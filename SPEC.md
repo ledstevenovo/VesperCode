@@ -783,7 +783,7 @@ StopReason =
 | `CREATED` | `START_PREFLIGHT` | 请求绑定有效；无待处理取消 | 创建 `phase_entry_ref` 和转换记录 | `RUNNING(PREFLIGHT)` |
 | `CREATED` | `CANCEL_ACCEPTED` | 存在有效取消请求 | 消费取消；创建 `StopRecord` | `STOPPED(USER_CANCELLED)` |
 | `RUNNING(PREFLIGHT)` | `ADMISSION_ADMITTED` | 3.3 全部强制检查通过；最终 CAS 成功；无待处理取消 | 封存准入结果；创建新阶段进入记录 | `RUNNING(BASELINE)` |
-| `RUNNING(PREFLIGHT)` | `ADMISSION_REJECTED` | 3.3 产生失败关闭结果 | 封存准入结果和错误；创建 `StopRecord` | `STOPPED(PRECONDITION_REJECTED | INTERNAL_ERROR)` |
+| `RUNNING(PREFLIGHT)` | `ADMISSION_REJECTED` | 3.3 产生失败关闭结果 | 封存准入结果和错误；创建 `StopRecord` | `STOPPED(PRECONDITION_REJECTED | EXECUTION_TERMINATED | BUDGET_EXHAUSTED | WORKSPACE_CHANGED | INTERNAL_ERROR)` |
 | `RUNNING(BASELINE)` | `EXISTING_FAILURE_BASELINE_ACCEPTED` | 3.4 基线证据和 Manifest v1 有效 | 封存基线；创建新阶段进入记录 | `RUNNING(AGENT_LOOP)` |
 | `RUNNING(BASELINE)` | `NATURAL_LANGUAGE_BASELINE_ACCEPTED` | 基线证据和 Manifest v1 有效 | 封存基线；创建新阶段进入记录 | `RUNNING(REPRODUCTION)` |
 | `RUNNING(BASELINE)` | `BASELINE_REJECTED` | 基线不满足场景合同或结果不可靠 | 封存错误与 `StopRecord` | `STOPPED(BASELINE_BLOCKED)` |
@@ -916,18 +916,16 @@ DeploymentMode = LOCAL_FORMAL | PUBLIC_DEMO
 RequestType = LOCAL_REPAIR | DEMO_SCENARIO
 ```
 
-`DeploymentMode` 只来自进程启动时的不可变配置，运行期间不得切换。客户端创建请求可以声明 `request_type`，但不得声明或覆盖 `deployment_mode`。
+`DeploymentMode` 只来自进程启动时的不可变配置，运行期间不得切换。客户端可以声明 `request_type`，但不得声明或覆盖 `deployment_mode`。允许组合是封闭的：
 
-控制面必须按以下顺序分派请求：
+| `DeploymentMode` | 唯一允许的 `RequestType` |
+| --- | --- |
+| `LOCAL_FORMAL` | `LOCAL_REPAIR` |
+| `PUBLIC_DEMO` | `DEMO_SCENARIO` |
 
-1. 只解析不含模式专用敏感字段的公共创建信封。
-2. 读取进程的 `DeploymentMode`。
-3. 选择该模式唯一允许的请求 Schema。
-4. 按所选 Schema 解析请求正文。
+控制面必须先解析不含模式专用敏感字段的公共创建信封，再读取进程模式、选择唯一允许的请求 Schema，最后解析正文。模式不支持时返回 `CAPABILITY_NOT_AVAILABLE`；正文含未知或禁止字段时返回 Schema 错误。公网进程不得先解析本地路径、缺陷描述或仓库字段后再拒绝，也不得在日志或错误说明中回显这些字段。
 
-当前进程不支持请求类型时必须返回 `CAPABILITY_NOT_AVAILABLE`；请求类型受支持但包含未知或禁止字段时必须返回 Schema 错误。公网进程不得先解析本地路径、缺陷描述或仓库字段后再拒绝能力，也不得在日志和错误说明中回显被拒绝的敏感字段。
-
-### 3.3.2 本地正式运行请求
+### 3.3.2 请求 Schema
 
 ```text
 LocalRepairRequest {
@@ -942,24 +940,7 @@ ExistingFailure {
 NaturalLanguageDefect {
   defect_description: bounded non-empty string
 }
-```
 
-两个 `repair_intent` 分支严格互斥，同时提供或均未提供必须在创建阶段拒绝。请求不得携带供应商、策略、预算、执行器、批准、Manifest、候选补丁或成功声明。`defect_description` 只是待解释的问题陈述，不具有命令、策略、批准或验收效力。
-
-`workspace_locator` 是不可信定位符，不是权威路径。创建阶段只能执行不访问文件系统的词法和静态体量校验。只有 `RUNNING(PREFLIGHT)` 完成文件系统解析与稳定身份绑定后，才可以形成 `WorkspaceIdentityRef`；后续快照、记忆、检查、审批和持久化不得仅凭原始路径字符串授权。
-
-`target_node_ids` 必须保持为数组，以便在规范化前观察重复项。创建阶段只检查数组数量、单项字节数和基础 Schema；建立工作区身份后，预检必须：
-
-1. 将每项解析为受支持的 pytest node ID 结构；
-2. 规范化仓库相对路径部分；
-3. 拒绝规范化后的重复项并返回 `DUPLICATE_TARGET_NODE_ID`；
-4. 形成确定性排序的 `CanonicalTargetSet`。
-
-node ID 不得经过 Shell 解析或拼接，必须作为独立 argv 元素传递。目标是否存在、可收集并稳定失败由 `BASELINE` 判断，不属于创建事务。
-
-### 3.3.3 公网演示请求
-
-```text
 DemoScenarioRequest {
   scenario_id
   scenario_version
@@ -967,100 +948,34 @@ DemoScenarioRequest {
 }
 ```
 
-场景 ID、版本和选择必须与进程注册表精确匹配，不允许近似匹配或版本降级。请求不得包含工作区定位符、文件、仓库地址、真实凭据、供应商、模型、任意命令或执行器配置。
+本地请求的两个 `repair_intent` 分支严格互斥。请求不得携带供应商、策略、预算、执行器、批准、Manifest、候选补丁或成功声明。`defect_description` 只是待解释的问题陈述，不具有命令、策略、批准或验收效力。
 
-### 3.3.4 创建事务与静态上限
+`workspace_locator` 是不可信定位符，不是权威路径。静态创建校验只检查词法、Schema 和体量；只有 `WORKSPACE_IDENTITY` 可以形成 `WorkspaceIdentityRef`。`target_node_ids` 在建立工作区身份后解析为受支持的 pytest node ID，规范化仓库相对路径，拒绝规范化后重复项并返回 `DUPLICATE_TARGET_NODE_ID`，再形成确定性排序的 `CanonicalTargetSet`。node ID 必须作为独立 argv 元素传递，不得经 Shell 解析或拼接；存在性、可收集性和稳定失败由 `BASELINE` 判断。
 
-公共创建信封至少绑定调用主体、请求 Schema 版本、`request_type`、创建幂等键和请求正文。版本化硬上限至少覆盖：
+Demo 场景 ID、版本和选择必须与进程内注册表精确匹配，不允许近似匹配或版本降级。Demo 请求不得包含工作区定位符、文件、仓库地址、真实凭据、供应商、模型、命令或执行器配置。
 
-- 请求总字节数；
-- `defect_description` 字节数；
-- `target_node_ids` 数量；
-- 单个 node ID 字节数；
-- Demo 选择项数量与总字节数。
+### 3.3.3 公共静态校验与创建幂等
 
-普通配置只能降低硬上限，不能提高。
+公共创建信封至少绑定调用主体、请求 Schema 版本、`request_type`、创建幂等键和请求正文。版本化硬上限至少覆盖请求总字节数、缺陷描述字节数、目标数量、单个 node ID 字节数以及 Demo 选择项数量和总字节数；普通配置只能降低硬上限。
 
-创建事务只执行 Schema、静态体量、模式能力和创建幂等校验。成功时原子产生 `run_id`、不可变 `request_ref` 和 `CREATED(revision=0)`；不得在该事务中访问 Git、Docker、凭据后端、真实 LLM 或项目文件。
+静态校验不得访问 Git、Docker、凭据后端、真实 LLM 或项目文件。相同主体和幂等作用域内，相同创建键与相同规范请求必须返回首次结果；同键不同规范请求返回 `CREATION_KEY_REUSE_CONFLICT`。首次结果可以是运行创建，也可以是没有 `run_id` 的创建拒绝；拒绝后的同键重放不得在条件变化后隐式创建运行。
 
-创建幂等作用域由调用主体和控制面声明的作用域组成：相同创建键、相同规范请求必须返回首次结果；相同创建键、不同规范请求必须返回创建键冲突，即使首次请求没有创建 `RunState` 也不得复用。
+创建拒绝记录只能保存调用主体、进程模式、幂等作用域、Schema 版本、可安全记录的规范摘要、稳定错误码和审计关联标识。不得默认保存原始路径、缺陷描述或可用于猜测低熵值的普通散列。
 
-创建失败不存在 `RunState`，但必须返回 3.1 的完整错误信封，并形成不依赖 `run_id` 的创建拒绝记录。该记录只能保存调用主体、当前模式、幂等作用域、Schema 版本、可安全记录的规范摘要、稳定错误码和审计关联标识；不得默认保存原始路径、缺陷描述或其可用于猜测低熵值的普通散列。
+本地正式请求通过静态校验后仍未创建 `RunState`。它必须先完成 3.3.4 的创建前准入门。Demo 请求按 3.3.14 的进程内原子事务创建会话与运行。
 
-### 3.3.5 创建与预检边界
+### 3.3.4 本地正式准入与创建顺序
 
-创建成功后，由 3.2 的 `START_PREFLIGHT` 进入 `RUNNING(PREFLIGHT)`。预检必须由控制面确定性执行，不调用真实 LLM，不运行项目代码，不修改权威工作区，不安装依赖，不拉取或构建镜像，也不回退宿主执行。
-
-预检只能调用 3.4 的 `SnapshotTree` 子合同。已有失败测试执行、失败稳定性判断、Manifest v1 派生和自然语言复现处理均属于后续阶段。
-
-### 3.3.6 准入画像与检查定义
-
-至少存在两个版本化准入画像：
+`LOCAL_FORMAL_ADMISSION` 的顺序是版本化合同，固定为：
 
 ```text
-LOCAL_FORMAL_ADMISSION
-PUBLIC_DEMO_ADMISSION
-```
-
-每个画像必须封存：
-
-```text
-AdmissionProfile {
-  profile_id
-  profile_version
-  deployment_mode
-  mandatory_check_ids
-  strict_priority_order
-  dependency_graph
-  evaluator_build_refs
-}
-```
-
-每个检查定义必须包含 `check_id`、`depends_on`、`diagnostic_group`、`check_contract_version`、`evaluator_build_ref`、`mandatory_for_profile` 和唯一 `priority`。同一画像的强制检查优先级必须构成严格全序；重复优先级、依赖成环、引用不存在的检查、遗漏强制检查或无法解析评估器版本，必须返回 `ADMISSION_PROFILE_INVALID` 并作为控制面内部错误处理。
-
-`mandatory_for_profile = true` 的检查不得产生 `NOT_APPLICABLE`。允许同层并行诊断时，主错误仍必须按画像全序确定，不得按线程完成、数据库插入或错误到达顺序选择。
-
-### 3.3.7 准入检查结果与尝试
-
-每个实际执行的准入检查必须具有：
-
-```text
-AdmissionCheckAttempt {
-  check_attempt_id
-  check_id
-  canonical_input_digest
-  preflight_phase_entry_ref
-  source_lifecycle_revision
-  admission_profile_version
-  evaluator_build_ref
-  workspace_fencing_generation?
-}
-```
-
-一个逻辑尝试最多接受一个权威结果。相同尝试 ID 和相同规范输入必须返回首次结果；相同 ID 和不同输入必须返回 `CHECK_ATTEMPT_ID_REUSE_CONFLICT`；阶段、修订或 fencing 已变化的结果必须作为陈旧输入拒绝。
-
-v1 每项准入检查只有一次逻辑尝试。仅当合同声明幂等，或控制面能够证明 `side_effect_status = NONE` 时，执行协调器才可以在同一尝试 ID 下恢复传输或重放。最终为 `UNKNOWN` 时，本次运行准入失败；用户必须修复外部条件后创建新运行。
-
-检查结果是封闭判别联合：
-
-```text
-PASS { evidence_ref }
-FAIL { error_envelope }
-UNKNOWN { error_envelope }
-NOT_RUN { not_run_reason, blocking_check_id?, blocking_event_ref? }
-NOT_APPLICABLE { profile_exclusion_reason }
-```
-
-`NOT_RUN` 必须能区分依赖失败、运行取消、生命周期变化、控制面中止、上游结果不可靠和当前阶段已不允许继续。警告只能是附属诊断，不能作为检查状态或代替 `PASS`。
-
-### 3.3.8 本地正式准入顺序
-
-`LOCAL_FORMAL_ADMISSION` 的强制检查按以下严格顺序和依赖执行：
-
-```text
+STATIC_REQUEST
 CONFIG_SNAPSHOT
 WORKSPACE_IDENTITY
-WORKSPACE_ADMISSION_LEASE
+WORKSPACE_OS_LOCK
+PRIOR_RUN_GATE
+CREATE_RUN
+START_PREFLIGHT
 REPOSITORY_STATE
 SENSITIVE_TRACKED_PATHS
 SNAPSHOT_TREE
@@ -1068,212 +983,218 @@ PROJECT_PROFILE
 TARGET_SELECTION
 CREDENTIAL_STATUS
 DOCKER_READINESS
+ADMISSION_COMMIT
 ```
 
-前项失败或未知时，依赖项必须标记 `NOT_RUN`。诊断性并行不得改变该顺序对主错误和副作用许可的约束。
+前五步属于创建前准入门；`CREATE_RUN` 成功后才存在新 `run_id`，随后按 3.2 从 `CREATED` 进入 `RUNNING(PREFLIGHT)`。`PRIOR_RUN_GATE` 未证明旧运行已终态时，`CREATE_RUN` 不得执行。这个顺序禁止先创建新运行再发现同工作区旧非终态运行。
 
-### 3.3.9 配置快照
+任一步失败或结果未知时，依赖步骤不得执行。创建前失败只形成无 `run_id` 的创建拒绝；创建后失败按 3.2 形成 `AdmissionResult` 和终态。预检不调用真实 LLM，不运行项目代码，不修改权威工作区，不安装依赖，不拉取或构建镜像，也不回退宿主执行。
 
-`CONFIG_SNAPSHOT` 必须严格加载并校验非秘密配置和凭据引用，拒绝未知字段、无效值、隐式权限扩大和覆盖硬规则的配置，并封存配置、策略、适配器和执行 profile 的规范摘要。
+### 3.3.5 配置快照与工作区身份
 
-该步骤不得把凭据值写入配置快照。配置快照只可以保存凭据记录引用、后端类型、所需凭据类型、记录版本和状态引用。
+`CONFIG_SNAPSHOT` 必须严格加载非秘密配置和凭据引用，拒绝未知字段、无效值、隐式权限扩大和覆盖硬规则的配置，并封存配置、策略、适配器与执行 profile 的规范摘要。快照不得保存凭据值，只能保存凭据记录引用、后端类型、所需类型、记录版本和状态引用。
 
-### 3.3.10 工作区身份
-
-`WORKSPACE_IDENTITY` 只证明定位符指向首版支持的 Windows 本地 Git 工作区根，并生成稳定身份；不得判断 `HEAD` 对象有效性。
-
-`WorkspaceIdentityRef` 至少必须绑定：
+`WORKSPACE_IDENTITY` 只证明定位符指向首版支持的 Windows 本地 Git 工作区根，并生成稳定身份；它不判断 `HEAD` 对象有效性。`WorkspaceIdentityRef` 至少绑定：
 
 - 平台与版本化文件系统策略；
-- 文件系统实例身份；
-- 根目录对象身份；
-- 规范显示路径；
-- Git 工作区元数据对象身份；
-- 文件系统是否满足 3.10 要求的身份稳定性、原子替换和持久化语义。
+- 文件系统实例和根目录对象身份；
+- 规范显示路径和 Git 工作区元数据对象身份；
+- 是否满足 3.10 所需的身份稳定性、原子替换和持久化语义。
 
-控制面不得向父目录自动搜索仓库根。路径任一祖先分量经过不受支持的符号链接、junction、mount point 或其他重解析点时必须拒绝。UNC、盘符相对路径、ADS、保留设备名、大小写或 Unicode 碰撞必须按版本化 Windows 文件系统策略机械处理，不得依赖字符串显示形式猜测身份。
+控制面不得向父目录搜索仓库根。路径祖先含不受支持的符号链接、junction、mount point 或其他重解析点时必须拒绝。UNC、盘符相对路径、ADS、保留设备名、大小写或 Unicode 碰撞必须按版本化 Windows 文件系统策略机械处理，不得用显示路径字符串代替身份。
 
-### 3.3.11 工作区准入租约与 fencing
+### 3.3.6 OS 排他锁与当前进程绑定
 
-同一 `WorkspaceIdentityRef` 任一时刻最多存在一个持有准入租约的非终态本地正式运行。租约必须在工作区身份建立后、仓库状态与快照检查前原子获取。已有活动正式运行、`RECOVERY_REQUIRED` 事项、未关闭持久化事务或 `WorkspaceAdmissionBlockRecord` 时必须分别返回稳定的繁忙或恢复阻断错误。
+`WORKSPACE_OS_LOCK` 必须以 `WorkspaceIdentityRef` 为键，由当前服务进程取得 OS 排他锁。同一身份任一时刻最多一个进程成功持有；锁忙时返回 `WORKSPACE_BUSY`，且不得读取仓库状态、创建新正式运行或形成新 `RunState`。
 
-准入租约是持久化排他占用，不是仅靠 TTL 失效的普通锁。仅凭心跳丢失、进程不存在或时间经过不得转授。合法接管分为：
+每次成功取得锁必须创建全局唯一、不可变的 `workspace_lease_ref`。该引用只证明当前进程仍持有这一次 OS 锁：
 
-1. 同一运行的协调器接管：恢复协调器证明旧 generation 已不能在受控制面管理的提交点产生新权威副作用，原子创建 `TakeoverRecord` 并递增 generation。
-2. 后续新运行获取：旧运行已终态、租约已安全释放且不存在阻断事项后，新运行使用更大的 generation 获取。
+- 它不按时间自动失效，也不存在延长有效期的协议；
+- 它不得交给另一进程、另一次锁获取或作为可继承权限使用；
+- 进程重启或释放后重新取得锁时必须创建不同引用；
+- 它不是可独立于 OS 锁存在的持久占用协议，也不能替代实际持锁检查。
 
-所有快照封存、候选封存、调度领取、检查结果接受、正式验证和持久化提交点必须重新校验 generation。generation 递增不能把已经发出的外部动作解释为未发生；仍可能产生副作用的旧尝试必须先终止或对账。
+取得锁后，进程必须持续持有到创建前拒绝已安全收尾，或正式运行进入终态且运行期资源清理完成。显式关闭锁句柄即使 `workspace_lease_ref` 失效；进程退出时由 OS 释放锁。若当前进程不能证明锁仍由自己持有，任何新权威提交都必须失败关闭。
 
-租约释放命令必须精确绑定：
+### 3.3.7 旧运行门与进程重启处理
+
+`PRIOR_RUN_GATE` 必须在持有当前 OS 锁后、创建新正式运行前，按 `WorkspaceIdentityRef` 读取旧运行的权威生命周期状态。处理只有三类：
+
+1. **旧运行已终态：** `SUCCEEDED` 或 `STOPPED` 不阻塞新运行创建。
+2. **旧运行处于非持久化非终态：** 包括 `CREATED`、`WAITING_USER` 以及 `RUNNING` 下除 `PERSISTENCE` 外的阶段。只有 `PRIOR_RUN_GATE` 可以在当前进程持有同一 `WorkspaceIdentityRef` 的 OS 排他锁、且本次 `CREATE_RUN` 尚未发生时，使用本次锁获取产生的新 `workspace_lease_ref` 发起启动终止；这是非持久化旧运行中唯一允许当前引用不同于旧运行创建时绑定引用的生命周期提交。控制面必须以旧 `run_id` 为 `owner_run_id`，同时验证当前引用、旧运行当前 `lifecycle_revision` 及适用状态、阶段和 `phase_entry_ref`，原子创建 `StopRecord` 并进入 `STOPPED(INTERNAL_ERROR)`。错误信封的稳定 `error_code` 必须是 `PROCESS_RESTARTED_DURING_RUN`。该提交不得修改、重绑定或声称继承旧运行绑定的引用，也不得授权普通命令以新引用操作旧运行；旧运行终态提交成功后才可创建新运行。
+3. **旧运行处于 `RUNNING(PERSISTENCE)` 或 `RECOVERY_REQUIRED`：** 只能按 3.2.9 与 3.10 处理。`RUNNING(PERSISTENCE)` 先通过恢复发现事件进入 `RECOVERY_REQUIRED`，然后接受 3.10 的三种 `RecoveryDisposition`：
+   - `COMMITTED_AND_VALID`：旧运行进入 `SUCCEEDED`；
+   - `NOT_COMMITTED_OR_ROLLED_BACK`：旧运行进入 `STOPPED(RECOVERY_TERMINATED)`；
+   - `UNRESOLVED`：旧运行保持 `RECOVERY_REQUIRED`，本次创建以 `WORKSPACE_RECOVERY_REQUIRED` 拒绝，且不得创建新运行。
+
+进程重启、普通错误或取消都不得把第三类改走第二类路线。若存在多个旧非终态运行、无法读取当前修订或无法证明分类，必须以控制面内部错误失败关闭且不得创建新运行；v1 不在本节增加额外状态机。
+
+### 3.3.8 正式运行创建与当前绑定
+
+创建前准入门通过后，控制面必须在仍持有同一 OS 锁时原子形成：
 
 ```text
-workspace_identity_ref
-lease_id
+FormalRunCreationResult {
+  run_id
+  request_ref
+  workspace_identity_ref
+  workspace_lease_ref
+  RunState = CREATED(request_ref)
+  lifecycle_revision = 0
+}
+```
+
+创建事务必须再次验证创建幂等声明、当前进程持锁事实、`WorkspaceIdentityRef`、当前 `workspace_lease_ref` 以及 `PRIOR_RUN_GATE` 的旧运行终态证据。任一绑定变化都不得创建运行。相同创建键的并发事务最多一个成功。
+
+从 `START_PREFLIGHT` 起，每个会改变正式运行生命周期、接受检查结果、发布快照或候选、消费批准、调度正式验证或触发持久化的权威提交，都必须验证：
+
+```text
 owner_run_id
-fencing_generation
+workspace_identity_ref
+current workspace_lease_ref
+current lifecycle_revision
+expected RunState
+applicable phase and phase_entry_ref
+action-specific immutable bindings
 ```
 
-释放采用 CAS：同一命令重放返回首次结果；owner 或 generation 不匹配时作为陈旧释放拒绝；旧 generation 不得释放新 generation 的租约；释放不得回退 generation。`RECOVERY_REQUIRED` 期间不得释放给新运行。
+`owner_run_id` 必须等于被提交运行的 `run_id`。引用不匹配、当前进程未持锁、修订陈旧或阶段绑定陈旧时，不得产生目标副作用。不得用仅保存在请求或审计记录中的旧引用证明当前持锁。
 
-租约清理或非持久化旧执行无法安全判定时，不得滥用运行级 `RECOVERY_REQUIRED`，必须创建独立 `WorkspaceAdmissionBlockRecord`，使后续运行以 `WORKSPACE_RECOVERY_BLOCKED` 失败关闭，直到恢复协调器安全关闭事项。
+3.3.7 第三类严格按 3.10 执行的专用恢复提交不属于运行内普通提交。每次专用恢复提交必须验证当前进程本次锁获取产生的新 `workspace_lease_ref`、旧运行的 `owner_run_id` 和当前 `lifecycle_revision`、适用的 `RecoveryContext` 与 `RunState`，以及 3.10 要求的其他绑定；它不得修改、继承或重绑定旧运行创建时绑定的 `workspace_lease_ref`。
 
-### 3.3.12 仓库状态与密闭 Git 视图
+除 3.3.7 第二类受限的启动终止和第三类专用恢复提交外，运行内普通提交必须使用该运行创建时绑定、且仍对应当前进程所持本次 OS 锁获取的 `workspace_lease_ref`；提交引用不同即作为陈旧输入或绑定拒绝处理，不得借用后续锁获取的新引用操作旧运行。
 
-`REPOSITORY_STATE` 是验证有效 `HEAD`、index、tree mode 和仓库策略的唯一准入检查。它必须在不读取 system/global Git 配置的密闭环境中，建立并证明以下三方关系：
+### 3.3.9 准入检查尝试与完成
+
+运行内每个实际检查形成：
 
 ```text
-封存的 Git HEAD tree
-Git index
-当前工作区 tracked 文件原始字节与模式
+AdmissionCheckAttempt {
+  check_attempt_id
+  check_id
+  canonical_input_digest
+  owner_run_id
+  workspace_identity_ref?
+  workspace_lease_ref?
+  preflight_phase_entry_ref
+  source_lifecycle_revision
+  admission_profile_version
+  evaluator_build_ref
+}
 ```
 
-首版必须拒绝未合并或非 stage-0 index entry、intent-to-add、`skip-worktree`、`assume-unchanged`、不支持的 tree mode 和 tracked symlink。不得执行 hooks、pager、credential helper、外部 diff/merge driver、filter、fsmonitor 或协议 helper；不得通过可能触发 clean/smudge filter 的外部 checkout 生成快照。
+正式检查必须包含工作区字段；Demo 检查不得包含它们。相同尝试 ID 和相同规范输入返回首次结果；同 ID 不同输入返回 `CHECK_ATTEMPT_ID_REUSE_CONFLICT`。owner、锁引用、修订、阶段或动作绑定变化后的迟到结果必须作为陈旧输入拒绝。
 
-locale、路径规范化、Git 能力版本和策略解释版本必须封存。bare repository、submodule、Git LFS、稀疏或 split index、alternates、replace refs、外部 `core.worktree`、自定义 filter、外部 fsmonitor以及其他无法确定性物化的仓库策略必须按支持矩阵拒绝。必须检测宿主文件系统上的大小写、Unicode 和保留名称碰撞。
-
-非忽略未跟踪文件必须拒绝。被支持策略忽略的未跟踪文件可以继续存在，但不得进入快照或被后续正式流程观察。
-
-### 3.3.13 敏感 tracked 路径
-
-`SENSITIVE_TRACKED_PATHS` 必须对来自 HEAD tree 的 Git 规范路径使用与读取、补丁、披露和持久化相同版本的 `SensitivePathPolicy`。大小写、Unicode 和分隔符规则必须版本化。
-
-命中硬拒绝规则时必须失败关闭，普通配置和用户批准不得放宽。fixture/example 窄例外每次命中必须生成不可变例外记录，绑定具体路径、规则 ID 和策略版本；例外只允许合同规定的本地处理，不自动授予对外披露权限。
-
-### 3.3.14 快照与唯一代码来源
-
-`SNAPSHOT_TREE` 必须调用 3.4 的快照子合同并封存 `SnapshotTreeRef`。快照发布后：
-
-> 基线、复现、Agent 文件工具、候选修订组装、普通检查和正式验证只能读取 `SnapshotTree` 或其派生候选副本。
-
-上述阶段不得读取、列出、执行或挂载权威工作区实时内容。ignored/untracked 文件不得进入 LLM 上下文、项目容器、适配器输入、基线或验证。权威工作区不得直接挂入容器，即使只读也不允许。
-
-在基线、复现、Agent 循环、普通检查和正式验证前，控制面只重验 `WorkspaceIdentityRef`、租约所有权和 fencing generation。权威工作区 tracked 原始字节、模式和前映像内容只能在 3.2 转换矩阵及 3.10 明确规定的最终审批、提交意图创建和持久化前检查点读取。内容变化不改变已封存快照，但必须阻止持久化。
-
-### 3.3.15 项目画像与目标选择
-
-`PROJECT_PROFILE` 必须依据快照和已封存配置选择第 1 章定义的受支持 Python 项目画像，形成版本化适配器绑定；画像外项目必须失败关闭，不得降级为任意命令执行。
-
-`TARGET_SELECTION` 在 `PROJECT_PROFILE` 之后运行。已有失败场景必须验证 node ID 结构、规范路径约束和快照内文件归属，形成 `CanonicalTargetSet`；测试收集、存在性和失败稳定性留给 `BASELINE`。自然语言场景必须验证缺陷描述仍满足创建时的结构和体量绑定，不得把描述解释为命令或策略。
-
-### 3.3.16 凭据状态
-
-`CREDENTIAL_STATUS` 只能输出：
+`AdmissionCheckAttempt` 只是不可变的单次检查记录和幂等边界，不是可恢复的活动状态，也不携带运行中、重试或恢复子状态。v1 每项检查只有一次逻辑尝试。对同一尝试 ID 的传输重放，只有检查合同声明幂等，或控制面能够证明首次执行 `side_effect_status = NONE` 时才允许；否则不得重新执行，并按现有 `UNKNOWN` 或 `CONTROL_PLANE_ABORTED` 路线安全失败关闭。任何允许的重放都不得创建第二个尝试或改变首次权威结果。
 
 ```text
-CONFIGURED | ABSENT | LOCKED | BACKEND_UNAVAILABLE
-```
+AdmissionCheckResult =
+  PASS { evidence_ref }
+  | FAIL { error_envelope }
+  | UNKNOWN { error_envelope }
+  | NOT_RUN { not_run_reason, blocking_check_id? }
 
-凭据状态证据只可以保存：
-
-```text
-credential_record_id
-backend_type
-record_version
-status
-```
-
-不得保存明文或可逆编码、key 前后缀或长度、未加密摘要、跨运行可比较的确定性秘密指纹或从秘密值派生的错误详情。状态检查必须非交互；需要解锁、弹窗或用户输入时返回 `LOCKED`。
-
-`CONFIGURED` 只证明引用存在且当前可访问，不证明供应商认证成功。每次真实 LLM 调用前，3.5 必须重验凭据引用版本，由供应商适配器即时取得秘密；秘密不得进入运行配置、普通日志或模型上下文。
-
-### 3.3.17 Docker 准入
-
-`DOCKER_READINESS` 必须证明受支持 Docker 能力当前可用，并形成不可变 `DockerEnvironmentRef`，至少绑定：
-
-- daemon 或 context 身份；
-- 服务端与 API 能力版本；
-- 本地镜像内容身份，而不是可变 tag；
-- 执行 profile 摘要；
-- 探测结果和探测实现版本。
-
-预检不得联网拉取镜像、构建环境、安装依赖或回退到宿主执行。可信探测容器必须验证实际生效的 UID/GID、只读根、网络模式、挂载集合、能力集、资源限制和 Docker 控制接口不可见。探测尝试必须记录清理结果和 `side_effect_status`。
-
-每次检查执行前必须重验 Docker 动态绑定。tag 重指向、镜像删除、daemon/context 切换或 profile 漂移时，不得沿用旧准入证据。
-
-### 3.3.18 公网演示准入
-
-`PUBLIC_DEMO_ADMISSION` 只可以检查：
-
-- 请求与访客选择 Schema；
-- 场景包内容摘要和场景注册表版本；
-- Mock LLM 与 `DemoExecutor` 实现版本；
-- 允许的演示能力封闭集合；
-- 独立会话命名空间和重置证明；
-- 绑定当前运行的资源预留与速率额度。
-
-它不得访问本地文件系统、Git、真实凭据、真实 LLM 或 Docker 项目执行环境。运行拥有的 Mock LLM、`DemoExecutor` 和场景能力不得产生外部网络出站；该限制不禁止公网 Web 服务接受浏览器入站连接。
-
-资源预留必须绑定 `run_id`、会话命名空间、场景包摘要和唯一 reservation ID。相同逻辑请求重放不得重复扣减；准入失败、取消、最终 CAS 失败和终态释放必须幂等。迟到释放只能绑定原 reservation ID，不得释放其他运行的新预留。进程崩溃后不得仅凭 TTL 将仍可能被活动运行使用的额度转授；无法确定时必须进入可对账状态。
-
-所有强制检查通过后的出口固定为：
-
-```text
-RUNNING(PREFLIGHT)
-  -- PUBLIC_DEMO_ADMISSION admitted -->
-RUNNING(BASELINE)
-```
-
-之后由 3.12 编排脚本化模拟并以 `STOPPED(DEMO_COMPLETED)` 结束。
-
-### 3.3.19 准入完成结果
-
-```text
-AdmissionCompletionKind =
-  ADMITTED
-  | CHECK_REJECTED
+AdmissionNotRunReason =
+  BLOCKED_BY_CHECK
   | CANCELLED
+  | LIFECYCLE_CHANGED
   | CONTROL_PLANE_ABORTED
 ```
 
-`AdmissionResult` 必须绑定：
+只有真正开始执行的检查才可以产生 `PASS`、`FAIL` 或 `UNKNOWN`；没有开始执行的检查才可以产生 `NOT_RUN`。`not_run_reason = BLOCKED_BY_CHECK` 时必须存在 `blocking_check_id`，且引用严格优先于当前检查的阻断检查；其他三个 reason 禁止携带该字段。强制检查在其前置成立且运行仍允许推进时不得跳过。`UNKNOWN` 使本次准入失败；迟到结果仍按 owner、锁引用、修订、阶段和动作绑定作为陈旧输入拒绝。主错误按版本化严格全序选择，不得按线程完成或记录写入顺序选择。
 
-- `deployment_mode`、画像 ID、版本和强制检查 ID 集合；
-- `preflight_phase_entry_ref`；
-- `source_lifecycle_revision`；
-- 全部检查定义与判别联合结果；
-- 按结果条件存在的证据引用；
-- `accepted_transition_ref` 和 `resulting_lifecycle_revision`，仅在完成转换后存在；
-- `primary_error_envelope`，按下述规则存在。
+准入画像必须封存强制检查 ID、严格优先级、依赖图和评估器构建引用。重复优先级、依赖成环、缺失强制检查或无法解析评估器版本时返回 `ADMISSION_PROFILE_INVALID`，并按控制面内部错误失败关闭。
 
-`allows_baseline` 不得作为可独立写入的字段，只能由 `completion_kind == ADMITTED` 派生：
+### 3.3.10 仓库状态与敏感路径
 
-- `ADMITTED`：全部强制检查为 `PASS`，且 `PREFLIGHT → BASELINE` 已被控制面原子接受；不得有主错误。
-- `CHECK_REJECTED`：至少一个强制检查为 `FAIL` 或 `UNKNOWN`；主错误按画像严格优先级选择。
-- `CANCELLED`：取消转换优先；使用取消错误信封，不从 `NOT_RUN` 伪造主错误。
-- `CONTROL_PLANE_ABORTED`：规范化、存储、封存或最终状态提交发生不可恢复的控制面故障；使用内部错误信封。
+`REPOSITORY_STATE` 是验证有效 `HEAD`、index、tree mode 与仓库策略的唯一准入检查。它必须在禁用 system/global Git 配置的密闭视图中证明封存 `HEAD tree`、Git index 与当前 tracked 文件原始字节及模式一致。
 
-引用必须按生产检查的结果条件存在。例如，仅 `WORKSPACE_IDENTITY = PASS` 时可以存在 `WorkspaceIdentityRef`；租约、快照、凭据、Docker、Demo 场景包和资源预留同理。前置检查失败时不得伪造后续引用。
+首版必须拒绝未合并或非 stage-0 index entry、intent-to-add、`skip-worktree`、`assume-unchanged`、不支持的 tree mode、tracked symlink、bare repository、submodule、Git LFS、稀疏或 split index、alternates、replace refs、外部 `core.worktree`、自定义 filter 与外部 fsmonitor。不得执行 hook、pager、credential helper、外部 diff/merge driver、filter、fsmonitor 或协议 helper。非忽略未跟踪文件返回 `WORKTREE_DIRTY`；被支持策略忽略的未跟踪文件不得进入后续视图。
 
-最后一个检查通过只是进入基线的必要条件。若最终 CAS 前有效取消已经持久化，结果必须为 `CANCELLED` 并进入 `STOPPED(USER_CANCELLED)`；若 CAS 因非取消的控制面故障无法完成，必须为 `CONTROL_PLANE_ABORTED`。准入结果一经封存不得由迟到检查覆盖。
+`SENSITIVE_TRACKED_PATHS` 必须对 `HEAD tree` 的 Git 规范路径使用与读取、补丁、披露和持久化相同版本的 `SensitivePathPolicy`。命中硬拒绝规则返回 `SENSITIVE_TRACKED_FILE`，普通配置和用户批准不得放宽。fixture/example 窄例外必须绑定具体路径、规则 ID 与策略版本。
 
-### 3.3.20 错误映射与清理
+仓库内 `.gitignore`、`.gitattributes` 和 `.gitmodules` 是受保护策略工件。`FinalDiff` 不得创建、修改、删除或重命名这些工件；策略摘要变化时按 `REPOSITORY_POLICY_CHANGED` 停止。
 
-每个稳定准入错误码必须恰好属于一个强类型 `AdmissionErrorCategory`；每个运行内错误类别必须恰好映射一个 `StopReason`。创建事务失败发生在 `RunState` 之前，只返回创建错误信封。
+### 3.3.11 快照与后续唯一权威来源
 
-用户输入、配置、工作区占用、不支持仓库、凭据状态和支持画像拒绝通常映射 `PRECONDITION_REJECTED`；工作区在准入过程中发生变化时使用独立错误码并映射 `WORKSPACE_CHANGED`；控制面存储、规范序列化、画像定义或封存协议故障映射 `INTERNAL_ERROR`。无法分类的错误必须视为画像或控制面内部错误，不得默认归为用户前置条件。
+`SNAPSHOT_TREE` 必须调用 3.4 子合同并封存 `SnapshotTreeRef`。发布后：
 
-准入失败、取消或中止时，已取得的租约、Demo 预留、临时快照对象和探测资源必须按各自 ID 幂等释放或进入可对账状态。迟到清理不得影响新 generation、新运行或新预留。
+> 基线、复现、Agent 文件工具、候选修订组装、普通检查和正式验证只能读取 `SnapshotTree` 或其派生候选副本。
 
-`AdmissionResult` 只证明当前修订允许或拒绝进入 `BASELINE`，不授权未来无条件使用凭据、Docker 或工作区。所有动态能力必须在实际使用前由对应动作合同重新绑定。
+这些阶段不得读取、列出、执行或挂载权威工作区实时内容。ignored/untracked 文件不得进入 LLM 上下文、项目容器、适配器输入、基线或验证；权威工作区即使只读也不得直接挂入容器。
 
-### 3.3.21 可确定性验证点
+后续阶段每个权威提交仍必须重验当前进程持锁、`WorkspaceIdentityRef`、`workspace_lease_ref`、`owner_run_id`、当前生命周期修订及适用阶段绑定。权威工作区 tracked 原始字节、模式与前映像只可在 3.2 和 3.10 明确规定的最终批准、提交意图与持久化检查点读取。外部变化不改写已封存快照，但必须阻止持久化。
 
-1. 给定 `PUBLIC_DEMO` 进程和 `LOCAL_REPAIR` 公共信封，系统必须在解析本地正文前返回 `CAPABILITY_NOT_AVAILABLE`，且不得访问文件系统。
-2. 给定同一创建键和相同规范请求，系统必须返回首次结果；同键不同请求必须返回创建键冲突。
-3. 给定同时提供两种修复意图的请求，系统不得创建 `RunState`，但必须生成完整错误信封和无 `run_id` 拒绝记录。
-4. 给定规范化后重复的 node ID，系统必须返回 `DUPLICATE_TARGET_NODE_ID`，不得启动 pytest。
-5. 给定两个运行竞争同一工作区租约，最多一个可以取得有效 generation；失败运行不得进入仓库读取或快照封存。
-6. 给定旧 generation 的释放请求晚于接管，系统必须拒绝释放且不得影响当前租约。
-7. 给定 `CONFIG_SNAPSHOT = FAIL`，结果不得包含工作区、租约、快照、凭据或 Docker 引用，主错误必须来自配置检查。
-8. 给定强制检查返回 `UNKNOWN`，系统不得进入 `BASELINE` 或自动创建第二个逻辑检查尝试。
-9. 给定两个同优先级强制检查的画像，系统必须返回 `ADMISSION_PROFILE_INVALID`，不得按完成顺序选择主错误。
-10. 给定检查发起后阶段、修订或 generation 已变化，迟到结果必须作为陈旧输入拒绝，不得改变准入结果。
-11. 给定所有强制检查已通过但最终 CAS 前存在有效取消，系统必须形成 `CANCELLED` 结果并进入 `STOPPED(USER_CANCELLED)`。
-12. 给定快照已发布，基线或正式验证不得读取或挂载权威工作区，ignored/untracked 文件不得影响结果。
-13. 给定已配置凭据，准入证据和审计只能观察到记录引用、后端、版本和状态，不得包含秘密派生信息。
-14. 给定 Docker tag 指向内容变化，后续执行必须拒绝旧 `DockerEnvironmentRef`，不得按 tag 名继续。
-15. 给定 Demo 预留成功但准入 CAS 被取消抢先，系统必须释放或对账原预留，不得进入 `BASELINE` 或永久泄漏额度。
-16. 给定旧 Demo reservation 的迟到释放，系统不得释放新运行的额度。
+### 3.3.12 项目画像、目标与凭据
+
+`PROJECT_PROFILE` 必须依据快照和已封存配置选择第 1 章支持的 Python 项目画像；画像外项目返回 `UNSUPPORTED_PROJECT`，不得降级为任意命令执行。
+
+`TARGET_SELECTION` 在项目画像之后运行。已有失败场景形成 `CanonicalTargetSet`；自然语言场景只验证缺陷描述的结构与体量绑定，不把说明解释为命令或策略。收集、存在性和稳定失败仍由 `BASELINE` 判断。
+
+`CREDENTIAL_STATUS` 只能输出 `CONFIGURED | ABSENT | LOCKED | BACKEND_UNAVAILABLE`。证据只保存凭据记录 ID、后端类型、记录版本和状态；不得保存明文、可逆编码、前后缀、长度、秘密摘要或跨运行可比较的秘密派生值。状态检查必须非交互；需要解锁或输入时返回 `LOCKED`。`CONFIGURED` 不证明供应商认证成功，每次真实 LLM 调用仍须即时重验记录版本并从后端取值。
+
+### 3.3.13 Docker-only 准入
+
+`DOCKER_READINESS` 必须证明受支持 Docker 能力当前可用，并形成不可变 `DockerEnvironmentRef`，至少绑定 daemon 或 context 身份、服务端与 API 能力版本、本地镜像内容身份、执行 profile 摘要、探测结果及探测实现版本。
+
+预检不得联网拉取镜像、构建环境、安装依赖或回退宿主执行。可信探测必须验证实际 UID/GID、只读根、网络模式、挂载集合、能力集、资源限制和 Docker 控制接口不可见。项目代码、基线、普通检查与正式验证只允许由 `DockerExecutor` 执行；`NativeExecutor` 及继承当前 Windows 用户权限的宿主执行或诊断路径不注册、不调度，也不能提供正式证据。
+
+每次项目检查执行前必须重验 Docker 动态绑定。tag 重指向、镜像删除、daemon/context 切换或 profile 漂移时，旧 `DockerEnvironmentRef` 失效，运行失败关闭。
+
+### 3.3.14 公网 Demo 准入与会话
+
+Demo 创建前事务只执行公共请求 Schema 与硬上限校验、场景 ID／版本／choices 与当前进程注册表的精确匹配，以及进程内配额 reservation。该事务必须全有或全无地创建唯一 reservation、`DemoSessionRef` 和 Demo `RunState`；任一步失败都不得产生 session 或 run。reservation 至少绑定 `run_id`、当前进程实例引用、会话命名空间、场景 ID 与版本；同一进程内同一逻辑请求重放不得重复扣减。
+
+创建成功并进入 `RUNNING(PREFLIGHT)` 后，`PUBLIC_DEMO_ADMISSION` 才验证场景包 digest、Mock LLM 与 `DemoExecutor` 实现版本、允许能力封闭集合、会话命名空间隔离，以及未注册真实 LLM、`DockerExecutor`、正式工作区或对外网络能力。它只读取内置版本化场景包，不读取用户仓库、用户文件或凭据。任一创建后检查失败必须形成 `AdmissionResult`，并按 3.3.15 与 3.2 的 `ADMISSION_REJECTED` 路线终结，不得回写为创建前拒绝。
+
+Demo 不解析 `WorkspaceIdentityRef`，不取得正式工作区 OS 锁，不创建 `workspace_lease_ref`，也不写权威工作区。Mock LLM、`DemoExecutor` 和场景能力不得产生外部网络出站；公网 Web 服务接受浏览器入站不受此句限制。
+
+Demo 配额只保证单个服务进程内的原子性。创建后的准入检查不得扩大创建前已经确定的配额、场景选择或能力边界。
+
+服务进程重启后，先前进程创建的全部 Demo session、reservation 与会话引用立即失效。旧 `run_id` 或会话引用返回 `DEMO_SESSION_INVALIDATED`，不得恢复、继续或把旧额度解释为当前额度。每个新会话从模板重新创建可丢弃状态。
+
+Demo 结束、取消或错误时必须在当前进程内幂等释放原 reservation 并丢弃会话命名空间。无法确认重置完成时，该会话失败关闭且状态不得供其他会话复用。全部强制检查通过后从 `RUNNING(PREFLIGHT)` 进入 `RUNNING(BASELINE)`，由 3.12 编排脚本化模拟，最终只可进入 `STOPPED(DEMO_COMPLETED)`；不得形成正式 `SuccessRecord`、持久化批准或 Docker 验证证据。
+
+### 3.3.15 准入结果、错误与关闭
+
+`AdmissionCompletionKind` 是封闭联合：
+
+```text
+ADMITTED
+| CHECK_REJECTED
+| CANCELLED
+| CONTROL_PLANE_ABORTED
+```
+
+`AdmissionResult` 必须显式绑定 `completion_kind`、部署模式、画像 ID 与版本、强制检查集合、`preflight_phase_entry_ref`、来源生命周期修订、全部运行内检查结果、按条件存在的证据引用，以及完成转换后才存在的 `accepted_transition_ref` 和结果修订。`allows_baseline` 只能由 `completion_kind == ADMITTED` 派生。
+
+`ADMITTED` 要求全部强制检查为 `PASS` 且 `PREFLIGHT → BASELINE` CAS 已接受；`CHECK_REJECTED` 的主错误按严格优先级选择；`CANCELLED` 使用取消错误，不从 `NOT_RUN` 伪造主错误；`CONTROL_PLANE_ABORTED` 使用内部错误。最后一个检查通过不等于准入完成：最终 CAS 前存在有效取消时必须进入 `STOPPED(USER_CANCELLED)`，非取消的提交故障必须失败关闭。
+
+创建前的用户输入、配置、工作区占用、未解决恢复或身份不支持只产生无新 `run_id` 的创建拒绝，不产生 `StopReason`。运行创建后的准入失败必须确定性映射：不支持的输入或环境映射 `PRECONDITION_REJECTED`；外部可靠观察或执行无法继续映射 `EXECUTION_TERMINATED`；资源硬上限或容量不足映射 `BUDGET_EXHAUSTED`；工作区在准入期间发生时间性变化时使用稳定 `error_code = WORKSPACE_MUTATED_DURING_ADMISSION` 并映射 `WORKSPACE_CHANGED`；控制面不变量、存储、规范序列化或当前持锁证明故障映射 `INTERNAL_ERROR`。无法分类的错误按 `INTERNAL_ERROR` 失败关闭。
+
+正式运行在非持久化阶段取消或失败时，必须先形成 3.2 的终态并清理运行资源，再关闭当前 OS 锁句柄。持久化阶段只可按 3.10 形成提交、安全失败或恢复结果；不得用普通取消或清理错误绕过。若当前进程无法证明锁句柄已经关闭，它必须拒绝该工作区的新请求直至进程结束。Demo 只清理自己的会话资源，不影响正式工作区。
+
+### 3.3.16 可确定性验证点
+
+1. 给定 `PUBLIC_DEMO` 进程和 `LOCAL_REPAIR` 信封，系统必须在解析本地正文前返回 `CAPABILITY_NOT_AVAILABLE`，且不得访问文件系统。
+2. 给定同一创建键和相同规范请求，系统必须返回首次结果；同键不同请求返回 `CREATION_KEY_REUSE_CONFLICT`。
+3. 给定本地请求尚未通过 `PRIOR_RUN_GATE`，系统中不得存在该请求的新 `RunState`。
+4. 给定两个进程竞争同一 `WorkspaceIdentityRef`，最多一个取得 OS 锁；失败者返回 `WORKSPACE_BUSY`，不得读取仓库状态或创建运行。
+5. 给定旧运行位于非持久化非终态，新进程必须先以 `PROCESS_RESTARTED_DURING_RUN` 和 `INTERNAL_ERROR` 原子终止旧运行，随后才可创建新运行。
+6. 给定旧运行位于 `RUNNING(PERSISTENCE)` 或 `RECOVERY_REQUIRED`，系统必须只接受 3.10 三种恢复结果；`UNRESOLVED` 时不得创建新运行。
+7. 给定旧运行经 `COMMITTED_AND_VALID` 或 `NOT_COMMITTED_OR_ROLLED_BACK` 进入终态，系统才可在仍持有当前 OS 锁时创建新运行。
+8. 给定进程重启或同一进程重新取得锁，新 `workspace_lease_ref` 必须不同；绑定旧引用的迟到结果不得产生权威副作用。
+9. 给定当前提交的 `owner_run_id`、锁引用、生命周期修订、阶段或 `phase_entry_ref` 任一不匹配，提交必须作为陈旧或内部错误拒绝。
+10. 给定 `CONFIG_SNAPSHOT` 失败，系统不得解析工作区、取得锁或创建运行；给定 `REPOSITORY_STATE` 失败，不得封存快照。
+11. 给定工作区不干净、命中敏感 tracked 路径或策略工件变化，系统必须在首次 LLM 调用和项目代码执行前失败关闭。
+12. 给定 `SnapshotTree` 已发布，基线、Agent 工具和验证不得读取或挂载权威工作区，ignored/untracked 文件不得影响结果。
+13. 给定 Docker tag 内容变化或 daemon/profile 漂移，系统必须拒绝旧 `DockerEnvironmentRef`；不得调度宿主执行作为替代。
+14. 给定同一进程内并发 Demo 请求超过配额，原子准入最多接受配额允许的会话，拒绝请求不得产生 reservation 或运行。
+15. 给定服务进程重启，所有旧 Demo session 必须返回 `DEMO_SESSION_INVALIDATED`，不得恢复或影响新进程配额。
+16. 给定任一 Demo 请求，系统不得解析工作区身份、取得正式工作区锁、读取用户凭据或写入权威工作区。
+17. 给定全部强制检查通过但最终 CAS 前存在有效取消，系统必须形成 `CANCELLED` 并进入 `STOPPED(USER_CANCELLED)`。
+18. 给定 Demo 场景完成，唯一终态是 `STOPPED(DEMO_COMPLETED)`，不得形成正式成功、持久化批准或 Docker 正式证据。
+
 
 ## 3.4 仓库快照、基线与 `ValidationManifest`
 
