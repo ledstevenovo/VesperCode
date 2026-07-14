@@ -1270,6 +1270,8 @@ SnapshotContentKind =
 
 Snapshot 由已封存 HEAD tree、`RepositoryPolicySnapshot` 和权威工作区 tracked 原始字节共同证明：HEAD 给出路径、mode 与 Git 来源身份；策略确定预期工作区字节；工作区提供实际原始字节。三者必须逐条一致。
 
+`ExpectedWorktreeTree` 是由 sealed HEAD tree 与 `RepositoryPolicySnapshot` 纯确定性计算的未发布投影，只作为本次 Snapshot 构建的比较输入；它不是权威链对象、持久记录、job 或 lifecycle，也不得独立发布。投影中的每个规范路径、mode 和预期原始字节摘要必须分别逐项映射到唯一 `SnapshotEntry` 的 `canonical_git_path`、`tree_entry_mode` 和 `expected_worktree_digest`；任一项缺失、碰撞或无法确定时都不得发布 `SnapshotTree`。
+
 ```text
 SnapshotEntry {
   canonical_git_path
