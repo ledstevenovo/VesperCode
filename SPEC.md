@@ -450,3 +450,3647 @@ INVEST 自检采用以下解释：
 - INVEST 自检不替代各故事的结果级验收条件。
 - 用户故事不等同于单个实现任务；后续实现计划可以把一个故事拆成多个可验证任务。
 - 公网演示不替代离线 Mock LLM 单元测试和机制演示脚本。
+
+# 3. 功能规约
+
+本章采用“规范合同优先的混合式结构”。3.2 是运行状态转换的唯一规范来源；3.3—3.12 分别定义可独立实现和验证的模块合同；3.8 以两类修复场景证明这些合同能够组成完整闭环。除非合同明确另有说明，第 1、2 章已经冻结的支持范围、安全边界、审批语义、验收契约和成功条件继续适用。
+
+## 3.1 规约约定与共同不变量
+
+### 3.1.1 规范性术语
+
+本章只有“必须”“不得”“可以”承担规范效力。“应”“应当”“建议”“通常”和“默认”等词只用于说明，不得定义合规条件。
+
+用户批准只能满足合同明确规定的审批前置条件，不能豁免硬性不变量，不能将 `DENY`、验证失败或非成功终态改写为允许或成功。普通配置只能在合同显式开放的参数范围内选择或收紧约束，不得覆盖硬性要求。
+
+发生合同冲突时，3.1 是规范词、共同处理顺序、错误信封、摘要绑定、状态隔离和确定性要求的权威来源；对象定义由 3.1.6 的权威合同索引指定章节唯一给出。其他章节只能引用或收紧共同规则，不得重新定义或放宽。
+
+### 3.1.2 模块合同形式与信任边界
+
+每个功能合同必须明确：
+
+- 输入及其 Schema 版本；
+- 前置 `RunState` 或独立功能状态；
+- 适用的运行、阶段、快照、Manifest、候选修订、策略和控制面摘要绑定；
+- 规范化与校验顺序；
+- 控制面行为及允许产生的副作用；
+- 输出、权威记录和生命周期触发事件；
+- 边界条件、错误码、重试处置和副作用状态；
+- 至少一个不依赖真实 LLM 或网络的可确定性验证点。
+
+所有跨越信任边界的输入均不可信。外部事实、用户决定、模型输出和执行结果，只有在控制面按照权威合同完成规范化、校验、上下文绑定并形成不可变记录后，方可在该记录明确限定的范围内作为授权或证据。被控制面记录不等于外部事实已被无条件证明，其效力不得超出证据类型、绑定上下文和有效期。
+
+模型输出只能提出请求或建议，不得签发运行状态、审批记录、披露授权、证据记录、绑定摘要或终态结果；即使模型输出伪造相同字段，也没有授权效力。尤其是 `ProposeCompletionAction` 只能请求 Harness 开始完成判定，不能声明任务成功。
+
+### 3.1.3 共同请求处理顺序
+
+任何可能触发状态转换、审批消费、工具执行、外部披露或权威写入的结构化请求，均必须按以下顺序处理。各动作合同必须声明适用的绑定集合；某一绑定不适用时必须显式声明，不得静默省略。
+
+1. 按封闭 Schema 和版本解析输入，拒绝未知字段、错误主体和不允许的联合分支。
+2. 按对象合同执行版本化规范化，形成规范输入摘要或 `canonical_event_digest`。
+3. 对运行内事件执行 `(run_id, event_id)` 幂等查询和复用冲突检查；尚未形成 `run_id` 的创建命令使用其创建合同定义的独立幂等键。
+4. 验证调用主体、运行状态、活动阶段，以及合同要求的运行、阶段进入记录、快照、Manifest、候选修订、策略版本、控制面摘要和 fencing generation 绑定。
+5. 检查待处理取消请求、预算和资源上限；若当前为 3.2 定义的取消安全点，必须先执行取消转换，不得继续审批或执行。
+6. 执行确定性治理和风险判定；`DENY` 必须失败关闭，不能进入授权消费。
+7. 验证并原子消费适用的一次性批准，或验证、建立、更新适用的披露授权。
+8. 创建唯一逻辑执行尝试及持久化保存的调度意图；事务提交后才可以开始动作执行。
+9. 校验执行结果、完整性证据和适用的后置条件。
+10. 原子写入权威结果、审计关联和允许的生命周期事件。
+
+后续合同可以在任一步插入更严格的检查，但不得删除、倒置或绕过此前步骤。外部 LLM、Docker、工具调用和权威工作区写入不得包含在生命周期 CAS 或批准消费事务中。
+
+相同 `event_id` 和相同 `canonical_event_digest` 必须返回首次权威处理结果，即使运行状态、阶段或 generation 此后已经变化；相同 `event_id` 和不同摘要必须返回 `EVENT_ID_REUSE_CONFLICT`。首次出现的事件才可以继续动态绑定检查。幂等查询返回既有结果不重新执行副作用，也不属于重试。
+
+第 1—7 步任一步失败时，不得开始动作执行，因此不得产生候选修订变更、外部披露或权威工作区写入。第 8 步开始后发生错误时，结果必须记录：
+
+```text
+SideEffectStatus = NONE | COMMITTED | UNKNOWN
+```
+
+- `NONE`：控制面能够证明未发生合同定义的副作用。
+- `COMMITTED`：控制面能够证明合同定义的副作用已完成。
+- `UNKNOWN`：证据不足以证明副作用未发生或已完整发生。
+
+`UNKNOWN` 不得折算为失败后安全重试，也不得折算为成功。仅当动作合同声明幂等，或控制面能够证明 `side_effect_status = NONE` 时，才可以自动重试。一次性批准在执行尝试开始后不得自动恢复为未消费状态。外部披露请求即使超时或无响应，也必须保留披露授权记录和披露尝试记录。
+
+### 3.1.4 统一错误信封
+
+所有非成功结果必须使用版本化、强类型的错误信封，至少包含：
+
+```text
+ErrorEnvelope {
+  schema_version
+  error_code
+  phase?
+  resource_operation_kind?
+  retry_disposition
+  side_effect_status
+  sanitized_message
+  audit_correlation_id
+  stop_reason?
+  lifecycle_transition_ref?
+}
+```
+
+运行级错误必须携带当前 `RunPhase` 并禁止 `resource_operation_kind`；可以在来源运行终态后执行的资源级操作必须携带封闭的 `resource_operation_kind` 并禁止 `phase`；`RunState` 形成前的创建错误两者均禁止。调用方提供不适用的条件字段必须被 Schema 拒绝，不能忽略或填充“not applicable”。
+
+`error_code`、`StopReason`、检查状态和策略决定属于不同命名空间，不得由相同字符串或说明文本隐式兼任。`retry_disposition` 必须来自封闭类型并由权威合同直接给出，不得从 `sanitized_message` 推断。解析失败、主体错误、陈旧事件、超时、取消、执行失败和结果未知必须使用可区分的错误码。
+
+```text
+RetryDisposition =
+  NO_RETRY
+  | SAME_ATTEMPT_REPLAY
+  | NEW_ATTEMPT_ALLOWED
+  | NEW_RUN_REQUIRED
+  | RECONCILIATION_REQUIRED
+```
+
+`RetryDisposition` 规定当前非成功结果唯一允许的后续处置类别，不构成执行、重试、对账或创建新运行的授权。实际处置仍必须满足模块合同、生命周期状态、绑定、治理、审批、预算和幂等条件：
+
+- `NO_RETRY`：原失败请求不得再次执行；只能停止、提交语义不同的新请求，或采用模块明确规定的其他非重试路由。
+- `SAME_ATTEMPT_REPLAY`：只允许相同 attempt ID、相同规范输入的传输恢复或幂等结果重放，不得形成第二次逻辑执行。
+- `NEW_ATTEMPT_ALLOWED`：模块可以在当前运行内创建新 attempt ID，但必须重新检查状态、预算、绑定和治理；原一次性批准不得复用。
+- `NEW_RUN_REQUIRED`：当前运行不得通过重试继续；外部条件修复后只能提交新的创建命令。该值不自动创建新运行。
+- `RECONCILIATION_REQUIRED`：必须先通过权威对账判定原副作用；对账完成前不得执行原请求或创建替代尝试。它不等同于 `RunStatus = RECOVERY_REQUIRED`。
+
+每个非成功错误信封必须恰好携带一个 `RetryDisposition`，并由稳定错误码、attempt 状态、`side_effect_status` 和模块合同版本确定性派生。共同优先规则为：
+
+```text
+side_effect_status = UNKNOWN
+→ RECONCILIATION_REQUIRED
+→ 若不存在确定性对账合同，则 NO_RETRY
+
+side_effect_status = COMMITTED
+→ 首次权威结果完整：只返回首次结果，不得再次执行副作用
+→ 权威结果缺失、不完整或矛盾：RECONCILIATION_REQUIRED
+→ 不存在确定性对账合同：NO_RETRY
+```
+
+`side_effect_status = UNKNOWN` 时，任何可能重新触发原副作用的操作都不得归类为 `SAME_ATTEMPT_REPLAY`。只读查询供应商幂等键、事务日志或执行状态属于对账。错误记录不终止生命周期时，Schema 必须禁止 `stop_reason`；只有形成 3.2 定义的终态转换时才允许并要求相应停止原因。
+
+错误说明必须脱敏，不得包含凭据、秘密派生信息、未经授权的文件内容、原始缺陷描述或低熵敏感定位符。错误结果需要停止运行时，必须同时产生唯一 `StopReason` 映射和 3.2 规定的权威终态记录；创建事务在 `RunState` 形成前失败时不得伪造 `StopReason`。
+
+### 3.1.5 规范化与摘要绑定
+
+所有“精确匹配”和绑定摘要必须由控制面基于版本化规范序列化结果计算，并同时记录：
+
+- 对象类型；
+- Schema 版本；
+- 规范化版本；
+- 摘要算法；
+- 摘要值。
+
+用户或模型提供的摘要只能作为待校验输入，不得直接成为绑定证据。路径分隔符、Unicode、字段排序、缺省字段、换行和序列化方式由相应对象的权威合同定义；实现内部对象身份、数据库行 ID 或界面显示文本不得代替规范形式。
+
+任一绑定字段变化后，旧证据不得用于授权或证明变更后的对象或新上下文；旧证据仍必须作为其原绑定上下文的不可变历史记录保留。人工决定可以作为显式结构化输入由替身注入；确定性验证禁止依赖测试人员临场解释自由文本，不禁止测试审批、拒绝或取消流程。
+
+### 3.1.6 状态空间隔离与权威合同索引
+
+以下状态空间必须保持强类型隔离：
+
+- `RunStatus` 与 `RunPhase`；
+- `StopReason`；
+- 策略决定；
+- 检查状态和检查结论；
+- 审批、披露授权与等待结果；
+- 执行尝试、事务和恢复状态；
+- 错误码和重试处置。
+
+一个空间中的值不得被另一个空间隐式解释。例如，检查失败不是 `STOPPED`，预算耗尽不是生命周期状态，用户批准也不是策略 `ALLOW`。
+
+对象权威位置固定为：
+
+- 3.1：规范词、共同处理顺序、统一错误信封和规范摘要共同规则；
+- 3.2：运行生命周期、终态和停止原因；
+- 3.3：运行请求、创建结果和准入结果；
+- 3.4：`SnapshotTree`、基线与 `ValidationManifest`；
+- 3.5：动作信封、上下文装配和 `ProposeCompletionAction`；
+- 3.6：`CandidateRevision`、恢复修订和 `FinalDiff`；
+- 3.7：检查能力、`CheckResult` 和失败指纹；
+- 3.8：两类修复场景及复现确认状态；
+- 3.9：策略决定、审批、披露授权与披露记录；
+- 3.10：正式验证、持久化事务与恢复记录；
+- 3.11：记忆、配置与凭据；
+- 3.12：可见性事件、审计记录与演示状态。
+
+### 3.1.7 可确定性验证约定
+
+可确定性验证点必须写成可观察命题：
+
+> 给定前置状态 X 和结构化输入 Y，系统必须产生 Z，且不得发生副作用 W。
+
+验证点可以规定错误码、状态转换、不变量和禁止调用，但不得规定测试文件名、mock 脚本路径或实现步骤。核心机制必须能够在真实 LLM 被 mock/stub 替换且没有网络时独立验证，至少覆盖工具分发、治理拦截、反馈回灌、记忆、配置和停止判定。
+
+时间、随机数、标识生成和调度顺序等非确定性来源，必须由验证环境固定或注入，或者由控制面记录后重放；不得成为验证命题的隐藏前提。
+
+## 3.2 运行生命周期
+
+### 3.2.1 状态与阶段
+
+运行生命周期采用六值 `RunStatus`：
+
+```text
+RunStatus =
+  CREATED
+  | RUNNING
+  | WAITING_USER
+  | RECOVERY_REQUIRED
+  | SUCCEEDED
+  | STOPPED
+```
+
+活动执行位置采用仅在 `RUNNING` 下有效的六值 `RunPhase`：
+
+```text
+RunPhase =
+  PREFLIGHT
+  | BASELINE
+  | REPRODUCTION
+  | AGENT_LOOP
+  | FORMAL_VALIDATION
+  | PERSISTENCE
+```
+
+`RunState` 必须建模为以 `RunStatus` 为判别字段的封闭联合：
+
+```text
+CREATED(request_ref)
+RUNNING(phase, phase_entry_ref)
+WAITING_USER(wait_context_ref)
+RECOVERY_REQUIRED(recovery_context_ref)
+SUCCEEDED(success_record_ref)
+STOPPED(stop_record_ref)
+```
+
+`RunPhase` 当且仅当 `RunStatus = RUNNING` 时存在。其他状态中保存的来源阶段、停止阶段和最后活动阶段仅为历史引用，不表示运行仍处于该阶段。`RunPhase` 的枚举排列不定义单调顺序；合法返回必须创建新的 `phase_entry_ref`，旧阶段证据不得作为新阶段证据复用。
+
+等待上下文、取消请求、预算、停止原因、披露授权和恢复事务均为正交记录，不扩张生命周期状态集合。安全点是转换守卫，不是状态或阶段。
+
+### 3.2.2 生命周期事件、CAS 与幂等
+
+每个运行记录必须包含从 0 开始单调递增的 `lifecycle_revision`。除创建事务外，每个状态事件必须绑定：
+
+```text
+LifecycleEventBinding {
+  run_id
+  event_id
+  canonical_event_digest
+  expected_status
+  expected_phase?
+  expected_phase_entry_ref?
+  expected_lifecycle_revision
+  workspace_fencing_generation?
+}
+```
+
+状态和阶段变更只能由控制面以 CAS 原子提交。成功转换必须同时写入新状态、递增后的修订号、阶段进入或终态记录，以及唯一 `LifecycleTransitionRecord`。
+
+幂等作用域固定为 `(run_id, event_id)`：
+
+- 相同 `event_id` 和相同规范事件摘要的重放必须返回首次结果，不得再次递增修订号、创建第二条逻辑转换记录或重复副作用。
+- 相同 `event_id` 和不同规范事件摘要必须返回 `EVENT_ID_REUSE_CONFLICT`，不得改变状态。
+- 不同 `event_id` 绑定旧状态、旧阶段、旧阶段进入记录、旧修订号或旧 fencing generation 时，必须形成 `IGNORED_STALE_EVENT`，不得覆盖当前状态。
+- 结构或 Schema 无效时必须返回对应解析错误；当前状态匹配但不存在该转换时必须返回 `ILLEGAL_LIFECYCLE_TRANSITION`。二者不得伪装为陈旧事件。
+
+两个具有不同 `event_id` 的事件同时声明预期修订号 `n` 时，最多一个可以转换成功；另一个必须成为陈旧事件，且不得产生其目标转换或副作用。
+
+运行创建是独立事务：
+
+```text
+CreateRunCommand(creation_idempotency_key)
+  -> CREATED(request_ref), lifecycle_revision = 0
+```
+
+“无运行”不是第七个 `RunStatus`。创建幂等与冲突语义由 3.3 定义。
+
+### 3.2.3 阶段执行与调度边界
+
+只有 `RUNNING` 可以调度 LLM、工具、检查和持久化尝试。外部长时执行不得位于生命周期事务中。产生执行的转换必须按以下边界处理：
+
+```text
+关闭适用等待并记录决定
+→ 消费适用的一次性批准，或建立／更新适用的披露授权
+→ 创建唯一逻辑执行尝试
+→ 写入持久化保存的调度意图
+→ 创建新阶段进入记录并进入 RUNNING
+→ 事务提交后由执行协调器领取尝试
+```
+
+只有确实立即产生外部执行的批准路由才可以创建执行尝试；纯粹派生 Manifest 或更新授权状态的路由不得虚构执行尝试。调度领取和结果接受必须重新校验当前状态、阶段进入记录、修订号和 fencing generation。
+
+### 3.2.4 等待上下文
+
+v1 的 `WaitKind` 是封闭集合：
+
+```text
+WaitKind =
+  DISCLOSURE_AUTHORIZATION
+  | CONFIRM_REPRODUCTION_APPROVAL
+  | FINAL_PERSISTENCE_APPROVAL
+```
+
+`WaitContext` 至少必须绑定：
+
+- 唯一 `wait_id` 和 `WaitKind`；
+- 来源阶段及来源 `phase_entry_ref`；
+- 被决定对象的规范摘要；
+- 适用的候选修订、Manifest、策略版本、供应商或执行 profile；
+- 决定 Schema 版本、截止时间和创建该等待的修订号；
+- 每一种合法结构化结果的明确转换路由。
+
+同一运行最多存在一个活动 `WaitContext`。只有在动作间安全点、不存在正在执行的 LLM、工具或检查租约、被决定对象已经冻结且无有效待处理取消时，才可以进入 `WAITING_USER`。
+
+一个 `wait_id` 在首次被控制面接受、生成 `WaitResolutionRecord` 并原子关闭等待后不得再次消费。仅完成 Schema 解析但未通过主体、绑定或 CAS 的决定不得关闭或消费等待。每个被接受结果必须记录来源主体和规范结果；审批、超时和取消竞态只由控制面持久化顺序和 CAS 决定，不依据客户端时间戳事后猜测。
+
+`TIMEOUT` 只能由控制面使用注入时钟生成。用户只能提交取消请求；`CANCEL_ACCEPTED` 只能由控制面在安全点产生。用户伪造这些结果必须被主体或 Schema 校验拒绝。
+
+v1 的配置修复和凭据录入不属于运行内等待。预检发现缺失配置或凭据时进入 `STOPPED`；用户通过 3.11 的独立功能修复后创建新运行。新增等待类型必须通过版本化 Schema 和 3.9 的具体动作合同显式定义，不得复用现有类型。
+
+### 3.2.5 取消合同
+
+取消请求是独立、不可变的控制面记录，不是 `RunStatus` 或 `RunPhase`。取消请求可以在非终态运行的任意时刻记录，并区分：
+
+- 取消已请求：存在待处理取消记录；
+- 取消已接受：安全点守卫成立并完成 `STOPPED(USER_CANCELLED)` 转换；
+- 取消过晚：运行已终态或已越过不可逆提交线，只生成忽略记录。
+
+`CREATED`、`WAITING_USER` 和各阶段动作之间的边界是取消安全点。不可中断执行区间中的取消必须保持待处理；到达下一个安全点后优先于普通推进。`RECOVERY_REQUIRED` 不得因取消请求直接停止，必须先解决持久化事务状态。
+
+在同一 `WAITING_USER` 实例上，有效取消请求若先于批准持久化，取消优先规则必须阻止批准推进并进入 `STOPPED(USER_CANCELLED)`。批准若先完成 CAS，随后取消不得追溯撤销已经关闭的等待或恢复已消费批准，只能作为新 `RUNNING` 状态下的取消请求，在下一安全点处理。
+
+持久化越过不可逆提交线后到达的取消属于过晚事件，不能把已完成的权威写入改写成取消成功。
+
+### 3.2.6 停止原因与终态
+
+`SUCCEEDED` 和 `STOPPED` 是不可逆终态。终态后的审批、取消、执行结果和恢复结果只能生成幂等重放、陈旧或终态忽略记录，不得回退状态。
+
+`StopReason` 与生命周期状态正交。v1 至少使用以下停止原因：
+
+```text
+USER_CANCELLED
+USER_REJECTED
+PRECONDITION_REJECTED
+BASELINE_BLOCKED
+REPRODUCTION_NOT_CONFIRMED
+DISCLOSURE_DENIED
+POLICY_TERMINATED
+EXECUTION_TERMINATED
+BUDGET_EXHAUSTED
+NO_PROGRESS
+WORKSPACE_CHANGED
+RECOVERY_TERMINATED
+INTERNAL_ERROR
+DEMO_COMPLETED
+```
+
+每个停止转换必须生成唯一 `StopRecord`，记录来源状态或阶段、触发事件、稳定错误信封、停止原因和适用证据。错误码不能隐式兼任停止原因。
+
+`DEMO_COMPLETED` 只允许用于 `run_mode = DEMO`，不得生成正式 `SuccessRecord`、持久化批准或权威工作区写入。正式运行只有 Harness 在独立验证、精确批准、事务持久化和写后核对全部成功后才可以进入 `SUCCEEDED`。
+
+### 3.2.7 正常转换矩阵
+
+下表是正常生命周期转换的唯一规范来源。表中“原子动作”只包括控制面状态和记录提交；外部执行遵循 3.2.3。
+
+| 源状态／阶段 | 触发事件 | 主要守卫 | 原子控制面动作 | 目标状态／阶段 |
+| --- | --- | --- | --- | --- |
+| `CREATED` | `START_PREFLIGHT` | 请求绑定有效；无待处理取消 | 创建 `phase_entry_ref` 和转换记录 | `RUNNING(PREFLIGHT)` |
+| `CREATED` | `CANCEL_ACCEPTED` | 存在有效取消请求 | 消费取消；创建 `StopRecord` | `STOPPED(USER_CANCELLED)` |
+| `RUNNING(PREFLIGHT)` | `ADMISSION_ADMITTED` | 3.3 全部强制检查通过；最终 CAS 成功；无待处理取消 | 封存准入结果；创建新阶段进入记录 | `RUNNING(BASELINE)` |
+| `RUNNING(PREFLIGHT)` | `ADMISSION_REJECTED` | 3.3 产生失败关闭结果 | 封存准入结果和错误；创建 `StopRecord` | `STOPPED(PRECONDITION_REJECTED | INTERNAL_ERROR)` |
+| `RUNNING(BASELINE)` | `EXISTING_FAILURE_BASELINE_ACCEPTED` | 3.4 基线证据和 Manifest v1 有效 | 封存基线；创建新阶段进入记录 | `RUNNING(AGENT_LOOP)` |
+| `RUNNING(BASELINE)` | `NATURAL_LANGUAGE_BASELINE_ACCEPTED` | 基线证据和 Manifest v1 有效 | 封存基线；创建新阶段进入记录 | `RUNNING(REPRODUCTION)` |
+| `RUNNING(BASELINE)` | `BASELINE_REJECTED` | 基线不满足场景合同或结果不可靠 | 封存错误与 `StopRecord` | `STOPPED(BASELINE_BLOCKED)` |
+| `RUNNING(REPRODUCTION)` | `REPRODUCTION_APPROVAL_REQUIRED` | 完整 `ConfirmReproductionAction` 已规范化并冻结；位于安全点 | 创建唯一等待 | `WAITING_USER(CONFIRM_REPRODUCTION_APPROVAL)` |
+| `WAITING_USER(CONFIRM_REPRODUCTION_APPROVAL)` | `APPROVE` | 主体、等待、动作、补丁、目标、匹配器、Manifest v1、环境和两阶段试验绑定完全匹配 | 关闭等待；消费批准；创建复现执行尝试和调度意图；创建新阶段进入记录 | `RUNNING(REPRODUCTION)` |
+| 同上 | `REJECT_WITH_REVISION` | 决定绑定当前等待 | 关闭等待；记录拒绝反馈；创建新阶段进入记录 | `RUNNING(REPRODUCTION)` |
+| 同上 | `REJECT_FINAL` 或 `TIMEOUT` | 决定或截止时间有效 | 关闭等待；创建 `StopRecord` | `STOPPED(USER_REJECTED)` |
+| `RUNNING(REPRODUCTION)` | `REPRODUCTION_CONFIRMED` | 获批两阶段试验形成有效技术证据 | 由可信控制面派生并封存 Manifest v2；创建新阶段进入记录 | `RUNNING(AGENT_LOOP)` |
+| `RUNNING(REPRODUCTION)` | `REPRODUCTION_NOT_CONFIRMED` | 技术试验未确认缺陷或结果不可靠 | 封存复现证据和 `StopRecord` | `STOPPED(REPRODUCTION_NOT_CONFIRMED)` |
+| `RUNNING(REPRODUCTION | AGENT_LOOP)` | `DISCLOSURE_AUTHORIZATION_REQUIRED` | 披露请求已规范化冻结；位于安全点 | 创建唯一等待 | `WAITING_USER(DISCLOSURE_AUTHORIZATION)` |
+| `WAITING_USER(DISCLOSURE_AUTHORIZATION)` | `APPROVE` | 决定与供应商、端点、模型、数据范围、预算和有效期完全匹配 | 关闭等待；建立或更新 `DisclosureGrant`；必要时创建 LLM 调用尝试及调度意图；创建新阶段进入记录 | `RUNNING(来源阶段)` |
+| 同上 | `REJECT` | 决定绑定当前等待，且场景无离线继续路由 | 关闭等待；创建 `StopRecord` | `STOPPED(DISCLOSURE_DENIED)` |
+| 同上 | `TIMEOUT` | 截止时间已到且无继续路由 | 关闭等待；创建 `StopRecord` | `STOPPED(DISCLOSURE_DENIED)` |
+| `RUNNING(AGENT_LOOP)` | `PROPOSE_COMPLETION_ACCEPTED` | `ProposeCompletionAction` 绑定当前候选和 Manifest；预算有效；位于安全点 | 冻结正式验证候选；创建新阶段进入记录和验证调度意图 | `RUNNING(FORMAL_VALIDATION)` |
+| `RUNNING(FORMAL_VALIDATION)` | `FORMAL_VALIDATION_FAILED` | 3.10 形成结构化失败反馈；仍有预算且可以继续 | 封存验证结果；创建新阶段进入记录 | `RUNNING(AGENT_LOOP)` |
+| `RUNNING(FORMAL_VALIDATION)` | `FORMAL_VALIDATION_PASSED` | 全新副本中的独立正式验证通过；候选和绑定未变化 | 封存验证证据；创建最终批准等待 | `WAITING_USER(FINAL_PERSISTENCE_APPROVAL)` |
+| `WAITING_USER(FINAL_PERSISTENCE_APPROVAL)` | `APPROVE` | 决定精确绑定当前 `FinalDiff`、候选树、Manifest 和验证证据；权威工作区前映像仍匹配 | 关闭等待；消费批准；创建唯一持久化尝试、提交意图和新阶段进入记录 | `RUNNING(PERSISTENCE)` |
+| 同上 | `APPROVE` | 决定绑定有效，但权威工作区前映像已变化 | 关闭等待；不消费为成功持久化批准；创建变化证据和 `StopRecord` | `STOPPED(WORKSPACE_CHANGED)` |
+| 同上 | `REJECT` 或 `TIMEOUT` | 决定或截止时间有效 | 关闭等待；创建 `StopRecord` | `STOPPED(USER_REJECTED)` |
+| `RUNNING(PERSISTENCE)` | `PERSISTENCE_COMMITTED` | 3.10 证明事务完整、写后摘要一致且全部成功条件仍成立 | 封存事务与 `SuccessRecord` | `SUCCEEDED` |
+| `RUNNING(PERSISTENCE)` | `PERSISTENCE_UNCERTAIN` | 权威工作区事务结果不确定或证据矛盾 | 创建恢复上下文和转换记录 | `RECOVERY_REQUIRED` |
+| `RUNNING(PERSISTENCE)` | `PERSISTENCE_SAFELY_FAILED` | 证明未提交或已完整回滚，且运行不能继续 | 封存事务结果和 `StopRecord` | `STOPPED(EXECUTION_TERMINATED | WORKSPACE_CHANGED | INTERNAL_ERROR)` |
+
+`ProposeCompletionAction` 的唯一转换必须完整写作：
+
+```text
+RUNNING(AGENT_LOOP)
+  -- 接受且绑定有效的 ProposeCompletionAction -->
+RUNNING(FORMAL_VALIDATION)
+```
+
+它不得直接进入 `WAITING_USER`、`PERSISTENCE` 或任一终态。
+
+### 3.2.8 取消与跨阶段终止
+
+在 `CREATED`、`RUNNING` 的安全点或 `WAITING_USER` 接受有效取消时，控制面必须优先进入 `STOPPED(USER_CANCELLED)`。不可中断区间的取消保持待处理；不存在从 `RECOVERY_REQUIRED` 直接取消的转换。
+
+下列终止事件只允许在其权威合同证明守卫成立且副作用已安全处置时使用：
+
+| 来源 | 触发类别 | 目标停止原因 |
+| --- | --- | --- |
+| `RUNNING(REPRODUCTION | AGENT_LOOP)` | 硬策略要求终止，或拒绝／无效动作达到冻结阈值 | `POLICY_TERMINATED` 或 `NO_PROGRESS` |
+| 任一非持久化 `RUNNING` 阶段 | 执行结果无法继续且合同已安全关闭 | `EXECUTION_TERMINATED` |
+| 任一正式非终态，3.10 允许的检查点 | 权威工作区身份或前映像绑定失效 | `WORKSPACE_CHANGED` |
+| 任一非终态 | 预算或资源硬上限耗尽 | `BUDGET_EXHAUSTED` |
+| 任一非终态 | 控制面不变量、存储或协议发生不可恢复错误 | `INTERNAL_ERROR` |
+| 演示运行的 3.12 规定阶段 | 脚本化演示完成并已重置或进入安全清理 | `DEMO_COMPLETED` |
+
+不得使用无守卫的通配终止事件绕过阶段合同。非持久化动作产生 `side_effect_status = UNKNOWN` 时不自动进入 `RECOVERY_REQUIRED`；其权威合同必须根据风险和可协调能力，明确选择保持或恢复 `RUNNING`、进入 `WAITING_USER` 或进入 `STOPPED`，后续不得假定该动作已成功或已失败。
+
+### 3.2.9 持久化恢复
+
+`RECOVERY_REQUIRED` 只用于 3.10 的权威工作区持久化事务出现不确定或矛盾状态，不泛化为 LLM、披露、Docker 或普通工具失败。
+
+进入该状态后，控制面必须完成事务对账。用户取消、进程重启或普通错误不得跳过对账并直接进入 `STOPPED`。只要事务结果仍不确定，运行必须保持 `RECOVERY_REQUIRED`。
+
+3.10 必须输出结构化 `RecoveryDisposition`，生命周期映射为：
+
+| `RecoveryDisposition` | 守卫与控制面动作 | 目标状态 |
+| --- | --- | --- |
+| `COMMITTED_AND_VALID` | 证明提交完整、写后摘要一致、全部成功条件仍成立 | `SUCCEEDED` |
+| `NOT_COMMITTED_OR_ROLLED_BACK_CONTINUE` | 证明未提交或已完整回滚，且同一授权执行尝试仍可继续 | `RUNNING(PERSISTENCE)` |
+| `REVALIDATION_REQUIRED` | 原授权尝试不能继续，候选仍可重新验证 | `RUNNING(FORMAL_VALIDATION)` |
+| `REAPPROVAL_REQUIRED` | 验证证据仍有效但必须重新批准精确对象 | `WAITING_USER(FINAL_PERSISTENCE_APPROVAL)` |
+| `SAFELY_CLOSED_TERMINATE` | 事务已安全关闭但不能成功，或存在可接受的有效取消 | `STOPPED(RECOVERY_TERMINATED | USER_CANCELLED)` |
+| `UNRESOLVED` | 生成新 `RecoveryAttemptRecord` 和新恢复上下文，递增修订号 | `RECOVERY_REQUIRED` |
+
+`UNRESOLVED` 是正式自转换。恢复成功例外路径：
+
+```text
+RECOVERY_REQUIRED -> SUCCEEDED
+```
+
+只能由恢复证据证明持久化完整、写后摘要一致且成功条件仍成立。正常成功的唯一直接前驱保持为：
+
+```text
+RUNNING(PERSISTENCE) -> SUCCEEDED
+```
+
+应用启动或运行恢复时，对处于 `RUNNING(PERSISTENCE)` 且发现未关闭、矛盾或结果无法证明的持久化事务，控制面必须通过恢复发现事件进入 `RECOVERY_REQUIRED`；已处于 `RECOVERY_REQUIRED` 的运行必须保持该状态并继续对账。
+
+终态运行若出现未关闭事务证据，表示控制面不变量或存储一致性遭到破坏，必须生成高优先级审计与运维事件，但不得通过普通生命周期转换改写终态；其处置由 3.10 的异常恢复合同规定。
+
+### 3.2.10 两类主流程
+
+已有失败信号场景的正常路径为：
+
+```text
+CREATED
+→ RUNNING(PREFLIGHT)
+→ RUNNING(BASELINE)
+→ RUNNING(AGENT_LOOP)
+→ RUNNING(FORMAL_VALIDATION)
+→ WAITING_USER(FINAL_PERSISTENCE_APPROVAL)
+→ RUNNING(PERSISTENCE)
+→ SUCCEEDED
+```
+
+自然语言缺陷场景采用一次复现审批：
+
+```text
+CREATED
+→ RUNNING(PREFLIGHT)
+→ RUNNING(BASELINE)
+→ RUNNING(REPRODUCTION)
+→ WAITING_USER(CONFIRM_REPRODUCTION_APPROVAL)
+→ RUNNING(REPRODUCTION)
+→ RUNNING(AGENT_LOOP)
+→ 后续共用正式完成链
+```
+
+`CONFIRM_REPRODUCTION_APPROVAL` 一次性绑定被冻结的复现测试补丁、目标 node ID、失败匹配器、Manifest v1、执行环境和两阶段试验定义。`APPROVE` 后才调度两阶段试验；`NOT_CONFIRMED` 进入 `STOPPED(REPRODUCTION_NOT_CONFIRMED)`；`CONFIRMED` 形成技术复现证据，由可信控制面直接派生 Manifest v2 并进入 `AGENT_LOOP`。v1 不设置试验后的第二次人工确认。
+
+### 3.2.11 可确定性验证点
+
+1. 给定合法创建命令，系统必须只创建一个 `CREATED(revision=0)`；同键同载荷重放不得创建第二个运行。
+2. 给定当前修订号 `n`，两个不同事件 ID 同时声明预期修订号 `n`，最多一个可以成功转换，另一个不得产生目标副作用。
+3. 给定同一事件 ID 和同一规范载荷的已接受事件，重放必须返回首次结果且不得再次递增修订号；同 ID 不同载荷必须返回 `EVENT_ID_REUSE_CONFLICT`。
+4. 给定结构合法但绑定旧阶段或旧修订号的结果，系统必须生成陈旧事件记录；给定 Schema 无效输入，系统必须返回解析错误而不是陈旧事件。
+5. 给定一个活动等待，系统不得创建第二个 `WaitContext`；决定仅解析成功但绑定失败时不得消费原等待。
+6. 给定有效 `ProposeCompletionAction`，系统必须进入新的 `FORMAL_VALIDATION` 阶段实例，且不得生成批准、持久化或成功记录。
+7. 给定正式验证失败和可用预算，系统必须进入新的 `AGENT_LOOP` 阶段实例，并把结构化反馈绑定该新实例。
+8. 给定同一等待上的批准与取消，最多一个事件可以关闭当前等待；批准先胜出后，迟到取消只能在新运行状态的下一安全点生效。
+9. 给定执行已经发出且副作用未知，系统不得把它标记为 `NONE`、自动恢复一次性批准或无条件重试。
+10. 给定持久化事务证据矛盾，系统必须进入或保持 `RECOVERY_REQUIRED`，不得以取消或进程重启跳过对账。
+11. 给定 `UNRESOLVED` 恢复结果，系统必须递增修订号并生成新的恢复上下文；旧恢复事件随即成为陈旧事件。
+12. 给定终态运行的迟到审批、取消或执行结果，系统只能返回重放或忽略结果，不得改变终态。
+13. 给定演示完成事件，系统必须进入 `STOPPED(DEMO_COMPLETED)`，不得生成正式 `SuccessRecord`。
+
+## 3.3 运行请求、创建与准入
+
+### 3.3.1 部署能力与请求分派
+
+```text
+DeploymentMode = LOCAL_FORMAL | PUBLIC_DEMO
+RequestType = LOCAL_REPAIR | DEMO_SCENARIO
+```
+
+`DeploymentMode` 只来自进程启动时的不可变配置，运行期间不得切换。客户端创建请求可以声明 `request_type`，但不得声明或覆盖 `deployment_mode`。
+
+控制面必须按以下顺序分派请求：
+
+1. 只解析不含模式专用敏感字段的公共创建信封。
+2. 读取进程的 `DeploymentMode`。
+3. 选择该模式唯一允许的请求 Schema。
+4. 按所选 Schema 解析请求正文。
+
+当前进程不支持请求类型时必须返回 `CAPABILITY_NOT_AVAILABLE`；请求类型受支持但包含未知或禁止字段时必须返回 Schema 错误。公网进程不得先解析本地路径、缺陷描述或仓库字段后再拒绝能力，也不得在日志和错误说明中回显被拒绝的敏感字段。
+
+### 3.3.2 本地正式运行请求
+
+```text
+LocalRepairRequest {
+  workspace_locator: WorkspaceLocator
+  repair_intent: ExistingFailure | NaturalLanguageDefect
+}
+
+ExistingFailure {
+  target_node_ids: non-empty array<string>
+}
+
+NaturalLanguageDefect {
+  defect_description: bounded non-empty string
+}
+```
+
+两个 `repair_intent` 分支严格互斥，同时提供或均未提供必须在创建阶段拒绝。请求不得携带供应商、策略、预算、执行器、批准、Manifest、候选补丁或成功声明。`defect_description` 只是待解释的问题陈述，不具有命令、策略、批准或验收效力。
+
+`workspace_locator` 是不可信定位符，不是权威路径。创建阶段只能执行不访问文件系统的词法和静态体量校验。只有 `RUNNING(PREFLIGHT)` 完成文件系统解析与稳定身份绑定后，才可以形成 `WorkspaceIdentityRef`；后续快照、记忆、检查、审批和持久化不得仅凭原始路径字符串授权。
+
+`target_node_ids` 必须保持为数组，以便在规范化前观察重复项。创建阶段只检查数组数量、单项字节数和基础 Schema；建立工作区身份后，预检必须：
+
+1. 将每项解析为受支持的 pytest node ID 结构；
+2. 规范化仓库相对路径部分；
+3. 拒绝规范化后的重复项并返回 `DUPLICATE_TARGET_NODE_ID`；
+4. 形成确定性排序的 `CanonicalTargetSet`。
+
+node ID 不得经过 Shell 解析或拼接，必须作为独立 argv 元素传递。目标是否存在、可收集并稳定失败由 `BASELINE` 判断，不属于创建事务。
+
+### 3.3.3 公网演示请求
+
+```text
+DemoScenarioRequest {
+  scenario_id
+  scenario_version
+  visitor_choices
+}
+```
+
+场景 ID、版本和选择必须与进程注册表精确匹配，不允许近似匹配或版本降级。请求不得包含工作区定位符、文件、仓库地址、真实凭据、供应商、模型、任意命令或执行器配置。
+
+### 3.3.4 创建事务与静态上限
+
+公共创建信封至少绑定调用主体、请求 Schema 版本、`request_type`、创建幂等键和请求正文。版本化硬上限至少覆盖：
+
+- 请求总字节数；
+- `defect_description` 字节数；
+- `target_node_ids` 数量；
+- 单个 node ID 字节数；
+- Demo 选择项数量与总字节数。
+
+普通配置只能降低硬上限，不能提高。
+
+创建事务只执行 Schema、静态体量、模式能力和创建幂等校验。成功时原子产生 `run_id`、不可变 `request_ref` 和 `CREATED(revision=0)`；不得在该事务中访问 Git、Docker、凭据后端、真实 LLM 或项目文件。
+
+创建幂等作用域由调用主体和控制面声明的作用域组成：相同创建键、相同规范请求必须返回首次结果；相同创建键、不同规范请求必须返回创建键冲突，即使首次请求没有创建 `RunState` 也不得复用。
+
+创建失败不存在 `RunState`，但必须返回 3.1 的完整错误信封，并形成不依赖 `run_id` 的创建拒绝记录。该记录只能保存调用主体、当前模式、幂等作用域、Schema 版本、可安全记录的规范摘要、稳定错误码和审计关联标识；不得默认保存原始路径、缺陷描述或其可用于猜测低熵值的普通散列。
+
+### 3.3.5 创建与预检边界
+
+创建成功后，由 3.2 的 `START_PREFLIGHT` 进入 `RUNNING(PREFLIGHT)`。预检必须由控制面确定性执行，不调用真实 LLM，不运行项目代码，不修改权威工作区，不安装依赖，不拉取或构建镜像，也不回退宿主执行。
+
+预检只能调用 3.4 的 `SnapshotTree` 子合同。已有失败测试执行、失败稳定性判断、Manifest v1 派生和自然语言复现处理均属于后续阶段。
+
+### 3.3.6 准入画像与检查定义
+
+至少存在两个版本化准入画像：
+
+```text
+LOCAL_FORMAL_ADMISSION
+PUBLIC_DEMO_ADMISSION
+```
+
+每个画像必须封存：
+
+```text
+AdmissionProfile {
+  profile_id
+  profile_version
+  deployment_mode
+  mandatory_check_ids
+  strict_priority_order
+  dependency_graph
+  evaluator_build_refs
+}
+```
+
+每个检查定义必须包含 `check_id`、`depends_on`、`diagnostic_group`、`check_contract_version`、`evaluator_build_ref`、`mandatory_for_profile` 和唯一 `priority`。同一画像的强制检查优先级必须构成严格全序；重复优先级、依赖成环、引用不存在的检查、遗漏强制检查或无法解析评估器版本，必须返回 `ADMISSION_PROFILE_INVALID` 并作为控制面内部错误处理。
+
+`mandatory_for_profile = true` 的检查不得产生 `NOT_APPLICABLE`。允许同层并行诊断时，主错误仍必须按画像全序确定，不得按线程完成、数据库插入或错误到达顺序选择。
+
+### 3.3.7 准入检查结果与尝试
+
+每个实际执行的准入检查必须具有：
+
+```text
+AdmissionCheckAttempt {
+  check_attempt_id
+  check_id
+  canonical_input_digest
+  preflight_phase_entry_ref
+  source_lifecycle_revision
+  admission_profile_version
+  evaluator_build_ref
+  workspace_fencing_generation?
+}
+```
+
+一个逻辑尝试最多接受一个权威结果。相同尝试 ID 和相同规范输入必须返回首次结果；相同 ID 和不同输入必须返回 `CHECK_ATTEMPT_ID_REUSE_CONFLICT`；阶段、修订或 fencing 已变化的结果必须作为陈旧输入拒绝。
+
+v1 每项准入检查只有一次逻辑尝试。仅当合同声明幂等，或控制面能够证明 `side_effect_status = NONE` 时，执行协调器才可以在同一尝试 ID 下恢复传输或重放。最终为 `UNKNOWN` 时，本次运行准入失败；用户必须修复外部条件后创建新运行。
+
+检查结果是封闭判别联合：
+
+```text
+PASS { evidence_ref }
+FAIL { error_envelope }
+UNKNOWN { error_envelope }
+NOT_RUN { not_run_reason, blocking_check_id?, blocking_event_ref? }
+NOT_APPLICABLE { profile_exclusion_reason }
+```
+
+`NOT_RUN` 必须能区分依赖失败、运行取消、生命周期变化、控制面中止、上游结果不可靠和当前阶段已不允许继续。警告只能是附属诊断，不能作为检查状态或代替 `PASS`。
+
+### 3.3.8 本地正式准入顺序
+
+`LOCAL_FORMAL_ADMISSION` 的强制检查按以下严格顺序和依赖执行：
+
+```text
+CONFIG_SNAPSHOT
+WORKSPACE_IDENTITY
+WORKSPACE_ADMISSION_LEASE
+REPOSITORY_STATE
+SENSITIVE_TRACKED_PATHS
+SNAPSHOT_TREE
+PROJECT_PROFILE
+TARGET_SELECTION
+CREDENTIAL_STATUS
+DOCKER_READINESS
+```
+
+前项失败或未知时，依赖项必须标记 `NOT_RUN`。诊断性并行不得改变该顺序对主错误和副作用许可的约束。
+
+### 3.3.9 配置快照
+
+`CONFIG_SNAPSHOT` 必须严格加载并校验非秘密配置和凭据引用，拒绝未知字段、无效值、隐式权限扩大和覆盖硬规则的配置，并封存配置、策略、适配器和执行 profile 的规范摘要。
+
+该步骤不得把凭据值写入配置快照。配置快照只可以保存凭据记录引用、后端类型、所需凭据类型、记录版本和状态引用。
+
+### 3.3.10 工作区身份
+
+`WORKSPACE_IDENTITY` 只证明定位符指向首版支持的 Windows 本地 Git 工作区根，并生成稳定身份；不得判断 `HEAD` 对象有效性。
+
+`WorkspaceIdentityRef` 至少必须绑定：
+
+- 平台与版本化文件系统策略；
+- 文件系统实例身份；
+- 根目录对象身份；
+- 规范显示路径；
+- Git 工作区元数据对象身份；
+- 文件系统是否满足 3.10 要求的身份稳定性、原子替换和持久化语义。
+
+控制面不得向父目录自动搜索仓库根。路径任一祖先分量经过不受支持的符号链接、junction、mount point 或其他重解析点时必须拒绝。UNC、盘符相对路径、ADS、保留设备名、大小写或 Unicode 碰撞必须按版本化 Windows 文件系统策略机械处理，不得依赖字符串显示形式猜测身份。
+
+### 3.3.11 工作区准入租约与 fencing
+
+同一 `WorkspaceIdentityRef` 任一时刻最多存在一个持有准入租约的非终态本地正式运行。租约必须在工作区身份建立后、仓库状态与快照检查前原子获取。已有活动正式运行、`RECOVERY_REQUIRED` 事项、未关闭持久化事务或 `WorkspaceAdmissionBlockRecord` 时必须分别返回稳定的繁忙或恢复阻断错误。
+
+准入租约是持久化排他占用，不是仅靠 TTL 失效的普通锁。仅凭心跳丢失、进程不存在或时间经过不得转授。合法接管分为：
+
+1. 同一运行的协调器接管：恢复协调器证明旧 generation 已不能在受控制面管理的提交点产生新权威副作用，原子创建 `TakeoverRecord` 并递增 generation。
+2. 后续新运行获取：旧运行已终态、租约已安全释放且不存在阻断事项后，新运行使用更大的 generation 获取。
+
+所有快照封存、候选封存、调度领取、检查结果接受、正式验证和持久化提交点必须重新校验 generation。generation 递增不能把已经发出的外部动作解释为未发生；仍可能产生副作用的旧尝试必须先终止或对账。
+
+租约释放命令必须精确绑定：
+
+```text
+workspace_identity_ref
+lease_id
+owner_run_id
+fencing_generation
+```
+
+释放采用 CAS：同一命令重放返回首次结果；owner 或 generation 不匹配时作为陈旧释放拒绝；旧 generation 不得释放新 generation 的租约；释放不得回退 generation。`RECOVERY_REQUIRED` 期间不得释放给新运行。
+
+租约清理或非持久化旧执行无法安全判定时，不得滥用运行级 `RECOVERY_REQUIRED`，必须创建独立 `WorkspaceAdmissionBlockRecord`，使后续运行以 `WORKSPACE_RECOVERY_BLOCKED` 失败关闭，直到恢复协调器安全关闭事项。
+
+### 3.3.12 仓库状态与密闭 Git 视图
+
+`REPOSITORY_STATE` 是验证有效 `HEAD`、index、tree mode 和仓库策略的唯一准入检查。它必须在不读取 system/global Git 配置的密闭环境中，建立并证明以下三方关系：
+
+```text
+封存的 Git HEAD tree
+Git index
+当前工作区 tracked 文件原始字节与模式
+```
+
+首版必须拒绝未合并或非 stage-0 index entry、intent-to-add、`skip-worktree`、`assume-unchanged`、不支持的 tree mode 和 tracked symlink。不得执行 hooks、pager、credential helper、外部 diff/merge driver、filter、fsmonitor 或协议 helper；不得通过可能触发 clean/smudge filter 的外部 checkout 生成快照。
+
+locale、路径规范化、Git 能力版本和策略解释版本必须封存。bare repository、submodule、Git LFS、稀疏或 split index、alternates、replace refs、外部 `core.worktree`、自定义 filter、外部 fsmonitor以及其他无法确定性物化的仓库策略必须按支持矩阵拒绝。必须检测宿主文件系统上的大小写、Unicode 和保留名称碰撞。
+
+非忽略未跟踪文件必须拒绝。被支持策略忽略的未跟踪文件可以继续存在，但不得进入快照或被后续正式流程观察。
+
+### 3.3.13 敏感 tracked 路径
+
+`SENSITIVE_TRACKED_PATHS` 必须对来自 HEAD tree 的 Git 规范路径使用与读取、补丁、披露和持久化相同版本的 `SensitivePathPolicy`。大小写、Unicode 和分隔符规则必须版本化。
+
+命中硬拒绝规则时必须失败关闭，普通配置和用户批准不得放宽。fixture/example 窄例外每次命中必须生成不可变例外记录，绑定具体路径、规则 ID 和策略版本；例外只允许合同规定的本地处理，不自动授予对外披露权限。
+
+### 3.3.14 快照与唯一代码来源
+
+`SNAPSHOT_TREE` 必须调用 3.4 的快照子合同并封存 `SnapshotTreeRef`。快照发布后：
+
+> 基线、复现、Agent 文件工具、候选修订组装、普通检查和正式验证只能读取 `SnapshotTree` 或其派生候选副本。
+
+上述阶段不得读取、列出、执行或挂载权威工作区实时内容。ignored/untracked 文件不得进入 LLM 上下文、项目容器、适配器输入、基线或验证。权威工作区不得直接挂入容器，即使只读也不允许。
+
+在基线、复现、Agent 循环、普通检查和正式验证前，控制面只重验 `WorkspaceIdentityRef`、租约所有权和 fencing generation。权威工作区 tracked 原始字节、模式和前映像内容只能在 3.2 转换矩阵及 3.10 明确规定的最终审批、提交意图创建和持久化前检查点读取。内容变化不改变已封存快照，但必须阻止持久化。
+
+### 3.3.15 项目画像与目标选择
+
+`PROJECT_PROFILE` 必须依据快照和已封存配置选择第 1 章定义的受支持 Python 项目画像，形成版本化适配器绑定；画像外项目必须失败关闭，不得降级为任意命令执行。
+
+`TARGET_SELECTION` 在 `PROJECT_PROFILE` 之后运行。已有失败场景必须验证 node ID 结构、规范路径约束和快照内文件归属，形成 `CanonicalTargetSet`；测试收集、存在性和失败稳定性留给 `BASELINE`。自然语言场景必须验证缺陷描述仍满足创建时的结构和体量绑定，不得把描述解释为命令或策略。
+
+### 3.3.16 凭据状态
+
+`CREDENTIAL_STATUS` 只能输出：
+
+```text
+CONFIGURED | ABSENT | LOCKED | BACKEND_UNAVAILABLE
+```
+
+凭据状态证据只可以保存：
+
+```text
+credential_record_id
+backend_type
+record_version
+status
+```
+
+不得保存明文或可逆编码、key 前后缀或长度、未加密摘要、跨运行可比较的确定性秘密指纹或从秘密值派生的错误详情。状态检查必须非交互；需要解锁、弹窗或用户输入时返回 `LOCKED`。
+
+`CONFIGURED` 只证明引用存在且当前可访问，不证明供应商认证成功。每次真实 LLM 调用前，3.5 必须重验凭据引用版本，由供应商适配器即时取得秘密；秘密不得进入运行配置、普通日志或模型上下文。
+
+### 3.3.17 Docker 准入
+
+`DOCKER_READINESS` 必须证明受支持 Docker 能力当前可用，并形成不可变 `DockerEnvironmentRef`，至少绑定：
+
+- daemon 或 context 身份；
+- 服务端与 API 能力版本；
+- 本地镜像内容身份，而不是可变 tag；
+- 执行 profile 摘要；
+- 探测结果和探测实现版本。
+
+预检不得联网拉取镜像、构建环境、安装依赖或回退到宿主执行。可信探测容器必须验证实际生效的 UID/GID、只读根、网络模式、挂载集合、能力集、资源限制和 Docker 控制接口不可见。探测尝试必须记录清理结果和 `side_effect_status`。
+
+每次检查执行前必须重验 Docker 动态绑定。tag 重指向、镜像删除、daemon/context 切换或 profile 漂移时，不得沿用旧准入证据。
+
+### 3.3.18 公网演示准入
+
+`PUBLIC_DEMO_ADMISSION` 只可以检查：
+
+- 请求与访客选择 Schema；
+- 场景包内容摘要和场景注册表版本；
+- Mock LLM 与 `DemoExecutor` 实现版本；
+- 允许的演示能力封闭集合；
+- 独立会话命名空间和重置证明；
+- 绑定当前运行的资源预留与速率额度。
+
+它不得访问本地文件系统、Git、真实凭据、真实 LLM 或 Docker 项目执行环境。运行拥有的 Mock LLM、`DemoExecutor` 和场景能力不得产生外部网络出站；该限制不禁止公网 Web 服务接受浏览器入站连接。
+
+资源预留必须绑定 `run_id`、会话命名空间、场景包摘要和唯一 reservation ID。相同逻辑请求重放不得重复扣减；准入失败、取消、最终 CAS 失败和终态释放必须幂等。迟到释放只能绑定原 reservation ID，不得释放其他运行的新预留。进程崩溃后不得仅凭 TTL 将仍可能被活动运行使用的额度转授；无法确定时必须进入可对账状态。
+
+所有强制检查通过后的出口固定为：
+
+```text
+RUNNING(PREFLIGHT)
+  -- PUBLIC_DEMO_ADMISSION admitted -->
+RUNNING(BASELINE)
+```
+
+之后由 3.12 编排脚本化模拟并以 `STOPPED(DEMO_COMPLETED)` 结束。
+
+### 3.3.19 准入完成结果
+
+```text
+AdmissionCompletionKind =
+  ADMITTED
+  | CHECK_REJECTED
+  | CANCELLED
+  | CONTROL_PLANE_ABORTED
+```
+
+`AdmissionResult` 必须绑定：
+
+- `deployment_mode`、画像 ID、版本和强制检查 ID 集合；
+- `preflight_phase_entry_ref`；
+- `source_lifecycle_revision`；
+- 全部检查定义与判别联合结果；
+- 按结果条件存在的证据引用；
+- `accepted_transition_ref` 和 `resulting_lifecycle_revision`，仅在完成转换后存在；
+- `primary_error_envelope`，按下述规则存在。
+
+`allows_baseline` 不得作为可独立写入的字段，只能由 `completion_kind == ADMITTED` 派生：
+
+- `ADMITTED`：全部强制检查为 `PASS`，且 `PREFLIGHT → BASELINE` 已被控制面原子接受；不得有主错误。
+- `CHECK_REJECTED`：至少一个强制检查为 `FAIL` 或 `UNKNOWN`；主错误按画像严格优先级选择。
+- `CANCELLED`：取消转换优先；使用取消错误信封，不从 `NOT_RUN` 伪造主错误。
+- `CONTROL_PLANE_ABORTED`：规范化、存储、封存或最终状态提交发生不可恢复的控制面故障；使用内部错误信封。
+
+引用必须按生产检查的结果条件存在。例如，仅 `WORKSPACE_IDENTITY = PASS` 时可以存在 `WorkspaceIdentityRef`；租约、快照、凭据、Docker、Demo 场景包和资源预留同理。前置检查失败时不得伪造后续引用。
+
+最后一个检查通过只是进入基线的必要条件。若最终 CAS 前有效取消已经持久化，结果必须为 `CANCELLED` 并进入 `STOPPED(USER_CANCELLED)`；若 CAS 因非取消的控制面故障无法完成，必须为 `CONTROL_PLANE_ABORTED`。准入结果一经封存不得由迟到检查覆盖。
+
+### 3.3.20 错误映射与清理
+
+每个稳定准入错误码必须恰好属于一个强类型 `AdmissionErrorCategory`；每个运行内错误类别必须恰好映射一个 `StopReason`。创建事务失败发生在 `RunState` 之前，只返回创建错误信封。
+
+用户输入、配置、工作区占用、不支持仓库、凭据状态和支持画像拒绝通常映射 `PRECONDITION_REJECTED`；工作区在准入过程中发生变化时使用独立错误码并映射 `WORKSPACE_CHANGED`；控制面存储、规范序列化、画像定义或封存协议故障映射 `INTERNAL_ERROR`。无法分类的错误必须视为画像或控制面内部错误，不得默认归为用户前置条件。
+
+准入失败、取消或中止时，已取得的租约、Demo 预留、临时快照对象和探测资源必须按各自 ID 幂等释放或进入可对账状态。迟到清理不得影响新 generation、新运行或新预留。
+
+`AdmissionResult` 只证明当前修订允许或拒绝进入 `BASELINE`，不授权未来无条件使用凭据、Docker 或工作区。所有动态能力必须在实际使用前由对应动作合同重新绑定。
+
+### 3.3.21 可确定性验证点
+
+1. 给定 `PUBLIC_DEMO` 进程和 `LOCAL_REPAIR` 公共信封，系统必须在解析本地正文前返回 `CAPABILITY_NOT_AVAILABLE`，且不得访问文件系统。
+2. 给定同一创建键和相同规范请求，系统必须返回首次结果；同键不同请求必须返回创建键冲突。
+3. 给定同时提供两种修复意图的请求，系统不得创建 `RunState`，但必须生成完整错误信封和无 `run_id` 拒绝记录。
+4. 给定规范化后重复的 node ID，系统必须返回 `DUPLICATE_TARGET_NODE_ID`，不得启动 pytest。
+5. 给定两个运行竞争同一工作区租约，最多一个可以取得有效 generation；失败运行不得进入仓库读取或快照封存。
+6. 给定旧 generation 的释放请求晚于接管，系统必须拒绝释放且不得影响当前租约。
+7. 给定 `CONFIG_SNAPSHOT = FAIL`，结果不得包含工作区、租约、快照、凭据或 Docker 引用，主错误必须来自配置检查。
+8. 给定强制检查返回 `UNKNOWN`，系统不得进入 `BASELINE` 或自动创建第二个逻辑检查尝试。
+9. 给定两个同优先级强制检查的画像，系统必须返回 `ADMISSION_PROFILE_INVALID`，不得按完成顺序选择主错误。
+10. 给定检查发起后阶段、修订或 generation 已变化，迟到结果必须作为陈旧输入拒绝，不得改变准入结果。
+11. 给定所有强制检查已通过但最终 CAS 前存在有效取消，系统必须形成 `CANCELLED` 结果并进入 `STOPPED(USER_CANCELLED)`。
+12. 给定快照已发布，基线或正式验证不得读取或挂载权威工作区，ignored/untracked 文件不得影响结果。
+13. 给定已配置凭据，准入证据和审计只能观察到记录引用、后端、版本和状态，不得包含秘密派生信息。
+14. 给定 Docker tag 指向内容变化，后续执行必须拒绝旧 `DockerEnvironmentRef`，不得按 tag 名继续。
+15. 给定 Demo 预留成功但准入 CAS 被取消抢先，系统必须释放或对账原预留，不得进入 `BASELINE` 或永久泄漏额度。
+16. 给定旧 Demo reservation 的迟到释放，系统不得释放新运行的额度。
+
+## 3.4 仓库快照、基线与 `ValidationManifest`
+
+本节覆盖已经采纳的仓库策略、预期树、快照封存、执行副本、错误恢复、控制面对账、资源清理、基线执行，以及 `ValidationManifestV1 / V2` 的不可变验收合同和派生边界。快照成功只证明代码来源被确定性封存，不等于基线、复现或正式验证成功。
+
+### 3.4.1 权威对象链
+
+快照子合同的权威来源链固定为：
+
+```text
+RepositoryPolicySnapshot
+→ ExpectedWorktreeTree
+→ SnapshotSealAttempt
+→ SnapshotTree
+→ MaterializationJob
+→ MaterializationAttempt
+→ ExecutionWorkspace
+→ ExecutionWorkspaceLifecycle
+→ ExecutionWorkspaceCleanupAttempt
+```
+
+各对象必须不可变、版本化并绑定 `owner_run_id`、`WorkspaceIdentityRef`、适用租约与创建时 fencing generation。对象引用只用于定位权威记录，不得代替规范内容摘要。
+
+VesperCode 控制面目录、对象正文、事务日志和临时命名空间必须位于权威工作区之外。不得通过从 tracked 路径集合中静默删除“控制面保留路径”来排除冲突；如果任一 tracked Git 规范路径与保留路径或控制面位置冲突，准入必须失败关闭，`ExpectedWorktreeTree` 和 `SnapshotTree` 均不得发布。
+
+### 3.4.2 `RepositoryPolicySnapshot`
+
+`RepositoryPolicySnapshot` 是解释 HEAD、index、工作区路径和忽略状态的不可变策略输入。所有 tracked 策略工件，包括受支持的 `.gitattributes`、`.gitignore` 和 `.gitmodules`，必须首先从已封存的 HEAD tree 读取正文，不得从实时工作区读取后再反向解释同一工作区。
+
+受支持的非 tracked 仓库本地元数据，例如 `.git/info/exclude`，必须通过独立受控读取封存，并记录原始字节摘要、来源身份、读取策略和复验信息。system/global Git 配置和外部 excludes、filters、hooks、fsmonitor 等不得进入策略快照。
+
+`RepositoryPolicySnapshot` 必须通过规范内容摘要绑定，不能只引用数据库 ID。策略摘要必须覆盖策略对象类型、规范 Git 路径、原始内容摘要、适用顺序、解释器与规范化版本，以及受支持的非 tracked 元数据摘要。策略正文读取失败、体量超限、内容不支持或读取期间发生变化时必须失败关闭。
+
+### 3.4.3 `ExpectedWorktreeTree`
+
+`ExpectedWorktreeTree` 必须由封存 HEAD tree 和 `RepositoryPolicySnapshot` 确定性派生，定义预期 tracked 路径全集、tree entry mode、Git 对象身份和预期工作区原始字节摘要。
+
+路径集合必须与受支持 HEAD tree 精确一致；不得省略大文件、二进制文件、不可披露文件或控制面冲突路径继续运行。Git 规范路径必须按版本化规则转换为 Windows 执行路径，并在发布前拒绝：
+
+- 绝对路径、空分量、`.` 或 `..` 分量；
+- ADS、保留设备名、尾随点或空格等不受支持形式；
+- 大小写、Unicode、规范化或分隔符碰撞；
+- 超过路径字节数、深度或平台表达能力的路径；
+- 不受支持的 tree mode、tracked symlink、submodule 或 Gitlink。
+
+Git 对象 ID 只能作为 Git 来源身份，不能自动承担 VesperCode 的内容完整性摘要。每个预期条目必须至少区分：
+
+```text
+git_object_identity
+expected_worktree_digest
+```
+
+`expected_worktree_digest` 必须基于策略确定性物化后期望出现在工作区的原始字节计算。
+
+### 3.4.4 工作区文件系统对象与内容分类
+
+对每个 tracked 路径，控制面必须从工作区根开始检查全部祖先分量和最终对象。首版只支持满足以下条件的普通文件：
+
+- 祖先分量不包含符号链接、junction、mount point、设备对象或其他不支持的 reparse point；
+- 最终对象是普通文件，不是符号链接、重解析对象、目录、设备或命名管道；
+- 硬链接计数为 1；
+- 不存在 ADS；
+- 文件身份、大小和 mode 能够在封存协议中稳定复验。
+
+不满足任一条件时必须返回不支持的文件系统对象错误，不得跟随、复制目标或忽略路径继续。
+
+内容分类是封闭联合：
+
+```text
+SnapshotContentKind =
+  TEXT_SUPPORTED
+  | BINARY
+  | TEXT_UNSUPPORTED
+```
+
+- `TEXT_SUPPORTED`：原始字节满足支持矩阵中的编码、BOM 与文本规则，可以被允许的文本工具读取或由候选补丁修改。
+- `BINARY`：作为原始字节进入快照并参与完整性校验，但不得作为文本发送给模型，也不得被 `FinalDiff` 修改。
+- `TEXT_UNSUPPORTED`：内容被策略或探测识别为文本，但编码或文本约定不受支持；快照必须失败关闭。
+
+普通二进制不得仅因无法解码而被错误分类为 `TEXT_UNSUPPORTED`。分类规则、探测顺序和分类器版本必须进入规范绑定。
+
+### 3.4.5 快照资源限制与容量预留
+
+```text
+SnapshotResourceLimits {
+  max_tracked_entry_count
+  max_canonical_path_bytes
+  max_path_depth
+  max_single_file_bytes
+  max_total_snapshot_bytes
+  max_policy_artifact_bytes
+  max_temporary_storage_bytes
+}
+```
+
+这些限制同时适用于 `RepositoryPolicySnapshot`、`ExpectedWorktreeTree` 和 `SnapshotTree` 的构建。读取策略正文或复制 tracked 文件正文前，控制面必须先取得绑定当前尝试的容量预留。超限不得通过省略文件、截断文本、忽略二进制或降低摘要覆盖范围继续。
+
+错误码与停止原因必须分离：
+
+- `SNAPSHOT_RESOURCE_LIMIT_EXCEEDED`：产品或运行配置允许的快照硬上限被超过，映射 `StopReason = BUDGET_EXHAUSTED`；
+- `SNAPSHOT_STORAGE_CAPACITY_UNAVAILABLE`：当前可分配容量或配额不足，映射 `StopReason = BUDGET_EXHAUSTED`；
+- `SNAPSHOT_STORE_ERROR`：对象存储、容量核算、预留协议或规范发布机制自身故障，映射 `StopReason = INTERNAL_ERROR`。
+
+错误码和停止原因不得使用同一枚举值隐式兼任。
+
+发布成功时，临时预留必须在同一控制面事务内原子转换为 `AuthoritativeArtifactAllocation`，并与 `SnapshotTreeRef` 和尝试的 `PUBLISHED` 状态一起提交；不得先释放再重新申请。发布失败时，预留必须幂等释放或进入可对账状态。只有按保留合同清理权威正文后，相应权威容量占用才可以释放。
+
+若对象存储按内容寻址去重，容量归属、共享计数和释放规则必须版本化并可确定性计算。已有相同内容不得使当前运行省略权威引用、来源链或生命周期记录。
+
+### 3.4.6 `SnapshotSealAttempt`
+
+```text
+SnapshotSealAttemptState = PREPARING | PUBLISHED | FAILED
+```
+
+每个封存尝试必须具有唯一 `snapshot_seal_attempt_id`，绑定规范输入摘要、工作区身份、租约、fencing generation、策略快照、预期树、资源预留和临时对象命名空间。
+
+相同尝试 ID 和相同规范输入必须返回首次权威结果；相同 ID 和不同规范输入必须返回 `SNAPSHOT_SEAL_ATTEMPT_ID_REUSE_CONFLICT`。`PUBLISHED` 和 `FAILED` 是终态，一个逻辑尝试最多发布一个有效 `SnapshotTreeRef`。
+
+封存必须按以下全有或全无协议执行：
+
+1. 以 `PREPARING` 持久化尝试、容量预留和未发布临时命名空间。
+2. 从 `ExpectedWorktreeTree` 按规范路径顺序枚举全部 tracked 条目，并建立初始 `WorktreeObservationProof`。
+3. 逐项拒绝不支持的文件系统对象，记录最终对象身份、mode、大小和读取前变化标记。
+4. 读取完整原始字节到临时对象区，计算 `snapshot_content_digest`，分类内容，并复验该文件的对象身份、mode、大小和变化标记。
+5. 对全部 tracked 路径重新读取并计算完整内容摘要；不得仅依赖 mtime、USN 或其他变化标记证明未变化。
+6. 重新枚举非忽略未跟踪状态，并复验 HEAD、index、策略对象、工作区身份、租约和 fencing generation。
+7. 生成最终 `WorktreeObservationProof`，再次计算其规范摘要并与初次观察的语义绑定比较。
+8. 在同一控制面事务内发布权威对象元数据、转换容量分配、写入 `SnapshotTreeRef`，并将尝试置为 `PUBLISHED`。
+
+第 2—7 步任一校验失败时不得发布部分树；尝试必须进入 `FAILED`，未发布临时对象必须清理或进入可对账状态，并在错误信封中记录清理的 `side_effect_status`。
+
+`PREPARING` 及其临时命名空间必须持久化绑定尝试 ID。重启发现 `PREPARING` 时不得推断成功；未发布对象不得被任何后续合同读取或作为证据。恢复可以继续同一逻辑尝试或将其安全关闭为 `FAILED`，但不得产生第二个逻辑尝试或两个发布结果。
+
+### 3.4.7 `WorktreeObservationProof`
+
+`WorktreeObservationProof` 至少必须覆盖：
+
+```text
+tracked_path_set
+final_object_identities
+file_sizes_and_modes
+versioned_change_markers
+complete_content_digests
+non_ignored_untracked_cleanliness
+repository_policy_digest
+head_and_index_bindings
+workspace_identity_ref
+lease_id_and_fencing_generation
+```
+
+初次枚举时必须建立证明，发布前必须对支持威胁模型内的全部字段进行复验并形成最终证明。变化标记只能作为辅助证据；最终接受必须包含全部 tracked 文件的第二次完整内容摘要。任何可检测变化都必须使封存失败，不能发布混合时点视图。
+
+### 3.4.8 `SnapshotTree`
+
+每个 `SnapshotTree` 条目至少必须包含：
+
+```text
+SnapshotEntry {
+  canonical_git_path
+  tree_entry_mode
+  content_kind
+  content_profile_ref?
+  byte_length
+  git_object_identity
+  expected_worktree_digest
+  snapshot_content_digest
+  snapshot_content_ref
+}
+```
+
+`snapshot_content_ref` 是不可变正文定位引用，只用于取得正文，不承担授权或完整性证明。每次读取正文后必须使用 `snapshot_content_digest` 校验；存储地址、数据库 ID 和物理对象路径不得进入规范树根摘要。
+
+树根摘要必须基于版本化规范序列化，覆盖有序路径集合及每个条目的语义字段、策略摘要、路径与内容分类版本和适用文件系统策略；不得覆盖可变物理定位信息。`SnapshotTree` 元数据必须绑定 `snapshot_seal_attempt_ref`、最终 `WorktreeObservationProof`、`created_under_fencing_generation` 和权威容量分配。尝试 ID 与证明引用可以不进入语义树根摘要，但不得从权威元数据缺失。
+
+发布后的 `SnapshotTree` 不得修改。后续候选、基线、检查和验证必须绑定其根摘要；正文定位变化不改变语义摘要，但读取校验失败必须作为控制面存储错误失败关闭。
+
+### 3.4.9 协调器接管后的工件效力
+
+fencing generation 是动作和结果接受权限，也是工件创建来源记录。已经原子发布的权威工件不会仅因同一运行发生协调器接管而自动失效。
+
+旧 generation 下已发布的工件只有在以下条件全部成立时，才可以由新 generation 继续消费：
+
+- `owner_run_id` 不变；
+- `lease_id` 不变；
+- `WorkspaceIdentityRef` 不变；
+- 接管对账确认不存在会改变该工件语义的未解决旧执行或持久化事项；
+- `TakeoverRecord` 明确列出继续有效的权威工件规范摘要；
+- 新的物化、检查和验证请求绑定当前 generation。
+
+旧 generation 的新命令、迟到结果和释放请求仍必须拒绝。已发布工件的 `created_under_fencing_generation` 不得改写。不满足延续条件时，控制面必须按生命周期合同重新封存、重新验证或停止，不得静默沿用。
+
+### 3.4.10 执行文件系统画像
+
+```text
+ExecutionFilesystemProfile {
+  profile_id
+  profile_version
+  path_semantics
+  case_and_unicode_semantics
+  file_mode_mapping
+  directory_mode_mapping
+  fixed_file_timestamp
+  fixed_directory_timestamp
+  timestamp_precision_rule
+  process_visible_working_directory
+  metadata_exclusion_rules
+}
+```
+
+物化 profile 必须设置版本化、确定性的文件和目录时间戳。底层文件系统无法精确表达时，必须使用固定归一化规则，并保证检查进程观察到的时间语义稳定；不得仅把时间戳排除在摘要之外。
+
+profile 必须固定路径大小写与 Unicode 语义、权限映射、时间精度、进程可见工作目录和目录创建顺序。执行副本不得继承权威工作区 ACL、ADS、扩展属性、所有者、访问时间或其他非合同元数据。profile 漂移时，依赖旧 profile 的基线、检查和验证证据不得证明新执行环境。
+
+### 3.4.11 `MaterializationAttempt` 与 `ExecutionWorkspace`
+
+```text
+MaterializationAttemptState = PREPARING | PUBLISHED | FAILED
+```
+
+物化源采用不可混用的判别联合：
+
+```text
+MaterializationSourceTreeRef =
+  SnapshotTreeRef
+  | CandidateTreeRef
+```
+
+`CandidateTreeRef` 的权威定义位于 3.6；本节只规定两类已发布不可变源树共用同一物化安全边界。每个物化尝试必须具有唯一 `materialization_attempt_id`，绑定所属 `MaterializationJob`、源树引用及根摘要、执行文件系统 profile、当前 fencing generation、资源预留和临时目录命名空间。
+
+- 相同尝试 ID、相同规范输入：返回首次权威结果。
+- 相同尝试 ID、不同规范输入：返回 `MATERIALIZATION_ATTEMPT_ID_REUSE_CONFLICT`。
+- 一个逻辑尝试最多拥有一个有效的已发布 `ExecutionWorkspaceRef`。
+- `PUBLISHED` 和 `FAILED` 为终态。
+- 从 `PREPARING` 恢复时可以重新创建物理目录，但不得形成第二个逻辑尝试或第二个同时有效的发布结果。
+
+物化必须按 `SnapshotTree` 的规范路径顺序创建目录和文件，从 `snapshot_content_ref` 读取完整正文并逐项校验 `snapshot_content_digest`，按 profile 设置权限和确定性时间戳，最后校验完整树摘要和进程可见语义。只有全部成功后才可以原子发布 `ExecutionWorkspaceRef`；未发布目录不得作为检查、工具或证据输入。
+
+`ExecutionWorkspace` 是不含 Git 元数据的纯文件树。不得包含 `.git` 目录或指针、index、refs、config、hooks、remote URL、worktree 管理路径，或指向权威仓库 Git 元数据的路径。项目若依赖 `.git`、提交历史、动态 Git 版本发现或 VCS 元数据，必须按不支持项目失败关闭，不得伪造 Git 元数据。
+
+每项正式检查必须从绑定源树重新物化全新副本；不得复用上一次检查产生的运行时文件。物化 job、consumer、发布后 lifecycle 和清理 attempt 分别由 3.4.16—3.4.20 定义。清理结果未知不得使残留目录成为后续输入。
+
+### 3.4.12 控制面工件分类与生命周期
+
+```text
+ControlPlaneArtifact =
+  AuthoritativeRepositoryArtifact
+  | TransientOperationalArtifact
+```
+
+第 1 章使用的 `OperationalArtifact` 只是对本地控制面运行工件的非类型化泛称，不表示其中所有对象具有相同的授权效力、保留期限或清理规则；对象分类和生命周期必须以本节的判别联合为准。
+
+`AuthoritativeRepositoryArtifact` 至少包括：
+
+- `RepositoryPolicySnapshot`；
+- `ExpectedWorktreeTree`；
+- 已发布 `SnapshotTree`。
+
+`TransientOperationalArtifact` 至少包括：
+
+- 未发布临时对象区；
+- `ExecutionWorkspace`；
+- 清理失败残留。
+
+权威工件不得作为普通缓存自动清理；其正文只能按运行终态、审计与恢复所需保留策略释放，元数据和来源链必须保持不可变。临时工件不得成为后续权威证据或输入。物理清理不得删除不可变历史元数据、尝试状态、摘要、容量变更和清理结果。
+
+### 3.4.13 快照来源、资源与准入错误
+
+快照检查在一个运行中只允许一个逻辑 `SnapshotSealAttempt`。稳定错误码、`StopReason`、`RetryDisposition` 和检查结论必须分别表达，不得由同一枚举值兼任。
+
+#### 来源状态分类
+
+首次完整稳定观察证明初始状态不符合密闭仓库条件时，使用：
+
+~~~text
+error_code = WORKTREE_DIRTY
+AdmissionCheckResult = FAIL
+StopReason = PRECONDITION_REJECTED
+RetryDisposition = NEW_RUN_REQUIRED
+~~~
+
+同一封存尝试中两个受控观察之间出现已证明的时间性变化时，继续使用 3.3 已定义的顶层错误：
+
+~~~text
+error_code = WORKSPACE_MUTATED_DURING_ADMISSION
+error_detail = SnapshotSourceChangedDetail
+AdmissionCheckResult = FAIL
+StopReason = WORKSPACE_CHANGED
+RetryDisposition = NEW_RUN_REQUIRED
+~~~
+
+~~~text
+SnapshotSourceChangeReason =
+  WORKSPACE_IDENTITY_CHANGED
+  | HEAD_CHANGED
+  | INDEX_CHANGED
+  | REPOSITORY_POLICY_CHANGED
+  | TRACKED_PATH_SET_CHANGED
+  | TRACKED_OBJECT_IDENTITY_CHANGED
+  | TRACKED_CONTENT_CHANGED
+  | TRACKED_MODE_CHANGED
+  | NON_IGNORED_UNTRACKED_STATE_CHANGED
+~~~
+
+单次稳定观察至少必须证明 WorkspaceIdentity、HEAD、index、策略、fencing generation、完整 tracked 路径集合、全部必要对象读取和完整内容摘要均一致，且不存在未知观察项。来源变化至少必须由两次绑定同一尝试的矛盾观察、同一对象的重复身份或摘要变化、受控变更标记变化，或 HEAD、index、策略、工作区身份的可证明变化支持。单次读取失败、sharing violation、权限错误、缺少摘要或只观察到变更标记存在，均不得被猜测为脏工作区或来源变化。
+
+无法完成可靠观察且又不能证明初始不一致或时间性变化时，使用：
+
+~~~text
+error_code = SNAPSHOT_SOURCE_OBSERVATION_INCONCLUSIVE
+AdmissionCheckResult = UNKNOWN
+StopReason = EXECUTION_TERMINATED
+RetryDisposition = NEW_RUN_REQUIRED
+~~~
+
+~~~text
+SnapshotObservationInconclusiveReason =
+  SOURCE_ACCESS_DENIED
+  | SOURCE_SHARING_VIOLATION
+  | SOURCE_OBJECT_IDENTITY_UNAVAILABLE
+  | SOURCE_METADATA_READ_FAILED
+  | SOURCE_CONTENT_READ_FAILED
+  | SOURCE_OBSERVATION_TIMEOUT
+~~~
+
+`SOURCE_*` 只描述权威工作区来源读取。控制面数据库、对象存储、序列化、摘要和证据持久化故障使用内部存储错误；已证明对象类型不支持时使用不受支持错误。`SOURCE_OBSERVATION_TIMEOUT` 必须由注入时钟和版本化期限产生，并绑定 deadline、clock source、timeout profile 和 operation phase；迟到结果不得覆盖已形成的失败结果。
+
+上述来源错误详情均采用规范原因集合：
+
+~~~text
+SnapshotSourceReasonDetail {
+  primary_reason_code
+  observed_reason_codes
+  reason_priority_profile_version
+  evidence_ref
+}
+~~~
+
+`observed_reason_codes` 必须是非空规范集合；主原因必须属于该集合并由版本化严格全序决定，不得依赖发现顺序。
+
+#### 不受支持来源
+
+已取得充分证据并确认输入超出 v1 支持矩阵时，使用以下封闭顶层错误：
+
+| 错误码 | `StopReason` | 安全关闭后的 `RetryDisposition` |
+| --- | --- | --- |
+| `UNSUPPORTED_REPOSITORY_POLICY` | `PRECONDITION_REJECTED` | `NEW_RUN_REQUIRED` |
+| `UNSUPPORTED_FILESYSTEM_OBJECT` | `PRECONDITION_REJECTED` | `NEW_RUN_REQUIRED` |
+| `SNAPSHOT_CONTENT_UNSUPPORTED` | `PRECONDITION_REJECTED` | `NEW_RUN_REQUIRED` |
+| `SNAPSHOT_RESERVED_PATH_CONFLICT` | `PRECONDITION_REJECTED` | `NEW_RUN_REQUIRED` |
+
+`SNAPSHOT_RESERVED_PATH_CONFLICT` 是唯一顶层保留路径错误；`CONTROL_PLANE_RESERVED_PATH`、`PRODUCT_RESERVED_PATH` 和 `CONTROL_PLANE_OBJECT_ALIAS` 只作为原因码。四类错误共用版本化支持矩阵、规范原因集合和证据引用；证据不足时不得使用这些错误。
+
+v1 的 `AuthoritativeWorkspace` 必须具有工作区根下本地、真实、非重解析点的 `.git` 目录。根目录 `.git` 为普通文件的任何 gitdir 指针布局，包括 linked worktree、submodule 工作区和 `--separate-git-dir`，均直接返回：
+
+~~~text
+UNSUPPORTED_REPOSITORY_POLICY / GITDIR_POINTER_LAYOUT
+~~~
+
+控制面不得读取、解析或跟随指针目标。`.git` 是 reparse point 时使用 `UNSUPPORTED_FILESYSTEM_OBJECT`；无法判断对象类型时使用观察不确定错误；本地目录布局正确但 HEAD 无效、index 不支持或初始状态不一致时，分别路由到相应独立错误。
+
+`SNAPSHOT_CONTENT_UNSUPPORTED` 只适用于已确定为语义文本但无法满足版本化文本画像的内容；普通二进制受支持，体量超限属于资源错误，读取失败属于观察不确定，观察间变化属于来源变化。
+
+#### 资源、发布和安全关闭
+
+资源错误固定映射为：
+
+| 错误码 | `StopReason` | 安全关闭后的 `RetryDisposition` |
+| --- | --- | --- |
+| `SNAPSHOT_RESOURCE_LIMIT_EXCEEDED` | `BUDGET_EXHAUSTED` | `NEW_RUN_REQUIRED` |
+| `SNAPSHOT_STORAGE_CAPACITY_UNAVAILABLE` | `BUDGET_EXHAUSTED` | `NEW_RUN_REQUIRED` |
+| `SNAPSHOT_STORE_ERROR` | `INTERNAL_ERROR` | `NEW_RUN_REQUIRED` |
+
+只有以下事实全部得到证明时，来源、资源和不受支持错误才可以使用 `NEW_RUN_REQUIRED`：
+
+~~~text
+SnapshotSealAttemptState = FAILED
+不存在已发布 SnapshotTreeRef
+不存在残留 AuthoritativeArtifactAllocation
+临时预留已经释放或确定性关闭
+临时命名空间已清理或安全隔离
+不存在待对账副作用
+~~~
+
+历史清理、释放或隔离可以保持 `side_effect_status = COMMITTED`，不要求改写为 `NONE`。新运行前必须发生与错误相对应的实质条件变化；`NEW_RUN_REQUIRED` 不自动创建新运行，也不允许复用原批准、预留或授权。
+
+仅清理或容量账本未知、但已证明没有发布快照时，可以保留原主错误并附加 `SNAPSHOT_CLEANUP_STATE_UNKNOWN` 或 `SNAPSHOT_STORAGE_RELEASE_STATE_UNKNOWN`；存在确定性对账合同则使用 `RECONCILIATION_REQUIRED`，否则 `NO_RETRY`。尝试终态或发布事实本身未知时，必须改用 `SNAPSHOT_ATTEMPT_STATE_UNKNOWN` 或 `SNAPSHOT_PUBLICATION_STATE_UNKNOWN`，映射 `INTERNAL_ERROR`，不得伪装成资源耗尽。
+
+尝试形成 `FAILED` 后不得恢复读取或在当前运行创建第二个快照尝试。相同 attempt ID 只返回首次失败结果。仅当尝试仍为 `PREPARING`、规范输入未变且控制面证明可以安全恢复时，才允许 `SAME_ATTEMPT_REPLAY`。
+
+### 3.4.14 尝试 execution generation 与快照恢复
+
+快照、物化和执行副本清理共用逻辑 attempt 与物理 execution generation 分离的合同：
+
+~~~text
+AttemptExecutionOwnerKind =
+  SNAPSHOT_SEAL_ATTEMPT
+  | MATERIALIZATION_ATTEMPT
+  | EXECUTION_WORKSPACE_CLEANUP_ATTEMPT
+~~~
+
+owner 父绑定和资源绑定必须是由 owner kind 控制的判别联合。快照和物化 generation 分别绑定自己的临时命名空间和资源预留；清理 generation 使用 3.4.19 定义的 revoked lifecycle、workspace 根、命名空间 reservation 和清理预算，不得伪造空临时命名空间或申请新的权威工件容量。
+
+每个 generation 必须具有唯一 execution claim 和持久化调度意图。正式事件处理顺序为：
+
+~~~text
+Schema／调用主体
+→ 规范化与 canonical_event_digest
+→ event_id 幂等查询和复用冲突检查
+→ lifecycle、phase_entry、attempt、lease、workspace generation
+→ attempt_execution_generation
+→ 操作专用守卫
+→ CAS 提交
+~~~
+
+generation 比较必须发生在权威 CAS 边界。CAS 失败后必须重新读取并从 generation 比较重新分类；不得根据过期读取产生 fatal 协议错误。generation 单调递增，不得回退。
+
+`SNAPSHOT_SEAL_EXECUTION_INTERRUPTED` 是尝试执行级记录，不是最终准入结果或生命周期错误：
+
+~~~text
+SnapshotSealExecutionRecord {
+  error_envelope: {
+    error_code = SNAPSHOT_SEAL_EXECUTION_INTERRUPTED
+    phase = PREFLIGHT
+    retry_disposition = SAME_ATTEMPT_REPLAY
+    side_effect_status = NONE | COMMITTED
+    audit_correlation_id
+    stop_reason = forbidden
+  }
+  snapshot_seal_attempt_ref
+  attempt_execution_generation
+}
+~~~
+
+该记录保持 `SnapshotSealAttemptState = PREPARING`，不形成 `AdmissionCheckResult`，不触发生命周期转换。`side_effect_status = UNKNOWN` 时不得使用该错误。
+
+恢复事务必须以尝试级 CAS 验证 attempt 状态、expected execution generation、attempt 摘要、预留状态、workspace fencing generation 和当前 lifecycle/phase。成功事务原子撤销旧 generation 的权威提交资格、递增 execution generation 和 resume count、创建 resume record、新的独立临时命名空间及唯一调度意图。attempt execution generation 与 workspace fencing generation 是独立计数器，所有领取、发布、结果接受和清理操作必须同时校验二者。
+
+旧 generation 不得领取任务、发布树、提交终态、变更容量、释放新 generation 的预留或写入当前观察证明；迟到结果只能形成 owner 专用 stale 记录。新 generation 开始前，旧进程必须终止或隔离，并满足完整容量保证；旧临时空间未释放时必须继续计费并为新 generation 取得额外完整容量。恢复从头完成全部观察、摘要和封存，不复用旧正文、证明或中间哈希。
+
+owner 专用 generation 错误遵循共同语义：
+
+- `submitted < current`：非终止 stale，`NO_RETRY`，`stop_reason` 禁止；只表示被拒绝的控制面操作没有执行，不证明旧物理进程没有副作用。
+- `submitted > current`：内部协议违例；先生成非终止检测记录并拒绝请求，再 fencing 当前执行并安全关闭 owner。只有资源状态全部确定后，适用的运行才可以最终以 `INTERNAL_ERROR` 停止。
+- generation 相等但授权已撤销：owner 专用 revoked 错误，`NO_RETRY`。
+
+快照 owner 至少使用 `SNAPSHOT_SEAL_ATTEMPT_STALE`、`STALE_SNAPSHOT_EXECUTION_GENERATION` 和 `SNAPSHOT_EXECUTION_GENERATION_INVALID`。attempt ID 复用冲突属于 `INTERNAL_ERROR / NO_RETRY`；它不得被伪装成来源变化或创建第二个 attempt。
+
+future-generation、发布、容量、清理或 owner 状态不确定时必须进入对账；不得直接篡改 attempt、workspace lifecycle 或运行终态。恢复次数、资源预算或无进展阈值耗尽后，逻辑 attempt 必须先安全关闭为 `FAILED`，再由相应终止合同处理。
+
+### 3.4.15 `ControlPlaneReconciliationCase`
+
+控制面对账用于非持久化快照、物化和 workspace 清理中的不确定副作用，不新增持久化专用 `RunStatus`：
+
+~~~text
+ControlPlaneReconciliationCaseState =
+  OPEN
+  | RESOLVING
+  | RESOLVED
+  | BLOCKED
+
+ReconciliationSubject =
+  SnapshotSealSubject
+  | MaterializationSubject
+  | ExecutionWorkspaceCleanupSubject
+
+ReconciliationCoordinationScope =
+  RunScopedReconciliationScope
+  | ResourceScopedReconciliationScope
+~~~
+
+主体结构至少为：
+
+~~~text
+SnapshotSealSubject {
+  snapshot_seal_attempt_ref
+}
+
+MaterializationSubject {
+  materialization_job_ref
+  materialization_attempt_ref
+  consumer_binding
+}
+
+ExecutionWorkspaceCleanupSubject {
+  cleanup_attempt_ref
+  execution_workspace_ref
+  execution_workspace_lifecycle_ref
+  authoritative_allocation_ref
+}
+~~~
+
+v1 合法组合固定为：
+
+~~~text
+SnapshotSealSubject              → RunScopedReconciliationScope
+MaterializationSubject           → RunScopedReconciliationScope
+ExecutionWorkspaceCleanupSubject → ResourceScopedReconciliationScope
+~~~
+
+Schema 必须拒绝其他交叉组合。`subject` 和 `coordination_scope` 在 case 创建后不可替换。主体专用 uncertainty detail、disposition 和 gate binding 均为同一判别字段控制的联合；快照字段不得出现在物化或清理 case 中。
+
+`OPEN / RESOLVING` 时 resolution disposition 和 ref 必须缺失；`RESOLVED / BLOCKED` 时两者必须存在。resolver generation、claim、事件幂等和旧 generation fencing 沿用 3.1 与本节共同合同。resolver 只允许版本化允许列表内的只读证据查询和最小、确定性修复；不得修改权威工作区、重新生成快照或 workspace 正文，或由模型自由选择处置。
+
+同一运行任一时刻最多一个 `OPEN` 或 `RESOLVING` 的 run-scoped case。相同主体的新不确定类别原子合入现有 case；不同主体触发必须形成不可丢失的 deferred trigger，不得把不同主体原因混入同一 case。当前 case 终态前必须先处理、移交或阻断全部 deferred trigger。
+
+物化 case 的 gate 同时冻结 job、attempt 和 consumer。物化 disposition 至少包括 `RESUME_WITH_PUBLISHED_WORKSPACE`、`ABORT_NOT_PUBLISHED`、`ABORT_INVALID_PUBLICATION`、`ABORT_INVALID_SOURCE` 和 `BLOCK_UNRESOLVED`。已发布 job 和 attempt 永远保持 `PUBLISHED` 历史；无效 publication 通过 workspace 阻断和必要的证据失效记录表达，不能将 job 改为 `CLOSED`。未发布 job 继续使用 `CLOSED(CONTROL_PLANE_ABORTED)`，不新增 `RECONCILIATION_BLOCKED`。
+
+`BLOCK_UNRESOLVED` 是技术 disposition，不固定等于 `INTERNAL_ERROR`。对于 run-scoped case，能力缺失或永久协议矛盾映射 `INTERNAL_ERROR`，deadline、次数或资源预算耗尽映射 `BUDGET_EXHAUSTED`，有效取消按 3.2 优先处理。resource-scoped case 不产生 `StopReason`，只形成资源对账错误、持久阻断和 case 终态。未开始的检查 consumer 可以形成 `NOT_RUN(CONTROL_PLANE_ABORTED)`；已执行 consumer 保留历史，只能通过外部失效记录禁止作为证据。
+
+资源级清理 case 可以在来源运行终态后创建。`origin_run_ref` 只具有来源和审计效力，不授予调度、取消或生命周期权限。它使用独立控制面对账预算，普通用户取消或审批不能跳过必要对账。
+
+`ResourceReconciliationGate` 采用 `ACTIVE | CLOSED` 两态。资源集合由版本化依赖规则确定性计算，至少覆盖 workspace、lifecycle、cleanup attempt、allocation、namespace reservation、workspace root 和 revocation record；只能原子扩张，不能缩小。权威 membership 注册表必须在同一 CAS 中验证全部资源未属于其他 active gate、建立全部 membership、创建 case 并激活 gate。资源集合有交集时最多一个 gate 成功。
+
+资源 gate 是直接授权门。普通领取、正文读取、修改、发布、清理和结果提交必须确认不存在覆盖资源的 active gate 或持久 block record；新依赖注册与 gate 检查必须处于同一 CAS。`RunResourceBlockBinding` 只负责传播阻断并 fencing 已调度操作，不是唯一授权事实。
+
+gate 内访问采用：
+
+~~~text
+ResourceAccessAuthorization =
+  NormalResourceAccess
+  | ReconciliationResolverAccess
+  | AuditMetadataRead
+~~~
+
+resolver access 必须绑定 case、gate revision、resolver claim/generation、允许的 operation kind 和规范输入摘要，只能执行主体专用查询或 disposition 允许的最小修复。audit metadata read 不得读取被阻断正文或形成正式执行证据。
+
+deferred trigger 必须保存主体、规范资源集合、不确定详情、来源事件和观察 revision vector。重叠 trigger 必须被当前 disposition 覆盖、无窗口提升为后继 case，或由持久阻断完全覆盖。后继移交使用 immutable handoff record，在同一事务中终结当前 case、创建 successor、替换 gate 的 current case 并递增 gate revision；gate 全程保持 `ACTIVE`。
+
+`RESOLVED` 时，确定性 disposition、资源状态变化、deferred trigger 处理和 gate 关闭必须原子衔接。`BLOCKED` 时必须先建立持久阻断并 fencing 相关操作，才可以关闭活动 gate。解除阻断必须创建独立解除记录，不得重新打开原 case。
+
+### 3.4.16 `MaterializationJob` 与 consumer
+
+~~~text
+MaterializationJobState =
+  PENDING
+  | ACTIVE
+  | PUBLISHED
+  | CLOSED
+~~~
+
+`PUBLISHED` 和 `CLOSED` 是不可逆终态。`PUBLISHED` 表示成功发布；`CLOSED` 是未成功发布的中性终态，具体失败、取消或预算原因由独立证据表达。
+
+job 至少固定绑定 job ID、owner run、源树引用与摘要、物化和文件系统 profile、不可替换的 `consumer_binding`、创建幂等键、状态、revision、attempt count 和 active attempt ref。`consumer_binding` 是判别联合，至少包含 consumer kind、ref、revision 或 generation、来源 phase-entry 和 lifecycle revision。
+
+相同创建键与相同规范输入返回首次 job；相同创建键与不同输入返回 `MATERIALIZATION_JOB_CREATION_CONFLICT`。创建后不得替换源树、consumer 或 profile。
+
+状态转换必须通过 job 级 CAS：
+
+~~~text
+CREATE_JOB
+→ PENDING(job_revision = 0, attempt_count = 0)
+
+PENDING → ACTIVE
+→ 创建 first attempt
+→ attempt_count = 1
+→ 设置 active_attempt_ref
+→ 保存唯一调度意图
+→ job_revision + 1
+
+ACTIVE → ACTIVE
+→ 旧 attempt 已 FAILED
+→ RetryDisposition = NEW_ATTEMPT_ALLOWED
+→ 资源已安全关闭
+→ 重新检查预算、取消和绑定
+→ 创建 next attempt 并替换 active_attempt_ref
+→ attempt_count + 1
+→ job_revision + 1
+~~~
+
+`SAME_ATTEMPT_REPLAY` 不属于 `ACTIVE → ACTIVE`；它只递增 attempt 内部 execution generation，不改变 `attempt_count` 或 `active_attempt_ref`。
+
+`ACTIVE → PUBLISHED` 必须在同一事务中提交 attempt `PUBLISHED`、唯一 `ExecutionWorkspaceRef`、`MaterializationPublicationRecord`、job `PUBLISHED` 和 revision 递增。publication record 至少绑定 job、publishing attempt、workspace、源树摘要、物化 profile、文件系统 profile 和 workspace 根摘要。不得出现 attempt 已发布但 job 仍活动，或 job 已发布但 workspace 引用缺失。
+
+`PENDING / ACTIVE → CLOSED` 必须生成 `MaterializationJobClosureRecord`。closure kind 是以下封闭集合：
+
+~~~text
+MaterializationJobClosureKind =
+  ATTEMPTS_EXHAUSTED
+  | BUDGET_EXHAUSTED
+  | RUN_CANCELLED
+  | BINDING_INVALIDATED
+  | CONTROL_PLANE_ABORTED
+~~~
+
+关闭前必须证明不存在仍可发布的 active attempt 或旧 execution generation，且资源已安全关闭；活动对账 case 本身不足以关闭 job，必须先得到安全 disposition 或生效的不可绕过阻断。closure kind 不得替代 `StopReason`、`RetryDisposition` 或 attempt 状态。
+
+协调器接管后，只有 owner、源树不变，`TakeoverRecord` 明确延续 job，旧 active attempt 已 fencing 或安全关闭，新事件绑定当前 workspace generation，且没有优先对账或取消事项时，才可以继续同一 job。已发布 job 接管后必须重新验证 workspace consumability，但不得改写 job 或 publication 历史。
+
+### 3.4.17 物化失败、源完整性与依赖阻断
+
+物化瞬时错误只允许以下原因：
+
+~~~text
+MaterializationTransientFailureReason =
+  TEMP_NAMESPACE_CREATION_TRANSIENT
+  | TEMP_FILE_WRITE_TRANSIENT
+  | TEMP_METADATA_APPLICATION_TRANSIENT
+~~~
+
+只有版本化 `MaterializationRetryProfile` 明确允许的规范化 OS 错误码才可以归类；不得依据异常文本或调用者判断。合法结果为：
+
+~~~text
+error_code = MATERIALIZATION_TRANSIENT_FAILURE
+MaterializationAttemptState = FAILED
+RetryDisposition = NEW_ATTEMPT_ALLOWED
+stop_reason = forbidden
+~~~
+
+容量或配额不足、访问拒绝、路径非法、源摘要不匹配、profile 漂移、控制面错误、状态未知和 stale binding 均不得归入该错误。`CONTROLLED_WORKER_INTERRUPTED` 继续保持 attempt `PREPARING`，使用 `SAME_ATTEMPT_REPLAY` 和新的 execution generation，不增加 job `attempt_count`。
+
+确定性证明源内容对象或树结构完整性失效时使用：
+
+~~~text
+error_code = MATERIALIZATION_SOURCE_INTEGRITY_INVALID
+MaterializationAttemptState = FAILED
+MaterializationJobState = CLOSED
+closure_kind = CONTROL_PLANE_ABORTED
+RetryDisposition = NO_RETRY
+RunStatus = STOPPED
+StopReason = INTERNAL_ERROR
+~~~
+
+attempt 错误记录中的 `stop_reason` 必须禁止；最终 `StopReason` 只进入 `StopRecord`。job closure、attempt 结果和生命周期终态通过引用关联但保持独立。资源或阻断状态未知时必须先对账，不能直接声明 `CLOSED`。
+
+~~~text
+MaterializationSourceIntegrityInvalidReason =
+  SOURCE_CONTENT_OBJECT_MISSING
+  | SOURCE_CONTENT_DIGEST_MISMATCH
+  | SOURCE_TREE_ENTRY_MISSING
+  | SOURCE_TREE_ROOT_DIGEST_MISMATCH
+~~~
+
+错误详情采用非空规范原因集合、版本化主原因优先级、受影响对象引用和证据引用。对象读取失败但不能证明缺失或损坏时使用存储错误或对账；序列化器、摘要实现和数据库故障不属于源完整性错误。
+
+完整性阻断必须通过不可变 `ArtifactConsumabilityBlockRecord` 表达，不得改写 `SnapshotTree`、`CandidateTree` 或内容对象。内容对象缺失或摘要不匹配时，最小作用域是 `CONTENT_OBJECT`，所有依赖树自动不可消费；树条目或根摘要损坏时只阻断对应树。无法确定安全作用域时必须扩大阻断并进入对账。
+
+阻断记录必须先于 job 关闭、运行停止和可能允许其他运行进入的租约释放生效。未发布 workspace 时，未开始的直接检查 consumer 及其依赖为 `NOT_RUN(CONTROL_PLANE_ABORTED)`；已执行 consumer 的历史不得改写，只能由确定性 `EvidenceInvalidationRecord` 取消证据效力。不得从权威工作区或其他非权威树补复制正文、覆盖原摘要，或让模型和用户批准解除阻断。
+
+### 3.4.18 `ExecutionWorkspaceLifecycle`
+
+`ExecutionWorkspaceRef`、publication record 和 job 发布历史不可变；发布后的消费授权和物理保留由独立 lifecycle 管理：
+
+~~~text
+ExecutionWorkspaceLifecycleState =
+  AVAILABLE
+  | REVOKED
+  | RELEASED
+~~~
+
+唯一状态路径为：
+
+~~~text
+AVAILABLE → REVOKED → RELEASED
+~~~
+
+~~~text
+ExecutionWorkspaceLifecycle {
+  execution_workspace_ref
+  materialization_publication_ref
+  materialization_job_ref
+  publishing_attempt_ref
+  authoritative_allocation_ref
+  consumer_binding
+  state
+  lifecycle_revision
+  revocation_record_ref?
+  release_record_ref?
+}
+~~~
+
+lifecycle 必须与 workspace 在发布事务中同时创建为 `AVAILABLE`；`consumer_binding` 不可替换。`revocation_record_ref` 只在 `REVOKED / RELEASED` 中存在，`release_record_ref` 只在 `RELEASED` 中存在。
+
+consumer 领取与撤销必须竞争同一 CAS。领取事务确认 `AVAILABLE`、expected revision、完整 consumer binding 和不存在冲突 claim，原子创建 `ConsumerExecutionClaim`、注册活动 claim 并递增 revision。撤销事务确认 `AVAILABLE` 和 expected revision，原子进入 `REVOKED`、创建 `WorkspaceRevocationRecord`、递增 revision，并撤销全部未完成 claim 的权威提交资格。
+
+consumer 权威结果或终态提交也必须确认 workspace 仍 `AVAILABLE`、expected revision、claim authorization、consumer binding 和 execution generation，在同一事务中提交结果、终结 claim、注销活动 claim 并递增 lifecycle revision。结果提交先完成时，撤销保留其历史；撤销先完成时，迟到结果拒绝；并发 CAS 只能有一个成功。
+
+`REVOKED` 只撤销未来消费，不表示目录已删除或容量已释放，也不自动否定历史 consumer 证据。正常退休、运行结束和资源回收时，已完成结果继续有效；只有无效发布、源完整性或消费环境故障被确定性证明时，才另建 `EvidenceInvalidationRecord`。
+
+`REVOKED → RELEASED` 必须确认所有 claim 已完成或 fencing、workspace 专属执行目录和临时命名空间确定不存在、无 retention lock，并且不存在未覆盖的对账或容量事项。普通释放要求没有覆盖资源的活动 case；`FINALIZE_RELEASE` 允许唯一当前 resource-scoped resolver 在同一事务中提交 lifecycle `RELEASED`、allocation `RELEASED`、`WorkspaceReleaseRecord` 和 case `RESOLVED`。共享源正文、源树、publication、job、attempt、lifecycle 元数据和审计记录不得删除。
+
+`WorkspaceReleaseRecord` 至少绑定 workspace、revocation record、final cleanup evidence、allocation release ref、前后 lifecycle revision 和 `audit_correlation_id`。
+
+物理删除已完成但释放事务失败或未知时，lifecycle 保持 `REVOKED` 并进入对账。释放后的读取或消费必须返回 revoked/released 类稳定错误，不得表现为对象从未存在。
+
+### 3.4.19 `ExecutionWorkspaceCleanupAttempt`
+
+每个 `(execution_workspace_ref, revocation_record_ref)` 最多一个逻辑清理 attempt：
+
+~~~text
+ExecutionWorkspaceCleanupAttemptState =
+  PREPARING
+  | SUCCEEDED
+  | FAILED
+~~~
+
+attempt 固定绑定 cleanup ID、workspace、lifecycle、revocation、allocation、workspace 根及原始对象身份、namespace reservation、cleanup profile、预算、attempt revision 和当前 execution generation。相同 cleanup ID 与相同输入返回首次结果；同 ID 不同输入返回 `CLEANUP_ATTEMPT_ID_REUSE_CONFLICT`。
+
+创建时 workspace 必须为 `REVOKED`，consumer claim 必须终态或 fencing，不存在 retention lock 或优先活动对账。清理 owner 使用判别式资源绑定：
+
+~~~text
+ExecutionWorkspaceCleanupResources {
+  execution_workspace_lifecycle_ref
+  expected_revoked_lifecycle_revision
+  revocation_record_ref
+  workspace_root_ref
+  workspace_root_identity
+  workspace_namespace_reservation_ref
+  cleanup_budget_ref
+}
+~~~
+
+清理不要求来源运行仍为 `RUNNING`，只绑定 `origin_run_ref` 作为来源和审计事实。
+
+清理使用 owner 专用 interrupted、stale、future-generation 和 revoked 错误。安全中断在状态确定且预算允许时保持 `PREPARING`、`SAME_ATTEMPT_REPLAY` 和 `stop_reason = forbidden`。旧 generation 必须先失去控制面提交资格且物理进程被终止或隔离；新 generation 重新枚举全部剩余目录，不复用旧游标。
+
+清理 owner 的稳定 generation 错误为：
+
+| 情形 | 错误码 |
+| --- | --- |
+| 安全执行中断 | `EXECUTION_WORKSPACE_CLEANUP_EXECUTION_INTERRUPTED` |
+| `submitted < current` | `STALE_EXECUTION_WORKSPACE_CLEANUP_EXECUTION_GENERATION` |
+| `submitted > current` | `EXECUTION_WORKSPACE_CLEANUP_EXECUTION_GENERATION_INVALID` |
+| generation 相等但授权已撤销 | `EXECUTION_WORKSPACE_CLEANUP_EXECUTION_GENERATION_REVOKED` |
+
+stale/revoked 错误中的 `side_effect_status = NONE` 只描述本次被拒绝的控制面提交；旧清理进程报告的物理删除必须作为独立证据由当前 generation 重新观察或由 resolver 吸收。
+
+永久不复用的 workspace 根允许单调、幂等的受限删除。已经确定完成的部分删除保持 `side_effect_status = COMMITTED`，不得改写为 `NONE`；根身份、命名空间和删除边界不变且没有 `UNKNOWN` 时，可以由同一 attempt 的新 generation 继续。瞬时错误只能依据独立、版本化 `CleanupRetryProfile` 的规范 OS 错误允许列表。
+
+~~~text
+ExecutionWorkspaceNamespaceReservationState =
+  RESERVED
+  | RELEASED_TOMBSTONE
+~~~
+
+~~~text
+ExecutionWorkspaceNamespaceReservation {
+  namespace_ref
+  parent_namespace_identity
+  workspace_root_ref
+  original_workspace_root_identity
+  reserved_for_execution_workspace_ref
+  state
+}
+~~~
+
+namespace reservation 从发布起永久保留归属。`RELEASED_TOMBSTONE` 可以释放物理目录和容量，但命名空间标识不得删除或重新分配。根目录缺失只有在父命名空间身份、reservation 和不可复用证明均匹配时才能作为成功证据；根路径出现不同对象时不得删除，必须对账和阻断。
+
+删除必须相对于已验证根执行 no-follow 遍历。consumer 创建的 symlink、junction 或其他 reparse entry 只能删除目录项本身，不得遍历目标；不得以路径字符串前缀代替对象身份。清理可以删除 workspace 内运行时生成的文件，但不得触及源树、共享内容对象或其他 workspace。
+
+`SUCCEEDED` 只证明物理 workspace 目录确定不存在并形成完整 cleanup evidence，不表示 lifecycle 或 allocation 已释放。成功后不得再次执行物理删除；释放 CAS 失败或未知时 attempt 保持 `SUCCEEDED`、lifecycle 保持 `REVOKED`，后续只对账或重放释放事务。
+
+确定性永久失败或自动清理预算耗尽时 attempt 进入 `FAILED`，workspace 保持 `REVOKED`，不得普通自动重放。后续控制面修复可以形成新的清理证据，但不得改写失败 attempt。`side_effect_status = UNKNOWN` 时不得启动新 generation，必须进入清理专用对账。
+
+### 3.4.20 清理对账 disposition
+
+~~~text
+ExecutionWorkspaceCleanupSubject {
+  cleanup_attempt_ref
+  execution_workspace_ref
+  execution_workspace_lifecycle_ref
+  authoritative_allocation_ref
+}
+~~~
+
+不确定类别至少包括 cleanup attempt 状态、workspace 根存在状态、lifecycle 释放状态和 allocation 释放状态。清理对账采用五值封闭模型：
+
+~~~text
+CleanupReconciliationDisposition =
+  RESUME_CLEANUP
+  | FINALIZE_RELEASE
+  | CONFIRM_ALREADY_RELEASED
+  | ABORT_UNSAFE_CLEANUP
+  | BLOCK_UNRESOLVED
+~~~
+
+| Disposition | 必须证明的事实 | 权威结果 |
+| --- | --- | --- |
+| `RESUME_CLEANUP` | 旧 generation 已 fencing；剩余物理状态、根身份和边界确定；attempt 仍可继续 | case `RESOLVED`；attempt 保持 `PREPARING`；原子创建新 generation 调度意图，实际删除在事务后领取 |
+| `FINALIZE_RELEASE` | cleanup 已 `SUCCEEDED`；lifecycle 仍 `REVOKED`；allocation 尚未释放且释放输入完整 | 原子提交 lifecycle、allocation 和 release record 后 case `RESOLVED`；不得重新删除 |
+| `CONFIRM_ALREADY_RELEASED` | 首次释放事务已经完整提交且权威结果可定位 | 返回首次 release 结果并将 case 置 `RESOLVED`；不得再次释放 |
+| `ABORT_UNSAFE_CLEANUP` | 根对象已替换、删除边界确定不安全或其他永久失败已证明 | attempt `FAILED`；lifecycle 保持 `REVOKED`；先建立 namespace、root 和 allocation 阻断，再将 case 置 `RESOLVED` |
+| `BLOCK_UNRESOLVED` | 证据不足以选择任何安全确定性动作，或对账预算耗尽 | 先建立覆盖全部不确定资源的持久阻断，再将 case 置 `BLOCKED` |
+
+`FINALIZE_RELEASE` 和 `CONFIRM_ALREADY_RELEASED` 不得合并：前者允许首次提交释放副作用，后者只返回已经提交的权威结果。`RESUME_CLEANUP` 只创建唯一调度意图，不能在对账事务内部直接执行删除。
+
+资源级 cleanup case 的错误信封禁止 `stop_reason`，不会重新打开或修改来源运行。若活动运行仍依赖该资源，只通过 `RunResourceBlockBinding` 阻止相关操作；该运行等待、回退或停止由其当前阶段合同独立决定。
+
+### 3.4.21 `BaselineJob` 与不可变计划
+
+~~~text
+BaselineJobState =
+  PENDING
+  | ACTIVE
+  | PUBLISHED
+  | CLOSED
+~~~
+
+`PUBLISHED` 表示完整、权威的基线判断已经发布，不等同于基线被接受。`CLOSED` 只表示取消、控制面中止或证据不完整使基线判断未能正常发布。
+
+`BaselineJob` 必须固定绑定：
+
+~~~text
+baseline_job_id
+owner_run_id
+baseline_phase_entry_ref
+scenario_kind
+snapshot_tree_ref_and_digest
+canonical_target_set?
+configured_check_set
+docker_environment_ref
+execution_filesystem_profile_ref
+baseline_profile_version
+baseline_plan_digest
+state
+job_revision
+~~~
+
+同一运行的同一 `BASELINE` phase-entry 最多创建一个 job。创建后不得替换 scenario、源树、目标集合、检查集合、Docker 环境、文件系统 profile 或计划。相同创建键和相同规范输入返回首次 job；同键不同输入必须返回创建冲突。
+
+不可变计划由以下账本项组成：
+
+~~~text
+BaselinePlanItem {
+  plan_item_id
+  canonical_ordinal
+  plan_item_role
+  check_capability_id
+  mandatory
+  materialization_job_ref
+  check_attempt_ref
+  consumer_binding
+  state
+  authoritative_result_ref?
+}
+
+BaselinePlanItemState =
+  PENDING
+  | ACTIVE
+  | COMPLETED
+  | CLOSED
+~~~
+
+计划创建后不得新增、删除、替换或重排计划项。每项最多绑定一个逻辑检查 attempt 和一个独立 `MaterializationJob`；workspace publication、check attempt 和 consumer binding 必须完全匹配。`COMPLETED` 表示形成了一个权威终态检查结果，不表示检查通过；`CLOSED` 表示未形成可用于正式基线聚合的结果。相同计划项不得生成第二份权威结果。
+
+所有计划项必须从同一 `SnapshotTree` 创建独立全新 `ExecutionWorkspace`，不共享缓存、字节码、临时文件或运行时状态。聚合只依据 `canonical_ordinal`，不得依据完成时间或数据库返回顺序。Ruff、Mypy 等独立项是否并发可以由版本化 baseline profile 决定，但不能改变结果语义。
+
+两种场景的计划角色固定为：
+
+~~~text
+ExistingFailure:
+  FULL_PYTEST
+  CONFIGURED_STATIC_CHECKS
+  TARGET_STABILITY_SERIES
+
+NaturalLanguageDefect:
+  FULL_PYTEST
+  CONFIGURED_STATIC_CHECKS
+~~~
+
+`CONFIGURED_STATIC_CHECKS` 只展开项目画像中实际配置且受支持的 Ruff、Mypy 等强制能力；不得伪造未配置检查的通过结果。
+
+v1 的 `TARGET_STABILITY_SERIES` 固定包含两次目标观察：
+
+~~~text
+observation_1 = FULL_PYTEST 中目标集合的逐 node 投影
+observation_2 = 一个独立 TARGET_SET_RERUN 计划项
+~~~
+
+第二次观察必须使用独立 `MaterializationJob`、全新 workspace、相同目标集合、Docker 环境和检查 profile。v1 不增加任意重复次数 `N`；改变重复次数属于支持画像和基线语义的版本化变更，不得由调用方配置。失败指纹及其稳定匹配规则由 3.7 唯一定义。
+
+`BaselineJob = PUBLISHED` 前所有 mandatory 计划项必须为 `COMPLETED`。取消或控制面中止必须先 fencing 活动 check consumer 和迟到结果；不能仅靠一次 job CAS 把仍有提交资格的子执行改成 `CLOSED`。
+
+### 3.4.22 `BaselineEvidenceSet` 与 `BaselineDecision`
+
+~~~text
+BaselineDecision =
+  ACCEPTED
+  | REJECTED
+~~~
+
+完整基线证据采用强类型引用：
+
+~~~text
+BaselineEvidenceSet {
+  baseline_job_ref
+  scenario_kind
+  snapshot_tree_ref_and_digest
+  repository_policy_digest
+  canonical_target_set?
+  full_pytest_check_result_ref
+  pytest_collection_evidence_ref
+  per_node_result_index_ref
+  target_stability_series_ref?
+  configured_static_check_result_refs
+  docker_environment_ref
+  execution_filesystem_profile_ref
+  baseline_plan_digest
+  aggregation_profile_version
+  evidence_set_digest
+}
+~~~
+
+`BaselineEvidenceSet` 只引用 3.7 定义的权威 `CheckResult`、收集证据、逐 node 结果索引和失败指纹，不重新定义、解释或改写 `CheckStatus`。每项结果必须绑定对应 workspace publication、consumer claim、结果被接受时的 lifecycle revision、源树摘要、Docker 环境和执行 profile。workspace 在结果提交后正常 `REVOKED / RELEASED` 不会使既有结果失效；聚合必须验证结果当时由有效 claim 原子接受。
+
+所有计划项的 Docker digest、环境白名单、执行 profile 或源树摘要必须一致；发生漂移时不得聚合。`evidence_set_digest` 必须覆盖规范计划、全部结果引用及其摘要、环境绑定和聚合 profile，不覆盖存储地址、完成时间或数据库返回顺序。
+
+结果完整性和基线接受是两个独立判断：
+
+- mandatory 项均形成结构完整、来源一致的权威终态结果，但场景判定不成立：可以发布 evidence set 和 `BaselineDecision(REJECTED)`。
+- 权威结果缺失、相互矛盾、来源不匹配或副作用状态未知：不能发布正式 evidence set 或 decision；job 必须安全关闭或进入对账。
+
+### 3.4.23 场景专用基线判定
+
+`ExistingFailure` 的接受条件为：
+
+1. 全量 pytest 收集成功形成非空、完整、规范排序的 node ID 集合。
+2. `CanonicalTargetSet` 中每个目标均在收集集合中精确存在。
+3. 第一次完整 pytest 中，每个目标的调用阶段结果只允许 `PASS` 或确定性 `FAIL`，且至少一个目标为 `FAIL`。
+4. 目标集合之外的每个 node ID 都实际执行并报告 `PASS`；任何 skip、xfail、xpass、deselect、未执行、收集错误、setup/teardown 错误、环境错误或超时均拒绝基线。
+5. 第二次目标集合观察中，每个目标的 `PASS / FAIL` 状态与第一次相同；首次失败的每个目标必须产生满足 3.7 稳定匹配规则的相同规范失败指纹，首次通过的目标必须再次通过。
+6. 全部已配置强制静态检查通过。
+
+ExistingFailure 不要求每个目标都失败。稳定通过的目标同样属于不可削弱的 Manifest v1 目标和最终验收条件。
+
+`NaturalLanguageDefect` 的接受条件为：
+
+1. 全量 pytest 收集成功且至少收集一个 node ID。
+2. 每个 node ID 都实际执行并在测试调用阶段报告 `PASS`。
+3. 不存在 skip、xfail、xpass、deselect、未执行、收集错误、setup/teardown 错误、环境错误或超时。
+4. 全部已配置强制静态检查通过。
+
+场景判定只消费 3.7 的权威结果。生命周期目标由 `scenario_kind` 确定性派生：
+
+~~~text
+ExistingFailure accepted
+→ RUNNING(AGENT_LOOP)
+
+NaturalLanguageDefect accepted
+→ RUNNING(REPRODUCTION)
+~~~
+
+调用方和模型不得指定目标阶段。两种场景接受后都生成 `ValidationManifestV1`：ExistingFailure 的 v1 固定目标、完整收集集合、基线状态和失败指纹；NaturalLanguageDefect 的 v1 固定原有测试与检查基线，后续只能由已确认复现合同派生 v2。
+
+### 3.4.24 基线发布、拒绝与关闭
+
+接受路线必须在同一控制面事务中完成：
+
+~~~text
+确认所有 mandatory 项均有完整权威结果
+→ 形成 BaselineEvidenceSet
+→ 形成 BaselineDecision(ACCEPTED)
+→ 形成 ValidationManifestV1
+→ BaselineJob = PUBLISHED
+→ 生命周期进入 scenario 对应阶段
+~~~
+
+拒绝路线用于证据完整但场景判定不成立：
+
+~~~text
+形成 BaselineEvidenceSet
+→ 形成 BaselineDecision(REJECTED)
+→ BaselineJob = PUBLISHED
+→ 不生成 ValidationManifestV1
+→ 生成 BaselineRecord、错误信封和 StopRecord
+→ STOPPED(BASELINE_BLOCKED)
+~~~
+
+取消或控制面中止路线为：
+
+~~~text
+fencing 所有活动 check attempt 和 consumer
+→ 拒绝迟到结果进入正式证据
+→ 撤销各 ExecutionWorkspace
+→ 安全关闭或阻断子 MaterializationJob 和资源
+→ BaselineJob = CLOSED
+→ 不生成 BaselineEvidenceSet、BaselineDecision 或 Manifest
+→ 按取消或内部错误合同处理生命周期
+~~~
+
+物理 workspace 清理可以在独立 resource-scoped case 中继续，但在 job 关闭前必须证明所有子执行已经失去结果提交资格，且残留资源已安全关闭或由不可绕过的 gate/block 覆盖。取消只有到达 3.2 的安全点后才能完成终态转换。
+
+正常状态下不得出现：
+
+- Manifest 已发布但 job 仍为 `ACTIVE`；
+- job 已 `PUBLISHED` 但没有 decision 或 evidence set；
+- `ACCEPTED` 但生命周期仍停留在旧 `BASELINE`；
+- `REJECTED` 却生成 Manifest；
+- `CLOSED` 却存在正式 evidence set 或 decision；
+- 取消后仍接受迟到结果进入 evidence set。
+
+### 3.4.25 `ValidationManifestV1` 核心与来源合同
+
+`ValidationManifestV1` 只在 `BaselineDecision(ACCEPTED)` 路线创建，是后续 Agent 检查、复现和正式验证的不可变验收合同：
+
+~~~text
+ValidationManifestV1 {
+  schema_version
+  manifest_kind = V1
+  owner_run_id
+  scenario_kind
+
+  baseline_job_ref_and_digest
+  baseline_evidence_set_ref_and_digest
+  baseline_decision_ref_and_digest
+
+  source_contract
+  pytest_contract
+  scenario_contract
+  configured_check_contracts
+  protected_artifact_contract
+  validation_environment_contract
+
+  canonicalization_profile_version
+  digest_algorithm
+  manifest_root_digest
+}
+~~~
+
+`baseline_decision_ref` 必须指向 `ACCEPTED`；`REJECTED` 和 `CLOSED` 路线不得进入 Manifest 发布事务。Manifest 保存验收语义和不可变证据引用，不内联原始 stdout/stderr、自由文本失败说明、物理存储位置或完整执行日志。
+
+来源合同为：
+
+~~~text
+SourceContract {
+  snapshot_tree_ref_and_digest
+  repository_policy_snapshot_ref_and_digest
+  expected_worktree_tree_ref_and_digest
+  workspace_identity_ref_and_digest
+}
+~~~
+
+每个引用必须同时携带对象类型、Schema 版本和语义摘要。对象引用只用于来源追踪和定位，摘要承担语义绑定；数据库 ID、对象路径和对象存储地址不得进入 Manifest 根摘要。
+
+`created_under_workspace_fencing_generation` 作为 Manifest 的创建来源元数据保存，不进入语义根摘要。协调器接管后是否继续使用 Manifest，由 3.4.9 的 takeover 延续合同决定；不得通过改写 Manifest 或根摘要实现延续。
+
+### 3.4.26 pytest、场景与结构化检查合同
+
+最终 pytest 状态只由 `PytestContract` 定义，场景合同不得重复存储或覆盖：
+
+~~~text
+PytestContract {
+  canonical_node_sequence: non-empty sequence<CanonicalPytestNodeId>
+  complete_node_set_digest
+  node_id_canonicalization_version
+
+  collection_capability_id
+  collection_action_digest
+  execution_capability_id
+  full_suite_action_digest
+  collection_profile_version
+  execution_profile_version
+  pytest_configuration_digest
+
+  required_final_status = PASS
+  forbidden_outcomes = {
+    SKIPPED,
+    XFAIL,
+    XPASS,
+    DESELECTED,
+    NOT_RUN
+  }
+}
+~~~
+
+`canonical_node_sequence` 不得包含重复 node ID；规范化碰撞必须拒绝；sequence 必须按版本化 node ID 严格全序排列，`complete_node_set_digest` 基于该规范 sequence 计算。两个正式场景都要求至少一个原始 pytest node；零测试继续返回已冻结的 `BASELINE_NO_TESTS`，不得发布 Manifest。
+
+最终验证必须重新形成完整 collection 并与 `canonical_node_sequence` 精确一致。collection error、节点新增、删除、重命名、规范化碰撞或隐式 deselection 均不得满足 Manifest。
+
+pytest capability 和 action digest 必须来自 3.7 的结构化受控能力，不得由 shell 字符串、任意 argv 或模型输出生成。Manifest 只声明接受 3.7 的哪些权威状态，不重新定义 `CheckStatus`、超时或失败指纹。
+
+场景义务使用判别联合：
+
+~~~text
+ScenarioContract =
+  ExistingFailureContract
+  | NaturalLanguageBaselineContract
+
+ExistingFailureContract {
+  canonical_target_set
+  baseline_target_status_index
+  stable_failure_fingerprint_index
+}
+
+NaturalLanguageBaselineContract {
+  reproduction_extension_policy_ref_and_digest
+}
+~~~
+
+`ExistingFailureContract` 必须满足：
+
+~~~text
+canonical_target_set 非空
+canonical_target_set ⊆ PytestContract.canonical_node_sequence
+keys(baseline_target_status_index) = canonical_target_set
+
+每个 target 的派生基线状态 =
+  STABLE_PASS | STABLE_FAIL
+
+failing_target_set =
+  { target | baseline_target_status_index[target] = STABLE_FAIL }
+
+failing_target_set 非空
+keys(stable_failure_fingerprint_index) = failing_target_set
+~~~
+
+`STABLE_PASS / STABLE_FAIL` 是 3.4.23 根据两次 3.7 权威结果派生的场景分类，不是新的 `CheckStatus`。稳定通过的显式目标仍属于 Manifest 和最终验收合同；只有稳定失败目标需要失败指纹。任一目标在两次观察间状态不一致，或失败目标指纹不稳定时，基线必须拒绝。
+
+ExistingFailure 基线中只有 `failing_target_set` 允许为稳定失败，其他全部原始 node 必须通过；NaturalLanguageDefect 基线中全部原始 node 必须通过。两种场景均不得包含 skip、xfail、xpass、deselect 或未执行结果。
+
+非 pytest 强制检查采用：
+
+~~~text
+ConfiguredCheckContract {
+  canonical_check_key
+  check_capability_id
+  adapter_profile_ref_and_digest
+  normalized_action_digest
+  configuration_digest
+  required_status
+}
+~~~
+
+每个 `canonical_check_key` 在 v1 最多出现一次，列表按版本化严格全序排列，不依赖配置读取或执行完成顺序。capability、adapter、action、configuration 和 required status 必须共同进入合同摘要；Manifest 不保存任意命令文本。
+
+### 3.4.27 保护工件、环境、规范摘要与派生边界
+
+`ProtectedArtifactContract` 由版本化保护画像确定性派生，至少覆盖以下角色：
+
+~~~text
+TEST_SOURCE
+TEST_SUPPORT
+PYTEST_CONFIG
+STATIC_CHECK_CONFIG
+DEPENDENCY_CONFIG
+INTERPRETER_CONFIG
+COLLECTION_HOOK
+POLICY_ARTIFACT
+~~~
+
+~~~text
+ProtectedArtifactContract {
+  protection_profile_version
+  artifact_constraints: canonical sequence<ProtectedArtifactConstraint>
+  forbidden_pattern_constraints: canonical sequence<ForbiddenArtifactPatternConstraint>
+  constraint_set_digest
+}
+~~~
+
+保护约束是判别联合：
+
+~~~text
+ProtectedArtifactConstraint =
+  PRESENT {
+    canonical_path
+    artifact_role
+    tree_mode
+    content_digest
+  }
+  | ABSENT {
+    canonical_path
+    artifact_role
+  }
+
+ForbiddenArtifactPatternConstraint {
+  artifact_role
+  canonical_path_pattern
+  matching_profile_version
+}
+~~~
+
+`PRESENT` 至少覆盖所有参与 baseline collection 的原有测试文件、`conftest.py`、fixture/support 文件、pytest/Ruff/Mypy 配置、依赖和解释器行为入口、collection hook 及仓库策略工件。`ABSENT` 和 forbidden pattern 必须阻止候选在任意受保护层级新建能够改变测试发现、plugin、fixture、依赖解析或检查语义的入口；不得仅枚举仓库根的若干配置文件。
+
+候选对受保护路径或模式的创建、修改、删除、重命名和 mode 变化均必须失败关闭。NaturalLanguage 的 v2 只能把 `ConfirmReproductionAction` 明确批准的复现补丁工件、且被 extension policy 允许的角色增加为新的 `PRESENT` 约束；不得自动允许未批准的“相关支持工件”。
+
+验证环境只在一个权威位置定义：
+
+~~~text
+ValidationEnvironmentContract {
+  docker_environment_ref_and_digest
+  check_execution_profile_ref_and_digest
+  execution_filesystem_profile_ref_and_digest
+  python_runtime_ref_and_digest
+  pytest_toolchain_ref_and_digest
+  configured_toolchain_refs_and_digests
+  locale
+  timezone
+  environment_allowlist_digest
+}
+~~~
+
+`docker_environment_ref_and_digest` 的语义摘要必须覆盖 3.3 已封存的 daemon/context、API 能力、镜像内容身份和隔离 profile，而不只是 image tag 或单一 image digest。环境合同不得包含凭据值、秘密派生信息或未授权环境变量。`SourceContract` 不重复保存执行文件系统 profile，环境合同也不重复保存仓库策略摘要。
+
+Manifest 根摘要使用独立规范投影：
+
+~~~text
+ManifestCanonicalProjection {
+  domain_separation_version
+  digest_algorithm
+  canonicalization_profile_version
+  all_normative_contract_fields
+  referenced_object_type_schema_and_semantic_digest
+}
+~~~
+
+投影不得包含数据库 ID、物理地址、创建时间、完成顺序、原始日志、`audit_correlation_id` 或人类可读说明。映射、集合和 sequence 必须使用各自明确的规范排序；同一语义字段只能有一个权威位置，不得在多个子合同中保存可不一致副本。
+
+v1 发布幂等键固定为：
+
+~~~text
+(owner_run_id, baseline_job_ref, manifest_kind = V1)
+~~~
+
+同键、同规范投影返回首次 Manifest；同键、不同投影返回 `VALIDATION_MANIFEST_PUBLICATION_CONFLICT`。Manifest、`BaselineEvidenceSet`、`BaselineDecision(ACCEPTED)`、`BaselineJob=PUBLISHED` 和场景对应生命周期转换必须继续原子提交。
+
+发布后 Manifest 不得修改。环境、来源或保护画像漂移只能使使用请求失败，不能改写 Manifest。v1→v2 必须满足：
+
+- v2 引用 v1 的 `manifest_root_digest`；
+- 不删除或放宽 v1 的原始 node、结构化检查、环境和保护约束；
+- 只增加经 `ConfirmReproductionAction` 批准且满足 extension policy 的复现 node 与保护工件；
+- 不替换来源 `SnapshotTree`，不改写原始 baseline evidence 或失败事实；
+- v1 与 v2 均永久保留为不可变历史。
+
+### 3.4.28 v2 批准时点与复现补丁
+
+`ValidationManifestV2` 只能从 `NaturalLanguageDefect` 场景中已接受的 v1 派生。`ExistingFailure` 在 Schema 和发布守卫两层均不得创建 v2。
+
+唯一一次人工批准必须在应用复现补丁和执行两阶段试验之前原子消费：
+
+~~~text
+冻结 ConfirmReproductionAction
+→ 用户批准并原子消费一次性批准
+→ 创建 ReproductionExecutionPlan 和唯一调度意图
+→ 应用精确复现补丁，形成派生候选树
+→ 执行两阶段试验
+→ 控制面计算复现判定
+→ 尝试发布 v2
+~~~
+
+`ConfirmReproductionAction` 必须绑定：
+
+~~~text
+parent_v1_root_digest
+reproduction_patch_digest
+expected_candidate_tree_digest
+approved_added_node_sequence
+failure_matcher_contract_digests
+compound_trial_plan_digest
+target_only_trial_plan_digest
+extension_profile_version
+validation_environment_digest
+~~~
+
+批准消费事务必须同时关闭对应等待、创建 `ApprovalConsumptionRecord`、冻结受控执行计划并创建 3.2 所需的新 phase-entry；外部物化、补丁应用和试验只能在事务提交后领取。v2 发布事务只验证并引用既有 `approval_consumption_ref_and_digest`，不得再次消费批准，也不得设置第二次人工确认。
+
+复现补丁采用版本化硬边界：
+
+~~~text
+ReproductionPatchPolicy {
+  required_artifact_role = REPRODUCTION_TEST_SOURCE
+  allowed_path_patterns
+  forbidden_path_patterns
+  maximum_added_files = 1
+  maximum_added_bytes
+  maximum_test_functions = 1
+  profile_version
+}
+~~~
+
+v1 只允许精确新增经 action 批准的一个 `REPRODUCTION_TEST_SOURCE` 普通测试模块，并且该模块只能包含一个非参数化 pytest 测试函数。不得新增测试支持文件、第二个测试模块或第二个测试函数。补丁不得修改、删除或重命名任何 v1 工件，不得新增或修改以下全局语义入口：
+
+~~~text
+conftest.py
+pytest plugin registration
+pytest.ini
+pyproject.toml
+setup.cfg
+tox.ini
+dependency configuration
+interpreter configuration
+Ruff / Mypy configuration
+Git / attribute policy artifacts
+~~~
+
+普通批准、extension policy 和模型建议均不得覆盖 v1 的 `PRESENT`、`ABSENT` 或 forbidden pattern 约束。所有新增工件必须进入 `added_protected_artifact_constraints`，以路径、角色、mode 和精确内容摘要锁定。
+
+`reproduction_candidate_tree` 必须由父 v1 的原始 `SnapshotTree` 加精确获批补丁确定性派生。它是后续修复的 `repair_base_tree`，但不能替换、改写或冒充原始来源快照。3.4 只冻结该来源关系，不创建或重新定义 3.6 的 `CandidateRevision`。
+
+### 3.4.29 两阶段复现证据与判定存在边界
+
+复合试验和目标专用试验必须共同绑定：
+
+~~~text
+parent_v1_root_digest
+reproduction_candidate_tree_digest
+approved_added_node_sequence_digest
+failure_matcher_contract_set_digest
+docker_environment_digest
+check_execution_profile_digest
+execution_filesystem_profile_digest
+~~~
+
+新增 node sequence 必须非空、无重复、与 v1 node sequence 不相交，并严格等于 action 批准的目标集合。
+
+复合试验中的全量 pytest 必须证明：
+
+~~~text
+collection =
+  parent_v1.pytest_contract.canonical_node_sequence
+  ∪ approved_added_node_sequence
+
+不存在额外或消失 node
+全部 v1 node = PASS
+全部新增 node = FAIL
+全部新增 node 匹配各自批准 matcher
+~~~
+
+全部已配置静态检查也必须为 `PASS`。pytest、Ruff 和 Mypy 各自使用从同一 reproduction candidate tree 物化的独立全新 workspace。
+
+目标专用试验必须使用另一个全新 workspace，并证明：
+
+~~~text
+实际收集和执行目标集合
+= approved_added_node_sequence
+
+每个目标 = FAIL
+stable_failure_fingerprint_index.key_set
+= approved_added_node_sequence
+~~~
+
+每个目标在两次试验中的失败指纹必须满足 3.7 的稳定匹配规则。目标专用试验使用专门的受控检查能力；其有意只选择新增目标，不受最终全量 `PytestContract` 对 `DESELECTED` 的禁止规则直接约束，但原始选择、collection 和执行结果必须完整保存。
+
+`failure_matcher_contracts` 必须引用 3.7 定义的结构化 matcher 及语义摘要，不得保存任意 shell、自由 argv 或未经约束的调用方正则表达式。
+
+`ReproductionEvaluation` 的状态和权威对象由 3.8 唯一定义。3.4 只规定其存在边界和 Manifest 消费规则：
+
+- 两阶段结果完整、来源一致且可确定解释时，才允许形成 evaluation；
+- 技术谓词全部成立时引用 `CONFIRMED`；
+- 证据完整但至少一个技术谓词明确不成立时引用 `NOT_CONFIRMED`；
+- 检查中断、结果缺失、环境漂移、状态未知或控制面故障时，evaluation 尚不存在，不得折算为 `NOT_CONFIRMED`。
+
+pytest 原始 `FAIL` 必须保持不变；evaluation 只判断这些失败是否满足已批准的预期失败合同。
+
+### 3.4.30 `ValidationManifestV2`、有效合同与派生证明
+
+~~~text
+ValidationManifestV2 {
+  schema_version
+  manifest_kind = V2
+  owner_run_id
+
+  parent_v1_ref_and_root_digest
+  reproduction_extension_ref_and_digest
+  derivation_proof_ref_and_digest
+  effective_contract_projection_ref_and_digest
+
+  canonicalization_profile_version
+  digest_algorithm
+  v2_root_digest
+}
+~~~
+
+`ReproductionExtension` 至少绑定：
+
+~~~text
+confirm_reproduction_action_ref_and_digest
+approval_consumption_ref_and_digest
+reproduction_patch_ref_and_digest
+reproduction_candidate_tree_ref_and_digest
+approved_added_node_sequence
+failure_matcher_contract_refs_and_digests
+stable_failure_fingerprint_index
+compound_trial_evidence_ref_and_digest
+target_only_trial_evidence_ref_and_digest
+reproduction_evaluation_ref_and_digest
+added_protected_artifact_constraints
+extension_profile_version
+~~~
+
+有效合同只能由控制面确定性计算：
+
+~~~text
+EffectiveV2Contract =
+  inherit(parent_v1)
+  + apply(reproduction_extension)
+~~~
+
+其唯一语义为：
+
+~~~text
+source_contract
+= parent_v1.source_contract
+
+repair_base_tree
+= reproduction_candidate_tree
+
+pytest canonical_node_sequence
+= canonical_union(
+     parent_v1 node sequence,
+     approved added node sequence
+   )
+
+configured_check_contracts
+= parent_v1 configured checks
+
+validation_environment_contract
+= parent_v1 environment
+
+protected_artifact_contract
+= parent_v1 constraints
+   ∪ approved addition constraints
+~~~
+
+调用方、模型和审批记录不得提交 effective projection 的字段值。为了读取效率保存的派生字段必须在发布事务中从父 v1 和 extension 重新计算并精确比较。
+
+`ManifestV2DerivationProof` 必须机械证明父 node、检查、环境、源快照和保护约束完整继承；新增 node 是规范、无交集的精确并集；保护约束只增强不放宽；repair base tree 是获批补丁的精确派生；新增约束与父约束不矛盾。
+
+v2 规范根投影只覆盖：
+
+~~~text
+parent_v1_root_digest
+reproduction_extension_semantic_digest
+derivation_proof_digest
+effective_contract_projection_digest
+Schema / canonicalization / digest versions
+~~~
+
+对象引用、数据库 ID、存储位置、创建时间和发布顺序只用于追踪，不进入 `v2_root_digest`。
+
+### 3.4.31 v2 发布与 `AGENT_LOOP` 入口
+
+v2 发布幂等键固定为：
+
+~~~text
+(owner_run_id, parent_v1_ref, manifest_kind = V2)
+~~~
+
+同键、同规范投影返回首次 v2；同键、不同投影返回 `VALIDATION_MANIFEST_V2_PUBLICATION_CONFLICT`。action 和批准消费记录进入规范 extension，不进入发布键；更换 action ref 不得绕过每个运行、每个 v1 最多一个权威 v2。
+
+发布前必须验证：
+
+- 3.8 的 evaluation 为 `CONFIRMED`；
+- 父 v1、源快照、候选树、试验证据和批准记录均未被阻断或失效；
+- action、批准消费和 execution plan 绑定本次精确 extension；
+- 当前 phase-entry、lifecycle revision、租约和 workspace fencing generation 有效；
+- 环境、configured checks 和保护画像没有漂移；
+- 没有优先接受的取消。
+
+完整检查结果已经分别由其权威合同发布；控制面根据这些结果确定性计算 evaluation、extension、proof 和 v2。成功 CAS 必须原子提交：
+
+~~~text
+ReproductionEvaluation(CONFIRMED)
+ReproductionExtension
+ManifestV2DerivationProof
+EffectiveV2Contract
+ValidationManifestV2
+ReproductionAcceptedRecord
+新的 PhaseEntryRecord
+RUNNING(REPRODUCTION) → RUNNING(AGENT_LOOP)
+~~~
+
+新 `AGENT_LOOP` 阶段上下文必须绑定：
+
+~~~text
+validation_manifest_v2_ref_and_digest
+repair_base_tree_ref_and_digest
+parent_snapshot_tree_ref_and_digest
+reproduction_accepted_record_ref_and_digest
+~~~
+
+`SnapshotTree` 始终是原始来源；`reproduction_candidate_tree` 只是 repair base。最终 `FinalDiff` 必须能够相对原始来源表达“获批复现补丁＋生产代码修复”。3.6 只能根据这里冻结的 repair base 创建初始候选修订。
+
+`NOT_CONFIRMED` 路线必须原子提交 3.8 的 evaluation、复现证据引用、错误信封、`StopRecord` 和 `STOPPED(REPRODUCTION_NOT_CONFIRMED)`，不得生成 v2。证据不完整或 `UNKNOWN` 时不得形成 evaluation，必须使用对应执行、对账或内部错误合同。取消、派生冲突或发布 CAS 失败时，v2、proof、extension 和 effective contract 均不得部分发布。
+
+### 3.4.32 3.4 子合同可确定性验证点
+
+
+1. 给定 tracked 路径与控制面保留路径冲突，系统必须拒绝快照，且不得静默删去该条目发布树。
+2. 给定实时工作区策略与 HEAD 中策略不同，系统必须以封存 HEAD 策略解释预期树，并由工作区原始字节不一致使准入失败，不得形成混合视图。
+3. 给定 tracked 普通文件的祖先是 junction 或最终文件存在 ADS／多硬链接，系统必须拒绝该对象且不得跟随或复制目标。
+4. 给定普通二进制文件，系统必须把完整原始字节纳入快照和摘要，不得因无法解码而标为不支持文本；给定不支持编码的声明文本，系统必须失败关闭。
+5. 给定任一资源上限被超过，系统不得截断、漏项或发布部分树，必须返回独立快照错误码及唯一停止原因映射。
+6. 给定容量已预留且发布成功，临时预留、权威容量占用、`SnapshotTreeRef` 和 `PUBLISHED` 必须原子提交；不得观察到已发布但无容量保障的树。
+7. 给定读取全部文件后某个 tracked 文件在发布前变化，第二次完整内容摘要或最终观察证明必须使封存失败。
+8. 给定重启发现 `PREPARING`，系统不得推断尝试成功，未发布对象不得被物化器读取。
+9. 给定相同封存或物化尝试 ID 和相同输入，重放不得产生第二个逻辑结果；同 ID 不同输入必须返回相应复用冲突错误。
+10. 给定正文定位返回错误字节，读取方必须因 `snapshot_content_digest` 不匹配失败，存储地址不得获得证明效力。
+11. 给定同一运行协调器接管且 `TakeoverRecord` 明确延续已发布快照，新 generation 可以消费该快照；旧 generation 的新命令和结果仍必须拒绝。
+12. 给定相同 `SnapshotTree` 和执行文件系统 profile，两次物化必须向检查进程呈现相同路径、字节、权限、工作目录和时间语义，且不得继承 ACL、ADS、扩展属性或 Git 元数据。
+13. 给定项目运行依赖 `.git` 或动态 VCS 版本发现，物化或项目画像必须失败关闭，不得伪造元数据继续。
+14. 给定相同事件 ID 和摘要在 generation 或阶段变化后重放，系统必须返回首次处理结果；同 ID 不同摘要必须返回复用冲突。
+15. 给定快照来源只能证明读取不完整而不能证明脏或变化，系统必须返回观察不确定错误，不得猜测为 `WORKTREE_DIRTY`。
+16. 给定根目录 `.git` 是普通文件，系统必须拒绝 gitdir 指针布局且不得读取或跟随指针目标。
+17. 给定快照执行 generation 小于当前值，系统必须记录 stale 且不改变 attempt；大于当前值时必须先安全关闭或对账，不能直接写入终态。
+18. 给定物化瞬时错误不在版本化允许列表，系统不得产生 `NEW_ATTEMPT_ALLOWED`。
+19. 给定源内容对象摘要不匹配，系统必须先建立最小作用域阻断，未发布 consumer 必须为 `NOT_RUN`，且不得从权威工作区补复制正文。
+20. 给定 job 已 `PUBLISHED` 后发现 publication 无效，系统必须保留 `PUBLISHED` 历史并阻断 workspace，不得将 job 改为 `CLOSED`。
+21. 给定 consumer claim 与 workspace 撤销并发，只能有一个 CAS 成功；撤销本身不得自动否定已完成结果。
+22. 给定物理 workspace 已删除但释放 CAS 未确定，cleanup attempt 必须保持 `SUCCEEDED`、lifecycle 保持 `REVOKED`，不得再次删除或重复释放容量。
+23. 给定两个清理 case 的规范资源集合有交集，资源 membership 注册表最多允许一个 `ACTIVE` gate；另一个必须形成冲突或 deferred trigger。
+24. 给定资源 gate 活动，普通 consumer 必须被拒绝；持有有效 resolver claim 的允许列表内对账查询可以执行，且不得借此运行普通消费。
+25. 给定 cleanup release 已经完整提交，对账必须使用 `CONFIRM_ALREADY_RELEASED` 返回首次结果，不得再次执行释放副作用。
+26. 给定基线证据完整但场景判定不成立，系统必须发布 `BaselineEvidenceSet` 和 `BaselineDecision(REJECTED)`，且不得生成 Manifest。
+27. 给定 mandatory 计划项仍为 `ACTIVE`，系统不得发布 job、evidence set 或 decision。
+28. 给定两个计划项完成顺序相反，聚合结果必须仍按 `canonical_ordinal` 产生相同摘要。
+29. 给定 ExistingFailure 的一个目标首次 `PASS`、再次 `PASS`，且另一目标两次稳定 `FAIL`，基线可以接受并必须把两个目标都保留在 v1。
+30. 给定 ExistingFailure 目标在完整 pytest 与目标重跑间状态不同，或失败指纹不满足稳定规则，系统必须拒绝基线。
+31. 给定 NaturalLanguageDefect 收集到零个测试，系统必须拒绝基线，不得把零测试解释为通过。
+32. 给定 workspace 在检查结果被有效接受后正常释放，聚合必须依据历史 consumer claim 和接受 revision 验证结果，不得仅因当前 lifecycle 为 `RELEASED` 使结果失效。
+33. 给定取消在基线发布 CAS 前获胜，系统必须先 fencing 子执行并拒绝迟到结果；不得发布 evidence set、decision 或 Manifest。
+34. 给定一个显式目标两次稳定 `PASS`、另一个目标两次稳定 `FAIL` 且指纹一致，Manifest v1 必须保留两个目标，失败指纹索引只能包含失败目标。
+35. 给定 node ID sequence 存在重复或规范化碰撞，系统必须拒绝 Manifest 发布，不得通过集合去重掩盖输入错误。
+36. 给定最终 pytest collection 新增、删除、重命名或隐式 deselect 任一原始 node，系统必须拒绝 Manifest 验收。
+37. 给定候选保持 node ID 不变但修改原有测试断言、fixture 或 `conftest.py`，保护合同必须在执行前拒绝。
+38. 给定候选在嵌套目录新建能够改变 collection 的 `conftest.py`，forbidden pattern 必须拒绝，不能只检查仓库根配置。
+39. 给定环境或来源引用可定位但其语义摘要不匹配，系统必须拒绝使用 Manifest，不能信任数据库引用。
+40. 给定相同 v1 发布键与不同规范投影，系统必须返回 `VALIDATION_MANIFEST_PUBLICATION_CONFLICT`，不得覆盖首次 Manifest。
+41. 给定 v2 派生请求删除 v1 node、放宽保护约束、替换源快照或加入未批准支持工件，系统必须拒绝派生。
+42. 给定复现批准尚未消费，系统不得应用补丁或创建两阶段试验调度；v2 发布事务不得再次消费批准。
+43. 给定任一试验结果缺失、`UNKNOWN` 或环境漂移，系统不得形成 `ReproductionEvaluation` 或 v2。
+44. 给定获批补丁尝试新增 `conftest.py`、pytest 配置、依赖配置或其他全局语义入口，`ReproductionPatchPolicy` 必须拒绝，普通批准不得覆盖。
+45. 给定复合试验和目标专用试验的父 v1、候选树、目标集合、matcher 或环境摘要任一不一致，系统不得聚合为复现证据。
+46. 给定目标专用试验只收集并执行全部获批新增节点，它不得因未选择 v1 原始节点而被解释为违反最终全量 deselection 约束。
+47. 给定调用方提交的 effective projection 与控制面从 v1 和 extension 重算结果不同，系统必须拒绝发布。
+48. 给定同一运行和父 v1 已有权威 v2，使用另一个 action ref 提交不同投影必须返回 `VALIDATION_MANIFEST_V2_PUBLICATION_CONFLICT`。
+49. 给定 v2 成功发布，evaluation、extension、proof、effective contract、accepted record、phase entry 和 `RUNNING(AGENT_LOOP)` 必须处于同一原子结果。
+50. 给定完整复现证据明确不满足技术谓词，系统必须形成 `NOT_CONFIRMED` 和停止记录，不得生成任何 v2 派生对象。
+
+## 3.5 Agent 单轮、动作信封与上下文装配
+
+本节是 Agent 主循环单轮协议、上下文装配、LLM 调用边界、统一动作信封、动作绑定、分发衔接和反馈连续性的权威来源。候选修订与补丁语义由 3.6 定义；检查能力、结果和失败指纹由 3.7 定义；场景编排和复现判定由 3.8 定义；策略、审批和披露由 3.9 定义；正式验证和持久化由 3.10 定义。本节只能引用这些权威结果，不得重新定义或放宽。
+
+### 3.5.1 混合式持久化与不可变轮次记录链
+
+Agent 主循环采用顺序单轮模型。每轮持久化影响授权、分发、反馈和恢复的权威边界；纯函数式上下文渲染和规范序列化可以根据已保存事实重建，不得为每个内部计算步骤创建新的运行生命周期状态。
+
+轮次使用以下不可变记录链：
+
+~~~text
+AgentTurnStartRecord
+→ AgentTurnOutputOutcome
+→ BoundAgentActionRecord?
+→ AgentTurnCompletionRecord
+~~~
+
+`AgentTurnRecord` 只可以作为上述记录的逻辑聚合视图，不得作为执行过程中逐步补字段的可变对象。任何记录一经发布不得原地修改；轮次完成记录一经形成，该轮次不得重新打开。
+
+~~~text
+AgentTurnStartRecord {
+  schema_version
+  turn_id
+  owner_run_id
+  canonical_ordinal
+  turn_subject
+  phase_entry_ref
+  source_lifecycle_revision
+  context_projection_ref_and_digest
+  llm_call_attempt_ref
+  workspace_fencing_generation
+}
+~~~
+
+LLM 调用 attempt 内部允许的传输恢复遵循 3.1 的 `RetryDisposition`。只有调用 attempt 得到一个权威终态结果后，才可以形成该轮的 `AgentTurnOutputOutcome`；`SAME_ATTEMPT_REPLAY` 不创建新轮次。
+
+~~~text
+AgentTurnOutputOutcome =
+  AcceptedTurnOutputRecord {
+    turn_start_ref
+    llm_call_result_ref
+    parsed_output_ref
+    accepted_output_ref
+  }
+  | RejectedTurnOutputRecord {
+    turn_start_ref
+    llm_call_result_ref
+    parse_error_ref
+    parse_feedback_ref
+    sanitized_response_digest?
+  }
+  | LLMCallFailureRecord {
+    turn_start_ref
+    llm_call_error_ref
+  }
+~~~
+
+VesperCode 默认不得持久化完整原始模型响应。受限运行缓冲区可以在解析和脱敏期间短暂保存响应；持久记录只保留权威解析结果、错误、允许的脱敏摘要和必要的完整性摘要。任何原始响应保留例外必须由后续非功能性安全与保留合同明确授权。
+
+### 3.5.2 阶段判别式轮次主体
+
+轮次主体是封闭判别联合：
+
+~~~text
+AgentTurnSubject =
+  ReproductionTurnSubject {
+    validation_manifest_v1_ref_and_digest
+    source_snapshot_tree_ref_and_digest
+    reproduction_iteration_context_ref_and_digest?
+  }
+  | RepairTurnSubject {
+    effective_validation_manifest_ref_and_digest
+    current_candidate_revision_ref_and_digest
+    repair_base_tree_ref_and_digest
+  }
+~~~
+
+`reproduction_iteration_context_ref` 只可以引用上一轮已关闭复现提案、用户修订反馈和相应权威记录形成的受控投影，不表示存在已经应用的复现候选修订。
+
+主体与阶段必须精确匹配：
+
+- `RUNNING(REPRODUCTION)` 只能创建 `ReproductionTurnSubject`；不得使用空 candidate 引用或占位修订。
+- `RUNNING(AGENT_LOOP)` 只能创建 `RepairTurnSubject`。
+- ExistingFailure 的修复主体必须绑定 `ValidationManifestV1`，且 `repair_base_tree` 为原始 `SnapshotTree`。
+- NaturalLanguageDefect 在 v2 发布后的修复主体必须绑定 `ValidationManifestV2` 的有效合同，且 `repair_base_tree` 为 3.4 冻结的 `reproduction_candidate_tree`。
+- 主体中的引用只能由控制面从当前 phase-entry 的权威上下文取得，模型、调用方和普通配置不得选择或替换。
+
+### 3.5.3 单活动轮次、序号与 CAS
+
+同一运行任一时刻最多存在一个未完成 `AgentTurn`。`canonical_ordinal` 是运行内从 1 开始、严格递增且不复用的逻辑轮次序号。
+
+创建轮次必须以 CAS 同时验证并绑定：
+
+- `RunStatus = RUNNING`；
+- 当前 `RunPhase` 为 `REPRODUCTION` 或 `AGENT_LOOP`；
+- 当前 `phase_entry_ref` 和 `lifecycle_revision`；
+- 当前轮次主体、Manifest、快照或候选修订；
+- 工作区租约和 fencing generation；
+- 不存在活动轮次、优先取消或阻断事项；
+- 适用的披露授权已经满足 3.9。
+
+轮次创建、序号分配、活动轮次门、`AgentTurnStartRecord`、唯一 LLM 调用 attempt 和持久化调度意图必须原子提交；外部 LLM 调用只能在事务提交后领取。一个轮次最多接受一个权威 LLM 调用结果、形成一个输出结果、创建一个绑定动作并发布一个完成记录。
+
+轮次不得跨越生命周期状态或 phase-entry。动作需要创建审批等待、进入正式验证或形成终态时，当前轮次完成记录、后续处置和 3.2 的生命周期转换必须在同一控制面 CAS 中原子提交，不得形成“轮次已关闭但转换尚未提交”的中间状态。恢复到新的 `RUNNING` phase-entry 后必须创建新轮次。迟到 LLM 响应不得覆盖新轮次、新候选或新阶段。
+
+### 3.5.4 `ContextProjection` 与 LLM 请求边界
+
+每次调用前，控制面必须根据轮次主体创建不可变、版本化 `ContextProjection`。投影至少区分：
+
+~~~text
+ContextProjection {
+  turn_subject_ref_and_digest
+  harness_contract_projection_ref_and_digest
+  repair_intent_projection_ref_and_digest
+  manifest_projection_ref_and_digest
+  candidate_or_source_projection_ref_and_digest
+  latest_authoritative_feedback_refs_and_digests
+  selected_file_content_refs_and_digests
+  selected_memory_refs_and_digests
+  context_budget_accounting
+  assembly_profile_version
+  context_projection_digest
+}
+~~~
+
+上下文装配不得发送完整原始对话历史。控制面只能从已完成 `AgentTurn` 的结构化动作、权威结果、反馈和摘要中选择当前必要投影。3.11 的持久记忆由 Harness 按当前工作区身份和任务相关性确定性选择；模型不能直接创建、修改或授权持久记忆。任何记忆都保持不可信辅助数据地位。
+
+上下文预算采用版本化固定优先级。强制合同、当前任务、当前 Manifest、当前候选绑定和最新权威反馈必须优先保留；低优先级可选项只能按完整投影项淘汰，不得任意截断后改变语义。强制项仍超过硬预算时，不得调用 LLM，必须返回明确上下文预算错误。不得通过额外真实 LLM 摘要调用绕过该边界。
+
+真实供应商请求必须由冻结投影确定性渲染：
+
+~~~text
+RenderedLLMRequest {
+  context_projection_ref_and_digest
+  prompt_template_version
+  action_schema_version
+  provider_adapter_version
+  provider_ref
+  endpoint_ref
+  model_ref
+  disclosure_payload_manifest_ref_and_digest
+  rendered_request_digest
+}
+~~~
+
+`ContextProjection` 只定义被选择的语义内容；`rendered_request_digest` 绑定实际发送的完整规范请求，包括提示模板、动作 Schema 和供应商适配器序列化结果。3.9 的披露授权必须同时覆盖供应商、端点、模型、投影中的数据类别、范围、体量和脱敏规则。授权未满足时不得创建活动轮次或发送真实请求；控制面必须先按 3.2 和 3.9 创建披露等待，返回新的 `RUNNING` phase-entry 后重新验证或重建投影。
+
+供应商响应、工具格式和 usage 数据均不可信，必须规范化后记录。调用超时不能证明供应商没有收到披露内容；披露尝试和副作用状态必须保留。LLM 只能接收渲染请求中的内容，不能通过 Harness 读取投影之外的快照、候选树、记忆或审计正文。
+
+Mock LLM 必须经过相同的单轮、Schema、动作绑定、策略、分发和反馈协议。Mock 只豁免真实外部披露授权和供应商网络调用，不得绕过其余控制面合同。
+
+### 3.5.5 模型输出与封闭动作联合
+
+通过严格 Schema 校验并被控制面接受的模型输出必须具有：
+
+~~~text
+AgentTurnOutput {
+  schema_version
+  reason_summary
+  action: AgentAction
+}
+~~~
+
+`reason_summary` 必须满足版本化字节上限并作为不可信解释性文本处理。它只能用于用户展示和受控审计，不得授权动作、改变策略、充当证据或证明完成。有效 `AgentTurnOutput` 必须恰好包含一个动作，不允许动作数组。
+
+调用失败、响应缺失、版本不兼容、未知字段或输出 Schema 无效时不得形成 `AgentAction`。控制面不得从自由文本猜测、修复或提取“最像”的动作。无效输出必须形成结构化解析反馈，消耗对应调用、Token、时间和无效输出预算；达到冻结阈值后按停止合同处理。
+
+首版模型动作是封闭联合：
+
+~~~text
+AgentAction =
+  ListFilesAction
+  | ReadFileAction
+  | SearchTextAction
+  | ApplyCandidatePatchAction
+  | RunCheckAction
+  | ProposeReproductionAction
+  | ProposeCompletionAction
+  | ProposeStopAction
+~~~
+
+动作载荷不得包含由模型签发的当前阶段、生命周期修订、Manifest、候选修订、repair base、策略版本或权威摘要。额外提供这些字段必须作为未知字段使输出 Schema 失败，而不是作为授权声明接受。
+
+三类代码检查动作只能访问当前轮次主体允许的项目视图。`SearchTextAction` 只支持有界字面量搜索和受限路径 glob，不支持正则、Shell 或命令语法。`RunCheckAction` 只能选择注册的检查能力 ID 和预先注册的 `CheckScopeRef`；模型不能提供 executable、自由 argv 或任意 pytest node ID。完整工具载荷和结果分别由本节后续子合同、3.6 和 3.7 定义。
+
+`ApplyCandidatePatchAction` 可以提出原子多文件补丁，但必须绑定当前 `RepairTurnSubject`；任一文件校验失败时不得产生部分修订。成功动作由 3.6 创建当前候选的不可变子修订，陈旧补丁不得自动合并或重绑定。
+
+`ProposeReproductionAction` 一次提出复现测试补丁、目标标识和受限结构化失败匹配器。匹配器只允许异常类型、规范化消息字面片段、预期测试阶段和可选仓库相对栈帧，不允许正则。该动作只是模型提案；3.8 校验并冻结后生成的 `ConfirmReproductionAction` 是控制面审批对象，不属于 `AgentAction`。
+
+`ProposeCompletionAction` 只能请求 3.2 进入 `FORMAL_VALIDATION`，不能声明成功。`ProposeStopAction` 只能携带受限提案类别和说明；Harness 在安全点根据当前状态、证据和停止优先级决定非成功终止及权威 `StopReason`。
+
+### 3.5.6 控制面动作绑定与阶段允许列表
+
+解析后的模型载荷不具有执行资格：
+
+~~~text
+ParsedAgentAction {
+  action_payload
+}
+~~~
+
+只有控制面可以从轮次起始上下文生成权威绑定：
+
+~~~text
+BoundAgentActionRecord {
+  schema_version
+  bound_action_id
+  turn_start_ref
+  parsed_action_ref
+  action_kind
+  bound_turn_subject_ref_and_digest
+  phase_entry_ref
+  source_lifecycle_revision
+  policy_version
+  canonical_action_digest
+}
+~~~
+
+`bound_turn_subject` 承担阶段专用 Manifest、来源树、repair base 和候选修订绑定，不在动作记录中复制可不一致的可选字段。只有 `BoundAgentActionRecord` 可以进入阶段校验、策略分类、审批和分发。阶段、Manifest、候选或策略发生变化后，旧动作只能作为 stale 输入拒绝；不得自动重绑定。
+
+以下允许列表是 v1 的封闭阶段合同：
+
+| 模型动作 | `REPRODUCTION` | `AGENT_LOOP` |
+| --- | --- | --- |
+| `ListFilesAction` | 允许 | 允许 |
+| `ReadFileAction` | 允许 | 允许 |
+| `SearchTextAction` | 允许 | 允许 |
+| `ApplyCandidatePatchAction` | 禁止 | 允许 |
+| `RunCheckAction` | 禁止 | 允许 |
+| `ProposeReproductionAction` | 允许 | 禁止 |
+| `ProposeCompletionAction` | 禁止 | 允许 |
+| `ProposeStopAction` | 允许 | 允许 |
+
+未列入当前阶段允许集合的动作必须返回稳定阶段错误，不得进入 3.9 的策略分类或审批。复现试验不得通过普通 `RunCheckAction` 绕过 `ConfirmReproductionAction` 的一次性批准。
+
+以下结果空间必须保持独立：
+
+~~~text
+ActionParseResult
+StageEligibilityResult
+PolicyDecision
+ActionExecutionResult
+~~~
+
+解析成功不表示阶段允许；阶段允许不表示策略 `ALLOW`；策略允许也不表示执行成功。
+
+### 3.5.7 轮次完成与后续处置
+
+每个轮次必须恰好发布一个不可变 `AgentTurnCompletionRecord`。轮次如何完成与完成后的运行去向使用两个封闭状态空间：
+
+~~~text
+AgentTurnCompletionKind =
+  ACTION_COMPLETED
+  | ACTION_REJECTED
+  | OUTPUT_INVALID
+  | LLM_CALL_FAILED
+  | TURN_CANCELLED
+  | TURN_ABORTED
+
+TurnContinuationDisposition =
+  CREATE_NEXT_TURN
+  | WAITING_USER
+  | PHASE_TRANSITIONED
+  | RUN_STOPPED
+  | NO_CONTINUATION
+~~~
+
+~~~text
+AgentTurnCompletionRecord {
+  schema_version
+  turn_start_ref
+  output_outcome_ref?
+  bound_action_ref?
+  authoritative_result_ref?
+  feedback_ref?
+  completion_kind
+  continuation_disposition
+  lifecycle_transition_ref?
+  completion_digest
+}
+~~~
+
+条件字段必须由 `completion_kind` 与 `continuation_disposition` 的合法组合控制，不能任意缺失或出现。至少满足：
+
+- 普通工具或检查形成权威结果并继续时：`ACTION_COMPLETED + CREATE_NEXT_TURN`。
+- 阶段非法或策略拒绝并允许修正时：`ACTION_REJECTED + CREATE_NEXT_TURN`。
+- 复现提案形成审批等待时：`ACTION_COMPLETED + WAITING_USER`。
+- 完成提议被接受并进入正式验证时：`ACTION_COMPLETED + PHASE_TRANSITIONED`。
+- 停止提议被 Harness 接受时：`ACTION_COMPLETED + RUN_STOPPED`。
+- 无效输出允许重试时：`OUTPUT_INVALID + CREATE_NEXT_TURN`。
+- 取消胜出时：`TURN_CANCELLED + RUN_STOPPED`。
+
+普通 Agent 动作首次被 `DENY` 不自动终止运行；控制面必须记录拒绝并生成结构化反馈。只有控制面完整性、策略定义或安全绑定失效可以按权威合同立即停止。相同候选、Manifest 和策略上下文中，规范动作—结果指纹重复且没有形成新候选修订或新权威证据时，必须累计无进展计数；达到冻结阈值后，控制面必须根据 3.2 的守卫唯一进入 `STOPPED(NO_PROGRESS)` 或 `STOPPED(POLICY_TERMINATED)`，模型更换说明文字不得重置计数。
+
+只有前一轮完成记录和后续处置已经原子发布，活动轮次门才可以关闭。`CREATE_NEXT_TURN` 只表示允许控制面重新检查取消、预算、披露、绑定和资源条件，不自动授权下一次 LLM 调用。
+
+### 3.5.8 单轮主循环
+
+正式单轮顺序固定为：
+
+~~~text
+读取当前 phase-entry 和 AgentTurnSubject
+→ 装配并冻结 ContextProjection
+→ 验证披露授权、预算、取消和单活动轮次门
+→ 原子创建 AgentTurnStartRecord、LLMCallAttempt 和调度意图
+→ 事务后调用 LLM
+→ 接受并规范化唯一调用结果
+→ 严格解析 AgentTurnOutput
+→ 控制面创建 BoundAgentActionRecord
+→ 检查阶段允许列表
+→ 执行 3.9 策略分类及适用批准
+→ 分发到动作权威合同
+→ 把权威结果转换为结构化反馈
+→ 原子发布 AgentTurnCompletionRecord 和后续处置
+~~~
+
+任一步不得把模型文本当作控制面事实。动作结果回灌必须引用权威结果、稳定状态或错误码、适用候选修订和截断元数据；不得仅把未经解析的 stdout/stderr 作为“反馈”。下一轮只能消费已发布完成记录和反馈投影。
+
+### 3.5.9 可确定性验证点
+
+1. 给定同一运行已经存在一个未完成轮次，第二个轮次创建必须失败，且不得创建第二个 LLM 调用 attempt。
+2. 给定两个创建请求竞争相同下一序号和 lifecycle revision，最多一个可以原子建立活动轮次门。
+3. 给定 `REPRODUCTION` 阶段，控制面必须创建 `ReproductionTurnSubject`，不得伪造空 `CandidateRevision`。
+4. 给定 NaturalLanguageDefect 的 v2 已发布，首个修复轮次必须绑定 v2 有效合同和 `reproduction_candidate_tree`；ExistingFailure 必须绑定 v1 和原始快照。
+5. 给定输出 Schema 合法，接受记录必须恰好包含一个动作；给定未知字段、动作数组或版本不兼容，不得形成 `AgentAction` 或分发副作用。
+6. 给定模型尝试提供 Manifest、候选摘要或 phase-entry 字段，封闭输出 Schema 必须拒绝，不能把这些字段用于权威绑定。
+7. 给定模型输出 `ApplyCandidatePatchAction` 时运行处于 `REPRODUCTION`，系统必须返回阶段错误，不得进入策略审批或应用补丁。
+8. 给定模型输出 `RunCheckAction` 时运行处于 `REPRODUCTION`，系统不得执行复现试验或创建检查 workspace。
+9. 给定旧轮次的 LLM 响应在 phase-entry 或候选修订变化后到达，系统必须拒绝迟到结果，不得自动重绑定。
+10. 给定上下文强制项超过硬预算，系统不得调用真实或 Mock LLM；给定只超出可选项预算，必须按固定优先级整项淘汰。
+11. 给定真实供应商调用，实际规范请求摘要必须等于获授权的 `rendered_request_digest`；调用超时不得删除披露尝试或推断供应商未收到内容。
+12. 给定相同 Mock LLM 输出与相同轮次主体，Mock 路线必须经过与真实路线相同的解析、绑定、阶段判断、策略和反馈步骤。
+13. 给定普通动作首次被 `DENY`，系统必须记录拒绝并在预算允许时生成下一轮反馈，不得把 `DENY` 本身直接改写为运行终态。
+14. 给定相同候选和策略上下文中重复产生相同动作—结果指纹，说明文本变化不得重置无进展计数。
+15. 给定 `ProposeCompletionAction` 被接受，当前轮必须以 `ACTION_COMPLETED + PHASE_TRANSITIONED` 关闭并进入 `FORMAL_VALIDATION`，不得创建成功或持久化记录。
+16. 给定 `ProposeStopAction`，模型提供的类别和说明不得成为 `StopReason`；只有 Harness 可以依据 3.2 发布非成功终态。
+
+### 3.5.10 专用 Agent 工作副本与当前绑定
+
+每个允许文件检查的轮次主体必须对应一个专用 Agent 工作副本。所有已发布 Agent 工作副本均为只读、不可变的 `ExecutionWorkspaceRef` 投影；不得在其中运行项目代码、生成缓存、改变文件、更新索引或产生任何会改变根摘要的副作用。
+
+~~~text
+AgentWorkspacePublication {
+  schema_version
+  agent_workspace_ref
+  execution_workspace_ref
+  execution_workspace_lifecycle_ref
+  agent_workspace_subject_ref_and_digest
+  consumer_binding
+  source_tree_ref_and_digest
+  publication_digest
+}
+
+CurrentAgentWorkspaceBinding {
+  schema_version
+  owner_run_id
+  phase_entry_ref
+  binding_revision
+  agent_workspace_publication_ref_and_digest
+  bound_turn_subject_ref_and_digest
+  current_candidate_revision_ref_and_digest?
+  binding_digest
+}
+~~~
+
+`REPRODUCTION` 的 workspace subject 只能是当前 `ReproductionTurnSubject` 绑定的来源树；`AGENT_LOOP` 的 workspace subject 只能是当前 `RepairTurnSubject` 绑定的候选树。一个 publication 只能对应一个不可变 subject。workspace lifecycle 为 `AVAILABLE` 只是必要条件；publication 在成为当前 `CurrentAgentWorkspaceBinding` 前不得被文件工具领取。当前绑定通过不可变 binding revision 链和 CAS 前移，不得原地改写。
+
+文件工具领取前必须同时验证当前绑定、phase-entry、workspace lifecycle revision、subject digest 和 consumer binding。同一 Agent workspace 同时最多存在一个活动文件工具 claim，但多个连续 Agent turn 可以顺序读取同一仍为当前且 `AVAILABLE` 的 workspace。
+
+`ApplyCandidatePatchAction` 在动作和策略层仍绑定当前 Agent workspace，以证明模型检查和提案所针对的精确候选视图；PatchEngine 实际上只能把补丁请求交给 3.6，并从该 workspace 绑定的 `CandidateTree` 创建 staging tree、新 `CandidateRevision` 和新 `CandidateTree`。它不得写入或重新发布旧 workspace。
+
+补丁成功必须采用以下原子激活协议：
+
+~~~text
+3.6 生成新 CandidateRevision 和 CandidateTree
+→ 为新 CandidateTree 物化并校验新 Agent workspace
+→ 发布新 workspace 为 AVAILABLE 但尚不可领取
+→ CAS 重验旧候选、旧 CurrentAgentWorkspaceBinding 和 phase-entry 仍为当前
+→ 原子激活新候选与新 CurrentAgentWorkspaceBinding
+→ 撤销旧 workspace 并发布补丁成功结果
+~~~
+
+最终 CAS 必须把新候选激活、新 binding revision、旧 workspace 撤销和补丁成功结果作为同一控制面结果提交。新 workspace 物化、完整性验证或最终 CAS 任一失败时，旧候选和旧 workspace 保持当前且逐字节不变；新修订不得成为当前修订，补丁不得报告成功。已经生成但未激活的新修订只能作为未激活历史工件由 3.6 的合同处置，其 workspace 始终不可被 Agent 工具领取。
+
+### 3.5.11 文件工具画像与不可信输入边界
+
+三个文件工具必须绑定由控制面选择的不可变、版本化画像。模型不能选择画像或放宽限制，普通配置只能进一步收紧硬上限。
+
+~~~text
+AgentFileToolProfile {
+  profile_id
+  profile_version
+  maximum_list_depth
+  maximum_page_size
+  maximum_glob_bytes
+  maximum_read_lines
+  maximum_read_bytes
+  maximum_single_line_bytes
+  maximum_search_query_bytes
+  search_context_before_lines
+  search_context_after_lines
+  glob_grammar_version
+  text_projection_version
+  ordering_profile_version
+  pagination_profile_version
+  profile_digest
+}
+~~~
+
+动作中的 `requested_path`、`root_path`、`path_glob`、深度和体量均是不可信请求值。所有路径必须采用仓库根相对的规范 `/` 分隔形式；`root_path = ""` 是表示仓库根的唯一例外，其他路径必须非空。拒绝绝对路径、盘符或 UNC 路径、空段、`.`、`..`、ADS、NUL、平台保留名称、反斜杠以及规范化后与原输入不同的形式。`root_path` 必须是当前 subject tree 中的现有目录，文件读取路径必须是其中的现有普通文件；符号链接及其他特殊条目的处理只能由冻结的 workspace filesystem profile 决定，模型不能借其逃逸 subject tree。
+
+`path_glob` 使用版本化受限 glob 语法，由 Harness 自身解释，不得交给 Shell 或宿主 glob。v1 不支持 brace expansion、正则、命令替换、环境变量、宿主转义或平台相关匹配语义。请求超过深度、页大小、glob、读取或查询硬上限时必须返回稳定输入错误，不得静默裁剪、缩小范围或替换为默认值。规范请求摘要必须绑定工具画像、当前 workspace binding、规范查询和全部有效上限。
+
+文件内容类别至少区分 `TEXT_SUPPORTED` 与不可投影内容。v1 的读取和搜索只能对 `TEXT_SUPPORTED` 成功；列表可以报告其他条目的稳定元数据，但不得借此返回宿主绝对路径、物理对象 ID、ACL、控制面存储地址或未授权正文。
+
+### 3.5.12 文件工具 attempt 与幂等发布
+
+每个绑定的文件工具动作必须创建一个独立逻辑 attempt。attempt 身份、绑定动作和规范输入不可变；执行状态不通过修改该对象表达，而通过一个起始记录和至多一个终态记录追加形成聚合视图。
+
+~~~text
+AgentFileToolAttemptStartRecord {
+  schema_version
+  tool_attempt_id
+  bound_agent_action_ref
+  action_kind
+  agent_workspace_ref
+  current_workspace_binding_ref_and_digest
+  expected_workspace_lifecycle_revision
+  workspace_subject_digest
+  agent_file_tool_profile_ref_and_digest
+  canonical_request_digest
+}
+
+AgentFileToolAttemptOutcome =
+  AgentFileToolPublishedRecord {
+    tool_attempt_start_ref
+    authoritative_result_ref_and_digest
+  }
+  | AgentFileToolFailedRecord {
+    tool_attempt_start_ref
+    final_error_ref_and_digest
+  }
+~~~
+
+逻辑 `AgentFileToolAttempt` 的投影状态只能是 `PREPARING`、`PUBLISHED` 或 `FAILED`。状态从 `PREPARING` 进入一个终态必须使用 CAS；一个 attempt 最多发布一个权威结果或一个终态错误，不得同时存在两者。
+
+相同 `tool_attempt_id` 与相同规范输入重放时必须返回首次权威终态，不重新枚举或读取文件；相同 ID 与不同规范输入必须返回 `TOOL_ATTEMPT_ID_REUSE_CONFLICT`。workspace 已撤销、subject 或当前 binding 已变化、lifecycle revision 过期时，迟到结果不得发布。临时正文已经释放时，重放原 attempt 仍返回原持久元数据以及正文不可用状态，不得伪造或重读正文；需要再次取得正文时，控制面必须为语义相同的请求创建新的 attempt，并且不能声称原结果正文仍然存在。
+
+### 3.5.13 文件列表与稳定条目页
+
+列表动作采用初始请求／继续请求判别联合：
+
+~~~text
+ListFilesAction =
+  StartListFilesAction {
+    root_path
+    maximum_depth
+    path_glob?
+    page_size
+  }
+  | ContinueListFilesAction {
+    continuation_cursor
+  }
+
+ListFilesEntry {
+  canonical_path
+  entry_kind
+  content_class
+  byte_count?
+  tree_mode
+  protected_artifact_role?
+}
+
+ListFilesResult {
+  tool_attempt_ref
+  agent_workspace_ref
+  workspace_subject_digest
+  canonical_query_digest
+  ordered_entries
+  returned_result_ordinal_range
+  continuation_cursor?
+  result_digest
+}
+~~~
+
+`maximum_depth` 从 `root_path` 为深度 0 计算，必须是非负整数且不超过画像上限；`page_size` 必须为正数且不超过画像上限。条目先按规范路径的 UTF-8 字节序稳定排序，再按连续结果序号分页，不得依赖宿主文件系统枚举顺序。没有匹配条目是成功空页；只有仍有后续条目时才签发 continuation cursor。
+
+`content_class` 的 v1 值至少包括 `TEXT_SUPPORTED`、`BINARY_OR_UNSUPPORTED` 和非普通文件使用的 `NOT_APPLICABLE`。普通文件的 `byte_count` 必须等于 subject tree 记录的文件字节数；目录和其他不具普通文件内容的条目必须省略该字段，不得填入宿主临时统计值或哨兵数值。每个返回条目必须能在绑定的 subject tree 中验证，任一条目无法验证时整个 attempt 失败，不得返回部分成功页。
+
+### 3.5.14 范围读取与文本投影语义
+
+~~~text
+ReadFileAction {
+  requested_path
+  start_line?
+  max_lines
+}
+
+ReadFileResult {
+  tool_attempt_ref
+  canonical_path
+  source_content_digest
+  returned_payload_digest
+  returned_start_line
+  returned_end_line
+  reached_eof
+  returned_byte_count
+  encoding_profile
+  bom_profile
+  newline_profile
+  transient_content_ref
+  result_digest
+}
+~~~
+
+`start_line` 从 1 开始，省略时为 1；`max_lines` 必须为正数且不超过画像上限。v1 的 `text_projection_version` 使用严格 UTF-8 解码，可以识别文件起始处的单个 UTF-8 BOM；BOM 记录在 `bom_profile` 中但不进入文本负载。无效 UTF-8、其他 BOM 或画像不支持的文本必须返回内容类型错误，不得替换无效字符。
+
+CRLF 作为一个换行边界，单独 LF 或 CR 各作为一个换行边界；不执行换行改写或 Unicode normalization。空文件具有 0 个逻辑行；非空文件至少有 1 行；文件末尾的换行终止最后一个逻辑行，但不额外产生一个空逻辑行。返回负载由所选完整逻辑行在 BOM 移除后的原始 UTF-8 字节及其实际存在的换行字节构成，不得截断半行、半个 Unicode 标量或改写换行。
+
+行数、返回总字节数和单行字节数上限必须同时满足。目标单行超过 `maximum_single_line_bytes` 时返回 `READ_LINE_TOO_LARGE`；显式范围的完整负载超过 `maximum_read_bytes` 时返回 `READ_RANGE_TOO_LARGE`。`start_line` 超出 EOF，包括读取空文件时，返回 `READ_RANGE_INVALID`，不得成功返回空正文。达到 EOF 前因 `max_lines` 正常结束不是截断错误；`reached_eof` 必须由所选最后一行是否为最后逻辑行确定。
+
+`source_content_digest` 绑定 subject tree 中的原始文件字节，`returned_payload_digest` 绑定实际进入临时缓冲区的精确负载；二者不得互换。任何脱敏、裁剪、重新编码或格式化都会形成新的投影负载和新摘要。
+
+### 3.5.15 字面量搜索与确定性命中
+
+搜索动作同样采用判别联合：
+
+~~~text
+SearchTextAction =
+  StartSearchTextAction {
+    root_path
+    literal_query
+    path_glob?
+    maximum_depth
+    page_size
+  }
+  | ContinueSearchTextAction {
+    continuation_cursor
+  }
+
+SearchTextMatch {
+  canonical_path
+  source_content_digest
+  line_number
+  match_start_scalar_offset
+  match_ordinal_in_line
+  context_start_line
+  context_end_line
+  context_payload_digest
+  transient_content_ref
+}
+
+SearchTextResult {
+  tool_attempt_ref
+  agent_workspace_ref
+  workspace_subject_digest
+  canonical_query_digest
+  ordered_matches
+  returned_result_ordinal_range
+  continuation_cursor?
+  result_digest
+}
+~~~
+
+`literal_query` 必须非空、不得包含 CR 或 LF，且 UTF-8 字节数不超过画像上限。搜索只检查满足路径约束的 `TEXT_SUPPORTED` 普通文件，并按 3.5.14 的文本投影解码。匹配基于解码后的 Unicode 标量序列，精确区分大小写；不得执行 case-fold、Unicode normalization、正则解释、转义替换或跨行匹配。
+
+同一行从左到右按起始 Unicode 标量偏移寻找，允许重叠匹配，并从 1 开始分配 `match_ordinal_in_line`。全局排序依次使用规范路径 UTF-8 字节序、1-based 行号、1-based 起始标量偏移和匹配序号。上下文前后行数完全由工具画像确定，模型不能扩大；每个命中的完整上下文形成独立精确 payload digest 和临时正文引用。
+
+命中行超过 `maximum_single_line_bytes` 时整个 attempt 返回 `SEARCH_MATCH_LINE_TOO_LARGE`，不得只给出位置而隐藏正文体量问题。画像要求返回的上下文行超过单行上限时返回 `SEARCH_CONTEXT_LINE_TOO_LARGE`；一个完整命中上下文或请求页超过允许负载时返回 `SEARCH_PAGE_TOO_LARGE`，不得静默缩小上下文或截断。零匹配是成功空结果，不形成 continuation cursor。
+
+### 3.5.16 continuation cursor 控制面能力
+
+`ContinueListFilesAction` 和 `ContinueSearchTextAction` 只能携带一个控制面签发的 opaque cursor；原查询参数不得再次提交，额外字段必须使动作 Schema 失败。权威 cursor 可以实现为服务端不可变记录或经过认证的 opaque token，但不能是模型自报后即获得效力的结构体。
+
+~~~text
+ToolContinuationCursor {
+  cursor_id
+  owner_run_id
+  action_kind
+  agent_workspace_ref
+  expected_workspace_lifecycle_revision
+  workspace_subject_digest
+  canonical_query_digest
+  next_result_ordinal
+  ordering_profile_version
+  pagination_profile_version
+  cursor_state
+  cursor_digest
+}
+~~~
+
+cursor 状态只能是 `ACTIVE` 或 `INVALIDATED`，并绑定同一运行、动作种类、workspace、subject、规范查询和分页画像。它可以跨连续 Agent turn 使用，但不能跨候选修订、workspace 当前绑定或运行迁移。workspace 撤销、binding 前移或 subject 变化时返回 `STALE_CONTINUATION_CURSOR`；格式、认证、摘要、所有者或动作类型错误时返回 `CONTINUATION_CURSOR_INVALID`，且必须在文件枚举或正文读取前拒绝。
+
+相同活动 cursor 的重放始终指向同一 `next_result_ordinal` 和同一逻辑页面，不得消费 cursor、重复推进或跳页。每个继续动作仍创建独立文件工具 attempt；只有其当前 workspace 和完整性验证通过后才可以重新形成该页的权威结果。最后一页不签发新 cursor；控制面失效 cursor 只能追加失效事实，不得把已有 token 改写成另一查询的能力。
+
+### 3.5.17 临时正文生命周期与持久结果隔离
+
+列表元数据、读取结果和搜索命中元数据可以持久化；原始文件正文和搜索上下文只能存在于受限临时运行缓冲区。
+
+~~~text
+TransientToolContentBufferState =
+  AVAILABLE
+  | RELEASED
+
+TransientToolContentBuffer {
+  transient_content_ref
+  owner_tool_result_ref
+  exact_payload_digest
+  payload_byte_count
+  content_profile
+  state
+  retention_deadline
+}
+~~~
+
+`AVAILABLE` 只表示精确正文当前可取用，不表示已经向模型披露。正文读取必须重算并验证 `exact_payload_digest`。从 `AVAILABLE` 到 `RELEASED` 的转换使用追加记录和 CAS；`RELEASED` 是不可逆终态，正文不得恢复或重新标记为 `AVAILABLE`。持久工具结果在正文释放后继续有效，但只能证明当时形成过具有相应摘要的负载，不能证明正文仍可取得。
+
+正文已经释放时返回 `TRANSIENT_CONTENT_UNAVAILABLE`；该错误不得回写或篡改原文件工具动作的成功事实。重新获取必须创建新的文件工具 attempt。审计、记忆、普通数据库字段和反馈摘要不得保存原始文件正文或搜索上下文；任何脱敏、裁剪或重新格式化均产生新的 `ContextProjection` payload 和新摘要，不能沿用原工具 payload digest。
+
+### 3.5.18 披露前置门与精确负载绑定
+
+真实 LLM 调用必须形成以下可验证链：
+
+~~~text
+AVAILABLE TransientToolContentBuffer
+→ exact tool payload digest
+→ selected or redacted ContextProjection payload digest
+→ DisclosureGrant coverage
+→ RenderedLLMRequest
+→ LLM call attempt
+~~~
+
+`ContextProjection` 必须逐项引用实际选择的工具结果、精确正文摘要或脱敏投影摘要。披露授权必须覆盖真实请求中出现的所有路径、行范围、搜索上下文、数据类别、体量、供应商、端点和模型，不能只覆盖搜索根、文件名或查询文本。发送前若临时正文已经释放、摘要不一致或授权覆盖不足，不得调用真实 LLM。
+
+授权覆盖不足时可以保留本地工具结果，但当前运行必须按 3.2 和 3.9 进入披露等待；只有取消、预算耗尽、控制面完整性失败等更高优先的权威条件可以使运行停止。不得静默删除受限正文后声称模型已经取得工具反馈，也不得沿未定义的“其他路线”继续下一 Agent turn。3.5 只产生精确披露需求并阻止调用；`DisclosureGrant` 的签发、预算、消费和等待恢复仍由 3.9 唯一定义。
+
+### 3.5.19 workspace 完整性门与第二部分验证点
+
+每次列表、读取和搜索都必须重新验证当前 Agent workspace，而不能只信任发布时检查。至少验证：workspace lifecycle 仍为 `AVAILABLE`；活动 claim、consumer 和当前 binding 有效；请求条目存在于 subject tree；文件字节摘要等于 subject tree 内容摘要；搜索处理的每个文件均来自当前不可变 workspace；读取前后不存在受支持机制检测到的对象替换。
+
+任一验证失败必须返回 `TOOL_RESULT_INTEGRITY_INVALID`，不得发布成功 payload、临时正文或可进入 `ContextProjection` 的结果。控制面必须撤销当前 Agent workspace，保存完整性错误及允许的证据，不得改写源 `SnapshotTree` 或 `CandidateTree`；随后只能从仍有效的源树重新物化并原子绑定新 workspace，或在源树也受到阻断时按权威合同停止或对账。`TOOL_RESULT_INTEGRITY_INVALID` 与 `TRANSIENT_CONTENT_UNAVAILABLE` 不得合并：前者表示当前读取不能证明与权威 subject 一致，后者表示曾经形成的有效负载已按生命周期清理。
+
+第二部分至少满足以下可确定性验证点：
+
+1. 给定已发布 Agent workspace，任一文件工具和 `ApplyCandidatePatchAction` 均不得改变其根摘要或任一文件字节。
+2. 给定新候选已生成但新 workspace 物化失败或最终 CAS 失效，当前候选与旧 workspace 必须保持有效，且补丁不得报告成功。
+3. 给定新 workspace 已为 `AVAILABLE` 但尚未成为当前 binding，文件工具必须拒绝领取。
+4. 给定相同 tool attempt ID 与相同规范输入，重放必须返回首次终态且不重新读取；相同 ID 与不同输入必须返回冲突。
+5. 给定请求路径、glob、深度、页大小或体量超过绑定画像，系统必须返回稳定输入错误，不得静默收紧后执行。
+6. 给定被修改、跨 workspace 或跨候选使用的 cursor，系统必须在枚举或读取前拒绝；给定同一有效 cursor 重放，逻辑页面不得变化或推进。
+7. 给定读取目标单行超过上限，系统不得截断或产生无效 Unicode；给定搜索命中行超过上限，必须返回 `SEARCH_MATCH_LINE_TOO_LARGE`。
+8. 给定持久工具结果仍存在但临时正文已经 `RELEASED`，系统必须保留历史元数据并拒绝正文取用，不得修改原成功结果。
+9. 给定披露授权未覆盖实际文件范围或搜索上下文，系统不得调用真实 LLM，必须进入披露等待或由更高优先权威条件停止。
+10. 给定 workspace 文件摘要与 subject tree 不一致，系统不得返回或披露可疑正文，不得把它加入任何 `ContextProjection`。
+
+### 3.5.20 结构化反馈的权威边界
+
+反馈是控制面对既有权威结果生成的受限、版本化模型投影。它只能帮助后续 Agent turn 修正输出或动作，不能重新解释执行事实，也不具有执行、审批、证据、授权或生命周期转换效力。模型文本、调用方声明和反馈自身均不能决定某项动作是否允许。
+
+反馈来源采用封闭判别联合：
+
+~~~text
+AgentFeedbackSource =
+  OutputParseFeedbackSource
+  | ActionRejectionFeedbackSource
+  | FileToolFeedbackSource
+  | CandidatePatchFeedbackSource
+  | CheckFeedbackSource
+  | UserRevisionFeedbackSource
+  | FormalValidationFeedbackSource
+~~~
+
+~~~text
+AgentFeedbackSourceKind =
+  OUTPUT_PARSE_RESULT
+  | ACTION_REJECTION_RESULT
+  | FILE_TOOL_RESULT
+  | CANDIDATE_PATCH_RESULT
+  | CHECK_RESULT
+  | USER_REVISION_DECISION
+  | FORMAL_VALIDATION_RESULT
+~~~
+
+~~~text
+AgentFeedbackBody =
+  OutputParseFeedback
+  | ActionRejectionFeedback
+  | FileToolFeedback
+  | CandidatePatchFeedback
+  | CheckFeedback
+  | UserRevisionFeedback
+  | FormalValidationFeedback
+~~~
+
+每个 `source_kind` 只能对应一种强类型 `feedback_body`。反馈正文只能由控制面根据权威来源、绑定的版本化 `FeedbackProfile` 和稳定错误码确定性生成；不得保存或转述不受控的模型自由文本。诊断必须按规范严格全序排序、限量并脱敏，发现顺序和数据库查询顺序不得影响结果。
+
+每个来源作用域最多发布一条反馈，唯一键固定为：
+
+~~~text
+(owner_run_id, source_kind, authoritative_source_ref)
+~~~
+
+同键同规范输入必须返回首次结果；同键不同规范输入必须返回 `FEEDBACK_PUBLICATION_CONFLICT`。该冲突属于控制面内部错误，不得启动下一 Agent turn 或创建新的 phase-entry。
+
+### 3.5.21 不可变反馈资格记录
+
+反馈资格必须先由控制面基于完整权威来源形成唯一、不可变记录，不能只是临时函数返回值：
+
+~~~text
+FeedbackEligibility =
+  ELIGIBLE
+  | INELIGIBLE
+
+FeedbackEligibilityRecord {
+  schema_version
+  eligibility_id
+  owner_run_id
+  source_binding_ref_and_digest
+  authoritative_source_ref_and_digest
+  eligibility_profile_ref_and_digest
+  evaluated_source_state_ref_and_digest
+  result
+  reason_codes
+  target_agent_scope_ref_and_digest?
+  eligibility_digest
+}
+~~~
+
+资格记录与反馈使用相同来源作用域唯一键。`eligibility_profile` 只决定来源能否反馈，`FeedbackProfile` 只决定合格来源如何投影，两者不得合并。旧来源一旦形成终局资格记录，不得因画像升级重新评估或重新生成反馈。
+
+字段条件固定为：
+
+~~~text
+ELIGIBLE
+→ reason_codes 必须为空
+→ target_agent_scope_ref_and_digest 必须存在
+→ 资格记录、目标作用域和反馈记录原子发布
+
+INELIGIBLE
+→ reason_codes 必须为非空、无重复的规范序列
+→ target_agent_scope_ref_and_digest 必须缺失
+→ 不得生成 AgentFeedbackRecord
+~~~
+
+`reason_codes` 的主原因和排列由版本化严格全序决定，不能从人类说明、模型解释或错误发现顺序推断。来源尚未完整形成终态、资格计算内部失败、绑定陈旧、目标作用域尚未建立或 CAS 失败时，资格评估尚未完成，`FeedbackEligibilityRecord` 必须不存在；这些情况可以形成独立尝试错误或审计事实，但不得永久写成 `INELIGIBLE`。
+
+资格路线必须机械化：
+
+- `ASK` 创建等待时为 `INELIGIBLE`；等待结束后，符合画像的用户决定作为新的独立来源评估。
+- 终态停止、取消、预算耗尽、传输错误和内部完整性错误为 `INELIGIBLE`。
+- 普通动作被拒绝且当前阶段允许模型修正请求时可以为 `ELIGIBLE`；硬策略终止或敏感拒绝为 `INELIGIBLE`，且不得泄露内部规则。
+- 检查或正式验证失败只有在生命周期明确返回 Agent 循环时才可以为 `ELIGIBLE`。
+- 补丁成功和可修正的补丁失败可以为 `ELIGIBLE`。
+- 来源结果被阻断、失效或尚未完整形成时不得产生终局资格记录。
+- 当前 token 预算、上下文选择结果和披露授权不参与来源资格判断；它们只影响后续消费。
+
+### 3.5.22 不可变反馈目标作用域
+
+`ELIGIBLE` 反馈必须绑定由控制面创建的强类型精确目标：
+
+~~~text
+AgentFeedbackTargetScopeBinding {
+  schema_version
+  owner_run_id
+  target_phase_entry_ref
+  target_turn_subject_ref_and_digest
+  target_manifest_ref_and_digest
+  target_candidate_revision_ref_and_digest?
+  target_agent_workspace_binding_ref_and_digest?
+  bound_target_scope_revision
+  binding_digest
+}
+~~~
+
+该绑定必须复用 3.5.2 的 `AgentTurnSubject`，发布后不可修改。`bound_target_scope_revision` 表示创建绑定时观察到的目标作用域版本，不表示对象可以原地升级。phase-entry、subject、Manifest、候选或适用的 workspace 变化时必须创建新作用域对象；旧反馈只保留为历史事实。
+
+默认消费要求以下字段精确匹配：
+
+~~~text
+target_phase_entry_ref
+target_turn_subject_digest
+bound_target_scope_revision
+~~~
+
+反馈不得自动迁移到任何不同的 phase-entry、Manifest、候选修订、workspace 或目标作用域，即使候选之间存在祖先—后代关系。补丁成功反馈只能绑定已经原子激活的新候选修订和新 Agent workspace；补丁失败绑定原候选；正式验证可反馈失败绑定返回后的新 `AGENT_LOOP` phase-entry；用户修订绑定等待关闭后重新进入的来源阶段实例。不得先发布反馈，再补写其目标作用域。
+
+workspace 绑定的存在由资格画像针对具体来源和反馈类型确定：
+
+~~~text
+WorkspaceBindingRequirement =
+  REQUIRED
+  | FORBIDDEN
+~~~
+
+`CandidatePatchFeedback` 成功时必须为 `REQUIRED` 并指向新激活 workspace；反馈语义仅依赖 Manifest、候选树或结构化权威结果时应为 `FORBIDDEN`；需要 workspace 专属消费能力或当前临时正文时必须为 `REQUIRED`。模型、用户、调用方和单次发布逻辑均不能选择是否填写该字段。
+
+### 3.5.23 来源绑定判别联合
+
+来源附属绑定是 Schema 判别联合的一部分，而不是一组可由调用方自由省略的普通可选字段：
+
+| `source_kind` | 强制来源绑定 |
+| --- | --- |
+| `OUTPUT_PARSE_RESULT` | `source_turn_ref` 必须存在 |
+| `ACTION_REJECTION_RESULT` | `source_turn_ref` 必须存在 |
+| `FILE_TOOL_RESULT` | `source_turn_ref` 必须存在 |
+| `CANDIDATE_PATCH_RESULT` | `source_turn_ref` 必须存在 |
+| `CHECK_RESULT` | `source_turn_ref` 必须存在 |
+| `USER_REVISION_DECISION` | `source_turn_ref` 必须缺失；必须绑定对应 `wait_id` 和用户决定记录 |
+| `FORMAL_VALIDATION_RESULT` | 必须绑定正式验证 subject 和正式验证结果；不得重复保存原完成提案 turn |
+
+任何不符合对应字段组合的来源必须在 Schema 层拒绝。资格记录、反馈记录和后续适用性记录只能引用该规范来源绑定，不能各自复制一组可能不一致的来源字段。
+
+### 3.5.24 反馈记录与规范摘要
+
+只有 `ELIGIBLE` 资格记录可以产生反馈：
+
+~~~text
+AgentFeedbackRecord {
+  schema_version
+  feedback_id
+  owner_run_id
+  source_kind
+  source_binding_ref_and_digest
+  authoritative_source_ref_and_digest
+  eligibility_record_ref_and_digest
+  target_agent_scope_ref_and_digest
+  feedback_profile_ref_and_digest
+  applicability_policy
+  feedback_semantic_slot_ref_and_digest
+  feedback_body
+  feedback_digest
+}
+~~~
+
+`eligibility_record_ref_and_digest` 必须指向同一事务发布的唯一 `ELIGIBLE` 记录，且资格记录中的目标作用域必须与反馈完全相同。无资格记录或资格为 `INELIGIBLE` 时不得发布反馈。
+
+`feedback_digest` 覆盖 Schema 版本、来源类型、来源语义摘要、资格语义、目标作用域语义、反馈画像、适用策略、semantic slot 和规范反馈正文。数据库 ID、时间戳、存储地址、物理日志位置、`TransientToolContentBuffer` 定位引用及其他纯定位字段不直接进入语义摘要；相应对象类型、Schema 版本和语义摘要必须进入。相同语义内容存储在不同物理位置时必须得到相同反馈身份。
+
+文件观察反馈的摘要必须包含精确 payload digest、规范路径、范围和创建反馈时观察到的可用状态；诊断投影包含排序、裁剪和脱敏后的语义摘要，不包含物理日志地址。临时正文后续释放不修改原 `feedback_digest`，只影响消费时能否取得 detail。反馈发布、当前可消费和已经发送是三个不同事实：
+
+~~~text
+AgentFeedbackRecord
+!= FeedbackConsumptionRecord
+!= LLMCallAttempt
+~~~
+
+### 3.5.25 分路线原子发布
+
+反馈发布必须与实际控制面路线匹配，不能使用一个含义过宽的通用事务描述。
+
+同阶段继续路线原子提交：
+
+~~~text
+完整来源终态
++ FeedbackEligibilityRecord
++ ELIGIBLE 时的 AgentFeedbackTargetScopeBinding
++ ELIGIBLE 时的 AgentFeedbackRecord
++ source AgentTurnCompletionRecord
+~~~
+
+普通下一轮不得仅为反馈创建新的 phase-entry。`INELIGIBLE` 是合法终局资格结果：它与来源终态和轮次完成原子形成，但不生成目标作用域或反馈。
+
+候选切换路线原子提交：
+
+~~~text
+新 CandidateRevision / CandidateTree
++ 新 Agent workspace 激活及当前绑定前移
++ 候选补丁权威结果
++ FeedbackEligibilityRecord
++ ELIGIBLE 时的目标作用域和 AgentFeedbackRecord
++ source AgentTurnCompletionRecord
+~~~
+
+新 workspace 未成功激活时不得发布指向新候选的反馈。稳定的 `INELIGIBLE` 不得回滚已经满足 3.6 和本节切换合同的领域事实。
+
+阶段返回路线原子提交：
+
+~~~text
+生命周期转换
++ 新 PhaseEntryRecord
++ 新 AgentTurnSubject 和目标作用域事实
++ 来源终态或等待完成记录
++ FeedbackEligibilityRecord
++ ELIGIBLE 时的 AgentFeedbackRecord
+~~~
+
+正式验证失败返回 `AGENT_LOOP` 和用户修订返回来源阶段均属于该路线。不得出现反馈指向尚未建立的新 phase-entry，也不得在反馈发布失败后把正常下一轮提前启动。
+
+同发布键、同规范投影的重放必须返回首次反馈并幂等完成相关事务；同键不同投影返回 `FEEDBACK_PUBLICATION_CONFLICT`，不创建下一轮或新 phase-entry，并按控制面内部错误处理。
+
+### 3.5.26 初始适用策略与语义槽
+
+每条反馈必须绑定一个版本化适用策略：
+
+~~~text
+FeedbackApplicabilityPolicy =
+  NEXT_TURN_ONLY
+  | UNTIL_SUPERSEDED
+~~~
+
+`NEXT_TURN_ONLY` 只面向精确目标 scope 内首个形成权威 `AcceptedTurnOutputRecord` 或 `RejectedTurnOutputRecord` 的后续 turn。`UNTIL_SUPERSEDED` 只表示反馈在精确目标 scope 内持续可选；它不允许自动跨候选或 phase-entry 传播，不充当检查证据，不延续审批、授权或执行能力，也不能在来源失效后继续消费。
+
+`FeedbackSemanticSlot` 是强类型、版本化规范投影，其摘要至少覆盖足以唯一确定反馈语义位置的来源类型、检查合同或 Manifest obligation、文件请求身份、动作类别、subject 绑定和 slot Schema 版本。除非版本化画像明确允许同一槽的多个不同历史观察，同一消费上下文中一个 semantic slot 最多存在一个当前反馈。
+
+只有 semantic slot 摘要完全相同的新权威结果才可以 supersede 旧反馈。新来源即使最终资格为 `INELIGIBLE`，也可以取代旧反馈，因为 supersession 表示已经存在新的权威语义事实，而不要求产生新反馈。
+
+### 3.5.27 延续、取代与失效事实
+
+原反馈和原目标作用域始终不可变。其后续适用性只能通过独立追加记录表达：
+
+~~~text
+FeedbackApplicabilityContinuationRecord
+FeedbackApplicabilitySupersessionRecord
+FeedbackInvalidationRecord
+~~~
+
+跨后代候选延续必须由版本化 `FeedbackContinuationProfile` 允许，并创建显式 continuation。continuation 必须引用候选 ancestry proof，重新验证来源、原目标绑定、新目标绑定、workspace 和临时正文要求，不能成环，不能生成第二条反馈，也不能修改原 feedback 或 target scope。其状态空间为：
+
+~~~text
+FeedbackContinuationState =
+  REVALIDATION_REQUIRED
+  | SUPERSEDED_AFTER_REVALIDATION
+  | INVALIDATED
+~~~
+
+`REVALIDATION_REQUIRED` 表示反馈在新候选中只能作为需要重新验证的既有观察，不能被提升为新候选的权威检查事实。形成同一 semantic slot 的新权威结果后，continuation 进入 `SUPERSEDED_AFTER_REVALIDATION`；延续依据、来源或目标绑定失效时进入 `INVALIDATED`。这些终止事实只能追加，不能使旧反馈复活。
+
+每次候选转换允许延续的最大数量、允许的来源和 slot 类型、workspace／临时正文要求及严格选择顺序均由 `FeedbackContinuationProfile` 固定。超过上限时，控制面按规范顺序选择前 N 条，并在候选和 workspace 激活事务中原子发布：
+
+~~~text
+FeedbackContinuationSelectionRecord {
+  schema_version
+  source_scope_ref_and_digest
+  target_scope_ref_and_digest
+  continuation_profile_ref_and_digest
+  ordered_selected_feedback_refs
+  omitted_feedback_refs_and_reason_codes
+  selection_digest
+}
+~~~
+
+遗漏原因 `LIMIT_EXCEEDED` 只是延续选择结果码，不是错误信封，不产生 `RetryDisposition`、`StopReason` 或生命周期失败。未延续反馈不得阻止候选激活，不得被解释为已经解决，也不得在新 scope 中消费；原 scope 的历史事实保持不变。
+
+supersession 必须与新来源终态和资格记录原子建立，避免新权威事实已经生效而旧反馈仍可被下一轮选择。supersession 与 invalidation 通过 CAS 竞争；首个获胜的终止事实决定该适用关系的终态。后续证据只能追加为不改变状态的审计事实。新反馈后来失效时不得回退选择旧反馈，也不得撤销已经形成的 supersession。
+
+### 3.5.28 发布后的消费资格门
+
+反馈发布时来源有效，不表示它在未来调用前永久可消费。每次选择反馈进入新的 `ContextProjection` 前至少重新验证：
+
+- 权威来源未被阻断或失效；
+- target phase-entry、`AgentTurnSubject` 和 `bound_target_scope_revision` 精确匹配，或存在有效的显式 continuation；
+- 候选、Manifest 和要求存在的 Agent workspace 绑定仍有效；
+- 没有已经获胜的 supersession 或 invalidation；
+- 需要的临时正文仍为 `AVAILABLE`；
+- 披露和上下文预算在消费阶段得到满足。
+
+来源、目标 subject 或相关证据后续失效时不得修改 `AgentFeedbackRecord`，只能发布独立失效事实或由消费资格门拒绝。任何 continuation 都不得绕过披露、上下文预算、来源失效或 workspace 完整性检查。
+
+### 3.5.29 `NEXT_TURN_ONLY` 的基础 reservation 语义
+
+`NEXT_TURN_ONLY` 的“首个后续 turn”精确定义为：精确目标 scope 内，首个形成权威 `AcceptedTurnOutputRecord` 或 `RejectedTurnOutputRecord` 的后续 turn。创建该 turn 的 `ContextProjection` 时必须为选入的 `NEXT_TURN_ONLY` 反馈建立一次性 reservation，并至少绑定：
+
+~~~text
+feedback_ref_and_digest
+target_scope_ref_and_digest
+target_turn_ref
+context_projection_ref_and_digest
+llm_call_attempt_ref
+created_under_target_scope_revision
+~~~
+
+reservation 与对应 `ContextProjection` 必须原子冻结。同一反馈在同一目标 scope 同时最多一个活动 reservation；同一 LLM attempt 的安全重放复用原 reservation。
+
+`AcceptedTurnOutputRecord` 或 `RejectedTurnOutputRecord` 必须与对应消费完成事实原子提交，此时该反馈完成一次性消费。Schema 无效但已经形成权威 `RejectedTurnOutputRecord` 的模型输出也会完成消费。`LLMCallFailureRecord` 不消费反馈；turn 在形成接受或拒绝输出前取消、终止或安全中止时，reservation 必须关闭但不得标记为已消费。scope 仍有效时，后续替代 turn 可以重新选择该反馈；scope 已结束或失效时不得迁移到其他 scope。已经消费后，同一 scope 的第二个 turn 不得再次选择。
+
+本小节只冻结上述行为语义。反馈选择记录、消费清单、精确投影 payload、披露预投影以及 reservation 的追加式记录结构由后续设计段继续定义，不能从本小节推断为可变行状态。
+
+### 3.5.30 第三部分前段的可确定性验证点
+
+1. 给定同一完整权威来源和相同规范输入，资格与反馈发布重放必须返回首次记录；输入不同必须冲突。
+2. 给定来源未完成、资格内部错误、陈旧绑定或 CAS 失败，不得形成 `INELIGIBLE` 资格记录。
+3. 给定 `INELIGIBLE` 资格记录，不得存在对应目标作用域或 `AgentFeedbackRecord`。
+4. 给定 `ELIGIBLE` 资格记录，资格、不可变目标作用域和反馈必须全部存在且相互摘要一致，不得观察到部分发布。
+5. 给定任何不同的 phase-entry、subject、Manifest 或候选修订，旧反馈默认不得进入新上下文，即使候选存在祖先关系。
+6. 给定 workspace 要求为 `FORBIDDEN`，发布方不得自行附加 workspace；要求为 `REQUIRED` 时，缺失或无效 workspace 必须阻止发布或消费。
+7. 给定来源绑定不符合 `source_kind` 判别联合，必须在 Schema 层拒绝。
+8. 给定同一语义反馈存储在不同物理地址，纯定位差异不得改变 `feedback_digest`。
+9. 给定新权威来源属于同一 semantic slot，即使其资格为 `INELIGIBLE`，也必须原子终止旧反馈的后续适用性。
+10. 给定不同 semantic slot 的新来源，不得 supersede 旧反馈。
+11. 给定 continuation 缺少有效 ancestry proof、形成环或超过画像允许范围，不得使旧反馈在新 scope 中可消费。
+12. 给定 continuation 超过数量上限，按规范顺序选择的前 N 条必须稳定；遗漏不得阻止候选激活或变成停止原因。
+13. 给定 supersession 与 invalidation 竞争，最多一个终止事实获胜，旧反馈不得复活。
+14. 给定 `NEXT_TURN_ONLY` 反馈已被某 turn reservation，但该 LLM 调用失败且没有接受或拒绝输出，反馈不得被标记为已消费。
+15. 给定模型输出 Schema 无效并形成权威 `RejectedTurnOutputRecord`，对应一次性反馈必须完成消费。
+16. 给定反馈来源或临时正文在发布后失效，原反馈摘要不得改变，但新的 ContextProjection 必须拒绝不再可消费的内容。
+
+### 3.5.31 确定性反馈选择
+
+每次创建 Agent turn 前，控制面必须先按 3.5.28 计算当前 eligible feedback 集合，再根据版本化 `FeedbackSelectionProfile` 的严格全序选择本轮反馈。适用性判断与最终选择是两个不同步骤：scope 不匹配、已经 supersede、invalidate 或来源失效的反馈不属于 eligible 集合；仍然适用但因画像、semantic slot、预算或数量限制未被选中的反馈才属于 excluded。
+
+~~~text
+FeedbackInclusionMode =
+  SUMMARY_ONLY
+  | SUMMARY_AND_DETAIL
+
+FeedbackSelectionEntry {
+  feedback_ref_and_digest
+  applicability_basis
+  applicability_evidence_ref_and_digest?
+  feedback_semantic_slot_ref_and_digest
+  inclusion_mode
+  summary_payload_ref_and_digest
+  detailed_payload_ref_and_digest?
+}
+~~~
+
+`SUMMARY_ONLY` 禁止 detail 字段；`SUMMARY_AND_DETAIL` 要求 detail 在选择时存在、可读取且摘要一致。summary 是控制面根据权威反馈正文生成的有界、持久规范投影。detail 可以来自受限临时正文或诊断投影，但不得仅保存一个不能证明内容仍可取得的定位引用。
+
+~~~text
+FeedbackSelectionExclusionReason =
+  PROFILE_EXCLUDED
+  | SEMANTIC_SLOT_SHADOWED
+  | CONTEXT_BUDGET_EXCLUDED
+  | SELECTION_COUNT_LIMIT
+  | DETAIL_CONTENT_UNAVAILABLE
+
+AgentFeedbackSelectionRecord {
+  schema_version
+  selection_id
+  owner_run_id
+  target_scope_ref_and_digest
+  target_turn_ref
+  feedback_selection_profile_ref_and_digest
+  eligible_candidate_set_digest
+  ordered_selected_entries
+  excluded_entries
+  context_budget_snapshot_ref_and_digest
+  selection_digest
+}
+~~~
+
+`excluded_entries` 必须引用反馈及封闭原因。选择顺序不得依赖数据库查询顺序、线程完成顺序或模型文本。同一 semantic slot 在一次选择中最多保留一个当前有效反馈，除非画像明确允许多个不同历史观察。空选择记录合法。
+
+画像声明为 mandatory 的最小反馈摘要已经压缩到不可再缩减的规范形式后仍超过硬预算时，必须返回：
+
+~~~text
+CONTEXT_PROJECTION_MANDATORY_CONTENT_EXCEEDS_BUDGET
+~~~
+
+该错误不得创建 turn、LLM attempt、consumption manifest 或 reservation，也不得通过随机丢弃、字段截断或静默省略继续。可选 detail 因预算未选中可以使用 `CONTEXT_BUDGET_EXCLUDED`。
+
+### 3.5.32 选择条目与消费条目分离
+
+选择阶段尚未创建 reservation，因此 `FeedbackSelectionEntry` 不得引用 reservation。最终发布阶段使用独立消费条目：
+
+~~~text
+FeedbackConsumptionEntry {
+  selection_entry_ref_and_digest
+  reservation_ref?
+}
+~~~
+
+字段存在条件固定为：
+
+~~~text
+NEXT_TURN_ONLY
+→ reservation_ref 必须存在
+
+UNTIL_SUPERSEDED
+→ reservation_ref 必须缺失
+~~~
+
+`AgentFeedbackSelectionRecord` 和披露 draft 只使用 selection entries；最终 `AgentFeedbackConsumptionManifest` 使用 consumption entries。reservation 是内部消费控制信息，不进入披露正文或 draft 的语义摘要。
+
+选择完成后、最终投影发布前，如果 detail 失效、来源失效或摘要不一致，必须废弃本次尚未发布的选择结果并重新计算。画像允许 summary 时可以在新的选择中使用 `SUMMARY_ONLY`；不得原地修改旧选择，也不得在发送时静默降级。
+
+### 3.5.33 披露 draft 与精确恢复比较
+
+需要披露等待时，控制面先根据完整规范调用内容形成：
+
+~~~text
+ContextProjectionDraft {
+  schema_version
+  draft_id
+  owner_run_id
+  source_target_scope_ref_and_digest
+  source_wait_id?
+  subject_ref_and_digest
+  manifest_and_candidate_binding_digest
+  feedback_selection_ref_and_digest
+  canonical_payload_digest
+  payload_byte_count
+  ordered_segment_digests
+  projection_serialization_profile_version
+  disclosure_requirement_digest
+  provider_profile_ref_and_digest
+  endpoint_profile_ref_and_digest
+  model_profile_ref_and_digest
+  redaction_profile_ref_and_digest
+  draft_digest
+}
+~~~
+
+draft 不持久化完整正文。DisclosureGrant 不绑定已经结束的旧 phase-entry，但必须绑定 owner run、产生等待的逻辑作用域、合法 wait 恢复链、稳定 subject、Manifest／candidate、精确 payload、披露范围、体量、脱敏画像和调用目标。
+
+从等待恢复后，控制面必须重新计算反馈适用性和选择，并根据相同序列化画像重新生成全部规范字节。只有 canonical payload、字节数、有序 segment digests、subject、Manifest／candidate、路径范围、数据类别、体量、脱敏结果、供应商、端点和模型全部相同时，才可以消费原 grant。任一差异都要求形成新 draft，并在需要时重新申请授权。
+
+原 detail 已经释放或无法重新生成相同字节时，不得静默改为 summary，也不得继续使用旧 grant；必须返回 3.5.31 重新选择。
+
+### 3.5.34 调用专用投影负载
+
+最终调用必须使用受限、调用专用的精确负载：
+
+~~~text
+ContextProjectionPayload {
+  payload_ref
+  context_projection_ref
+  exact_payload_digest
+  payload_byte_count
+  ordered_segment_digests
+  source_payload_refs_and_digests
+}
+
+ContextProjectionPayloadReleaseRecord {
+  payload_ref_and_digest
+  source_llm_call_attempt_ref
+  release_reason
+  release_digest
+}
+~~~
+
+最终发布前，控制面必须从仍可用的来源读取内容，完成裁剪、格式化、脱敏和规范序列化，并校验最终摘要。真实 LLM 调用只读取 `ContextProjectionPayload`，不再读取原工具正文。payload 在调用及输出终态处理完成前不得正常释放；释放使用独立追加记录，不修改 `ContextProjection`、反馈选择、consumption manifest、reservation 或披露历史。
+
+`ContextProjection` 的根摘要必须覆盖模型实际接收的完整有序内容，包括 system／protocol、当前任务、turn subject、Manifest、candidate 或来源树、选择的 memory、工具和反馈投影以及 action schema。3.5.4 的 `latest_authoritative_feedback_refs_and_digests` 必须与本轮有序 selection entries 对应，选择记录只承担来源证明，不能替代实际 payload digest。
+
+供应商、端点和模型继续由 `RenderedLLMRequest` 与 `LLMCallAttempt` 绑定；DisclosureGrant 必须同时覆盖最终投影内容和这些调用目标。
+
+### 3.5.35 Consumption Manifest 与 reservation
+
+每个目标 turn 必须恰好对应一个消费清单：
+
+~~~text
+AgentFeedbackConsumptionManifest {
+  schema_version
+  consumption_manifest_id
+  owner_run_id
+  target_scope_ref_and_digest
+  target_turn_ref
+  feedback_selection_ref_and_digest
+  context_projection_ref_and_digest
+  ordered_consumption_entries
+  manifest_digest
+}
+
+FeedbackConsumptionReservationRecord {
+  schema_version
+  reservation_id
+  feedback_ref_and_digest
+  selection_entry_ref_and_digest
+  target_scope_ref_and_digest
+  target_turn_ref
+  consumption_manifest_ref_and_digest
+  context_projection_ref_and_digest
+  llm_call_attempt_ref
+  created_under_target_scope_revision
+  reservation_digest
+}
+~~~
+
+同一反馈在同一目标 scope 同时最多一个活动 reservation。reservation 起始记录不可变，不使用可原地更新的状态字段。其逻辑状态由 manifest 的唯一终态记录推导：
+
+~~~text
+FeedbackManifestTerminalKind =
+  COMPLETED
+  | CLOSED
+
+FeedbackManifestTerminalRecord {
+  schema_version
+  consumption_manifest_ref_and_digest
+  terminal_kind
+  source_output_failure_or_abort_ref_and_digest
+  ordered_reservation_refs_and_digests
+  reservation_set_digest
+  terminal_digest
+}
+~~~
+
+无终态记录时，清单内 reservation 为活动；`COMPLETED` 时全部为已消费；`CLOSED` 时全部为已关闭但未消费。每个 manifest 最多一个终态，规范 reservation 集合必须与全部 `NEXT_TURN_ONLY` consumption entries 精确一致，不得部分消费或部分关闭。manifest 没有 `NEXT_TURN_ONLY` 条目时允许使用空 reservation 集合。
+
+关闭后，只有生命周期明确创建新的替代 turn、原 target scope 仍精确有效且反馈尚未消费时，反馈才可以被重新选择并创建新的 reservation identity。已经消费后，同一 scope 不得再次选择。v1 不引入 reservation generation 或跨进程接管协议。
+
+### 3.5.36 最终发布与调用前复验
+
+控制面必须使用一个本地权威事务发布：
+
+~~~text
+AgentFeedbackSelectionRecord
++ ContextProjection
++ ContextProjectionPayload
++ AgentFeedbackConsumptionManifest
++ 全部 NEXT_TURN_ONLY reservations
++ AgentTurnStartRecord
++ LLMCallAttempt
+~~~
+
+提交前必须重新验证当前 lifecycle、phase-entry、`AgentTurnSubject`、Manifest、candidate、Agent workspace、反馈来源与目标 scope、continuation／supersession／invalidation、正文可用性、DisclosureGrant、上下文与调用预算、凭据状态、单活动 turn 和优先取消。任一条件变化时整笔事务失败并重新计算，不得发布部分 projection、manifest、reservation、turn 或 attempt。
+
+`ContextProjection` 的规范摘要单向覆盖有序反馈 payload digests 和选择记录摘要；consumption manifest 引用 projection。数据库可以提供反向索引，但不得形成规范摘要循环。真实供应商调用只能发生在事务提交后。同一 attempt 内由 3.1 允许的安全传输重放必须复用原 projection、payload、manifest 和 reservations。
+
+数据库实现、对象存储布局、WAL／outbox、跨进程 execution generation、fencing 和崩溃恢复算法属于后续架构与实现计划，不在本功能规约中展开。
+
+### 3.5.37 输出、失败与 reservation 终态
+
+调用与解析继续使用 3.5.1 的 `AcceptedTurnOutputRecord | RejectedTurnOutputRecord | LLMCallFailureRecord`，不得创建第二套输出结果联合。
+
+Accepted 或 Rejected 输出必须与 `FeedbackManifestTerminalRecord(COMPLETED)` 和清单内全部活动 reservations 的消费事实原子提交。Schema 无效但已经形成权威 `RejectedTurnOutputRecord` 时同样完成消费。输出形成后发生的阶段拒绝、策略拒绝或动作执行失败不撤销反馈消费。
+
+只有适配器根据 3.1 的重试合同形成终态 `LLMCallFailureRecord` 时，才可以与 `FeedbackManifestTerminalRecord(CLOSED)` 和全部活动 reservations 的关闭事实原子提交。非终态 `SAME_ATTEMPT_REPLAY` 不创建新的 turn、projection、manifest 或 reservation，也不关闭现有 reservation。
+
+输出前取消或安全中止必须原子发布相应 turn 终态、manifest `CLOSED` 和全部 reservation 关闭事实。关闭不表示模型未收到请求，也不撤销 DisclosureGrant、披露尝试、供应商调用或预算记录。
+
+turn 已经形成权威终态后到达的迟到响应不得重新打开 turn、manifest、reservation 或 target scope，不得形成 Accepted 或 Rejected 输出；只允许保存不含原始响应的脱敏迟到元数据，并清理临时正文。v1 不定义完整迟到 transport 兼容矩阵。
+
+### 3.5.38 v1 内部故障关闭与明确非目标
+
+v1 不持久化完整原始模型响应，也不支持响应正文跨控制进程恢复。响应只可以在当前调用和严格解析期间存在于受限临时缓冲区。
+
+响应已经收到，但解析器、规范序列化、结果存储或其他控制面处理发生不可恢复内部故障时，必须原子形成：
+
+~~~text
+稳定内部错误信封
++ FeedbackManifestTerminalRecord(CLOSED)
++ 全部活动 reservations 关闭
++ AgentTurnCompletionRecord(TURN_ABORTED)
++ StopRecord(INTERNAL_ERROR)
++ RunStatus = STOPPED
+~~~
+
+该路线不得创建 Accepted、Rejected 或 `LLMCallFailureRecord`，不得重新调用供应商，也不得把内部故障伪装成 Schema 拒绝。已经发生的披露、预算和供应商调用事实必须保留。
+
+控制进程恢复时发现活动 turn 没有权威输出终态，v1 必须使用稳定内部错误失败关闭当前 turn 和 reservations，并停止运行；不得尝试从日志、摘要或供应商重新构造原响应，也不得自动重新调用模型。释放调用 payload 或其他临时正文只能发生在权威关闭事实形成后。
+
+以下内容明确不属于 v1 验收范围：
+
+- Stage2 processing generation、claim takeover 和 revocation；
+- 原始响应或解析过程的跨崩溃恢复；
+- LLM response reconciliation case；
+- persistent processing block、successor case 和 block handoff DAG；
+- recovered response artifact 与 prepared／published response 状态机；
+- transport late-result 完整兼容矩阵；
+- 多层资源级 cleanup reconciliation。
+
+这些机制可以在架构章、实现计划或未来版本中讨论，但不得成为本节冻结或课程 v1 完成的前置条件。
+
+### 3.5.39 第三部分后段的封闭验证清单
+
+以下十五项是本设计段固定验收门。全部满足后，本段即通过；除非发现与已冻结合同直接矛盾、无法实现或存在严重安全漏洞，不得再增加生产级恢复条件。
+
+1. 给定相同 eligible feedback 和选择画像，数据库返回顺序变化不得改变选中项、排除项或顺序。
+2. scope 不匹配、已失效、superseded 或 invalidated 的反馈不得进入 eligible 集合，也不得伪装成 excluded。
+3. 同一 semantic slot 的反馈必须按画像稳定去重。
+4. mandatory 规范内容超过硬预算时不得创建 turn 或调用 LLM。
+5. `SUMMARY_AND_DETAIL` 的 detail 在最终发布前失效时，旧选择和 draft 必须废弃，不得原地或发送时降级。
+6. DisclosureGrant 不精确覆盖最终 payload、范围、体量、脱敏结果或调用目标时不得调用真实 LLM。
+7. 每个选入的 `NEXT_TURN_ONLY` 反馈必须恰好对应一个 reservation；`UNTIL_SUPERSEDED` 必须对应零个。
+8. Accepted 输出必须全量消费清单中的 reservations。
+9. Rejected 输出必须全量消费清单中的 reservations。
+10. 终态 LLM 调用失败必须全量关闭但不得消费 reservations。
+11. 输出前取消或安全中止必须全量关闭 reservations。
+12. 响应后的不可恢复内部处理故障必须关闭 reservations、停止运行且不得重新调用供应商。
+13. 迟到响应不得重新打开任何权威 turn、manifest、reservation 或 target scope。
+14. 任一 manifest 终态事务必须全有或全无，不得部分消费或部分关闭。
+15. Mock LLM 与真实适配器必须经过相同的选择、投影、解析、manifest 和 reservation 终态逻辑；Mock 只豁免外部网络和真实披露消费。
