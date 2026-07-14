@@ -809,3 +809,51 @@ Codex提出三种收敛方向：直接冻结课程可实现 v1、把完整协议
 - **既有合同修正：** `3.5.29` 的 `reservation_revision` 改为 `created_under_target_scope_revision`，避免暗示 reservation 可以原地更新。
 - **边界保持：** 没有修改第 1、2 章，没有生成实现代码、启动 `writing-plans` 或提交 Git。
 - **验证结果：** `git diff --check -- SPEC.md SPEC_PROCESS.md` 通过（仅有 Git 的 LF→CRLF 工作区提示）；`3.5.29—3.5.39` 标题连续；两份文档的波浪号代码围栏均成对；新增区间占位符为 0；旧 `reservation_revision` 为 0；被下放的 Stage2、response reconciliation、persistent block 和恢复工件 Schema 定义为 0。
+
+## 10. 2026-07-15｜v1 范围收敛与 3.5 机械迁移
+
+### 10.1 范围失控与封闭验收维度
+
+回看 3.1—3.5 的形成过程，原本针对功能规约的审查逐步吸收了生产级工作流引擎问题：execution generation、资源 gate 与 block、claim takeover／revocation、物化 job、跨进程恢复、reconciliation case、持久处理阻断和多层 cleanup 对账。每增加一个对象，又继续派生唯一键、迟到结果、接管、清理未知和二次对账要求，导致课程 v1 的完成条件不断后移。该扩张不是实现 Agent 主循环、确定性 guardrail、反馈纠正和离线 Mock LLM 测试所必需的功能闭环。
+
+本轮因此把以下七项固定为封闭验收维度，不再由生产级高可用建议继续扩张：
+
+1. Coding Agent Harness 的最小功能闭环可运行；
+2. 权威输入、结果与持久化边界可判定；
+3. 模型不参与授权或安全事实判定；
+4. feedback reservation 不部分消费或部分关闭；
+5. 内部故障安全停止且不伪造成功；
+6. 核心机制可用 Mock LLM 离线确定性测试；
+7. 方案在单人课程项目周期内可实现、可演示和可验证。
+
+### 10.2 v1 保留项与下放项
+
+v1 保留：顺序单轮 Agent 主循环、封闭动作联合、确定性动作绑定与 guardrail、精确 `SnapshotTree | CandidateTree` 来源绑定、硬容量限制、不得部分发布、一次性全新执行副本、`ExecutionWorkspaceEvidence`、`ExecutionWorkspaceCleanupResult` 与 quarantine 记录、结构化反馈资格／选择／消费、临时正文隔离、披露前置门、Mock LLM 离线测试以及 3.10 专用持久化恢复边界。
+
+下放到架构说明、实施 PLAN 或未来增强的内容包括：数据库与对象存储物理布局、分布式 execution／fencing generation、长期资源 allocation、物化 job 调度、claim takeover／revocation、资源 gate／block 图、通用 reconciliation engine、Stage2 响应处理、原始响应跨崩溃恢复、persistent processing block、successor／handoff DAG 和多层 cleanup reconciliation。这些内容可以作为后续设计材料，但不再成为 v1 功能规约、冻结或课程完成的前置条件；本轮没有因此修改 `PLAN.md`。
+
+本轮采纳的建议是：保留确定性安全门、强类型来源、精确摘要、硬容量、原子发布、一次性执行证据与清理证明，并让这些机制在替换真实 LLM 后仍可独立测试。拒绝升级为 v1 条件的建议是：把每个本地 attempt 建模为持久 job／generation，把物理目录生命周期当作 Agent 的长期权威状态，以及要求通用 takeover、block handoff 或 reconciliation 工作流才能完成课程验收。
+
+### 10.3 3.1—3.5 的实际收敛结果
+
+- **3.1：** 保留共同请求顺序、事件幂等、错误信封、规范化与摘要、状态空间隔离和可确定性验证；不再把普通 attempt 扩张为带多 generation、takeover 和资源阻断图的执行引擎。
+- **3.2：** 保留运行状态、阶段、三类等待、取消、停止和转换矩阵；`RecoveryDisposition` 只服务于 3.10 权威工作区持久化专用的三结果语义，不泛化到 LLM、文件工具、披露或普通清理失败。
+- **3.3：** 保留请求、静态校验、工作区身份、OS 排他锁、旧运行门、正式创建和准入结果；不再建立资源级 reconciliation gate、run-resource block binding 或通用接管图。
+- **3.4：** 收敛为 `RepositoryPolicySnapshot → SnapshotTree → ExecutionWorkspaceEvidence → BaselineEvidenceSet → BaselineDecision → ValidationManifestV1 → ReproductionEvaluation(CONFIRMED) → ValidationManifestV2` 的完整权威链；执行 consumer 使用独立全新副本，受硬容量约束，并在 consumer 启动前形成不可变 `ExecutionWorkspaceEvidence`；consumer 完成 post-run 验证且必要 payload 转存后形成 `ExecutionWorkspaceCleanupResult`，满足这些绑定后才允许原子发布。`MaterializationPublicationRecord` 的规范职责由 `ExecutionWorkspaceEvidence` 承担；旧 `WorkspaceReleaseRecord`／cleanup attempt 由 cleanup result 与 quarantine 记录承担；不再保留 `AuthoritativeArtifactAllocation` 这一长期 allocation 对象，但硬容量与不得部分发布行为仍保留。
+- **3.5：** 只做与上述已冻结 3.4 对象一致的机械迁移：把旧 Agent physical workspace publication／lifecycle／current binding 重绑为逻辑 `AgentWorkspacePublication`、`CurrentAgentSourceBinding`、精确 source tree ref／digest，以及产生具体工具结果的一次性 `ExecutionWorkspaceEvidence` 与 cleanup result。动作联合、反馈 reservation、LLM 输出联合、选择／消费和故障关闭行为均未重新设计。
+
+### 10.4 自动引用清单与处理分类
+
+本轮先从 `2864a53^:SPEC.md` 自动截取旧 3.4，使用正则提取反引号代码跨度内的标识符、PascalCase 类型、全大写枚举，以及名称中含 generation／gate／block／claim／lifecycle／cleanup／reconciliation 的词项，再与任务给定种子表取并集。并集共 339 个候选；编辑前扫描当前 `SPEC.md` 实际命中 170 个、扫描 `SPEC_PROCESS.md` 实际命中 129 个。计数是候选名称去重后的文件级命中，不把未出现的种子误报为当前依赖。
+
+实际命中按以下三类处理：
+
+1. **从当前规范删除：** physical Agent workspace lifecycle、workspace fencing generation、长期 claim／revocation、工具恢复／对账依赖，以及不再承担 v1 职责的旧 allocation／job／gate／block／release／cleanup-attempt 对象。
+2. **替换为 v1 简化对象：** Agent 当前视图改绑 `CurrentAgentSourceBinding` 与精确 `SnapshotTree | CandidateTree`；`MaterializationPublicationRecord` 职责改由 `ExecutionWorkspaceEvidence` 表达；release／cleanup attempt 改由 `ExecutionWorkspaceCleanupResult` 和 quarantine 记录表达。硬容量、完整副本、必要正文先转存和不得部分发布语义继续保留。
+3. **仅保留历史或未来增强说明：** Stage2 多 generation、恢复响应、persistent processing block、claim takeover、response reconciliation 和多层 cleanup reconciliation 只在 3.5.38 明确非目标或本过程文档的历史记录中出现；`RecoveryDisposition` 只保留 3.10 持久化专用三结果语义。
+
+旧 9.13—9.18、9.23、9.25 等记录中的 `MaterializationJob`、`ExecutionWorkspaceLifecycle`、cleanup attempt、generation、gate、claim、reconciliation、Stage2 等术语是当时讨论与审查轨迹，保留原文用于证明迭代过程。它们在 `SPEC_PROCESS.md` 中出现不构成当前规范对象、实现义务或 v1 验收条件。
+
+### 10.5 证据边界
+
+本轮范围收敛的前序步骤实际重写、审查并提交了 3.1—3.4，对应提交为 `856a8f0`、`0e6845c`、`2864a53`，并可引用 checkpoint `3640de6`；进入本步骤的 3.5 机械引用迁移时，3.1—3.4 才已经冻结，本步骤未再修改其正文。本节不宣称尚未发生的新冷启动审查、PR、实现验证或最终 SPEC／PLAN 批准，也不把此前历史讨论改写成当前规范；这些后续事项仍须按各自真实发生的证据另行记录，且不得为本步骤虚构新的提交哈希。
