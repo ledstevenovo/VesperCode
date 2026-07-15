@@ -2169,7 +2169,7 @@ v1 的适用策略只有 `NEXT_TURN_ONLY`。`structured_summary` 是控制面按
 
 同一 Manifest 不允许部分消费、部分关闭或遗留 ACTIVE reservation。同一 turn 最多一个权威终态获胜；迟到或陈旧的终态提交必须拒绝，不能改写首次终态。
 
-`SAME_ATTEMPT_REPLAY` 只是同一 LLM call attempt 的安全传输重放，必须复用原 `AgentFeedbackConsumptionManifest`、完整 reservations 和 `ContextProjection`，不得重新选择反馈、创建第二组 reservation 或创建新 turn。turn 已有权威终态后到达的迟到 `ResponseReceived` 或传输失败不得重新打开 turn、Manifest 或 reservations，也不得形成第二个 Accepted、Rejected 或失败结果。
+`SAME_ATTEMPT_REPLAY` 只是同一 LLM call attempt 的安全传输重放，必须复用原 `AgentFeedbackConsumptionManifest`、完整 reservations 和 `ContextProjection`，不得重新选择反馈、创建第二组 reservation 或创建新 turn。turn 已有权威终态后到达的迟到响应或传输结果不得重新打开 turn、Manifest 或 reservations，也不得形成第二个 Accepted、Rejected 或失败结果。
 
 ### 3.5.8 内部故障关闭与明确非目标
 
