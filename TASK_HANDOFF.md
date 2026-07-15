@@ -2,6 +2,7 @@
 
 > 面向对象：一个完全不了解当前聊天记录的新 Codex 对话。
 > 交接日期：2026-07-15（Asia/Taipei）。
+> 状态最后更新：2026-07-16
 > 权威分支：`origin/main`。
 > 历史 Phase 2 现场：本文最初创建前，`main` 与 `origin/main` 曾均指向 `64de2a3846c05b81ad69909a6e59be976e87d2c1`；该 SHA 不代表本轮最终 HEAD。
 > 本轮合同修正以 `cf720407af69aaac235b2bb0f7923fecd0544c68` 为基线，在 `codex/ch3-review-fixes` 分支实施。合并后开启新对话时必须先成功 fetch，并以当时最新 `origin/main` 为准，不得把本文中的历史或基线 SHA 当作最终提交。
