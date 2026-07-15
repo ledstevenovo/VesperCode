@@ -34,3 +34,9 @@
   - Task 7 实施阶段的 3.5 标题连续性、固定清单编号、目标 `rg` 扫描、冻结正文对比、围栏检查、凭据标记扫描和 `git diff --check` 均已通过。
   - Task 7 的规范与质量审查及最终冷审尚未发生，本条不记录其结果。
 - **Lesson learned:** 固定验收与安全失败关闭可以阻止范围继续扩张；未来增强不得升级为 v1 冻结条件。
+- **Task 7 review completion (Asia/Taipei):** `2026-07-15T15:01:45+08:00`
+  - **Specification review:** `/root/p2_acceptance_process_spec_review` 最终 `PASS`。
+  - **Document quality review:** `/root/p2_acceptance_process_quality_review` 最终 `PASS / Ready: Yes`。
+  - **Rework commits:** `c21c22e2aeb56834d55aa6ce39171821fae613e6`、`9011a3aeee1ea428875517456d3da92e79294565`、`677d5e7d446a9b3ca644cedf2c6fd14ab7118fe2`、`d68e3951b047c7796c00035840e6e3e82cbc25ab`、`b6c765dc50bfbb83a0cef2a69200ff915e6f4b48`。
+  - **Final verification:** A–D 规范复审 `PASS`；文档质量复审 `PASS / Ready: Yes`；131 个删除标识符的规范残留为 0；3.5 固定验收为 21 项、标题为 9 节；`git diff --check` 通过；worktree clean。
+  - **Cold-review boundary:** 最终无背景冷审截至上述完成记录时间尚未发生，本条不声称其已完成。
