@@ -7,8 +7,8 @@
 - **Skills invoked:** `writing-plans`, `subagent-driven-development`
 - **Key prompt/context:** Execute the approved two-phase specification-convergence plan while requiring Phase 1 to stop at the human checkpoint; Phase 2 was outside the authorized execution boundary.
 - **Implementation and review agents/results:**
-  - Phase 1 implementation agent for baseline rejection semantics: `DONE`; produced commit `87586a9d557bb45666e7022fb3c9524b6fc255e9`.
-  - Phase 1 implementation agent for review-admission closure: `DONE`; produced commit `9bc34a1b631cdc2c84ddc888112801eb488a55f6`.
+  - Phase 1 implementation agent for baseline rejection semantics: `DONE`.
+  - Phase 1 implementation agent for review-admission closure: `DONE`.
   - Specification review agents: two reviews, both `PASS`.
   - Quality review agents: two reviews, both `PASS`.
 - **Commits:** `87586a9d557bb45666e7022fb3c9524b6fc255e9` (`Clarify baseline rejection semantics`); `9bc34a1b631cdc2c84ddc888112801eb488a55f6` (`Close v1 review admission rules`).
