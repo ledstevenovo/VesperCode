@@ -2103,7 +2103,7 @@ TurnContinuationDisposition =
 
 三个动作直接解析树条目并读取其指向的内容对象；不得创建或挂载 `ExecutionWorkspace`，不得把树物化为宿主目录，也不产生文件工具专用的 cleanup、quarantine、领取或所有权状态。宿主目录、权威工作区、缓存和上一次调用留下的字节均不得成为补读或回退来源。
 
-文件工具执行期的每次初始访问、分页继续和权威结果形成前，控制面都必须重新验证精确来源引用、树根摘要、主体、phase-entry、Manifest、规范路径、目标条目以及适用的内容摘要。任一引用缺失、摘要不一致、条目不存在或内容对象无法按摘要验证时，该次工具请求返回 `TOOL_RESULT_INTEGRITY_INVALID`；不得发布权威成功结果、披露任何正文、形成可消费的上下文或调用 LLM，也不得从权威工作区或其他副本补读。权威结果形成后，正文在上下文消费期进入投影前仍须从同一不可变树确定性重读并完成相同校验；重读失败时不得使用或披露该正文，也不得调用 LLM，必须按 3.5.32–3.5.36 废弃尚未发布的选择并重新计算，而不是回写原工具结果或把消费失败改写为新的工具执行错误。
+文件工具执行期的每次初始访问、分页继续和权威结果形成前，控制面都必须重新验证精确来源引用、树根摘要、主体、phase-entry、Manifest、规范路径、目标条目以及适用的内容摘要。任一引用缺失、摘要不一致、条目不存在或内容对象无法按摘要验证时，该次工具请求返回 `TOOL_RESULT_INTEGRITY_INVALID`；不得发布权威成功结果、披露任何正文、形成可消费的上下文或调用 LLM，也不得从权威工作区或其他副本补读。权威结果形成后，正文在上下文消费期进入投影前仍须从同一不可变树确定性重读并完成相同校验；重读失败时不得使用或披露该正文，也不得调用 LLM，必须按 3.5.6 废弃尚未发布的选择并重新计算，而不是回写原工具结果或把消费失败改写为新的工具执行错误。
 
 三个动作共享由控制面选择的不可变、版本化硬画像；模型不能选择画像或扩大限制，普通配置只能进一步收紧。路径采用仓库根相对、`/` 分隔的规范 Git 路径，表示仓库根时仅允许 `root_path = ""`。绝对路径、UNC、盘符、反斜杠、空段、`.`、`..`、ADS、NUL、平台保留名称以及任何规范化后与原输入不同的形式必须稳定拒绝。受限 glob 由 Harness 按版本化语法解释，不具有 Shell、正则、brace expansion、环境变量、命令替换、宿主转义或平台相关语义。路径、深度、页大小、glob、查询、行数、字节数或上下文超过硬限时必须返回稳定输入错误，不得静默裁剪、缩小范围或替换默认值。
 
@@ -2117,617 +2117,75 @@ TurnContinuationDisposition =
 
 同一绑定请求的幂等重放和陈旧结果拒绝只适用 3.1 的共同规则；本节不建立文件工具 attempt 状态机、publication revision、持久 cursor 或恢复协议。`ApplyCandidatePatchAction` 仍必须交给 3.6 生成并激活新的 `CandidateRevision` 和 `CandidateTree`，不得修改本次动作读取的来源树。Mock 与真实 LLM 路线必须共享同一套文件工具控制面、画像、完整性校验、排序和错误语义。
 
-### 3.5.20 结构化反馈的权威边界
+### 3.5.6 有界的下一轮结构化反馈
 
-反馈是控制面对既有权威结果生成的受限、版本化模型投影。它只能帮助后续 Agent turn 修正输出或动作，不能重新解释执行事实，也不具有执行、审批、证据、授权或生命周期转换效力。模型文本、调用方声明和反馈自身均不能决定某项动作是否允许。
+反馈是控制面对既有权威结果生成的受限模型投影，只帮助已经调度的下一 Agent turn 修正输出或动作，不具有执行、审批、证据、授权或生命周期转换效力。只有权威工具结果、严格输出或 Schema 验证结果、正式验证结果、动作或策略结果已经完整形成，并且生命周期处置已明确调度一个具体下一轮时，控制面才可以生成 `AgentFeedbackRecord`。模型文本、模型异常文本、未经解析的 stdout/stderr 或调用方说明不能直接成为权威反馈；控制面只能从权威记录、稳定状态和错误码确定性转换反馈。
 
-反馈来源采用封闭判别联合：
-
-~~~text
-AgentFeedbackSource =
-  OutputParseFeedbackSource
-  | ActionRejectionFeedbackSource
-  | FileToolFeedbackSource
-  | CandidatePatchFeedbackSource
-  | CheckFeedbackSource
-  | UserRevisionFeedbackSource
-  | FormalValidationFeedbackSource
-~~~
-
-~~~text
-AgentFeedbackSourceKind =
-  OUTPUT_PARSE_RESULT
-  | ACTION_REJECTION_RESULT
-  | FILE_TOOL_RESULT
-  | CANDIDATE_PATCH_RESULT
-  | CHECK_RESULT
-  | USER_REVISION_DECISION
-  | FORMAL_VALIDATION_RESULT
-~~~
-
-~~~text
-AgentFeedbackBody =
-  OutputParseFeedback
-  | ActionRejectionFeedback
-  | FileToolFeedback
-  | CandidatePatchFeedback
-  | CheckFeedback
-  | UserRevisionFeedback
-  | FormalValidationFeedback
-~~~
-
-每个 `source_kind` 只能对应一种强类型 `feedback_body`。反馈正文只能由控制面根据权威来源、绑定的版本化 `FeedbackProfile` 和稳定错误码确定性生成；不得保存或转述不受控的模型自由文本。诊断必须按规范严格全序排序、限量并脱敏，发现顺序和数据库查询顺序不得影响结果。
-
-每个来源作用域最多发布一条反馈，唯一键固定为：
-
-~~~text
-(owner_run_id, source_kind, authoritative_source_ref)
-~~~
-
-同键同规范输入必须返回首次结果；同键不同规范输入必须返回 `FEEDBACK_PUBLICATION_CONFLICT`。该冲突属于控制面内部错误，不得启动下一 Agent turn 或创建新的 phase-entry。
-
-### 3.5.21 不可变反馈资格记录
-
-反馈资格必须先由控制面基于完整权威来源形成唯一、不可变记录，不能只是临时函数返回值：
-
-~~~text
-FeedbackEligibility =
-  ELIGIBLE
-  | INELIGIBLE
-
-FeedbackEligibilityRecord {
-  schema_version
-  eligibility_id
-  owner_run_id
-  source_binding_ref_and_digest
-  authoritative_source_ref_and_digest
-  eligibility_profile_ref_and_digest
-  evaluated_source_state_ref_and_digest
-  result
-  reason_codes
-  target_agent_scope_ref_and_digest?
-  eligibility_digest
-}
-~~~
-
-资格记录与反馈使用相同来源作用域唯一键。`eligibility_profile` 只决定来源能否反馈，`FeedbackProfile` 只决定合格来源如何投影，两者不得合并。旧来源一旦形成终局资格记录，不得因画像升级重新评估或重新生成反馈。
-
-字段条件固定为：
-
-~~~text
-ELIGIBLE
-→ reason_codes 必须为空
-→ target_agent_scope_ref_and_digest 必须存在
-→ 资格记录、目标作用域和反馈记录原子发布
-
-INELIGIBLE
-→ reason_codes 必须为非空、无重复的规范序列
-→ target_agent_scope_ref_and_digest 必须缺失
-→ 不得生成 AgentFeedbackRecord
-~~~
-
-`reason_codes` 的主原因和排列由版本化严格全序决定，不能从人类说明、模型解释或错误发现顺序推断。来源尚未完整形成终态、资格计算内部失败、绑定陈旧、目标作用域尚未建立或 CAS 失败时，资格评估尚未完成，`FeedbackEligibilityRecord` 必须不存在；这些情况可以形成独立尝试错误或审计事实，但不得永久写成 `INELIGIBLE`。
-
-资格路线必须机械化：
-
-- `ASK` 创建等待时为 `INELIGIBLE`；等待结束后，符合画像的用户决定作为新的独立来源评估。
-- 终态停止、取消、预算耗尽、传输错误和内部完整性错误为 `INELIGIBLE`。
-- 普通动作被拒绝且当前阶段允许模型修正请求时可以为 `ELIGIBLE`；硬策略终止或敏感拒绝为 `INELIGIBLE`，且不得泄露内部规则。
-- 检查或正式验证失败只有在生命周期明确返回 Agent 循环时才可以为 `ELIGIBLE`。
-- 补丁成功和可修正的补丁失败可以为 `ELIGIBLE`。
-- 来源结果被阻断、失效或尚未完整形成时不得产生终局资格记录。
-- 当前 token 预算、上下文选择结果和披露授权不参与来源资格判断；它们只影响后续消费。
-
-### 3.5.22 不可变反馈目标作用域
-
-`ELIGIBLE` 反馈必须绑定由控制面创建的强类型精确目标：
-
-~~~text
-AgentFeedbackTargetScopeBinding {
-  schema_version
-  owner_run_id
-  target_phase_entry_ref
-  target_turn_subject_ref_and_digest
-  target_manifest_ref_and_digest
-  target_candidate_revision_ref_and_digest?
-  target_source_tree_ref_and_digest?
-  bound_target_scope_revision
-  binding_digest
-}
-~~~
-
-该绑定必须复用 3.5.2 的 `AgentTurnSubject`，发布后不可修改。`bound_target_scope_revision` 表示创建绑定时观察到的目标作用域版本，不表示对象可以原地升级。phase-entry、subject、Manifest、候选或适用的当前 `AgentTurnSubject` 所绑定精确来源树变化时必须创建新作用域对象；旧反馈只保留为历史事实。
-
-默认消费要求以下字段精确匹配：
-
-~~~text
-target_phase_entry_ref
-target_turn_subject_digest
-bound_target_scope_revision
-~~~
-
-反馈不得自动迁移到任何不同的 phase-entry、Manifest、候选修订、当前 `AgentTurnSubject` 所绑定精确来源树或目标作用域，即使候选之间存在祖先—后代关系。补丁成功反馈只能绑定已经由 3.6 原子激活的新候选修订和目标主体绑定的新 `CandidateTree`；补丁失败绑定原候选；正式验证可反馈失败绑定返回后的新 `AGENT_LOOP` phase-entry；用户修订绑定等待关闭后重新进入的来源阶段实例。不得先发布反馈，再补写其目标作用域。
-
-`target_source_tree_ref_and_digest` 是否存在由资格画像针对具体来源和反馈类型确定：
-
-~~~text
-SourceBindingRequirement =
-  REQUIRED
-  | FORBIDDEN
-~~~
-
-`CandidatePatchFeedback` 成功时必须为 `REQUIRED` 并指向目标主体绑定的新激活 `CandidateTree`；反馈语义仅依赖 Manifest、候选树或结构化权威结果时应为 `FORBIDDEN`；需要当前精确来源树专属消费能力或需要从该树确定性重读文件正文时必须为 `REQUIRED`。模型、用户、调用方和单次发布逻辑均不能选择是否填写该字段。
-
-`SourceBindingRequirement` 只决定反馈目标是否必须匹配当前 `AgentTurnSubject` 绑定的精确来源树。`FILE_TOOL_RESULT` 的权威来源必须引用 3.5.5 的权威文件工具结果及其精确来源、规范请求、范围或命中和内容摘要；这些历史绑定不能替代 `target_source_tree_ref_and_digest`，也不能授权从不同来源读取。后续需要 detail 时仍须从该结果绑定的同一不可变树确定性重读并校验。
-
-### 3.5.23 来源绑定判别联合
-
-来源附属绑定是 Schema 判别联合的一部分，而不是一组可由调用方自由省略的普通可选字段：
-
-| `source_kind` | 强制来源绑定 |
-| --- | --- |
-| `OUTPUT_PARSE_RESULT` | `source_turn_ref` 必须存在 |
-| `ACTION_REJECTION_RESULT` | `source_turn_ref` 必须存在 |
-| `FILE_TOOL_RESULT` | `source_turn_ref` 必须存在 |
-| `CANDIDATE_PATCH_RESULT` | `source_turn_ref` 必须存在 |
-| `CHECK_RESULT` | `source_turn_ref` 必须存在 |
-| `USER_REVISION_DECISION` | `source_turn_ref` 必须缺失；必须绑定对应 `wait_id` 和用户决定记录 |
-| `FORMAL_VALIDATION_RESULT` | 必须绑定正式验证 subject 和正式验证结果；不得重复保存原完成提案 turn |
-
-任何不符合对应字段组合的来源必须在 Schema 层拒绝。资格记录、反馈记录和后续适用性记录只能引用该规范来源绑定，不能各自复制一组可能不一致的来源字段。
-
-### 3.5.24 反馈记录与规范摘要
-
-只有 `ELIGIBLE` 资格记录可以产生反馈：
+`AgentFeedbackRecord` 必须直接绑定以下语义，不通过宽泛作用域或可变资格对象间接表达：
 
 ~~~text
 AgentFeedbackRecord {
   schema_version
   feedback_id
   owner_run_id
-  source_kind
-  source_binding_ref_and_digest
   authoritative_source_ref_and_digest
-  eligibility_record_ref_and_digest
-  target_agent_scope_ref_and_digest
-  feedback_profile_ref_and_digest
-  applicability_policy
-  feedback_semantic_slot_ref_and_digest
-  feedback_body
+  source_kind
+  target_phase_entry_ref
+  target_turn_ref
+  target_turn_subject_ref_and_digest
+  target_validation_manifest_ref_and_digest
+  target_candidate_binding
+  applicability_policy = NEXT_TURN_ONLY
+  summary_profile_ref_and_digest
+  structured_summary
   feedback_digest
 }
 ~~~
 
-`eligibility_record_ref_and_digest` 必须指向同一事务发布的唯一 `ELIGIBLE` 记录，且资格记录中的目标作用域必须与反馈完全相同。无资格记录或资格为 `INELIGIBLE` 时不得发布反馈。
+`target_candidate_binding` 在存在候选的阶段必须是目标 turn 当前 `CandidateRevision` 的精确引用与摘要；不存在候选的阶段必须使用规范 `NO_CANDIDATE` 值并同时绑定该事实的权威阶段或来源记录，不能使用调用方提供的空值或占位候选。目标 phase-entry、`AgentTurnSubject`、适用的 `ValidationManifest`、候选绑定和目标 turn 任一项不精确匹配时，该反馈都不得进入上下文。
 
-`feedback_digest` 覆盖 Schema 版本、来源类型、来源语义摘要、资格语义、目标作用域语义、反馈画像、适用策略、semantic slot 和规范反馈正文。数据库 ID、时间戳、存储地址、物理日志位置及其他纯定位字段不直接进入语义摘要；相应对象类型、Schema 版本和语义摘要必须进入。相同语义内容存储在不同物理位置时必须得到相同反馈身份。
+反馈发布后不得迁移或重绑定。候选、phase-entry、`AgentTurnSubject` 或 Manifest 发生变化时，旧反馈只保留为历史事实；如果新轮仍需要反馈，必须根据新形成的权威转换结果重新生成一条精确绑定的新记录。候选 ancestry、相似错误、相同说明文字或模型请求均不能延续旧反馈。
 
-文件观察反馈的摘要必须包含 3.5.5 权威文件工具结果所绑定的精确来源、规范请求、范围或命中、内容摘要和有界元数据；它不得包含原始正文或物理存储位置，也不得把历史观察解释为当前目标来源树。诊断投影包含排序、裁剪和脱敏后的语义摘要，不包含物理日志地址。后续同树确定性重读失败不修改原 `feedback_digest`，只影响消费时能否取得 detail。反馈发布、当前可消费和已经发送是三个不同事实：
+v1 的适用策略只有 `NEXT_TURN_ONLY`。`structured_summary` 是控制面按版本化 Schema 生成的有界、脱敏结构，不保存自由文本 detail。摘要画像必须固定允许字段、条目上限、单项长度上限、总字节上限、脱敏规则、规范排序和裁剪顺序；同一权威输入与画像必须产生相同字节。裁剪只能在完整结构化条目边界按稳定全序进行，并保留画像规定的有界裁剪元数据，不能依赖数据库返回顺序、线程完成顺序、错误发现顺序或模型文本。
 
-~~~text
-AgentFeedbackRecord
-!= FeedbackConsumptionRecord
-!= LLMCallAttempt
-~~~
+`ContextProjection` 对反馈只投影上述有界摘要，不持久化或投影反馈 detail 正文。文件正文仍按 3.5.5 从权威文件工具结果绑定的同一不可变树确定性重读并校验；在投影冻结前无法得到相同内容时，控制面必须废弃尚未发布的反馈选择并重新计算，不得回写原工具结果、从其他来源补读或静默降级。其他权威事实只能使用记录中受限的结构化字段或其有界摘要。
 
-### 3.5.25 分路线原子发布
+创建目标 turn 的 `ContextProjection` 时，控制面只能选择同时精确绑定该 turn、phase-entry、`AgentTurnSubject`、`ValidationManifest` 和候选绑定的反馈。选择优先级、同优先级决胜、条目顺序和预算裁剪由版本化画像给出严格全序；相同输入必须得到相同选择。mandatory 摘要按规范压缩后仍超过 3.5.3 的硬预算时，不得创建 LLM 调用，也不得随机丢弃、截断字段或发起额外 LLM 摘要调用。
 
-反馈发布必须与实际控制面路线匹配，不能使用一个含义过宽的通用事务描述。
+### 3.5.7 reservation 与轮次终态
 
-同阶段继续路线原子提交：
+一个目标 turn 恰好使用一个 `AgentFeedbackConsumptionManifest`。它绑定该 turn 及其 `ContextProjection`，并以规范顺序聚合同一 turn 选中的完整 reservation 集合；没有选中反馈时该集合为空。每个被选中的 `AgentFeedbackRecord` 恰好创建一个 `FeedbackConsumptionReservationRecord`，该 reservation 绑定反馈、精确目标 turn、消费 Manifest、`ContextProjection` 和对应 LLM call attempt。
 
-~~~text
-完整来源终态
-+ FeedbackEligibilityRecord
-+ ELIGIBLE 时的 AgentFeedbackTargetScopeBinding
-+ ELIGIBLE 时的 AgentFeedbackRecord
-+ source AgentTurnCompletionRecord
-~~~
+反馈选择、全部 reservation 创建、`AgentFeedbackConsumptionManifest` 发布以及反馈进入 `ContextProjection` 必须全有或全无。任一步失败时，本次尚未发布的选择不生效，不得出现部分反馈投影、缺少 reservation 的已投影反馈或不完整 Manifest。本节只规定这一功能合同，不规定字段级 CAS、摘要 DAG、多对象事务拓扑或 attempt 状态机。
 
-普通下一轮不得仅为反馈创建新的 phase-entry。`INELIGIBLE` 是合法终局资格结果：它与来源终态和轮次完成原子形成，但不生成目标作用域或反馈。
+`NEXT_TURN_ONLY` 反馈只可由其记录中精确指定的目标 turn 成功选择一次。任何其他 turn、候选、phase-entry、`AgentTurnSubject` 或 Manifest 都必须拒绝；已关闭或已消费的反馈也不得重新选择。Manifest 发布后、权威终态形成前，其中全部 reservations 均视为 ACTIVE。
 
-候选切换路线原子提交：
+轮次输出继续使用 3.5.1 的封闭三值联合，不建立第二套结果类型。Manifest 与其完整 reservation 集合的终态规则固定为：
 
-~~~text
-新 CandidateRevision / CandidateTree
-+ 当前 AgentTurnSubject 与新 CandidateTree 的精确绑定
-+ 候选补丁权威结果
-+ FeedbackEligibilityRecord
-+ ELIGIBLE 时的目标作用域和 AgentFeedbackRecord
-+ source AgentTurnCompletionRecord
-~~~
+- `AcceptedTurnOutputRecord`：Manifest 中全部 ACTIVE reservations 全量标记为已消费，并与 Accepted 轮次结果形成同一权威终态；后续阶段拒绝、策略拒绝或动作执行失败不撤销消费。
+- `RejectedTurnOutputRecord`：全部 ACTIVE reservations 同样全量标记为已消费，因为模型已经看见并使用了反馈；无效输出不得把反馈退回。
+- 终态 `LLMCallFailureRecord`、输出前取消或内部中止：全部 ACTIVE reservations 关闭但不标记消费，并与对应轮次失败、取消或中止结果形成同一权威终态；反馈不得自动迁移到其他 turn、候选或 phase-entry。
 
-新 `CandidateTree` 未成功激活并绑定到目标 `AgentTurnSubject` 时不得发布指向新候选的反馈。稳定的 `INELIGIBLE` 不得回滚已经满足 3.6 和本节切换合同的领域事实。
+同一 Manifest 不允许部分消费、部分关闭或遗留 ACTIVE reservation。同一 turn 最多一个权威终态获胜；迟到或陈旧的终态提交必须拒绝，不能改写首次终态。
 
-阶段返回路线原子提交：
+`SAME_ATTEMPT_REPLAY` 只是同一 LLM call attempt 的安全传输重放，必须复用原 `AgentFeedbackConsumptionManifest`、完整 reservations 和 `ContextProjection`，不得重新选择反馈、创建第二组 reservation 或创建新 turn。turn 已有权威终态后到达的迟到 `ResponseReceived` 或传输失败不得重新打开 turn、Manifest 或 reservations，也不得形成第二个 Accepted、Rejected 或失败结果。
 
-~~~text
-生命周期转换
-+ 新 PhaseEntryRecord
-+ 新 AgentTurnSubject 和目标作用域事实
-+ 来源终态或等待完成记录
-+ FeedbackEligibilityRecord
-+ ELIGIBLE 时的 AgentFeedbackRecord
-~~~
+### 3.5.8 内部故障关闭与明确非目标
 
-正式验证失败返回 `AGENT_LOOP` 和用户修订返回来源阶段均属于该路线。不得出现反馈指向尚未建立的新 phase-entry，也不得在反馈发布失败后把正常下一轮提前启动。
+调用失败、解析失败或控制面内部错误不得伪装为模型动作。可确定的输出 Schema 无效继续形成 3.5.1 的 `RejectedTurnOutputRecord`；适配器终态调用失败继续形成 `LLMCallFailureRecord`；错误反馈只能由控制面从这些权威事实、稳定状态和错误码生成，异常文本本身不能成为反馈。
 
-同发布键、同规范投影的重放必须返回首次反馈并幂等完成相关事务；同键不同投影返回 `FEEDBACK_PUBLICATION_CONFLICT`，不创建下一轮或新 phase-entry，并按控制面内部错误处理。
+响应已经收到，但控制面在解析器执行、规范化、结果发布或其他响应处理步骤发生不可恢复内部故障时，必须关闭该 Manifest 的全部 ACTIVE reservations 且不标记消费，以 `TURN_ABORTED` 关闭 turn，并停止运行于 `STOPPED(INTERNAL_ERROR)`。该路线不得创建 Accepted、Rejected 或 `LLMCallFailureRecord`，不得重新请求供应商，也不得把故障包装成模型动作。已经发生的披露、预算消耗和供应商调用事实必须保留。
 
-### 3.5.26 初始适用策略与语义槽
+Mock LLM 与真实适配器必须经过相同的反馈生成、确定性选择、上下文投影、严格解析、Manifest、reservation 和轮次终态控制面。Mock 只豁免外部网络调用和真实披露消费，不能绕过上述绑定、预算或失败关闭语义。
 
-每条反馈必须绑定一个版本化适用策略：
+以下内容明确不属于 v1；这些术语只标识未来可能研究的概念，不建立当前记录、状态、转换或规范依赖：
 
-~~~text
-FeedbackApplicabilityPolicy =
-  NEXT_TURN_ONLY
-  | UNTIL_SUPERSEDED
-~~~
+- 跨进程 Stage2 processing generation、reservation generation、执行接管、fencing、revocation 或 takeover；
+- 原始响应正文、解析过程或其他响应工件的跨崩溃恢复；
+- persistent processing block、successor reconciliation case、block handoff、恢复工件及 prepared/published 恢复状态机；
+- 完整迟到传输兼容矩阵、供应商响应 reconciliation 和多层资源 cleanup 状态机；
+- 跨候选或跨 phase-entry 的 feedback continuation、supersession、invalidation、自动迁移或回退；
+- `UNTIL_SUPERSEDED` 适用策略；
+- summary/detail 双模式及任何持久 detail 正文。
 
-`NEXT_TURN_ONLY` 只面向精确目标 scope 内首个形成权威 `AcceptedTurnOutputRecord` 或 `RejectedTurnOutputRecord` 的后续 turn。`UNTIL_SUPERSEDED` 只表示反馈在精确目标 scope 内持续可选；它不允许自动跨候选或 phase-entry 传播，不充当检查证据，不延续审批、授权或执行能力，也不能在来源失效后继续消费。
-
-`FeedbackSemanticSlot` 是强类型、版本化规范投影，其摘要至少覆盖足以唯一确定反馈语义位置的来源类型、检查合同或 Manifest obligation、文件请求身份、动作类别、subject 绑定和 slot Schema 版本。除非版本化画像明确允许同一槽的多个不同历史观察，同一消费上下文中一个 semantic slot 最多存在一个当前反馈。
-
-只有 semantic slot 摘要完全相同的新权威结果才可以 supersede 旧反馈。新来源即使最终资格为 `INELIGIBLE`，也可以取代旧反馈，因为 supersession 表示已经存在新的权威语义事实，而不要求产生新反馈。
-
-### 3.5.27 延续、取代与失效事实
-
-原反馈和原目标作用域始终不可变。其后续适用性只能通过独立追加记录表达：
-
-~~~text
-FeedbackApplicabilityContinuationRecord
-FeedbackApplicabilitySupersessionRecord
-FeedbackInvalidationRecord
-~~~
-
-跨后代候选延续必须由版本化 `FeedbackContinuationProfile` 允许，并创建显式 continuation。continuation 必须引用候选 ancestry proof，重新验证来源、原目标绑定、新目标绑定、当前 `AgentTurnSubject` 绑定的精确来源树和同树确定性重读要求，不能成环，不能生成第二条反馈，也不能修改原 feedback 或 target scope。其状态空间为：
-
-~~~text
-FeedbackContinuationState =
-  REVALIDATION_REQUIRED
-  | SUPERSEDED_AFTER_REVALIDATION
-  | INVALIDATED
-~~~
-
-`REVALIDATION_REQUIRED` 表示反馈在新候选中只能作为需要重新验证的既有观察，不能被提升为新候选的权威检查事实。形成同一 semantic slot 的新权威结果后，continuation 进入 `SUPERSEDED_AFTER_REVALIDATION`；延续依据、来源或目标绑定失效时进入 `INVALIDATED`。这些终止事实只能追加，不能使旧反馈复活。
-
-每次候选转换允许延续的最大数量、允许的来源和 slot 类型、当前精确来源树／同树确定性重读要求及严格选择顺序均由 `FeedbackContinuationProfile` 固定。超过上限时，控制面按规范顺序选择前 N 条，并在候选和主体来源树绑定激活事务中原子发布：
-
-~~~text
-FeedbackContinuationSelectionRecord {
-  schema_version
-  source_scope_ref_and_digest
-  target_scope_ref_and_digest
-  continuation_profile_ref_and_digest
-  ordered_selected_feedback_refs
-  omitted_feedback_refs_and_reason_codes
-  selection_digest
-}
-~~~
-
-遗漏原因 `LIMIT_EXCEEDED` 只是延续选择结果码，不是错误信封，不产生 `RetryDisposition`、`StopReason` 或生命周期失败。未延续反馈不得阻止候选激活，不得被解释为已经解决，也不得在新 scope 中消费；原 scope 的历史事实保持不变。
-
-supersession 必须与新来源终态和资格记录原子建立，避免新权威事实已经生效而旧反馈仍可被下一轮选择。supersession 与 invalidation 通过 CAS 竞争；首个获胜的终止事实决定该适用关系的终态。后续证据只能追加为不改变状态的审计事实。新反馈后来失效时不得回退选择旧反馈，也不得撤销已经形成的 supersession。
-
-### 3.5.28 发布后的消费资格门
-
-反馈发布时来源有效，不表示它在未来调用前永久可消费。每次选择反馈进入新的 `ContextProjection` 前至少重新验证：
-
-- 权威来源未被阻断或失效；
-- target phase-entry、`AgentTurnSubject` 和 `bound_target_scope_revision` 精确匹配，或存在有效的显式 continuation；
-- 候选、Manifest 和要求存在的当前 `AgentTurnSubject` 精确来源树绑定仍有效；
-- 来源为文件工具结果时，3.5.5 权威结果的精确来源、规范请求、范围或命中、内容摘要和有界元数据绑定完整且摘要一致；
-- 没有已经获胜的 supersession 或 invalidation；
-- 需要文件正文时，仍可从该结果绑定的同一不可变树确定性重读，并得到相同内容摘要；
-- 披露和上下文预算在消费阶段得到满足。
-
-当前 `AgentTurnSubject` 绑定的精确来源树只证明本次目标视图；3.5.5 权威文件工具结果中的来源、请求、范围或命中和内容摘要只证明该历史观察。后续 detail 必须从同一不可变树确定性重读，任何工作区或物理目录都不能替代。来源、目标 subject 或相关结果摘要后续失效时不得修改 `AgentFeedbackRecord`，只能发布独立失效事实或由消费资格门拒绝。任何 continuation 都不得绕过披露、上下文预算、来源失效、当前精确来源树或确定性重读完整性检查。
-
-### 3.5.29 `NEXT_TURN_ONLY` 的基础 reservation 语义
-
-`NEXT_TURN_ONLY` 的“首个后续 turn”精确定义为：精确目标 scope 内，首个形成权威 `AcceptedTurnOutputRecord` 或 `RejectedTurnOutputRecord` 的后续 turn。创建该 turn 的 `ContextProjection` 时必须为选入的 `NEXT_TURN_ONLY` 反馈建立一次性 reservation，并至少绑定：
-
-~~~text
-feedback_ref_and_digest
-target_scope_ref_and_digest
-target_turn_ref
-context_projection_ref_and_digest
-llm_call_attempt_ref
-created_under_target_scope_revision
-~~~
-
-reservation 与对应 `ContextProjection` 必须原子冻结。同一反馈在同一目标 scope 同时最多一个活动 reservation；同一 LLM attempt 的安全重放复用原 reservation。
-
-`AcceptedTurnOutputRecord` 或 `RejectedTurnOutputRecord` 必须与对应消费完成事实原子提交，此时该反馈完成一次性消费。Schema 无效但已经形成权威 `RejectedTurnOutputRecord` 的模型输出也会完成消费。`LLMCallFailureRecord` 不消费反馈；turn 在形成接受或拒绝输出前取消、终止或安全中止时，reservation 必须关闭但不得标记为已消费。scope 仍有效时，后续替代 turn 可以重新选择该反馈；scope 已结束或失效时不得迁移到其他 scope。已经消费后，同一 scope 的第二个 turn 不得再次选择。
-
-本小节只冻结上述行为语义。反馈选择记录、消费清单、精确投影 payload、披露预投影以及 reservation 的追加式记录结构由后续设计段继续定义，不能从本小节推断为可变行状态。
-
-### 3.5.30 第三部分前段的可确定性验证点
-
-1. 给定同一完整权威来源和相同规范输入，资格与反馈发布重放必须返回首次记录；输入不同必须冲突。
-2. 给定来源未完成、资格内部错误、陈旧绑定或 CAS 失败，不得形成 `INELIGIBLE` 资格记录。
-3. 给定 `INELIGIBLE` 资格记录，不得存在对应目标作用域或 `AgentFeedbackRecord`。
-4. 给定 `ELIGIBLE` 资格记录，资格、不可变目标作用域和反馈必须全部存在且相互摘要一致，不得观察到部分发布。
-5. 给定任何不同的 phase-entry、subject、Manifest 或候选修订，旧反馈默认不得进入新上下文，即使候选存在祖先关系。
-6. 给定当前精确来源树要求 `SourceBindingRequirement = FORBIDDEN`，发布方不得自行附加目标来源树；要求为 `REQUIRED` 时，缺失或无效的目标来源树绑定必须阻止发布或消费。
-7. 给定来源绑定不符合 `source_kind` 判别联合，必须在 Schema 层拒绝。
-8. 给定同一语义反馈存储在不同物理地址，纯定位差异不得改变 `feedback_digest`。
-9. 给定新权威来源属于同一 semantic slot，即使其资格为 `INELIGIBLE`，也必须原子终止旧反馈的后续适用性。
-10. 给定不同 semantic slot 的新来源，不得 supersede 旧反馈。
-11. 给定 continuation 缺少有效 ancestry proof、形成环或超过画像允许范围，不得使旧反馈在新 scope 中可消费。
-12. 给定 continuation 超过数量上限，按规范顺序选择的前 N 条必须稳定；遗漏不得阻止候选激活或变成停止原因。
-13. 给定 supersession 与 invalidation 竞争，最多一个终止事实获胜，旧反馈不得复活。
-14. 给定 `NEXT_TURN_ONLY` 反馈已被某 turn reservation，但该 LLM 调用失败且没有接受或拒绝输出，反馈不得被标记为已消费。
-15. 给定模型输出 Schema 无效并形成权威 `RejectedTurnOutputRecord`，对应一次性反馈必须完成消费。
-16. 给定反馈来源在发布后失效，或文件正文无法从同一不可变树确定性重读为相同字节，原反馈摘要不得改变，但新的 ContextProjection 必须拒绝不再可消费的内容。
-
-### 3.5.31 确定性反馈选择
-
-每次创建 Agent turn 前，控制面必须先按 3.5.28 计算当前 eligible feedback 集合，再根据版本化 `FeedbackSelectionProfile` 的严格全序选择本轮反馈。适用性判断与最终选择是两个不同步骤：scope 不匹配、已经 supersede、invalidate 或来源失效的反馈不属于 eligible 集合；仍然适用但因画像、semantic slot、预算或数量限制未被选中的反馈才属于 excluded。
-
-~~~text
-FeedbackInclusionMode =
-  SUMMARY_ONLY
-  | SUMMARY_AND_DETAIL
-
-FeedbackSelectionEntry {
-  feedback_ref_and_digest
-  applicability_basis
-  applicability_evidence_ref_and_digest?
-  feedback_semantic_slot_ref_and_digest
-  inclusion_mode
-  summary_payload_ref_and_digest
-  detailed_payload_ref_and_digest?
-}
-~~~
-
-`SUMMARY_ONLY` 禁止 detail 字段；`SUMMARY_AND_DETAIL` 要求 detail 在选择时存在、可读取且摘要一致。summary 是控制面根据权威反馈正文生成的有界、持久规范投影。文件 detail 必须从 3.5.5 权威结果绑定的同一不可变树确定性重读；其他 detail 可以来自诊断投影，但不得仅保存一个不能证明内容仍可取得的定位引用。
-
-~~~text
-FeedbackSelectionExclusionReason =
-  PROFILE_EXCLUDED
-  | SEMANTIC_SLOT_SHADOWED
-  | CONTEXT_BUDGET_EXCLUDED
-  | SELECTION_COUNT_LIMIT
-  | DETAIL_CONTENT_UNAVAILABLE
-
-AgentFeedbackSelectionRecord {
-  schema_version
-  selection_id
-  owner_run_id
-  target_scope_ref_and_digest
-  target_turn_ref
-  feedback_selection_profile_ref_and_digest
-  eligible_candidate_set_digest
-  ordered_selected_entries
-  excluded_entries
-  context_budget_snapshot_ref_and_digest
-  selection_digest
-}
-~~~
-
-`excluded_entries` 必须引用反馈及封闭原因。选择顺序不得依赖数据库查询顺序、线程完成顺序或模型文本。同一 semantic slot 在一次选择中最多保留一个当前有效反馈，除非画像明确允许多个不同历史观察。空选择记录合法。
-
-画像声明为 mandatory 的最小反馈摘要已经压缩到不可再缩减的规范形式后仍超过硬预算时，必须返回：
-
-~~~text
-CONTEXT_PROJECTION_MANDATORY_CONTENT_EXCEEDS_BUDGET
-~~~
-
-该错误不得创建 turn、LLM attempt、consumption manifest 或 reservation，也不得通过随机丢弃、字段截断或静默省略继续。可选 detail 因预算未选中可以使用 `CONTEXT_BUDGET_EXCLUDED`。
-
-### 3.5.32 选择条目与消费条目分离
-
-选择阶段尚未创建 reservation，因此 `FeedbackSelectionEntry` 不得引用 reservation。最终发布阶段使用独立消费条目：
-
-~~~text
-FeedbackConsumptionEntry {
-  selection_entry_ref_and_digest
-  reservation_ref?
-}
-~~~
-
-字段存在条件固定为：
-
-~~~text
-NEXT_TURN_ONLY
-→ reservation_ref 必须存在
-
-UNTIL_SUPERSEDED
-→ reservation_ref 必须缺失
-~~~
-
-`AgentFeedbackSelectionRecord` 和披露 draft 只使用 selection entries；最终 `AgentFeedbackConsumptionManifest` 使用 consumption entries。reservation 是内部消费控制信息，不进入披露正文或 draft 的语义摘要。
-
-选择完成后、最终投影发布前，如果文件 detail 无法从同一不可变树确定性重读并校验，其他 detail 无法重新验证可用性、摘要及相同字节，或任一来源失效，必须废弃本次尚未发布的选择结果并重新计算。画像允许 summary 时可以在新的选择中使用 `SUMMARY_ONLY`；不得原地修改旧选择，也不得在发送时静默降级。
-
-### 3.5.33 披露 draft 与精确恢复比较
-
-需要披露等待时，控制面先根据完整规范调用内容形成：
-
-~~~text
-ContextProjectionDraft {
-  schema_version
-  draft_id
-  owner_run_id
-  source_target_scope_ref_and_digest
-  source_wait_id?
-  subject_ref_and_digest
-  manifest_and_candidate_binding_digest
-  feedback_selection_ref_and_digest
-  canonical_payload_digest
-  payload_byte_count
-  ordered_segment_digests
-  projection_serialization_profile_version
-  disclosure_requirement_digest
-  provider_profile_ref_and_digest
-  endpoint_profile_ref_and_digest
-  model_profile_ref_and_digest
-  redaction_profile_ref_and_digest
-  draft_digest
-}
-~~~
-
-draft 不持久化完整正文。DisclosureGrant 不绑定已经结束的旧 phase-entry，但必须绑定 owner run、产生等待的逻辑作用域、合法 wait 恢复链、稳定 subject、Manifest／candidate、精确 payload、披露范围、体量、脱敏画像和调用目标。
-
-从等待恢复后，控制面必须重新计算反馈适用性和选择，并根据相同序列化画像重新生成全部规范字节。只有 canonical payload、字节数、有序 segment digests、subject、Manifest／candidate、路径范围、数据类别、体量、脱敏结果、供应商、端点和模型全部相同时，才可以消费原 grant。任一差异都要求形成新 draft，并在需要时重新申请授权。
-
-原文件 detail 所绑定的不可变树无法访问或确定性重读无法重新生成相同字节，或者其他 detail 无法重新验证可用性、摘要及相同字节时，不得静默改为 summary，也不得继续使用旧 grant；必须返回 3.5.31 重新选择。
-
-### 3.5.34 调用专用投影负载
-
-最终调用必须使用受限、调用专用的精确负载：
-
-~~~text
-ContextProjectionPayload {
-  payload_ref
-  context_projection_ref
-  exact_payload_digest
-  payload_byte_count
-  ordered_segment_digests
-  source_payload_refs_and_digests
-}
-~~~
-
-最终发布前，控制面必须从仍可用的来源读取内容；文件正文必须按 3.5.5 从同一不可变树确定性重读并校验，随后完成裁剪、格式化、脱敏和规范序列化，并校验最终摘要。真实 LLM 调用只读取 `ContextProjectionPayload`，不再读取原工具正文。payload 是调用专用数据，不得长期持久化；在调用及输出形成权威终态前必须保留，终态后丢弃。丢弃 payload 不修改 `ContextProjection`、反馈选择、consumption manifest、reservation 或披露历史。
-
-`ContextProjection` 的根摘要必须覆盖模型实际接收的完整有序内容，包括 system／protocol、当前任务、turn subject、Manifest、candidate 或来源树、选择的 memory、工具和反馈投影以及 action schema。3.5.3 中选中的权威反馈必须与本轮有序 selection entries 对应，选择记录只承担来源证明，不能替代实际 payload digest。
-
-供应商、端点和模型继续由 `RenderedLLMRequest` 与 `LLMCallAttempt` 绑定；DisclosureGrant 必须同时覆盖最终投影内容和这些调用目标。
-
-### 3.5.35 Consumption Manifest 与 reservation
-
-每个目标 turn 必须恰好对应一个消费清单：
-
-~~~text
-AgentFeedbackConsumptionManifest {
-  schema_version
-  consumption_manifest_id
-  owner_run_id
-  target_scope_ref_and_digest
-  target_turn_ref
-  feedback_selection_ref_and_digest
-  context_projection_ref_and_digest
-  ordered_consumption_entries
-  manifest_digest
-}
-
-FeedbackConsumptionReservationRecord {
-  schema_version
-  reservation_id
-  feedback_ref_and_digest
-  selection_entry_ref_and_digest
-  target_scope_ref_and_digest
-  target_turn_ref
-  consumption_manifest_ref_and_digest
-  context_projection_ref_and_digest
-  llm_call_attempt_ref
-  created_under_target_scope_revision
-  reservation_digest
-}
-~~~
-
-同一反馈在同一目标 scope 同时最多一个活动 reservation。reservation 起始记录不可变，不使用可原地更新的状态字段。其逻辑状态由 manifest 的唯一终态记录推导：
-
-~~~text
-FeedbackManifestTerminalKind =
-  COMPLETED
-  | CLOSED
-
-FeedbackManifestTerminalRecord {
-  schema_version
-  consumption_manifest_ref_and_digest
-  terminal_kind
-  source_output_failure_or_abort_ref_and_digest
-  ordered_reservation_refs_and_digests
-  reservation_set_digest
-  terminal_digest
-}
-~~~
-
-无终态记录时，清单内 reservation 为活动；`COMPLETED` 时全部为已消费；`CLOSED` 时全部为已关闭但未消费。每个 manifest 最多一个终态，规范 reservation 集合必须与全部 `NEXT_TURN_ONLY` consumption entries 精确一致，不得部分消费或部分关闭。manifest 没有 `NEXT_TURN_ONLY` 条目时允许使用空 reservation 集合。
-
-关闭后，只有生命周期明确创建新的替代 turn、原 target scope 仍精确有效且反馈尚未消费时，反馈才可以被重新选择并创建新的 reservation identity。已经消费后，同一 scope 不得再次选择。v1 不引入 reservation generation 或跨进程接管协议。
-
-### 3.5.36 最终发布与调用前复验
-
-控制面必须使用一个本地权威事务发布：
-
-~~~text
-AgentFeedbackSelectionRecord
-+ ContextProjection
-+ ContextProjectionPayload
-+ AgentFeedbackConsumptionManifest
-+ 全部 NEXT_TURN_ONLY reservations
-+ AgentTurnStartRecord
-+ LLMCallAttempt
-~~~
-
-提交前必须重新验证当前 run lifecycle、phase-entry、`AgentTurnSubject`、Manifest、candidate、当前主体绑定的精确来源树、反馈来源与目标 scope、continuation／supersession／invalidation、确定性重读结果、DisclosureGrant、上下文与调用预算、凭据状态、单活动 turn 和优先取消；选中反馈来自文件工具结果时，还必须复验 3.5.5 权威结果的精确来源、规范请求、范围或命中和内容摘要，并从同一不可变树确定性重读需要的正文。任一条件变化时整笔事务失败并重新计算，不得发布部分 projection、manifest、reservation、turn 或 attempt。
-
-`ContextProjection` 的规范摘要单向覆盖有序反馈 payload digests 和选择记录摘要；consumption manifest 引用 projection。数据库可以提供反向索引，但不得形成规范摘要循环。真实供应商调用只能发生在事务提交后。同一 attempt 内由 3.1 允许的安全传输重放必须复用原 projection、payload、manifest 和 reservations。
-
-数据库实现、对象存储布局、WAL／outbox 及高可用恢复算法属于后续架构与实现计划，不在本功能规约中展开。
-
-### 3.5.37 输出、失败与 reservation 终态
-
-调用与解析继续使用 3.5.1 的 `AcceptedTurnOutputRecord | RejectedTurnOutputRecord | LLMCallFailureRecord`，不得创建第二套输出结果联合。
-
-Accepted 或 Rejected 输出必须与 `FeedbackManifestTerminalRecord(COMPLETED)` 和清单内全部活动 reservations 的消费事实原子提交。Schema 无效但已经形成权威 `RejectedTurnOutputRecord` 时同样完成消费。输出形成后发生的阶段拒绝、策略拒绝或动作执行失败不撤销反馈消费。
-
-只有适配器根据 3.1 的重试合同形成终态 `LLMCallFailureRecord` 时，才可以与 `FeedbackManifestTerminalRecord(CLOSED)` 和全部活动 reservations 的关闭事实原子提交。非终态 `SAME_ATTEMPT_REPLAY` 不创建新的 turn、projection、manifest 或 reservation，也不关闭现有 reservation。
-
-输出前取消或安全中止必须原子发布相应 turn 终态、manifest `CLOSED` 和全部 reservation 关闭事实。关闭不表示模型未收到请求，也不撤销 DisclosureGrant、披露尝试、供应商调用或预算记录。
-
-turn 已经形成权威终态后到达的迟到响应不得重新打开 turn、manifest、reservation 或 target scope，不得形成 Accepted 或 Rejected 输出；只允许保存不含原始响应的脱敏迟到元数据，并清理临时正文。v1 不定义完整迟到 transport 兼容矩阵。
-
-### 3.5.38 v1 内部故障关闭与明确非目标
-
-v1 不持久化完整原始模型响应，也不支持响应正文跨控制进程恢复。响应只可以在当前调用和严格解析期间存在于受限临时缓冲区。
-
-响应已经收到，但解析器、规范序列化、结果存储或其他控制面处理发生不可恢复内部故障时，必须原子形成：
-
-~~~text
-稳定内部错误信封
-+ FeedbackManifestTerminalRecord(CLOSED)
-+ 全部活动 reservations 关闭
-+ AgentTurnCompletionRecord(TURN_ABORTED)
-+ StopRecord(INTERNAL_ERROR)
-+ RunStatus = STOPPED
-~~~
-
-该路线不得创建 Accepted、Rejected 或 `LLMCallFailureRecord`，不得重新调用供应商，也不得把内部故障伪装成 Schema 拒绝。已经发生的披露、预算和供应商调用事实必须保留。
-
-控制进程恢复时发现活动 turn 没有权威输出终态，v1 必须使用稳定内部错误失败关闭当前 turn 和 reservations，并停止运行；不得尝试从日志、摘要或供应商重新构造原响应，也不得自动重新调用模型。释放调用 payload 或其他临时正文只能发生在权威关闭事实形成后。
-
-以下内容明确不属于 v1 验收范围；下列名称只用于标识已移出的未来增强，不建立当前规范对象、状态或依赖：
-
-- `Stage2*` 多 generation（包括跨进程 `execution_generation`／`fencing_generation`）、claim takeover 和 revocation；
-- 原始响应、解析过程或 `RecoveredLLMResponse*` 的跨崩溃恢复；
-- LLM response reconciliation case；
-- persistent processing block（例如 `LLMResponseProcessingBlockRecord`）、successor case 和 block handoff DAG；
-- recovered response artifact 与 prepared／published response 状态机；
-- transport late-result 完整兼容矩阵；
-- 多层资源级 cleanup reconciliation。
-
-这些机制可以在架构章、实现计划或未来版本中讨论，但不得成为本节冻结或课程 v1 完成的前置条件。
-
-### 3.5.39 第三部分后段的封闭验证清单
-
-以下十五项是本设计段固定验收门。全部满足后，本段即通过；除非发现与已冻结合同直接矛盾、无法实现或存在严重安全漏洞，不得再增加生产级恢复条件。
-
-1. 给定相同 eligible feedback 和选择画像，数据库返回顺序变化不得改变选中项、排除项或顺序。
-2. scope 不匹配、已失效、superseded 或 invalidated 的反馈不得进入 eligible 集合，也不得伪装成 excluded。
-3. 同一 semantic slot 的反馈必须按画像稳定去重。
-4. mandatory 规范内容超过硬预算时不得创建 turn 或调用 LLM。
-5. `SUMMARY_AND_DETAIL` 的 detail 在最终发布前失效时，旧选择和 draft 必须废弃，不得原地或发送时降级。
-6. DisclosureGrant 不精确覆盖最终 payload、范围、体量、脱敏结果或调用目标时不得调用真实 LLM。
-7. 每个选入的 `NEXT_TURN_ONLY` 反馈必须恰好对应一个 reservation；`UNTIL_SUPERSEDED` 必须对应零个。
-8. Accepted 输出必须全量消费清单中的 reservations。
-9. Rejected 输出必须全量消费清单中的 reservations。
-10. 终态 LLM 调用失败必须全量关闭但不得消费 reservations。
-11. 输出前取消或安全中止必须全量关闭 reservations。
-12. 响应后的不可恢复内部处理故障必须关闭 reservations、停止运行且不得重新调用供应商。
-13. 迟到响应不得重新打开任何权威 turn、manifest、reservation 或 target scope。
-14. 任一 manifest 终态事务必须全有或全无，不得部分消费或部分关闭。
-15. Mock LLM 与真实适配器必须经过相同的选择、投影、解析、manifest 和 reservation 终态逻辑；Mock 只豁免外部网络和真实披露消费。
+遇到上述未支持情形时，v1 只使用已有的安全失败关闭路线：无法安全形成正常轮次终态时，关闭完整 reservation 集合且不消费，并在需要终止运行时使用 `STOPPED(INTERNAL_ERROR)`。不得为这些非目标补充 generation、接管、reconciliation、persistent block、cleanup、恢复记录或状态机。
