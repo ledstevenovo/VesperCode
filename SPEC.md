@@ -2119,7 +2119,7 @@ TurnContinuationDisposition =
 
 ### 3.5.6 有界的下一轮结构化反馈
 
-反馈是控制面对既有权威结果生成的受限模型投影，只帮助已经调度的下一 Agent turn 修正输出或动作，不具有执行、审批、证据、授权或生命周期转换效力。只有权威工具结果、严格输出或 Schema 验证结果、正式验证结果、动作或策略结果已经完整形成，并且生命周期处置已明确调度一个具体下一轮时，控制面才可以生成 `AgentFeedbackRecord`。模型文本、模型异常文本、未经解析的 stdout/stderr 或调用方说明不能直接成为权威反馈；控制面只能从权威记录、稳定状态和错误码确定性转换反馈。
+反馈是控制面对既有权威结果生成的受限模型投影，只帮助已经调度的下一 Agent turn 修正输出或动作，不具有执行、审批、证据、授权或生命周期转换效力。`RejectedTurnOutputRecord` 始终保存其结构化解析错误，作为权威来源事实；该事实的形成不以是否存在下一轮为条件。只有权威工具结果、严格输出或 Schema 验证结果、正式验证结果、动作或策略结果已经完整形成，并且生命周期处置已明确调度一个具体下一轮时，控制面才可以从相应权威来源事实派生 `AgentFeedbackRecord`；没有下一轮时不得创建反馈或虚构目标 turn。模型文本、模型异常文本、未经解析的 stdout/stderr 或调用方说明不能直接成为权威反馈；控制面只能从权威记录、稳定状态和错误码确定性转换反馈。
 
 `AgentFeedbackRecord` 必须直接绑定以下语义，不通过宽泛作用域或可变资格对象间接表达：
 
@@ -2129,7 +2129,6 @@ AgentFeedbackRecord {
   feedback_id
   owner_run_id
   authoritative_source_ref_and_digest
-  source_kind
   target_phase_entry_ref
   target_turn_ref
   target_turn_subject_ref_and_digest
@@ -2141,6 +2140,8 @@ AgentFeedbackRecord {
   feedback_digest
 }
 ~~~
+
+`authoritative_source_ref_and_digest` 所引用对象的既有权威结果类型唯一决定来源类别；`AgentFeedbackRecord` 不保存第二个独立分类字段，也不得通过新来源枚举或调用方字段覆盖该类型。
 
 `target_candidate_binding` 在存在候选的阶段必须是目标 turn 当前 `CandidateRevision` 的精确引用与摘要；不存在候选的阶段必须使用规范 `NO_CANDIDATE` 值并同时绑定该事实的权威阶段或来源记录，不能使用调用方提供的空值或占位候选。目标 phase-entry、`AgentTurnSubject`、适用的 `ValidationManifest`、候选绑定和目标 turn 任一项不精确匹配时，该反馈都不得进入上下文。
 
