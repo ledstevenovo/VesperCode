@@ -18,11 +18,11 @@
 
 VesperCode 不负责创建开发环境或安装项目依赖。执行环境必须预先准备完成。VesperCode 自身使用的 Python 版本与目标项目支持的 Python 版本分别定义。目标 Python 版本、容器 OS、项目布局、配置与环境入口、源文件编码/BOM/换行、pytest 插件集合、零 skip/xfail/deselect 基线、受限复现测试形式以及本地服务和忽略文件依赖等限制，将在技术选型章节形成可测试的支持矩阵。画像之外的项目以 `UNSUPPORTED_PROJECT` 停止，不得降级为任意命令执行。
 
-首版只接受具有有效 `HEAD` 的 Git 工作区。已暂存修改、未暂存修改或非忽略的未跟踪文件都会使运行以 `WORKTREE_DIRTY` 停止。VesperCode 不自动执行 commit、stash 或 clean，也不删除运行开始前已经存在的权威工作区文件。事务回滚只能删除由当前持久化事务创建，且路径、前置不存在状态和写入内容摘要均已记录在事务日志中、当前内容仍与该摘要一致的新文件；发现日志之外的修改时不得自动删除，并进入 `RECOVERY_REQUIRED`。该删除属于 Harness 内部恢复步骤，不属于 Agent 删除动作。删除可丢弃执行副本同样属于 Harness 内部生命周期清理。
+首版只接受具有有效 `HEAD` 的 Git 工作区。已暂存修改、未暂存修改或非忽略的未跟踪文件都会使运行以 `error_code = WORKTREE_DIRTY` 与 `StopReason = PRECONDITION_REJECTED` 停止。VesperCode 不自动执行 commit、stash 或 clean，也不删除运行开始前已经存在的权威工作区文件。事务回滚只能删除由当前持久化事务创建，且路径、前置不存在状态和写入内容摘要均已记录在事务日志中、当前内容仍与该摘要一致的新文件；发现日志之外的修改时不得自动删除，并进入 `RECOVERY_REQUIRED`。该删除属于 Harness 内部恢复步骤，不属于 Agent 删除动作。删除可丢弃执行副本同样属于 Harness 内部生命周期清理。
 
 在首次 LLM 调用和执行器启动前，系统必须检查所有 tracked 路径。命中内建硬拒绝敏感路径规则的 tracked 文件使运行以 `SENSITIVE_TRACKED_FILE` 失败关闭，不进入执行副本；测试假凭据只能使用内建的窄范围 fixture/example 例外，普通项目配置不能放宽硬拒绝规则。
 
-快照的路径集合、Git blob 身份和 tree entry mode 绑定封存的 `HEAD tree`；文件内容取经干净状态验证后的权威工作区原始字节，并同时记录 HEAD blob 摘要和工作区字节摘要。支持范围内的 tracked 普通文件无论文本或二进制都进入快照和执行副本；二进制文件参与完整性验证，但不得作为文本提供给 LLM，也不得由 `FinalDiff` 修改。首版 `FinalDiff` 只支持创建或修改支持矩阵列明编码的普通文本文件；内容摘要基于原始字节，不执行换行或 Unicode 内容归一化，并保留既有 BOM 与换行约定。不支持的补丁编码、删除、重命名、二进制修改和 Git 文件模式变更以 `UNSUPPORTED_PATCH_OPERATION` 拒绝。未跟踪且被有效 Git 忽略规则排除的文件不进入快照，受支持项目不得在运行时依赖这些文件。
+快照的路径集合、Git blob 身份和 tree entry mode 绑定封存的 `HEAD tree`；文件内容取经干净状态验证后的权威工作区原始字节，并同时记录 HEAD blob 摘要和工作区字节摘要。支持范围内的 tracked 普通文件无论文本或二进制都进入快照和执行副本；二进制文件参与完整性验证，但不得作为文本提供给 LLM，也不得由 `FinalDiff` 修改。首版 `FinalDiff` 只支持创建或修改 `TextContentProfile = UTF8 | UTF8_BOM` 的普通文本文件；内容摘要基于含 BOM 在内的原始字节，不执行换行或 Unicode 内容归一化，并保留既有 BOM 与换行约定。不支持的补丁编码、删除、重命名、二进制修改和 Git 文件模式变更以 `UNSUPPORTED_PATCH_OPERATION` 拒绝。未跟踪且被有效 Git 忽略规则排除的文件不进入快照，受支持项目不得在运行时依赖这些文件。
 
 “干净工作区”不得仅由单一 Git status 结果判定。控制面必须拒绝未合并或非 stage-0 index entry、intent-to-add、`skip-worktree`、`assume-unchanged` 和不受支持的 Git tree mode。系统在封存的 `RepositoryPolicySnapshot` 下从 `HEAD tree` 确定性物化 `ExpectedWorktreeTree`，并将权威工作区内每个 tracked 文件的实际原始字节与预期值逐一比较；任何不一致以 `WORKTREE_DIRTY` 停止，无法确定性物化时以 `UNSUPPORTED_REPOSITORY_POLICY` 停止。具体 index 解析、属性转换和字节比较算法由安全设计规定。
 
@@ -65,7 +65,7 @@ VesperCode 使用工作区级内部 lease，禁止自身多个运行并发持久
 
 Git 预检采用密闭语义：禁用 system/global Git config 和外部 `core.excludesFile`，使用隔离 HOME，不执行 alias、hook、filter 或 fsmonitor，只依据封存的 HEAD、Git index、仓库本地 `.git/info/exclude` 和受支持的仓库内策略工件构造 `RepositoryPolicySnapshot`。在密闭视图内检测到 Git submodule、Git LFS、稀疏检出、自定义 clean/smudge filter、外部 fsmonitor 或其他不可确定性物化策略，或者禁用外部配置后仓库无法满足干净状态与完整确定性物化要求时，以 `UNSUPPORTED_REPOSITORY_POLICY` 失败关闭；系统不读取也不承诺识别仅存在于被隔离 system/global 配置中的机制。新增文件必须在基线与候选状态忽略策略下均为非忽略文件；策略摘要变化时以 `REPOSITORY_POLICY_CHANGED` 停止。具体环境变量和 Git 参数由安全设计规定。`FinalDiff` 不得写入 `.git`、VesperCode 控制面目录或其他保留路径。
 
-`SnapshotTree`、执行副本、不可变验收工件、事务日志和备份属于运行期 `OperationalArtifact`，不属于记忆或审计。它们只能保存在本机受限目录中，不得整批或隐式发送给 LLM；代码和检查结果只能通过数据披露策略提供必要的裁剪投影。运行终态后清除运行工件；`RECOVERY_REQUIRED` 期间仅保留恢复所需的最小集合，恢复完成或用户明确放弃后清除。应用启动时清理没有活动运行或恢复记录的孤立工件。保留周期和清理协议由非功能性需求规定。
+`SnapshotTree`、执行副本、不可变验收工件、事务日志和备份属于运行期 `OperationalArtifact`，不属于记忆或审计。它们只能保存在本机受限目录中，不得整批或隐式发送给 LLM；代码和检查结果只能通过数据披露策略提供必要的裁剪投影。运行终态必须撤销运行、consumer、mount 与 allocator 对运行工件的可达性和复用资格；能够安全证明边界时才物理删除。物理删除失败但隔离证据完整时，精确残留根可以永久保持 `QUARANTINED`；每次启动时 allocator 都必须永久拒绝其 instance/root，且不承诺以后再次删除。`RECOVERY_REQUIRED` 期间必须保留 3.10 恢复所需的最小集合并阻断同工作区新运行，直到形成允许的恢复结果；用户取消或声明放弃都不能清除未解决恢复工件。应用启动时只可清理没有活动运行、恢复记录或 quarantine 记录且边界可证明的孤立工件。保留周期和清理协议由非功能性需求规定。
 
 ### 默认动作决策
 
@@ -809,6 +809,7 @@ StopReason =
 | `RUNNING(PERSISTENCE)` | `PERSISTENCE_COMMITTED` | 3.10 证明事务完整、写后摘要一致且全部成功条件仍成立 | 封存事务与 `SuccessRecord` | `SUCCEEDED` |
 | `RUNNING(PERSISTENCE)` | `PERSISTENCE_UNCERTAIN` | 权威工作区事务结果不确定或证据矛盾 | 创建恢复上下文和转换记录 | `RECOVERY_REQUIRED` |
 | `RUNNING(PERSISTENCE)` | `PERSISTENCE_SAFELY_FAILED` | 证明未提交或已完整回滚，且运行不能继续 | 封存事务结果和 `StopRecord` | `STOPPED(EXECUTION_TERMINATED | WORKSPACE_CHANGED | INTERNAL_ERROR)` |
+| 旧进程实例绑定的任一非终态 Demo `RunState` | 新服务进程启动并发现旧进程绑定 | 当前状态仍非终态且进程实例引用属于旧进程 | 对该运行执行生命周期 CAS；同一权威结果写入 `error_code = DEMO_SESSION_INVALIDATED` 和完整 `StopRecord` | `STOPPED(INTERNAL_ERROR)` |
 
 证据缺失、矛盾、结果不可靠或控制面失败不得触发 `BASELINE_REJECTED`，不得形成 `BaselineDecision` 或 Manifest，必须按 3.4 的执行错误或 `INTERNAL_ERROR` 路线失败关闭。
 
@@ -839,6 +840,8 @@ RUNNING(FORMAL_VALIDATION)
 
 不得使用无守卫的通配终止事件绕过阶段合同。非持久化动作产生 `side_effect_status = UNKNOWN` 时不得进入 `RECOVERY_REQUIRED`；其权威合同必须明确停止或其他安全关闭路线，后续不得假定该动作已成功或已失败。
 
+Demo 进程失效是控制面内部终止，不是脚本化 `DEMO_COMPLETED`。它复用既有 `StopReason = INTERNAL_ERROR`，不得新增 StopReason；新进程必须在接受任何新 Demo 请求前完成对全部旧进程非终态 Demo 运行的上述 CAS 关闭。
+
 ### 3.2.9 持久化恢复
 
 `RECOVERY_REQUIRED` 只用于 3.10 的权威工作区持久化事务出现不确定或矛盾状态，不泛化为 LLM、披露、Docker、普通工具、发布或清理失败。只有该合同可以在错误信封中使用 `RECONCILIATION_REQUIRED`。
@@ -864,6 +867,8 @@ RUNNING(PERSISTENCE) -> SUCCEEDED
 ```
 
 应用启动或运行恢复时，对处于 `RUNNING(PERSISTENCE)` 且发现未关闭、矛盾或结果无法证明的持久化事务，控制面必须通过恢复发现事件进入 `RECOVERY_REQUIRED`；已处于该状态且事实仍不确定的运行必须保持该状态。
+
+仍为 `UNRESOLVED` 时，3.10 规定的最小恢复工件必须继续保留，同一工作区的新运行必须继续被拒绝。用户取消、声明放弃恢复、普通清理或进程重启都不得删除这些工件、释放恢复门或把运行改写为终态；只有 `COMMITTED_AND_VALID` 或 `NOT_COMMITTED_OR_ROLLED_BACK` 可以结束该阻断。
 
 终态运行若出现未关闭事务证据，表示控制面不变量或存储一致性遭到破坏，必须生成高优先级审计与运维事件，但不得通过普通生命周期转换改写终态；其处置由 3.10 的异常恢复合同规定。
 
@@ -997,7 +1002,9 @@ ADMISSION_COMMIT
 
 ### 3.3.5 配置快照与工作区身份
 
-`CONFIG_SNAPSHOT` 必须严格加载非秘密配置和凭据引用，拒绝未知字段、无效值、隐式权限扩大和覆盖硬规则的配置，并封存配置、策略、适配器与执行 profile 的规范摘要。快照不得保存凭据值，只能保存凭据记录引用、后端类型、所需类型、记录版本和状态引用。
+`CONFIG_SNAPSHOT` 只能从目标仓库之外的 VesperCode 控制面配置根和凭据后端读取非秘密配置与凭据引用；它必须拒绝未知字段、无效值、隐式权限扩大和覆盖硬规则的配置，并封存配置、策略、适配器与执行 profile 的规范摘要。此步骤不得打开、列出、解析或按祖先搜索目标仓库、其 `.git` 元数据或任何仓内文件。快照不得保存凭据值，只能保存凭据记录引用、后端类型、所需类型、记录版本和状态引用。
+
+`pyproject.toml`、`pytest.ini`、`setup.cfg`、`mypy.ini` 以及 Ruff、Mypy 或 pytest 的其他仓内配置都不属于 `CONFIG_SNAPSHOT`。只有 `SNAPSHOT_TREE` 发布后，`PROJECT_PROFILE` 才可从该不可变快照读取并解释这些文件；不得从权威工作区实时读取、预读或把仓内配置合并进控制面配置快照。
 
 `WORKSPACE_IDENTITY` 只证明定位符指向首版支持的 Windows 本地 Git 工作区根，并生成稳定身份；它不判断 `HEAD` 对象有效性。`WorkspaceIdentityRef` 至少绑定：
 
@@ -1112,9 +1119,9 @@ AdmissionNotRunReason =
 
 ### 3.3.10 仓库状态与敏感路径
 
-`REPOSITORY_STATE` 是验证有效 `HEAD`、index、tree mode 与仓库策略的唯一准入检查。它必须在禁用 system/global Git 配置的密闭视图中证明封存 `HEAD tree`、Git index 与当前 tracked 文件原始字节及模式一致。
+`REPOSITORY_STATE` 只验证封存 `HEAD` 与 Git index 可解析、仓库结构与 tree mode 受支持、密闭 Git 策略可确定，以及不存在首版不支持的仓库机制。成功时它必须形成并输出 `RepositoryPolicySnapshotRef`，绑定封存 HEAD/index、受保护策略工件、受支持的本地 exclude 与相应策略摘要。
 
-首版必须拒绝未合并或非 stage-0 index entry、intent-to-add、`skip-worktree`、`assume-unchanged`、不支持的 tree mode、tracked symlink、bare repository、submodule、Git LFS、稀疏或 split index、alternates、replace refs、外部 `core.worktree`、自定义 filter 与外部 fsmonitor。不得执行 hook、pager、credential helper、外部 diff/merge driver、filter、fsmonitor 或协议 helper。非忽略未跟踪文件返回 `WORKTREE_DIRTY`；被支持策略忽略的未跟踪文件不得进入后续视图。
+该检查不得读取、摘要、比较或判定权威工作区 tracked 文件的实际字节或实际 mode，也不得判定 HEAD/index 清洁性或枚举非忽略未跟踪状态；这些实际工作区事实只能由 `SNAPSHOT_TREE` 按 3.4 的双观察合同判定。首版结构与策略检查必须拒绝未合并或非 stage-0 index entry、intent-to-add、`skip-worktree`、`assume-unchanged`、不支持的 tree mode、tracked symlink、bare repository、submodule、Git LFS、稀疏或 split index、alternates、replace refs、外部 `core.worktree`、自定义 filter 与外部 fsmonitor。不得执行 hook、pager、credential helper、外部 diff/merge driver、filter、fsmonitor 或协议 helper。
 
 `SENSITIVE_TRACKED_PATHS` 必须对 `HEAD tree` 的 Git 规范路径使用与读取、补丁、披露和持久化相同版本的 `SensitivePathPolicy`。命中硬拒绝规则返回 `SENSITIVE_TRACKED_FILE`，普通配置和用户批准不得放宽。fixture/example 窄例外必须绑定具体路径、规则 ID 与策略版本。
 
@@ -1156,9 +1163,9 @@ Demo 不解析 `WorkspaceIdentityRef`，不取得正式工作区 OS 锁，不创
 
 Demo 配额只保证单个服务进程内的原子性。创建后的准入检查不得扩大创建前已经确定的配额、场景选择或能力边界。
 
-服务进程重启后，先前进程创建的全部 Demo session、reservation 与会话引用立即失效。旧 `run_id` 或会话引用返回 `DEMO_SESSION_INVALIDATED`，不得恢复、继续或把旧额度解释为当前额度。每个新会话从模板重新创建可丢弃状态。
+新服务进程启动时，必须在接受新 Demo 请求前查找所有绑定旧进程实例的非终态 Demo `RunState`，并对每个运行执行生命周期 CAS：只有当前修订仍非终态且进程绑定仍旧时，才在同一权威结果中写入 `error_code = DEMO_SESSION_INVALIDATED`、`StopReason = INTERNAL_ERROR` 和完整 `StopRecord`，原子进入 `STOPPED(INTERNAL_ERROR)`。全部旧 Demo session、reservation 与会话引用同时失去当前进程资格；旧 `run_id` 或会话引用此后仍返回 `DEMO_SESSION_INVALIDATED`，不得恢复、继续或把旧额度解释为当前额度。该路线不新增 StopReason，每个新会话从模板重新创建可丢弃状态。
 
-Demo 结束、取消或错误时必须在当前进程内幂等释放原 reservation 并丢弃会话命名空间。无法确认重置完成时，该会话失败关闭且状态不得供其他会话复用。全部强制检查通过后从 `RUNNING(PREFLIGHT)` 进入 `RUNNING(BASELINE)`，由 3.12 编排脚本化模拟，最终只可进入 `STOPPED(DEMO_COMPLETED)`；不得形成正式 `SuccessRecord`、持久化批准或 Docker 验证证据。
+Demo 结束、取消或错误时必须在当前进程内幂等释放原 reservation 并丢弃会话命名空间。无法确认重置完成时，该会话失败关闭且状态不得供其他会话复用。全部强制检查通过后从 `RUNNING(PREFLIGHT)` 进入 `RUNNING(BASELINE)`，由 3.12 编排脚本化模拟；正常脚本完成只可进入 `STOPPED(DEMO_COMPLETED)`，进程失效则按上述 `DEMO_SESSION_INVALIDATED + INTERNAL_ERROR` 路线终止。两者都不得形成正式 `SuccessRecord`、持久化批准或 Docker 验证证据。
 
 ### 3.3.15 准入结果、错误与关闭
 
@@ -1190,20 +1197,20 @@ ADMITTED
 7. 给定旧运行经 `COMMITTED_AND_VALID` 或 `NOT_COMMITTED_OR_ROLLED_BACK` 进入终态，系统才可在仍持有当前 OS 锁时创建新运行。
 8. 给定进程重启或同一进程重新取得锁，新 `workspace_lease_ref` 必须不同；绑定旧引用的迟到结果不得产生权威副作用。
 9. 给定当前提交的 `owner_run_id`、锁引用、生命周期修订、阶段或 `phase_entry_ref` 任一不匹配，提交必须作为陈旧或内部错误拒绝。
-10. 给定 `CONFIG_SNAPSHOT` 失败，系统不得解析工作区、取得锁或创建运行；给定 `REPOSITORY_STATE` 失败，不得封存快照。
-11. 给定工作区不干净、命中敏感 tracked 路径或策略工件变化，系统必须在首次 LLM 调用和项目代码执行前失败关闭。
+10. 给定 `CONFIG_SNAPSHOT`，系统只可读取目标仓库外的控制面配置和凭据引用；失败时不得打开或解析目标仓库、取得锁或创建运行。给定 `REPOSITORY_STATE` 失败，不得封存快照。
+11. `REPOSITORY_STATE` 只能验证封存 HEAD/index 的可解析性与结构／策略支持并输出 `RepositoryPolicySnapshotRef`；工作区不干净、非忽略未跟踪状态或 tracked 实际字节／mode 不一致必须只由 `SNAPSHOT_TREE` 判定，并在首次 LLM 调用和项目代码执行前失败关闭。
 12. 给定 `SnapshotTree` 已发布，基线、Agent 工具和验证不得读取或挂载权威工作区，ignored/untracked 文件不得影响结果。
 13. 给定 Docker tag 内容变化或 daemon/profile 漂移，系统必须拒绝旧 `DockerEnvironmentRef`；不得调度宿主执行作为替代。
 14. 给定同一进程内并发 Demo 请求超过配额，原子准入最多接受配额允许的会话，拒绝请求不得产生 reservation 或运行。
-15. 给定服务进程重启，所有旧 Demo session 必须返回 `DEMO_SESSION_INVALIDATED`，不得恢复或影响新进程配额。
+15. 给定服务进程重启，系统必须先以生命周期 CAS 将每个旧进程绑定的非终态 Demo `RunState` 原子关闭为 `error_code = DEMO_SESSION_INVALIDATED`、`STOPPED(INTERNAL_ERROR)` 和完整 `StopRecord`；旧 session 继续返回该错误，不得恢复或影响新进程配额。
 16. 给定任一 Demo 请求，系统不得解析工作区身份、取得正式工作区锁、读取用户凭据或写入权威工作区。
 17. 给定全部强制检查通过但最终 CAS 前存在有效取消，系统必须形成 `CANCELLED` 并进入 `STOPPED(USER_CANCELLED)`。
-18. 给定 Demo 场景完成，唯一终态是 `STOPPED(DEMO_COMPLETED)`，不得形成正式成功、持久化批准或 Docker 正式证据。
+18. 给定 Demo 场景正常完成，唯一终态是 `STOPPED(DEMO_COMPLETED)`；给定旧进程会话失效则必须是 `STOPPED(INTERNAL_ERROR)`。两者都不得形成正式成功、持久化批准或 Docker 正式证据。
 
 
 ## 3.4 仓库快照、基线与 `ValidationManifest`
 
-本节定义本地正式运行中的仓库快照、执行副本证据、基线判定和不可变验收合同。快照成功只证明输入代码已被确定性封存，不表示基线成立、缺陷已复现或候选已通过验证。首版对中断或不确定副作用一律安全失败关闭，不定义生产级恢复协议。
+本节定义本地正式运行中的仓库快照、执行副本证据、基线判定和不可变验收合同。快照成功只证明输入代码已被确定性封存，不表示基线成立、缺陷已复现或候选已通过验证。本节所称“不定义跨崩溃恢复”只限定 `SnapshotTree` 构建、`ExecutionWorkspace` 和普通 consumer；它们在中断或副作用不确定时按本节安全失败关闭。3.10 对权威工作区持久化事务的持久恢复是唯一例外，继续受 `RECOVERY_REQUIRED` 与其恢复合同约束，不得被本节清理语义绕过。
 
 ### 3.4.1 权威链与共同不变量
 
@@ -1242,6 +1249,7 @@ RepositoryPolicySnapshot {
   owner_run_id
   workspace_identity_ref_and_digest
   sealed_head_ref_and_tree_digest
+  sealed_index_ref_and_digest
   tracked_policy_artifact_entries
   supported_local_exclude_entry?
   sensitive_path_policy_ref_and_digest
@@ -1269,11 +1277,23 @@ SnapshotContentKind =
   | TEXT_UNSUPPORTED
 ```
 
-`TEXT_SUPPORTED` 符合版本化编码、BOM、换行和文本工具规则；`BINARY` 的完整原始字节仍进入快照和摘要，但不自动获得披露或文本修改资格；已确定为语义文本但编码不支持时为 `TEXT_UNSUPPORTED`，快照失败关闭。普通二进制不得仅因 UTF-8 解码失败被误判。分类器版本、探测顺序和结果都进入 Snapshot 摘要；分类不确定时不得发布。
+v1 文本内容画像固定为：
+
+```text
+TextContentProfile =
+  UTF8
+  | UTF8_BOM
+```
+
+`UTF8` 要求全部原始字节以严格 UTF-8 解码且不存在 BOM。`UTF8_BOM` 只允许原始字节以单一 `EF BB BF` 前缀开始，其余字节必须以严格 UTF-8 解码；重复开头 BOM、缺失前缀或其他 BOM 形式都不属于该画像。原始字节长度、内容摘要、`expected_worktree_digest` 与 `snapshot_content_digest` 必须包含该 BOM。逻辑文本投影只移除这个单一开头 BOM，因此逻辑行号、列号和搜索位置不计入 BOM；不得移除或改写其他字节。对既有文件序列化补丁结果时，必须恢复其原 `TextContentProfile`，使 `UTF8_BOM` 输出重新带有同一单一开头 BOM，且候选内容摘要仍按完整输出原始字节计算。
+
+`TEXT_SUPPORTED` 必须符合上述画像及版本化换行和文本工具规则；`BINARY` 的完整原始字节仍进入快照和摘要，但不自动获得披露或文本修改资格；已确定为语义文本但采用其他编码或 BOM 形式时必须分类为 `TEXT_UNSUPPORTED`，快照失败关闭。普通二进制不得仅因 UTF-8 解码失败被误判。分类器版本、探测顺序和结果都进入 Snapshot 摘要；分类不确定时不得发布。
 
 ### 3.4.3 `SnapshotTree` 与双观察
 
-Snapshot 由已封存 HEAD tree、`RepositoryPolicySnapshot` 和权威工作区 tracked 原始字节共同证明：HEAD 给出路径、mode 与 Git 来源身份；策略确定预期工作区字节；工作区提供实际原始字节。三者必须逐条一致。
+`SNAPSHOT_TREE` 是判定以下实际仓库前置条件的唯一准入检查：HEAD 与 index 清洁一致、非忽略未跟踪状态为空、每个 tracked 路径的实际原始字节与实际 mode 符合预期树，以及上述事实在观察 A 与观察 B 之间未变化。`REPOSITORY_STATE` 的结构／策略通过结果不能替代这些观察，也不能提前发布其中任何结论。
+
+Snapshot 由已封存 HEAD tree、Git index、`RepositoryPolicySnapshot` 和权威工作区 tracked 原始字节共同证明：HEAD 给出路径、mode 与 Git 来源身份；index 必须以完整 stage-0 路径、对象身份和 mode 与 HEAD 清洁一致；策略确定预期工作区字节；工作区提供实际原始字节与 mode。四者必须逐条一致。
 
 `ExpectedWorktreeTree` 是由 sealed HEAD tree 与 `RepositoryPolicySnapshot` 纯确定性计算的未发布投影，只作为本次 Snapshot 构建的比较输入；它不是权威链对象、持久记录、job 或 lifecycle，也不得独立发布。投影中的每个规范路径、mode 和预期原始字节摘要必须分别逐项映射到唯一 `SnapshotEntry` 的 `canonical_git_path`、`tree_entry_mode` 和 `expected_worktree_digest`；任一项缺失、碰撞或无法确定时都不得发布 `SnapshotTree`。
 
@@ -1312,8 +1332,9 @@ SnapshotTree {
 ```text
 观察 A：
   验证 WorkspaceIdentity、HEAD、index、策略
+  比较完整 stage-0 index 与 HEAD 的路径、对象身份和 mode
   枚举完整 tracked 集合与非忽略未跟踪状态
-  记录每项对象身份、mode、大小和完整字节摘要
+  记录每项实际对象身份、mode、大小和完整字节摘要
 复制：
   按规范路径顺序复制完整字节到未发布内容寻址临时区
   重算摘要并分类
@@ -1325,7 +1346,7 @@ SnapshotTree {
 
 两个观察点都须完整读取所有 tracked 文件；mtime、USN、size 或变化标记只能辅助，不能替代第二次完整内容摘要。任一文件、mode、对象身份、路径集合、HEAD、index、策略、WorkspaceIdentity 或非忽略未跟踪状态变化都禁止发布混合时点树。
 
-`snapshot_observation_evidence` 必须保存两个观察点的结构化证据并绑定上述全部项目。初始稳定观察已证明 HEAD/index/策略预期与工作区不一致，属于初始前置条件不成立；两个观察点间可证明变化属于准入期间时间性变化；无法可靠观察但不能证明前两者属于观察不确定，三类不得互猜。
+`snapshot_observation_evidence` 必须保存两个观察点的结构化证据并绑定上述全部项目。相同事实在两个观察点都稳定存在，但 index 与 HEAD 不一致、存在非忽略未跟踪条目、tracked 路径集合不一致，或 tracked 实际字节／mode 与预期树不一致，属于初始前置条件不成立；任一 WorkspaceIdentity、HEAD、index、策略、tracked 路径、对象身份、实际字节、实际 mode 或非忽略未跟踪状态在两个观察点间发生变化，属于准入期间时间性变化；无法可靠观察但不能证明前两者属于观察不确定。三类不得互猜，也不得由 `REPOSITORY_STATE` 改写分类。
 
 发布后的 `SnapshotTree` 不可修改，其根摘要是后续执行副本、基线、候选和验证的原始来源锚点。正文缺失或摘要不匹配时按控制面存储/完整性错误失败关闭，不得从权威工作区或其他树补复制。
 
@@ -1347,7 +1368,7 @@ SnapshotResourceLimits {
 
 成功时，控制面在一个事务中验证预留覆盖和所有内容摘要，将字节记入 `SnapshotTree` 的容量账，发布树元数据与根摘要并关闭临时预留；不得先释放再申请，也不得出现已发布树无正文容量保证。失败时清理未发布对象并释放预留；清理状态不确定则不发布、不开始基线，并按 `INTERNAL_ERROR` 关闭。
 
-初始稳定不一致固定映射：
+初始稳定不一致固定映射；该映射唯一覆盖稳定的 HEAD/index 不清洁、非忽略未跟踪状态存在、tracked 路径集合不一致，以及 tracked 实际字节或 mode 与预期树不一致：
 
 ```text
 error_code = WORKTREE_DIRTY
@@ -1355,7 +1376,7 @@ AdmissionCheckResult = FAIL
 StopReason = PRECONDITION_REJECTED
 ```
 
-双观察间变化必须复用 3.3 顶层错误：
+双观察间任一上述事实发生变化必须复用 3.3 顶层错误：
 
 ```text
 error_code = WORKSPACE_MUTATED_DURING_ADMISSION
@@ -1520,9 +1541,9 @@ ExecutionWorkspaceQuarantineRecord {
 
 `CLEANED` 只在根身份一致、边界安全、精确根已物理删除、删除后复验证明根对象不存在且未触及其他资源时成立。
 
-`QUARANTINED` 只在物理删除失败、但精确残留根已被移出或永久隔离于全部运行期 `OperationalArtifact` 命名空间、consumer 消费权限、容器挂载、allocator 和可复用命名空间时成立。残留只由不可变安全隔离证据约束，不再能作为执行副本、运行工件或其他 consumer 输入；仍可访问、挂载或复用的目录不能伴随结果发布。该结果必须引用已持久化的 `ExecutionWorkspaceQuarantineRecord`，其 isolation evidence 证明精确 instance/root、父目录、全部运行可达性和资格已清除，以及 allocator 拒绝规则。第 1 章“运行终态后清除运行工件”的承诺在该分支通过清除全部运行可达性与使用资格满足，而不是声称残留已被物理删除。
+`QUARANTINED` 只在物理删除失败、但精确残留根已被移出或永久隔离于全部运行期 `OperationalArtifact` 命名空间、consumer 消费权限、容器挂载、allocator 和可复用命名空间时成立。残留只由不可变安全隔离证据约束，不再能作为执行副本、运行工件或其他 consumer 输入；仍可访问、挂载或复用的目录不能伴随结果发布。该结果必须引用已持久化的 `ExecutionWorkspaceQuarantineRecord`，其 isolation evidence 证明精确 instance/root、父目录、全部运行可达性和资格已清除，以及 allocator 拒绝规则。第 1 章“终态撤销运行可达性与复用资格”的承诺在该分支通过清除全部运行可达性与使用资格满足，而不是声称残留已被物理删除。
 
-Quarantine 记录不可修改、解除、重开或替换。每次进程启动后，allocator 在创建目录前读取这些记录并拒绝已有 instance/root；外部后来删除残留也不恢复资格；新 workspace 必须使用新 instance 和 root。记录只证明禁用复用，不引入再次清理或恢复协议。
+Quarantine 记录不可修改、解除、重开或替换。每次进程启动后，allocator 在创建目录前读取这些记录并永久拒绝已有 instance/root；外部后来删除残留也不恢复资格；新 workspace 必须使用新 instance 和 root。`QUARANTINED` 可以永久保持，系统不承诺启动时或以后再次尝试物理删除；记录只证明禁用复用，不引入再次清理或恢复协议。
 
 Quarantine 记录的发布键固定为 `(workspace_instance_id, workspace_root_identity, consumer_ref)`。同键同规范投影返回首次记录；同键不同投影返回稳定 `EXECUTION_WORKSPACE_QUARANTINE_PUBLICATION_CONFLICT`，不得形成第二条记录，也不得形成第二个 cleanup/result 绑定。
 
@@ -2121,7 +2142,7 @@ TurnContinuationDisposition =
 
 `ListFilesAction` 只返回有界深度和有界页大小内的稳定条目元数据；条目按规范 Git 路径的 UTF-8 字节序排序，不依赖宿主枚举顺序。仍有后续条目时只返回经过认证的 stateless page token；token 绑定精确来源树根摘要、规范查询和下一逻辑位置，不建立持久 cursor 状态。token 被改写、跨来源树使用或与查询、位置失配时必须在读取条目前拒绝；同一有效 token 重放必须得到同一逻辑页面。
 
-`ReadFileAction` 和 `SearchTextAction` 只能读取 `TEXT_SUPPORTED` 内容对象。文本使用严格 UTF-8 投影；行号和搜索列均从 1 开始，CRLF 计作一个换行边界，不执行换行改写或 Unicode normalization。读取必须同时满足 UTF-8 字节、完整逻辑行、单行和范围硬限；超长行、越过 EOF 的起始行、空文件上的行请求或其他非法范围必须返回稳定错误，不得截断半行、半个 Unicode 标量或返回无效 Unicode。
+`ReadFileAction` 和 `SearchTextAction` 只能读取 `TEXT_SUPPORTED` 内容对象，其 `TextContentProfile` 必须是 3.4.2 的 `UTF8 | UTF8_BOM`。两者使用严格 UTF-8 逻辑投影；`UTF8_BOM` 的单一开头 BOM 保留在原始字节、长度和摘要中，但在逻辑投影前移除，因此行号、列号和搜索位置都不计入 BOM。行号和搜索列均从 1 开始，CRLF 计作一个换行边界，不执行换行改写或 Unicode normalization。读取必须同时满足 UTF-8 字节、完整逻辑行、单行和范围硬限；超长行、越过 EOF 的起始行、空文件上的行请求或其他非法范围必须返回稳定错误，不得截断半行、半个 Unicode 标量或返回无效 Unicode。后续候选补丁对既有文件序列化时必须恢复相同 `TextContentProfile`，不能因逻辑投影而丢失或新增 BOM；其他语义文本编码继续是 `TEXT_UNSUPPORTED`。
 
 `SearchTextAction` 只接受非空、区分大小写的字面量查询；不得执行 normalization、case-fold、正则解释、转义替换或跨行匹配。命中按规范路径 UTF-8 字节序、1-based 行号和 1-based 列稳定排序，并复用 `ListFilesAction` 的无状态 page token 规则；token 仍只绑定精确来源树根摘要、规范查询和下一命中逻辑位置。有后续命中时必须签发 token；命中数量和总字节硬上限按页约束，一页达到任一上限且仍有后续命中时必须在完整命中边界结束本页并正常续页，不得作为超限错误。画像固定的前后文和单个命中仍受硬限；单个完整命中或上下文超限时必须稳定拒绝，不得缩短上下文。
 
