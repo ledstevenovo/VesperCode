@@ -47,3 +47,15 @@
   - **Systemic findings:** 章节范围扩张、功能规约生产级事务化、验收门槛不封闭、增强建议升级冻结条件均判定不存在。
   - **NON_BLOCKING_ENHANCEMENT:** 无。
   - **Reviewer mutations:** 审查代理未编辑文件、未创建提交。
+
+## TASK-HANDOFF-001
+
+- **Timestamp (Asia/Taipei):** `2026-07-15T17:08:00+08:00`
+- **Task ID:** `TASK-HANDOFF-001`
+- **Skills invoked:** `doc-coauthoring`
+- **Key prompt/context:** 用户要求先把 3.5 v1 范围收敛成果合并并推送到 `main`，随后为新对话编写任务交接文档，并总结规格冗余、边界失控和审查范围膨胀的可复用方法论。
+- **Deliverable and commit:** `TASK_HANDOFF.md`；提交 `60cbe27455792688392f088baee59fd772b1135d`（`Add task handoff and review methodology`）。
+- **Review:** 无背景读者代理 `/root/handoff_reader_test` 最终 `PASS`；交接文档已补齐最新 `origin/main` worktree 启动方式、Git ownership/fetch 失败路线、五项阻断意见信息和无 `rg` 时的 `Select-String` 退路。
+- **Human intervention:** 用户要求先合并 `main`，并指出根目录资源管理器仍显示旧分支中的 3.5.39。核验后确认最新 `main` 位于独立 `main-merge` worktree；用户批准在保全根目录未跟踪文件后，将根目录安全切换到 `main`。
+- **Verification:** 强凭据模式扫描无命中；`git diff --cached --check` 通过；交接文档暂存范围仅包含 `TASK_HANDOFF.md`；读者测试最终 `PASS`。
+- **Lesson learned:** 更新分支引用不等于更新所有 worktree 的工作目录。完成合并时必须同时报告权威分支、实际 worktree 路径和用户正在查看的目录，并把“文件已更新”验证到目标路径而非只验证远端 SHA。
