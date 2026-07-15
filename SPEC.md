@@ -786,7 +786,7 @@ StopReason =
 | `RUNNING(PREFLIGHT)` | `ADMISSION_REJECTED` | 3.3 产生失败关闭结果 | 封存准入结果和错误；创建 `StopRecord` | `STOPPED(PRECONDITION_REJECTED | EXECUTION_TERMINATED | BUDGET_EXHAUSTED | WORKSPACE_CHANGED | INTERNAL_ERROR)` |
 | `RUNNING(BASELINE)` | `EXISTING_FAILURE_BASELINE_ACCEPTED` | 3.4 基线证据和 Manifest v1 有效 | 封存基线；创建新阶段进入记录 | `RUNNING(AGENT_LOOP)` |
 | `RUNNING(BASELINE)` | `NATURAL_LANGUAGE_BASELINE_ACCEPTED` | 基线证据和 Manifest v1 有效 | 封存基线；创建新阶段进入记录 | `RUNNING(REPRODUCTION)` |
-| `RUNNING(BASELINE)` | `BASELINE_REJECTED` | 基线不满足场景合同或结果不可靠 | 封存错误与 `StopRecord` | `STOPPED(BASELINE_BLOCKED)` |
+| `RUNNING(BASELINE)` | `BASELINE_REJECTED` | `BaselineEvidenceSet` 完整，`BaselineDecision = REJECTED`，且场景谓词不成立 | 封存错误与 `StopRecord` | `STOPPED(BASELINE_BLOCKED)` |
 | `RUNNING(REPRODUCTION)` | `REPRODUCTION_APPROVAL_REQUIRED` | 完整 `ConfirmReproductionAction` 已规范化并冻结；位于安全点 | 创建唯一等待 | `WAITING_USER(CONFIRM_REPRODUCTION_APPROVAL)` |
 | `WAITING_USER(CONFIRM_REPRODUCTION_APPROVAL)` | `APPROVE` | 主体、等待、动作、补丁、目标、匹配器、Manifest v1、环境和两阶段试验绑定完全匹配 | 关闭等待；消费批准；创建新阶段进入记录 | `RUNNING(REPRODUCTION)` |
 | 同上 | `REJECT_WITH_REVISION` | 决定绑定当前等待 | 关闭等待；记录拒绝反馈；创建新阶段进入记录 | `RUNNING(REPRODUCTION)` |
@@ -806,6 +806,8 @@ StopReason =
 | `RUNNING(PERSISTENCE)` | `PERSISTENCE_COMMITTED` | 3.10 证明事务完整、写后摘要一致且全部成功条件仍成立 | 封存事务与 `SuccessRecord` | `SUCCEEDED` |
 | `RUNNING(PERSISTENCE)` | `PERSISTENCE_UNCERTAIN` | 权威工作区事务结果不确定或证据矛盾 | 创建恢复上下文和转换记录 | `RECOVERY_REQUIRED` |
 | `RUNNING(PERSISTENCE)` | `PERSISTENCE_SAFELY_FAILED` | 证明未提交或已完整回滚，且运行不能继续 | 封存事务结果和 `StopRecord` | `STOPPED(EXECUTION_TERMINATED | WORKSPACE_CHANGED | INTERNAL_ERROR)` |
+
+证据缺失、矛盾、结果不可靠或控制面失败不得触发 `BASELINE_REJECTED`，不得形成 `BaselineDecision` 或 Manifest，必须按 3.4 的执行错误或 `INTERNAL_ERROR` 路线失败关闭。
 
 `ProposeCompletionAction` 的唯一转换必须完整写作：
 
