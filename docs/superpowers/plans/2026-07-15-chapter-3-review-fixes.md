@@ -42,7 +42,7 @@ AcceptedTurnOutputRecord
 ```
 
 - `DisclosureGrant` 绑定供应商、端点、模型、允许来源/类别、脱敏规则、累计预算和有效期；`DisclosureRecord` 绑定本次最终请求摘要、实际来源、体量、脱敏结果和所消费 grant。
-- `ContextProjectionDraft` 只是不持久化、不授权的纯计算；授权通过后才原子创建最终投影、turn、attempt、Manifest 和 reservations。
+- `ContextProjectionDraft` 只是不持久化、不授权的纯计算；授权通过后才原子创建最终投影、turn、attempt、`AgentFeedbackConsumptionManifest` 和 reservations。
 - 增加 `TextContentProfile = UTF8 | UTF8_BOM`。BOM 计入原始字节摘要，但不计入逻辑文本行列；补丁序列化必须原样恢复。
 - 不增加 `RunStatus`、`WaitKind` 或 `StopReason`。`DEMO_SESSION_INVALIDATED` 是错误码，映射 `INTERNAL_ERROR`。
 
@@ -77,7 +77,7 @@ AcceptedTurnOutputRecord
 → 授权不足：创建 WaitContext，不创建 AgentTurn
 → 授权后在新 phase-entry 重新计算
 → 原子创建 AgentTurn、最终 ContextProjection、attempt、
-  feedback records、Manifest 和 reservations
+  feedback records、AgentFeedbackConsumptionManifest 和 reservations
 → 提交 dispatch checkpoint
 → 调用适配器
 ```
