@@ -1949,7 +1949,7 @@ AgentTurnOutputOutcome =
 ~~~
 
 - `AcceptedTurnOutputRecord` 只表示唯一权威响应经规范化和严格 Schema 解析后被接受，并产生一个可绑定的 `AgentTurnOutput`。
-- `RejectedTurnOutputRecord` 表示已取得响应但严格解析拒绝；它必须产生结构化解析反馈，不得产生动作或分发副作用，并消耗适用的调用、Token、时间和无效输出预算。
+- `RejectedTurnOutputRecord` 表示已取得响应但未通过严格解析；它必须产生结构化解析反馈，不得产生动作或分发副作用，并消耗适用的调用、Token、时间和无效输出预算。
 - `LLMCallFailureRecord` 表示该 attempt 以调用失败结束；它不得伪造模型输出或动作。内部恢复仍受 3.1 约束。
 
 VesperCode 默认不持久化完整原始模型响应。受限运行缓冲区可以在解析和脱敏期间短暂持有响应；持久事实只保留被接受的结构化输出、结构化错误、允许的脱敏摘要和必要完整性摘要。
@@ -1958,7 +1958,7 @@ VesperCode 默认不持久化完整原始模型响应。受限运行缓冲区可
 
 ### 3.5.2 轮次主体与顺序主循环
 
-`AgentTurnSubject` 仍是封闭判别联合：
+`AgentTurnSubject` 是封闭判别联合：
 
 ~~~text
 AgentTurnSubject =
@@ -1968,10 +1968,10 @@ AgentTurnSubject =
 
 | 运行阶段 | 主体 | 必须绑定的权威对象 |
 | --- | --- | --- |
-| `RUNNING(REPRODUCTION)` | `ReproductionTurnSubject` | `ManifestV1` 与当前 `SnapshotTree`；不得用空 candidate 或占位修订代替 |
+| `RUNNING(REPRODUCTION)` | `ReproductionTurnSubject` | `ValidationManifestV1` 与当前 `SnapshotTree`；不得用空 candidate 或占位修订代替 |
 | `RUNNING(AGENT_LOOP)` | `RepairTurnSubject` | 有效 Manifest、当前 `CandidateRevision` 及其 `CandidateTree`，以及当前 repair base |
 
-ExistingFailure 的修复主体继续绑定 `ManifestV1`，repair base 是原始 `SnapshotTree`。NaturalLanguageDefect 在 v2 发布后的修复主体继续绑定 `ManifestV2` 的有效合同，repair base 是 3.4 冻结的 `reproduction_candidate_tree`。复现迭代上下文如存在，只能来自已关闭复现提案、用户修订反馈及其权威记录的受控投影，不表示已有复现候选被应用。
+ExistingFailure 的修复主体继续绑定 `ValidationManifestV1`，repair base 是原始 `SnapshotTree`。NaturalLanguageDefect 在 v2 发布后的修复主体继续绑定 `ValidationManifestV2` 的有效合同，repair base 是 3.4 冻结的 `reproduction_candidate_tree`。复现迭代上下文如存在，只能来自已关闭复现提案、用户修订反馈及其权威记录的受控投影，不表示已有复现候选被应用。
 
 主体只能由控制面从当前 phase-entry 的权威上下文取得。模型、调用方和普通配置都不能选择、替换或补写主体中的 Manifest、来源树、候选或 repair base。
 
@@ -2008,9 +2008,9 @@ ExistingFailure 的修复主体继续绑定 `ManifestV1`，repair base 是原始
 
 Mock LLM 只豁免供应商网络调用和真实披露消费；单活动 turn、预算、投影装配、Schema、绑定、阶段允许、策略、分发、反馈和完成处置必须与真实路线相同。
 
-### 3.5.4 单动作输出、绑定与阶段允许列表
+### 3.5.4 单动作输出、绑定、阶段允许与完成处置
 
-模型输出合同保持为：
+模型输出合同为：
 
 ~~~text
 AgentTurnOutput {
@@ -2040,7 +2040,7 @@ AgentAction =
 
 解析出的动作没有执行资格。控制面必须把它绑定到当前 turn subject、phase-entry、Manifest、来源或候选、repair base 和适用策略后，才可进入阶段校验、3.9 和分发；本节不列 `BoundAgentActionRecord` 的完整字段。阶段、主体、Manifest、候选或策略变化后，旧动作必须作为 stale 输入拒绝，不得自动重绑定。
 
-以下允许列表是 v1 的封闭阶段合同，逐项不变：
+以下允许列表是 v1 的封闭阶段合同：
 
 | 模型动作 | `REPRODUCTION` | `AGENT_LOOP` |
 | --- | --- | --- |
@@ -2899,7 +2899,7 @@ ContextProjectionPayloadReleaseRecord {
 
 最终发布前，控制面必须从仍可用的来源读取内容，完成裁剪、格式化、脱敏和规范序列化，并校验最终摘要。真实 LLM 调用只读取 `ContextProjectionPayload`，不再读取原工具正文。payload 在调用及输出终态处理完成前不得正常释放；释放使用独立追加记录，不修改 `ContextProjection`、反馈选择、consumption manifest、reservation 或披露历史。
 
-`ContextProjection` 的根摘要必须覆盖模型实际接收的完整有序内容，包括 system／protocol、当前任务、turn subject、Manifest、candidate 或来源树、选择的 memory、工具和反馈投影以及 action schema。3.5.4 的 `latest_authoritative_feedback_refs_and_digests` 必须与本轮有序 selection entries 对应，选择记录只承担来源证明，不能替代实际 payload digest。
+`ContextProjection` 的根摘要必须覆盖模型实际接收的完整有序内容，包括 system／protocol、当前任务、turn subject、Manifest、candidate 或来源树、选择的 memory、工具和反馈投影以及 action schema。3.5.3 中选中的权威反馈必须与本轮有序 selection entries 对应，选择记录只承担来源证明，不能替代实际 payload digest。
 
 供应商、端点和模型继续由 `RenderedLLMRequest` 与 `LLMCallAttempt` 绑定；DisclosureGrant 必须同时覆盖最终投影内容和这些调用目标。
 
