@@ -59,3 +59,28 @@
 - **Human intervention:** 用户要求先合并 `main`，并指出根目录资源管理器仍显示旧分支中的 3.5.39。核验后确认最新 `main` 位于独立 `main-merge` worktree；用户批准在保全根目录未跟踪文件后，将根目录安全切换到 `main`。
 - **Verification:** 强凭据模式扫描无命中；`git diff --cached --check` 通过；交接文档暂存范围仅包含 `TASK_HANDOFF.md`；读者测试最终 `PASS`。
 - **Lesson learned:** 更新分支引用不等于更新所有 worktree 的工作目录。完成合并时必须同时报告权威分支、实际 worktree 路径和用户正在查看的目录，并把“文件已更新”验证到目标路径而非只验证远端 SHA。
+
+## CH3-REVIEW-FIXES
+
+- **Timestamp (Asia/Taipei):** `2026-07-16T02:10:19+08:00`
+- **Task ID:** `CH3-REVIEW-FIXES`
+- **Skills invoked:** `superpowers:writing-plans`、`superpowers:using-git-worktrees`、`superpowers:executing-plans`、`subagent-driven-development`、`superpowers:receiving-code-review`、`superpowers:requesting-code-review`。
+- **Key prompt/context:** 执行用户批准的 `docs/superpowers/plans/2026-07-15-chapter-3-review-fixes.md`；计划基线为 `cf720407af69aaac235b2bb0f7923fecd0544c68`，实施分支为 `codex/ch3-review-fixes`，隔离 worktree 为 `D:\code\VesperCode\.worktrees\ch3-review-fixes`。该计划是本轮修订计划，不是课程权威 `PLAN.md`；全程禁止修改根 worktree。
+- **Major commit chain:**
+  - `edcf6d28dbe421c311cfd51511194770e1bc4eac` (`Add chapter three correction plan`)：记录获批修订计划；
+  - `3f0f9fce0b36caca33f2f437fd2adb4b09b11d72` (`Clarify same-attempt replay semantics`)：闭合同 attempt replay；
+  - `ccc59b7d0cbabfd98e3f2679b8868107358ffb02` (`Close disclosure and turn outcome contracts`)：闭合披露、turn、outcome 与 feedback；
+  - `ef5a843d3c90f761f6c127f922b8fae6e8b59a39` (`Separate admission and artifact boundaries`)：收敛 workspace、config、Demo、encoding 与 recovery 边界；
+  - `5c3743100ae6554770763702c6e68dca67705de8` (`Freeze v1 scope and stop mappings`)：冻结 v1 范围与停止映射；
+  - `48d06ef0d13a2b036502bb7eae870eaff02358d6` (`Record chapter three contract corrections`)：同步过程证据与交接；
+  - `bd50d82ac0c8ba94fa303874efec12c9a8bda6d8` (`Close restart turn termination lifecycle`)：闭合正式路线重启终止；
+  - `a125dfe92a7fc7e02217403c689d21f5645afffb` (`Close Demo restart in-flight objects`)：闭合 Demo 重启中的在途对象；
+  - `83746d7599ed0f09e10ad15b2e6215378a226cb4` (`Close remaining chapter three review gaps`)：关闭最终审查缺口并形成固定被审内容。
+- **Implementation and review agents/results:**
+  - `a125dfe` 的提交正文记录实施代理为 `ch3_spec_implementer`。固定 `a125dfe` 后，`/root/final_spec_review` 返回 `PASS`，`/root/final_doc_quality` 返回 `NEEDS_CHANGES`，`/root/final_cold_review` 返回 `NEEDS_CHANGES`；因此当时没有重新锁定 3.1—3.5。
+  - 最终返修代理 `/root/review_fix_implementer` 形成 `83746d7`。固定该 SHA 后，`/root/review_fix_spec_review` 返回 `✅ Spec compliant`；`/root/review_fix_doc_quality` 未发现 Critical、Important 或 Minor 问题并返回 `PASS / Ready to proceed: Yes`；`/root/cold_review_83746d7` 对 `cf720407..83746d7` 返回 `PASS`，没有符合五字段准入格式的阻断项，置信度高。
+- **Human intervention:** 用户批准修订计划并允许使用完成计划所必需的 subagent；在任务暂停后明确要求继续；反复要求所有修改只能发生在指定隔离 worktree，禁止触碰根 worktree。用户同时保持课程边界：只重新锁定 3.1—3.5，不提前批准课程 `PLAN.md` 或进入实现。
+- **Verification:** 固定内容 SHA `83746d7599ed0f09e10ad15b2e6215378a226cb4` 上三项最终只读审查均实际 `PASS`；本证据提交前执行 `git diff --check`、三文件范围检查、`TASK_HANDOFF.md` 当前状态一致性扫描和凭据模式扫描，结果均通过。
+- **Cold-review boundary:** 最终无背景冷审止于 `83746d7599ed0f09e10ad15b2e6215378a226cb4`，不覆盖本条证据所在的后续提交；后续只需做窄范围真实性与格式复核，本条不声称该复核已经发生。
+- **Unfinished work:** 3.6—3.12、完整第三章交叉审查、完整 `SPEC.md` 与课程权威 `PLAN.md` 批准、最终冷启动实现试验、实现代码。
+- **Lesson learned:** 审查结论必须绑定固定内容 SHA；追加审查证据必然晚于被审内容，不能把原冷审的覆盖范围扩张到承载结果的日志提交。历史 `NEEDS_CHANGES` 与最终 `PASS` 应同时保留，才能证明返修和重新锁定真实发生。
