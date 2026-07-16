@@ -494,7 +494,7 @@ DisclosureRecord 证明请求已通过授权并完成真实适配器调用前调
 ```powershell
 $current = Get-Content SPEC.md -Raw
 if ($current -match '每次实际发送|每次实际披露') { throw 'legacy disclosure wording remains' }
-$overstatedProof = Select-String -Path SPEC.md -Pattern '(?<!不)(?<!不能)(?<!不得)证明.*适配器实际被调用'
+$overstatedProof = Select-String -Path SPEC.md -Pattern '(?<!不)(?<!不能)(?<!不得)证明[^，。；\r\n]*适配器实际被调用'
 if ($overstatedProof) { $overstatedProof; throw 'overstated disclosure wording remains' }
 foreach ($term in '完成真实适配器调用前调度提交','不证明适配器实际被调用','调用与供应商交付事实均为.*UNKNOWN','DisclosureRecord','规范外发载荷','披露预算') {
   if ($current -notmatch $term) { throw "missing disclosure contract: $term" }
