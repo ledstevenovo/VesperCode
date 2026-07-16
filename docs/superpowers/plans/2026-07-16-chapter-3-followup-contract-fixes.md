@@ -783,6 +783,48 @@ git commit -m "Define minimum agent loop acceptance set"
 - [ ] **Step 4: 运行当前文档一致性检查**
 
 ```powershell
+$handoff = Get-Content TASK_HANDOFF.md -Raw
+$sections = [ordered]@{
+  top = [regex]::Match($handoff, '(?s)\A.*?(?=## 1\.)').Value
+  section_2_1 = [regex]::Match($handoff, '(?s)### 2\.1.*?(?=### 2\.2|## 3\.|\z)').Value
+}
+$errors = @()
+foreach ($entry in $sections.GetEnumerator()) {
+  $text = $entry.Value
+  if (-not $text) {
+    $errors += "$($entry.Key): section missing"
+    continue
+  }
+  if ($text -notmatch '(?m)^.*本轮二次交叉审阅修正基线.*53ddefd1676c2c72603dddaac33393ffb3627ef7.*$') {
+    $errors += "$($entry.Key): current baseline missing"
+  }
+  if ($text -notmatch '(?m)^.*本轮分支.*codex/ch3-followup-review-plan.*$') {
+    $errors += "$($entry.Key): current branch missing"
+  }
+  if ($text -notmatch '(?s)第一轮.{0,120}cf720407af69aaac235b2bb0f7923fecd0544c68|cf720407af69aaac235b2bb0f7923fecd0544c68.{0,120}第一轮') {
+    $errors += "$($entry.Key): prior baseline lacks first-round/history semantics"
+  }
+  if ($text -notmatch '(?s)第一轮.{0,120}codex/ch3-review-fixes|codex/ch3-review-fixes.{0,120}第一轮') {
+    $errors += "$($entry.Key): prior branch lacks first-round/history semantics"
+  }
+}
+$legacyLines = $handoff -split '\r?\n' |
+  Where-Object { $_ -match 'cf720407af69aaac235b2bb0f7923fecd0544c68|codex/ch3-review-fixes' }
+foreach ($line in $legacyLines) {
+  if ($line -notmatch '第一轮|历史') {
+    $errors += "legacy review site lacks first-round/history semantics: $line"
+  }
+  if ($line -match '本轮合同修正|本轮交叉审阅修正基线|本轮交叉审阅修正分支|本轮修正分支') {
+    $errors += "legacy review site is still labeled current: $line"
+  }
+}
+if ($errors.Count) { throw ($errors -join '; ') }
+'PASS'
+```
+
+Expected: `PASS`。顶部和 2.1 都明确给出本轮基线与分支，第一轮 SHA／分支只保留为历史证据，不再被称为“本轮合同修正”或“本轮交叉审阅修正基线／分支”。
+
+```powershell
 Select-String -Path SPEC.md,TASK_HANDOFF.md -Pattern '完整且唯一|唯一的 21 项|细化门禁只来自 3\.5\.9|正常转换矩阵|正常生命周期转换|3\.10 形成结构化失败反馈|高风险但受支持的动作|正在执行、正在等待用户操作和已经停止三种状态|每次实际发送|每次实际披露|已进入真实适配器调度边界|越过真实适配器调度边界'
 ```
 
