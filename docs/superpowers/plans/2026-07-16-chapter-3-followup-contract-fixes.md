@@ -141,10 +141,10 @@ minimal_fix: 3.6 必须规定每次进入 AGENT_LOOP 时，在首个 RepairTurnS
 | 2 | 正确，是矩阵名称与成员不一致 | 3.2.7 改为“权威生命周期转换矩阵”；正式重启源状态使用七项封闭集合，明确排除 `RUNNING(PERSISTENCE)` 与 `RECOVERY_REQUIRED` |
 | 3 | 正确，是证明语义过强 | `DisclosureRecord` 只证明授权与 pre-dispatch commit 完成，不证明适配器实际调用或供应商送达 |
 | 4 | 正确，是 `ErrorEnvelope` 必填字段遗漏 | 3.5 最小错误路由增加副作用判定对象和 `side_effect_status`，逐行冻结 `NONE | COMMITTED | UNKNOWN` |
-| 5 | 正确，是跨章节权威冲突 | 3.10 只形成 `FormalValidationResult`；3.5 在下一 turn 创建时从该结果确定性生成反馈 |
+| 5 | 正确，是跨章节权威冲突 | 仅在 `FORMAL_VALIDATION_FAILED → AGENT_LOOP` 的下一轮反馈所有权边界内，3.10 形成并封存 `FormalValidationResult`，3.5 在下一 turn 创建时从该 `FormalValidationResult` 确定性生成反馈；这不收窄 3.10 的持久化事务／恢复职责 |
 | 6 | 正确，是用户故事承诺过宽 | US-06 收窄到 `ConfirmReproductionAction` 一次性批准和通用 `DENY` 拦截；最终持久化批准继续只由 US-07 覆盖 |
 
-六项全部进入既有 Task，不增加新 Task、新审查轮次或 3.5.10。`TASK_HANDOFF.md` 还必须为未来章节冻结两条约束：3.9 是 grant、披露预算账本、`DisclosureRecord` 发布键／幂等与 pre-dispatch commit 的权威来源；3.12 只能展示“已完成调用前调度提交／适配器调用与交付未知”等准确状态，不得把记录无条件显示为“已发送”或“供应商已收到”。
+六项全部进入既有 Task，不增加新 Task、新审查轮次或 3.5.10。`TASK_HANDOFF.md` 还必须为未来章节冻结两条约束：3.5 是唯一的组合 dispatch checkpoint 编排权威；3.9 拥有 grant、披露预算账本、`DisclosureRecord` 领域／证明语义、发布键／幂等及可加入该组合提交的权威披露子操作；3.12 只能展示“已完成调用前调度提交／适配器调用与交付未知”等准确状态，不得把记录无条件显示为“已发送”或“供应商已收到”。
 
 ## 修订后冻结的公共合同
 
@@ -166,7 +166,11 @@ PROCESS_RESTART_DETECTED
 
 `RECOVERY_REQUIRED` 不得显示为停止原因，用户取消或声明放弃也不得直接结束该状态。
 
+所有 `RunState` 目标状态映射均由 3.2 拥有。3.10 拥有正式验证、持久化事务／恢复的领域证据、事务事实、结构化 `RecoveryDisposition` 及其守卫，但不得另行定义目标状态映射。
+
 ### 真实披露 dispatch checkpoint
+
+3.5 是唯一的组合 dispatch checkpoint 编排权威，拥有调用时点、turn／attempt／最终投影／最终请求绑定和 feedback reservations 消费。3.9 拥有权威披露子操作及其 `DisclosureGrant` 校验语义、披露预算账本、`DisclosureRecord` 领域／证明语义、发布键与幂等；该披露子操作可以全有或全无地加入 3.5 编排的同一权威提交，但不得在 checkpoint 之外先行或另行提交预算或记录。3.5 不得重实现或放宽 3.9 的这些语义。
 
 真实适配器调用前的单一持久 checkpoint 必须按同一权威提交完成：
 
@@ -333,7 +337,7 @@ CREATED
 | --- | --- | --- | --- |
 | `PROCESS_RESTART_DETECTED` | 当前进程持有同一工作区 OS 排他锁和新 `workspace_lease_ref`；旧 `run_id`、修订、封闭源状态及 3.3.7 全部在途对象仍精确匹配并可全有或全无闭合 | 按 3.3.7 同一 CAS／权威提交写入 `error_code = PROCESS_RESTARTED_DURING_RUN`、关闭在途对象、创建完整 `StopRecord`；不得伪造决定、outcome 或适配器结果 | `STOPPED(INTERNAL_ERROR)` |
 
-`RUNNING(PERSISTENCE)` 与 `RECOVERY_REQUIRED` 必须在矩阵文字中明确排除；它们只能进入 3.2.9 与 3.10 的持久化恢复路线。矩阵只引用 3.3.7 的对象级闭合细节，不复制其逐对象算法。Demo 行保持独立，不得取得正式工作区 lease。
+`RUNNING(PERSISTENCE)` 与 `RECOVERY_REQUIRED` 必须在矩阵文字中明确排除；它们只能使用 3.2.9 的恢复目标状态映射，并由 3.10 提供持久化事务／恢复的领域证据、事务事实、`RecoveryDisposition` 与守卫。矩阵只引用 3.3.7 的对象级闭合细节，不复制其逐对象算法。Demo 行保持独立，不得取得正式工作区 lease。
 
 - [ ] **Step 4: 在正确的 3.2.11 增加确定性验证点**
 
@@ -354,7 +358,7 @@ CREATED
 | --- | --- | --- | --- | --- |
 | `RUNNING(FORMAL_VALIDATION)` | `FORMAL_VALIDATION_FAILED` | 3.10 已形成完整、结构化的 `FormalValidationResult`；仍有预算且允许继续 | 封存 `FormalValidationResult`；创建新的 `AGENT_LOOP` phase-entry | `RUNNING(AGENT_LOOP)` |
 
-紧随该行明确：3.10 只负责正式验证结果；3.5 在创建下一 `AgentTurn` 时，从该 `FormalValidationResult` 确定性生成有界结构化反馈。3.2.7 不得再写“3.10 形成结构化失败反馈”。
+紧随该行明确：仅在 `FORMAL_VALIDATION_FAILED → AGENT_LOOP` 的下一轮反馈所有权边界内，3.10 形成并封存 `FormalValidationResult`，3.5 在创建下一 `AgentTurn` 时从该 `FormalValidationResult` 确定性生成有界结构化反馈。这一局部边界不收窄 3.10 对正式验证、持久化事务／恢复领域证据、事务事实、`RecoveryDisposition` 与守卫的既有职责；所有 `RunState` 目标状态映射仍由 3.2 拥有。3.2.7 不得再写“3.10 形成结构化失败反馈”。
 
 - [ ] **Step 6: 把 US-08 与 INVEST 改为四类可见状态**
 
@@ -399,7 +403,26 @@ $us06 = [regex]::Match($spec, '(?s)### US-06.*?(?=### US-07)').Value
 $us08 = [regex]::Match($spec, '(?s)### US-08.*?(?=### US-09)').Value
 $us06Invest = [regex]::Match($spec, '(?m)^\| US-06 \|.*$').Value
 $restartRow = ($matrix -split [Environment]::NewLine | Where-Object { $_ -match 'PROCESS_RESTART_DETECTED' }) -join ' '
-$formalRow = ($matrix -split [Environment]::NewLine | Where-Object { $_ -match 'FORMAL_VALIDATION_FAILED' }) -join ' '
+function Find-FormalValidationFailedMatrixRow([string]$text) {
+  $text -split '\r?\n' |
+    Where-Object { $_ -match '^\|\s*`RUNNING\(FORMAL_VALIDATION\)`\s*\|\s*`FORMAL_VALIDATION_FAILED`\s*\|' }
+}
+function Get-FormalValidationFailedMatrixRow([string]$text) {
+  $rows = @(Find-FormalValidationFailedMatrixRow $text)
+  if ($rows.Count -ne 1) { throw "expected exactly one formal validation failure matrix row, got $($rows.Count)" }
+  $rows[0]
+}
+$formalRow = Get-FormalValidationFailedMatrixRow $matrix
+
+$syntheticRow = '| `RUNNING(FORMAL_VALIDATION)` | `FORMAL_VALIDATION_FAILED` | guard | action | `RUNNING(AGENT_LOOP)` |'
+$syntheticExplanation = '仅在 `FORMAL_VALIDATION_FAILED → AGENT_LOOP` 的下一轮反馈所有权边界内，3.10 形成结果，3.5 生成反馈。'
+$syntheticWrongRow = '| `RUNNING(FORMAL_VALIDATION)` | `FORMAL_VALIDATION_FAILED_WRONG` | guard | action | `RUNNING(AGENT_LOOP)` |'
+if ((Get-FormalValidationFailedMatrixRow "$syntheticRow`r`n$syntheticExplanation") -ne $syntheticRow) { throw 'formal row locator admitted an explanatory sentence' }
+foreach ($invalidSynthetic in @($syntheticExplanation, $syntheticWrongRow)) {
+  $rejected = $false
+  try { $null = Get-FormalValidationFailedMatrixRow $invalidSynthetic } catch { $rejected = $true }
+  if (-not $rejected) { throw 'formal row validator accepted a missing or wrong table row' }
+}
 if ($mapping -notmatch 'PROCESS_RESTARTED_DURING_RUN.*INTERNAL_ERROR') { throw 'formal restart mapping missing' }
 if ($matrix -notmatch '### 3\.2\.7 权威生命周期转换矩阵') { throw 'matrix title incorrect' }
 if ($matrix -match '正常生命周期转换|正常转换矩阵') { throw 'normal-only matrix wording remains' }
@@ -475,6 +498,8 @@ DisclosureRecord 证明请求已通过授权并完成真实适配器调用前调
 + 绑定最终规范供应商请求
 + 全量消费 feedback reservations
 ```
+
+3.5 负责唯一组合 dispatch checkpoint 的调用时点、最终绑定、feedback reservations 消费和整笔提交编排。前四项属于 3.9 的权威披露子操作；该子操作只能加入同一提交，不得在 checkpoint 之外先行或另行提交预算或记录。3.5 不得重实现或放宽 3.9 的 grant 校验、账本、`DisclosureRecord` 发布键或幂等语义。
 
 只有提交成功后才可调用真实适配器。任一步失败时不得调用，且上述记录和消费均不得部分可见。
 
@@ -739,7 +764,7 @@ git commit -m "Define minimum agent loop acceptance set"
 同步以下当前状态：
 
 - 3.2.7 名为“权威生命周期转换矩阵”，同时包含正式运行与 Demo 启动终止；
-- 正式重启源状态是七项封闭集合，`RUNNING(PERSISTENCE)` 与 `RECOVERY_REQUIRED` 只走 3.10 恢复；
+- 正式重启源状态是七项封闭集合，`RUNNING(PERSISTENCE)` 与 `RECOVERY_REQUIRED` 只使用 3.2.9 的恢复目标状态映射，并由 3.10 提供领域事实、`RecoveryDisposition` 与守卫；
 - `PROCESS_RESTARTED_DURING_RUN -> INTERNAL_ERROR`；
 - 正式重启确定性验证点位于 3.2.11，不是 3.2.10；
 - 3.10 形成 `FormalValidationResult`，3.5 从它生成下一轮反馈；
@@ -769,9 +794,12 @@ git commit -m "Define minimum agent loop acceptance set"
 同一交接章节还必须冻结：
 
 ```text
-3.9 是 DisclosureGrant、披露预算账本、DisclosureRecord 发布键、
-幂等语义和 pre-dispatch commit 的权威来源；
-3.5 只规定 Agent turn 对该合同的调用时点和必要绑定。
+3.5 是唯一的组合 dispatch checkpoint 编排权威，拥有调用时点、
+最终绑定和 feedback reservations 消费；
+3.9 拥有 DisclosureGrant 校验语义、披露预算账本、DisclosureRecord
+领域／证明语义、发布键／幂等和可加入同一提交的权威披露子操作；
+该披露子操作不得在 checkpoint 之外先行或另行提交预算或记录，
+3.5 不得重实现或放宽上述 3.9 语义。
 
 3.12 展示 DisclosureRecord 时必须使用
 “已完成调用前调度提交／适配器调用与交付状态未知”等准确文案，
@@ -886,6 +914,38 @@ $forbidden = Select-String -Path SPEC.md,TASK_HANDOFF.md -Pattern @(
   '用户明确放弃后清除'
 )
 if ($forbidden) { $forbidden; throw 'forbidden current-contract wording found' }
+
+$planPath = 'docs/superpowers/plans/2026-07-16-chapter-3-followup-contract-fixes.md'
+$authorityFiles = @('SPEC.md', 'TASK_HANDOFF.md', $planPath)
+$authorityCorpus = ($authorityFiles | ForEach-Object { Get-Content $_ -Raw }) -join "`n"
+foreach ($legacyAuthority in @(
+  '3\.10 只负责正式验证结果',
+  '3\.10 只形成(?:并封存)?\s*`?FormalValidationResult`?',
+  '3\.10 的结构化\s*`RecoveryDisposition`\s*只有三种生命周期映射',
+  'RUNNING\(PERSISTENCE\).{0,160}RECOVERY_REQUIRED.{0,100}只走\s*3\.10\s*恢复',
+  '(?s:3\.9 是.{0,240}pre-dispatch commit 的权威(?:来源|章节))',
+  '3\.5\s*只规定[^\r\n]{0,120}调用时点'
+)) {
+  if ([regex]::IsMatch($authorityCorpus, $legacyAuthority)) {
+    throw "legacy authority wording found: $legacyAuthority"
+  }
+}
+
+$requiredAuthority = [ordered]@{
+  local_feedback_boundary = 'FORMAL_VALIDATION_FAILED\s*→\s*AGENT_LOOP.{0,180}下一轮反馈所有权边界'
+  runstate_mapping_owner = '所有\s*`RunState`\s*目标状态映射均由\s*3\.2\s*拥有'
+  composite_checkpoint_owner = '3\.5\s*是唯一的组合\s*dispatch checkpoint\s*编排权威'
+  disclosure_suboperation_owner = '3\.9\s*拥有权威披露子操作'
+  no_independent_disclosure_commit = '披露子操作.{0,180}不得在\s*checkpoint\s*之外.{0,100}(先行|独立|另行).{0,100}提交'
+}
+foreach ($file in $authorityFiles) {
+  $text = Get-Content $file -Raw
+  foreach ($entry in $requiredAuthority.GetEnumerator()) {
+    if (-not [regex]::IsMatch($text, $entry.Value, [System.Text.RegularExpressions.RegexOptions]::Singleline)) {
+      throw "$file missing authority boundary: $($entry.Key)"
+    }
+  }
+}
 'PASS'
 ```
 
@@ -905,13 +965,17 @@ Expected: `PASS`。
 - `MODEL_OUTPUT_INVALID`、`MODEL_OUTPUT_INVALID_LIMIT_REACHED`、`TURN_PROCESSING_FAILED` 使用 `COMMITTED`，`LLM_ADAPTER_CALL_FAILED` 使用 `UNKNOWN`，调用／动作前拒绝使用 `NONE`；
 - 正式和 Demo 重启路线仍使用不同绑定守卫。
 
+上述“确认”都是阻断门禁，执行者必须逐项完成，并为每项记录实际计数和精确证据；任何一项缺少计数、定义位置、路由行或对应守卫证据时都不得继续固定候选 SHA。
+
 运行：
 
 ```powershell
 Select-String -Path SPEC.md -Pattern 'RunStatus =|WaitKind =|StopReason =|AgentAction =|AgentTurnOutcome =|side_effect_status|PROCESS_RESTARTED_DURING_RUN|LLM_ADAPTER_CALL_FAILED|TURN_PROCESSING_FAILED'
 ```
 
-Expected: 所有类型只在其权威小节定义，错误码在 3.2.6 和对应模块路由中成对出现，九条最小错误路由均有副作用状态。
+上述 `Select-String` 只用于定位证据。命令 `exit 0` 或有输出都不能单独判定 `PASS`；执行者必须把定位结果逐项与冻结枚举、3.2.6 映射、九条路由和正式／Demo 守卫比较，并记录计数与结论。
+
+Expected: 逐项证据证明所有类型只在其权威小节定义，错误码在 3.2.6 和对应模块路由中成对出现，九条最小错误路由均有副作用状态；仅有扫描输出不构成通过。
 
 - [ ] **Step 3: 运行 Git 与凭据检查**
 
@@ -1034,7 +1098,7 @@ docs/superpowers/plans/2026-07-16-chapter-3-followup-contract-fixes.md
 - 3.2.7 名为“权威生命周期转换矩阵”，不再使用“正常转换矩阵”；
 - 3.2.6、3.2.7 与 3.3.7 对正式进程重启使用同一错误码、七项封闭源状态、守卫和终态，并明确排除 `RUNNING(PERSISTENCE)` 与 `RECOVERY_REQUIRED`；
 - 正式重启验证点位于 3.2.11，守卫失败时既不终止旧运行也不创建新运行；
-- 3.10 只形成 `FormalValidationResult`，下一轮结构化反馈只由 3.5 从该结果确定性生成；
+- 仅在 `FORMAL_VALIDATION_FAILED → AGENT_LOOP` 的下一轮反馈所有权边界内，3.10 形成并封存 `FormalValidationResult`，下一轮结构化反馈由 3.5 从该结果确定性生成；这不收窄 3.10 对正式验证、持久化事务／恢复领域证据、事务事实、`RecoveryDisposition` 与守卫的既有职责；
 - US-06 只承诺 `ConfirmReproductionAction` 的一次性批准和通用 `DENY`，最终持久化批准继续由 US-07 覆盖；
 - US-08 与 `RunStatus` 对 `RECOVERY_REQUIRED` 的语义一致；
 - 每个被允许进入真实适配器调用阶段的请求，在调用前均已完成 `DisclosureRecord`、披露预算和 feedback 消费的原子 pre-dispatch commit；
@@ -1043,7 +1107,8 @@ docs/superpowers/plans/2026-07-16-chapter-3-followup-contract-fixes.md
 - 3.5.9 保持严格 1—21，但只声明最低必测集合；
 - 3.5 不新增 3.5.10；四项自身收口通过顺序审查后可以局部锁定；
 - `TASK_HANDOFF.md` 明确 3.6 必须在首个 `RepairTurnSubject` 前全有或全无地发布唯一初始 `CandidateRevision` 与 `CandidateTree`；
-- `TASK_HANDOFF.md` 明确 3.9 是 grant、披露预算账本、`DisclosureRecord` 发布键／幂等和 pre-dispatch commit 的权威来源，3.5 只规定调用时点；
+- `SPEC.md`、`TASK_HANDOFF.md` 与本计划一致明确所有 `RunState` 目标状态映射由 3.2 拥有，3.10 不另行定义映射；
+- `TASK_HANDOFF.md` 明确 3.5 是唯一组合 dispatch checkpoint 编排权威，3.9 拥有 grant 校验、披露预算账本、`DisclosureRecord` 领域／证明语义、发布键／幂等和可全有或全无加入同一提交的权威披露子操作，且该子操作不得独立提交；
 - `TASK_HANDOFF.md` 明确 3.12 不得把 `DisclosureRecord` 无条件显示为已发送或供应商已收到；
 - 在 3.6 完成该初始候选合同前，不声称 `3.5 -> 3.6` 的端到端修复循环已经验证；
 - 没有新增 `RunStatus`、`WaitKind`、`StopReason`、`DisclosureAttempt`、供应商重发、generation、takeover、通用 reconciliation 或恢复状态机；

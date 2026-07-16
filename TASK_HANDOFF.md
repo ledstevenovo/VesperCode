@@ -130,13 +130,13 @@ FINAL_PERSISTENCE_APPROVAL
 
 本地动作策略只有规定的复现确认动作和最终持久化动作可以进入 `ASK`；披露授权属于独立状态空间。不要重新引入通用 `ACTION_APPROVAL`，除非第 2 章产品承诺被用户显式修改。
 
-生命周期仍采用六状态、六阶段、权威生命周期转换矩阵、取消安全点、唯一停止原因和 3.10 专用持久化恢复。
+生命周期仍采用六状态、六阶段、权威生命周期转换矩阵、取消安全点、唯一停止原因，以及由 3.2 定义目标映射、3.10 提供领域事实与守卫的专用持久化恢复。
 
 稳定细分 `error_code` 只表达诊断，`StopReason` 只表达生命周期停止原因；3.2.6 的带上下文映射是两者之间的权威转换，不得把同一名称在两个状态空间混用。
 
-3.2.7 是表内主流程、等待／批准以及正式／Demo 启动关闭事件的权威生命周期转换矩阵。正式 `PROCESS_RESTART_DETECTED` 行只覆盖七项非持久化非终态：`CREATED`、`WAITING_USER`、`RUNNING(PREFLIGHT)`、`RUNNING(BASELINE)`、`RUNNING(REPRODUCTION)`、`RUNNING(AGENT_LOOP)` 和 `RUNNING(FORMAL_VALIDATION)`；它必须经 3.2.6 的 `PROCESS_RESTARTED_DURING_RUN → INTERNAL_ERROR` 映射并引用 3.3.7 的对象级闭合细节。`RUNNING(PERSISTENCE)` 与 `RECOVERY_REQUIRED` 明确排除，只能走 3.2.9／3.10 的恢复路线；对应机械验证位于 3.2.11 第 12 项。Demo 启动失效仍使用独立矩阵行，不得取得或伪造正式 lease。
+所有 `RunState` 目标状态映射均由 3.2 拥有。3.2.7 是表内主流程、等待／批准以及正式／Demo 启动关闭事件的权威生命周期转换矩阵。正式 `PROCESS_RESTART_DETECTED` 行只覆盖七项非持久化非终态：`CREATED`、`WAITING_USER`、`RUNNING(PREFLIGHT)`、`RUNNING(BASELINE)`、`RUNNING(REPRODUCTION)`、`RUNNING(AGENT_LOOP)` 和 `RUNNING(FORMAL_VALIDATION)`；它必须经 3.2.6 的 `PROCESS_RESTARTED_DURING_RUN → INTERNAL_ERROR` 映射并引用 3.3.7 的对象级闭合细节。`RUNNING(PERSISTENCE)` 与 `RECOVERY_REQUIRED` 明确排除，只能走 3.2.9 的恢复目标状态映射，并由 3.10 提供持久化事务／恢复领域证据、事务事实、`RecoveryDisposition` 与守卫；对应机械验证位于 3.2.11 第 12 项。Demo 启动失效仍使用独立矩阵行，不得取得或伪造正式 lease。
 
-3.10 只形成并封存 `FormalValidationResult`；3.5 在原子创建下一 `AgentTurn` 时才从该结果确定性生成有界结构化反馈。US-06 只负责 `ConfirmReproductionAction` 的一次性批准和通用 `DENY`，最终持久化批准及绑定由 US-07 负责。
+仅在 `FORMAL_VALIDATION_FAILED → AGENT_LOOP` 的下一轮反馈所有权边界内，3.10 形成并封存 `FormalValidationResult`，3.5 在原子创建下一 `AgentTurn` 时才从该 `FormalValidationResult` 确定性生成有界结构化反馈；这不收窄 3.10 对正式验证、持久化事务／恢复的领域证据、事务事实、`RecoveryDisposition` 与守卫的既有职责，也不允许 3.10 另行定义 `RunState` 目标状态映射。US-06 只负责 `ConfirmReproductionAction` 的一次性批准和通用 `DENY`，最终持久化批准及绑定由 US-07 负责。
 
 US-08 的用户可见状态固定为四类：执行中（`CREATED | RUNNING`）、等待用户（`WAITING_USER`）、恢复阻塞（`RECOVERY_REQUIRED`）、已结束（`SUCCEEDED | STOPPED`）。恢复阻塞是非终态，不得伪装成普通等待或已结束。
 
@@ -219,7 +219,8 @@ RepositoryPolicySnapshot
 - `DisclosureRecord` 只证明授权有效且已完成真实适配器调用前调度提交，不证明适配器实际被调用，也不证明供应商已收到、处理或返回；
 - 披露等待前只能构建非权威 `ContextProjectionDraft`；授权不足只创建 `WaitContext`，不得创建 turn、attempt、feedback、`AgentFeedbackConsumptionManifest` 或 reservations；授权满足并在新 phase-entry 全量重算后，才原子创建 `AgentTurn`、最终 `ContextProjection`、attempt、适用 feedback、`AgentFeedbackConsumptionManifest` 和 reservations；
 - feedback 只支持 `NEXT_TURN_ONLY` 有界摘要，不跨候选或 phase 迁移；
-- 每条选中反馈恰好一个 reservation，一个 `AgentFeedbackConsumptionManifest` 聚合完整集合；真实调用前的确定性 dispatch checkpoint 必须以同一 pre-dispatch commit 全有或全无地完成 grant 重验、披露预算消费、`DisclosureRecord` 创建与最终请求绑定，以及 reservations 全量消费；任一事实不得部分可见，提交成功后才可尝试调用适配器；
+- 3.5 是唯一的组合 dispatch checkpoint 编排权威，拥有调用时点、turn／attempt／最终投影／最终请求绑定和 feedback reservations 消费；3.9 拥有权威披露子操作及其 `DisclosureGrant` 校验语义、披露预算账本、`DisclosureRecord` 领域／证明语义、发布键与幂等；该披露子操作不得在 checkpoint 之外先行或另行提交预算或记录，3.5 也不得重实现或放宽这些语义；
+- 每条选中反馈恰好一个 reservation，一个 `AgentFeedbackConsumptionManifest` 聚合完整集合；由 3.5 编排的真实调用前确定性 dispatch checkpoint 必须以同一组合 pre-dispatch commit，全有或全无地加入 3.9 权威披露子操作的 grant 重验、披露预算消费、`DisclosureRecord` 创建与最终请求领域绑定，以及 3.5 拥有的 reservations 全量消费；任一事实不得部分可见，提交成功后才可尝试调用适配器；
 - owning process 内 Accepted、Rejected、`LLMCallFailureRecord` 和 `TurnProcessingFailureRecord` 都保持 checkpoint 后的消费；
 - owning process 内 checkpoint 前取消或内部中止全量关闭 reservations 且不消费；3.3.7 正式启动终止或 3.3.14 Demo 启动失效在 checkpoint 前执行相同关闭，在 checkpoint 后无 outcome 时保持已消费；
 - `SAME_ATTEMPT_REPLAY` 只能为相同标识和相同规范输入返回首次已形成的同一 outcome，并复用原最终投影、`AgentFeedbackConsumptionManifest` 和 reservations；尚无 outcome 时不得重发适配器调用；
@@ -349,12 +350,12 @@ NON_BLOCKING_ENHANCEMENT
 | 3.6 | `CandidateRevision`、恢复修订、`FinalDiff` |
 | 3.7 | 检查能力、`CheckResult`、失败指纹 |
 | 3.8 | 两类修复场景、复现确认状态 |
-| 3.9 | 策略决定、审批、`DisclosureGrant`、披露预算账本、`DisclosureRecord` 发布键／幂等与 pre-dispatch commit |
-| 3.10 | 形成 `FormalValidationResult`、正式验证、持久化事务、持久化恢复；下一轮反馈仍由 3.5 生成 |
+| 3.9 | 策略决定、审批、`DisclosureGrant`、披露预算账本、`DisclosureRecord` 领域／证明语义、发布键／幂等，以及可全有或全无加入 3.5 组合 checkpoint 的权威披露子操作 |
+| 3.10 | 形成 `FormalValidationResult`、正式验证、持久化事务／恢复的领域证据、事务事实、`RecoveryDisposition` 与守卫；下一轮反馈仍由 3.5 生成，`RunState` 目标状态映射仍只由 3.2 定义 |
 | 3.11 | 记忆、配置、凭据 |
 | 3.12 | 可见性事件、审计记录、演示状态；`DisclosureRecord` 只能展示已完成调用前调度提交，适配器调用与交付状态未知 |
 
-3.9 是 `DisclosureGrant`、披露预算账本、`DisclosureRecord` 发布键／幂等和 pre-dispatch commit 的权威章节；3.5 只规定调用时点与绑定。3.12 展示 `DisclosureRecord` 时必须写明“已完成调用前调度提交；适配器调用与交付状态未知”，不得无条件显示“已发送”或“供应商已收到”。当前任务只交接这些所有权边界，不编写 3.9 或 3.12 正文。
+3.5 是唯一的组合 dispatch checkpoint 编排权威，拥有调用时点、最终绑定和 feedback reservations 消费；3.9 拥有权威披露子操作，包括 `DisclosureGrant` 校验语义、披露预算账本、`DisclosureRecord` 领域／证明语义、发布键与幂等。该披露子操作只能全有或全无地加入 3.5 编排的同一提交，不得在 checkpoint 之外先行或另行提交预算或记录；3.5 不得重实现或放宽 3.9 的语义。3.12 展示 `DisclosureRecord` 时必须写明“已完成调用前调度提交；适配器调用与交付状态未知”，不得无条件显示“已发送”或“供应商已收到”。当前任务只交接这些所有权边界，不编写 3.9 或 3.12 正文。
 
 SPEC 全部完成和批准后，才能创建权威 `PLAN.md`。计划还必须通过不同代理类型的无背景冷启动试验，之后才能进入实现。不要从本地未跟踪的旧 `PLAN.md` 直接恢复工作。
 
