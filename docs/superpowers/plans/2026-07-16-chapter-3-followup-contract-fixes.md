@@ -607,7 +607,7 @@ foreach ($term in @(
 }
 foreach ($route in @(
   'CONTEXT_BUDGET_EXCEEDED.*NONE',
-  'MODEL_OUTPUT_INVALID.*COMMITTED',
+  'MODEL_OUTPUT_INVALID(?![A-Z0-9_]).*COMMITTED',
   'MODEL_OUTPUT_INVALID_LIMIT_REACHED.*COMMITTED',
   'ACTION_NOT_ALLOWED_IN_PHASE.*NONE',
   'TOOL_INPUT_INVALID.*NONE',
@@ -800,6 +800,12 @@ Select-String -Path TASK_HANDOFF.md -Pattern '不新增 3\.5\.10|初始 Candidat
 
 Expected: 3.5、3.6、3.9 和 3.12 的下游边界均在当前交接章节出现。
 
+```powershell
+$handoff = Get-Content TASK_HANDOFF.md -Raw; if ($handoff -notmatch '(?m)^.*响应后的不可恢复处理故障.*TURN_PROCESSING_FAILED.*side_effect_status\s*=\s*COMMITTED.*TurnProcessingFailureRecord.*TURN_ABORTED.*RUN_STOPPED.*retry_disposition\s*=\s*NO_RETRY.*STOPPED\(INTERNAL_ERROR\).*reservations 已消费.*不产生动作.*不重新请求供应商.*$') { throw 'HANDOFF post-response failure route is incomplete or split across lines' }; 'PASS'
+```
+
+Expected: `PASS`，且完整路线保持在同一行。
+
 - [ ] **Step 5: 提交过程和交接修正**
 
 ```powershell
@@ -877,10 +883,9 @@ Expected: 无输出。
 git diff --name-only origin/main...HEAD
 ```
 
-Expected only:
+Expected exactly（审查日志追加前精确四文件）：
 
 ```text
-AGENT_LOG.md
 SPEC.md
 SPEC_PROCESS.md
 TASK_HANDOFF.md
@@ -962,6 +967,24 @@ TASK_HANDOFF.md
 `git diff --name-only HEAD^..HEAD` 必须只返回上述两项，`git diff --check HEAD^..HEAD` 必须无输出，上下文 diff 中的每项事实必须与实际回执一致。若任一记录不一致，必须返回 Step 6 修正日志或交接状态，运行 `git commit --amend --no-edit` 生成新的 Task 7 最终日志提交 SHA，并从头重跑 Step 7；不得宣称完成，也不得把新 SHA 写回同一提交造成自引用。
 
 窄范围真实性复核通过后，不得把它描述为对 `SPEC.md` 的第二次冷审。
+
+完成上述日志提交与窄范围真实性复核后，运行最终分支总范围检查：
+
+```powershell
+git diff --name-only origin/main...HEAD
+```
+
+Expected exactly:
+
+```text
+AGENT_LOG.md
+SPEC.md
+SPEC_PROCESS.md
+TASK_HANDOFF.md
+docs/superpowers/plans/2026-07-16-chapter-3-followup-contract-fixes.md
+```
+
+最终分支总范围必须精确为上述五项；该检查不替代最后一个提交只能包含 `AGENT_LOG.md` 与 `TASK_HANDOFF.md` 的既有检查。
 
 ## 完成标准
 

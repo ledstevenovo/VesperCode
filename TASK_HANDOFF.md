@@ -223,7 +223,7 @@ RepositoryPolicySnapshot
 - 两种启动关闭都不得调用、恢复或重发适用适配器；正式路线保留已提交的 `DisclosureRecord`、披露预算和 feedback 消费，但适配器调用与供应商交付事实均为 `UNKNOWN`；Demo 路线不创建 `DisclosureRecord`、不消费真实披露预算并保留 feedback 消费，Mock adapter 是否已调用或返回也为 `UNKNOWN`；旧 process、适用的正式 lease 或 Demo session、turn 或 attempt 绑定的迟到结果不得重开或改写终态；
 - dispatch checkpoint 后真实或 Mock LLM 适配器终态失败必须形成 `LLMCallFailureRecord`、`LLM_ADAPTER_CALL_FAILED`、`side_effect_status = UNKNOWN`、`LLM_CALL_FAILED + RUN_STOPPED` 和 `STOPPED(EXECUTION_TERMINATED)`；当前运行不得重试或重发；
 - 3.5.8 的最小错误路由表逐行冻结场景、稳定错误码、副作用判定对象、`side_effect_status`、轮次处置、重试处置和运行路线；`UNKNOWN` 必须相对于同一行的判定对象解释；
-- 响应后的不可恢复处理故障形成 `TurnProcessingFailureRecord + TURN_ABORTED + STOPPED(INTERNAL_ERROR)`，保持 reservations 已消费，不产生动作且不重新请求供应商。
+- 响应后的不可恢复处理故障固定为 `TURN_PROCESSING_FAILED`，副作用判定对象为本次 LLM 适配器调用且 `side_effect_status = COMMITTED`，形成 `TurnProcessingFailureRecord + TURN_ABORTED + RUN_STOPPED`，`retry_disposition = NO_RETRY`，运行进入 `STOPPED(INTERNAL_ERROR)`；保持 reservations 已消费，不产生动作且不重新请求供应商。
 
 3.5.9 只是固定最低验收清单和最低必测集合；3.5.1—3.5.8 中其他 MUST／MUST NOT 合同继续有效，不得因未在 21 项中逐项复写而排除。3.5 写作结构止于 3.5.9，不新增 3.5.10。
 
