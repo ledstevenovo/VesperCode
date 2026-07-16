@@ -916,8 +916,28 @@ $forbidden = Select-String -Path SPEC.md,TASK_HANDOFF.md -Pattern @(
 if ($forbidden) { $forbidden; throw 'forbidden current-contract wording found' }
 
 $planPath = 'docs/superpowers/plans/2026-07-16-chapter-3-followup-contract-fixes.md'
-$authorityFiles = @('SPEC.md', 'TASK_HANDOFF.md', $planPath)
-$authorityCorpus = ($authorityFiles | ForEach-Object { Get-Content $_ -Raw }) -join "`n"
+$processText = Get-Content SPEC_PROCESS.md -Raw
+$currentProcessHeadings = [regex]::Matches($processText, '(?m)^## 13\.[^\r\n]*')
+if ($currentProcessHeadings.Count -ne 1) {
+  throw 'SPEC_PROCESS current section heading must exist exactly once'
+}
+$currentProcessMatch = [regex]::Match($processText, '(?ms)^## 13\..*\z')
+if (-not $currentProcessMatch.Success) {
+  throw 'SPEC_PROCESS current section missing'
+}
+$currentProcessSection = $currentProcessMatch.Value
+$currentProcessBody = $currentProcessSection -replace '(?s)\A## 13\.[^\r\n]*(?:\r?\n)?', ''
+if ([string]::IsNullOrWhiteSpace($currentProcessBody)) {
+  throw 'SPEC_PROCESS current section empty'
+}
+
+$authorityTexts = [ordered]@{
+  'SPEC.md' = Get-Content SPEC.md -Raw
+  'TASK_HANDOFF.md' = Get-Content TASK_HANDOFF.md -Raw
+  $planPath = Get-Content $planPath -Raw
+  'SPEC_PROCESS.md current section' = $currentProcessSection
+}
+$authorityCorpus = ($authorityTexts.Values) -join "`n"
 foreach ($legacyAuthority in @(
   '3\.10 只负责正式验证结果',
   '3\.10 只形成(?:并封存)?\s*`?FormalValidationResult`?',
@@ -938,18 +958,18 @@ $requiredAuthority = [ordered]@{
   disclosure_suboperation_owner = '3\.9\s*拥有权威披露子操作'
   no_independent_disclosure_commit = '披露子操作.{0,180}不得在\s*checkpoint\s*之外.{0,100}(先行|独立|另行).{0,100}提交'
 }
-foreach ($file in $authorityFiles) {
-  $text = Get-Content $file -Raw
+foreach ($authorityText in $authorityTexts.GetEnumerator()) {
+  $text = $authorityText.Value
   foreach ($entry in $requiredAuthority.GetEnumerator()) {
     if (-not [regex]::IsMatch($text, $entry.Value, [System.Text.RegularExpressions.RegexOptions]::Singleline)) {
-      throw "$file missing authority boundary: $($entry.Key)"
+      throw "$($authorityText.Key) missing authority boundary: $($entry.Key)"
     }
   }
 }
 'PASS'
 ```
 
-Expected: `PASS`。
+Expected: `PASS`。四个权威文本（`SPEC.md`、`TASK_HANDOFF.md`、本计划和 `SPEC_PROCESS.md` 从当前 `## 13.` 标题到 EOF 的非空章节）必须各自包含五项正向边界，合并语料中的六类旧冲突必须为零；当前第 13 节缺失或为空时必须失败。`SPEC_PROCESS.md` 第 12 节及更早历史只保留为过程证据，不进入当前合同扫描。
 
 - [ ] **Step 2: 运行类型、错误码和状态空间一致性检查**
 
@@ -1112,7 +1132,7 @@ docs/superpowers/plans/2026-07-16-chapter-3-followup-contract-fixes.md
 - `TASK_HANDOFF.md` 明确 3.12 不得把 `DisclosureRecord` 无条件显示为已发送或供应商已收到；
 - 在 3.6 完成该初始候选合同前，不声称 `3.5 -> 3.6` 的端到端修复循环已经验证；
 - 没有新增 `RunStatus`、`WaitKind`、`StopReason`、`DisclosureAttempt`、供应商重发、generation、takeover、通用 reconciliation 或恢复状态机；
-- `SPEC.md`、`SPEC_PROCESS.md`、`TASK_HANDOFF.md` 和 `AGENT_LOG.md` 对当前合同与审查事实一致；
+- `SPEC.md`、`SPEC_PROCESS.md` 当前第 13 节、`TASK_HANDOFF.md` 和 `AGENT_LOG.md` 对当前合同与审查事实一致；`SPEC_PROCESS.md` 第 12 节及更早历史不因当前结论而改写，也不进入当前合同扫描；
 - 三轮只读审查对同一固定内容 SHA 通过，日志提交完成窄范围真实性复核；
 - 本轮只重新锁定 3.1—3.5；完整第三章仍须完成 3.6—3.12 后接受全章交叉审查；
 - 课程冷启动实现试验仍须等待完整 `SPEC.md` 与权威 `PLAN.md` 获批。
