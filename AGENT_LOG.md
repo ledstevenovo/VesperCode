@@ -84,3 +84,29 @@
 - **Cold-review boundary:** 最终无背景冷审止于 `83746d7599ed0f09e10ad15b2e6215378a226cb4`，不覆盖本条证据所在的后续提交；后续只需做窄范围真实性与格式复核，本条不声称该复核已经发生。
 - **Unfinished work:** 3.6—3.12、完整第三章交叉审查、完整 `SPEC.md` 与课程权威 `PLAN.md` 批准、最终冷启动实现试验、实现代码。
 - **Lesson learned:** 审查结论必须绑定固定内容 SHA；追加审查证据必然晚于被审内容，不能把原冷审的覆盖范围扩张到承载结果的日志提交。历史 `NEEDS_CHANGES` 与最终 `PASS` 应同时保留，才能证明返修和重新锁定真实发生。
+
+## CH3-FOLLOWUP-CONTRACT-FIXES
+
+- **Timestamp (Asia/Taipei):** `2026-07-17T13:10:34.2027936+08:00`
+- **Task ID:** `CH3-FOLLOWUP-CONTRACT-FIXES`
+- **Skills invoked:** `superpowers:using-git-worktrees`、`superpowers:subagent-driven-development`、`superpowers:requesting-code-review`、`superpowers:receiving-code-review`、`superpowers:verification-before-completion`；`superpowers:executing-plans` 只用于读取并审阅计划，随后按其要求切换到唯一的 subagent 调度器，没有并列重复实施任务。
+- **Key prompt/context:** 用户以 `/goal` 要求执行 `docs/superpowers/plans/2026-07-16-chapter-3-followup-contract-fixes.md`，修改后至少由两轮独立子代理审查，不合格则返工。计划基线为 `53ddefd1676c2c72603dddaac33393ffb3627ef7`，分支为 `codex/ch3-followup-review-plan`，隔离 worktree 为 `D:\code\VesperCode\.worktrees\ch3-followup-review-plan`；计划本身要求最终增加第三轮无背景范围冷审。
+- **Task 1—6 implementation agents and commits:**
+  - Task 1：`/root/task1_implementer`，`28f2734b8409cb66b9e2b2dddf0d569fb122ddae`。
+  - Task 2：`/root/task2_implementer`，`5ffac852808991a421f8a5ab0c507bccef401e91`。
+  - Task 3：`/root/task3_implementer`、恢复实施者 `/root/task3_implementer_recovery`，`695626623742ff73e8cf3d5f73908c416c4b95bf`、`196dbac6bff83f14b993caafab0c03200ad50efe`。
+  - Task 4：`/root/task4_implementer`，`d6c4d4455e7a1cc1757f2a7e39f3501c5f3319b7`。
+  - Task 5：`/root/task5_implementer`，`67d0b5b79fc511f440f19e52f3d30f0f5c9b3acd`。
+  - Task 6：`/root/task6_implementer`、最终修复实施者 `/root/task6_fix_implementer`，`06b08a94c142db68bad70e57dd38985b17d9a441`、`7a55641dbda07c31c87f31c8498d4f70fcaf65e7`。
+- **Subsequent rework and fixed content:** `/root/review2_rework_writer` 形成 `fc09b05ed0e0f8da2a9a4a9bbd43e99a501a4ca0`；`/root/handoff_baseline_rework_writer` 形成 `79d3ae466aebe56be68dda0e9720510443b07cea`；`/root/authority_boundary_rework_writer` 形成 `c7f582b6862e5046bfd8760781b76ef1304513dd`；`/root/process_authority_rework_writer` 形成 `a31922c855d0ce4427bed04c75f99c0f091d2baf`；`/root/plan_semantics_rework_writer` 完成最后三文件返工，控制代理全量验证后提交固定内容 SHA `1fc0fc4524013b16e51f48c43cbb831f63145e32`。
+- **Fresh candidate verification:** `/root/candidate_fresh_verifier` 对固定内容 SHA 从零读取计划、完整四文件 diff 和项目规则；33/33 个 PowerShell fenced blocks AST 解析无错误，Tasks 2—7 合同门禁、枚举和九条七列错误路由、Git 范围、凭据、UTF-8/CRLF、checkbox 与历史不变性全部 `FINAL PASS`。验证代理未编辑文件。
+- **Three sequential read-only reviews on the same content SHA:**
+  - 规范符合性：`/root/candidate_review1_spec_v2`，`FINAL PASS`，无阻断项或非阻断意见。
+  - 文档质量：`/root/candidate_review2_doc_quality_v2` 首次因审查证据未补齐而返回程序性 `FINAL FAIL`，没有提出候选合同缺陷；按 `receiving-code-review` 核验后，同一代理在同一 SHA 补齐 Step 2—3、编码与结束现场证据，最终 `FINAL PASS / Ready: Yes`。
+  - 无背景范围冷审：`/root/candidate_review3_cold_scope_v2` 只收到课程来源、固定 SHA、当前文件和 Git 范围，最终 `FINAL PASS`，无符合五字段要求的阻断项。
+- **Non-blocking review observations:** 文档质量审查与无背景冷审都指出 `SPEC_PROCESS.md` 的 13.4 标题称“六项修正”而实际有七项，以及计划的 Step 1 期望文字称“五项正向边界”而脚本实际检查八项；文档质量审查还指出同一句称“六类旧冲突”而脚本实际检查七类。这些计数措辞均被分类为不影响合同或门禁行为的 `NON_BLOCKING_ENHANCEMENT`，未触发内容 SHA 返工。
+- **Human intervention:** 用户批准执行指定计划，要求至少两轮独立子代理审查且失败时返工，并在执行中要求汇报进度、确认 Codex 额度已经恢复。用户没有直接编辑本轮文件；工具审批和 Windows 沙箱限制只影响命令启动方式，不改变候选内容。
+- **Verification:** 固定内容 SHA 上 `RunStatus/WaitKind/StopReason/AgentAction/AgentTurnOutcome` 计数为 `6/3/14/7/4`；3.5.8 为 9 行 × 7 列，`side_effect_status` 分布为 `NONE=5 / COMMITTED=3 / UNKNOWN=1`；3.5.9 严格为 1—21；正式与 Demo 重启守卫分离；`git diff --check` 通过，凭据模式命中 0，四个变更文件均为严格 UTF-8、无 BOM、纯 CRLF，工作树与索引干净。
+- **Review boundary:** 三轮审查范围均止于固定内容 SHA `1fc0fc4524013b16e51f48c43cbb831f63145e32`，不覆盖本条日志和交接状态所在的后续提交；后续只对该日志提交做窄范围真实性、格式和范围复核，不把它描述为对 `SPEC.md` 的第二次冷审。
+- **Lock status and unfinished work:** 3.1—3.5 已在固定内容 SHA 上重新锁定；完整第三章仍未锁定，下一任务仍是 3.6。3.6—3.12、完整第三章交叉审查、完整 `SPEC.md` 与课程权威 `PLAN.md` 批准、最终冷启动实现试验及实现代码均未完成。
+- **Lesson learned:** 审查代理的证据未跑完不等于候选内容失败；必须先核验 classification 和代码库事实，再决定是否返工。只有实际候选内容变化才生成新 SHA 并从第 1 轮重启审查，程序性补证可以在同一冻结 SHA 上闭合。
