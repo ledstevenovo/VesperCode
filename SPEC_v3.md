@@ -16,7 +16,26 @@
 
 每项规范合同只在一个章节定义。问题陈述和用户故事只描述可观察结果，不重新定义内部协议。功能合同使用 `FR-*`，非功能要求使用 `NFR-*`，验收标准使用 `AC-*`。
 
-精确依赖 patch 版本、Docker 镜像摘要、发布 URL 和 CI 执行编号属于实现与发布证据，必须记录在 lock file、镜像清单、CI 和 README 中，但不改变本文冻结的行为边界。
+精确依赖 patch 版本、OpenAI model、profile manifest 摘要、Docker 镜像摘要、发布 URL 和 CI 执行编号属于实现与发布证据，必须记录在 lock file、manifest、CI 和 README 中，并由运行快照绑定，但不改变本文冻结的行为边界。
+
+## 0.1 `CanonicalizationV1`
+
+所有用于身份、重放、策略、批准、披露、验证和持久化绑定的摘要统一使用 SHA-256，并以对象类型和 schema 版本作域分隔。不同对象即使正文相同，也不得产生可互换的绑定摘要。
+
+规范 JSON 使用无 BOM UTF-8：对象键按 Unicode code point 升序排列；不保留无意义空白；整数使用十进制；禁止浮点数、`NaN` 和无穷值；数组保持各合同规定的规范顺序。时间统一为 UTC RFC3339。未被具体合同声明为绑定字段的进程 ID、随机 ID、时间、审计序号和显示文本不得进入语义重放摘要。
+
+仓库内路径统一为使用 `/` 的规范相对路径。路径解析必须拒绝 `.`/`..` 段、空段、绝对路径、盘符、UNC、ADS、设备路径、尾随点/空格、保留设备名、Unicode 或 Windows 大小写折叠后碰撞，以及多个输入解析到同一最终对象的别名。工作区身份绑定规范绝对路径、卷标识和最终目录对象身份；仅对路径字符串做大小写转换不构成身份验证。
+
+下列对象的摘要输入必须唯一：
+
+- `AgentAction`：拒绝未知字段后的完整规范动作对象；
+- `ContextProjection`：裁剪完成、来源和裁剪决定已固定的最终投影；
+- `ReferenceProfileManifestV1` 和 `LLMProfileManifestV1`：除自身 `digest` 外的全部规范字段；
+- `ValidationManifestV1`：全部规范字段，不含显示文本；
+- `FailureFingerprintV1`：规范测试身份、调用阶段失败事实、异常类型、规范消息、断言差异和项目栈帧；
+- `FinalDiff`：§4.3 定义的规范树差异字节；
+- 工作区前/后映像：规范路径、`ABSENT` 或原始文件字节摘要、文本元数据和最终对象身份；
+- 语义检查结果：检查类型、输入树、环境、逐测试/诊断事实和稳定错误；排除执行时间、容器 ID 与审计序号。
 
 # 1. 问题陈述与范围
 
@@ -66,7 +85,7 @@
 | 缺陷输入 | 已存在且可稳定复现的 pytest 失败测试 | 自然语言缺陷自动生成测试 |
 | 检查 | pytest 8.x、Ruff、Mypy；命令由适配器生成 | 任意 Shell、任意 argv、动态下载工具 |
 | 补丁 | 严格 `UNIFIED_DIFF_V1`；UTF-8/UTF-8 BOM 普通文本的创建和修改 | 删除、重命名、二进制、链接、模式变更、模糊应用 |
-| Git | 有有效 HEAD、字节与 HEAD blob 一致的干净普通仓库 | submodule、LFS、稀疏检出、filter、工作树编码转换、脏工作区 |
+| Git | 有有效 HEAD、满足 §1.4.1 干净谓词且字节与 HEAD blob 一致的普通仓库 | submodule、LFS、稀疏检出、filter、工作树编码转换、特殊 index 状态、脏工作区 |
 | 执行 | 预构建、无网络、候选树只读挂载的 Docker profile | 宿主执行、运行中构建镜像或安装依赖 |
 | LLM | 可注入 Mock LLM；一个 OpenAI 单轮适配器 | 高层 Agent 框架、自动重试与跨崩溃调用恢复 |
 | WebUI | 本地 WebUI；公网 Mock Demo | 公网读取本地仓库、上传任意仓库、公网真实凭据 |
@@ -77,21 +96,90 @@
 
 v1 只支持 profile id 为 `python-src-py312-v1` 的参考画像：
 
-| 项目 | 冻结要求 |
+#### `ReferenceProfileManifestV1`
+
+参考画像不是仅靠字符串约定的规则集合。发布包必须内置且只读地提供：
+
+    ReferenceProfileManifestV1 {
+      schema_version: 1
+      profile_id: "python-src-py312-v1"
+      requirements_lock_digest
+      docker_image_digest
+      python_version
+      pytest_version
+      report_plugin_version
+      ruff_version
+      mypy_version
+      check_plan_version
+      digest
+    }
+
+`digest` 按 §0.1 对除自身外的全部字段计算。目标仓库的 `requirements.lock` 必须精确匹配该 manifest 的 `requirements_lock_digest`；仅提供相同 profile id 不构成匹配。预检、基线、正式验证和发布证据必须使用同一个 manifest digest 和 Docker image digest。
+
+交付仓库必须提供一个与该 manifest 匹配、能走完基线、错误补丁反馈、修正、正式验证和写回流程的 reference fixture。该 fixture 是实现和端到端验收工件，不扩大正式输入范围。
+
+#### `StaticProjectProfileCheckV1`
+
+静态预检不运行项目代码，只验证可由仓库快照、Git 元数据、内置 manifest 和 Docker 配置证明的事实：
+
+| 项目 | 静态冻结要求 |
 |---|---|
 | 根目录文件 | 必须存在 `pyproject.toml` 和 `requirements.lock` |
 | 源码布局 | 业务源码位于 `src/`；测试位于 `tests/` |
-| Python | 宿主适配器和容器均为 Python 3.12 |
+| Python 与工具 | 宿主适配器、容器和工具版本精确匹配 `ReferenceProfileManifestV1` |
 | pytest | 配置只来自 `pyproject.toml`；允许内建插件及执行镜像内固定的机器可读报告插件 |
 | Ruff / Mypy | 均必须在 `pyproject.toml` 中显式配置；未配置视为不支持，而不是跳过 |
-| 依赖 | `requirements.lock` 摘要必须映射到预构建 Docker profile；运行中不得安装或更新 |
-| 外部服务 | 测试不得依赖网络、宿主服务、数据库守护进程或未声明本地服务 |
-| Git 元数据 | 项目运行时不得依赖 `.git`、提交历史、标签或 VCS 动态版本 |
-| 运行时写入 | 检查期间不得要求写入项目树；临时文件和缓存必须写入容器 tmpfs |
+| 依赖 | `requirements.lock` 摘要精确匹配 manifest；运行中不得安装或更新 |
 | 文本 | 可编辑文件必须为 UTF-8 或 UTF-8 BOM、统一 LF/CRLF、具有末尾换行；混合换行文件不可编辑 |
-| pytest 扩展 | 不支持会使 node ID 依赖外部环境的自定义收集插件、动态下载插件或入口点自动加载 |
+| pytest 扩展 | 不支持自定义收集插件、动态下载插件或入口点自动加载 |
+| Git 干净谓词 | index tree 必须等于 HEAD；不存在 unmerged、非 stage-0、intent-to-add、skip-worktree、assume-unchanged、tracked 字节漂移或不允许的 untracked 文件 |
 
-`ProjectAdapter.detect` 必须逐项验证该画像。任何一项无法证明时返回 `UNSUPPORTED_PROJECT`，不得猜测或跳过检查。
+    StaticProjectProfileResult =
+      SUPPORTED {
+        profile_id
+        reference_profile_digest
+        repository_policy_digest
+      }
+      | UNSUPPORTED_PROJECT {
+        reasons[]
+      }
+
+`ProjectAdapter.detect_static` 必须逐项验证静态画像。任何一项无法证明时返回上述 `UNSUPPORTED_PROJECT`，不得猜测、运行项目代码或跳过检查。
+
+未跟踪文件只有在冻结 ignore 规则下被忽略且不命中 §1.4.2—1.4.3 时才允许存在；它们不得进入 `SnapshotTree`、容器、披露来源或最终差异。Git index、工作树和 HEAD 的比较必须禁用宿主 system/global 配置、外部 attributes/ignore 和可改变内容的 filter。任意规范路径在 Windows 大小写或 Unicode 折叠后发生碰撞时返回 `UNSUPPORTED_REPOSITORY`。
+
+有效 Git 配置必须满足 `core.autocrlf=false`，且不得通过 repository config 或 `.gitattributes` 为任一 tracked 路径启用 `core.eol`、`eol`、`working-tree-encoding` 或内容 filter 转换。CRLF 文件只有在 HEAD blob 本身使用一致 CRLF、工作区原始字节与 blob 完全相同且补丁保持该换行风格时受支持；不能依赖 checkout 转换制造 CRLF 工作树。
+
+#### `RuntimeCompatibilityCheckV1`
+
+以下行为只能在 `RUNNING(BASELINE)` 的固定无网络、无宿主服务、候选树只读容器中验证，不能由 `PREFLIGHT` 假装静态证明：
+
+- 两次 pytest collect-only 的完整 node ID 集合稳定；
+- 完整基线和独立目标复跑可在没有网络、宿主服务、数据库守护进程或未声明本地服务时完成；
+- 项目不依赖 `.git`、提交历史、标签或 VCS 动态版本才能启动检查；
+- pytest、Ruff 和 Mypy 不要求写入项目树，临时文件和缓存只进入 tmpfs；
+- pytest 报告以及 Ruff/Mypy 输出满足 §4.5 的完整解析合同。
+
+    RuntimeProfileViolationKind =
+      EXTERNAL_SERVICE_REQUIRED
+      | VCS_RUNTIME_DEPENDENCY
+      | PROJECT_TREE_WRITE
+      | COLLECTION_UNSTABLE
+      | REPORT_INCOMPLETE
+      | CHECK_ENVIRONMENT_ERROR
+
+    RuntimeCompatibilityResult =
+      COMPATIBLE {
+        reference_profile_digest
+        evidence_digest
+      }
+      | BASELINE_BLOCKED {
+        reason: RUNTIME_PROFILE_VIOLATION
+        violation_kind
+        evidence_refs[]
+      }
+
+动态不兼容返回上述 `BASELINE_BLOCKED`，不得改写为静态 `UNSUPPORTED_PROJECT`。该结果只证明固定测试与检查在本次 reference profile 下的可观察兼容性，不宣称发现未执行代码中的潜在依赖。
 
 ### 1.4.2 受保护验收与仓库策略工件
 
@@ -105,7 +193,7 @@ v1 只支持 profile id 为 `python-src-py312-v1` 的参考画像：
 - `.gitignore`、`.gitattributes`、`.gitmodules`；
 - 适配器识别出的其他会改变 pytest 收集、解释器启动、依赖解析、Ruff 或 Mypy 行为的入口。
 
-Profile 正常形态只使用 `pyproject.toml` 和 `requirements.lock`；出现其他配置入口时，适配器可以将项目直接判为不支持。保护集合必须由代码中的单一版本化表生成，不能由仓库文本放宽。
+Profile 正常形态只使用 `pyproject.toml` 和 `requirements.lock`；出现其他 pytest、Ruff、Mypy、解释器启动或依赖解析配置入口时，适配器必须返回 `UNSUPPORTED_PROJECT`。保护集合必须由代码中的单一版本化表生成，不能由仓库文本放宽。
 
 ### 1.4.3 敏感路径与文件系统对象
 
@@ -116,7 +204,7 @@ Profile 正常形态只使用 `pyproject.toml` 和 `requirements.lock`；出现�
 - 常见私钥或凭据文件，如 `id_rsa`、`id_ed25519`、`*.pem`、`*.key`、`*.p12`、`*.pfx`、`credentials.json`、`secrets.*`；
 - 内建 `SensitivePathPolicyV1` 追加的保留路径。
 
-所有 tracked 对象必须是单链接普通文件或目录。符号链接、junction/reparse point、Alternate Data Stream、设备路径、UNC、盘符相对路径、保留设备名和 link count 大于 1 的普通文件均以 `UNSUPPORTED_FILESYSTEM_OBJECT` 拒绝。
+所有 tracked 对象必须是单链接普通文件或目录。符号链接、junction/reparse point、Alternate Data Stream、设备路径、UNC、盘符相对路径、保留设备名、Windows 大小写或 Unicode 折叠后路径碰撞，以及 link count 大于 1 的普通文件均以 `UNSUPPORTED_FILESYSTEM_OBJECT` 拒绝。
 
 ### 1.4.4 仓库和候选硬上限
 
@@ -132,7 +220,7 @@ Profile 正常形态只使用 `pyproject.toml` 和 `requirements.lock`；出现�
 
 ### 1.4.5 `DockerExecutionProfileV1`
 
-正式检查和 Agent 请求的检查都使用同一个锁定镜像摘要，并满足：
+正式检查和 Agent 请求的检查都使用 `ReferenceProfileManifestV1.docker_image_digest` 指定的同一个锁定镜像，并满足：
 
 - `--network none`；非 root 用户；只读容器根文件系统；`cap-drop=ALL`；不挂载 Docker socket；
 - 候选项目树挂载到 `/workspace` 且为只读；权威工作区、控制面数据库、凭据和事务备份不得挂载；
@@ -169,14 +257,15 @@ Profile 正常形态只使用 `pyproject.toml` 和 `requirements.lock`；出现�
 
 ## 2.1 US-01 配置并安全启动运行
 
-作为受支持仓库的开发者，我希望先创建一个可见的准备中运行，再由系统执行兼容性预检，以便在任何模型调用、项目执行或持久修改前发现不支持或不安全的条件。
+作为受支持仓库的开发者，我希望先创建一个可见的准备中运行，再由系统执行静态预检和隔离的运行时兼容性验证，以便在任何模型调用或持久修改前发现不支持、不兼容或不安全的条件。
 
 验收结果：
 
 - 无效请求 Schema 在创建运行前被拒绝，不产生 `run_id`。
-- 有效请求创建 `CREATED` 运行并冻结配置；用户能看到工作区、目标测试、执行 profile、模型模式和预算摘要。
+- 有效请求创建 `CREATED` 运行并冻结配置；用户能看到工作区、规范目标集合、reference/Docker/LLM profile digest 和 `RunLimitsV1` 摘要。
 - 启动后进入 `RUNNING(PREFLIGHT)`；脏仓库、不支持的 Git/项目画像、危险文件对象、未解决恢复、缺失 Docker profile 或凭据会使该运行进入 `STOPPED`。
 - 被拒绝的预检不调用 LLM、不运行项目代码、不安装依赖、不构建镜像、不修改仓库。
+- 预检只验证静态事实；项目代码仅在无网络、候选树只读的 `BASELINE` 中运行，动态不兼容以结构化 `BASELINE_BLOCKED` 停止。
 
 ## 2.2 US-02 安全管理真实 LLM 凭据
 
@@ -197,7 +286,7 @@ Profile 正常形态只使用 `pyproject.toml` 和 `requirements.lock`；出现�
 验收结果：
 
 - 两次 collect-only 得到相同完整 node ID 集合；所有目标存在。
-- 至少一个目标在全量基线和独立目标复跑中产生相同失败分类与失败指纹。
+- 每个目标都在全量基线和独立目标复跑中稳定产生相同 `CALL/FAIL` 和 `FailureFingerprintV1.digest`。
 - 非目标测试全部通过，Ruff 和 Mypy 通过，不存在 skip、xfail、xpass、deselect、未运行或环境错误。
 - 候选补丁不能修改受保护测试或检查配置。
 - 检查失败形成结构化反馈，Mock LLM 可据此在下一轮改变动作。
@@ -209,9 +298,9 @@ Profile 正常形态只使用 `pyproject.toml` 和 `requirements.lock`；出现�
 
 验收结果：
 
-- 首次真实请求前，用户看到供应商、模型、允许的来源路径/类别、脱敏规则、累计字节预算和有效期，并可批准或拒绝 `DisclosureGrant`。
+- 首次真实请求前，用户看到冻结 LLM profile、供应商、模型、允许的来源路径/类别、`NO_CONTENT_REDACTION_V1` 的明确含义、累计字节预算和有效期，并可批准或拒绝 `DisclosureGrant`。
 - 用户拒绝或没有有效 Grant 时不得调用真实适配器。
-- Grant 只对当前运行有效；供应商、模型、来源范围、数据类别、脱敏规则、累计预算或有效期变化时重新进入 `WAITING_USER`。
+- Grant 只对当前运行有效；LLM profile、来源范围、数据类别、redaction profile、累计预算或有效期变化时，在总墙钟仍有正等待区间时重新进入精确绑定的 `WAITING_USER`。
 - 在有效 Grant 范围内，每个请求由控制面自动创建绑定精确请求摘要、实际来源和字节数的 `DisclosureAuthorizationRecord`，不要求用户逐请求点击。
 - 请求摘要变化本身不会使 Grant 失效，但每个精确请求都必须有独立授权记录。
 - 审计只保存摘要和元数据，不保存完整请求、完整响应或凭据。
@@ -225,8 +314,8 @@ Profile 正常形态只使用 `pyproject.toml` 和 `requirements.lock`；出现�
 - `DENY` 不可被模型输出、配置、`DisclosureGrant` 或任何批准覆盖。
 - `ASK` 展示完整动作摘要、理由、绑定上下文和有效期。
 - 拒绝、过期、上下文变化或重复消费均不执行动作。
-- `ActionApproval` 只被精确绑定的动作原子消费一次。
-- `ActionApproval` 与 `DisclosureGrant` 是独立类型，不能互相授权。
+- `FinalWritebackApproval` 只被精确绑定的最终写回原子消费一次。
+- `FinalWritebackApproval` 与 `DisclosureGrant` 是独立类型，不能互相授权。
 
 ## 2.6 US-06 审查、持久化并恢复已验证 diff
 
@@ -238,6 +327,7 @@ Profile 正常形态只使用 `pyproject.toml` 和 `requirements.lock`；出现�
 - 候选、Manifest、验证证据、策略或工作区前映像变化使批准失效。
 - 写回不自动执行 `git add` 或 commit。
 - 写后核对失败不得报告成功。
+- 每个路径以 `PersistencePathRecord` 记录 `PRESENT/ABSENT` 前映像和可滞后的持久进度；恢复必须以实际字节和对象身份为准。
 - 未解决事务阻止同一工作区新运行；用户不能通过“忽略”绕过。
 - `vespercode recover --workspace <path>` 或等价 WebUI 恢复页只产生 `COMMITTED`、`ROLLED_BACK` 或 `UNRESOLVED` 三种结果。
 
@@ -275,7 +365,7 @@ Profile 正常形态只使用 `pyproject.toml` 和 `requirements.lock`；出现�
 - 页面持续显示模拟运行，不得展示为正式修复成功。
 - 相同场景版本、输入和用户选择产生相同关键状态与动作序列。
 - Demo 使用独立 `DemoRunStatus`，不进入正式 `RunStatus.SUCCEEDED`。
-- Demo 不注册本地文件、真实凭据、Docker 或真实 LLM 能力。
+- Demo 不注册本地文件、真实凭据、Docker 或真实 LLM 能力；模拟用户选择只形成 `DemoDecision`，不得形成正式批准或披露授权。
 
 ## 2.10 INVEST 检查
 
@@ -299,7 +389,7 @@ Profile 正常形态只使用 `pyproject.toml` 和 `requirements.lock`；出现�
 |---|---|---|
 | 动作/工具 | list、分段 read、literal search、严格 patch、封闭 check、propose completion | 严格动作 Schema、工具注册表、路径解析器、补丁引擎、受控适配器 |
 | 客观反馈 | pytest、Ruff、Mypy、Schema/策略拒绝、正式验证 | 机器可读结果解析器、失败分类器、`FeedbackRecord` 和下一轮投影 |
-| 危险动作 | 越界路径、敏感路径、验收篡改、任意命令、外发、权威写回 | `PolicyEngine`、`ALLOW/ASK/DENY`、`ActionApproval`、`DisclosureGrant` |
+| 危险动作 | 越界路径、敏感路径、验收篡改、任意命令、外发、权威写回 | `PolicyEngine`、`ALLOW/ASK/DENY`、`FinalWritebackApproval`、`DisclosureGrant` |
 | 记忆 | 项目约定、用户决定、运行摘要、已知失败 | 仓库隔离存储、写入权限、有限检索、来源标注、用户清除 |
 
 ## 3.2 六个 Harness 维度
@@ -337,14 +427,47 @@ Profile 正常形态只使用 `pyproject.toml` 和 `requirements.lock`；出现�
 
 ### 输入与接口
 
-    ValidateRunRequest {
-      schema_version
+    ValidateRunRequestV1 {
+      schema_version: 1
       workspace_path
-      target_test_ids[]
-      llm_mode: MOCK | OPENAI
-      docker_profile_id
-      configurable_limits
+      target_test_ids: 1..20 unique exact pytest node IDs
+      llm_profile_id
+      docker_profile_id: "python-src-py312-v1"
+      limits: RunLimitsV1
     }
+
+    RunLimitsV1 {
+      max_turns: 1..20
+      max_llm_calls: 1..20
+      max_run_wall_clock_seconds: 1..900
+      user_wait_timeout_seconds: 1..300
+      tool_timeout_seconds: 1..60
+      target_check_timeout_seconds: 1..120
+      formal_validation_timeout_seconds: 1..600
+    }
+
+    LLMProfileManifestV1 =
+      MockLLMProfileV1 {
+        schema_version: 1
+        profile_id: "mock-deterministic-v1"
+        mode: MOCK
+        adapter_version
+        script_id
+        script_digest
+        digest
+      }
+      | OpenAILLMProfileV1 {
+        schema_version: 1
+        profile_id: "openai-single-turn-v1"
+        mode: OPENAI
+        provider: "openai"
+        model
+        adapter_version
+        request_serializer_version
+        fixed_parameters
+        redaction_profile_id: "NO_CONTENT_REDACTION_V1"
+        digest
+      }
 
     validate_request(request) -> ValidatedRunRequest | CONFIG_INVALID
     create_run(validated_request) -> Run(CREATED, frozen_config)
@@ -352,20 +475,22 @@ Profile 正常形态只使用 `pyproject.toml` 和 `requirements.lock`；出现�
 
 ### 行为
 
-1. `validate_request` 使用拒绝未知字段的版本化 Schema，只做语法、类型、枚举和基础值域校验；失败时不创建 Run。
-2. `create_run` 将用户限制与内建硬上限合并；用户只能收紧，不能放宽。随后冻结 `RunConfigSnapshot` 并创建 `CREATED`。
-3. `start_run` 以原子状态转换进入 `RUNNING(PREFLIGHT)`，然后执行工作区、Git、项目、Docker、凭据和恢复阻断检查。
-4. 规范化工作区身份后，使用以该身份摘要为键的 Windows named mutex 或等价 Win32 跨进程锁；仅“当前进程内锁”不合格。
-5. 若存在未解决 `PersistenceTransaction`，拒绝新运行并指向恢复入口。
-6. 验证有效 HEAD、工作区字节与 HEAD blob 一致、受支持仓库策略、单链接普通文件、敏感路径规则和 `PythonProjectProfileV1`。
-7. 验证 Docker profile 已预构建、镜像摘要匹配且能力参数满足 §1.4.5。
-8. 真实模式只检查凭据状态和安全后端，不读取或记录秘密。
-9. 预检通过后进入 `RUNNING(BASELINE)`；失败后该 Run 进入带结构化证据的 `STOPPED`。
+1. `validate_request` 使用拒绝未知字段的版本化 Schema，只做语法、类型、枚举和基础值域校验；全部字段必填，解析器不得静默补默认值。单个 target node ID 必须为非空且不超过 1024 个 UTF-8 字节；重复值返回 `CONFIG_INVALID`，规范请求按 §0.1 排序后绑定。
+2. `llm_profile_id` 和 `docker_profile_id` 必须解析到发布包内置的只读 manifest。精确模型、适配器、请求序列化器、固定参数、Mock 脚本、工具版本和镜像摘要由 manifest 决定，不能由请求自由覆盖。
+3. `RunLimitsV1` 每个值只能等于或低于内建硬上限；WebUI 可以预填上述最大值，但 API 请求仍必须显式提交。子超时始终受剩余总墙钟约束。
+4. `create_run` 冻结规范 target 集合、`RunLimitsV1`、LLM profile digest、`ReferenceProfileManifestV1` digest 和 Docker profile digest，形成不含秘密的 `RunConfigSnapshot` 并创建 `CREATED`。
+5. `start_run` 以原子状态转换进入 `RUNNING(PREFLIGHT)`，同时冻结 `started_at` 和 `run_deadline = started_at + max_run_wall_clock_seconds`，然后执行工作区、Git、静态项目画像、Docker、凭据和恢复阻断检查；不得在预检运行项目代码。
+6. 规范化工作区身份后，使用以该身份摘要为键的 Windows named mutex 或等价 Win32 跨进程锁；仅“当前进程内锁”不合格。
+7. 若存在未解决 `PersistenceTransaction`，拒绝新运行并指向恢复入口。
+8. 验证有效 HEAD、工作区字节与 HEAD blob 一致、受支持仓库策略、单链接普通文件、敏感路径规则和 `StaticProjectProfileCheckV1`。
+9. 验证 `ReferenceProfileManifestV1`、Docker profile、镜像摘要和能力参数满足 §1.4.1 与 §1.4.5。
+10. 只有选中的 LLM profile 为 `OpenAILLMProfileV1` 时才检查凭据状态和安全后端；检查不读取或记录秘密。
+11. 预检通过后进入 `RUNNING(BASELINE)`，由 §4.5 执行 `RuntimeCompatibilityCheckV1`；静态预检失败和动态基线阻断必须使用不同证据与错误语义。
 
 ### 输出
 
 - 请求无效：`CONFIG_INVALID`，无 `run_id`。
-- 请求有效：`RunCreated(run_id, config_snapshot_id, status=CREATED)`。
+- 请求有效：`RunCreated(run_id, config_snapshot_id, status=CREATED)`；快照绑定 LLM、reference 和 Docker profile digest。
 - 预检：`AdmissionResult = ACCEPTED | REJECTED(error)`，并形成相应生命周期结果。
 
 ### 错误
@@ -378,14 +503,16 @@ Profile 正常形态只使用 `pyproject.toml` 和 `requirements.lock`；出现�
 
 - 无效 Schema 不产生 Run。
 - 有效请求先产生 `CREATED`，再进入 `PREFLIGHT`。
+- 重复、超过 20 个、超长 target ID，未知 profile、遗漏限制字段和放宽硬上限均为 `CONFIG_INVALID`；target 输入排列不同但集合相同时形成相同规范摘要。
 - 为每种预检拒绝使用固定仓库或 stub；断言 LLM、Docker 和持久化调用次数均为零。
+- 预检不得调用 pytest、Ruff、Mypy 或导入目标项目；运行时兼容性只在 `BASELINE` 检查。
 - 两个进程竞争同一规范工作区时最多一个获得 lease。
 
 ## 4.2 FR-LOOP：主循环、动作协议、上下文和停止
 
 ### 4.2.1 核心接口与状态
 
-    LLMAdapter.generate(ContextProjection) -> ModelResponse
+    LLMAdapter.generate(PreparedModelRequest) -> ModelResponse
     ActionParser.parse(ModelResponse) -> AgentAction | ParseError
     ToolDispatcher.dispatch(AgentAction, RunContext) -> ActionResult
     StopEvaluator.evaluate(RunState, Evidence) -> Continue | Validate | Stop
@@ -399,36 +526,39 @@ Profile 正常形态只使用 `pyproject.toml` 和 `requirements.lock`；出现�
 
     DemoRunStatus = DEMO_CREATED | DEMO_RUNNING | DEMO_WAITING_USER | DEMO_COMPLETED | DEMO_FAILED
 
-`DEMO_COMPLETED` 不是正式 `RunStatus`，不能生成 `VerifiedCandidate`、`ActionApproval` 或权威工作区写入。
+`DEMO_COMPLETED` 不是正式 `RunStatus`，不能生成 `VerifiedCandidate`、`FinalWritebackApproval`、`DisclosureGrant` 或权威工作区写入。
 
 ### 4.2.2 封闭动作 Schema
 
-所有模型响应必须是一个 JSON 对象，且只包含一个动作；动作外自由文本、未知字段和多个动作均为无效输出。
+所有模型响应必须是一个 JSON 对象，且只包含一个动作；动作外自由文本、未知字段和多个动作均为无效输出。公共字段和具体动作字段位于同一个拒绝未知字段的对象中，所有下列字段均为必填字段，不应用解析器默认值补齐。
 
 公共信封：
 
     ActionEnvelope {
       schema_version: 1
-      action_id
-      action_type
+      action_id: non-empty UTF-8 string, <=128 bytes
+      action_type: closed literal
     }
 
 封闭联合及字段：
 
-    ListFilesAction {
-      root: relative_path = "."
+    ListFilesAction = ActionEnvelope & {
+      action_type: "list_files"
+      root: relative_path
       recursive: bool
       max_entries: 1..500
     }
 
-    ReadFileAction {
+    ReadFileAction = ActionEnvelope & {
+      action_type: "read_file"
       path: relative_path
       start_line: >=1
       line_count: 1..400
       max_bytes: 1..32768
     }
 
-    SearchTextAction {
+    SearchTextAction = ActionEnvelope & {
+      action_type: "search_text"
       query: literal UTF-8 string, 1..256 bytes
       roots[]: 1..8 relative paths
       case_sensitive: bool
@@ -436,24 +566,27 @@ Profile 正常形态只使用 `pyproject.toml` 和 `requirements.lock`；出现�
       max_results: 1..100
     }
 
-    ApplyCandidatePatchAction {
+    ApplyCandidatePatchAction = ActionEnvelope & {
+      action_type: "apply_candidate_patch"
       base_candidate_digest
       patch_format: "UNIFIED_DIFF_V1"
       patch_text: UTF-8, <=128 KiB
     }
 
-    RunCheckAction {
+    RunCheckAction = ActionEnvelope & {
+      action_type: "run_check"
       check_plan_id: TARGET_TESTS | FULL_PYTEST | RUFF | MYPY
     }
 
-    ProposeCompletionAction {
+    ProposeCompletionAction = ActionEnvelope & {
+      action_type: "propose_completion"
       candidate_digest
       rationale_summary: UTF-8, <=2048 bytes
     }
 
 `RunCheckAction` 不含 executable、argv、工作目录、环境变量或命令文本；这些全部由可信 `PythonProjectAdapterV1` 根据冻结 profile 生成。模型没有任意 Shell 或任意命令能力。
 
-`ListFilesAction`、`ReadFileAction` 和 `SearchTextAction` 的结果按规范相对路径、行号稳定排序。Search v1 只支持字面量，不支持正则表达式。
+`ListFilesAction`、`ReadFileAction` 和 `SearchTextAction` 的结果按规范相对路径、行号稳定排序。Search v1 只支持字面量，不支持正则表达式。路径数组不得为空、重复或在 Windows 折叠规则下形成别名。
 
 动作结果使用公共信封：
 
@@ -474,7 +607,20 @@ Profile 正常形态只使用 `pyproject.toml` 和 `requirements.lock`；出现�
 - `RunCheckResult`：对应 `CheckResult` 引用；原始输出不直接内嵌进模型上下文。
 - `ProposeCompletionResult`：`VALIDATION_REQUESTED` 或结构化拒绝；它不是成功记录。
 
-### 4.2.3 `ContextProjection`
+面向模型的单个结果正文统一不超过 32 KiB。允许截断的 list/read/search 结果必须返回 `truncated=true`、实际范围和稳定继续参数；不允许截断的 patch、check 和 completion 结果超限时返回稳定错误，不能把部分结果伪装成完整结果。动作已成功执行但客观检查为 `FAIL` 时，`ActionResult.status=SUCCEEDED` 且 `CheckResult.status=FAIL`；只有动作未能按合同完成时才使用 `FAILED`。
+
+### 4.2.3 动作—phase 矩阵
+
+| Phase / 状态 | 模型动作 |
+|---|---|
+| `RUNNING(AGENT_LOOP)` | 六种动作；`RunCheckAction` 可选择四个冻结计划，但受剩余运行和检查预算约束 |
+| `RUNNING(PREFLIGHT)`、`RUNNING(BASELINE)` | 无；由可信协调器执行 |
+| `RUNNING(FORMAL_VALIDATION)` | 无；由可信协调器执行完整冻结计划 |
+| `WAITING_USER`、`RUNNING(PERSISTENCE)`、`RECOVERY_REQUIRED` | 无 |
+
+任何不在矩阵中的模型动作返回 `ACTION_NOT_ALLOWED_IN_PHASE`，不得进入策略批准。正式验证不得通过伪造 `RunCheckAction` 启动，也不消费 Agent turn。
+
+### 4.2.4 `ContextProjection`
 
 每轮上下文由控制面确定性组装，顺序固定为：
 
@@ -487,9 +633,9 @@ Profile 正常形态只使用 `pyproject.toml` 和 `requirements.lock`；出现�
 
 裁剪顺序固定为：先删除最旧记忆，再删除最旧成功动作摘要，再缩减非最近文件片段；Harness 协议、目标测试、当前候选绑定和最近失败反馈不得被裁掉。规范压缩后强制内容仍超过 64 KiB 时，以 `CONTEXT_BUDGET_EXCEEDED` 停止，不得静默截断成语义无效请求。
 
-投影必须记录来源类别、相对路径、字节数、裁剪决定和规范摘要，以供披露授权和测试重放。
+投影必须记录来源类别、相对路径、字节数、裁剪决定和按 §0.1 计算的规范摘要，以供披露授权和测试重放。
 
-### 4.2.4 主循环行为
+### 4.2.5 主循环行为
 
 1. 同一运行任一时刻最多一个活动 `AgentTurn`。
 2. 每轮基于当前候选、有限记忆、未消费反馈和预算生成一个 `ContextProjection`。
@@ -499,33 +645,53 @@ Profile 正常形态只使用 `pyproject.toml` 和 `requirements.lock`；出现�
 6. `ProposeCompletionAction` 只请求进入 `FORMAL_VALIDATION`，不能声明成功。
 7. `StopEvaluator` 只负责 `Continue | Validate | Stop`；它不能发布 `SUCCEEDED`。正式成功只能由 `PersistenceCoordinator` 在 §4.6 的全部条件满足后发布。
 
-### 4.2.5 取消与无进展
+### 4.2.6 取消、预算与无进展
 
 - 用户通过 `CancelRun` 提交取消请求。动作边界、等待用户状态以及持久化首次替换前是安全点。
 - 若持久化已发生首个文件替换，取消保持待处理，必须先完成事务判定或进入恢复，不能中断并假定回滚成功。
 - 相同候选上，相同规范动作得到相同结果连续 3 次时，以 `REPEATED_ACTION_LIMIT` 停止。
 - 连续 6 个 turn 没有产生 `ProgressMarker` 时，以 `NO_PROGRESS_LIMIT` 停止。
-- `ProgressMarker` 只包括：候选树摘要变化；当前候选产生此前未见的结构化检查结果；进入正式验证。单纯重复读取、搜索或相同失败不算进展。
+- `ProgressMarker` 只包括：候选树摘要变化；当前候选产生此前未见的语义检查结果；进入正式验证。语义检查结果按 §0.1 计算，排除时间、随机 ID、容器 ID 和审计序号；单纯重复读取、搜索、相同失败或只改变易变字段不算进展。
+- 冻结 `RunLimitsV1` 的 turn、LLM call 和总墙钟是整个正式运行的实际上限，且不得超过 §5.1 的内建硬上限；单动作、目标检查、用户等待和正式验证超时只是子上限，不能扩大总上限。Schema 无效、模型输出无效和 LLM 调用失败均消耗已开始的 turn/call；在预算不足以开始下一动作、等待或检查时必须于副作用前停止。
 
-### 4.2.6 生命周期
+### 4.2.7 生命周期
+
+    WaitKind = DISCLOSURE_GRANT | FINAL_WRITEBACK
+
+    WaitContext {
+      wait_id
+      run_id
+      wait_kind
+      source_phase: AGENT_LOOP | FORMAL_VALIDATION
+      subject_digest
+      created_at
+      expires_at
+    }
 
 - 有效创建：无 Run → `CREATED`。
 - `CREATED` → `RUNNING(PREFLIGHT)` 或 `STOPPED`。
 - `RUNNING(PREFLIGHT)` → `RUNNING(BASELINE)` 或 `STOPPED`。
 - `RUNNING(BASELINE)` → `RUNNING(AGENT_LOOP)` 或 `STOPPED`。
-- `RUNNING(AGENT_LOOP)` 可继续、进入 `WAITING_USER`、进入 `FORMAL_VALIDATION` 或 `STOPPED`。
-- `RUNNING(FORMAL_VALIDATION)` 可回到新的 `AGENT_LOOP`、进入最终批准等待或 `STOPPED`。
-- 最终批准通过后进入 `RUNNING(PERSISTENCE)`。
+- `RUNNING(AGENT_LOOP)` 可继续、以 `DISCLOSURE_GRANT` 进入 `WAITING_USER`、进入 `FORMAL_VALIDATION` 或 `STOPPED`。
+- `RUNNING(FORMAL_VALIDATION)` 可回到新的 `AGENT_LOOP`、以 `FINAL_WRITEBACK` 进入 `WAITING_USER` 或 `STOPPED`。
+- `DISCLOSURE_GRANT` 只能绑定 `source_phase=AGENT_LOOP`；`FINAL_WRITEBACK` 只能绑定 `source_phase=FORMAL_VALIDATION`。其他 wait kind/phase 组合在创建前拒绝。
+- `DISCLOSURE_GRANT` 的 `subject_digest` 是所请求 LLM profile、来源范围/类别、redaction profile、累计预算和有效期的规范摘要；`FINAL_WRITEBACK` 的 `subject_digest` 是 §4.4.2 全部批准绑定的规范摘要。
+- 用户决定必须同时绑定 `wait_id`、`run_id`、`wait_kind` 和 `subject_digest`。`expires_at = min(created_at + user_wait_timeout_seconds, run_deadline)`；若创建时已无正的等待区间，则在创建 `WaitContext` 前以总墙钟预算耗尽停止。
+- `DISCLOSURE_GRANT` 等待被精确批准后回到来源 `AGENT_LOOP` 的新执行入口；`FINAL_WRITEBACK` 等待被精确批准后进入 `RUNNING(PERSISTENCE)`。
+- 等待被拒绝、过期或取消时进入带稳定原因的 `STOPPED`。`WaitKind`、subject 或绑定变化使旧决定失效；只有来源 phase 重新产生新的 subject 后才可创建新等待。
+- `WAITING_USER` 时间计入 `max_run_wall_clock_seconds`，但不消耗 Agent turn 或 LLM call。披露范围不足、累计预算不足、Grant 过期或撤销时，只要仍有正的等待区间就必须创建新的 `DISCLOSURE_GRANT` 等待；不得在“等待或停止”之间自由选择。
+- 最终候选、Manifest 或验证证据变化时必须重新进入适用的 `AGENT_LOOP` 或 `FORMAL_VALIDATION`；工作区前映像、配置、策略、适配器或执行 profile 变化时停止，不得只创建新的最终批准。
 - `RUNNING(PERSISTENCE)` 可进入 `SUCCEEDED`、`STOPPED` 或 `RECOVERY_REQUIRED`。
 - `RECOVERY_REQUIRED` 只能由 §4.6 的恢复结果进入 `SUCCEEDED`、`STOPPED` 或保持不变。
-- 非持久化阶段进程重启统一停止为 `PROCESS_RESTARTED_DURING_RUN`，不得恢复 turn 或重发 LLM 请求。
+- 非持久化阶段和两类 `WAITING_USER` 进程重启统一停止为 `PROCESS_RESTARTED_DURING_RUN`，不得恢复等待、turn 或重发 LLM 请求。
 
-### 4.2.7 错误
+### 4.2.8 错误
 
 - 模型输出无效：`MODEL_OUTPUT_INVALID`；连续两次无效则 `MODEL_OUTPUT_INVALID_LIMIT` 停止。
 - 动作阶段不允许：`ACTION_NOT_ALLOWED_IN_PHASE`，形成反馈；硬 `DENY` 不进入审批。
 - LLM 调用失败：`LLM_CALL_FAILED` 并停止；v1 不自动重试。
 - 响应后控制面失败：`INTERNAL_ERROR` 并停止。
+- 等待拒绝、过期和绑定变化分别使用 `WAIT_REJECTED`、`WAIT_EXPIRED`、`WAIT_STALE`。
 - 预算、重复动作、无进展和取消使用各自稳定错误码。
 
 ### 确定性测试
@@ -594,9 +760,9 @@ Profile 正常形态只使用 `pyproject.toml` 和 `requirements.lock`；出现�
 
 硬 `DENY` 列表由代码中的单一版本化策略定义。配置、提示、仓库文本、`DisclosureGrant` 和用户批准都不能改变 `DENY`。
 
-### 4.4.2 `ActionApproval`
+### 4.4.2 `FinalWritebackApproval`
 
-最终持久化批准必须绑定：
+`FinalWritebackApproval` 只授权最终权威写回，不授权其他 `ASK`、本地工具、披露、Demo 决定或任何硬 `DENY`。最终持久化批准必须绑定：
 
 - `run_id`、动作类型和规范动作摘要；
 - 当前候选、`FinalDiff`、Manifest 和正式验证证据摘要；
@@ -604,7 +770,7 @@ Profile 正常形态只使用 `pyproject.toml` 和 `requirements.lock`；出现�
 - 配置、策略、适配器和执行 profile 摘要；
 - 创建时间、到期时间和状态。
 
-状态为 `PENDING | REJECTED | EXPIRED | CONSUMED`。只有当前 `PENDING` 且全部绑定仍匹配的批准可以在动作执行前通过一次原子更新变为 `CONSUMED`。消费失败不得执行动作；任何批准不得覆盖 `DENY`。
+状态为 `PENDING | REJECTED | EXPIRED | CONSUMED`。只有当前 `PENDING` 且全部绑定仍匹配的批准可以在动作执行前通过一次原子更新变为 `CONSUMED`。消费失败不得执行动作；任何批准不得覆盖 `DENY`，也不得被转换为其他批准或授权类型。
 
 ### 4.4.3 `DisclosureGrant`
 
@@ -612,77 +778,131 @@ Profile 正常形态只使用 `pyproject.toml` 和 `requirements.lock`；出现�
 
     DisclosureGrant {
       run_id
+      llm_profile_digest
       provider
       model
       allowed_source_paths[]
       allowed_source_categories[]
-      redaction_profile_id
+      redaction_profile_id: "NO_CONTENT_REDACTION_V1"
       cumulative_byte_budget
       consumed_bytes
       expires_at
       status: ACTIVE | REVOKED | EXPIRED | EXHAUSTED
     }
 
-Grant 不绑定尚未形成的最终请求摘要，也不授权任何本地工具或持久化动作。`allowed_source_paths` 使用规范相对文件路径或目录前缀。用户可以撤销；供应商、模型、来源范围、数据类别、脱敏规则、累计预算上限或有效期被修改，或者当前请求需要扩大这些范围时，必须创建新的等待和 Grant。正常的 `consumed_bytes` 增长不会使 Grant 失效。
+Grant 不绑定尚未形成的最终请求摘要，也不授权任何本地工具或持久化动作。`allowed_source_paths` 使用规范相对文件路径或目录前缀。供应商、模型和请求序列化方式来自冻结 `OpenAILLMProfileV1`，用户不能在 Grant 中改写。用户可以撤销；LLM profile、来源范围、数据类别、脱敏 profile、累计预算上限或有效期被修改，或者当前请求需要扩大这些范围时，必须创建新的等待和 Grant。正常的 `consumed_bytes` 增长不会使 Grant 失效。
+
+`NO_CONTENT_REDACTION_V1` 不扫描、替换或声称识别用户源码中的任意秘密。凭据、会话令牌和其他控制面秘密必须在 `ContextProjection` 形成前通过类型和来源隔离保证不可进入；违反该不变量时失败关闭，不能把事后字符串替换当作补救。授权界面必须明确告知用户：被选择的项目正文将在规范裁剪后原样发送，敏感路径拒绝不等于通用秘密扫描。
 
 ### 4.4.4 逐请求授权记录
 
 每次真实调用前：
 
-1. 重新生成最终 `ContextProjection` 和规范供应商请求；
-2. 验证所有实际来源、类别、脱敏结果和字节数均落在活动 Grant 内；
-3. 在同一控制面事务中原子消费累计字节预算，并创建 `DisclosureAuthorizationRecord`；
-4. 只有事务成功后才能调用真实适配器。
+1. 重新生成最终 `ContextProjection`，应用冻结的 `NO_CONTENT_REDACTION_V1` 并形成不可再扩张正文的 `PreparedModelRequest`；
+2. 对实际发送的最终规范请求 UTF-8 字节计数，验证 LLM profile、全部实际来源、类别、redaction profile 应用结果和字节数均落在活动 Grant 内；
+3. 在同一控制面事务中原子消费累计字节预算，并创建绑定精确请求的 `DisclosureAuthorizationRecord`；
+4. 只有事务成功后，真实调用门才可把同一 `PreparedModelRequest` 和授权记录引用交给真实适配器；适配器不得追加项目正文、工具结果或记忆。
 
-记录至少绑定：`grant_id`、provider、model、最终 request digest、实际来源路径/类别、规范字节数、脱敏 profile、创建时间。它证明该精确请求在调用前获得授权，不证明适配器被调用或供应商收到请求。适配器结果由独立 `LLMCallResult` 表示。
+`PreparedModelRequest` 至少包含 LLM profile digest、provider、model、request serializer version、裁剪完成的消息、固定请求参数、实际来源元数据、redaction profile、规范字节数和按 §0.1 计算的 request digest。记录至少绑定：`grant_id`、LLM profile digest、provider、model、最终 request digest、实际来源路径/类别、规范字节数、redaction profile、创建时间。它证明该精确请求在调用前获得授权，不证明适配器被调用或供应商收到请求。适配器结果由独立 `LLMCallResult` 表示。
 
-若请求摘要变化但仍在 Grant 范围和预算内，自动创建新的逐请求记录，不重新要求用户点击。超范围、预算不足、Grant 过期或撤销时进入 `WAITING_USER` 或停止，且真实适配器调用次数为零。
+若请求摘要变化但仍在 Grant 范围和预算内，自动创建新的逐请求记录，不重新要求用户点击。超范围、预算不足、Grant 过期或撤销时严格按 §4.2.7 创建新的 `DISCLOSURE_GRANT` 等待；只有没有正的等待区间时才因总墙钟预算耗尽而停止。两种情况下真实适配器调用次数均为零。
+
+预算消费表示一次真实发送尝试已经获准。事务提交后，即使进程在调用前崩溃、适配器返回错误或供应商是否收到请求无法证明，已消费字节也不退款；v1 不自动重发。`LLMCallResult` 必须区分 `NOT_ATTEMPTED | SUCCEEDED | FAILED | DELIVERY_UNKNOWN`，不得把授权记录显示为供应商已收到。
 
 Mock 路线经过相同上下文裁剪、来源分类、Schema、策略和预算计算，但不读取凭据、不联网，也不创建真实披露 Grant/授权记录。
 
 ### 输出与错误
 
-输出：`PolicyDecision`、`ActionApproval` 状态变化、`DisclosureGrant`、`DisclosureAuthorizationRecord` 或稳定拒绝。
+输出：`PolicyDecision`、`FinalWritebackApproval` 状态变化、`DisclosureGrant`、`DisclosureAuthorizationRecord`、`PreparedModelRequest` 或稳定拒绝。
 
-错误：`ACTION_SCHEMA_INVALID`、`ACTION_DENIED`、`APPROVAL_REJECTED`、`APPROVAL_EXPIRED`、`APPROVAL_STALE`、`APPROVAL_ALREADY_CONSUMED`、`DISCLOSURE_GRANT_REQUIRED`、`DISCLOSURE_SCOPE_EXCEEDED`、`DISCLOSURE_BUDGET_EXCEEDED`、`DISCLOSURE_GRANT_EXPIRED`、`DISCLOSURE_GRANT_REVOKED`。
+错误：`ACTION_SCHEMA_INVALID`、`ACTION_DENIED`、`APPROVAL_REJECTED`、`APPROVAL_EXPIRED`、`APPROVAL_STALE`、`APPROVAL_ALREADY_CONSUMED`、`DISCLOSURE_GRANT_REQUIRED`、`DISCLOSURE_GRANT_REJECTED`、`DISCLOSURE_SCOPE_EXCEEDED`、`DISCLOSURE_BUDGET_EXCEEDED`、`DISCLOSURE_GRANT_EXPIRED`、`DISCLOSURE_GRANT_REVOKED`。
 
 ### 确定性测试
 
-直接构造 `ALLOW`、`ASK`、`DENY`、批准竞态和 Grant 范围变化；断言硬拒绝不可覆盖，只有一个精确批准消费胜出，有效 Grant 内不同请求自动产生不同逐请求记录，未授权或超预算时真实适配器调用次数为零。
+直接构造 `ALLOW`、`ASK`、`DENY`、批准竞态和 Grant 范围变化；断言硬拒绝不可覆盖，只有一个精确批准消费胜出，有效 Grant 内不同请求自动产生不同逐请求记录，未授权或超预算时真实适配器调用次数为零，失败/未知交付不退款且不能重用记录。
 
 ## 4.5 FR-VAL：Python 适配器、基线、检查、Manifest 和反馈
 
 ### 适配器边界
 
     ProjectAdapter {
-      detect(snapshot) -> ProjectProfile
-      build_baseline_plan(profile, target_test_ids) -> CheckPlan
+      detect_static(snapshot, reference_manifest) -> StaticProjectProfileResult
+      build_baseline_plan(static_profile, target_test_ids) -> CheckPlan
+      evaluate_runtime_compatibility(baseline_evidence) -> RuntimeCompatibilityResult
       build_validation_plan(manifest, candidate) -> CheckPlan
       parse_check_result(raw_result) -> CheckResult
-      protected_artifacts(profile) -> ProtectedArtifactSet
+      protected_artifacts(static_profile) -> ProtectedArtifactSet
     }
 
-核心只理解 `CheckPlanId`、`CheckResult`、`TestIdentity`、`ProtectedArtifact` 和 `ValidationManifestV1`。命令、argv、环境白名单和解析器属于 `PythonProjectAdapterV1`。
+`detect_static` 只能读取快照、Git 元数据和内置 manifest，不能执行项目代码。核心只理解 `CheckPlanId`、`CheckResult`、`TestIdentity`、`ProtectedArtifact`、`FailureFingerprintV1` 和 `ValidationManifestV1`。命令、argv、环境白名单和解析器属于 `PythonProjectAdapterV1`。
+
+### `PytestEvidenceV1`
+
+pytest 的权威输入是执行镜像内固定报告插件生成的完整 `PytestEvidenceV1`，至少包含：
+
+- schema、插件版本、递增事件序号和正常结束标记；
+- collect-only 或执行时的完整有序 node ID 集合；
+- 每个 node ID 的 setup、call、teardown outcome、`wasxfail`、结构化异常字段和有界显示摘要；
+- `SKIP`、`XFAIL`、`XPASS`、`DESELECTED`、collection/session/environment error 及其 `ErrorPhase`；
+- pytest 退出码、事件数量和前序事件的完整性摘要。
+
+缺少结束标记、事件序号断裂、重复或未知事件、报告截断、schema/插件版本不匹配、计划外 node ID、计划内 node ID 缺失，或事件摘要不一致时统一返回 `REPORTER_INVALID`。stdout/stderr 和 pytest 退出码不能补足或覆盖缺失的结构化事实。
+
+Ruff 和 Mypy 必须分别使用由 profile 冻结的结构化或稳定格式及对应解析器。缺失、截断、未知诊断类别、工具/格式版本不匹配或解析器无法证明完整性时返回 `CHECK_ERROR`，不能仅按进程退出码判定 `PASS`。
+
+### `FailureFingerprintV1` 与错误阶段
+
+    ErrorPhase =
+      COLLECTION | SETUP | CALL | TEARDOWN | ENVIRONMENT
+
+    ProjectFrameSignatureV1 {
+      relative_path
+      function_name
+      line_number
+    }
+
+    FailureFingerprintV1 {
+      schema_version: 1
+      node_id
+      failure_phase: CALL
+      exception_type
+      normalized_message
+      normalized_assertion_diff: UTF-8 | ABSENT
+      project_frame_signatures[]
+      digest
+    }
+
+只有完整 `PytestEvidenceV1` 中 outcome 为 `FAIL`、阶段为 `CALL` 且结构化异常字段齐全的目标才能产生指纹。collection、setup、teardown 和 environment error 使用 `TestStatus.ERROR + ErrorPhase`，不能伪装为目标失败。
+
+规范化固定为：
+
+1. node ID 使用 collect-only 返回的精确规范字符串；异常类型使用报告器给出的完整类型名。
+2. 消息和断言差异统一为 LF；只把 Harness 已知的执行副本根、tmp 根、当前 run/container ID 和报告器结构化标记的运行时对象地址替换为固定占位符。
+3. 项目栈帧只保留 `SnapshotTree` 内规范相对路径、函数名和行号，并保持调用顺序；pytest、标准库和 site-packages 帧不进入摘要。
+4. 报告中的时间戳、耗时、事件序号和审计元数据不进入指纹。不得用宽泛正则删除用户消息中的任意数字、时间文本或十六进制值；无法安全规范化的易变正文必须导致 `TARGET_UNSTABLE`。
+5. `normalized_message`、项目帧或适用的断言差异缺失、截断、解析失败时不能创建指纹；非断言异常必须显式记录 `normalized_assertion_diff=ABSENT`，不能省略字段。报告合同缺失返回 `REPORTER_INVALID`。
 
 ### 基线固定顺序
 
-A. 在两个独立只读执行副本中分别运行 pytest collect-only，比较完整 node ID 集合；必须完全相同且非空。  
-B. 在第三个独立副本中运行一次完整 pytest，建立逐测试基线。  
-C. 在第四个独立副本中只运行目标集合，验证每个目标的 PASS/FAIL 与步骤 B 一致；失败目标的规范失败指纹必须一致。  
-D. Ruff 和 Mypy 各在自己的全新副本/容器中运行一次。
+1. 在两个独立只读执行副本中分别运行 pytest collect-only，比较完整 node ID 集合；必须完全相同且非空。
+2. 在第三个独立副本中运行一次完整 pytest，建立逐测试基线。
+3. 在第四个独立副本中只运行目标集合；每个目标都必须与步骤 2 一致地在 `CALL` 阶段 `FAIL`，且 `FailureFingerprintV1.digest` 完全一致。
+4. Ruff 和 Mypy 各在自己的全新副本/容器中运行一次。
+5. 对步骤 1—4 的完整证据执行 `RuntimeCompatibilityCheckV1`；只能得到 `COMPATIBLE` 或 §1.4.1 定义的结构化 `BASELINE_BLOCKED`。
 
 基线通过条件：
 
-- 每个目标存在；至少一个目标稳定 `FAIL`。
+- 每个目标都存在并稳定产生相同 `CALL/FAIL` 指纹；任一目标 `PASS`、`ERROR`、缺失、未运行、无法指纹化或不稳定都拒绝整个 baseline。
 - 非目标测试全部实际执行并 `PASS`。
 - 不存在 `SKIP`、`XFAIL`、`XPASS`、`DESELECTED`、`NOT_RUN`、收集错误、setup/teardown 错误、环境错误或超时。
 - Ruff 和 Mypy 均 `PASS`。
+- `RuntimeCompatibilityResult` 为 `COMPATIBLE`。
 
 基线成功后创建不可变 `ValidationManifestV1`，至少绑定：
 
-- 完整 pytest node ID 集合、目标集合、逐测试状态和目标失败指纹；
+- 完整 pytest node ID 集合、目标集合、逐测试状态、`ErrorPhase` 和目标 `FailureFingerprintV1`；
 - §1.4.2 保护工件摘要；
-- 检查计划、适配器版本、Python/pytest/Ruff/Mypy/报告插件版本；
+- `ReferenceProfileManifestV1` digest、检查计划、适配器版本、Python/pytest/Ruff/Mypy/报告插件版本和 `PytestEvidenceV1` 完整性摘要；
 - Docker 镜像摘要、资源参数、环境白名单和仓库策略摘要；
 - `SnapshotTree` 摘要。
 
@@ -694,13 +914,14 @@ D. Ruff 和 Mypy 各在自己的全新副本/容器中运行一次。
 - 检查前后都重验候选树、保护工件和 Manifest 环境；项目树出现任何写入或漂移即 `EXECUTION_WORKSPACE_MUTATED`。
 
     CheckResult.status = PASS | FAIL | ERROR | TIMEOUT | NOT_RUN
-    TestStatus = PASS | FAIL | SKIP | XFAIL | XPASS | ERROR | NOT_RUN
+    TestStatus = PASS | FAIL | SKIP | XFAIL | XPASS | DESELECTED | ERROR | NOT_RUN
+    TestError = {status: ERROR, error_phase: ErrorPhase, stable_error, evidence_ref}
 
 快速反馈可以只运行 `TARGET_TESTS`，但不能创建 `VerifiedCandidate` 或正式成功。
 
 ### 结构化反馈
 
-- 反馈只从 `CheckResult`、`TestStatus` 和稳定错误码生成。
+- 反馈只从 `CheckResult`、`TestStatus`、`ErrorPhase`、`FailureFingerprintV1` 和稳定错误码生成。
 - 下一 turn 最多接收 10 条、32 KiB；最近失败的分类、位置和有界摘要必须保留。
 - 修改保护工件的候选直接 `DENY`，不运行检查。
 
@@ -711,7 +932,7 @@ D. Ruff 和 Mypy 各在自己的全新副本/容器中运行一次。
 1. 最终 pytest 收集集合与 Manifest 完全一致；
 2. 每个 node ID 都实际执行且为 `PASS`；
 3. 不存在 skip、xfail、xpass、deselect、未执行、收集错误、setup/teardown 错误、环境错误或超时；
-4. 所有目标测试由基线允许状态变为最终 `PASS`；
+4. 所有目标测试由 Manifest 记录的稳定 `CALL/FAIL` 指纹变为最终 `PASS`；
 5. Ruff 和 Mypy 均 `PASS`；
 6. 保护工件、检查计划、工具版本、镜像摘要和环境摘要保持一致；
 7. 候选项目树在所有检查后仍与正式验证输入完全一致。
@@ -720,52 +941,92 @@ pytest 退出码为 0 但上述任一条件不成立时，正式验证仍失败�
 
 ### 输出与错误
 
-输出：`BaselineResult`、`ValidationManifestV1`、`CheckResult`、`FeedbackRecord`、`VerifiedCandidate`。
+输出：`StaticProjectProfileResult`、`RuntimeCompatibilityResult`、`BaselineResult`、`PytestEvidenceV1`、`FailureFingerprintV1`、`ValidationManifestV1`、`CheckResult`、`FeedbackRecord`、`VerifiedCandidate`。
 
-错误：`TARGET_NOT_FOUND`、`TARGET_NOT_REPRODUCED`、`TARGET_UNSTABLE`、`BASELINE_BLOCKED`、`CHECK_ERROR`、`CHECK_TIMEOUT`、`PROTECTED_ARTIFACT_CHANGED`、`EXECUTION_WORKSPACE_MUTATED`、`VALIDATION_ENVIRONMENT_CHANGED`、`FORMAL_VALIDATION_FAILED`。
+错误：`TARGET_NOT_FOUND`、`TARGET_NOT_REPRODUCED`、`TARGET_UNSTABLE`、`BASELINE_BLOCKED`、`REPORTER_INVALID`、`CHECK_ERROR`、`CHECK_TIMEOUT`、`PROTECTED_ARTIFACT_CHANGED`、`EXECUTION_WORKSPACE_MUTATED`、`VALIDATION_ENVIRONMENT_CHANGED`、`FORMAL_VALIDATION_FAILED`。
 
 ### 确定性测试
 
-使用固定机器可读报告夹具覆盖稳定失败、节点漂移、skip/xfail/xpass/deselect、解析错误、保护工件变化、项目树写入和正式全通过；解析器单测不访问网络或真实 Docker。Docker 集成测试另见 §10.3。
+使用固定机器可读报告夹具覆盖全部目标稳定 `CALL/FAIL`、目标意外 PASS/ERROR、执行根和 run ID 变化但指纹相同、用户正文变化导致指纹不稳定、节点漂移、skip/xfail/xpass/deselect、五种 `ErrorPhase`、事件缺失/重复/截断、结束标记或摘要损坏、Ruff/Mypy 解析错误、保护工件变化、项目树写入和正式全通过；解析器单测不访问网络或真实 Docker。Docker 集成测试另见 §10.3。
 
 ## 4.6 FR-PERSIST：最终批准、受控写回与恢复
 
 ### 输入
 
-`VerifiedCandidate`、规范 `FinalDiff`、`ValidationManifestV1`、正式验证证据、工作区前映像和最终 `ActionApproval`。
+`VerifiedCandidate`、规范 `FinalDiff`、`ValidationManifestV1`、正式验证证据、工作区前映像和最终 `FinalWritebackApproval`。
 
 ### 写回前置条件
 
 1. `FinalDiff` 不超过 §1.4.4 的 3 文件限制。
 2. `VerifiedCandidate` 精确绑定当前候选、Manifest 和 FinalDiff。
 3. WebUI 同页展示精确 diff、Manifest 摘要和正式验证证据。
-4. `ActionApproval` 已按 §4.4.2 原子消费。
+4. `FinalWritebackApproval` 已按 §4.4.2 原子消费。
 5. 跨进程 workspace lease 仍由当前进程持有；权威工作区仍等于冻结前映像。
 
 ### 持久化事务
 
-1. 创建本地事务日志，记录每个目标路径、前映像、后映像、操作顺序和备份路径。
+    PersistenceTransactionState =
+      PREPARED | WRITING | COMMITTED | ROLLED_BACK | UNRESOLVED
+
+    PreimageV1 =
+      PRESENT {
+        raw_bytes_digest
+        text_metadata
+        object_identity
+      }
+      | ABSENT
+
+    PostimageV1 {
+      raw_bytes_digest
+      text_metadata
+      required_object_policy_digest
+    }
+
+    PathWriteState =
+      NOT_STARTED | REPLACED | VERIFIED | ROLLED_BACK
+
+    PersistencePathRecord {
+      path
+      operation: CREATE | REPLACE
+      preimage: PreimageV1
+      postimage: PostimageV1
+      sequence
+      durable_state: PathWriteState
+      backup_ref: artifact_ref | ABSENT
+      last_evidence_digest: digest | ABSENT
+    }
+
+现有文件使用 `PRESENT` 前映像；本事务创建的新文件使用 `ABSENT`。`ABSENT` 是类型化哨兵，不是空文件摘要。`CREATE` 必须绑定 `ABSENT` 且 `backup_ref=ABSENT`；`REPLACE` 必须绑定 `PRESENT` 和有效备份引用。违反组合时事务不能进入 `PREPARED`。
+
+1. 创建状态为 `PREPARED` 的本地事务日志，为每个目标路径写入完整 `PersistencePathRecord`；所有记录初始为 `NOT_STARTED`。
 2. 每个文件写入前再次验证 workspace lease、目标前映像和路径对象身份。
-3. 使用同目录临时文件，写入后 flush 文件内容；在可用时同步目录元数据，然后执行原子替换。
-4. 每次替换后记录事实，不把“计划写入”当作“已经写入”。
-5. 全部替换完成后，逐文件比较期望后映像，并重验未涉及 tracked 文件未变化。
-6. 只有全部匹配时标记事务提交并由 `PersistenceCoordinator` 发布 `SUCCEEDED`。
+3. 首次替换前转为 `WRITING`；使用同目录临时文件，写入后 flush 文件内容，在可用时同步目录元数据，然后执行原子替换。
+4. 每次替换后，只有观察到当前对象精确匹配 postimage 且对象类型仍受支持，才能把该路径持久记录为 `REPLACED`；写后复验完成后记录为 `VERIFIED`。恢复前映像并复验后才可记录 `ROLLED_BACK`。
+5. 正常写回只允许 `NOT_STARTED → REPLACED → VERIFIED`；恢复可在重新验证实际字节后从前三种状态进入 `ROLLED_BACK`。不得跳过证据直接前移状态，也不得从 `ROLLED_BACK` 返回写回状态。
+6. `durable_state` 是最后一次成功持久化的进度事实，不是当前文件内容的权威替代。进程可能在文件替换与状态落盘之间崩溃；恢复必须重新读取当前字节、文本元数据和对象身份，并允许观测证据纠正滞后的状态。
+7. 全部替换完成后，逐文件比较期望后映像，并重验未涉及 tracked 文件未变化。
+8. 只有全部匹配时转为 `COMMITTED` 并由 `PersistenceCoordinator` 发布 `SUCCEEDED`；可证明全部恢复前映像时转为 `ROLLED_BACK`；其他未知或矛盾状态只能转为 `UNRESOLVED`。
+
+事务数据库、前映像备份和恢复证据必须创建在当前 Windows 用户专属本地应用数据目录，并在写入前验证 ACL 只允许当前用户和操作系统必要主体访问。无法创建或证明安全 ACL 时以 `ARTIFACT_ACL_UNSAFE` 失败关闭，不得把源码备份写入目标仓库、通用临时目录或继承了宽权限的目录。
 
 ### 恢复入口
 
 CLI 必须提供：
 
     vespercode recover --workspace <path>
+    vespercode recover --workspace <path> --apply
 
-本地 WebUI 提供等价恢复页，展示事务摘要、受影响路径和拟执行结果。用户不能通过“忽略”解除阻断。
+不带 `--apply` 时只读取事务、备份和当前字节，展示逐路径前/后映像匹配、拟执行动作和预计结果，且不得修改工作区、事务状态或备份。`--apply` 在重新取得同一 workspace lease、重验对象身份和备份完整性后才执行恢复。
+
+本地 WebUI 提供等价恢复页，先展示事务摘要、受影响路径、逐路径匹配状态和拟执行结果，再要求显式确认。不存在“忽略”“强制成功”或跳过未知路径的入口。
 
 恢复只产生：
 
 - `COMMITTED`：证明所有后映像匹配，重做写后核对；满足成功条件后进入 `SUCCEEDED`。
-- `ROLLED_BACK`：证明所有已写路径恢复到前映像，进入 `STOPPED`。
+- `ROLLED_BACK`：证明所有路径恢复到前映像，进入 `STOPPED`。前映像为 `ABSENT` 时，只有当前文件精确匹配本事务 postimage、操作为 `CREATE` 且对象身份仍受支持，才允许删除该新文件；若文件被外部改写、变为链接/特殊对象或身份无法证明，则不得删除并进入 `UNRESOLVED`。
 - `UNRESOLVED`：存在未知字节、缺失备份、矛盾证据或无法证明的对象身份，保持 `RECOVERY_REQUIRED`。
 
-存在 `UNRESOLVED` 事务时，同一工作区的新运行必须被拒绝。只有 `COMMITTED` 或 `ROLLED_BACK` 后，才可以释放恢复阻断并删除不再需要的事务备份；删除前必须保留足以证明终局的摘要记录。
+存在 `UNRESOLVED` 事务时，同一工作区的新运行必须被拒绝。只有 `COMMITTED` 或 `ROLLED_BACK` 后，才可以释放恢复阻断并按保留策略删除不再需要的正文备份；删除前必须保留足以证明终局的摘要记录。`UNRESOLVED` 的事务、备份和最小证据不受普通清理或 30 天审计清理影响。
 
 若事务日志存在但尚无工作区写入，可安全结束为 `ROLLED_BACK`。取消、普通进程重启或用户声明放弃都不能把不确定事务改写为成功或安全停止。
 
@@ -773,11 +1034,11 @@ CLI 必须提供：
 
 输出：`PersistenceTransaction`、`RecoveryResult` 和 `SUCCEEDED | STOPPED | RECOVERY_REQUIRED`。
 
-错误：`APPROVAL_STALE`、`WORKSPACE_CHANGED`、`WORKSPACE_LOCK_LOST`、`PERSISTENCE_FAILED`、`PERSISTENCE_UNCERTAIN`、`WRITEBACK_MISMATCH`、`RECOVERY_UNRESOLVED`。
+错误：`APPROVAL_STALE`、`WORKSPACE_CHANGED`、`WORKSPACE_LOCK_LOST`、`ARTIFACT_ACL_UNSAFE`、`PERSISTENCE_FAILED`、`PERSISTENCE_UNCERTAIN`、`WRITEBACK_MISMATCH`、`RECOVERY_UNRESOLVED`。
 
 ### 确定性测试
 
-使用临时目录和逐故障点注入覆盖写入前失败、第一/第二文件替换后崩溃、完整提交、前映像变化、可回滚和未知字节；断言未知证据只能进入 `RECOVERY_REQUIRED`，且恢复阻断不能被普通启动绕过。
+使用临时目录和逐故障点注入覆盖 preview 零写入、显式 apply、写入前失败、第一/第二文件替换后崩溃、文件替换后但 `REPLACED` 状态落盘前崩溃、三文件混合 `CREATE/REPLACE`、新文件精确 postimage 的 `ABSENT` 回滚、新文件被外部改写或替换为特殊对象、ACL 不安全、完整提交、前映像变化、可回滚和未知字节；断言状态滞后可由字节证据纠正，外部改写的新文件绝不删除，未知证据只能进入 `RECOVERY_REQUIRED`，且恢复阻断不能被普通启动绕过。
 
 ## 4.7 FR-MEM：记忆与审计
 
@@ -805,7 +1066,7 @@ CLI 必须提供：
 
 ### 审计
 
-- 记录生命周期、动作摘要、策略决定、ActionApproval、DisclosureGrant、逐请求披露授权元数据、检查结果、恢复和成功/停止证据。
+- 记录生命周期、动作摘要、策略决定、FinalWritebackApproval、DisclosureGrant、逐请求披露授权元数据、检查结果、恢复和成功/停止证据。
 - 不记录凭据、完整 LLM 请求/响应、完整文件正文或未截断工具输出。
 - 审计事件不可由 Agent 修改；默认保留 30 天，用户可显式清除已结束运行的本地审计。
 
@@ -859,6 +1120,7 @@ CLI 必须提供：
 - 不注册本地文件、Keyring、Docker、恢复或真实供应商适配器。
 - 固定场景展示：硬 `DENY`；一次检查失败使下一动作改变；保护工件修改被拒绝；没有最终批准时不写回。
 - Demo 只使用 `DemoRunStatus`；完成为 `DEMO_COMPLETED`，失败为 `DEMO_FAILED`。
+- 模拟用户选择形成 `DemoDecision {demo_session_id, subject_digest, decision, created_at}`；它只推进固定 Demo 场景，不得转换为 `FinalWritebackApproval`、`DisclosureGrant` 或正式 `AuditEvent`。
 - 会话有独立 UUID，最长 5 分钟；结束后丢弃。重置失败只使该会话失败，不创建跨进程恢复协议。
 
 ### 输出、错误与测试
@@ -871,8 +1133,8 @@ Host/Origin/CSRF 校验失败、无效会话、Demo 非法场景或能力请求�
 
 ## 5.1 NFR-PERF：性能与预算
 
-- 正式运行最大 20 个 Agent turn、20 次 LLM 调用、15 分钟。
-- 单工具动作默认 60 秒；单目标检查默认 120 秒；完整正式验证默认 10 分钟。
+- 内建硬上限为 20 个 Agent turn、20 次 LLM 调用和 900 秒总墙钟；实际上限使用冻结 `RunLimitsV1`。总墙钟从 `PREFLIGHT` 开始，到终态或 `RECOVERY_REQUIRED` 为止，并包含 `WAITING_USER`。
+- 单工具动作、单目标检查和完整正式验证分别使用 `tool_timeout_seconds`、`target_check_timeout_seconds` 和 `formal_validation_timeout_seconds`。它们都是总运行预算内的子上限，剩余总墙钟更小时以剩余值为准。
 - 单次 LLM 规范请求不超过 64 KiB，单次工具反馈不超过 32 KiB。
 - 单次检查原始输出最多 4 MiB，超出即 `CHECK_OUTPUT_LIMIT_EXCEEDED`，不得把截断结果判为 PASS。
 - 仓库、候选和 Docker 资源上限使用 §1.4.4—1.4.5。
@@ -882,6 +1144,8 @@ Host/Origin/CSRF 校验失败、无效会话、Demo 非法场景或能力请求�
 ## 5.2 NFR-REL：可靠性
 
 - 相同 Mock 脚本、快照、配置、时钟、ID 生成器和用户决定必须产生相同关键动作、状态和终态。
+- 相同语义对象在不同进程、映射插入顺序和易变运行元数据下必须产生相同 §0.1 摘要。
+- 相同 `ReferenceProfileManifestV1`、LLM profile 和 target 集合必须形成相同冻结配置；profile digest 变化必须被视为环境变化。
 - 所有核心机制使用离线、无网络的 Mock/Stub 单元测试。
 - 未知、不完整或矛盾证据默认失败关闭。
 - 只有权威工作区持久化允许恢复；其他重启统一停止。
@@ -900,7 +1164,7 @@ Host/Origin/CSRF 校验失败、无效会话、Demo 非法场景或能力请求�
 - 每个正式运行有唯一 `run_id` 和按顺序递增的审计序号；Demo 使用独立 `demo_session_id`。
 - 日志使用结构化事件，并对路径、输出和错误文本执行长度限制与脱敏。
 - 测试模式允许注入时钟、ID 生成器和故障点，以获得稳定快照。
-- `.gitlab-ci.yml` 必须包含名为 `unit-test` 的 job，并在每次 push 运行离线核心测试。
+- `.gitlab-ci.yml` 必须包含 §8.4 的三个精确 job 名称并遵守各自 push、merge request 和 main 触发合同。
 - 发布证据必须区分离线单测、Windows 集成、Docker 集成、端到端 fixture 和公网 smoke test。
 
 ## 5.5 NFR-SEC：威胁模型
@@ -908,7 +1172,7 @@ Host/Origin/CSRF 校验失败、无效会话、Demo 非法场景或能力请求�
 | 资产/风险 | 攻击者或来源 | 对策 | 残余风险 |
 |---|---|---|---|
 | OpenAI API Key | 仓库文本、日志、命令历史、Demo 用户 | Windows Credential Manager；后端探测；隐藏录入；禁止 CLI 参数和明文配置；日志白名单 | 同一 Windows 用户或管理员仍可能访问凭据 |
-| 用户源码 | 恶意模型、提示注入、错误披露范围 | 本地读取与外发分离；运行级 Grant；逐请求授权记录；敏感 tracked 路径准入拒绝 | 不能识别源码正文中的所有秘密 |
+| 用户源码 | 恶意模型、提示注入、错误披露范围 | 本地读取与外发分离；冻结 LLM profile；运行级 Grant；逐请求授权记录；敏感 tracked 路径准入拒绝；明确 `NO_CONTENT_REDACTION_V1` 不扫描正文 | 被授权源码按范围原样外发；不能识别源码正文中的所有秘密 |
 | 权威工作区 | 越界路径、reparse/hard link、陈旧批准、并发进程 | 句柄级身份检查、单链接画像、named mutex、前映像绑定、逐文件复核、写后核对 | 最后检查与替换间仍有短暂本机竞争窗口 |
 | 验收契约 | 模型修改测试、配置或运行时篡改 | 不可变 Manifest、保护工件、只读候选挂载、全新容器、正式重验 | Manifest 只覆盖支持画像中已识别的入口 |
 | 控制面数据 | 项目代码或容器读取宿主数据 | 无网络、非 root、只读根、候选只读挂载、tmpfs、无 Docker socket | Docker Desktop/宿主管理员不在威胁模型内 |
@@ -921,9 +1185,9 @@ Host/Origin/CSRF 校验失败、无效会话、Demo 非法场景或能力请求�
 ## 5.6 NFR-PRIV：数据保留
 
 - 凭据只存于 Windows Credential Manager。
-- 运行数据库、记忆、审计和恢复工件位于用户本地应用数据目录，不进入目标仓库。
+- 运行数据库、记忆、审计和恢复工件位于当前 Windows 用户专属本地应用数据目录，不进入目标仓库；创建时必须验证仅当前用户和操作系统必要主体可访问的 ACL。
 - 审计默认保留 30 天；普通执行副本在运行终止后立即尝试删除。
-- 未解决事务的最小日志和备份必须保留到恢复形成终局，不能被普通清理删除。
+- 已形成 `COMMITTED` 或 `ROLLED_BACK` 的事务按保留策略删除正文备份并保留摘要证据；未解决事务的最小日志和备份必须保留到恢复形成终局，不能被普通清理删除。
 - 公网 Demo 不接收用户仓库、真实凭据或任意文件上传，不挂载持久磁盘。
 
 # 6. 系统架构
@@ -949,17 +1213,20 @@ Host/Origin/CSRF 校验失败、无效会话、Demo 非法场景或能力请求�
                        Read-only CandidateTree
 
     CredentialService -> Windows Credential Manager
+    Admission -> Built-in Reference/LLM Profile Registry
     PersistenceCoordinator -> Authoritative Workspace
 
 依赖方向从应用服务指向核心端口，再指向适配器。LLM、Docker、Credential Store、数据库、Win32 文件系统和时钟必须可替换为测试 double。WebUI 不直接访问仓库、凭据或数据库。
 
 ## 6.2 正式修复数据流
 
-    ValidateRunRequest
+    ValidateRunRequestV1
+    → resolve Reference/LLM profile manifests + freeze RunLimitsV1
     → Create Run(CREATED) + freeze config
-    → Start + PREFLIGHT
+    → Start + PREFLIGHT static profile check
     → SnapshotTree
     → collect-only ×2 + full pytest + target rerun + Ruff + Mypy
+    → RuntimeCompatibilityResult(COMPATIBLE)
     → ValidationManifestV1
     → Agent turn / governance / candidate patch / structured feedback loop
     → fresh read-only formal validation
@@ -970,14 +1237,16 @@ Host/Origin/CSRF 校验失败、无效会话、Demo 非法场景或能力请求�
 
 ## 6.3 真实 LLM 调用数据流
 
-    ContextProjection draft
+    frozen LLMProfileManifestV1 + ContextProjection draft
     → classify exact sources and bytes
     → active DisclosureGrant?
-        no: WAITING_USER
-        yes: create exact request
+        no: WAITING_USER(DISCLOSURE_GRANT, bounded by run deadline)
+        yes: apply NO_CONTENT_REDACTION_V1 and create exact PreparedModelRequest
     → atomically consume grant budget + create DisclosureAuthorizationRecord
-    → single OpenAI adapter call
+    → pass the same authorized request to one OpenAI adapter call
     → LLMCallResult
+
+授权事务提交后预算不退款。适配器调用失败、调用前崩溃或交付状态未知都不得重用授权记录或自动重发。
 
 ## 6.4 公网 Demo 数据流
 
@@ -1003,28 +1272,38 @@ Demo 不经过 Credential Store、真实 LLM、Docker、workspace lease、恢复
 
 | 实体 | 关键字段 | 关系与约束 |
 |---|---|---|
-| Run | id、workspace_identity、status、phase、config_snapshot_id | 一个运行有多个 turn；终态不可重开 |
-| RunConfigSnapshot | schema_version、normalized_config、digest | 创建后不可变；不能包含秘密 |
+| Run | id、workspace_identity、status、phase、config_snapshot_id、started_at、run_deadline | `PREFLIGHT` 入口冻结 deadline；一个运行有多个 turn；终态不可重开 |
+| RunLimitsV1 | turns、LLM calls、run wall clock、wait/tool/check timeouts | 全部必填且只能收紧内建硬上限 |
+| ReferenceProfileManifestV1 | requirements/image/tool/check-plan versions、digest | `python-src-py312-v1` 的权威可交付映射 |
+| LLMProfileManifestV1 | mode、provider/model 或 Mock script、adapter/serializer、fixed parameters、digest | 请求只选 profile id，不能覆盖 manifest 字段 |
+| RunConfigSnapshot | target IDs、limits、LLM/reference/Docker profile digests、digest | 创建后不可变；不能包含秘密 |
 | WorkspaceLease | workspace_identity、mutex_name、process_id、acquired_at | 正式工作区同一时刻最多一个持有者 |
+| WaitContext | wait_id、run_id、wait_kind、source_phase、subject_digest、created_at、expires_at | 只允许 `DISCLOSURE_GRANT | FINAL_WRITEBACK`；决定绑定 wait 与 subject |
 | SnapshotTree | root_digest、entries、repository_policy_digest | 一个运行一个权威基线快照 |
-| ValidationManifestV1 | target IDs、test collection、protected digests、check plan、environment digest | 由基线创建后不可变 |
+| RuntimeCompatibilityResult | status、violation_kind、evidence_refs | BASELINE 中产生；非 `COMPATIBLE` 不创建 Manifest |
+| FailureFingerprintV1 | node、CALL phase、exception、message/diff、project frames、digest | 只由完整 pytest 证据创建；不安全规范化即不稳定 |
+| ValidationManifestV1 | target IDs/fingerprints、test collection、protected/profile digests、check plan、environment digest | 由基线创建后不可变 |
 | CandidateRevision | id、parent_id、tree_digest、final_diff_digest | 单父链；限制基于相对 Snapshot 的累计净差异 |
 | AgentTurn | id、run_id、candidate_id、context_digest、consumed_feedback_refs、outcome | 同一运行最多一个活动 turn |
 | ActionRecord | action_type、canonical_digest、policy_decision、result_ref | 动作输入与结果不可被 Agent 改写 |
 | FeedbackRecord | source_ref、kind、bounded_payload、consumed_by_turn | 最多被一个下一 turn 消费 |
-| ActionApproval | subject_digest、bindings、expires_at、status | `PENDING` 只能一次转入一个终局状态 |
-| DisclosureGrant | run/provider/model/scope/redaction/budget/expiry/status | 只授权当前运行的数据传输范围，不授权工具 |
-| DisclosureAuthorizationRecord | grant_id、request_digest、actual sources/categories、bytes | 逐请求精确记录，不含正文 |
-| LLMCallResult | authorization_record_id、status、response_digest、error | 与授权记录分离，不证明供应商交付 |
+| FinalWritebackApproval | subject_digest、bindings、expires_at、status | 只授权最终权威写回；`PENDING` 只能一次转入一个终局状态 |
+| DisclosureGrant | run/LLM profile/provider/model/scope/redaction/budget/expiry/status | v1 redaction 固定为 `NO_CONTENT_REDACTION_V1`；不授权工具 |
+| DisclosureAuthorizationRecord | grant/profile ids、request digest、actual sources/categories、bytes | 逐请求精确记录，不含正文 |
+| PreparedModelRequest | LLM profile、serializer、provider/model、messages、fixed parameters、sources/redaction/bytes、digest | profile 应用和裁剪完成后不可追加项目正文 |
+| LLMCallResult | authorization_record_id、status、response_digest、error | `NOT_ATTEMPTED | SUCCEEDED | FAILED | DELIVERY_UNKNOWN`；不证明供应商交付 |
+| PytestEvidenceV1 | schema/plugin、events、collection、exit、integrity_digest | 缺失、截断或完整性失败不能产生 PASS |
 | CheckResult | check_kind、status、structured_findings、raw_digest | 原始输出作为有界本地工件 |
 | VerifiedCandidate | candidate_id、manifest_id、formal_result_digest | 只有完整正式验证通过时创建 |
-| PersistenceTransaction | final_diff_digest、preimages、postimages、state、backup_refs | 未解决时阻止同工作区新运行 |
+| PersistenceTransaction | final_diff_digest、path_records、state、backup_refs | `PREPARED | WRITING | COMMITTED | ROLLED_BACK | UNRESOLVED`；未解决时阻止新运行 |
+| PersistencePathRecord | path、operation、PRESENT/ABSENT preimage、postimage、sequence、durable_state、evidence | 状态可滞后；恢复始终重验实际字节和对象身份 |
 | RecoveryResult | transaction_id、disposition、evidence_digest | `COMMITTED | ROLLED_BACK | UNRESOLVED` |
 | MemoryEntry | workspace_identity、kind、summary、creator、source、timestamps | 不保存秘密、权限或完整源码 |
 | AuditEvent | run_id、sequence、event_type、redacted_payload | 每个运行序号唯一且单调 |
 | DemoSession | id、scenario_version、status、state_digest、expires_at | 与正式 Run 和能力完全隔离 |
+| DemoDecision | demo_session_id、subject_digest、decision、created_at | 只推进固定 Demo 场景，不能转换为正式授权 |
 
-控制存储使用 SQLite 事务保证本地状态比较与更新。大文件、执行副本、补丁正文、原始检查输出和恢复备份存为本地受限工件，只在数据库保存摘要与精确引用；凭据从不进入 SQLite。
+控制存储使用 SQLite 事务保证本地状态比较与更新。大文件、执行副本、补丁正文、原始检查输出和恢复备份存为当前用户 ACL 受限的本地工件，只在数据库保存摘要与精确引用；凭据从不进入 SQLite。所有 digest 使用 §0.1。
 
 # 8. 凭据、分发与部署
 
@@ -1039,7 +1318,8 @@ Demo 不经过 Credential Store、真实 LLM、Docker、workspace lease、恢复
 
 ## 8.2 本地分发
 
-- 发布 Python wheel。
+- 发布 Python wheel，并将版本化 wheel 作为 GitHub Release 附件提供；Release 同时发布 SHA-256 摘要。
+- README 必须记录 Release 下载位置、版本、摘要校验命令和从下载产物安装的步骤。
 - 从本地构建产物安装的规范命令为：
 
       pipx install dist/vespercode-<version>-py3-none-any.whl
@@ -1049,9 +1329,9 @@ Demo 不经过 Credential Store、真实 LLM、Docker、workspace lease、恢复
       pipx install vespercode
 
 - `vespercode serve` 启动本地 WebUI。
-- `vespercode recover --workspace <path>` 启动命令行恢复；WebUI 提供等价入口。
+- `vespercode recover --workspace <path>` 只预览恢复；增加 `--apply` 后才执行。WebUI 提供等价的预览与显式确认入口。
 - 目标机器前提：Windows 11 x64、Python 3.12、Git、Docker Desktop Linux 容器模式，以及预构建的 `python-src-py312-v1` 镜像。
-- README 必须给出获取、安装、启动、凭据配置、Docker profile 准备、恢复、目录结构和已知限制。
+- README 必须给出获取、安装、启动、凭据配置、reference/Docker/LLM profile manifest 与精确模型、`NO_CONTENT_REDACTION_V1` 外发提示、恢复、目录结构和已知限制。
 
 ## 8.3 公网 Demo 分发
 
@@ -1065,13 +1345,15 @@ Demo 不经过 Credential Store、真实 LLM、Docker、workspace lease、恢复
 
 ## 8.4 发布构建要求
 
-CI 或发布流水线必须：
+`.gitlab-ci.yml` 必须包含以下精确 job 名称；不能仅由人工发布脚本替代：
 
-1. 构建 wheel；
-2. 在干净环境中执行 wheel smoke install 和 `vespercode --help`；
-3. 运行离线 `unit-test`；
-4. 构建 Demo 镜像；
-5. 保存版本、wheel 摘要、镜像摘要和测试证据。
+| Job | 触发条件 | 必须执行 |
+|---|---|---|
+| `unit-test` | 每次 push 和每个 merge request | 在锁定依赖环境中运行离线 `python -m pytest -q`，保存测试报告 |
+| `wheel-build-smoke` | 每次 push 和每个 merge request | 构建 wheel、生成并校验 SHA-256，在干净受支持环境中从该 wheel 安装并运行 `vespercode --help` |
+| `demo-image-build` | 每个 merge request 和 main 分支 push | 使用 Demo Dockerfile 真实构建 OCI 镜像，记录镜像摘要并运行容器级 `/healthz` smoke |
+
+版本 tag/release 流水线复用通过验证的构建步骤，重新生成并校验版本化 wheel 和 SHA-256，创建或更新对应 GitHub Release 工件，并保存版本、Release URL、wheel 摘要、镜像摘要、测试与 smoke 证据。普通 push/MR 流水线不得创建 Release。
 
 # 9. 技术选型
 
@@ -1079,15 +1361,15 @@ CI 或发布流水线必须：
 |---|---|---|
 | 语言 | Python 3.12 | 与目标 profile 和测试生态一致，适合可注入端口 |
 | API/Web | FastAPI + Pydantic v2 | 严格请求 Schema、类型校验和本地/公网复用 |
-| UI | 服务端 HTML + HTMX；Open Design 作为设计系统 | 降低前端状态复杂度，满足 WebUI 与安全渲染要求 |
+| UI | 服务端 HTML + HTMX；Open Design 作为设计系统；使用 `ui-ux-pro-max` skill 做交互、可访问性和安全渲染审查 | 降低前端状态复杂度，满足 WebUI 与安全渲染要求 |
 | 控制存储 | SQLite | 支持本地原子状态更新、无需额外服务 |
 | Windows 边界 | pywin32/Win32 API 封装 | 处理最终对象身份、reparse/hard link 和 named mutex |
 | 凭据 | keyring，且强制验证 Windows Credential Manager backend | 满足系统钥匙串要求并拒绝不安全 fallback |
-| LLM | 自定义 `LLMAdapter`；Mock + OpenAI 单轮适配器 | 不依赖高层 Agent 框架，真实与离线路线共享核心 |
+| LLM | 自定义 `LLMAdapter`；冻结 `LLMProfileManifestV1`；Mock + OpenAI 单轮适配器 | 固定模型/Mock 脚本、适配器、请求序列化器和参数；不依赖高层 Agent 框架 |
 | 执行 | Docker SDK for Python；固定 argv、无网络、只读根、候选只读挂载、tmpfs | 隔离项目代码并防止运行时临时篡改验收树 |
 | 检查 | pytest + 固定机器可读报告插件、Ruff、Mypy | 提供测试、lint、类型和结构化反馈 |
 | 测试 | pytest；单一离线命令 `python -m pytest -q` | 可注入、适合 TDD 与 Mock LLM |
-| CI | `.gitlab-ci.yml`，包含 `unit-test` job | 满足课程指定命名和每次 push 验证 |
+| CI | `.gitlab-ci.yml`，包含 `unit-test`、`wheel-build-smoke`、`demo-image-build` | 冻结课程测试、wheel smoke 和 Demo 镜像构建的名称、触发与证据 |
 | 包分发 | wheel + pipx | 适合 Windows 本地 CLI/WebUI |
 | Demo | OCI 容器 | 与本地能力隔离，便于公网部署 |
 | 公网部署 | Render Web Service；Docker runtime、`/healthz`、无持久磁盘 | 冻结公开 WebUI 的端口、健康检查和无状态边界 |
@@ -1100,53 +1382,59 @@ CI 或发布流水线必须：
 
 - **AC-01：** 路径逃逸、绝对路径、ADS、设备名、symlink/reparse、hard link 和敏感 tracked 路径全部确定性拒绝。
 - **AC-02：** 硬 `DENY` 无法被配置、模型输出、DisclosureGrant 或批准覆盖。
-- **AC-03：** 一次性 `ActionApproval` 在过期、绑定变化和重复消费时均不执行。
+- **AC-03：** 一次性 `FinalWritebackApproval` 在过期、绑定变化和重复消费时均不执行，且不能授权披露、Demo 或其他 `ASK`。
 - **AC-04：** 修改测试、检查配置或 Manifest 保护工件的补丁不能进入检查或正式验证。
 - **AC-05：** 注入固定检查失败后，Mock LLM 下一轮动作按脚本发生变化。
 - **AC-06：** LLM completion 建议不能绕过正式成功谓词和最终批准。
 - **AC-07：** 写回内容精确等于已批准 `FinalDiff`；外部工作区变化阻止写入。
 - **AC-08：** 凭据录入、状态、更新、清除、后端探测和日志均不暴露测试秘密。
 - **AC-09：** 相同 Demo 输入产生相同关键状态和动作序列，且只进入 `DemoRunStatus`。
-- **AC-10：** `python -m pytest -q` 离线通过；CI `unit-test` job 最后一次执行通过。
-- **AC-11：** wheel 可在全新受支持 Windows 环境通过 pipx 从本地产物安装；README 步骤可启动 WebUI。
-- **AC-12：** 公网 Mock Demo URL 可访问且无法使用本地、恢复或真实能力。
-- **AC-13：** 未授权披露时真实适配器调用次数为零；有效 Grant 内不同请求生成不同逐请求授权记录；范围、模型、预算上限、脱敏或有效期被修改，或请求需要扩大范围时要求新 Grant。
+- **AC-10：** `python -m pytest -q` 离线通过；`.gitlab-ci.yml` 的 `unit-test` 在每次 push 和 merge request 运行，最后一次记录通过。
+- **AC-11：** `wheel-build-smoke` 在每次 push 和 merge request 构建 wheel、校验 SHA-256 并完成干净安装/CLI smoke；README 步骤可从发布产物启动 WebUI。
+- **AC-12：** `demo-image-build` 在每个 merge request 和 main push 真实构建镜像并通过容器 `/healthz` smoke；公网 Mock Demo URL 可访问且无法使用本地、恢复或真实能力。
+- **AC-13：** 未授权披露时真实适配器调用次数为零；有效 Grant 精确绑定冻结 LLM profile 和 `NO_CONTENT_REDACTION_V1`，不同请求生成不同逐请求授权记录；profile、范围、预算上限或有效期变化，或请求需要扩大范围时，在有正等待区间时要求新 Grant。
 - **AC-14：** 两个工作区的记忆相互隔离；模型不能直接写记忆；用户清除后后续 turn 不再选择该条目。
-- **AC-15：** 有效请求先创建 `CREATED`；所有仓库、Docker、凭据和恢复预检发生在 `PREFLIGHT`，拒绝时不调用 LLM/执行器且不修改工作区。
+- **AC-15：** 严格 `ValidateRunRequestV1` 拒绝重复/超量目标、未知 profile、缺失限制和放宽硬上限；有效请求先创建 `CREATED`，静态预检发生在 `PREFLIGHT` 且不运行项目代码，动态兼容性只在 `BASELINE` 判定。
 - **AC-16：** 正式 Run 的六种状态和各 phase 显示正确；失败、超时、skip、xfail、xpass、deselect 和未运行不显示为通过。
 - **AC-17：** 六种动作严格按 Schema 解析；`RunCheckAction` 无法携带 executable、argv 或命令文本；多动作和自由文本响应被拒绝。
 - **AC-18：** 多次 patch action 不能绕过累计 3 文件/128 KiB 限制；`FinalDiff` 等于 Snapshot 到最终 CandidateTree 的规范净差异。
-- **AC-19：** Docker 检查中候选树只读、缓存进入 tmpfs、无 Docker socket、无网络；尝试写项目树导致检查失败而非通过。
+- **AC-19：** Docker 检查中候选树只读、缓存进入 tmpfs、无 Docker socket、无网络；`RuntimeCompatibilityCheckV1` 对收集漂移、项目树写入、报告不完整或检查环境错误返回结构化 `BASELINE_BLOCKED`。
 - **AC-20：** 正式 pytest 只有在 node 集合一致、全部实际执行并 PASS、无所有禁止状态、Ruff/Mypy PASS、保护工件和环境一致时才创建 `VerifiedCandidate`。
 - **AC-21：** 两个进程竞争同一工作区时最多一个获得 lease；未解决恢复事务阻止新的正式 Run。
-- **AC-22：** 故障注入后的恢复只产生 `COMMITTED`、`ROLLED_BACK` 或 `UNRESOLVED`；`UNRESOLVED` 保持阻断且不能被忽略。
+- **AC-22：** 1—3 文件混合 `CREATE/REPLACE` 的故障注入只产生 `COMMITTED`、`ROLLED_BACK` 或 `UNRESOLVED`；`PersistencePathRecord` 状态滞后由实际字节证据纠正，`UNRESOLVED` 保持阻断且不能被忽略。
 - **AC-23：** `PROJECT_CONVENTION`/`USER_DECISION` 与 `RUN_SUMMARY`/`KNOWN_FAILURE` 的创建权限严格按 §4.7 执行。
-- **AC-24：** Windows、Docker 和端到端验证矩阵中的必需用例均形成可保存证据；不能只用解析器单测替代真实边界测试。
+- **AC-24：** Windows、Docker、端到端和 §8.4 三个强制 CI job 均形成可保存证据；不能用解析器单测或人工发布脚本替代真实边界测试和镜像构建。
+- **AC-25：** 每个目标在全量基线和独立复跑中都稳定产生相同 `CALL/FAIL` 与 `FailureFingerprintV1.digest`；任一目标 PASS/ERROR、缺失、未运行、无法安全规范化、不稳定、运行时不兼容或 `PytestEvidenceV1` 不完整时不创建 Manifest。
+- **AC-26：** 相同语义对象、profile 和 target 集合在不同进程、映射插入顺序和易变元数据下产生相同 §0.1 摘要；profile 内容、路径别名、大小写/Unicode 碰撞或对象类型变化不能伪造绑定。
+- **AC-27：** `DISCLOSURE_GRANT` 与 `FINAL_WRITEBACK` 等待的决定精确绑定 wait/run/kind/subject；拒绝、过期、取消、绑定变化、总墙钟耗尽和重启严格按 §4.2.7 转换，旧决定不能复用。
+- **AC-28：** `RunLimitsV1` 的 turn/call/总墙钟和各子超时均在下一副作用前执行；等待计入总墙钟但不消耗 turn/call，进展使用排除时间、ID 和审计序号的语义摘要判断。
+- **AC-29：** 恢复默认 preview 且零写入，只有显式 `--apply` 修改工作区；新文件只有仍精确匹配本事务 postimage 时才能恢复为 `ABSENT`，外部改写或未知对象绝不删除并只能进入 `UNRESOLVED`。
 
 ## 10.2 用户故事—合同—验收追踪
 
 | 用户故事 | 权威功能合同 | 适用 NFR | 主要验收 |
 |---|---|---|---|
-| US-01 | FR-ADM、FR-LOOP | NFR-PERF、NFR-USE、NFR-SEC | AC-15、AC-16、AC-21 |
+| US-01 | FR-ADM、FR-LOOP | NFR-PERF、NFR-USE、NFR-SEC | AC-15、AC-16、AC-21、AC-26、AC-28 |
 | US-02 | FR-CRED、§8.1 | NFR-SEC、NFR-PRIV | AC-08 |
-| US-03 | FR-LOOP、FR-WS、FR-VAL | NFR-PERF、NFR-REL | AC-04、AC-05、AC-06、AC-17—AC-20 |
-| US-04 | FR-GOV | NFR-SEC、NFR-PRIV | AC-13 |
-| US-05 | FR-GOV | NFR-REL、NFR-SEC | AC-01—AC-03 |
-| US-06 | FR-PERSIST | NFR-REL、NFR-SEC | AC-07、AC-21、AC-22 |
+| US-03 | FR-LOOP、FR-WS、FR-VAL | NFR-PERF、NFR-REL | AC-04—AC-06、AC-17—AC-20、AC-25、AC-26、AC-28 |
+| US-04 | FR-GOV | NFR-SEC、NFR-PRIV | AC-13、AC-26、AC-27 |
+| US-05 | FR-GOV | NFR-REL、NFR-SEC | AC-01—AC-03、AC-26、AC-27 |
+| US-06 | FR-PERSIST | NFR-REL、NFR-SEC | AC-07、AC-21、AC-22、AC-26、AC-29 |
 | US-07 | FR-MEM | NFR-OBS、NFR-PRIV | AC-14、AC-23 |
-| US-08 | FR-LOOP、FR-MEM、FR-UI | NFR-USE、NFR-OBS | AC-06、AC-16 |
+| US-08 | FR-LOOP、FR-MEM、FR-UI | NFR-USE、NFR-OBS | AC-06、AC-16、AC-27、AC-28 |
 | US-09 | FR-UI | NFR-PERF、NFR-REL、NFR-SEC | AC-09、AC-12 |
 
 ## 10.3 验证环境矩阵
 
-| 层次 | 环境 | 必须证明 | 证据 |
-|---|---|---|---|
-| 离线核心单测 | 无网络；Fake FS/DB/Clock/LLM/Credential | 主循环、动作解析、策略、批准、Grant、反馈、记忆、停止和持久化故障注入 | `unit-test` job 日志与测试报告 |
-| Windows 集成 | Windows 11 x64 | ADS、reparse、hard link、设备名、最终对象身份、Credential Manager、named mutex | Windows runner 或发布前保存的脚本日志；测试秘密已清除 |
-| Docker 集成 | Docker Desktop Linux 模式 | 无网络、非 root、只读根、候选只读、tmpfs、资源限制、真实 pytest/Ruff/Mypy | 固定镜像摘要和集成测试报告 |
-| 端到端 fixture | Windows + Docker + Mock LLM | 稳定失败 → 错误补丁 → 反馈回灌 → 修正 → 正式验证 → 最终批准 → 精确写回 | 可重复脚本、审计导出和最终摘要 |
-| 恢复故障注入 | Windows 本地临时仓库 | 1—3 文件事务在各故障点进入三值恢复结果 | 故障点矩阵和恢复日志 |
-| 公网 smoke | 部署后的 Demo | `/healthz`、固定场景、无真实能力 | CI/发布记录与可访问 URL |
+| 层次 | 环境 | 主要 AC | 必须证明 | 证据 |
+|---|---|---|---|---|
+| 离线核心单测 | 无网络；Fake FS/DB/Clock/LLM/Credential | AC-02、AC-03、AC-05、AC-06、AC-10、AC-13—AC-18、AC-20—AC-23、AC-25—AC-29 | profile/config 规范化、失败指纹、主循环、动作解析、策略、批准、带 deadline 的两类等待、Grant、反馈、记忆、停止和逐路径持久化故障注入 | `unit-test` job 日志与测试报告 |
+| Windows 集成 | Windows 11 x64 | AC-01、AC-07、AC-08、AC-11、AC-21、AC-22、AC-24、AC-26、AC-29 | ADS、reparse、hard link、设备名、路径碰撞、Git EOL/encoding/filter 拒绝、最终对象身份、ACL、Credential Manager、named mutex 和新文件恢复 | Windows runner 或发布前保存的脚本日志；测试秘密已清除 |
+| Docker 集成 | Docker Desktop Linux 模式 | AC-04、AC-19、AC-20、AC-24、AC-25 | `ReferenceProfileManifestV1` 映射、无网络、非 root、只读根、候选只读、tmpfs、资源限制、动态兼容性、`PytestEvidenceV1` 和真实 pytest/Ruff/Mypy | 固定执行镜像摘要和可重复 Docker 集成脚本/runner 报告 |
+| 端到端 reference fixture | Windows + Docker + Mock LLM | AC-05—AC-07、AC-13、AC-15—AC-18、AC-20—AC-23、AC-25—AC-29 | 冻结 profiles/limits → 静态预检 → 动态兼容 → 全目标稳定指纹 → 错误补丁 → 反馈回灌 → 修正 → 正式验证 → 最终批准 → 精确写回，以及等待拒绝和未批准不写回 | 可重复 reference fixture 脚本、审计导出和最终摘要 |
+| 恢复故障注入 | Windows 本地临时仓库 | AC-07、AC-21、AC-22、AC-24、AC-29 | 1—3 文件混合事务、状态落盘前崩溃、外部改写新文件、preview 零写入、显式 apply 和安全 `ABSENT` 回滚 | 故障点矩阵和恢复日志 |
+| 包与发布 smoke | 干净受支持 Windows 环境 | AC-10、AC-11、AC-24 | `wheel-build-smoke`、从 GitHub Release 下载 wheel、校验 SHA-256、通过 pipx 安装并启动 WebUI | job 日志、Release URL、wheel 摘要、安装日志和环境版本 |
+| 公网 smoke | `demo-image-build` + 部署后的 Demo | AC-09、AC-12、AC-24 | main/MR 镜像构建、容器及公网 `/healthz`、固定场景、`DemoDecision`、无真实能力 | job 日志、镜像摘要、部署记录与可访问 URL |
 
 没有可用 Windows CI runner 时，Windows 集成可以作为发布前人工触发的可重复脚本，但其日志、环境版本和结果必须纳入最终交付证据；不能省略。
 
@@ -1166,12 +1454,12 @@ CI 或发布流水线必须：
 
 | 风险 | 概率/影响 | 触发信号 | 缓解或降级 |
 |---|---|---|---|
-| 参考 profile 与真实项目差异过大 | 中/中 | 外部试用频繁命中不支持 | 保持参考画像定位；公开兼容矩阵，不临时扩张 |
+| 参考 profile 与真实项目差异过大 | 中/中 | 外部试用频繁命中不支持或动态阻断 | 交付权威 manifest/reference fixture；区分静态不支持与动态不兼容；不临时扩张 |
 | Win32 最终对象身份实现错误 | 中/高 | ADS/reparse/hard link 集成用例失败 | 使用 pywin32/Win32 API；失败关闭，不降级为字符串路径判断 |
-| Docker Desktop 行为或性能不稳定 | 中/高 | 只读挂载、tmpfs或资源限制失败 | 固定 profile 和镜像摘要；准入失败关闭 |
-| pytest/Ruff/Mypy 输出解析漂移 | 中/中 | 未知结果或解析错误 | 固定版本和机器可读报告；未知状态不通过 |
-| 1—3 文件持久化中断 | 低/高 | 事务日志未完成 | 前后映像、备份、三值恢复和工作区阻断 |
-| 真实 LLM 泄露未识别秘密 | 中/高 | 请求正文含未分类敏感值 | 敏感路径拒绝、Grant、逐请求记录、体量限制；明确残余风险 |
+| Docker Desktop 行为或性能不稳定 | 中/高 | 只读挂载、tmpfs、资源限制或 runtime compatibility 失败 | 固定 manifest/镜像摘要；动态证据失败关闭 |
+| pytest/Ruff/Mypy 输出解析漂移 | 中/中 | 未知结果、指纹失败或解析错误 | 固定版本、机器可读报告和 `FailureFingerprintV1`；未知状态不通过 |
+| 1—3 文件持久化中断 | 低/高 | 事务日志或逐路径状态未完成 | 类型化前映像、逐路径事实、实际字节复核、备份、三值恢复和工作区阻断 |
+| 真实 LLM 泄露未识别秘密 | 中/高 | 被授权正文含未分类敏感值 | 敏感路径拒绝、冻结 profile、Grant、逐请求记录、体量限制；明确 `NO_CONTENT_REDACTION_V1` 残余风险 |
 | SPEC 再次扩张 | 中/高 | 新增自然语言测试、多 Agent、通用恢复或大量兼容分支 | 所有新增先修改 §1.5/1.6 并经独立审查；PLAN 不得暗增 |
 | 公网 Demo 被误认为正式验证 | 低/中 | UI 或审计缺少模拟标识 | 独立状态、持续标识、独立能力注册表 |
 
@@ -1180,25 +1468,28 @@ CI 或发布流水线必须：
 本版已冻结以下此前存在歧义的架构决定：
 
 - 请求校验、`CREATED`、`PREFLIGHT` 和正式生命周期的边界；
+- 严格 `ValidateRunRequestV1`、`RunLimitsV1`、reference/LLM profile manifest 和 `NO_CONTENT_REDACTION_V1`；
 - 六种 AgentAction 的字段、封闭检查计划、literal search 和严格 `UNIFIED_DIFF_V1`；
-- 确定性 `ContextProjection` 顺序、裁剪和预算失败行为；
+- `CanonicalizationV1`、确定性 `ContextProjection` 顺序、裁剪和预算失败行为；
 - 运行级 `DisclosureGrant` 与逐请求 `DisclosureAuthorizationRecord`；
-- `PythonProjectProfileV1`、保护工件、敏感路径、hard link 和资源上限；
-- Docker 候选树只读、tmpfs、无网络、资源限制和正式成功谓词；
-- 跨进程 workspace lease、3 文件上限、恢复入口和三值恢复结果；
+- `FinalWritebackApproval` 与带 wait/run/subject/deadline 绑定的两类 `WAITING_USER`；
+- `PythonProjectProfileV1` 的静态准入、动态兼容性、Reference Profile Manifest、保护工件、Git 转换策略、敏感路径和资源上限；
+- `PytestEvidenceV1`、`ErrorPhase`、`FailureFingerprintV1` 和所有目标稳定 `CALL/FAIL` 合同；
+- Docker 候选树只读、tmpfs、无网络、资源限制、运行时兼容性和正式成功谓词；
+- 跨进程 workspace lease、3 文件/1 新文件上限、`PersistencePathRecord`、恢复入口和三值恢复结果；
 - 独立 `FR-CRED` 与记忆创建权限；
-- 离线、Windows、Docker、端到端和公网验证矩阵；
-- wheel 的 pipx 安装命令与发布 smoke 要求。
+- 离线、Windows、Docker、reference fixture、恢复、包和公网验证矩阵；
+- 三个强制 CI job、wheel 的 pipx 安装命令与发布 smoke 要求。
 
-因此，PLAN 不得再让实现者自行选择上述语义。精确依赖 patch 版本、镜像摘要和部署 URL仍由实现/发布证据记录。
+因此，PLAN 不得再让实现者自行选择上述语义。精确依赖 patch 版本、OpenAI model、镜像摘要和部署 URL 由发布 manifest、lock file、README 与流水线证据记录，并通过 digest 绑定到运行。
 
 PLAN 的最前部必须安排三项技术验证任务，并采用失败关闭而不是放宽设计：
 
 1. Win32 最终对象身份、hard link/reparse/ADS 与 named mutex 集成验证；
-2. Docker 只读候选树、tmpfs、缓存和资源限制集成验证；
+2. `ReferenceProfileManifestV1`/reference fixture 映射、Docker 只读候选树、tmpfs、缓存、资源限制、完整报告和失败指纹集成验证；
 3. 1—3 文件持久化的逐故障点恢复验证。
 
-若第三项无法证明 3 文件事务安全，v1 发布范围自动收窄为单文件 `FinalDiff`；不得删除恢复语义或把未知状态视为成功。
+若第三项无法证明 3 文件事务安全，必须停止后续实现和发布；不得在 PLAN 或代码中把正式范围隐式改为单文件。改变 3 文件/1 新文件范围前，必须正式修订本 SPEC、相关用户故事、AC、验证矩阵和 PLAN，并重新审查；不得删除恢复语义或把未知状态视为成功。
 
 ## 11.3 未来工作
 
