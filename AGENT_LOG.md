@@ -110,3 +110,24 @@
 - **Review boundary:** 三轮审查范围均止于固定内容 SHA `1fc0fc4524013b16e51f48c43cbb831f63145e32`，不覆盖本条日志和交接状态所在的后续提交；后续只对该日志提交做窄范围真实性、格式和范围复核，不把它描述为对 `SPEC.md` 的第二次冷审。
 - **Lock status and unfinished work:** 3.1—3.5 已在固定内容 SHA 上重新锁定；完整第三章仍未锁定，下一任务仍是 3.6。3.6—3.12、完整第三章交叉审查、完整 `SPEC.md` 与课程权威 `PLAN.md` 批准、最终冷启动实现试验及实现代码均未完成。
 - **Lesson learned:** 审查代理的证据未跑完不等于候选内容失败；必须先核验 classification 和代码库事实，再决定是否返工。只有实际候选内容变化才生成新 SHA 并从第 1 轮重启审查，程序性补证可以在同一冻结 SHA 上闭合。
+
+## SPEC-V3-CONTRACT-CLOSURE
+
+- **Timestamp (Asia/Taipei):** `2026-07-25T15:10:23.8043554+08:00`
+- **Task ID:** `SPEC-V3-CONTRACT-CLOSURE`
+- **Skills invoked:** `writing-plans`、`executing-plans`、`git-workflow`、`verification-before-completion`；`finishing-a-development-branch` 仅用于核对收尾约束，因工作直接位于用户指定的 `main` 且没有独立功能分支，不执行合并、PR 或清理步骤。
+- **Key prompt/context:** 用户连续提交对 `SPEC_v3.md` 的局部审查意见，要求先判断问题是否存在，再制定并执行只修改 v3 的修复方案；最后要求把本批更新同步到两个上下文文件并提交、推送。修改前本地 `main=6422d10577461c9d145996b2e5146b3dffbfc15f`，`origin/main=f83948112eeadb3a80dc698f018fc7d8b682f656`；执行 `git fetch origin main` 后远端未出现新提交。
+- **Specification changes:**
+  - 补全 `CanonicalizationV1` 的 Unicode scalar、字符串转义、key 排序和唯一 `CanonicalTimestampV1`，并把兼容性向量扩展到 CTV-01—CTV-07。
+  - 冻结唯一 `OPENAI_PUBLIC_API_V1 → https://api.openai.com:443/v1` 映射；profile、Grant、准备请求、逐请求授权记录和适配器目标绑定同一 `endpoint_id`，禁止环境或配置覆盖 base URL，并拒绝跨 origin redirect 重发正文。
+  - 将 `PreparedModelRequestV1` 拆为 Mock/OpenAI 封闭变体，冻结各自摘要域、实际 payload byte count 和 `LLMCallResultV1.authorization_record_ref` 的 `ABSENT/PRESENT` 模式约束，避免 Mock 伪造 OpenAI 字段或授权记录。
+  - 消除 PREFLIGHT 循环依赖，固定 workspace lease/recovery → Snapshot 前置检查 → 创建并封存唯一 Snapshot → `detect_static` → readiness → BASELINE 的顺序。
+  - 用 `RepositoryLocationV1` 和 `DisclosurePathScopeV1` 判别联合表示仓库根、文件与目录；冻结带路径/无路径来源合同，并把 `FinalDiffV1.added_and_replacement_text_bytes` 固定为全部 CREATE/REPLACE 完整 postimage 原始字节之和。
+  - 内嵌唯一 `EditablePathPolicyV1`，只允许 `CREATE/REPLACE src/**`；Candidate、FinalDiff、检查、正式验证、批准和持久化全链路复验，保护工件错误优先于一般不可编辑错误，list/read/search 不受可编辑策略限制。
+  - 将 `ListFilesEntryV1` 冻结为 `DIRECTORY | TEXT_FILE | NON_TEXT_FILE`，让 List/Read/Search 共享 `SupportedTextFileV1` 分类；非文本文件可进入 Snapshot 和 List，Read 返回 `FILE_NOT_TEXT` 且零正文，Search 稳定累计 `skipped_non_text_count`，并固定 List/Search 排序与继续语义。
+- **Post-change review findings closed:** 复审过程中补齐 FinalWriteback policy identity 的 `TREE_INTEGRITY_FAILED`、内建 editable policy 损坏的 `CONFIG_INVALID`、保护工件错误优先级、Search 直接以非文本文件为 root 的零匹配/计数行为，以及 List“目录优先”和总则“按路径排序”的冲突。没有新增 `RunStatus`、`RunPhase`、自定义 endpoint、二进制补丁或第二套 editable policy 来源。
+- **Human intervention:** 用户提供外部审查意见并逐项批准局部修复方向；用户未直接编辑本批文件。用户最终明确授权同步 `AGENT_LOG.md`、`TASK_HANDOFF.md`，并执行 commit 与 push。
+- **Verification:** 各局部方案均运行针对性全文断言；最终 List 文件类型合同审计的 14 组要求全部为 `True`。`git diff --check -- SPEC_v3.md` 退出码为 0，仅有 Git 的 LF→CRLF 工作树提示；上下文同步前 `git diff --name-only` 只有 `SPEC_v3.md`。本批是文档合同修改，仓库仍无相应实现代码，因此没有把规范中的未来单测描述成已经运行的实现测试。
+- **Review boundary:** 本轮进行了逐问题合同审查和修改后机械复核，但没有执行一轮覆盖 `SPEC_v3.md` 全部 571 行差异的独立无背景冷启动实现试验；不得把局部审计描述为完整课程冷启动门槛已经通过。
+- **Git evidence:** 本条与 `TASK_HANDOFF.md`、`SPEC_v3.md` 在同一最终提交中记录；为避免提交对象自引用，本条不写自己的最终 commit SHA，Git history 与 `origin/main` 是提交和推送结果的权威证据。
+- **Lesson learned:** 局部 Schema 修复必须同时检查邻接合同。修复非文本 List 表示时，如果不复查 Search root 与全局排序，就会留下同一输入在动作校验、结果计数和分页中的不同解释。

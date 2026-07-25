@@ -633,3 +633,49 @@ Windows 沙箱的进程启动拒绝、权限审批延迟、Git ownership 提示�
 - 如何验证新章节没有重新引入范围膨胀。
 
 如果上述任一问题仍需要依赖旧聊天记录才能回答，先修订本文，不要继续下一章节。
+
+## 13. `SPEC_v3.md` 当前合同闭合状态（2026-07-25）
+
+### 13.1 权威文件与 Git 边界
+
+- 本节记录根目录 `SPEC_v3.md` 相对提交 `6422d10577461c9d145996b2e5146b3dffbfc15f` 的后续合同更新；用户要求把最终提交直接推送到 `origin/main`。
+- `SPEC_v3.md` 是本轮 v3 审查与局部修复的权威文件。根目录 `SPEC.md` 是另一条更早、内容更大的规格演进线，本次没有同步或替换它；后续任务不得假设两者内容等价。
+- 本轮只修改规范和两个上下文文件，没有新增实现代码、迁移或运行时配置。规范列出的单元、Windows、Docker 和端到端测试仍是未来实现验收要求，不是本轮已经存在或运行的代码测试。
+- 本节与 `AGENT_LOG.md`、`SPEC_v3.md` 由同一最终提交承载；最终提交 SHA 和 push 结果以 Git history 与 `origin/main` 为准，不在提交正文中制造自引用。
+
+### 13.2 本批七组权威合同
+
+1. **规范编码：** `CanonicalizationV1` 不执行 Unicode normalization，按 Unicode scalar value 处理字符串和 key；非 ASCII scalar 直接写 UTF-8，冻结 JSON 强制转义、控制字符转义、`/`/U+2028/U+2029 不转义和 key 排序。时间只接受 `YYYY-MM-DDTHH:MM:SS.sssZ`；CTV-01—CTV-07 是固定兼容性向量。
+2. **真实 LLM 目的端点：** v1 只有 `OPENAI_PUBLIC_API_V1`，可信映射为 `https://api.openai.com:443/v1`。profile、Grant subject、OpenAI prepared request、逐请求授权记录和适配器有效目标必须一致；请求、配置和 `OPENAI_BASE_URL` 不能覆盖；跨 origin redirect 不得携带正文重发。
+3. **Mock/OpenAI 请求分离：** `PreparedModelRequestV1 = MockPreparedModelRequestV1 | OpenAIPreparedModelRequestV1`。Mock 只绑定 script 且不得出现 OpenAI 字段或授权记录；OpenAI 绑定 endpoint/serializer/fixed parameters 并必须引用逐请求授权记录。两个变体使用不同摘要域，`LLMCallResultV1` 按模式冻结合法状态组合。
+4. **Snapshot 顺序：** PREFLIGHT 唯一顺序为 workspace identity/lease → recovery gate → Git/文件系统对象/敏感路径/干净状态 Snapshot 前置检查 → 创建并封存本次唯一 Snapshot → `detect_static` → reference image/execution profile readiness → 适用的 OpenAI credential/endpoint readiness → BASELINE。静态画像不得重读权威工作区或创建第二份 Snapshot。
+5. **路径、披露和 FinalDiff：** 仓库根只能用 `RepositoryLocationV1.ROOT` 表示；披露 scope 使用 `ROOT | FILE | DIRECTORY`，空 scope 不授权带路径来源，目录按路径段匹配。`FinalDiffV1.added_and_replacement_text_bytes` 是全部 CREATE/REPLACE 完整 postimage 原始字节长度之和，不是 unified diff 或新增行长度。
+6. **可编辑路径：** 唯一内建 `EditablePathPolicyV1` 只允许 `CREATE/REPLACE src/**`。已有文件和新文件使用同一目录段匹配；仓库根、README/docs、CI、Docker 和 scripts 不可修改，保护工件错误优先。Candidate、FinalDiff、验证、最终批准和持久化都必须复验同一 policy identity；list/read/search 的可见范围不由 editable policy 收窄。
+7. **文件类型结果：** `ListFilesEntryV1` 只有 `DIRECTORY | TEXT_FILE | NON_TEXT_FILE` 三种封闭变体。List、Read、Search 共享 `SupportedTextFileV1`；`NON_TEXT_FILE` 只表示不满足 v1 文本合同，不是仓库准入拒绝，也不表示一定是二进制。Read 返回 `FILE_NOT_TEXT` 且零正文；Search 直接以非文本文件为 root 时成功返回零匹配和 `skipped_non_text_count=1`。List 使用 `(directory_rank, canonical_path)`，Search match 使用 `(canonical_path, line, column)`。
+
+### 13.3 实现时不可放宽或误读
+
+- 不得把 `provider="openai"` 当作足够的网络目的地授权；必须同时验证可信 `endpoint_id` 映射和适配器有效 origin。
+- 不得给 Mock 请求填充虚假 OpenAI endpoint/model/fixed parameters，也不得创建虚假 `DisclosureAuthorizationRecordV1`。
+- 不得在完整 PREFLIGHT/BASELINE 之前开放 Agent 文件动作；Snapshot 的创建是 PREFLIGHT 内部步骤，不代表准入已经完成。
+- 不得用 `""`、`.`、`./`、`/` 或尾随 `/` 字符串表达仓库根或目录 scope。
+- `allowed_source_paths=[]` 表示不授权任何带路径来源；文件名、正文摘录和路径相关工具结果不能降级为 pathless。
+- 不得把“可读取整个 Snapshot”解释为“可修改整个 Snapshot”；候选修改仍严格限于 `src/**`。
+- 不得把 `NON_TEXT_FILE` 解释为拒绝仓库、删除文件或开放二进制 Read/Search/patch；它只能列出 size/path，并按文件工具合同跳过或失败。
+
+### 13.4 已有验证与未完成门槛
+
+- 每项局部合同都执行了对应全文断言；最终 List 文件类型合同检查的旧表述清零、三变体、统一分类、Read/Search 行为、排序、测试要求、AC-17、数据模型摘要、验证矩阵和关闭清单全部命中。
+- `git diff --check -- SPEC_v3.md` 退出码为 0；唯一提示是当前 Git 配置下工作树 LF 将来可能转换为 CRLF。该提示不是空白错误，但后续编辑仍应避免无意制造整文件换行噪声。
+- 上下文同步前，tracked diff 只有 `SPEC_v3.md`；`.gitignore`、`AGENTS.md`、`PLAN.md`、`REFLECTION.md` 和 `SPEC_v2.md` 是既有未跟踪文件，本轮不得把它们带入提交。
+- 尚未完成：基于实现代码的 TDD、完整 v3 独立冷启动实现试验、SPEC/PLAN 的课程最终批准和任何运行时交付。后续任务必须按实际完成范围记录，不能把规范中的测试计划写成已经通过。
+
+### 13.5 后续任务启动检查
+
+新任务开始前至少确认：
+
+1. 当前 `origin/main` 是否包含承载 `SPEC_v3.md`、`AGENT_LOG.md` 和本节的同一最终提交；
+2. 实现或继续审查时是否以 `SPEC_v3.md` 而不是旧聊天摘要重建合同；
+3. `CanonicalizationV1`、endpoint、请求模式、Snapshot 顺序、路径 scope、editable policy 和文件类型七组合同是否仍各有唯一权威来源；
+4. 新建议是否会新增自定义 endpoint、第二套 editable policy、字符串根哨兵、二进制补丁或状态机；若会，必须先正式修订 SPEC，不能作为“实现细节”偷偷加入；
+5. 若声称 v3 已可进入实现，是否补齐了本节明确未完成的全量独立冷启动验证和课程批准证据。
