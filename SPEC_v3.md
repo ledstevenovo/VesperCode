@@ -1,7 +1,7 @@
 # VesperCode v1 规格说明
 
 > 版本：SPEC v3  
-> 状态：SPEC v3 冻结稿，等待 PLAN 与陌生智能体冷启动验证。完成冷启动试验和本文 §10 的验证证据前，不得宣称实现完成。
+> 状态：SPEC v3 冻结候选，等待与其内容寻址绑定的 `PLAN.md` 获批，并完成不同 Agent 类型、无先前对话或记忆上下文的冷启动试验。除课程要求的隔离、可丢弃且不得合入的冷启动试作外，在该精确 SPEC/PLAN 对获批并通过冷启动门禁前，不得开始或继续正式实现、CI、发行或部署；§10 的实现与发布证据只能在门禁通过后生成，不能替代该门禁。
 
 ## 0. 文档约定
 
@@ -2044,7 +2044,7 @@ GitHub Release 与 GHCR 使用彼此独立的最小权限发布凭据：前者�
 
 离线脚本或测试必须在同一场景中展示：
 
-1. Mock LLM 提出读取工作区外路径，治理护栏返回 `DENY`；
+1. Mock LLM 提交结构合法、路径规范但尝试创建 `docs/outside-scope.md` 的 `ApplyCandidatePatchAction`；路径校验通过后，`PolicyEngine` 返回 `DENY`，稳定错误码为 `PATCH_PATH_NOT_EDITABLE`，并断言工具分发和 Candidate 发布次数均为零；
 2. Mock LLM 可读取 `README.md`，但尝试修改它时以 `PATCH_PATH_NOT_EDITABLE` 硬拒绝；
 3. Mock LLM 提出合法但失败的 `src/**` 候选补丁，pytest 失败被结构化回灌，下一轮动作改变；
 4. Mock LLM 尝试修改受保护测试或 Ruff/Mypy 配置，Manifest 保护机制拒绝；
