@@ -1,2386 +1,2103 @@
-# 1. 问题陈述
+# VesperCode v1 规格说明
 
-## 1.1 项目定义与背景
+> 版本：SPEC v3  
+> 状态：SPEC v3 冻结候选，等待与其内容寻址绑定的 `PLAN.md` 获批，并完成不同 Agent 类型、无先前对话或记忆上下文的冷启动试验。除课程要求的隔离、可丢弃且不得合入的冷启动试作外，在该精确 SPEC/PLAN 对获批并通过冷启动门禁前，不得开始或继续正式实现、CI、发行或部署；§10 的实现与发布证据只能在门禁通过后生成，不能替代该门禁。
 
-**项目名称：** VesperCode
+## 0. 文档约定
 
-**一句话定位：**
+本文与 `AI4SE_Final_Project_通用要求.md`、`AI4SE_Final_Project_A_Coding_Agent_Harness(1).md` 共同构成项目要求；冲突时课程原文优先。
 
-面向维护 Windows 本地代码仓库的独立开发者，构建一个以治理为核心、具备确定性护栏和测试反馈闭环的 Coding Agent Harness，使 LLM 能在受控工作区中检查和修改代码、运行验证并根据反馈自我修正，同时显式管理路径、动作、审批、记忆、配置和数据披露风险。
+规范词含义如下：
 
-裸 LLM 或仅具对话能力的模型本身只能生成 Token 输出；受控文件操作、补丁应用、检查执行、反馈闭环、审批和审计必须由 Harness 提供。即使为模型提供工具，仅依靠系统提示也无法确定性地阻止路径越界、危险动作、秘密读取、验收条件篡改或未经批准的持久修改。VesperCode 因此自行实现 Agent 主循环、工具协议、治理机制、反馈闭环、记忆和配置，而不是把安全要求交给模型自觉遵守。
+- **必须 / 不得**：v1 强制要求。
+- **应当**：除非在 `AGENT_LOG.md` 中记录明确理由，否则必须满足。
+- **可以**：非强制实现选择。
+- **未来工作**：不属于 v1，不得进入 v1 的实现任务或验收门禁。
 
-## 1.2 目标用户、支持范围与产品交互面
+每项规范合同只在一个章节定义。问题陈述和用户故事只描述可观察结果，不重新定义内部协议。功能合同使用 `FR-*`，非功能要求使用 `NFR-*`，验收标准使用 `AC-*`。
 
-目标用户是维护 Windows 本地代码仓库、希望在人工监督下自动修复缺陷的独立开发者。“Windows 本地代码仓库”描述宿主运行环境，不表示 Harness 只能处理 Windows 程序。
+精确依赖 patch 版本、OpenAI model、profile manifest 摘要、Docker 镜像摘要、发布 URL 和 CI 执行编号属于实现与发布证据，必须记录在 lock file、manifest、CI 和 README 中，并由运行快照绑定，但不改变本文冻结的行为边界。
 
-核心决策循环、工具协议、记忆、治理、反馈和配置机制保持语言无关。首版提供面向明确兼容性画像的 Python 项目适配器，不承诺覆盖完整 Python 生态。该适配器支持通过 pytest 收集和运行测试，并运行项目已配置的 Ruff 和 Mypy 检查。`unittest` 测试仅在 pytest 能直接收集时受支持。
+## 0.1 `CanonicalizationV1`
 
-VesperCode 不负责创建开发环境或安装项目依赖。执行环境必须预先准备完成。VesperCode 自身使用的 Python 版本与目标项目支持的 Python 版本分别定义。目标 Python 版本、容器 OS、项目布局、配置与环境入口、源文件编码/BOM/换行、pytest 插件集合、零 skip/xfail/deselect 基线、受限复现测试形式以及本地服务和忽略文件依赖等限制，将在技术选型章节形成可测试的支持矩阵。画像之外的项目以 `error_code = UNSUPPORTED_PROJECT` 与 `StopReason = PRECONDITION_REJECTED` 停止，不得降级为任意命令执行。
+所有用于身份、重放、策略、批准、披露、验证和持久化绑定的摘要统一使用 SHA-256。摘要输入字节精确定义为：
 
-首版只接受具有有效 `HEAD` 的 Git 工作区。已暂存修改、未暂存修改或非忽略的未跟踪文件都会使运行以 `error_code = WORKTREE_DIRTY` 与 `StopReason = PRECONDITION_REJECTED` 停止。VesperCode 不自动执行 commit、stash 或 clean，也不删除运行开始前已经存在的权威工作区文件。事务回滚只能删除由当前持久化事务创建，且路径、前置不存在状态和写入内容摘要均已记录在事务日志中、当前内容仍与该摘要一致的新文件；发现日志之外的修改时不得自动删除，并进入 `RECOVERY_REQUIRED`。该删除属于 Harness 内部恢复步骤，不属于 Agent 删除动作。删除可丢弃执行副本同样属于 Harness 内部生命周期清理。
+    UTF8("VesperCode")
+    || 0x00
+    || UTF8(object_type)
+    || 0x00
+    || ASCII(decimal_schema_version)
+    || 0x00
+    || canonical_json_utf8
 
-在首次 LLM 调用和执行器启动前，系统必须检查所有 tracked 路径。命中内建硬拒绝敏感路径规则的 tracked 文件使运行以 `error_code = SENSITIVE_TRACKED_FILE` 与 `StopReason = PRECONDITION_REJECTED` 失败关闭，不进入执行副本；测试假凭据只能使用内建的窄范围 fixture/example 例外，普通项目配置不能放宽硬拒绝规则。
+`object_type` 必须是本文声明的精确类型名；schema 版本使用无前导零十进制。摘要输出为 64 个小写十六进制字符。不同对象类型或 schema 版本即使规范 JSON 完全相同，也不得产生可互换的绑定摘要。
 
-快照的路径集合、Git blob 身份和 tree entry mode 绑定封存的 `HEAD tree`；文件内容取经干净状态验证后的权威工作区原始字节，并同时记录 HEAD blob 摘要和工作区字节摘要。支持范围内的 tracked 普通文件无论文本或二进制都进入快照和执行副本；二进制文件参与完整性验证，但不得作为文本提供给 LLM，也不得由 `FinalDiff` 修改。首版 `FinalDiff` 只支持创建或修改 `TextContentProfile = UTF8 | UTF8_BOM` 的普通文本文件；内容摘要基于含 BOM 在内的原始字节，不执行换行或 Unicode 内容归一化，并保留既有 BOM 与换行约定。不支持的补丁编码、删除、重命名、二进制修改和 Git 文件模式变更以 `UNSUPPORTED_PATCH_OPERATION` 拒绝。未跟踪且被有效 Git 忽略规则排除的文件不进入快照，受支持项目不得在运行时依赖这些文件。
+规范 JSON 使用无 BOM UTF-8：不保留无意义空白；整数使用十进制；禁止浮点数、`NaN` 和无穷值；数组保持各合同规定的规范顺序。未被具体合同声明为绑定字段的进程 ID、随机 ID、时间、审计序号和显示文本不得进入语义重放摘要。
 
-“干净工作区”不得仅由单一 Git status 结果判定。控制面必须拒绝未合并或非 stage-0 index entry、intent-to-add、`skip-worktree`、`assume-unchanged` 和不受支持的 Git tree mode。系统在封存的 `RepositoryPolicySnapshot` 下从 `HEAD tree` 确定性物化 `ExpectedWorktreeTree`，并将权威工作区内每个 tracked 文件的实际原始字节与预期值逐一比较；任何稳定不一致以 `error_code = WORKTREE_DIRTY` 与 `StopReason = PRECONDITION_REJECTED` 停止，无法确定性物化时以 `error_code = UNSUPPORTED_REPOSITORY_POLICY` 与同一 StopReason 停止。具体 index 解析、属性转换和字节比较算法由安全设计规定。
+字符串不执行 Unicode normalization。输入必须是 Unicode scalar value 序列：拒绝孤立 surrogate；若宿主表示先提供合法 surrogate pair，必须先还原为对应 scalar。`"` 和 `\` 分别编码为 `\"` 和 `\\`；U+0008、U+0009、U+000A、U+000C、U+000D 分别编码为 `\b`、`\t`、`\n`、`\f`、`\r`；其余 U+0000—U+001F 使用小写四位 `\u00xx`。除上述双引号、反斜杠和 U+0000—U+001F 的指定转义外，所有其余 Unicode scalar（包括普通 ASCII、U+007F 和非 ASCII）必须直接按 UTF-8 输出，禁止用 `\uXXXX` 或 `\/` 表示这些 scalar；`/`、U+2028 和 U+2029 不转义。对象键使用相同编码规则，并按未经 normalization 的 Unicode scalar（code point）序列升序排序。
 
-VesperCode 以同一 Harness 内核提供两种部署配置：
+`CanonicalTimestampV1` 是所有进入规范 JSON 的时间字段唯一合同：格式必须精确为 `YYYY-MM-DDTHH:MM:SS.sssZ`，固定三位毫秒并使用大写 `T` 和 `Z`。年份必须为 `0001`—`9999`，日期必须是有效 Gregorian 日期，小时只能为 `00`—`23`，分钟和秒只能为 `00`—`59`，不支持 leap second。`+00:00`、无小数秒、非三位小数秒和小写 `z` 等非规范形式必须在摘要前拒绝。内部时钟统一使用 UTC epoch milliseconds；更细精度必须在进入规范对象前向下截断至毫秒。
 
-- **本地实际使用模式：** 在用户 Windows 本机运行，通过 CLI 启动仅绑定 `127.0.0.1` 的本地 WebUI，用于指定工作区、启动修复、查看候选 diff、处理审批、观察结构化检查结果和查阅审计记录。本地服务使用本地会话令牌、严格的 Origin/Host 校验和 CSRF 防护，不绑定公网接口。
-- **公网演示模式：** 使用内置示例仓库、预定义演示场景、Mock LLM 和受限 `DemoExecutor`，展示路径拦截、审批、反馈回灌、补丁验证和审计流程。演示模式不访问用户本地文件，不允许上传任意仓库，不接收真实 LLM 凭据，不执行任意命令或对外网络请求，并在每次演示后重置可丢弃状态。`DemoExecutor` 只产生带 `simulated=true` 的演示证据；演示运行以 `DEMO_COMPLETED` 结束，不得进入正式 `SUCCEEDED`、生成持久化授权或与真实 Docker 证据混用，前端必须持续显示“模拟运行”。
+所有参与安全绑定的 v1 Schema 都是封闭字段集合：全部声明字段必须出现，未知字段一律拒绝，不允许实现自行选择是否把扩展字段纳入摘要。可选语义必须使用合同声明的判别联合，例如 `{"kind":"ABSENT"}` 或 `{"kind":"PRESENT","value":...}`；不得通过字段缺失或 `null` 表示。`ABSENT`、空字符串和空数组是三个不同值，只有具体 Schema 明确允许时才有效。除具体 Schema 明确声明的自身 `digest` 字段外，全部字段进入规范 JSON；自身 `digest` 不进入自身摘要。
 
-两种模式尽量复用同一前端和 API 状态模型。具体前端技术、Open Design 设计系统与 UI skill 在技术选型章节说明。
+`CanonicalRelativePathV1` 是仓库内实际文件或目录位置的唯一字符串合同：必须是使用 `/` 的非空仓库相对路径，不得以前导或尾随 `/` 表示。路径解析必须拒绝 `.`/`..` 段、空段、绝对路径、盘符、UNC、ADS、设备路径、尾随点/空格、保留设备名、Unicode 或 Windows 大小写折叠后碰撞，以及多个输入解析到同一最终对象的别名。仓库根不属于 `CanonicalRelativePathV1`，不得用空字符串、`.`、`./` 或 `/` 表示。工作区身份绑定规范绝对路径、卷标识和最终目录对象身份；仅对路径字符串做大小写转换不构成身份验证。
 
-`DeploymentMode` 在进程启动时确定且运行期间不可切换。公网演示进程采用独立的能力注册表，只注册 Mock LLM、`DemoExecutor` 和内置只读场景模板；每次演示只修改由模板创建的会话级可丢弃副本。公网进程不注册本地文件系统、凭据管理、`DockerExecutor` 或真实 LLM 供应商适配器。客户端请求、会话数据和普通配置不能提升部署模式能力。公网会话隔离、并发与速率限制以及重置失败处理在非功能性需求中规定。
+需要表示仓库根的合同必须使用以下封闭联合，不得引入字符串哨兵：
 
-## 1.3 要解决的核心问题
+    RepositoryLocationV1 =
+      ROOT { kind: "ROOT" }
+      | PATH {
+          kind: "PATH"
+          path: CanonicalRelativePathV1
+        }
 
-VesperCode 需要解决以下问题：
+下列对象的摘要输入必须唯一：
 
-1. 自行实现可注入 Mock LLM 的决策循环，使 Agent 能执行“观察—决策—动作—反馈—修正—停止”，而不使用替代主循环的高层 Agent 框架。
-2. 通过受治理的文件读取和两个能力分离的补丁动作处理仓库内容。LLM 输出首先被视为内存中的不可信候选补丁。LLM 只能提出 `ApplyCandidatePatchAction`，其目标固定为当前 `ExecutionWorkspace`，schema 不含 workspace 或 destination 参数；Harness 只有在正式验证完成后才能生成不暴露给 LLM 的 `PersistVerifiedDiffAction`，其目标固定为当前 `AuthoritativeWorkspace`，并绑定已封存的 `FinalDiff`、`CandidateTree`、Manifest 和证据摘要。两种动作可以复用不持有工作区权限的内部 `PatchEngine`，但能力接口必须分离。
-3. 对所有规范化结构化动作进行风险分类，产生 `ALLOW / ASK / DENY` 决策。检查执行请求由适配器生成，至少包含允许的可执行程序、独立 argv、工作目录、超时和输出上限，并且不经 Shell 解释。首版不接受 PowerShell、cmd、Shell 脚本或任意命令文本。
-4. 实现不可复用的一次性审批状态机。批准必须绑定完整动作上下文、具有明确有效期并被原子消费；硬 `DENY` 规则不能被批准覆盖。首版不提供有限会话授权。
-5. 将测试、Ruff 检查和 Mypy 类型检查转换为退出码与结构化结果，并把有效反馈回灌给 LLM，而不是让模型仅凭文本猜测是否成功。
-6. 按需向 LLM 提供项目约定、历史决策、上次运行摘要和已知失败，不加载完整历史上下文。
-7. 通过声明式配置定义工作区、工具权限、检查适配器、Docker 执行 profile、运行预算和日志策略。未知字段、无效值、试图覆盖硬 `DENY` 规则，以及通过默认值或隐式行为扩大权限的配置，必须确定性报错并失败关闭。首版只使用 `DockerExecutor` 执行项目代码、正式验证和成功判定，运行过程中不得切换执行器或降级到宿主执行。
-8. 在基线阶段生成并封存不可变、版本化的 `ValidationManifest`。Manifest 绑定目标测试、完整 pytest node ID 集合与逐测试结果、结构化检查动作、受保护工件、依赖与规范化验证环境；后者至少覆盖 Python、pytest 与插件集合、平台、locale/timezone、执行器 profile、环境白名单和仓库策略。Manifest 存储在不作为 Agent 工具暴露的控制面中；Harness 不向 LLM 提供修改控制面状态的工具，只可提供完成任务所需的只读、裁剪后投影。正式完整性保证仅适用于 Docker 验证。
-9. 将环境准备与 Agent 循环分离，不在运行过程中自动联网安装依赖、拉取镜像或构建环境。
+- `ActionSemanticDigestV1`：拒绝未知字段后的封闭语义动作；模型路线为完整规范 `AgentAction`，最终写回路线为 §4.4.2 的封闭协调器动作，两者都不含 Harness 生成的 `action_id`；
+- `ActionInstanceDigestV1`：`schema_version`、Harness 生成的 `action_id` 和 `semantic_digest`；
+- `ContextProjection`：裁剪完成、来源和裁剪决定已固定的最终投影；
+- `ReferenceProfileManifestV1` 和 `LLMProfileManifestV1`：除自身 `digest` 外的全部规范字段；
+- `MockPreparedModelRequestV1` 和 `OpenAIPreparedModelRequestV1`：分别以自身具体类型名作为 `object_type`，排除自身 `digest` 后绑定全部模式专属字段；联合别名 `PreparedModelRequestV1` 不具有独立摘要域；
+- `ValidationManifestV1`：全部规范字段，不含显示文本；
+- `FailureFingerprintV1`：规范测试身份、调用阶段失败事实、异常类型、规范消息、断言差异和项目栈帧；
+- `CandidateIdentityV1`：§4.3 定义的 Snapshot、CandidateTree 和规范 `FinalDiffV1` 三重绑定，排除自身 `digest`；
+- `FinalDiffV1`：§4.3 定义的封闭结构化净差异，排除自身 `digest`；
+- 工作区前/后映像：规范路径、`ABSENT` 或原始文件字节摘要、文本元数据和最终对象身份；
+- 语义检查结果：检查类型、输入树、环境、逐测试/诊断事实和稳定错误；排除执行时间、容器 ID 与审计序号。
 
-### 工作区与补丁事务
+规范编码器必须至少通过 CTV-01—CTV-07。`CanonicalizationProbeV1` 是仅用于兼容性测试的封闭 Schema：`{schema_version: 1, label: UTF-8 string, tags: UTF-8 string[], optional_note: ABSENT | PRESENT(UTF-8 string)}`，不进入业务数据模型。`CanonicalTimeProbeV1` 也仅用于兼容性测试，且为封闭 Schema：`{schema_version: 1, expires_at: CanonicalTimestampV1}`，不进入业务数据模型。
 
-`AuthoritativeWorkspace` 是用户的权威工作区。`ExecutionWorkspace` 是由 `SnapshotTree` 或 `CandidateTree` 物化的可丢弃纯文件树，不是 Git worktree；它不得包含 `.git` 目录或指针文件、index、refs、config、hooks、remote URL、worktree 管理路径，或任何指向权威仓库 Git 元数据的路径。运行时需要 Git 元数据、提交历史、标签或 `setuptools-scm` 等 VCS 信息的项目不属于首版支持范围。工作区事务使用三个规范化概念：
+| 向量 | 输入 | 期望结果 |
+|---|---|---|
+| CTV-01 | `object_type=CanonicalizationProbeV1`；`{"tags":[],"schema_version":1,"optional_note":{"kind":"ABSENT"},"label":"x"}` | 规范字节为 `{"label":"x","optional_note":{"kind":"ABSENT"},"schema_version":1,"tags":[]}`；摘要 `1923bd578b2110ae145622050b4b6d10171c4b8fca4a383be06fa9f78d1ca782` |
+| CTV-02 | 与 CTV-01 字段顺序不同但值相同 | 规范字节和摘要必须与 CTV-01 完全相同 |
+| CTV-03 | `object_type=CanonicalizationProbeV1`；`{"label":"x","optional_note":{"kind":"PRESENT","value":""},"schema_version":1,"tags":[]}` | 摘要 `a9242ff2226e5d78c5efb1f8fb9adfe6c5a5c217d104c14691c38d3b95d10a3f`，且不得等于 CTV-01 |
+| CTV-04 | CTV-01 增加未知字段、把 `optional_note` 写成 `null` 或省略该字段 | 在计算摘要前拒绝，不产生摘要 |
+| CTV-05 | `object_type=CanonicalizationProbeV1`；`label` 依次为 `中文`、`"`、`\`、换行、`/`、分解形式 `e` + U+0301；其余字段为 `{"schema_version":1,"tags":[],"optional_note":{"kind":"ABSENT"}}` | 规范 JSON 为 `{"label":"中文\"\\\n/é","optional_note":{"kind":"ABSENT"},"schema_version":1,"tags":[]}`；完整 UTF-8 hex 为 `7b226c6162656c223a22e4b8ade696875c225c5c5c6e2f65cc81222c226f7074696f6e616c5f6e6f7465223a7b226b696e64223a22414253454e54227d2c22736368656d615f76657273696f6e223a312c2274616773223a5b5d7d`；按 §0.1 域分隔计算的 SHA-256 为 `1c757fec0a18509fe01156d8e7e359cc948d9abf1abcac0c999e00e15ed56a3a` |
+| CTV-06 | `object_type=CanonicalTimeProbeV1`；`{"schema_version":1,"expires_at":"2026-07-24T09:30:15.123Z"}` | 规范 JSON 为 `{"expires_at":"2026-07-24T09:30:15.123Z","schema_version":1}`；完整 UTF-8 hex 为 `7b22657870697265735f6174223a22323032362d30372d32345430393a33303a31352e3132335a222c22736368656d615f76657273696f6e223a317d`；按 §0.1 域分隔计算的 SHA-256 为 `277d8e57122ba6ce91dfe28d5b724b2e5b0a85c3b9e33e951b19adcd86786125` |
+| CTV-07 | 孤立 surrogate；或 `CanonicalTimestampV1` 使用 `+00:00`、无小数秒、1/2/4 位小数秒、小写 `z` 或 leap second | 必须在计算摘要前拒绝，且不产生摘要 |
 
-- `SnapshotTree`：由封存的 `HEAD tree` 和 `RepositoryPolicySnapshot` 确定性物化，并已经与权威工作区实际原始字节逐文件验证一致的规范化项目树；
-- `FinalDiff`：从 `SnapshotTree` 到最终候选状态、准备持久化的规范化补丁操作集合；
-- `CandidateTree`：对 `SnapshotTree` 应用 `FinalDiff` 后得到的规范化候选树，包括补丁声明新增的受支持文件，但不包括执行器产生的运行时文件。
+# 1. 问题陈述与范围
 
-每项正式检查都使用从 `CandidateTree` 重新物化的全新执行副本；检查前后验证完整 tracked tree 和受保护路径，不共享前一检查的运行时产物。LLM 只能提出目标固定为当前执行副本的 `ApplyCandidatePatchAction`。只有绑定精确 `FinalDiff`、`CandidateTree`、Manifest 和 Docker 验证结果的一次性批准，才能授权 Harness 生成并执行不暴露给 LLM 的 `PersistVerifiedDiffAction`。
+## 1.1 用户问题
 
-VesperCode 使用工作区级内部 lease，禁止自身多个运行并发持久化，并在消费批准前、持久化前及每个文件替换前检测外部修改。检测到变化时形成适用合同规定的稳定 `error_code`，并以 `StopReason = WORKSPACE_CHANGED` 停止；已检测的用户修改不得覆盖。首版不保证阻止其他本机进程在最后一次前映像检查与原子替换之间写入；用户必须在短暂的持久化窗口内停止外部编辑。事务必须可在崩溃后安全恢复，恢复未解决时进入 `RECOVERY_REQUIRED` 且不得判定成功。具体 lease、事务日志、提交意图、前滚、回滚和人工恢复协议由系统架构与功能规约唯一规定。
+现有 Coding Agent 在本地仓库中工作时，用户通常难以确认：
 
-仓库内所有 `.gitignore`、`.gitattributes` 和 `.gitmodules` 属于受保护仓库策略工件，本次补丁不得创建、修改、删除或重命名。Agent 可调用的文件工具只能访问授权工作区；可信控制面可以为预检读取封存的 HEAD、Git index、仓库本地 `.git/info/exclude` 和受支持的仓库内策略文件，但这些内容不自动进入日志、记忆或 LLM 上下文。
+1. Agent 是否只访问和修改了允许的文件，还是越过工作区或接触了敏感路径；
+2. 测试是否完整执行，还是通过删除测试、增加跳过或修改检查配置获得表面成功；
+3. 一次批准是否只授权了用户实际看到的动作和 diff；
+4. 本地允许读取的数据是否被自动发送给外部 LLM；
+5. 最终写回的内容是否就是已验证、已批准的候选内容；
+6. 写回中断后，工作区是否仍处于可证明的状态。
 
-Git 预检采用密闭语义：禁用 system/global Git config 和外部 `core.excludesFile`，使用隔离 HOME，不执行 alias、hook、filter 或 fsmonitor，只依据封存的 HEAD、Git index、仓库本地 `.git/info/exclude` 和受支持的仓库内策略工件构造 `RepositoryPolicySnapshot`。在密闭视图内检测到 Git submodule、Git LFS、稀疏检出、自定义 clean/smudge filter、外部 fsmonitor 或其他不可确定性物化策略，或者禁用外部配置后仓库无法满足干净状态与完整确定性物化要求时，以 `error_code = UNSUPPORTED_REPOSITORY_POLICY` 与 `StopReason = PRECONDITION_REJECTED` 失败关闭；系统不读取也不承诺识别仅存在于被隔离 system/global 配置中的机制。新增文件必须在基线与候选状态忽略策略下均为非忽略文件；封存后策略摘要变化时以 `error_code = REPOSITORY_POLICY_CHANGED` 与 `StopReason = WORKSPACE_CHANGED` 停止。具体环境变量和 Git 参数由安全设计规定。`FinalDiff` 不得写入 `.git`、VesperCode 控制面目录或其他保留路径。
+仅在提示词中要求模型谨慎不能确定性解决这些问题。模型输出、仓库文本、工具输出和记忆均可能不可靠；治理、检查、审批、成功判定、停止和恢复必须由 Harness 代码控制。
 
-`SnapshotTree`、执行副本、不可变验收工件、事务日志和备份属于运行期 `OperationalArtifact`，不属于记忆或审计。它们只能保存在本机受限目录中，不得整批或隐式发送给 LLM；代码和检查结果只能通过数据披露策略提供必要的裁剪投影。运行终态必须撤销运行、consumer、mount 与 allocator 对运行工件的可达性和复用资格；能够安全证明边界时才物理删除。物理删除失败但隔离证据完整时，精确残留根可以永久保持 `QUARANTINED`；每次启动时 allocator 都必须永久拒绝其 instance/root，且不承诺以后再次删除。`RECOVERY_REQUIRED` 期间必须保留 3.10 恢复所需的最小集合并阻断同工作区新运行，直到形成允许的恢复结果；用户取消或声明放弃都不能清除未解决恢复工件。应用启动时只可清理没有活动运行、恢复记录或 quarantine 记录且边界可证明的孤立工件。保留周期和清理协议由非功能性需求规定。
+## 1.2 产品定位
 
-### 默认动作决策
+**VesperCode 是一个面向 Windows 11 本地 Python 参考仓库的治理型 Coding Agent Harness 原型：它在隔离候选树中修复已有失败测试，用 pytest、Ruff 和 Mypy 验证候选结果，并在用户批准精确 diff 后才写回原仓库。**
 
-| 动作 | 默认决策 | 约束 |
-| --- | --- | --- |
-| 在本机列出或读取执行副本中的普通文件 | `ALLOW` | 只授权本地动作；必须通过路径围栏，不自动授权外部披露 |
-| 读取匹配硬拒绝规则的敏感路径 | `DENY` | 不承诺自动识别所有凭据 |
-| 读取工作区外文件 | `DENY` | 不可通过批准覆盖 |
-| 提出 `ApplyCandidatePatchAction` | `ALLOW` | 目标固定为当前执行副本；不得命中硬拒绝敏感路径、验收契约、仓库策略或保留路径 |
-| 创建、修改或持久化命中硬拒绝规则的敏感路径 | `DENY` | 不可通过批准覆盖 |
-| 确认并执行复现计划 | `ASK` | 作为绑定补丁、目标、匹配器、环境和两次试验的复合动作 |
-| 在默认 Docker 中运行结构化检查 | `ALLOW` | 仅限适配器动作，默认禁用外部网络 |
-| 执行 `PersistVerifiedDiffAction` | `ASK` | 只由 Harness 生成，不属于 LLM 工具；只接受正式 Docker 验证结果 |
-| 删除、重命名、二进制补丁或文件模式变更 | `DENY` | 以 `UNSUPPORTED_PATCH_OPERATION` 拒绝 |
-| Agent、普通工具动作或修复补丁修改当前验收契约 | `DENY` | 不可通过批准或配置覆盖。自然语言缺陷场景在进入修复阶段前，由可信控制面依据已批准且两阶段复现确认成功的 `ConfirmReproductionAction`，从不可变 `ValidationManifest v1` 派生不可变 `v2`；该受控转换不属于本动作，不作为 LLM 工具暴露，也不能由普通批准或配置触发 |
-| 通用联网、下载、发布或推送 | `DENY` | LLM 控制面通信除外 |
-| 绕过执行器或执行任意 Shell | `DENY` | 包括明确的破坏性系统动作 |
+主要贡献是一条可离线测试的确定性治理管线：
 
-“联网 `DENY`”约束 Agent 工具和可识别的结构化动作。首版 `DockerExecutor` 对项目子进程实施外部网络禁用；精确隔离参数由非功能性安全需求规定。
-
-读取工具、补丁解析器、执行副本应用和最终持久化必须调用同一版本的 `SensitivePathPolicy`，并以相同规范化路径输入作出判定；任一阶段不得维护可漂移的独立敏感路径规则。
-
-文件本地读取与向真实 LLM 供应商披露是两个独立策略点。`ReadFileAction` 只允许控制面在本机读取内容；将文件内容、检查输出或记忆加入真实供应商请求前，必须独立获得 `DisclosureDecision`。用户首次确认生成仅对当前运行有效的 `DisclosureGrant`，只绑定当前运行、供应商、端点、模型、允许来源范围、允许数据类别、脱敏规则、累计字节预算和有效期，不绑定尚未形成的最终请求摘要；超出范围或预算的披露必须重新请求批准或拒绝。每个真实供应商请求被允许进入适配器调用阶段前，必须先通过确定性 dispatch checkpoint 完成 pre-dispatch commit，并在该原子提交中创建既有 `DisclosureRecord`；记录逐次绑定最终请求摘要、实际来源、数据类别、确定性序列化后的规范外发载荷字节数、脱敏结果和所消费的 `DisclosureGrant`，不得保存完整请求正文。
-`DisclosureRecord` 证明请求已通过授权并完成真实适配器调用前调度提交。
-它不证明适配器实际被调用，也不证明供应商已收到、处理或返回；硬拒绝敏感路径不可由披露授权覆盖，测试 fixture 和 example 的窄范围例外也只允许本地处理，不自动取得对外披露资格。完整状态与字段由数据模型和非功能性安全需求定义。
-
-“首版不提供有限会话授权”仅适用于工具与副作用动作的 `ActionApproval`。`DisclosureGrant` 是独立的、仅限当前运行的数据传输授权，只能决定允许的数据是否可以发送给已绑定供应商；它不得授权任何工具动作或持久化动作，也不得覆盖 `DENY`、敏感路径规则或验收契约。
-
-每次 `ASK` 对应一个不可复用的高层结构化动作，而不是一次底层工具调用。`ApprovalContext` 绑定运行、动作或 diff、工作区与快照、Manifest、Harness 与 schema 版本、有效策略、适配器和执行器 profile；任一安全相关上下文变化都使审批失效。批准具有有效期和一次消费语义，由控制面原子消费。完整字段、状态转换、时钟与存储技术由数据模型和技术选型章节唯一规定。
-
-复现测试使用一次固定且不可复用的 `ConfirmReproductionAction`。该动作绑定不可变的两阶段计划：试验 A 是复合验证阶段，全量 pytest、Ruff 和 Mypy 中每项已配置检查分别在从同一复现候选树物化的独立全新执行副本中运行，用于证明只新增预期失败且没有其他回归；试验 B 再使用另一个独立全新执行副本，只运行获批目标测试并证明失败指纹稳定。两项试验的顺序、补丁、目标、匹配器、Manifest、Docker profile 和环境白名单均属于批准上下文，任何变化都会使批准失效。
-
-首版复现补丁只能在既有且受支持的测试根目录下新增一个普通测试模块，并且只能新增一个非参数化 pytest 测试函数；不得创建或修改 `conftest.py`、`__init__.py`、pytest 插件注册、测试辅助模块、动态参数化或收集钩子。目标 node ID 必须由获批的相对文件路径和函数名确定性派生；超出该画像时以 `UNSUPPORTED_REPRO_TEST` 拒绝，不能通过批准放宽。
-
-### 验收契约防篡改
-
-本节的不可修改约束自当前修复 Manifest 生效后适用。自然语言缺陷场景中的 `v1 → v2` 受控派生发生在修复阶段之前，由可信控制面执行，不属于 Agent、普通工具动作或修复补丁修改验收契约。
-
-进入修复阶段后，已有测试、已确认的复现测试、测试收集配置、Ruff 和 Mypy 配置、结构化检查动作和依赖清单不得由修复补丁改变。保护规则覆盖受保护路径的创建、修改、删除和重命名，并覆盖支持矩阵明确列出的、能够改变 pytest 收集与执行、Ruff、Mypy、解释器启动或依赖解析行为的配置入口。补丁直接触及受保护内容时必须在应用前被拒绝；系统在每次检查前后重新验证受保护工件和补丁涉及文件。执行副本漂移以 `error_code = EXECUTION_WORKSPACE_MUTATED` 与 `StopReason = EXECUTION_TERMINATED` 停止；验收工件篡改以 `error_code = VALIDATION_TAMPERED` 与 `StopReason = POLICY_TERMINATED` 停止；工具版本、执行镜像或执行环境变化以 `error_code = VALIDATION_ENV_CHANGED` 与 `StopReason = EXECUTION_TERMINATED` 停止。
-
-Docker 最终验证中的受保护测试和配置必须来自控制面保存的不可变副本，或以候选进程不可写的方式提供。`ValidationManifest` 保证验收工件和执行配置的完整性，不构成候选程序无法在运行时影响 Python、导入系统或测试框架行为的形式化证明。
-
-已有失败测试场景在基线后封存 `ValidationManifest v1`。自然语言场景先封存原始基线，在复现测试获批并被稳定复现后派生不可变的 `ValidationManifest v2`；`v2` 绑定 `v1` 摘要、严格等于 v1 node ID 集合与获批新增目标 node ID 集合之并集的完整收集结果及逐测试状态、复现补丁、失败匹配器和两次执行证据，两个版本均保留。修复阶段以 `v2` 为当前验收契约。合法改变验收条件必须终止当前运行并重新建立基线，不能在运行中重新授权弱化契约。完整 schema 在数据模型章节定义。
-
-## 1.4 核心使用场景
-
-### 场景一：根据已有失败测试修复缺陷
-
-用户指定工作区和目标测试集合。VesperCode 在从同一权威快照创建的全新执行副本中建立基线：
-
-- 所有目标测试 ID 必须成功收集；任何目标未收集时以 `error_code = TARGET_NOT_FOUND` 与 `StopReason = BASELINE_BLOCKED` 停止。
-- 所有目标测试都必须实际执行，基线结果只允许 `PASS` 或测试调用阶段的确定性 `FAIL`，并且至少一个目标为 `FAIL`。任一目标出现 `SKIPPED`、`XFAIL`、`XPASS`、`DESELECTED`、setup/teardown 错误、收集错误、环境错误或超时，均以 `error_code = TARGET_BASELINE_INVALID` 与 `StopReason = BASELINE_BLOCKED` 停止；目标全部通过时以 `error_code = TARGET_NOT_REPRODUCED` 与同一 StopReason 停止。
-- 目标集合之外的全部 pytest node ID 必须实际执行并在测试调用阶段报告 `PASS`；任何 `SKIPPED`、`XFAIL`、`XPASS`、`DESELECTED`、未执行、收集错误或其他非 `PASS` 结果均以 `error_code = BASELINE_NON_TARGET_FAILED` 与 `StopReason = BASELINE_BLOCKED` 停止。所有已配置的 Ruff 和 Mypy 检查也必须通过；检查得到 `FAIL`、`ERROR` 或 `TIMEOUT` 时保留对应结果，并以 `error_code = BASELINE_MANDATORY_CHECK_FAILED` 与同一 StopReason 停止。
-- 系统在第二个全新执行副本中重新运行整个目标集合。每个目标的 `PASS / FAIL` 结果必须与首次运行一致，每个失败目标必须逐一产生相同的规范化失败指纹；任一目标不一致时以 `error_code = TARGET_UNSTABLE` 与 `StopReason = BASELINE_BLOCKED` 停止。
-
-基线确认后，系统封存目标失败指纹和 `ValidationManifest v1`。Agent 使用受治理的工具检查代码、生成候选补丁并在执行副本中运行目标测试。失败结果被结构化后回灌给 LLM，Agent 可以继续修正，直到所有成功条件满足或触发停止条件。目标集合中原本通过的测试也保留在最终验收契约中。
-
-### 场景二：根据自然语言缺陷生成复现测试
-
-当用户只提供缺陷描述时，原始项目收集到的每个 pytest node ID 都必须实际执行并在测试调用阶段报告 `PASS`，所有已配置的 Ruff 和 Mypy 检查也必须通过，否则不得生成修复。任何 `SKIPPED`、`XFAIL`、`XPASS`、`DESELECTED`、未执行或其他非 `PASS` 结果均使基线无效。全量基线未收集到任何测试时以 `error_code = BASELINE_NO_TESTS` 与 `StopReason = BASELINE_BLOCKED` 停止，不能把零测试解释为 pytest 验收通过。
-
-Agent 在内存中生成只新增复现测试、不修改已有测试或检查配置的测试补丁，并向用户展示测试内容、目标测试 ID、预期失败匹配器和完整 `ConfirmReproductionAction`。用户批准该复合动作并由控制面原子消费一次后，Harness 使用相同测试补丁、Manifest、Docker profile 和环境白名单执行两个固定试验。试验 A 是复合验证阶段：全量 pytest、Ruff 和 Mypy 中每项已配置检查分别在从同一复现候选树物化的独立全新 `ExecutionWorkspace` 中运行，各检查不共享缓存、字节码或其他运行时产物；pytest 收集集合必须严格等于 `ValidationManifest v1` 的完整 node ID 集合与获批新增目标 node ID 集合的并集，全部 v1 node ID 必须实际执行并报告 `PASS`，不得出现其他新增或消失的 node ID，获批目标测试必须产生匹配失败指纹，所有 Ruff 和 Mypy 检查必须通过。试验 B 再使用另一个独立全新执行副本，只运行获批目标测试，其失败指纹必须与试验 A 相同。复现确认前，测试补丁不得写入权威工作区。
-
-目标测试必须在两个副本中被实际收集和执行，两次结果必须产生相同且匹配批准内容的规范化失败指纹。语法错误、测试收集失败、依赖缺失、导入失败、setup/teardown 错误、环境错误、未执行到目标测试、无关异常、超时，或试验 A 中任一非目标测试与检查未通过，均不构成有效复现。任一条件不满足时，系统以 `error_code = REPRO_NOT_CONFIRMED` 与 `StopReason = REPRODUCTION_NOT_CONFIRMED` 停止，并报告两个试验的执行证据。
-
-试验 A 的 pytest 原始 `CheckStatus` 保持 `FAIL`，因为获批复现测试按预期失败；Harness 使用独立的 `ReproductionEvaluation` 将两阶段聚合结果判定为 `CONFIRMED` 或 `NOT_CONFIRMED`，不得为了表达复现成功而把 pytest 原始结果改写为 `PASS`。完整状态模型在数据模型与功能规约中定义。
-
-复现确认后，系统生成包含测试内容、目标 ID、补丁摘要和失败指纹的 `ValidationManifest v2`。该测试在修复阶段不得修改或删除，最终必须与业务代码修复组成同一个精确 diff，在全新执行副本中完成验证，并在一次性批准后共同持久化。
-
-## 1.5 成功定义、停止条件与主要贡献
-
-单次修复只有在以下条件全部满足时才能标记成功：
-
-- 所有参与成功判定的测试和检查均由当前 Manifest 绑定的 `DockerExecutor` 完成。
-- Manifest 中的所有目标测试 ID 均以原 ID 被实际收集、执行并报告为 `PASS`；`SKIPPED`、`XFAIL`、`XPASS`、`DESELECTED` 和未收集均不构成通过。
-- 除获批新增的复现测试外，最终收集到的 pytest node ID 集合必须与基线一致；所有 node ID 均被实际执行并在测试调用阶段报告 `PASS`。任何 `SKIPPED`、`XFAIL`、`XPASS`、`DESELECTED`、未执行、新增未授权 node ID 或基线 node ID 消失均使最终验证失败。
-- 所有已配置的 Ruff 和 Mypy 检查为 `PASS`。
-- 最终测试集合、检查动作、受保护文件及配置摘要与当前封存的 `ValidationManifest` 一致。
-- 自然语言场景中，获批的复现测试以相同内容保留在最终 diff 中并实际通过。
-- 最终精确 diff 已在从原始快照重新创建的执行副本中完成验证。
-- 用户已批准绑定完整上下文的 `PersistVerifiedDiffAction`，最终补丁已由 Harness 通过内部 `PatchEngine` 写入权威工作区，且权威文件摘要与已验证候选状态一致。
-- 没有未解决的审批、超时、执行错误、基线阻断或环境漂移状态。
-
-成功运行结束后，权威工作区保留且仅保留已批准的 `FinalDiff`，默认不执行 `git add` 或 commit。修改文件保持未暂存状态，新文件保持未跟踪状态；用户必须自行审查、提交或撤销这些修改。在工作区重新变为干净状态前，VesperCode 不允许启动新的正式修复运行。
-
-本地动作策略决定、外部披露决定、检查结果、复现评估、运行生命周期、终止原因和审批生命周期必须使用互不混用的状态空间；`DisclosureGrant` 与真实适配器调用前随 dispatch checkpoint 原子创建的 `DisclosureRecord` 也不得复用本地动作审批状态，`ReproductionEvaluation` 也不得覆盖或改写原始 `CheckStatus`。已配置检查只有确定 `PASS` 才能满足成功条件；工具缺失、解析错误、超时和未运行均不能视为通过。`RECOVERY_REQUIRED` 阻塞运行终态判定，`SUCCEEDED` 只能由 Harness 在独立验证全部成功条件后进入；LLM 输出既不能触发停止，也不能宣告成功。完整枚举和状态转换表由数据模型与功能规约唯一规定。
-
-当达到配置规定的重复失败阈值、重复动作阈值、最大决策轮次、模型调用次数、输入输出 Token 预算、总运行时间、单动作超时或输出体量上限时，系统必须停止。补丁文件数与字节数、新文件数、单文件大小、执行副本与运行工件总量以及容器可写空间也必须具有失败关闭的硬上限，并在补丁应用或执行前检查。预算类限制形成稳定细分 `error_code`、`StopReason = BUDGET_EXHAUSTED` 和具体原因；重复失败或动作达到阈值时形成稳定细分 `error_code` 与 `StopReason = NO_PROGRESS`。停止只由 Harness 控制面的确定性谓词触发，模型输出不能触发、覆盖或忽略预算、停止与成功判定。
-
-Docker 不可用、镜像缺失或环境画像不匹配必须在任何权威工作区持久写入之前被预检发现，并使正式运行失败关闭；不得自动切换或降级到宿主执行模式。
-
-VesperCode 以治理为主要贡献，重点实现工作区围栏、结构化动作风险分类、一次性 HITL 审批状态机以及 `ValidationManifest` 验收契约防篡改。决策、工具、记忆、治理、反馈和配置六个 Harness 维度均提供最低可运行实现。即使使用 Mock LLM，也必须能够确定性测试路径围栏、动作分类、审批状态机、工具分发、记忆读写、配置校验、反馈回灌、验收契约和停止条件。
-
-四类领域机制、六个 Harness 维度的编码接口、确定性测试与 Mock LLM 机制演示将在独立的“领域与机制设计”章节中详细规定。机制演示至少覆盖：危险动作在执行前被拦截；注入一次确定性检查失败后，Mock LLM 的下一步动作发生确定变化；修改受保护测试或检查配置时返回 `DENY` 或 `VALIDATION_TAMPERED`；仓库文件中的提示注入诱导 Mock LLM 请求敏感路径时，独立策略仍确定性返回 `DENY`。
-
-## 1.6 安全承诺与非目标
-
-在支持矩阵内且不存在本机恶意进程并发替换文件系统对象的威胁模型下，VesperCode 保证其内建文件工具基于已打开对象的最终身份，在经过 Windows 路径规范化、重解析点检查和句柄级边界验证后只操作授权工作区。该承诺适用于 VesperCode 自身实现的工具，不等同于对任意子进程提供操作系统级文件隔离；并发恶意重解析点、目录替换或硬链接竞态不属于首版保证范围。
-
-默认 `DockerExecutor` 的唯一可写项目挂载是可丢弃执行副本；控制面验收工件只读提供，权威工作区、宿主凭据和 Docker 控制接口不进入容器。容器采用非 root、只读根文件系统、最小权限、外部网络禁用和资源限制等失败关闭基线。精确挂载、namespace、capability、进程与临时目录参数在非功能性安全需求中唯一规定。Docker 只为支持矩阵内的容器兼容项目提供纵深防御，不构成任意 Windows 程序的通用操作系统级沙箱。
-
-首版不提供继承当前 Windows 用户权限的宿主执行或诊断路径。用户在 VesperCode 外部自行运行的命令和检查不属于 VesperCode 运行证据，不能用于正式成功判定或最终持久化授权。
-
-VesperCode 控制面只与用户显式配置的 LLM 供应商通信。该通信不属于 Agent 的仓库工具权限；模型不能自行选择供应商地址或读取凭据。
-
-凭据威胁模型规定 LLM Key 的安全录入、Keyring 存储、状态查看、更新、清除和日志隔离。第一次真实 LLM 调用前，WebUI 必须展示并要求用户确认供应商、端点、模型、允许披露的数据范围、初始拟发送来源与估算体量、允许数据类别、脱敏状态、本次运行累计披露预算和有效期，并据此生成仅对当前运行有效的 `DisclosureGrant`；grant 不绑定最终请求摘要，供应商、端点、模型、允许来源、允许数据类别、脱敏规则、预算或有效期变化时必须重新确认。运行中每个真实供应商请求进入适配器调用阶段前，必须在同一 dispatch checkpoint 的 pre-dispatch commit 中重验 grant 与当前绑定、按确定性序列化后的规范外发载荷字节数消费累计披露预算，并创建既有 `DisclosureRecord`；记录逐次绑定最终请求摘要、实际来源、数据类别、规范外发载荷字节数、脱敏结果和所消费的 `DisclosureGrant`。不得新增持久 `DisclosureAttempt`，不得保存完整请求正文，也不得把该记录解释为适配器调用或供应商交付证据。LLM 数据披露模型另行规定允许发送的代码片段、文件内容、运行结果和记忆，并实施拒绝路径过滤、确定性脱敏、体量限制和披露范围审计。首版不承诺识别所有秘密格式，也不承诺在 Agent 做出后续读取决策前预知全部未来披露路径。
-
-仓库内容、代码注释、测试数据、工具输出、检查输出和持久记忆均作为 `UntrustedContext` 提供给 LLM，不具有修改系统指令、策略、审批范围、Manifest 或成功条件的权限。所有模型输出必须先通过结构化 schema 解析，再经过独立策略判定；上下文中的文字不能自行授予权限或构成用户批准。VesperCode 不承诺识别或消除所有提示注入，而是保证受影响的模型仍不能绕过确定性治理机制。
-
-WebUI 将仓库内容、文件名、模型输出、diff、工具输出和审计数据全部视为不可信显示数据。高层合同是默认纯文本转义、只允许经 allowlist sanitizer 处理的 Markdown 子集、执行严格内容安全策略，并禁止客户端构造审批上下文或在 URL 与脚本可读持久存储中保存会话令牌。公网演示与本地模式采用同一渲染边界；具体 CSP、会话 Cookie、diff renderer 和安全 header 由非功能性安全需求规定。
-
-持久记忆和运行时审计默认只保存结构化决策、动作摘要、文件摘要、审批结果、规范化失败指纹以及截断、脱敏后的检查输出。不默认持久化完整文件内容、原始提示、完整命令输出或凭据。完整输出只可在当前运行的受限缓冲区中短暂存在；用户能够检查并清除跨会话记忆。
-
-持久记忆按规范化工作区身份隔离，默认不得跨仓库检索或注入。记忆条目记录来源、创建时间和适用工作区，并始终作为不可信辅助上下文处理；记忆不能修改安全策略、Manifest、审批范围或成功条件。工作区身份及仓库迁移行为在数据模型中定义。
-
-首版只支持能够获得唯一规范化身份的单链接普通文件。检测到 NTFS hard link、Alternate Data Stream、设备路径、UNC、盘符相对路径、保留设备名或其他无法安全归一化的文件系统对象时，若发生在 3.3 的 `WORKSPACE_IDENTITY` 且 `CREATE_RUN` 尚未发生，只返回 `error_code = UNSUPPORTED_FILESYSTEM_OBJECT` 的无 `run_id` 创建拒绝，不生成 `StopReason` 或 `StopRecord`；只有 `RunState` 已存在且该错误实际触发 `STOPPED` 转换时，才按 3.2.6 映射为 `StopReason = PRECONDITION_REJECTED`。尾随空格或点、大小写别名和 8.3 短文件名等 Windows 路径规则的精确拒绝与测试矩阵在安全设计和支持矩阵中规定。
-
-首版明确不做：
-
-- 多 Agent 协作；
-- IDE 插件；
-- GitHub、GitLab 等远程代码托管平台 API 集成；
-- 通过公网服务访问或控制用户本地仓库的远程 Agent；
-- 在公网演示模式中接收用户代码、仓库地址或真实凭据；
-- 向 LLM 暴露任意 Shell；
-- `NativeExecutor` 或其他继承当前 Windows 用户权限的宿主执行、诊断模式；
-- 自动下载依赖、拉取镜像或构建项目环境；
-- 远程发布、远程推送或强制推送；
-- 任意 Windows 程序的通用操作系统级沙箱；
-- 对所有秘密格式的完整识别；
-- 对本机恶意进程并发修改文件系统的防御；
-- 对兼容性画像之外 Python 项目的支持；
-- 必须修改已有测试、测试基础设施、Ruff 和 Mypy 配置或依赖清单才能完成的修复；
-- 无法稳定复现的 flaky test 修复；
-- 二进制补丁、符号链接或重解析点创建、Git submodule、Git LFS、稀疏检出、自定义 clean/smudge filter、外部 fsmonitor 和仅大小写变化的重命名；
-- 运行时依赖未跟踪忽略文件、宿主 Git 元数据或未声明本地服务的项目；
-- 替代 Claude Code、OpenCode 等成熟通用编码智能体。
-
-产品运行时不集成远程托管平台 API，不影响 VesperCode 项目自身使用 Git 仓库、Merge Request 和课程要求的 CI 流程。CLI 保留为本地服务启动、配置和自动化入口，但不是唯一交互界面。
+    结构化动作
+    → 路径、项目画像与验收契约校验
+    → ALLOW / ASK / DENY
+    → 精确动作的一次性批准
+    → 运行级披露 Grant + 逐请求授权记录
+    → 不可变 ValidationManifestV1 下的正式验证
+    → 用户批准精确 FinalDiffV1
+    → 受控写回、写后核对与最小恢复
+
+项目定位是课程型、安全研究型参考 Harness，不承诺兼容普通 Python 生态中的任意仓库，也不以生产级分布式控制平面为目标。
+
+## 1.3 目标用户
+
+目标用户是希望观察和评估治理机制的课程评审者、安全研究者，以及愿意使用受支持参考画像的 Windows 本地 Python 开发者。
+
+用户需要理解 Git、pytest 和 diff 的基本概念，但不需要理解内部数据库结构或事务实现。
+
+## 1.4 v1 支持矩阵
+
+| 维度 | v1 支持 | v1 不支持 |
+|---|---|---|
+| 宿主 | Windows 11 x64，Docker Desktop Linux 容器模式 | macOS、Linux 宿主、Windows 容器 |
+| Harness 运行时 | Python `>=3.12,<3.13` | 其他 Python 主版本 |
+| 目标项目 | §1.4.1 的 `PythonProjectProfileV1` | 任意 Python 项目、自动猜测项目布局 |
+| 缺陷输入 | 已存在且可稳定复现的 pytest 失败测试 | 自然语言缺陷自动生成测试 |
+| 检查 | pytest 8.x、Ruff、Mypy；命令由适配器生成 | 任意 Shell、任意 argv、动态下载工具 |
+| 补丁 | 严格 `UNIFIED_DIFF_V1`；UTF-8/UTF-8 BOM 普通文本的创建和修改 | 删除、重命名、二进制、链接、模式变更、模糊应用 |
+| Git | 有有效 HEAD、满足 §1.4.1 干净谓词且字节与 HEAD blob 一致的普通仓库 | submodule、LFS、稀疏检出、filter、工作树编码转换、特殊 index 状态、脏工作区 |
+| 执行 | `ReferenceProfileManifestV1` 锁定的预构建、无网络、候选树只读执行镜像 | 宿主执行、运行中构建镜像或安装依赖 |
+| LLM | 可注入 Mock LLM；一个 OpenAI 单轮适配器 | 高层 Agent 框架、自动重试与跨崩溃调用恢复 |
+| WebUI | 本地 WebUI；公网 Mock Demo | 公网读取本地仓库、上传任意仓库、公网真实凭据 |
+
+发布时必须在 lock file 和 README 的兼容性表中记录通过验证的精确依赖版本、Docker 镜像摘要和 Windows/Docker Desktop 环境。超出画像的输入以明确的不支持结果停止，不得静默降级。
+
+### 1.4.1 `PythonProjectProfileV1`
+
+v1 只支持 profile id 为 `python-src-py312-v1` 的参考画像：
+
+#### `EditablePathPolicyV1`
+
+    EditableOperationV1 =
+      "CREATE" | "REPLACE"
+
+    EditablePathPolicyV1 {
+      schema_version: 1
+      policy_id: "PYTHON_SRC_ONLY_V1"
+      editable_directory_roots:
+        exactly [CanonicalRelativePathV1("src")]
+      allowed_operations:
+        exactly ["CREATE", "REPLACE"], sorted CREATE < REPLACE
+      digest
+    }
+
+全部字段必填并拒绝未知字段；`digest` 按 §0.1 对除自身外的全部字段计算。v1 只有上述发布包内建、只读实例，用户请求、普通配置、模型输出和仓库文本均不得提供、覆盖或扩大 editable roots、operation、policy id 或 digest；v1 不支持自定义根、glob、排除规则、临时例外、`DELETE` 或 `RENAME`。
+
+`FinalDiffEntryV1.path` 只有在完成 `CanonicalRelativePathV1`、Windows/Unicode 别名和对象安全校验后，才可执行 editable root 匹配。对目录根 `root`，唯一匹配谓词是 `path` 以 `root + "/"` 开头；不得使用普通字符串前缀，且文件条目不得等于目录根本身。因此 `src/a.py` 和 `src/pkg/a.py` 匹配，`src`、`src-old/a.py`、`src2/a.py` 和路径别名不匹配。
+
+`EditablePathPolicyV1` 只约束 Candidate 的 `CREATE`/`REPLACE`、验证和权威写回，不限制 `ListFilesAction`、`ReadFileAction` 或 `SearchTextAction`；读取仍受 Snapshot、路径安全、ContextProjection 和真实 LLM 披露规则约束。`EditablePathPolicyV1.digest` 必须进入 `ReferenceProfileManifestV1.digest`、`SnapshotTree.repository_policy_digest` 和治理 `policy_digest`，后三者只绑定同一内建实例，不能分别解析独立策略。
+
+#### `ReferenceProfileManifestV1`
+
+参考画像不是仅靠字符串约定的规则集合。发布包必须内置且只读地提供：
+
+    ReferenceProfileManifestV1 {
+      schema_version: 1
+      profile_id: "python-src-py312-v1"
+      requirements_lock_digest
+      docker_image_digest
+      docker_execution_profile_version: 1
+      python_version
+      pytest_version
+      report_plugin_version
+      ruff_version
+      mypy_version
+      check_plan_version
+      editable_path_policy: EditablePathPolicyV1
+      digest
+    }
+
+`digest` 按 §0.1 对除自身外的全部字段计算，因此自动绑定完整 `EditablePathPolicyV1`。目标仓库的 `requirements.lock` 必须精确匹配该 manifest 的 `requirements_lock_digest`；仅提供相同 profile id 不构成匹配。预检、基线、正式验证和发布证据必须使用同一个 manifest digest、editable policy digest 和 Docker image digest。用户请求只选择 `reference_profile_id`；editable policy、镜像和 execution profile 不能被独立选择。正式镜像的构建、GHCR digest 分发和 wheel/manifest 一致性合同见 §8.2、§8.4 和 AC-30。
+
+交付仓库必须提供一个与该 manifest 匹配、能走完基线、错误补丁反馈、修正、正式验证和写回流程的 reference fixture。该 fixture 是实现和端到端验收工件，不扩大正式输入范围。
+
+#### `StaticProjectProfileCheckV1`
+
+静态预检不运行项目代码，只验证可由本次 `RUNNING(PREFLIGHT)` 已创建并封存的唯一 `SnapshotTree`、其绑定的 `repository_policy_digest`、内置 manifest 和可信 Docker 配置证明的事实。Git 干净状态、工作区原始字节、文件系统对象和敏感路径属于 Snapshot 前置检查，不由 `detect_static` 重新判断：
+
+| 项目 | 静态冻结要求 |
+|---|---|
+| Snapshot 身份 | 必须是当前 Run 在 PREFLIGHT 内创建并封存的唯一 `SnapshotTree`；`repository_policy_digest` 必须等于 Snapshot 前置检查冻结值 |
+| 根目录文件 | 必须存在 `pyproject.toml` 和 `requirements.lock` |
+| 源码布局 | 业务源码位于 `src/`；测试位于 `tests/` |
+| Python 与工具 | 宿主适配器、容器和工具版本精确匹配 `ReferenceProfileManifestV1` |
+| pytest | 配置只来自 `pyproject.toml`；允许内建插件及执行镜像内固定的机器可读报告插件 |
+| Ruff / Mypy | 均必须在 `pyproject.toml` 中显式配置；未配置视为不支持，而不是跳过 |
+| 依赖 | `requirements.lock` 摘要精确匹配 manifest；运行中不得安装或更新 |
+| 文本 | 可编辑文件必须为 UTF-8 或 UTF-8 BOM、统一 LF/CRLF、具有末尾换行；混合换行文件不可编辑 |
+| pytest 扩展 | 不支持自定义收集插件、动态下载插件或入口点自动加载 |
+
+    StaticProjectProfileResult =
+      SUPPORTED {
+        profile_id
+        reference_profile_digest
+        snapshot_root_digest
+        repository_policy_digest
+      }
+      | UNSUPPORTED_PROJECT {
+        reference_profile_digest
+        snapshot_root_digest
+        repository_policy_digest
+        reasons[]
+      }
+
+`ProjectAdapter.detect_static` 必须逐项验证静态画像并把输入 `SnapshotTree.root_digest` 写入结果。任何一项无法证明时返回上述 `UNSUPPORTED_PROJECT`，不得猜测、运行项目代码、重新读取权威工作区、重新执行 Git 干净检查、创建第二份 Snapshot 或跳过检查。Python/工具和 Docker 项只验证内建声明、版本与摘要的一致性；镜像和 execution profile 的实际可用性由 §4.1 的后续 readiness 检查负责。
+
+以下规则由 §4.1 的 Snapshot 前置检查唯一负责：未跟踪文件只有在冻结 ignore 规则下被忽略且不命中 §1.4.2—1.4.3 时才允许存在；它们不得进入 `SnapshotTree`、容器、披露来源或最终差异。Git index、工作树和 HEAD 的比较必须禁用宿主 system/global 配置、外部 attributes/ignore 和可改变内容的 filter。任意规范路径在 Windows 大小写或 Unicode 折叠后发生碰撞时返回 `UNSUPPORTED_REPOSITORY`。
+
+同一 Snapshot 前置检查还必须证明：index tree 等于 HEAD；不存在 unmerged、非 stage-0、intent-to-add、skip-worktree、assume-unchanged、tracked 字节漂移或不允许的 untracked 文件；有效 Git 配置满足 `core.autocrlf=false`，且 repository config 或 `.gitattributes` 未为任一 tracked 路径启用 `core.eol`、`eol`、`working-tree-encoding` 或内容 filter 转换。CRLF 文件只有在 HEAD blob 本身使用一致 CRLF、工作区原始字节与 blob 完全相同且补丁保持该换行风格时受支持；不能依赖 checkout 转换制造 CRLF 工作树。
+
+#### `RuntimeCompatibilityCheckV1`
+
+以下行为只能在 `RUNNING(BASELINE)` 的固定无网络、无宿主服务、候选树只读容器中验证，不能由 `PREFLIGHT` 假装静态证明：
+
+- 两次 pytest collect-only 的完整 node ID 集合稳定；
+- 完整基线和独立目标复跑可在没有网络、宿主服务、数据库守护进程或未声明本地服务时完成；
+- 项目不依赖 `.git`、提交历史、标签或 VCS 动态版本才能启动检查；
+- pytest、Ruff 和 Mypy 不要求写入项目树，临时文件和缓存只进入 tmpfs；
+- pytest 报告以及 Ruff/Mypy 输出满足 §4.5 的完整解析合同。
+
+    RuntimeProfileViolationKind =
+      EXTERNAL_SERVICE_REQUIRED
+      | VCS_RUNTIME_DEPENDENCY
+      | PROJECT_TREE_WRITE
+      | COLLECTION_UNSTABLE
+      | REPORT_INCOMPLETE
+      | CHECK_ENVIRONMENT_ERROR
+
+    RuntimeCompatibilityResult =
+      COMPATIBLE {
+        reference_profile_digest
+        evidence_digest
+      }
+      | BASELINE_BLOCKED {
+        reason: RUNTIME_PROFILE_VIOLATION
+        violation_kind
+        evidence_refs[]
+      }
+
+动态不兼容返回上述 `BASELINE_BLOCKED`，不得改写为静态 `UNSUPPORTED_PROJECT`。该结果只证明固定测试与检查在本次 reference profile 下的可观察兼容性，不宣称发现未执行代码中的潜在依赖。
+
+### 1.4.2 可编辑路径、受保护验收与仓库策略工件
+
+Candidate 中每个 `CREATE` 和 `REPLACE` 都必须命中冻结 `EditablePathPolicyV1`；以下保护集合是在 editable allowlist 之外继续执行的附加硬拒绝，不构成可编辑路径白名单。若同一条目同时违反保护集合和 editable policy，错误优先级以 §4.3 为准，返回 `PROTECTED_ARTIFACT_CHANGED`：
+
+下列路径或类别在基线建立后不得由候选创建、修改、删除或重命名：
+
+- `tests/**`；
+- 根目录 `pyproject.toml`、`requirements.lock`；
+- 任意 `conftest.py`、`sitecustomize.py`、`usercustomize.py`；
+- `pytest.ini`、`tox.ini`、`setup.cfg`、`mypy.ini`、`.ruff.toml`、`ruff.toml`；
+- `poetry.lock`、`uv.lock`、`pdm.lock`、`requirements*.txt`；
+- `.gitignore`、`.gitattributes`、`.gitmodules`；
+- 适配器识别出的其他会改变 pytest 收集、解释器启动、依赖解析、Ruff 或 Mypy 行为的入口。
+
+根据唯一 `PYTHON_SRC_ONLY_V1`，`tests/**`、全部仓库根文件、`README*`、`docs/**`、`.github/**`、`.gitlab-ci.yml`、`Dockerfile*`、`scripts/**` 以及其他不属于 `src/**` 的路径都不可由 Candidate 创建或替换；该列表只用于说明，权威判定仍是上文目录段匹配算法。
+
+Profile 正常形态只使用 `pyproject.toml` 和 `requirements.lock`；出现其他 pytest、Ruff、Mypy、解释器启动或依赖解析配置入口时，适配器必须返回 `UNSUPPORTED_PROJECT`。保护集合必须由代码中的单一版本化表生成，不能由仓库文本放宽。
+
+### 1.4.3 敏感路径与文件系统对象
+
+以下 tracked 路径命中时，准入阶段直接拒绝整个运行；它们不能仅通过“禁止读取”留在快照或容器中：
+
+- 任一路径段为 `.git`、`.ssh`、`.aws`、`.azure`、`.gnupg`、`.kube`；
+- 文件名为 `.env` 或匹配 `.env.*`；
+- 常见私钥或凭据文件，如 `id_rsa`、`id_ed25519`、`*.pem`、`*.key`、`*.p12`、`*.pfx`、`credentials.json`、`secrets.*`；
+- 内建 `SensitivePathPolicyV1` 追加的保留路径。
+
+所有 tracked 对象必须是单链接普通文件或目录。符号链接、junction/reparse point、Alternate Data Stream、设备路径、UNC、盘符相对路径、保留设备名、Windows 大小写或 Unicode 折叠后路径碰撞，以及 link count 大于 1 的普通文件均以 `UNSUPPORTED_FILESYSTEM_OBJECT` 拒绝。
+
+### 1.4.4 仓库和候选硬上限
+
+- tracked 文件最多 5,000 个；tracked 原始字节总量最多 128 MiB；单 tracked 文件最多 4 MiB。
+- 可编辑单文件最多 128 KiB。
+- 当前候选相对 `SnapshotTree` 的**累计净差异**最多涉及 3 个文件，其中最多 1 个新文件。
+- 当前候选规范 `FinalDiffV1` 中所有 `CREATE`/`REPLACE` 条目的完整 postimage 原始字节总量最多 128 KiB。
+- 规范相对路径最多 240 个字符，单路径段最多 100 个字符。
+- 执行副本与容器临时数据合计不得超过 512 MiB。
+- 新文件在冻结的 Git ignore 规则下必须为非忽略文件。
+
+限制作用于当前候选的累计净差异，而不是单次 `ApplyCandidatePatchAction`，因此不能通过多个小动作绕过。
+
+### 1.4.5 `DockerExecutionProfileV1`
+
+正式检查和 Agent 请求的检查都使用 `ReferenceProfileManifestV1.docker_image_digest` 指定的同一个锁定镜像；执行参数由同一 manifest 的 `docker_execution_profile_version=1` 唯一选择，并满足：
+
+- `--network none`；非 root 用户；只读容器根文件系统；`cap-drop=ALL`；不挂载 Docker socket；
+- 候选项目树挂载到 `/workspace` 且为只读；权威工作区、控制面数据库、凭据和事务备份不得挂载；
+- `/tmp` 与工具缓存目录使用有界 tmpfs；Python bytecode、pytest cache、Ruff cache 和 Mypy cache 不写入项目树；
+- 上限为 2 CPU、2 GiB 内存、256 PIDs、256 MiB tmpfs；单检查输出最多 4 MiB；
+- 环境白名单固定且只允许 `PYTHONHASHSEED=0`、`TZ=UTC`、`LANG=C.UTF-8`、`LC_ALL=C.UTF-8`、`PYTHONDONTWRITEBYTECODE=1` 与 Harness 为固定报告通道注入的显式变量；变量名、值和报告变量集合由 execution profile v1 封闭定义，并禁用 pytest 插件自动加载；
+- 每项检查使用全新容器和全新物化候选树，不共享 cache、字节码或运行时文件。
+
+若参考项目无法在只读项目树下运行，它不属于 v1 支持画像；不得为兼容该项目把候选挂载改为可写。
+
+## 1.5 v1 目标
+
+- 自行实现顺序 Agent 主循环和可注入 LLM 抽象。
+- 提供受路径围栏约束的 list、read、literal search、apply patch、run check 和 propose completion 动作。
+- 用确定性代码实现 `ALLOW / ASK / DENY`、一次性动作批准和硬拒绝。
+- 用运行级 `DisclosureGrant` 与逐请求 `DisclosureAuthorizationRecordV1` 控制真实 LLM 外发。
+- 用 `ValidationManifestV1` 保护测试、检查配置、执行环境和正式验证条件。
+- 将 pytest、Ruff、Mypy 结果转换为结构化反馈并驱动下一轮动作。
+- 在用户审查精确 diff 后写回干净权威工作区，完成写后核对并提供最小恢复入口。
+- 提供安全凭据管理、有限仓库记忆、本地 WebUI、离线 Mock 测试和可访问的公网 Mock Demo。
+
+## 1.6 非目标
+
+- 生产级通用 Coding Agent 或任意仓库兼容。
+- 自然语言缺陷生成复现测试、`ValidationManifestV2` 或测试生成审批。
+- 多 Agent、并行 turn、分布式任务、供应商调用对账或自动重发。
+- 普通 Agent turn 的跨进程恢复。
+- 通用 quarantine allocator、分布式 reconciliation 或多层 cleanup 状态机。
+- Agent/Harness 正式运行中自动 commit、push、PR、依赖安装、镜像构建或对外发布；§8.4 的项目交付 CI 不属于 Agent 能力。
+- 识别所有秘密格式、消除所有提示注入或对恶意宿主管理员提供隔离。
+- 验证以破坏 Python 解释器、pytest、固定报告插件、容器内报告通道或检查进程为目的的主动恶意项目代码。
+- 删除、重命名、二进制修改、文件模式变更或超过 3 文件的持久化事务。
 
 # 2. 用户故事
 
-## 2.1 角色、范围与共同原则
+## 2.1 US-01 配置并安全启动运行
 
-本章采用按用户旅程组织的结果级用户故事。
+作为受支持仓库的开发者，我希望先创建一个可见的准备中运行，再由系统执行静态预检和隔离的运行时兼容性验证，以便在任何模型调用或持久修改前发现不支持、不兼容或不安全的条件。
 
-- **主要角色：** 维护 Windows 本地代码仓库的独立开发者。
-- **次要角色：** 公网演示访客。
-- 每个故事描述用户目标、用户价值和可观察的结果级验收条件。
-- 第 1 章已经确认的支持范围、安全承诺、治理边界、审批语义、停止条件和非目标继续有效，本章不重新定义或放宽。
-- 本章不规定系统架构、数据模型、技术选型、接口 schema 或实现任务。
-- 数据披露确认、中间动作批准和最终持久化批准是相互独立的用户决定，不能彼此替代。
+验收结果：
 
-## 2.2 准备与安全启动
+- 无效请求 Schema 在创建运行前被拒绝，不产生 `run_id`。
+- 有效请求创建 `CREATED` 运行并冻结配置；用户能看到工作区、规范目标集合、reference/LLM profile digest 和 `RunLimitsV1` 摘要；reference profile 同时展示其绑定的执行镜像 digest。
+- 启动后进入 `RUNNING(PREFLIGHT)`；脏仓库、不支持的 Git/项目画像、危险文件对象、未解决恢复、缺失 reference profile、其锁定执行镜像或凭据会使该运行进入 `STOPPED`。
+- 被拒绝的预检不调用 LLM、不运行项目代码、不安装依赖、不构建镜像、不修改仓库。
+- 预检只验证静态事实；项目代码仅在无网络、候选树只读的 `BASELINE` 中运行，动态不兼容以结构化 `BASELINE_BLOCKED` 停止。
 
-### US-01 在兼容且安全的条件下启动修复
+## 2.2 US-02 安全管理真实 LLM 凭据
 
-**故事陈述：**
+作为使用真实 LLM 的开发者，我希望安全录入、查看状态、更新和清除 API Key，以便不把凭据写入仓库、命令历史、日志或公网 Demo。
 
-作为维护 Windows 本地代码仓库的独立开发者，我希望 VesperCode 在调用 LLM 或运行项目代码之前检查工作区和运行前提，以便只在已声明的支持边界内开始修复，并避免破坏现有修改。
+验收结果：
 
-**用户价值：**
+- 首次真实调用前提供隐藏输入。
+- 状态查询只返回已配置/未配置、供应商和更新时间，不返回秘密。
+- 更新和清除给出明确成功或失败结果。
+- 存储后端必须被验证为 Windows Credential Manager；不允许静默退化到明文或文件后端。
+- 清除后新的真实调用必须停止，直到重新配置。
 
-用户能在任何高成本或有副作用的步骤发生前知道项目是否可运行，以及被拒绝时应该处理什么问题。
+## 2.3 US-03 修复已有稳定失败
 
-**结果级验收条件：**
+作为已有失败测试的开发者，我希望 Agent 在隔离候选树中根据客观检查反馈迭代修复，以便获得不削弱既有验收条件的候选 diff。
 
-- 用户能够指定一个本地路径和修复场景，并看到运行前检查结果。
-- 指定路径不是具有有效 `HEAD` 的 Git 工作区、工作区不干净、项目或工作区文件系统对象超出第 1 章支持范围、仓库策略不受支持，或存在按产品安全承诺必须拒绝的已跟踪敏感路径时，运行在首次 LLM 调用和项目代码执行前停止。
-- 停止结果明确指出主要原因，不把“不支持”伪装成普通修复失败。
-- 被拒绝的启动不会自动执行依赖安装、环境构建、`commit`、`stash`、`clean` 或工作区持久修改。
-- 检查通过只代表允许进入后续流程，不代表缺陷已经修复。
+验收结果：
 
-### US-02 安全管理真实 LLM 凭据
+- 两次 collect-only 得到相同完整 node ID 集合；所有目标存在。
+- 每个目标都在全量基线和独立目标复跑中稳定产生相同 `CALL/FAIL` 和 `FailureFingerprintV1.digest`。
+- 非目标测试全部通过，Ruff 和 Mypy 通过，不存在 skip、xfail、xpass、deselect、未运行或环境错误。
+- 候选补丁不能修改受保护测试或检查配置。
+- 检查失败形成结构化反馈，Mock LLM 可据此在下一轮改变动作。
+- 只有满足正式成功谓词的候选才能进入最终审查。
 
-**故事陈述：**
+## 2.4 US-04 控制外部数据披露
 
-作为使用真实 LLM 的独立开发者，我希望安全录入、查看状态、更新和清除供应商凭据，以便使用自己的服务账号，同时避免密钥被界面、日志或项目文件泄露。
+作为使用真实 LLM 的开发者，我希望为当前运行创建一个明确范围的披露授权，并逐请求查看实际外发记录，以便本地读取权限不会被自动解释为外发权限，同时避免每轮都重复点击相同授权。
 
-**用户价值：**
+验收结果：
 
-用户可以完成真实模式配置和凭据轮换，而不需要把密钥写进仓库或命令历史。
+- 首次真实请求前，用户看到冻结 LLM profile、供应商、模型、`endpoint_id = OPENAI_PUBLIC_API_V1`、由可信内建 endpoint 映射解析的目的主机 `api.openai.com`、允许的来源路径/类别、`NO_CONTENT_REDACTION_V1` 的明确含义、累计字节预算和有效期，并可批准或拒绝 `DisclosureGrant`；显示值不得来自环境、请求、普通配置或 DNS 文本。
+- 用户拒绝或没有有效 Grant 时不得调用真实适配器。
+- Grant 只对当前运行有效；LLM profile、endpoint、来源范围、数据类别、redaction profile、累计预算或有效期变化时，在总墙钟仍有正等待区间时重新进入精确绑定的 `WAITING_USER`。
+- `DisclosureGrantSubjectV1` 不含 `consumed_bytes` 或 Grant 状态；正常预算消费不改变用户批准的 subject。
+- 在有效 Grant 范围内，每个请求由控制面自动创建绑定精确请求摘要、实际来源和字节数的 `DisclosureAuthorizationRecordV1`，不要求用户逐请求点击。
+- 请求摘要变化本身不会使 Grant 失效，但每个精确请求都必须有独立授权记录。
+- 审计只保存摘要和元数据，不保存完整请求、完整响应或凭据。
 
-**结果级验收条件：**
+## 2.5 US-05 依赖确定性护栏和一次性动作审批
 
-- 首次需要真实 LLM 时，用户得到安全录入引导，录入过程不回显完整凭据。
-- 凭据保存到第 1 章承诺的安全凭据存储中。
-- 默认录入流程不要求用户通过命令行参数或会记录完整密钥的 Shell 命令提供凭据。
-- 用户可以查看凭据是否已配置，但任何状态页面、日志和审计记录都不显示凭据明文。
-- 用户可以显式更新或清除凭据，并得到操作成功或失败的明确结果。
-- 凭据被清除后，新的真实 LLM 调用在重新配置前不会继续。
-- VesperCode 不要求用户把真实凭据写入目标仓库、明文配置文件或公网演示环境。
+作为监督 Agent 的用户，我希望硬拒绝动作始终被阻止，而最终写回批准只执行一次，以便权限不能由模型、仓库文本、披露 Grant 或旧批准扩大。
 
-## 2.3 核心修复旅程
+验收结果：
 
-### US-03 根据已有稳定失败测试修复缺陷
+- `DENY` 不可被模型输出、配置、`DisclosureGrant` 或任何批准覆盖。
+- `ASK` 展示完整动作语义摘要、不可变 `FinalWritebackSubjectV1`、理由和有效期；批准记录状态不属于 subject。
+- 拒绝、过期、上下文变化或重复消费均不执行动作。
+- `FinalWritebackApproval` 只被精确绑定的最终写回原子消费一次，状态变化不改变 subject digest。
+- `FinalWritebackApproval` 与 `DisclosureGrant` 是独立类型，不能互相授权。
 
-**故事陈述：**
+## 2.6 US-06 审查、持久化并恢复已验证 diff
 
-作为已有失败测试的独立开发者，我希望指定目标测试并让 VesperCode 根据客观检查反馈迭代修复，以便在不削弱原有验收条件的情况下获得经过完整验证的候选修改。
+作为开发者，我希望在原仓库发生修改前查看精确 diff 和验证证据，并在写回中断后使用明确恢复入口，以便写回内容与我批准的内容一致，且不确定状态不会被伪装成成功。
 
-**用户价值：**
+验收结果：
 
-用户不必手动反复定位代码和执行检查，并能依据受保护的验收契约和完整验证证据判断候选修改是否满足目标问题的已确认验收条件，而不是通过删除测试、跳过测试或改变检查配置获得表面成功。
+- 用户拒绝时权威工作区保持不变。
+- 候选、`FinalDiffV1`、Manifest、验证证据、策略或工作区前映像变化使批准失效。
+- 写回不自动执行 `git add` 或 commit。
+- 写后核对失败不得报告成功。
+- 每个路径以 `PersistencePathRecord` 记录 `PRESENT/ABSENT` 前映像和可滞后的持久进度；恢复必须以实际字节和对象身份为准。
+- 未解决事务阻止同一工作区新运行；用户不能通过“忽略”绕过。
+- `vespercode recover --workspace <path>` 或等价 WebUI 恢复页只产生 `COMMITTED`、`ROLLED_BACK` 或 `UNRESOLVED` 三种结果。
 
-**结果级验收条件：**
+## 2.7 US-07 检查和清除仓库记忆
 
-- 用户能够指定一个或多个目标测试；所有目标测试都必须被实际收集并稳定执行，结果只允许符合第 1 章规定的稳定通过或稳定失败，并且至少一个目标稳定失败。
-- 稳定通过的目标测试同样保留在最终验收契约中，不能因其基线已经通过而被忽略。
-- 目标之外的基线测试以及项目已配置的 Ruff、Mypy 检查不满足第 1 章基线要求时，运行停止并说明阻断原因。
-- 只有候选修改停留在可丢弃执行副本中；检查结果作为结构化反馈参与后续修正，并作为可追踪的审计证据保存。
-- Agent 可以根据反馈继续提出候选修改，直到完整验收通过或达到明确停止条件；停止不得被表述为成功。
-- 候选修改只有在当前验收契约绑定的正式验证中使全部要求通过，且受保护测试和配置保持不变时，才能进入用户最终审查；此时尚未写入权威工作区。
+作为重复维护同一参考仓库的用户，我希望查看、使用和清除仓库级记忆，以便获得有限连续性而不让模型随意写入记忆或让旧信息成为权限来源。
 
-### US-04 根据自然语言缺陷建立复现测试并修复
+验收结果：
 
-**故事陈述：**
+- 记忆按规范化工作区身份隔离。
+- 用户能查看类型、来源、摘要和更新时间，并能清除。
+- `PROJECT_CONVENTION` 与 `USER_DECISION` 只由用户创建或确认；`RUN_SUMMARY` 与 `KNOWN_FAILURE` 只由控制面从结构化事实生成。
+- 模型没有通用 `remember(text)` 工具。
+- 记忆不保存完整源码、完整工具输出、凭据或权限；当前仓库和检查证据始终优先。
 
-作为只有自然语言缺陷描述的独立开发者，我希望 VesperCode 先提出并稳定复现该缺陷，再基于受保护的复现测试修复代码，以便避免针对未经证实的问题生成不可验证的修改。
+## 2.8 US-08 理解状态和审计证据
 
-**用户价值：**
+作为监督运行的用户，我希望看到准备中、预检、运行中、等待决定、恢复阻塞和已结束状态，以便区分模型建议、检查结果和正式成功。
 
-用户能够先确认“测试确实描述了我的问题”，再让 Agent 修复，并把同一个复现测试作为缺陷已经消失的客观验收证据。
+验收结果：
 
-**结果级验收条件：**
+- `CREATED` 显示为准备中，`RUNNING(PREFLIGHT)` 显示为预检，其他 `RUNNING` phase 显示为运行中。
+- 测试失败、错误、超时、skip、xfail、xpass、deselect 和未运行不得显示为通过。
+- LLM 的 completion 建议只能请求正式验证，不能直接触发 `SUCCEEDED`。
+- 只有持久化协调器在正式验证、最终批准、写回和写后核对全部完成后才能发布 `SUCCEEDED`。
+- 停止、恢复阻塞和成功均显示对应的结构化证据。
 
-- 只有原始项目的完整测试基线以及已配置的 Ruff、Mypy 检查满足第 1 章要求时，系统才继续生成复现方案。
-- 系统向用户展示拟新增测试的内容、目标测试标识、预期失败特征和复现范围；未经用户确认，既不执行复现试验，也不把测试写入权威工作区。
-- 获批复现方案必须在隔离的两阶段试验中稳定产生匹配的目标失败。
-- 复现后的测试收集集合只能在原有集合上新增获批目标，不得出现其他新增或消失的测试；原有测试以及 Ruff、Mypy 检查继续通过。
-- 收集错误、环境错误、无关异常、超时、不稳定失败或不匹配的失败均不算成功复现；系统停止并展示相应证据。
-- 复现确认后，该测试成为不可削弱的验收条件；最终候选修改必须同时保留该测试、修复受支持的项目代码并使完整验收通过，之后才进入用户最终审查。
+## 2.9 US-09 运行公网 Mock Demo
 
-## 2.4 人工控制与持久化
+作为评审者，我希望无需仓库或真实凭据即可运行固定 Demo，以便重复观察危险动作拦截、失败反馈修正和 Manifest 防篡改。
 
-本节中的三类用户决定相互独立：
+验收结果：
 
-- 数据披露确认只决定允许的数据是否可以发送给绑定的真实 LLM 供应商；
-- 中间动作批准只授权当前展示的受支持结构化动作；
-- 最终持久化批准只授权写入已经完成正式验证的精确候选 diff。
+- Demo 只使用内置场景、Mock LLM 和模拟执行器。
+- 页面持续显示模拟运行，不得展示为正式修复成功。
+- 相同场景版本、输入和用户选择产生相同关键状态与动作序列。
+- Demo 使用独立 `DemoRunStatus`，不进入正式 `RunStatus.SUCCEEDED`。
+- Demo 不注册本地文件、真实凭据、Docker 或真实 LLM 能力；模拟用户选择只形成 `DemoDecision`，不得形成正式批准或披露授权。
 
-任何一种确认或批准都不能替代另外两种，也不能覆盖第 1 章规定的硬拒绝规则。
+## 2.10 INVEST 检查
 
-### US-05 控制向真实 LLM 披露的项目数据
+| 故事 | I / N / V / E / S / T 结论 |
+|---|---|
+| US-01 | 独立验证请求创建与预检；边界和拒绝时点明确 |
+| US-02 | 独立验证凭据生命周期与后端校验；界面细节可协商 |
+| US-03 | 以预置失败 fixture 独立验收；实现任务在 PLAN 中继续拆分 |
+| US-04 | 独立验证运行级 Grant 与逐请求记录；真实网络以 stub adapter 测试 |
+| US-05 | 直接构造动作即可离线验证决策、批准和类型隔离 |
+| US-06 | 以固定候选、故障注入和工作区前映像独立验证持久化与恢复 |
+| US-07 | 以临时数据库独立验证来源权限、隔离、读取和清除 |
+| US-08 | 以预置运行记录独立验证状态和证据展示 |
+| US-09 | 以内置脚本独立、确定性、可重复验收 |
 
-**故事陈述：**
+# 3. 领域与机制设计
 
-作为使用真实 LLM 的独立开发者，我希望在项目数据发送给外部供应商前了解并控制披露范围，以便在获得模型能力的同时限制代码、检查结果和记忆的外传。
+## 3.1 Coding 领域的四类机制
 
-**用户价值：**
+| 类别 | v1 设计 | 确定性代码机制 |
+|---|---|---|
+| 动作/工具 | list、分段 read、literal search、严格 patch、封闭 check、propose completion | 严格动作 Schema、工具注册表、路径解析器、补丁引擎、受控适配器 |
+| 客观反馈 | pytest、Ruff、Mypy、Schema/策略拒绝、正式验证 | 机器可读结果解析器、失败分类器、`FeedbackRecord` 和下一轮投影 |
+| 危险动作 | 越界路径、敏感路径、验收篡改、任意命令、外发、权威写回 | `PolicyEngine`、`ALLOW/ASK/DENY`、`FinalWritebackApproval`、`DisclosureGrant` |
+| 记忆 | 项目约定、用户决定、运行摘要、已知失败 | 仓库隔离存储、写入权限、有限检索、来源标注、用户清除 |
 
-本地读取权限不会被误当成外部发送权限；用户能针对当前运行作出知情决定，并核对实际披露是否符合决定。
+## 3.2 六个 Harness 维度
 
-**结果级验收条件：**
+| 维度 | v1 最低实现 | 深度 |
+|---|---|---|
+| 决策 | 顺序主循环、确定性上下文装配、一次 LLM 调用、动作解析、停止谓词 | 最低闭环 |
+| 工具 | 六种结构化动作和统一分发 | 最低闭环 |
+| 记忆 | SQLite 仓库级摘要存取、来源权限、检查和清除 | 最低闭环 |
+| 治理 | 路径围栏、Manifest、披露门、一次性批准、受控写回与恢复阻断 | **主要贡献** |
+| 反馈 | 三类检查结果、拒绝原因和下一轮结构化反馈 | 最低闭环 |
+| 配置 | 严格 Schema、冻结快照、预算和不可放宽硬规则 | 最低闭环 |
 
-- 第一次真实 LLM 调用前，用户能看到供应商、端点、模型、允许披露的数据范围、当前已知的初始拟披露来源与数据类别、估算体量、脱敏状态和本次运行披露预算，并选择允许或拒绝。
-- 用户拒绝披露时，系统不会发出真实 LLM 请求。
-- 用户的确认只对当前运行、供应商、端点、模型、允许来源与数据类别、脱敏规则、累计预算和有效期有效，不绑定最终请求摘要；任一绑定变化时，系统重新请求确认。
-- 每个真实供应商请求只有在真实适配器调用前的 dispatch checkpoint 以同一权威提交全有或全无地完成 grant 重验、累计披露预算消费、`DisclosureRecord` 创建与最终规范供应商请求绑定，以及全部 feedback reservations 消费后，才可进入调用阶段。
-- checkpoint 任一步失败时，系统不会调用真实适配器，且上述记录、预算与 feedback 消费不得部分可见。
-- `DisclosureRecord` 证明请求已通过授权并完成真实适配器调用前调度提交；记录绑定最终请求摘要、实际来源与数据类别、确定性序列化后的规范外发载荷字节数、脱敏结果和所消费的 `DisclosureGrant`，但不记录凭据明文、不保存完整请求正文，也不新增持久 `DisclosureAttempt`。
-- 它不证明适配器实际被调用，也不证明供应商已收到、处理或返回。
-- 授权不足时，系统先创建披露 `WaitContext`，且不创建 `AgentTurn`、LLM call attempt、feedback records、`AgentFeedbackConsumptionManifest` 或 reservations；获得授权并进入新的运行 phase-entry 后才重新计算最终请求。
-- 超出已确认范围或预算的数据不会被静默发送，而是重新请求确认或被拒绝。
-- 按产品安全承诺必须拒绝的敏感路径不能通过披露确认发送；允许本地读取也不自动允许外部披露。
+## 3.3 主贡献的评价问题
 
-### US-06 审查复现确认动作，并确保禁用动作无法执行
+1. 构造任意模型动作时，模型能否越过工作区、敏感路径或受保护工件？
+2. 用户批准的动作或 diff 是否就是最终执行对象，且批准能否复用？
+3. 模型能否通过修改测试、配置、执行命令或成功条件获得表面成功？
+4. 本地可读数据能否在没有有效 Grant 和逐请求记录时进入真实适配器？
 
-**故事陈述：**
+四项都必须在替换真实 LLM 为 Mock/Stub 后由离线单元测试回答。
 
-作为监督 Agent 的独立开发者，我希望在执行拟议复现计划前查看其测试补丁、目标、失败匹配器、环境和两阶段试验，并明确批准或拒绝；同时希望所有被分类为禁用的结构化动作始终被确定性阻止。
+## 3.4 信任边界
 
-**用户价值：**
+- **可信控制面：** 主循环、配置解析、路径解析、策略、审批、披露授权、Manifest、检查解析、成功/停止判定、持久化和恢复判定。
+- **不可信输入：** 用户仓库、代码注释、测试数据、工具输出、模型输出、记忆正文和 WebUI 客户端请求。
+- **受限执行面：** 无网络 Docker 容器；候选树只读挂载，临时写入仅进入 tmpfs。
+- **外部边界：** 真实 LLM 供应商；本地读取授权不等于披露授权。
+- **权威工作区：** 只允许持久化模块在正式验证和最终批准后写入。
+- **恢复边界：** 只有持久化事务可以进入 `RECOVERY_REQUIRED`；普通 LLM、工具和检查失败不得升级为通用恢复状态机。
 
-用户只批准自己实际审查的复现确认动作，并能依赖确定性护栏阻止禁用动作，而不是依赖 LLM 自觉遵守提示。
+# 4. 功能规约
 
-**结果级验收条件：**
+## 4.1 FR-ADM：请求校验、运行创建与预检
 
-- 用户在执行拟议复现计划前看到完整 `ConfirmReproductionAction`、批准有效期和绑定上下文，包括测试补丁、目标、失败匹配器、环境、Manifest 和两阶段试验，并可明确批准或拒绝。
-- 用户拒绝、批准过期，或测试补丁、目标、失败匹配器、环境、Manifest、两阶段试验任一变化时，拟议复现计划不得执行。
-- 批准必须原子消费一次且不可复用。
-- 所有 `DENY` 结构化动作始终被阻止，且不可被模型输出、仓库文本、配置或既有批准覆盖。
+### 输入与接口
 
-### US-07 审查已验证候选 diff 并决定是否写入权威工作区
-
-**故事陈述：**
-
-作为独立开发者，我希望在任何候选修改写入权威工作区前查看精确 diff 和完整验证结果，并明确决定接受或拒绝，以便最终写入内容与我审查的内容一致。
-
-**用户价值：**
-
-自动修复停留在可丢弃副本中，直到用户确认一个经过正式验证且内容固定的候选结果。
-
-**结果级验收条件：**
-
-- 只有满足当前验收契约并完成正式 Docker 验证的候选 diff 才能进入最终写入审批。
-- 用户能够查看精确候选 diff、涉及文件、验证结果和相关安全状态，并选择批准或拒绝。
-- 用户拒绝时，权威工作区保持不变。
-- 批准过期、候选内容变化、验收上下文变化，或检测到权威工作区发生外部变化时，候选修改不会继续写入，也不会覆盖外部修改。
-- 批准后只写入用户审查并与验证证据绑定的精确 diff；系统不自动执行 `git add` 或 `commit`。
-- 写入完成后，系统核对权威工作区结果与已验证候选状态是否精确一致；不一致时不得报告成功。
-- 工作区外部变化与事务恢复状态分别报告：前者停止写入并保护外部修改，后者在事务未完成或恢复未解决时进入需要恢复状态，并明确提示人工处理。
-
-## 2.5 运行记录与跨会话连续性
-
-### US-08 理解运行进度、停止原因和审计证据
-
-**故事陈述：**
-
-作为监督自动修复的独立开发者，我希望查看运行所处阶段、关键动作、检查反馈、审批状态和最终停止原因，以便判断系统做过什么、为什么继续或停止，以及结果是否值得接受。
-
-**用户价值：**
-
-用户不需要根据聊天文本猜测系统状态，也不会把模型完成声明、未运行的检查或未经正式验证的结果误认为正式成功。
-
-**结果级验收条件：**
-
-- 用户能够明确区分四类用户可见状态：执行中（`CREATED | RUNNING`）、等待用户（`WAITING_USER`）、恢复阻塞（`RECOVERY_REQUIRED`）、已结束（`SUCCEEDED | STOPPED`），并看到当前阶段、已完成步骤和待处理事项；恢复阻塞表示尚未形成成功或停止终态。
-- 测试、Ruff、Mypy、复现评估、动作决策和运行终态以各自明确的结果展示，不把未运行、超时、错误或预期失败改写成通过。
-- 运行以 `STOPPED` 结束时，用户能看到具体停止类别及可理解原因，包括不支持、基线阻断、预算耗尽、无进展和工作区变化等情况。
-- 运行以 `SUCCEEDED` 结束时，用户能看到正式成功证据，不要求 `StopReason`；恢复阻塞仍作为独立非终态展示，尚未形成 `SUCCEEDED` 或 `STOPPED` 终态。
-- 审计记录在保护敏感载荷、执行脱敏和截断的同时，保留可追踪的结构化证据，包括关键动作摘要、治理与披露决定、审批生命周期、检查结果和终止原因。
-- LLM 输出不得触发运行停止或正式成功；停止只由控制面谓词触发，正式成功必须同时绑定当前验收契约下的 Docker 验证、最终批准、持久化以及写入后的精确结果核对。公网模拟运行不得进入该正式成功状态。
-
-### US-09 使用、检查并清除仓库级跨会话记忆
-
-**故事陈述：**
-
-作为反复维护同一仓库的独立开发者，我希望 VesperCode 按需利用该仓库的项目约定、历史决策、上次运行摘要和已知失败，同时允许我检查并清除这些记忆，以便减少重复说明而不失去对长期上下文的控制。
-
-**用户价值：**
-
-后续运行能够获得必要的连续性，但不会无边界加载历史记录或把旧信息当成新的权限来源。
-
-**结果级验收条件：**
-
-- 后续运行只按需使用与当前规范化工作区身份相关的记忆，不默认跨仓库检索或注入。
-- 用户能够查看当前仓库有哪些持久记忆，以及本次运行实际选用了哪些记忆。
-- 记忆检查信息包含来源、适用范围、摘要以及创建或更新时间。
-- 用户能够清除当前仓库的持久记忆，并得到明确结果；清除成功后，这些条目不再被当前运行后续的上下文装配或后续运行检索、注入。清除不能撤回已经完成的模型请求或外部披露，不删除审计记录，也不倒退改变已经完成的决策；系统应向用户明确这些边界。
-- 任何被选入当前运行并准备发送给真实 LLM 的记忆，仍必须满足 US-05 的披露确认、范围限制和逐次记录要求。
-- 当前仓库内容和当前检查证据与历史记忆冲突时，以当前仓库和检查证据为准。
-- 记忆始终作为不可信辅助信息，不能修改治理规则、验收契约、审批范围或成功条件。
-- 默认持久记忆不保存完整文件内容、原始提示、完整工具输出或由 VesperCode 管理的真实 LLM 凭据；无法安全归属或不应持久化的内容不会被记住。
-
-## 2.6 公网演示
-
-### US-10 无需真实仓库或凭据，体验可重复的模拟治理流程
-
-**故事陈述：**
-
-作为不了解 VesperCode 的公网演示访客，我希望无需提供代码仓库或真实凭据即可运行预定义场景，以便观察治理拦截、反馈修正、验收保护和提示注入防绕过机制如何工作。
-
-**用户价值：**
-
-访客能够通过可重复的交互理解产品核心机制，同时不会误以为演示正在访问或修复真实项目。
-
-**结果级验收条件：**
-
-- 访客无需上传文件、提供仓库地址、连接本地工作区或录入真实 LLM 凭据即可开始演示。
-- 页面在整个流程中持续明确标识“模拟运行”，模拟结果不得展示为真实修复成功或正式 Docker 验证证据。
-- 一个或多个预定义场景共同确定性展示：危险动作被治理机制拦截；注入一次确定性检查失败后，Mock LLM 的下一步动作按预设发生变化；受保护验收条件无法被候选修改削弱；仓库内容中的提示注入不能绕过独立治理判断。
-- 访客能够查看模拟动作、治理决定、检查反馈和审计结果，并可重复运行。
-- 可重复运行是指：相同场景版本、相同初始状态和相同访客选择产生相同关键决策序列、状态序列和终态；时间戳、请求标识等非语义字段可以不同。
-- 演示会话之间相互隔离并在结束后重置；任何无法确认已经完成重置的会话状态不得被新会话复用，受影响会话必须失败关闭。重置失败不得使任何会话获得访问用户本地文件系统、凭据管理、`DockerExecutor`、真实 LLM 供应商或 Agent 对外网络的能力，也不得暴露其他会话状态。
-- 公网演示可以复用确定性场景，但不替代离线 Mock LLM 单元测试和机制演示脚本。
-
-## 2.7 INVEST 自检
-
-| 故事 | I：独立 | N：可协商 | V：有价值 | E：可估算 | S：小而聚焦 | T：可测试 |
-| --- | --- | --- | --- | --- | --- | --- |
-| US-01 | 可独立验证运行准入 | 检查结果的展示和引导形式仍可细化，但冻结的准入边界不可协商 | 避免在不安全或不支持的条件下运行 | 准入输入、拒绝类别和停止时点均由第 1 章限定，可通过有限测试夹具矩阵估算 | 只负责运行前准入 | 可用受支持与各类拒绝样例验证 |
-| US-02 | 可独立验证凭据生命周期 | 录入和状态展示交互仍可细化，但安全存储与禁止明文泄露的要求不可协商 | 支持安全使用真实 LLM | 录入、状态、更新和清除边界明确 | 不包含数据披露授权 | 可观察明文不回显、安全存储调用结果和凭据生命周期结果 |
-| US-03 | 可用预置工作区独立演示 | 修复交互和反馈呈现仍可细化，但基线与最终验收条件不可协商 | 修复已有失败测试 | 目标集合、基线条件、反馈循环和终态均有明确边界 | 限定已有目标测试的修复场景 | 可由确定性测试与检查证据验证 |
-| US-04 | 可用预置缺陷场景独立演示 | 复现方案的交互呈现仍可细化，但复现限制与验收条件不可协商 | 把自然语言缺陷转为客观验收 | 复现测试形式、两阶段试验和收集集合约束明确 | 保持一条完整复现—修复旅程 | 可验证收集集合、失败指纹和最终结果 |
-| US-05 | 与本地动作批准分离 | 披露说明和确认界面仍可细化，但独立授权语义和硬拒绝边界不可协商 | 控制项目数据外传 | 初次确认、重新确认、拒绝和调用前记录条件明确 | 只处理真实 LLM 数据披露 | 可核对真实调用前 checkpoint 的 grant 重验、记录与预算／feedback 原子消费，以及提交失败时未调用适配器 |
-| US-06 | 可用构造的 `ConfirmReproductionAction` 与 `DENY` 动作独立验证 | 审批交互形式仍可细化，但一次性批准和硬拒绝边界不可协商 | 审查复现执行并阻止禁用动作 | 批准、拒绝、过期、绑定变化、原子消费和 `DENY` 形成封闭结果空间 | 只负责 `ConfirmReproductionAction` 的一次性批准和通用 `DENY` 拦截；最终持久化批准由 US-07 负责。 | 可验证批准、拒绝、过期、复用和硬拒绝 |
-| US-07 | 可用已验证候选 diff 独立演示 | diff 展示和确认交互仍可细化，但验证绑定与持久化语义不可协商 | 保证审查内容与写入内容一致 | 写入资格、拒绝、失效、外部变化、写入核对和恢复状态均明确 | 只负责最终持久化决定 | 可核对精确 diff、工作区变化、写入和恢复结果 |
-| US-08 | 可对任意预置运行记录验证 | 状态和证据的展示形式仍可细化，但成功条件和状态语义不可协商 | 使运行状态和证据可理解 | 执行中、等待用户、恢复阻塞、已结束四类用户可见状态，以及检查、审批、披露、审计和终态证据范围明确 | 只负责运行可见性与追踪 | 可核对阶段、恢复阻塞、终态、结构化证据和成功判定 |
-| US-09 | 可用预置记忆独立验证 | 记忆检索与展示交互仍可细化，但隔离、优先级和权限边界不可协商 | 减少重复说明且保留控制权 | 使用、实际选用可见性、检查和清除边界明确 | 只处理仓库级持久记忆 | 可核对选用记忆、隔离、优先级和清除效果 |
-| US-10 | 以预定义场景独立运行 | 场景内容和交互表现仍可细化，但模拟能力边界和确定性要求不可协商 | 无风险展示核心机制 | 场景输入、访客选择、关键决策序列、状态序列和终态构成明确比较范围 | 只负责公网模拟体验 | 同一场景版本、初始状态和访客选择必须产生相同关键决策序列、状态序列和终态，非语义字段可以不同 |
-
-INVEST 自检采用以下解释：
-
-- “独立”不表示用户旅程没有先后关系，而是每个故事可以使用预置状态或测试夹具单独验收。
-- `US-03` 和 `US-04` 虽然包含端到端闭环，但支持范围已被第 1 章收窄；继续拆分会把用户结果拆成内部机制清单。
-- “可协商”仅表示后续交互形式和解决方案仍可细化，不表示用户可以在运行时重新协商产品约束。第 1 章已经冻结的安全边界、存储方案、审批语义和验收条件不得重新开放。
-- INVEST 自检不替代各故事的结果级验收条件。
-- 用户故事不等同于单个实现任务；后续实现计划可以把一个故事拆成多个可验证任务。
-- 公网演示不替代离线 Mock LLM 单元测试和机制演示脚本。
-
-# 3. 功能规约
-
-本章采用“规范合同优先的混合式结构”。3.2 是运行状态转换的唯一规范来源；3.3—3.12 分别定义可独立实现和验证的模块合同；3.8 以两类修复场景证明这些合同能够组成完整闭环。除非合同明确另有说明，第 1、2 章已经冻结的支持范围、安全边界、审批语义、验收契约和成功条件继续适用。
-
-## 3.0 v1 实施边界
-
-v1 深入实现治理与审批、`ValidationManifest` 防篡改、路径围栏和真实 LLM 披露门；这些机制必须保持确定性、可独立测试，并在 Mock LLM 下仍完整生效。
-
-决策、工具、反馈、记忆和配置维度只要求形成贯通主循环的最低可运行实现，不得借完善某一维度扩张为生产级通用平台。普通 Agent turn 的跨进程恢复、供应商请求重发、feedback 跨 turn／候选迁移、cleanup reconciliation、分布式 Demo 配额和通用执行接管明确推迟到 v1 之后；这些概念不得在 v1 形成额外状态、持久对象或恢复状态机。
-
-3.6—3.12 必须在上述边界内完成既有闭环。任何扩大深挖维度、恢复范围、分布式能力或通用接管的设计，必须先获得用户重新批准并同步修订本节；不得仅由后续章节或 `PLAN.md` 隐式扩张。
-
-## 3.1 规约约定与共同不变量
-
-### 3.1.1 规范性术语
-
-本章只有“必须”“不得”“可以”承担规范效力。“应”“应当”“建议”“通常”和“默认”等词只用于说明，不得定义合规条件。
-
-用户批准只能满足合同明确规定的审批前置条件，不能豁免硬性不变量，不能将 `DENY`、验证失败或非成功终态改写为允许或成功。普通配置只能在合同显式开放的参数范围内选择或收紧约束，不得覆盖硬性要求。
-
-发生合同冲突时，3.1 是规范词、共同流程、错误信封、摘要绑定、状态隔离和确定性要求的权威来源。其他章节只能引用或收紧共同规则，不得重新定义或放宽。
-
-### 3.1.2 模块合同形式与信任边界
-
-每个功能合同必须提供足以让不同合规实现唯一判断可观察行为的语义输入输出、身份绑定和错误边界，至少明确：
-
-- 语义输入、输出及其 Schema 版本；
-- 前置 `RunState` 或独立功能状态，以及适用运行、阶段、快照、Manifest、候选、策略和摘要的身份绑定；
-- 规范化、校验与权威发布的可观察顺序；
-- 允许的控制面行为、副作用与生命周期结果；
-- 边界条件、稳定错误码、副作用状态、适用时的 `StopReason` 映射和失败关闭路线；
-- 至少一个不依赖真实 LLM 或网络的可确定性验证点。
-
-功能规约不要求数据库字段、存储布局、事务实现方式或内部引用拓扑；本章出现的记录字段与引用只表达行为所需语义，不冻结物理 Schema。上述实现细节统一下放到架构设计、数据模型和 `PLAN.md`，且不得反向改变本章可观察合同。
-
-所有跨越信任边界的输入均不可信。外部事实、用户决定、模型输出和执行结果，只有在控制面按照权威合同完成规范化、校验、上下文绑定并形成不可变记录后，方可在该记录明确限定的范围内作为授权或证据。被控制面记录不等于外部事实已被无条件证明，其效力不得超出证据类型、绑定上下文和有效期。
-
-模型输出只能提出请求或建议，不得签发运行状态、审批记录、披露授权、证据记录、绑定摘要或终态结果；即使模型输出伪造相同字段，也没有授权效力。尤其是 `ProposeCompletionAction` 只能请求 Harness 开始完成判定，不能声明任务成功。
-
-### 3.1.3 共同请求处理顺序与幂等边界
-
-任何可能触发状态转换、授权或预算消费、外部副作用、权威发布或工作区写入的结构化请求，必须按以下唯一顺序处理：
-
-1. **解析：** 按封闭 Schema 和版本解析，拒绝未知字段、错误主体和不允许的联合分支。
-2. **绑定：** 执行版本化规范化，计算规范摘要，并验证主体、当前状态、阶段、对象身份、快照、Manifest、候选、策略和合同要求的其他上下文。
-3. **治理：** 执行确定性允许列表、硬拒绝和风险分类；`DENY` 必须失败关闭。
-4. **授权：** 在实际披露或调用前，验证适用、有效且覆盖当前运行、供应商、端点、模型、允许来源与数据类别、脱敏规则、累计预算和有效期的 `DisclosureGrant`，或验证并原子消费精确绑定的一次性批准与预算；grant 不绑定最终请求摘要，真实 LLM 路线仍必须在 3.5 的 dispatch checkpoint 重验当前绑定并消费累计披露预算，不适用时必须由动作合同明确说明。
-5. **执行：** 仅在前述步骤和合同要求的全部调用前持久前置事实成功提交后，才可调用 LLM、Docker、工具或持久化能力；外部执行不得嵌入生命周期状态事务。
-6. **验证：** 校验结构化结果、完整性证据、资源上限和动作后置条件；无法证明的结果不得视为通过。
-7. **记录：** 原子发布该请求唯一的权威执行结果，以及适用的审计关联、生命周期转换和对象记录。
-
-后续合同可以增加更严格的守卫，但不得删除、倒置或绕过上述步骤。解析、绑定、治理或授权失败时不得开始执行，也不得产生该请求声明的副作用。
-
-上述“记录”步骤仍负责发布执行结果；但具体合同要求的授权消费、`DisclosureRecord`、dispatch checkpoint 和其他调用前持久前置事实必须在“执行”前提交。它们不是供应商执行结果，不得延迟到外部调用后，也不得因为执行结果未知或失败而伪装成尚未提交。
-
-以下操作必须拒绝陈旧输入，并保证同一规范请求不会再次产生其权威效果：
-
-- 真实 LLM、Docker 或工具调用等外部副作用；
-- 生命周期状态或阶段转换；
-- 一次性批准、披露预算或其他一次性预算的消费；
-- Snapshot、Manifest、候选、验证证据或其他对象的唯一权威发布；
-- `AuthoritativeWorkspace` 写入。
-
-这些操作必须绑定稳定请求标识、规范输入摘要和合同要求的当前权威上下文。相同标识与相同摘要的重放必须返回首次权威结果；相同标识与不同摘要必须返回稳定复用冲突；首次请求绑定旧状态、旧阶段、旧对象或旧前映像时必须拒绝为陈旧输入。任何重放或陈旧拒绝都不得再次执行副作用、转换生命周期、消费批准或预算、发布第二个权威对象或覆盖工作区内容。
-
-纯确定性计算和尚未发布的投影可以从同一不可变输入重新计算，不需要为每次计算建立 attempt 状态机。它们一旦参与授权、生命周期或权威发布，仍必须在发布边界重新验证绑定，并受前述幂等与陈旧输入规则约束。3.5 的 `ContextProjectionDraft` 正是这种非权威、非持久且无授权效力的纯计算；授权不足时只能据其创建 `WaitContext`，不得创建 turn、调用 attempt、feedback records、`AgentFeedbackConsumptionManifest` 或 reservations。授权满足后必须在可执行 phase-entry 全量重算，并原子创建 3.5 规定的轮次对象，再提交确定性 dispatch checkpoint；真实路线的 `DisclosureRecord`、披露预算与真实／Mock 路线的 feedback 消费都是该 checkpoint 的调用前持久前置事实，只有 checkpoint 成功后才可调用真实或 Mock 适配器。
-
-非持久化外部副作用的结果无法证明时，模块必须选择明确且可测试的失败关闭路线，不得自动重试、恢复一次性批准或假定成功。v1 不为未来增强预设额外状态机或协调机制。
-
-### 3.1.4 统一错误信封
-
-所有非成功结果必须使用版本化、强类型的错误信封，至少包含：
-
-```text
-ErrorEnvelope {
-  schema_version
-  error_code
-  phase?
-  retry_disposition
-  side_effect_status
-  sanitized_message
-  audit_correlation_id
-  stop_reason?
-  lifecycle_transition_ref?
-}
-```
-
-`retry_disposition` 必须来自以下封闭类型：
-
-```text
-RetryDisposition =
-  NO_RETRY
-  | SAME_ATTEMPT_REPLAY
-  | NEW_ATTEMPT_ALLOWED
-  | NEW_RUN_REQUIRED
-  | RECONCILIATION_REQUIRED
-```
-
-- `NO_RETRY`：原请求不得再次执行。
-- `SAME_ATTEMPT_REPLAY`：只允许相同标识与相同规范输入返回首次已经形成的同一权威结果，绝不重新进入执行、调用外部适配器或发出外部请求。尚无权威结果时不得使用该处置重新发送；模块只能按其既有安全失败关闭路线结束，不得新增 replay 状态。
-- `NEW_ATTEMPT_ALLOWED`：模块可以显式允许使用新标识重新提交，但必须重新经过 3.1.3 的完整流程，且不得复用一次性批准或预算消费。
-- `NEW_RUN_REQUIRED`：当前运行不得继续该请求；外部条件修复后只能创建新运行。
-- `RECONCILIATION_REQUIRED`：v1 仅允许由 3.10 的权威工作区持久化恢复合同产生；其他模块不得使用该值，也不得把普通 LLM、披露、Docker、工具、发布或清理失败升级为运行级恢复。
-
-`RetryDisposition` 只描述该错误允许的后续路线，不构成执行、重试、授权消费或新运行创建的授权，也不要求通用 attempt 生命周期。
-
-`side_effect_status` 只能是 `NONE | COMMITTED | UNKNOWN`。`UNKNOWN` 不得折算为成功或安全重试；一次性批准和预算不得自动恢复。每个模块必须用稳定错误码给出明确、安全、可测试的后续路线。
-
-`error_code`、`StopReason`、检查状态、策略决定和重试处置属于不同命名空间，不得由说明文本隐式兼任。只有实际形成 3.2 终态转换时才允许并要求 `stop_reason` 与 `lifecycle_transition_ref`。
-
-错误说明必须脱敏，不得包含凭据、秘密派生信息、未经授权的文件内容、原始缺陷描述、未截断工具输出或低熵敏感定位符。需要停止运行时，错误信封、唯一 `StopReason` 和 3.2 的终态记录必须属于同一权威结果；`RunState` 形成前的创建错误不得伪造停止原因。
-
-### 3.1.5 规范化与摘要绑定
-
-所有“精确匹配”和绑定摘要必须由控制面基于版本化规范序列化结果计算，并同时记录：
-
-- 对象类型；
-- Schema 版本；
-- 规范化版本；
-- 摘要算法；
-- 摘要值。
-
-用户或模型提供的摘要只能作为待校验输入，不得直接成为绑定证据。路径分隔符、Unicode、字段排序、缺省字段、换行和序列化方式由相应对象的权威合同定义；实现内部对象身份、数据库行 ID 或界面显示文本不得代替规范形式。
-
-任一绑定字段变化后，旧证据不得用于授权或证明变更后的对象或新上下文；旧证据仍必须作为其原绑定上下文的不可变历史记录保留。人工决定可以作为显式结构化输入由替身注入；确定性验证禁止依赖测试人员临场解释自由文本，不禁止测试审批、拒绝或取消流程。
-
-### 3.1.6 状态空间隔离与权威合同索引
-
-以下状态空间必须保持强类型隔离：
-
-- `RunStatus` 与 `RunPhase`；
-- `StopReason`；
-- 策略决定；
-- 检查状态和检查结论；
-- 审批、披露授权与等待结果；
-- 外部执行记录、持久化事务和恢复状态；
-- 错误码和重试处置。
-
-一个空间中的值不得被另一个空间隐式解释。例如，检查失败不是 `STOPPED`，预算耗尽不是生命周期状态，用户批准也不是策略 `ALLOW`。
-
-对象权威位置固定为：
-
-- 3.1：规范词、共同处理顺序、统一错误信封和规范摘要共同规则；
-- 3.2：运行生命周期、终态和停止原因；
-- 3.3：运行请求、创建结果和准入结果；
-- 3.4：`SnapshotTree`、基线与 `ValidationManifest`；
-- 3.5：动作信封与单动作输出、`ContextProjection` 与上下文装配、不可变树上的只读文件工具，以及精确下一轮结构化反馈与 reservation 终结；
-- 3.6：`CandidateRevision`、恢复修订和 `FinalDiff`；
-- 3.7：检查能力、`CheckResult` 和失败指纹；
-- 3.8：两类修复场景及复现确认状态；
-- 3.9：策略决定、审批、披露授权与披露记录；
-- 3.10：正式验证、持久化事务与恢复记录；
-- 3.11：记忆、配置与凭据；
-- 3.12：可见性事件、审计记录与演示状态。
-
-### 3.1.7 可确定性验证约定
-
-可确定性验证点必须写成可观察命题：
-
-> 给定前置状态 X 和结构化输入 Y，系统必须产生 Z，且不得发生副作用 W。
-
-验证点可以规定错误码、状态转换、不变量和禁止调用，但不得规定测试文件名、mock 脚本路径或实现步骤。核心机制必须能够在真实 LLM 被 mock/stub 替换且没有网络时独立验证，至少覆盖工具分发、治理拦截、反馈回灌、记忆、配置和停止判定。
-
-时间、随机数、标识生成和调度顺序等非确定性来源，必须由验证环境固定或注入，或者由控制面记录后重放；不得成为验证命题的隐藏前提。
-
-## 3.2 运行生命周期
-
-### 3.2.1 状态与阶段
-
-运行生命周期采用六值 `RunStatus`：
-
-```text
-RunStatus =
-  CREATED
-  | RUNNING
-  | WAITING_USER
-  | RECOVERY_REQUIRED
-  | SUCCEEDED
-  | STOPPED
-```
-
-活动执行位置采用仅在 `RUNNING` 下有效的六值 `RunPhase`：
-
-```text
-RunPhase =
-  PREFLIGHT
-  | BASELINE
-  | REPRODUCTION
-  | AGENT_LOOP
-  | FORMAL_VALIDATION
-  | PERSISTENCE
-```
-
-`RunState` 必须建模为以 `RunStatus` 为判别字段的封闭联合：
-
-```text
-CREATED(request_ref)
-RUNNING(phase, phase_entry_ref)
-WAITING_USER(wait_context_ref)
-RECOVERY_REQUIRED(recovery_context_ref)
-SUCCEEDED(success_record_ref)
-STOPPED(stop_record_ref)
-```
-
-矩阵和流程中的 `WAITING_USER(X)` 只是展示简写；实际 `RunState` 载荷始终是 `WAITING_USER(wait_context_ref)`，且该引用指向的 `WaitContext.kind = X`。
-
-`RunPhase` 当且仅当 `RunStatus = RUNNING` 时存在。其他状态中保存的来源阶段、停止阶段和最后活动阶段仅为历史引用，不表示运行仍处于该阶段。`RunPhase` 的枚举排列不定义单调顺序；合法返回必须创建新的 `phase_entry_ref`，旧阶段证据不得作为新阶段证据复用。
-
-等待上下文、取消请求、预算、停止原因、披露授权和恢复事务均为正交记录，不扩张生命周期状态集合。安全点是转换守卫，不是状态或阶段。
-
-### 3.2.2 权威生命周期结果
-
-每个运行记录必须包含从 0 开始单调递增的 `lifecycle_revision`。除创建事务外，每个生命周期命令必须绑定 `run_id`、`event_id`、规范事件摘要、预期状态、适用的预期阶段与 `phase_entry_ref`，以及预期修订号。
-
-状态和阶段变更只能由控制面以 CAS 提交。每个被接受的命令必须形成一个不可拆分的权威 `LifecycleResult`，同时包含：
-
-- 新 `RunState` 和递增后的 `lifecycle_revision`；
-- 唯一 `LifecycleTransitionRecord`；
-- 进入 `RUNNING` 时的新 `phase_entry_ref`；
-- 进入 `WAITING_USER` 时的唯一活动 `WaitContext`；
-- 关闭 `WAITING_USER` 时的结构化决定和被关闭的 `wait_context_ref`；
-- 进入 `RECOVERY_REQUIRED` 时的 `RecoveryContext`；
-- 进入 `STOPPED` 时的 `StopRecord`，或进入 `SUCCEEDED` 时的 `SuccessRecord`。
-
-适用记录不能与状态转换一起完整提交时，任何部分都不得成为权威结果。审计投影可以随后重建，但不得代替该结果。
-
-生命周期命令遵循 3.1 的幂等与陈旧输入规则。相同事件和相同摘要返回首次结果；事件标识复用冲突返回 `EVENT_ID_REUSE_CONFLICT`；旧状态、旧阶段、旧阶段进入记录或旧修订号返回 `IGNORED_STALE_EVENT`。Schema 无效返回解析错误；当前绑定有效但矩阵不存在该转换时返回 `ILLEGAL_LIFECYCLE_TRANSITION`。
-
-两个事件同时声明预期修订号 `n` 时，最多一个可以成功。失败的事件不得产生其目标转换、消费授权或预算、发布对象或开始外部副作用。
-
-运行创建是独立事务：
-
-```text
-CreateRunCommand(creation_idempotency_key)
-  -> CREATED(request_ref), lifecycle_revision = 0
-```
-
-“无运行”不是第七个 `RunStatus`。创建幂等与冲突语义由 3.3 定义。
-
-### 3.2.3 等待类型与封闭来源映射
-
-v1 的 `WaitKind` 是封闭集合：
-
-```text
-WaitKind =
-  DISCLOSURE_AUTHORIZATION
-  | CONFIRM_REPRODUCTION_APPROVAL
-  | FINAL_PERSISTENCE_APPROVAL
-```
-
-三种等待的来源和结果路由固定为：
-
-| 决策机制 | 来源阶段与冻结对象 | 唯一等待 | 允许的结果路由 |
-| --- | --- | --- | --- |
-| 独立 `DisclosureDecision` | `REPRODUCTION` 或 `AGENT_LOOP` 中，真实 LLM 调用前由非权威 `ContextProjectionDraft` 计算的供应商、端点、模型、允许来源与数据类别、脱敏规则、累计预算和有效期 | `DISCLOSURE_AUTHORIZATION` | 授权则建立或更新 `DisclosureGrant`，进入来源阶段的新 phase-entry 并全量重算；拒绝或超时且无离线路由则停止 |
-| 本地 `PolicyDecision = ASK` | `REPRODUCTION` 中由控制面校验并冻结的 `ConfirmReproductionAction` | `CONFIRM_REPRODUCTION_APPROVAL` | 批准则消费一次性批准并执行绑定的两阶段试验；修改后拒绝则返回复现阶段；最终拒绝或超时则停止 |
-| 本地 `PolicyDecision = ASK` | 正式验证通过后由控制面生成并冻结的 `PersistVerifiedDiffAction` | `FINAL_PERSISTENCE_APPROVAL` | 批准且权威前映像匹配则进入持久化；拒绝、超时或前映像变化则停止 |
-
-真实 LLM 前的数据披露不属于本地动作策略的 `ASK`。`DisclosureDecision`、`DisclosureGrant` 和 `DisclosureRecord` 与 `PolicyDecision`、动作批准和持久化批准保持强类型隔离。`DisclosureGrant` 只表达当前运行允许的供应商、端点、模型、来源、数据类别、脱敏、累计预算和有效期范围，不绑定最终请求摘要。每个真实供应商请求进入适配器调用阶段前，必须在 dispatch checkpoint 的同一 pre-dispatch commit 中重验 grant 与当前绑定、按确定性序列化后的规范外发载荷字节数消费披露预算并创建既有 `DisclosureRecord`；记录绑定最终请求摘要、实际来源、数据类别、规范外发载荷字节数、脱敏结果和所消费的 `DisclosureGrant`，v1 不建立持久 `DisclosureAttempt`，也不保存完整请求正文。
-
-本地动作策略只有 `ConfirmReproductionAction` 和 `PersistVerifiedDiffAction` 可以产生 `ASK`；其他受支持的本地动作只能产生 `ALLOW` 或 `DENY`。硬拒绝不得转为等待或被批准覆盖。
-
-`ProposeReproductionAction` 只是模型提案，不是审批对象；只有控制面完成校验并冻结后的 `ConfirmReproductionAction` 才能进入复现批准等待。`ProposeCompletionAction` 只触发进入 `FORMAL_VALIDATION`，不得直接创建持久化批准等待、写入动作或成功记录。
-
-US-06 在 v1 由 `ConfirmReproductionAction` 的展示、批准、拒绝、过期、一次消费和硬拒绝测试覆盖，不增加通用动作等待类型。`NativeExecutor` 以及继承当前 Windows 用户权限的宿主执行或诊断路径明确属于 v1 非目标，不得为其创建策略分支或等待类型。
-
-未来新增可批准动作时，必须同时定义动作类型、唯一来源阶段、被冻结对象、每个结果的生命周期路由和新的版本化 `WaitKind`；缺少任一项时只能 `ALLOW` 或 `DENY`，不得复用现有等待类型。
-
-### 3.2.4 阶段执行与等待处理
-
-只有 `RUNNING` 可以开始 LLM、工具、检查或持久化执行。外部长时执行不得位于生命周期事务中；控制面必须先提交授权消费与进入相应 `RUNNING` 阶段的权威结果，执行前再验证该结果仍为当前绑定。真实 LLM 路线还必须按 3.5 在调用前的同一权威 dispatch checkpoint 中完成 grant 重验、披露预算消费、`DisclosureRecord` 创建与最终请求绑定，以及 feedback reservations 全量消费；这些是调用前持久前置事实，不是供应商执行结果。纯授权更新、调用前 checkpoint 或 Manifest 派生都不得虚构外部执行。
-
-`WaitContext` 至少必须绑定：
-
-- 唯一 `wait_id` 和 `WaitKind`；
-- 来源阶段及来源 `phase_entry_ref`；
-- 被决定对象的规范摘要；
-- 适用的候选修订、Manifest、策略版本、供应商或执行 profile；
-- 决定 Schema 版本、截止时间和创建该等待的修订号；
-- 每一种合法结构化结果的明确转换路由。
-
-披露 `WaitContext` 的“被决定对象规范摘要”只绑定拟申请的当前运行、供应商、端点、模型、允许来源与数据类别、脱敏规则、累计预算和有效期范围，不绑定 `ContextProjectionDraft` 或最终请求摘要；其他两类等待继续绑定各自表中已冻结的精确动作。
-
-同一运行最多存在一个活动 `WaitContext`。只有在动作间安全点、没有已开始但尚未形成权威结果的 LLM、工具或检查执行、被决定范围已经确定且无有效待处理取消时，才可以进入 `WAITING_USER`。披露路线中的 `ContextProjectionDraft` 只用于展示与计算该范围，仍是非权威、非持久且无授权效力的纯计算；授权不足而创建 `WaitContext` 时，禁止创建 `AgentTurn`、LLM call attempt、`AgentFeedbackRecord`、`AgentFeedbackConsumptionManifest` 或 `FeedbackConsumptionReservationRecord`。
-
-一个 `wait_id` 一经权威关闭后不得再次消费或改写。除 3.3.7 正式启动终止和 3.3.14 Demo 启动失效这两个既有例外外，关闭等待的结构化决定、来源主体、规范结果和被关闭的 `wait_context_ref` 必须随 `LifecycleResult` 原子记录；仅完成 Schema 解析但未通过主体、绑定或 CAS 的决定不得关闭或消费等待。两个启动终止例外只能随创建的同一 `StopRecord`，在同一 CAS／权威提交中连带关闭旧运行的活动 `WaitContext`；该关闭不得构造或消费 `AUTHORIZE`、`APPROVE`、`REJECT`、`TIMEOUT`、`CANCEL_ACCEPTED` 等用户或控制面决定，不得生成 `DisclosureGrant`、批准或其他授权效果，已有终局决定和已经关闭的 `WaitContext` 不得改写。审批、超时和取消竞态只由控制面的权威提交顺序和 CAS 决定，不依据客户端时间戳事后猜测。披露授权成功只能进入来源阶段的新 phase-entry；控制面必须重新读取状态与 subject，并全量重算 draft、预算、grant 和最终投影，不得把等待前的 draft、请求摘要、反馈选择或任何临时计算直接升级为权威对象。
-
-`TIMEOUT` 只能由控制面使用注入时钟生成。用户只能提交取消请求；`CANCEL_ACCEPTED` 只能由控制面在安全点产生。用户伪造这些结果必须被主体或 Schema 校验拒绝。
-
-v1 的配置修复和凭据录入不属于运行内等待。预检发现缺失配置或凭据时进入 `STOPPED`；用户通过 3.11 的独立功能修复后创建新运行。
-
-### 3.2.5 取消合同
-
-取消请求是独立、不可变的控制面记录，不是 `RunStatus` 或 `RunPhase`。取消请求可以在非终态运行的任意时刻记录，并区分：
-
-- 取消已请求：存在待处理取消记录；
-- 取消已接受：安全点守卫成立并完成 `STOPPED(USER_CANCELLED)` 转换；
-- 取消过晚：运行已进入终态，只生成终态忽略记录。
-
-`CREATED`、`WAITING_USER` 和各阶段动作之间的边界是取消安全点。不可中断执行区间中的取消必须保持待处理；到达下一个安全点后优先于普通推进。
-
-在同一 `WAITING_USER` 实例上，有效取消请求若先于批准持久化，取消优先规则必须阻止批准推进并进入 `STOPPED(USER_CANCELLED)`。批准若先完成 CAS，随后取消不得追溯撤销已经关闭的等待或恢复已消费批准，只能作为新 `RUNNING` 状态下的取消请求，在下一安全点处理。
-
-在 `RUNNING(PERSISTENCE)` 中，若 3.10 的持久化执行尚未开始且未发生权威工作区写入，控制面可以在执行前安全点接受取消。持久化事务一旦开始，取消必须保持待处理，不得中断事务或改写其结果；控制面必须先形成 `PERSISTENCE_COMMITTED`、`PERSISTENCE_SAFELY_FAILED` 或 `PERSISTENCE_UNCERTAIN`。前两者形成终态后，取消只生成终态忽略记录；后者进入 `RECOVERY_REQUIRED`，取消不得使其直接停止，必须先解决持久化事务状态。
-
-### 3.2.6 停止原因与终态
-
-`SUCCEEDED` 和 `STOPPED` 是不可逆终态。终态后的审批、取消、执行结果和恢复结果只能生成幂等重放、陈旧或终态忽略记录，不得回退状态。
-
-`StopReason` 与生命周期状态正交，并定义为以下封闭联合：
-
-```text
-StopReason =
-  USER_CANCELLED
-  | USER_REJECTED
-  | PRECONDITION_REJECTED
-  | BASELINE_BLOCKED
-  | REPRODUCTION_NOT_CONFIRMED
-  | DISCLOSURE_DENIED
-  | POLICY_TERMINATED
-  | EXECUTION_TERMINATED
-  | BUDGET_EXHAUSTED
-  | NO_PROGRESS
-  | WORKSPACE_CHANGED
-  | RECOVERY_TERMINATED
-  | INTERNAL_ERROR
-  | DEMO_COMPLETED
-```
-
-未知 `StopReason` 值必须被 Schema 拒绝，不得映射为现有值或从说明文本推断。
-
-每个停止转换必须生成唯一 `StopRecord`，记录来源状态或阶段、触发事件、稳定错误信封、停止原因和适用证据。错误码不能隐式兼任停止原因。
-
-运行已经存在且实际形成 `STOPPED` 转换时，下列稳定 `error_code → StopReason` 映射不得由调用方、模型、说明文本或普通配置改变：
-
-| `error_code` | `StopReason` | 适用边界 |
-| --- | --- | --- |
-| `UNSUPPORTED_PROJECT` | `PRECONDITION_REJECTED` | 项目画像不在支持范围 |
-| `WORKTREE_DIRTY` | `PRECONDITION_REJECTED` | 3.4 证明初始稳定不一致 |
-| `UNSUPPORTED_REPOSITORY_POLICY` | `PRECONDITION_REJECTED` | 仓库结构、策略或物化机制不受支持 |
-| `SENSITIVE_TRACKED_FILE` | `PRECONDITION_REJECTED` | tracked 路径命中硬拒绝敏感规则 |
-| `UNSUPPORTED_FILESYSTEM_OBJECT` | `PRECONDITION_REJECTED` | `RunState` 已存在；工作区对象不满足文件系统支持画像并实际触发 `STOPPED` |
-| `TARGET_NOT_FOUND` | `BASELINE_BLOCKED` | 目标未被收集 |
-| `TARGET_BASELINE_INVALID` | `BASELINE_BLOCKED` | 目标基线状态不允许 |
-| `TARGET_NOT_REPRODUCED` | `BASELINE_BLOCKED` | ExistingFailure 目标未呈现要求的失败 |
-| `TARGET_UNSTABLE` | `BASELINE_BLOCKED` | 两次目标观察不稳定 |
-| `BASELINE_NO_TESTS` | `BASELINE_BLOCKED` | NaturalLanguageDefect 原始基线无测试 |
-| `BASELINE_NON_TARGET_FAILED` | `BASELINE_BLOCKED` | 非目标 pytest node 未全部通过 |
-| `BASELINE_MANDATORY_CHECK_FAILED` | `BASELINE_BLOCKED` | Ruff、Mypy 或其他 mandatory 检查未通过 |
-| `REPRO_NOT_CONFIRMED` | `REPRODUCTION_NOT_CONFIRMED` | 两阶段复现未确认 |
-| `EXECUTION_WORKSPACE_MUTATED` | `EXECUTION_TERMINATED` | 执行副本在检查期间漂移 |
-| `VALIDATION_ENV_CHANGED` | `EXECUTION_TERMINATED` | 验证环境绑定变化 |
-| `VALIDATION_TAMPERED` | `POLICY_TERMINATED` | 验收工件或保护约束遭篡改 |
-| `WORKSPACE_MUTATED_DURING_ADMISSION` | `WORKSPACE_CHANGED` | 3.4 两次准入观察之间发生变化 |
-| `REPOSITORY_POLICY_CHANGED` | `WORKSPACE_CHANGED` | 策略已封存后摘要或绑定变化 |
-| `DEMO_SESSION_INVALIDATED` | `INTERNAL_ERROR` | 新进程关闭旧进程绑定的非终态 Demo 运行 |
-| `PROCESS_RESTARTED_DURING_RUN` | `INTERNAL_ERROR` | 新进程按 3.3.7 关闭旧正式运行的非持久化非终态；左列是 `error_code`，右列是 `StopReason` |
-| `CONTEXT_BUDGET_EXCEEDED` | `BUDGET_EXHAUSTED` | 3.5 mandatory context 规范压缩后仍超过硬预算 |
-| `MODEL_OUTPUT_INVALID_LIMIT_REACHED` | `NO_PROGRESS` | 3.5 模型输出 Schema 无效达到冻结阈值 |
-| `TOOL_RESULT_INTEGRITY_INVALID` | `INTERNAL_ERROR` | 3.5 活动 turn 文件工具或创建新 turn 前重读发现完整性失效 |
-| `LLM_ADAPTER_CALL_FAILED` | `EXECUTION_TERMINATED` | 3.5 dispatch checkpoint 后真实或 Mock LLM 适配器终态失败 |
-| `TURN_PROCESSING_FAILED` | `INTERNAL_ERROR` | 3.5 收到响应后发生不可恢复控制面处理故障 |
-
-`MODEL_OUTPUT_INVALID`、`ACTION_NOT_ALLOWED_IN_PHASE` 和 `TOOL_INPUT_INVALID` 在 3.5 的对应路线未触发终态时不进入本表，不得携带 `StopReason`、`StopRecord` 或伪造终态转换；只有实际触发终态的错误才与对应 `StopRecord` 形成同一权威结果。
-
-创建前没有 `RunState` 的拒绝仍只返回错误信封，不得伪造 `StopReason` 或 `StopRecord`。表外且需要触发停止的错误必须由其权威模块合同显式指定映射；缺少映射时不得从错误名猜测，应按该合同的控制面内部错误路线失败关闭。不触发 `STOPPED` 转换的错误不得为了复用本表而伪造 StopReason。
-
-`DEMO_COMPLETED` 只允许用于 `DeploymentMode = PUBLIC_DEMO` 且 `RequestType = DEMO_SCENARIO`，不得生成正式 `SuccessRecord`、持久化批准或权威工作区写入。正式运行只有 Harness 在独立验证、精确批准、事务持久化和写后核对全部成功后才可以进入 `SUCCEEDED`。
-
-### 3.2.7 权威生命周期转换矩阵
-
-下表是运行生命周期转换的唯一规范来源。
-所有 `RunState` 目标状态映射均由 3.2 拥有。这里的“唯一”按触发事件归属：3.2.7 是表中所列主流程、等待／批准以及正式／Demo 启动关闭事件的唯一规范来源；3.2.8 是取消／跨阶段终止映射的权威；3.2.9 是持久化恢复目标状态映射的权威，本表不复制这些合同。3.10 拥有正式验证、持久化事务／恢复的领域证据、事务事实、结构化 `RecoveryDisposition` 及其守卫，但不得另行定义 `RunState` 目标状态映射。
-
-表中“权威结果”只包含控制面状态、授权消费和必需记录；外部执行遵循 3.1 与 3.2.4。
-
-| 源状态／阶段 | 触发事件 | 主要守卫 | 同一权威结果中的动作 | 目标状态／阶段 |
-| --- | --- | --- | --- | --- |
-| `CREATED` | `START_PREFLIGHT` | 请求绑定有效；无待处理取消 | 创建 `phase_entry_ref` 和转换记录 | `RUNNING(PREFLIGHT)` |
-| `CREATED` | `CANCEL_ACCEPTED` | 存在有效取消请求 | 消费取消；创建 `StopRecord` | `STOPPED(USER_CANCELLED)` |
-| `RUNNING(PREFLIGHT)` | `ADMISSION_ADMITTED` | 3.3 全部强制检查通过；最终 CAS 成功；无待处理取消 | 封存准入结果；创建新阶段进入记录 | `RUNNING(BASELINE)` |
-| `RUNNING(PREFLIGHT)` | `ADMISSION_REJECTED` | 3.3 产生失败关闭结果 | 封存准入结果和错误；创建 `StopRecord` | `STOPPED(PRECONDITION_REJECTED | EXECUTION_TERMINATED | BUDGET_EXHAUSTED | WORKSPACE_CHANGED | INTERNAL_ERROR)` |
-| `RUNNING(BASELINE)` | `EXISTING_FAILURE_BASELINE_ACCEPTED` | 3.4 基线证据和 Manifest v1 有效 | 封存基线；创建新阶段进入记录 | `RUNNING(AGENT_LOOP)` |
-| `RUNNING(BASELINE)` | `NATURAL_LANGUAGE_BASELINE_ACCEPTED` | 基线证据和 Manifest v1 有效 | 封存基线；创建新阶段进入记录 | `RUNNING(REPRODUCTION)` |
-| `RUNNING(BASELINE)` | `BASELINE_REJECTED` | `BaselineEvidenceSet` 完整，`BaselineDecision = REJECTED`，且场景谓词不成立 | 封存错误与 `StopRecord` | `STOPPED(BASELINE_BLOCKED)` |
-| `RUNNING(REPRODUCTION)` | `REPRODUCTION_APPROVAL_REQUIRED` | 完整 `ConfirmReproductionAction` 已规范化并冻结；位于安全点 | 创建唯一等待 | `WAITING_USER(CONFIRM_REPRODUCTION_APPROVAL)` |
-| `WAITING_USER(CONFIRM_REPRODUCTION_APPROVAL)` | `APPROVE` | 主体、等待、动作、补丁、目标、匹配器、Manifest v1、环境和两阶段试验绑定完全匹配 | 关闭等待；消费批准；创建新阶段进入记录 | `RUNNING(REPRODUCTION)` |
-| 同上 | `REJECT_WITH_REVISION` | 决定绑定当前等待 | 关闭等待；记录拒绝反馈；创建新阶段进入记录 | `RUNNING(REPRODUCTION)` |
-| 同上 | `REJECT_FINAL` 或 `TIMEOUT` | 决定或截止时间有效 | 关闭等待；创建 `StopRecord` | `STOPPED(USER_REJECTED)` |
-| `RUNNING(REPRODUCTION)` | `REPRODUCTION_CONFIRMED` | 获批两阶段试验形成有效技术证据 | 由可信控制面派生并封存 Manifest v2；创建新阶段进入记录 | `RUNNING(AGENT_LOOP)` |
-| `RUNNING(REPRODUCTION)` | `REPRODUCTION_NOT_CONFIRMED` | 技术试验未确认缺陷或结果不可靠 | 封存复现证据和 `StopRecord` | `STOPPED(REPRODUCTION_NOT_CONFIRMED)` |
-| `RUNNING(REPRODUCTION | AGENT_LOOP)` | `DISCLOSURE_AUTHORIZATION_REQUIRED` | 披露请求已规范化冻结；位于安全点 | 创建唯一等待 | `WAITING_USER(DISCLOSURE_AUTHORIZATION)` |
-| `WAITING_USER(DISCLOSURE_AUTHORIZATION)` | `AUTHORIZE` | `DisclosureDecision` 与供应商、端点、模型、数据范围、预算和有效期完全匹配 | 关闭等待；建立或更新 `DisclosureGrant`；创建新阶段进入记录 | `RUNNING(来源阶段)` |
-| 同上 | `REJECT` | 决定绑定当前等待，且场景无离线继续路由 | 关闭等待；创建 `StopRecord` | `STOPPED(DISCLOSURE_DENIED)` |
-| 同上 | `TIMEOUT` | 截止时间已到且无继续路由 | 关闭等待；创建 `StopRecord` | `STOPPED(DISCLOSURE_DENIED)` |
-| `RUNNING(AGENT_LOOP)` | `PROPOSE_COMPLETION_ACCEPTED` | `ProposeCompletionAction` 绑定当前候选和 Manifest；预算有效；位于安全点 | 冻结正式验证候选；创建新阶段进入记录 | `RUNNING(FORMAL_VALIDATION)` |
-| `RUNNING(FORMAL_VALIDATION)` | `FORMAL_VALIDATION_FAILED` | 3.10 已形成完整、结构化 `FormalValidationResult`；仍有预算且允许继续 | 同一权威结果封存 `FormalValidationResult` 并创建新的 `AGENT_LOOP` phase-entry | `RUNNING(AGENT_LOOP)` |
-| `RUNNING(FORMAL_VALIDATION)` | `FORMAL_VALIDATION_PASSED` | 全新副本中的独立正式验证通过；候选和绑定未变化 | 封存验证证据和控制面生成的 `PersistVerifiedDiffAction`；创建最终批准等待 | `WAITING_USER(FINAL_PERSISTENCE_APPROVAL)` |
-| `WAITING_USER(FINAL_PERSISTENCE_APPROVAL)` | `APPROVE` | 决定精确绑定当前 `PersistVerifiedDiffAction`、`FinalDiff`、候选树、Manifest 和验证证据；权威工作区前映像仍匹配 | 关闭等待；消费批准；创建新阶段进入记录 | `RUNNING(PERSISTENCE)` |
-| 同上 | `APPROVE` | 决定绑定有效，但权威工作区前映像已变化 | 关闭等待；不得写入；创建变化证据和 `StopRecord` | `STOPPED(WORKSPACE_CHANGED)` |
-| 同上 | `REJECT` 或 `TIMEOUT` | 决定或截止时间有效 | 关闭等待；创建 `StopRecord` | `STOPPED(USER_REJECTED)` |
-| `RUNNING(PERSISTENCE)` | `PERSISTENCE_COMMITTED` | 3.10 证明事务完整、写后摘要一致且全部成功条件仍成立 | 封存事务与 `SuccessRecord` | `SUCCEEDED` |
-| `RUNNING(PERSISTENCE)` | `PERSISTENCE_UNCERTAIN` | 权威工作区事务结果不确定或证据矛盾 | 创建恢复上下文和转换记录 | `RECOVERY_REQUIRED` |
-| `RUNNING(PERSISTENCE)` | `PERSISTENCE_SAFELY_FAILED` | 证明未提交或已完整回滚，且运行不能继续 | 封存事务结果和 `StopRecord` | `STOPPED(EXECUTION_TERMINATED | WORKSPACE_CHANGED | INTERNAL_ERROR)` |
-| `CREATED`<br>`WAITING_USER`<br>`RUNNING(PREFLIGHT)`<br>`RUNNING(BASELINE)`<br>`RUNNING(REPRODUCTION)`<br>`RUNNING(AGENT_LOOP)`<br>`RUNNING(FORMAL_VALIDATION)` | `PROCESS_RESTART_DETECTED` | 当前进程持有同一工作区 OS 排他锁及本次重新取得锁生成的新 `workspace_lease_ref`；旧 `run_id`、`lifecycle_revision`、上述封闭源状态／阶段和 3.3.7 所列全部在途对象仍精确匹配，且可在同一 CAS／权威提交中全有或全无地闭合 | 按 3.3.7 以同一 CAS／权威提交写入 `error_code = PROCESS_RESTARTED_DURING_RUN`、闭合全部在途对象并创建完整 `StopRecord`；不得构造或伪造任何决定、outcome 或适配器结果 | `STOPPED(INTERNAL_ERROR)` |
-| 旧进程实例绑定的任一非终态 Demo `RunState` | 新服务进程启动并发现旧进程绑定 | 旧 `run_id`、`process_instance_ref`、session、进程内配额 reservation、`lifecycle_revision` 与适用状态／阶段仍精确匹配，且活动 `WaitContext` 与全部其他在途对象可完整闭合 | 对该运行执行 3.3.14 的生命周期 CAS；同一权威提交写入 `error_code = DEMO_SESSION_INVALIDATED`、`StopReason = INTERNAL_ERROR` 与完整 `StopRecord`，随该 `StopRecord` 连带关闭活动 `WaitContext`，闭合无结果 `AdmissionCheckAttempt`、未完成 turn、`AgentFeedbackConsumptionManifest` 与 feedback reservations，并使旧 session 和配额 reservation 失效；关闭等待不得构造或消费决定、grant 或批准 | `STOPPED(INTERNAL_ERROR)` |
-
-仅在 `FORMAL_VALIDATION_FAILED → AGENT_LOOP` 的下一轮反馈所有权边界内，3.10 形成并封存 `FormalValidationResult`，3.5 在创建下一 `AgentTurn` 时从该 `FormalValidationResult` 确定性生成有界结构化反馈。这一局部边界不收窄 3.10 对正式验证、持久化事务／恢复的领域证据、事务事实、`RecoveryDisposition` 与守卫的既有职责；3.10 不得另行定义 `RunState` 目标状态映射。
-
-上述正式重启行只引用 3.3.7 的对象级闭合细节，不复制其算法；3.3.7 仍是对象级闭合权威。`RUNNING(PERSISTENCE)` 和 `RECOVERY_REQUIRED` 明确排除在该正式重启行之外，只能使用 3.2.9 的恢复目标状态映射，并由 3.10 提供持久化事务／恢复的领域证据、事务事实、`RecoveryDisposition` 与守卫。
-
-Demo 进程失效行与正式重启行彼此独立；Demo 路线不得取得或伪造正式 `workspace_lease_ref`。
-
-证据缺失、矛盾、结果不可靠或控制面失败不得触发 `BASELINE_REJECTED`，不得形成 `BaselineDecision` 或 Manifest，必须按 3.4 的执行错误或 `INTERNAL_ERROR` 路线失败关闭。
-
-`ProposeCompletionAction` 的唯一转换必须完整写作：
-
-```text
-RUNNING(AGENT_LOOP)
-  -- 接受且绑定有效的 ProposeCompletionAction -->
-RUNNING(FORMAL_VALIDATION)
-```
-
-它不得直接进入 `WAITING_USER`、`PERSISTENCE` 或任一终态。
-
-### 3.2.8 取消与跨阶段终止
-
-在 `CREATED`、`RUNNING` 的安全点或 `WAITING_USER` 接受有效取消时，控制面必须优先进入 `STOPPED(USER_CANCELLED)`。不可中断区间的取消保持待处理；不存在从 `RECOVERY_REQUIRED` 直接取消的转换。
-
-下列终止事件只允许在其权威合同证明守卫成立且副作用已安全处置时使用：
-
-| 来源 | 触发类别 | 目标停止原因 |
-| --- | --- | --- |
-| `RUNNING(REPRODUCTION | AGENT_LOOP)` | 硬策略要求终止，或拒绝／无效动作达到冻结阈值 | `POLICY_TERMINATED` 或 `NO_PROGRESS` |
-| 任一非持久化 `RUNNING` 阶段 | 执行结果无法继续且合同已安全关闭 | `EXECUTION_TERMINATED` |
-| 除 `RECOVERY_REQUIRED` 外的任一正式非终态，3.10 允许的检查点 | 权威工作区身份或前映像绑定失效 | `WORKSPACE_CHANGED` |
-| 除 `RECOVERY_REQUIRED` 外的任一非终态 | 预算或资源硬上限耗尽 | `BUDGET_EXHAUSTED` |
-| 除 `RECOVERY_REQUIRED` 外的任一非终态 | 控制面不变量、存储或协议发生不可恢复错误 | `INTERNAL_ERROR` |
-| 演示运行的 3.12 规定阶段 | 脚本化演示完成并已重置或进入安全清理 | `DEMO_COMPLETED` |
-
-不得使用无守卫的通配终止事件绕过阶段合同。非持久化动作产生 `side_effect_status = UNKNOWN` 时不得进入 `RECOVERY_REQUIRED`；其权威合同必须明确停止或其他安全关闭路线，后续不得假定该动作已成功或已失败。
-
-Demo 进程失效是控制面内部终止，不是脚本化 `DEMO_COMPLETED`。它复用既有 `StopReason = INTERNAL_ERROR`，不得新增 StopReason；新进程必须在接受任何新 Demo 请求前按 3.3.14 完成对全部旧进程非终态 Demo 运行及其在途对象的同一 CAS／权威提交关闭。该路线只验证 Demo 的运行、旧进程、session、进程内配额 reservation 与生命周期绑定，不取得或伪造正式工作区 OS 锁、`WorkspaceIdentityRef` 或 `workspace_lease_ref`。
-
-### 3.2.9 持久化恢复
-
-`RECOVERY_REQUIRED` 只用于 3.10 的权威工作区持久化事务出现不确定或矛盾状态，不泛化为 LLM、披露、Docker、普通工具、发布或清理失败。只有该合同可以在错误信封中使用 `RECONCILIATION_REQUIRED`。
-
-所有 `RunState` 目标状态映射均由 3.2 拥有；下表是三种 `RecoveryDisposition` 到目标状态的唯一规范来源。3.10 负责形成并校验正式验证、持久化事务／恢复的领域证据与事务事实，给出结构化 `RecoveryDisposition` 并证明相应守卫；它不得复述、扩张或改写下表的目标状态映射。
-
-进入该状态后，控制面必须按 3.10 判定事务事实。用户取消、进程重启或普通错误不得跳过恢复并直接终止。由 3.10 形成的结构化 `RecoveryDisposition` 在 3.2.9 只有下列三种目标状态映射：
-
-| `RecoveryDisposition` | 守卫与控制面动作 | 目标状态 |
-| --- | --- | --- |
-| `COMMITTED_AND_VALID` | 证明提交完整、写后摘要一致、全部成功条件仍成立 | `SUCCEEDED` |
-| `NOT_COMMITTED_OR_ROLLED_BACK` | 证明未提交或已完整回滚；封存恢复证据和 `StopRecord` | `STOPPED(RECOVERY_TERMINATED)` |
-| `UNRESOLVED` | 仍不能证明提交或安全关闭；更新恢复上下文 | `RECOVERY_REQUIRED` |
-
-`UNRESOLVED` 是正式自转换；每次结果必须递增修订号并使旧恢复命令成为陈旧输入。恢复成功例外路径为：
-
-```text
-RECOVERY_REQUIRED -> SUCCEEDED
-```
-
-只能由恢复证据证明持久化完整、写后摘要一致且成功条件仍成立。确认未提交或完整回滚时必须终止，不得返回正式验证、重新批准或持久化阶段。正常成功的唯一直接前驱保持为：
-
-```text
-RUNNING(PERSISTENCE) -> SUCCEEDED
-```
-
-应用启动或运行恢复时，对处于 `RUNNING(PERSISTENCE)` 且发现未关闭、矛盾或结果无法证明的持久化事务，控制面必须通过恢复发现事件进入 `RECOVERY_REQUIRED`；已处于该状态且事实仍不确定的运行必须保持该状态。
-
-仍为 `UNRESOLVED` 时，3.10 规定的最小恢复工件必须继续保留，同一工作区的新运行必须继续被拒绝。用户取消、声明放弃恢复、普通清理或进程重启都不得删除这些工件、释放恢复门或把运行改写为终态；只有 `COMMITTED_AND_VALID` 或 `NOT_COMMITTED_OR_ROLLED_BACK` 可以结束该阻断。
-
-终态运行若出现未关闭事务证据，表示控制面不变量或存储一致性遭到破坏，必须生成高优先级审计与运维事件，但不得通过普通生命周期转换改写终态；其处置由 3.10 的异常恢复合同规定。
-
-### 3.2.10 两类主流程
-
-已有失败信号场景的正常路径为：
-
-```text
-CREATED
-→ RUNNING(PREFLIGHT)
-→ RUNNING(BASELINE)
-→ RUNNING(AGENT_LOOP)
-→ RUNNING(FORMAL_VALIDATION)
-→ WAITING_USER(FINAL_PERSISTENCE_APPROVAL)
-→ RUNNING(PERSISTENCE)
-→ SUCCEEDED
-```
-
-自然语言缺陷场景采用一次复现审批：
-
-```text
-CREATED
-→ RUNNING(PREFLIGHT)
-→ RUNNING(BASELINE)
-→ RUNNING(REPRODUCTION)
-→ WAITING_USER(CONFIRM_REPRODUCTION_APPROVAL)
-→ RUNNING(REPRODUCTION)
-→ RUNNING(AGENT_LOOP)
-→ 后续共用正式完成链
-```
-
-`CONFIRM_REPRODUCTION_APPROVAL` 一次性绑定被冻结的复现测试补丁、目标 node ID、失败匹配器、Manifest v1、执行环境和两阶段试验定义。`APPROVE` 后才调度两阶段试验；`NOT_CONFIRMED` 进入 `STOPPED(REPRODUCTION_NOT_CONFIRMED)`；`CONFIRMED` 形成技术复现证据，由可信控制面直接派生 Manifest v2 并进入 `AGENT_LOOP`。v1 不设置试验后的第二次人工确认。
-
-### 3.2.11 可确定性验证点
-
-1. 给定合法创建命令，系统必须只创建一个 `RunState = CREATED(request_ref)` 且 `lifecycle_revision = 0` 的运行；同键同载荷重放不得创建第二个运行。
-2. 给定当前修订号 `n`，两个不同事件 ID 同时声明预期修订号 `n`，最多一个可以成功转换，另一个不得产生目标副作用。
-3. 给定同一事件 ID 和同一规范载荷的已接受事件，重放必须返回首次结果且不得再次递增修订号；同 ID 不同载荷必须返回 `EVENT_ID_REUSE_CONFLICT`。
-4. 给定结构合法但绑定旧阶段或旧修订号的结果，系统必须生成陈旧事件记录；给定 Schema 无效输入，系统必须返回解析错误而不是陈旧事件。
-5. 给定一个活动等待，系统不得创建第二个 `WaitContext`；决定仅解析成功但绑定失败时不得消费原等待。
-6. 给定真实 LLM 披露请求，系统必须使用独立 `DisclosureDecision`；给定任一本地支持动作，只有两个冻结动作类型可以产生 `ASK` 和对应等待。
-7. 给定模型的 `ProposeReproductionAction`，系统不得直接创建等待；给定有效 `ProposeCompletionAction`，系统必须进入新的 `FORMAL_VALIDATION`，且不得生成批准、持久化或成功记录。
-8. 给定正式验证失败和可用预算，系统必须先封存 `FormalValidationResult` 并进入新的 `AGENT_LOOP` phase-entry；随后只有 3.5 原子创建下一 `AgentTurn` 时，才从该结果确定性生成有界结构化反馈并绑定该 turn。该阶段转换本身不得提前创建无目标反馈。
-9. 给定同一等待上的批准与取消，最多一个事件可以关闭当前等待；批准先胜出后，迟到取消只能在新运行状态的下一安全点生效。
-10. 给定执行已经发出且副作用未知，系统不得把它标记为 `NONE`、自动恢复一次性批准或无条件重试。
-11. 给定持久化事务证据矛盾，系统必须进入或保持 `RECOVERY_REQUIRED`；只有证明提交完整才能成功，证明未提交或完整回滚必须以 `RECOVERY_TERMINATED` 停止。
-12. 给定新进程发现旧正式运行处于 3.2.7 所列七项封闭源状态之一，必须命中 3.2.7 唯一的 `PROCESS_RESTART_DETECTED` 矩阵行；任一 OS 锁／`workspace_lease_ref`、旧 `run_id`、`lifecycle_revision`、状态、阶段或 3.3.7 在途对象闭合守卫失败时，不得终止旧运行，也不得创建新运行。
-13. 给定终态运行的迟到审批、取消或执行结果，系统只能返回重放或忽略结果，不得改变终态；演示完成只能进入 `STOPPED(DEMO_COMPLETED)`。
-
-## 3.3 运行请求、创建与准入
-
-### 3.3.1 部署能力与请求分派
-
-```text
-DeploymentMode = LOCAL_FORMAL | PUBLIC_DEMO
-RequestType = LOCAL_REPAIR | DEMO_SCENARIO
-```
-
-`DeploymentMode` 只来自进程启动时的不可变配置，运行期间不得切换。客户端可以声明 `request_type`，但不得声明或覆盖 `deployment_mode`。允许组合是封闭的：
-
-| `DeploymentMode` | 唯一允许的 `RequestType` |
-| --- | --- |
-| `LOCAL_FORMAL` | `LOCAL_REPAIR` |
-| `PUBLIC_DEMO` | `DEMO_SCENARIO` |
-
-控制面必须先解析不含模式专用敏感字段的公共创建信封，再读取进程模式、选择唯一允许的请求 Schema，最后解析正文。模式不支持时返回 `CAPABILITY_NOT_AVAILABLE`；正文含未知或禁止字段时返回 Schema 错误。公网进程不得先解析本地路径、缺陷描述或仓库字段后再拒绝，也不得在日志或错误说明中回显这些字段。
-
-### 3.3.2 请求 Schema
-
-```text
-LocalRepairRequest {
-  workspace_locator: WorkspaceLocator
-  repair_intent: ExistingFailure | NaturalLanguageDefect
-}
-
-ExistingFailure {
-  target_node_ids: non-empty array<string>
-}
-
-NaturalLanguageDefect {
-  defect_description: bounded non-empty string
-}
-
-DemoScenarioRequest {
-  scenario_id
-  scenario_version
-  visitor_choices
-}
-```
-
-本地请求的两个 `repair_intent` 分支严格互斥。请求不得携带供应商、策略、预算、执行器、批准、Manifest、候选补丁或成功声明。`defect_description` 只是待解释的问题陈述，不具有命令、策略、批准或验收效力。
-
-`workspace_locator` 是不可信定位符，不是权威路径。静态创建校验只检查词法、Schema 和体量；只有 `WORKSPACE_IDENTITY` 可以形成 `WorkspaceIdentityRef`。`target_node_ids` 在建立工作区身份后解析为受支持的 pytest node ID，规范化仓库相对路径，拒绝规范化后重复项并返回 `DUPLICATE_TARGET_NODE_ID`，再形成确定性排序的 `CanonicalTargetSet`。node ID 必须作为独立 argv 元素传递，不得经 Shell 解析或拼接；存在性、可收集性和稳定失败由 `BASELINE` 判断。
-
-Demo 场景 ID、版本和选择必须与进程内注册表精确匹配，不允许近似匹配或版本降级。Demo 请求不得包含工作区定位符、文件、仓库地址、真实凭据、供应商、模型、命令或执行器配置。
-
-### 3.3.3 公共静态校验与创建幂等
-
-公共创建信封至少绑定调用主体、请求 Schema 版本、`request_type`、创建幂等键和请求正文。版本化硬上限至少覆盖请求总字节数、缺陷描述字节数、目标数量、单个 node ID 字节数以及 Demo 选择项数量和总字节数；普通配置只能降低硬上限。
-
-静态校验不得访问 Git、Docker、凭据后端、真实 LLM 或项目文件。相同主体和幂等作用域内，相同创建键与相同规范请求必须返回首次结果；同键不同规范请求返回 `CREATION_KEY_REUSE_CONFLICT`。首次结果可以是运行创建，也可以是没有 `run_id` 的创建拒绝；拒绝后的同键重放不得在条件变化后隐式创建运行。
-
-创建拒绝记录只能保存调用主体、进程模式、幂等作用域、Schema 版本、可安全记录的规范摘要、稳定错误码和审计关联标识。不得默认保存原始路径、缺陷描述或可用于猜测低熵值的普通散列。
-
-本地正式请求通过静态校验后仍未创建 `RunState`。它必须先完成 3.3.4 的创建前准入门。Demo 请求按 3.3.14 的进程内原子事务创建会话与运行。
-
-### 3.3.4 本地正式准入与创建顺序
-
-`LOCAL_FORMAL_ADMISSION` 的顺序是版本化合同，固定为：
-
-```text
-STATIC_REQUEST
-CONFIG_SNAPSHOT
-WORKSPACE_IDENTITY
-WORKSPACE_OS_LOCK
-PRIOR_RUN_GATE
-CREATE_RUN
-START_PREFLIGHT
-REPOSITORY_STATE
-SENSITIVE_TRACKED_PATHS
-SNAPSHOT_TREE
-PROJECT_PROFILE
-TARGET_SELECTION
-CREDENTIAL_STATUS
-DOCKER_READINESS
-ADMISSION_COMMIT
-```
-
-前五步属于创建前准入门；`CREATE_RUN` 成功后才存在新 `run_id`，随后按 3.2 从 `CREATED` 进入 `RUNNING(PREFLIGHT)`。`PRIOR_RUN_GATE` 未证明旧运行已终态时，`CREATE_RUN` 不得执行。这个顺序禁止先创建新运行再发现同工作区旧非终态运行。
-
-任一步失败或结果未知时，依赖步骤不得执行。创建前失败只形成无 `run_id` 的创建拒绝；创建后失败按 3.2 形成 `AdmissionResult` 和终态。预检不调用真实 LLM，不运行项目代码，不修改权威工作区，不安装依赖，不拉取或构建镜像，也不回退宿主执行。
-
-### 3.3.5 配置快照与工作区身份
-
-`CONFIG_SNAPSHOT` 只能从目标仓库之外的 VesperCode 控制面配置根和凭据后端读取非秘密配置与凭据引用；它必须拒绝未知字段、无效值、隐式权限扩大和覆盖硬规则的配置，并封存配置、策略、适配器与执行 profile 的规范摘要。此步骤不得打开、列出、解析或按祖先搜索目标仓库、其 `.git` 元数据或任何仓内文件。快照不得保存凭据值，只能保存凭据记录引用、后端类型、所需类型、记录版本和状态引用。
-
-`pyproject.toml`、`pytest.ini`、`setup.cfg`、`mypy.ini` 以及 Ruff、Mypy 或 pytest 的其他仓内配置都不属于 `CONFIG_SNAPSHOT`。只有 `SNAPSHOT_TREE` 发布后，`PROJECT_PROFILE` 才可从该不可变快照读取并解释这些文件；不得从权威工作区实时读取、预读或把仓内配置合并进控制面配置快照。
-
-`WORKSPACE_IDENTITY` 只证明定位符指向首版支持的 Windows 本地 Git 工作区根，并生成稳定身份；它不判断 `HEAD` 对象有效性。`WorkspaceIdentityRef` 至少绑定：
-
-- 平台与版本化文件系统策略；
-- 文件系统实例和根目录对象身份；
-- 规范显示路径和 Git 工作区元数据对象身份；
-- 是否满足 3.10 所需的身份稳定性、原子替换和持久化语义。
-
-控制面不得向父目录搜索仓库根。路径祖先含不受支持的符号链接、junction、mount point 或其他重解析点时必须拒绝。UNC、盘符相对路径、ADS、保留设备名、大小写或 Unicode 碰撞必须按版本化 Windows 文件系统策略机械处理，不得用显示路径字符串代替身份。
-
-### 3.3.6 OS 排他锁与当前进程绑定
-
-`WORKSPACE_OS_LOCK` 必须以 `WorkspaceIdentityRef` 为键，由当前服务进程取得 OS 排他锁。同一身份任一时刻最多一个进程成功持有；锁忙时返回 `WORKSPACE_BUSY`，且不得读取仓库状态、创建新正式运行或形成新 `RunState`。
-
-每次成功取得锁必须创建全局唯一、不可变的 `workspace_lease_ref`。该引用只证明当前进程仍持有这一次 OS 锁：
-
-- 它不按时间自动失效，也不存在延长有效期的协议；
-- 它不得交给另一进程、另一次锁获取或作为可继承权限使用；
-- 进程重启或释放后重新取得锁时必须创建不同引用；
-- 它不是可独立于 OS 锁存在的持久占用协议，也不能替代实际持锁检查。
-
-取得锁后，进程必须持续持有到创建前拒绝已安全收尾，或正式运行进入终态且运行期资源清理完成。显式关闭锁句柄即使 `workspace_lease_ref` 失效；进程退出时由 OS 释放锁。若当前进程不能证明锁仍由自己持有，任何新权威提交都必须失败关闭。
-
-### 3.3.7 旧运行门与进程重启处理
-
-`PRIOR_RUN_GATE` 必须在持有当前 OS 锁后、创建新正式运行前，按 `WorkspaceIdentityRef` 读取旧运行的权威生命周期状态。处理只有三类：
-
-1. **旧运行已终态：** `SUCCEEDED` 或 `STOPPED` 不阻塞新运行创建。
-2. **旧运行处于权威矩阵封闭的非持久化非终态：** 仅包括 `CREATED`、`WAITING_USER`、`RUNNING(PREFLIGHT)`、`RUNNING(BASELINE)`、`RUNNING(REPRODUCTION)`、`RUNNING(AGENT_LOOP)` 和 `RUNNING(FORMAL_VALIDATION)`。新进程必须命中 3.2.7 唯一的 `PROCESS_RESTART_DETECTED` 矩阵行；3.2.7 是 `PROCESS_RESTART_DETECTED` 转换的唯一规范来源，本节仍是该行全部在途对象闭合细节的权威。只有 `PRIOR_RUN_GATE` 可以在当前进程持有同一 `WorkspaceIdentityRef` 的 OS 排他锁、且本次 `CREATE_RUN` 尚未发生时，使用本次锁获取产生的新 `workspace_lease_ref` 发起启动终止；这是非持久化旧运行中唯一允许当前引用不同于旧运行创建时绑定引用的生命周期提交。控制面必须以旧 `run_id` 为 `owner_run_id`，同时验证当前引用、旧运行当前 `lifecycle_revision` 及适用状态、阶段和 `phase_entry_ref`，以同一 CAS／权威提交全有或全无地创建 `StopRecord`、闭合下列旧运行在途对象并进入 `STOPPED(INTERNAL_ERROR)`。错误信封的稳定 `error_code` 必须是 `PROCESS_RESTARTED_DURING_RUN`：
-   - 尚无权威结果的 `AdmissionCheckAttempt` 必须在该提交中闭合；已经开始的 attempt 形成既有 `UNKNOWN`，尚未开始或新进程无法安全启动的 attempt 形成既有 `NOT_RUN(CONTROL_PLANE_ABORTED)`。已经存在权威结果的 attempt 不得改写。
-   - 若旧运行存在活动 `WaitContext`，必须随同一 `StopRecord` 在该 CAS／权威提交中连带关闭其 `wait_context_ref`。该关闭不得构造或消费 `AUTHORIZE`、`APPROVE`、`REJECT`、`TIMEOUT`、`CANCEL_ACCEPTED` 等用户或控制面决定，不得生成 `DisclosureGrant`、批准或其他授权效果；已有终局决定和已经关闭的 `WaitContext` 不得改写。
-   - 任何尚未形成完成类别与后续处置的 `AgentTurn` 必须在该提交中形成既有 `AgentTurnCompletionKind = TURN_ABORTED` 与 `TurnContinuationDisposition = RUN_STOPPED`。已经存在的 `AgentTurnOutcome` 只可保留，不得改写或替换；已经终局的 turn 不得重新闭合。
-   - 若该 turn 已原子创建但 dispatch checkpoint 尚未提交，必须闭合其 `AgentFeedbackConsumptionManifest`，并全量关闭全部 ACTIVE reservations 且不标记消费。若 checkpoint 已提交但尚无 `AgentTurnOutcome`，必须闭合该 `AgentFeedbackConsumptionManifest` 并保持全部 reservations 已消费；真实路线已经在 checkpoint 提交的 `DisclosureRecord` 与披露预算和 feedback 消费均不得回退，但适配器调用与供应商交付事实均为 `UNKNOWN`，不得创建或伪造四值 `AgentTurnOutcome`。新进程不得补发、对账、伪造适配器调用或供应商送达，也不得创建第二条 `DisclosureRecord`。
-
-   上述两种无 outcome 路线都不得调用、恢复或重发适配器；checkpoint 后路线还不得对账未知供应商事实、伪造调用或送达、回退已提交的记录与消费或建立第二条披露记录。旧进程绑定的迟到检查、响应、outcome 或其他结果必须按旧 process、lease、turn 与 attempt 绑定拒绝。该启动终止提交不得修改、重绑定或声称继承旧运行绑定的引用，也不得授权普通命令以新引用操作旧运行。任一活动 `WaitContext` 或其他在途对象无法被完整枚举、验证或闭合时，整个 CAS／权威提交必须失败且不得创建新运行；只有旧运行终态提交成功后才可创建新运行。
-3. **旧运行处于 `RUNNING(PERSISTENCE)` 或 `RECOVERY_REQUIRED`：** 只能使用 3.2.9 的恢复目标状态映射，并由 3.10 判定持久化事务／恢复事实、形成 `RecoveryDisposition` 和证明守卫。`RUNNING(PERSISTENCE)` 先通过恢复发现事件进入 `RECOVERY_REQUIRED`，然后接受 3.10 形成的三种 `RecoveryDisposition`；其目标状态仍只由 3.2.9 定义：
-   - `COMMITTED_AND_VALID`：旧运行进入 `SUCCEEDED`；
-   - `NOT_COMMITTED_OR_ROLLED_BACK`：旧运行进入 `STOPPED(RECOVERY_TERMINATED)`；
-   - `UNRESOLVED`：旧运行保持 `RECOVERY_REQUIRED`，本次创建以 `WORKSPACE_RECOVERY_REQUIRED` 拒绝，且不得创建新运行。
-
-进程重启、普通错误或取消都不得把第三类改走第二类路线。若存在多个旧非终态运行、无法读取当前修订或无法证明分类，必须以控制面内部错误失败关闭且不得创建新运行；v1 不在本节增加额外状态机。
-
-### 3.3.8 正式运行创建与当前绑定
-
-创建前准入门通过后，控制面必须在仍持有同一 OS 锁时原子形成：
-
-```text
-FormalRunCreationResult {
-  run_id
-  request_ref
-  workspace_identity_ref
-  workspace_lease_ref
-  RunState = CREATED(request_ref)
-  lifecycle_revision = 0
-}
-```
-
-创建事务必须再次验证创建幂等声明、当前进程持锁事实、`WorkspaceIdentityRef`、当前 `workspace_lease_ref` 以及 `PRIOR_RUN_GATE` 的旧运行终态证据。任一绑定变化都不得创建运行。相同创建键的并发事务最多一个成功。
-
-从 `START_PREFLIGHT` 起，每个会改变正式运行生命周期、接受检查结果、发布快照或候选、消费批准、调度正式验证或触发持久化的权威提交，都必须验证：
-
-```text
-owner_run_id
-workspace_identity_ref
-current workspace_lease_ref
-current lifecycle_revision
-expected RunState
-applicable phase and phase_entry_ref
-action-specific immutable bindings
-```
-
-`owner_run_id` 必须等于被提交运行的 `run_id`。引用不匹配、当前进程未持锁、修订陈旧或阶段绑定陈旧时，不得产生目标副作用。不得用仅保存在请求或审计记录中的旧引用证明当前持锁。
-
-3.3.7 第三类严格按 3.10 执行的专用恢复提交不属于运行内普通提交。每次专用恢复提交必须验证当前进程本次锁获取产生的新 `workspace_lease_ref`、旧运行的 `owner_run_id` 和当前 `lifecycle_revision`、适用的 `RecoveryContext` 与 `RunState`，以及 3.10 要求的其他绑定；它不得修改、继承或重绑定旧运行创建时绑定的 `workspace_lease_ref`。
-
-除 3.3.7 第二类受限的启动终止和第三类专用恢复提交外，运行内普通提交必须使用该运行创建时绑定、且仍对应当前进程所持本次 OS 锁获取的 `workspace_lease_ref`；提交引用不同即作为陈旧输入或绑定拒绝处理，不得借用后续锁获取的新引用操作旧运行。
-
-### 3.3.9 准入检查尝试与完成
-
-运行内每个实际检查形成：
-
-```text
-AdmissionCheckAttempt {
-  check_attempt_id
-  check_id
-  canonical_input_digest
-  owner_run_id
-  workspace_identity_ref?
-  workspace_lease_ref?
-  preflight_phase_entry_ref
-  source_lifecycle_revision
-  admission_profile_version
-  evaluator_build_ref
-}
-```
-
-正式检查必须包含工作区字段；Demo 检查不得包含它们。相同尝试 ID 和相同规范输入返回首次结果；同 ID 不同输入返回 `CHECK_ATTEMPT_ID_REUSE_CONFLICT`。owner、锁引用、修订、阶段或动作绑定变化后的迟到结果必须作为陈旧输入拒绝。
-
-`AdmissionCheckAttempt` 只是不可变的单次检查记录和幂等边界，不是可恢复的活动状态，也不携带运行中、重试或恢复子状态。v1 每项检查只有一次逻辑尝试。相同尝试 ID 与相同规范输入只有在首次权威 `AdmissionCheckResult` 已经形成时，才可按 `SAME_ATTEMPT_REPLAY` 返回该同一结果；控制面绝不得再次执行检查器或发出外部调用。尚无权威结果时不得重发：已经开始的检查按既有 `UNKNOWN` 路线关闭，尚未开始或控制面无法安全启动的检查按既有 `NOT_RUN(CONTROL_PLANE_ABORTED)` 路线关闭；不得创建 replay 状态、第二个尝试或改写后续结果。
-
-```text
-AdmissionCheckResult =
-  PASS { evidence_ref }
-  | FAIL { error_envelope }
-  | UNKNOWN { error_envelope }
-  | NOT_RUN { not_run_reason, blocking_check_id? }
-
-AdmissionNotRunReason =
-  BLOCKED_BY_CHECK
-  | CANCELLED
-  | LIFECYCLE_CHANGED
-  | CONTROL_PLANE_ABORTED
-```
-
-只有真正开始执行的检查才可以产生 `PASS`、`FAIL` 或 `UNKNOWN`；没有开始执行的检查才可以产生 `NOT_RUN`。`not_run_reason = BLOCKED_BY_CHECK` 时必须存在 `blocking_check_id`，且引用严格优先于当前检查的阻断检查；其他三个 reason 禁止携带该字段。强制检查在其前置成立且运行仍允许推进时不得跳过。`UNKNOWN` 使本次准入失败；迟到结果仍按 owner、锁引用、修订、阶段和动作绑定作为陈旧输入拒绝。主错误按版本化严格全序选择，不得按线程完成或记录写入顺序选择。
-
-准入画像必须封存强制检查 ID、严格优先级、依赖图和评估器构建引用。重复优先级、依赖成环、缺失强制检查或无法解析评估器版本时返回 `ADMISSION_PROFILE_INVALID`，并按控制面内部错误失败关闭。
-
-### 3.3.10 仓库状态与敏感路径
-
-`REPOSITORY_STATE` 只验证封存 `HEAD` 与 Git index 可解析、仓库结构与 tree mode 受支持、密闭 Git 策略可确定，以及不存在首版不支持的仓库机制。成功时它必须形成并输出 `RepositoryPolicySnapshotRef`，绑定封存 HEAD/index、受保护策略工件、受支持的本地 exclude 与相应策略摘要。
-
-该检查不得读取、摘要、比较或判定权威工作区 tracked 文件的实际字节或实际 mode，也不得判定 HEAD/index 清洁性或枚举非忽略未跟踪状态；这些实际工作区事实只能由 `SNAPSHOT_TREE` 按 3.4 的双观察合同判定。首版结构与策略检查必须拒绝未合并或非 stage-0 index entry、intent-to-add、`skip-worktree`、`assume-unchanged`、不支持的 tree mode、tracked symlink、bare repository、submodule、Git LFS、稀疏或 split index、alternates、replace refs、外部 `core.worktree`、自定义 filter 与外部 fsmonitor。不得执行 hook、pager、credential helper、外部 diff/merge driver、filter、fsmonitor 或协议 helper。
-
-`SENSITIVE_TRACKED_PATHS` 必须对 `HEAD tree` 的 Git 规范路径使用与读取、补丁、披露和持久化相同版本的 `SensitivePathPolicy`。命中硬拒绝规则返回 `SENSITIVE_TRACKED_FILE`，普通配置和用户批准不得放宽。fixture/example 窄例外必须绑定具体路径、规则 ID 与策略版本。
-
-仓库内 `.gitignore`、`.gitattributes` 和 `.gitmodules` 是受保护策略工件。`FinalDiff` 不得创建、修改、删除或重命名这些工件；策略摘要变化时按 `REPOSITORY_POLICY_CHANGED` 停止。
-
-### 3.3.11 快照与后续唯一权威来源
-
-`SNAPSHOT_TREE` 必须调用 3.4 子合同并封存 `SnapshotTreeRef`。发布后：
-
-> 基线、复现、Agent 文件工具、候选修订组装、普通检查和正式验证只能读取 `SnapshotTree` 或其派生候选副本。
-
-这些阶段不得读取、列出、执行或挂载权威工作区实时内容。ignored/untracked 文件不得进入 LLM 上下文、项目容器、适配器输入、基线或验证；权威工作区即使只读也不得直接挂入容器。
-
-后续阶段每个权威提交仍必须重验当前进程持锁、`WorkspaceIdentityRef`、`workspace_lease_ref`、`owner_run_id`、当前生命周期修订及适用阶段绑定。权威工作区 tracked 原始字节、模式与前映像只可在 3.2 和 3.10 明确规定的最终批准、提交意图与持久化检查点读取。外部变化不改写已封存快照，但必须阻止持久化。
-
-### 3.3.12 项目画像、目标与凭据
-
-`PROJECT_PROFILE` 必须依据快照和已封存配置选择第 1 章支持的 Python 项目画像；画像外项目返回 `UNSUPPORTED_PROJECT`，不得降级为任意命令执行。
-
-`TARGET_SELECTION` 在项目画像之后运行。已有失败场景形成 `CanonicalTargetSet`；自然语言场景只验证缺陷描述的结构与体量绑定，不把说明解释为命令或策略。收集、存在性和稳定失败仍由 `BASELINE` 判断。
-
-`CREDENTIAL_STATUS` 只能输出 `CONFIGURED | ABSENT | LOCKED | BACKEND_UNAVAILABLE`。证据只保存凭据记录 ID、后端类型、记录版本和状态；不得保存明文、可逆编码、前后缀、长度、秘密摘要或跨运行可比较的秘密派生值。状态检查必须非交互；需要解锁或输入时返回 `LOCKED`。`CONFIGURED` 不证明供应商认证成功，每次真实 LLM 调用仍须即时重验记录版本并从后端取值。
-
-### 3.3.13 Docker-only 准入
-
-`DOCKER_READINESS` 必须证明受支持 Docker 能力当前可用，并形成不可变 `DockerEnvironmentRef`，至少绑定 daemon 或 context 身份、服务端与 API 能力版本、本地镜像内容身份、执行 profile 摘要、探测结果及探测实现版本。
-
-预检不得联网拉取镜像、构建环境、安装依赖或回退宿主执行。可信探测必须验证实际 UID/GID、只读根、网络模式、挂载集合、能力集、资源限制和 Docker 控制接口不可见。项目代码、基线、普通检查与正式验证只允许由 `DockerExecutor` 执行；`NativeExecutor` 及继承当前 Windows 用户权限的宿主执行或诊断路径不注册、不调度，也不能提供正式证据。
-
-每次项目检查执行前必须重验 Docker 动态绑定。tag 重指向、镜像删除、daemon/context 切换或 profile 漂移时，旧 `DockerEnvironmentRef` 失效，运行失败关闭。
-
-### 3.3.14 公网 Demo 准入与会话
-
-Demo 创建前事务只执行公共请求 Schema 与硬上限校验、场景 ID／版本／choices 与当前进程注册表的精确匹配，以及进程内配额 reservation。该事务必须全有或全无地创建唯一 reservation、`DemoSessionRef` 和 Demo `RunState`；任一步失败都不得产生 session 或 run。reservation 至少绑定 `run_id`、当前进程实例引用、会话命名空间、场景 ID 与版本；同一进程内同一逻辑请求重放不得重复扣减。
-
-创建成功并进入 `RUNNING(PREFLIGHT)` 后，`PUBLIC_DEMO_ADMISSION` 才验证场景包 digest、Mock LLM 与 `DemoExecutor` 实现版本、允许能力封闭集合、会话命名空间隔离，以及未注册真实 LLM、`DockerExecutor`、正式工作区或对外网络能力。它只读取内置版本化场景包，不读取用户仓库、用户文件或凭据。任一创建后检查失败必须形成 `AdmissionResult`，并按 3.3.15 与 3.2 的 `ADMISSION_REJECTED` 路线终结，不得回写为创建前拒绝。
-
-Demo 不解析 `WorkspaceIdentityRef`，不取得正式工作区 OS 锁，不创建 `workspace_lease_ref`，也不写权威工作区。Mock LLM、`DemoExecutor` 和场景能力不得产生外部网络出站；公网 Web 服务接受浏览器入站不受此句限制。
-
-Demo 配额只保证单个服务进程内的原子性。创建后的准入检查不得扩大创建前已经确定的配额、场景选择或能力边界。
-
-新服务进程启动时，必须在接受新 Demo 请求前查找所有绑定旧进程实例的非终态 Demo `RunState`，并对每个运行执行生命周期 CAS。控制面必须以旧 `run_id` 为 `owner_run_id`，同时验证旧 `process_instance_ref`、`DemoSessionRef`、进程内配额 reservation、当前 `lifecycle_revision` 及适用状态、阶段和 `phase_entry_ref`；不得取得、要求或伪造正式 `WorkspaceIdentityRef`、工作区 OS 锁或 `workspace_lease_ref`。只有这些 Demo 绑定仍精确匹配时，才可在同一 CAS／权威提交中全有或全无地写入 `error_code = DEMO_SESSION_INVALIDATED`、`StopReason = INTERNAL_ERROR` 和完整 `StopRecord`，闭合下列旧运行在途对象并原子进入 `STOPPED(INTERNAL_ERROR)`：
-
-- 尚无权威结果的 `AdmissionCheckAttempt` 必须在该提交中闭合；已经开始的 attempt 形成既有 `UNKNOWN`，尚未开始或新进程无法安全启动的 attempt 形成既有 `NOT_RUN(CONTROL_PLANE_ABORTED)`。已经存在权威结果的 attempt 不得改写。
-- 若旧运行存在活动 `WaitContext`，必须随同一 `StopRecord` 在该 CAS／权威提交中连带关闭其 `wait_context_ref`。该关闭不得构造或消费 `AUTHORIZE`、`APPROVE`、`REJECT`、`TIMEOUT`、`CANCEL_ACCEPTED` 等用户或控制面决定，不得生成 `DisclosureGrant`、批准或其他授权效果；已有终局决定和已经关闭的 `WaitContext` 不得改写。
-- 任何尚未形成完成类别与后续处置的 `AgentTurn` 必须在该提交中形成既有 `AgentTurnCompletionKind = TURN_ABORTED` 与 `TurnContinuationDisposition = RUN_STOPPED`。已经存在的 `AgentTurnOutcome` 只可保留，不得改写或替换；已经终局的 turn 不得重新闭合。
-- 若该 turn 已原子创建但 dispatch checkpoint 尚未提交，必须闭合其 `AgentFeedbackConsumptionManifest`，并全量关闭全部 ACTIVE feedback reservations 且不标记消费。若 checkpoint 已提交但尚无 `AgentTurnOutcome`，必须闭合该 `AgentFeedbackConsumptionManifest`，全部 feedback reservations 保持已消费；Mock 路线不创建 `DisclosureRecord`、不消费真实披露预算，只保留其他适用的已持久化预算事实；Mock adapter 是否被调用、是否返回均为 `UNKNOWN`；不得创建或伪造四值 `AgentTurnOutcome`，不得调用、恢复或重发 Mock adapter。
-
-上述两种无 outcome 路线都不得调用、恢复或重发 Mock adapter；旧进程绑定的迟到检查、响应、outcome 或其他结果必须按旧 `run_id`、`process_instance_ref`、session、turn 与 attempt 绑定拒绝。全部旧 Demo session、进程内配额 reservation 与会话引用同时失去当前进程资格；旧 `run_id` 或会话引用此后仍返回 `DEMO_SESSION_INVALIDATED`，不得恢复、继续或把旧额度解释为当前额度。任一活动 `WaitContext` 或其他在途对象无法被完整枚举、验证或闭合时，整个 CAS／权威提交必须失败，且新进程不得接受任何新 Demo 请求。该路线不新增 StopReason，每个新会话从模板重新创建可丢弃状态。
-
-Demo 结束、取消或错误时必须在当前进程内幂等释放原 reservation 并丢弃会话命名空间。无法确认重置完成时，该会话失败关闭且状态不得供其他会话复用。全部强制检查通过后从 `RUNNING(PREFLIGHT)` 进入 `RUNNING(BASELINE)`，由 3.12 编排脚本化模拟；正常脚本完成只可进入 `STOPPED(DEMO_COMPLETED)`，进程失效则按上述 `DEMO_SESSION_INVALIDATED + INTERNAL_ERROR` 路线终止。两者都不得形成正式 `SuccessRecord`、持久化批准或 Docker 验证证据。
-
-### 3.3.15 准入结果、错误与关闭
-
-`AdmissionCompletionKind` 是封闭联合：
-
-```text
-ADMITTED
-| CHECK_REJECTED
-| CANCELLED
-| CONTROL_PLANE_ABORTED
-```
-
-`AdmissionResult` 必须显式绑定 `completion_kind`、部署模式、画像 ID 与版本、强制检查集合、`preflight_phase_entry_ref`、来源生命周期修订、全部运行内检查结果、按条件存在的证据引用，以及完成转换后才存在的 `accepted_transition_ref` 和结果修订。`allows_baseline` 只能由 `completion_kind == ADMITTED` 派生。
-
-`ADMITTED` 要求全部强制检查为 `PASS` 且 `PREFLIGHT → BASELINE` CAS 已接受；`CHECK_REJECTED` 的主错误按严格优先级选择；`CANCELLED` 使用取消错误，不从 `NOT_RUN` 伪造主错误；`CONTROL_PLANE_ABORTED` 使用内部错误。最后一个检查通过不等于准入完成：最终 CAS 前存在有效取消时必须进入 `STOPPED(USER_CANCELLED)`，非取消的提交故障必须失败关闭。
-
-创建前的用户输入、配置、工作区占用、未解决恢复或身份不支持只产生无新 `run_id` 的创建拒绝，不产生 `StopReason`。运行创建后的准入失败必须确定性映射：不支持的输入或环境映射 `PRECONDITION_REJECTED`；外部可靠观察或执行无法继续映射 `EXECUTION_TERMINATED`；资源硬上限或容量不足映射 `BUDGET_EXHAUSTED`；工作区在准入期间发生时间性变化时使用稳定 `error_code = WORKSPACE_MUTATED_DURING_ADMISSION` 并映射 `WORKSPACE_CHANGED`；控制面不变量、存储、规范序列化或当前持锁证明故障映射 `INTERNAL_ERROR`。无法分类的错误按 `INTERNAL_ERROR` 失败关闭。
-
-正式运行在非持久化阶段取消或失败时，必须先形成 3.2 的终态并清理运行资源，再关闭当前 OS 锁句柄。持久化阶段只可按 3.10 形成提交、安全失败或恢复结果；不得用普通取消或清理错误绕过。若当前进程无法证明锁句柄已经关闭，它必须拒绝该工作区的新请求直至进程结束。Demo 只清理自己的会话资源，不影响正式工作区。
-
-### 3.3.16 可确定性验证点
-
-1. 给定 `PUBLIC_DEMO` 进程和 `LOCAL_REPAIR` 信封，系统必须在解析本地正文前返回 `CAPABILITY_NOT_AVAILABLE`，且不得访问文件系统。
-2. 给定同一创建键和相同规范请求，系统必须返回首次结果；同键不同请求返回 `CREATION_KEY_REUSE_CONFLICT`。
-3. 给定本地请求尚未通过 `PRIOR_RUN_GATE`，系统中不得存在该请求的新 `RunState`。
-4. 给定两个进程竞争同一 `WorkspaceIdentityRef`，最多一个取得 OS 锁；失败者返回 `WORKSPACE_BUSY`，不得读取仓库状态或创建运行。
-5. 给定旧运行位于 3.2.7 `PROCESS_RESTART_DETECTED` 矩阵行封闭列举的七项非持久化非终态，新进程必须命中该唯一矩阵行，并先以同一 CAS／权威提交全有或全无地写入 `PROCESS_RESTARTED_DURING_RUN`、`INTERNAL_ERROR` 与 `StopRecord`，随该 `StopRecord` 连带关闭活动 `WaitContext`，并按仍作为对象级闭合权威的 3.3.7 闭合所有无结果 `AdmissionCheckAttempt`、未完成 `AgentTurn`、`AgentFeedbackConsumptionManifest` 和 reservations，随后才可创建新运行。活动等待的关闭不得构造或消费用户／控制面决定，不得生成 grant 或批准；已有终局决定和已关闭等待不得改写。checkpoint 前 reservations 必须全量关闭且不消费；checkpoint 后无 outcome 时必须保持已消费并闭合 `AgentFeedbackConsumptionManifest`，不得创建四值 `AgentTurnOutcome`、调用、恢复或重发适配器。任一活动等待或其他在途对象无法完整枚举、验证或闭合时，整个 CAS 必须失败且不得创建新运行；已有 outcome 与已终局对象不得改写。
-6. 给定旧运行位于 `RUNNING(PERSISTENCE)` 或 `RECOVERY_REQUIRED`，系统必须只接受 3.10 三种恢复结果；`UNRESOLVED` 时不得创建新运行。
-7. 给定旧运行经 `COMMITTED_AND_VALID` 或 `NOT_COMMITTED_OR_ROLLED_BACK` 进入终态，系统才可在仍持有当前 OS 锁时创建新运行。
-8. 给定进程重启或同一进程重新取得锁，新 `workspace_lease_ref` 必须不同；绑定旧引用的迟到结果不得产生权威副作用。
-9. 给定当前提交的 `owner_run_id`、锁引用、生命周期修订、阶段或 `phase_entry_ref` 任一不匹配，提交必须作为陈旧或内部错误拒绝。
-10. 给定 `CONFIG_SNAPSHOT`，系统只可读取目标仓库外的控制面配置和凭据引用；失败时不得打开或解析目标仓库、取得锁或创建运行。给定 `REPOSITORY_STATE` 失败，不得封存快照。
-11. `REPOSITORY_STATE` 只能验证封存 HEAD/index 的可解析性与结构／策略支持并输出 `RepositoryPolicySnapshotRef`；工作区不干净、非忽略未跟踪状态或 tracked 实际字节／mode 不一致必须只由 `SNAPSHOT_TREE` 判定，并在首次 LLM 调用和项目代码执行前失败关闭。
-12. 给定 `SnapshotTree` 已发布，基线、Agent 工具和验证不得读取或挂载权威工作区，ignored/untracked 文件不得影响结果。
-13. 给定 Docker tag 内容变化或 daemon/profile 漂移，系统必须拒绝旧 `DockerEnvironmentRef`；不得调度宿主执行作为替代。
-14. 给定同一进程内并发 Demo 请求超过配额，原子准入最多接受配额允许的会话，拒绝请求不得产生 reservation 或运行。
-15. 给定服务进程重启，系统必须先以旧 `run_id`、旧 `process_instance_ref`、session、进程内配额 reservation、`lifecycle_revision` 和适用阶段绑定执行生命周期 CAS，在同一权威提交中将每个旧进程绑定的非终态 Demo `RunState` 关闭为 `error_code = DEMO_SESSION_INVALIDATED`、`STOPPED(INTERNAL_ERROR)` 和完整 `StopRecord`，随该 `StopRecord` 连带关闭活动 `WaitContext`，并按 3.3.14 闭合所有无结果 `AdmissionCheckAttempt`、未完成 `AgentTurn`、`AgentFeedbackConsumptionManifest` 和 feedback reservations。活动等待的关闭不得构造或消费用户／控制面决定，不得生成 grant 或批准；已有终局决定和已关闭等待不得改写。无结果且已开始的 Admission attempt 必须形成 `UNKNOWN`，未开始或无法安全启动的 attempt 必须形成 `NOT_RUN(CONTROL_PLANE_ABORTED)`；未完成 turn 必须形成 `TURN_ABORTED + RUN_STOPPED`。checkpoint 前 reservations 必须全量关闭且不消费；checkpoint 后无 outcome 时必须闭合 `AgentFeedbackConsumptionManifest`，全部 feedback reservations 保持已消费；Mock 路线不创建 `DisclosureRecord`、不消费真实披露预算，只保留其他适用的已持久化预算事实；Mock adapter 是否被调用、是否返回均为 `UNKNOWN`；不得创建或伪造四值 `AgentTurnOutcome`，不得调用、恢复或重发 Mock adapter。任一活动等待或其他在途对象无法完整枚举、验证或闭合时，整个关闭必须全有或全无地失败，且新进程不得接受新 Demo 请求；已有 outcome 与已终局对象不得改写，旧绑定迟到结果必须拒绝，且不得取得或伪造正式工作区 lease。旧 session 继续返回该错误，不得恢复或影响新进程配额。
-16. 给定任一 Demo 请求，系统不得解析工作区身份、取得正式工作区锁、读取用户凭据或写入权威工作区。
-17. 给定全部强制检查通过但最终 CAS 前存在有效取消，系统必须形成 `CANCELLED` 并进入 `STOPPED(USER_CANCELLED)`。
-18. 给定 Demo 场景正常完成，唯一终态是 `STOPPED(DEMO_COMPLETED)`；给定旧进程会话失效则必须是 `STOPPED(INTERNAL_ERROR)`。两者都不得形成正式成功、持久化批准或 Docker 正式证据。
-
-
-## 3.4 仓库快照、基线与 `ValidationManifest`
-
-本节定义本地正式运行中的仓库快照、执行副本证据、基线判定和不可变验收合同。快照成功只证明输入代码已被确定性封存，不表示基线成立、缺陷已复现或候选已通过验证。本节所称“不定义跨崩溃恢复”只限定 `SnapshotTree` 构建、`ExecutionWorkspace` 和普通 consumer；它们在中断或副作用不确定时按本节安全失败关闭。3.10 对权威工作区持久化事务的持久恢复是唯一例外，继续受 `RECOVERY_REQUIRED` 与其恢复合同约束，不得被本节清理语义绕过。
-
-### 3.4.1 权威链与共同不变量
-
-权威链固定为：
-
-```text
-RepositoryPolicySnapshot
-→ SnapshotTree
-→ ExecutionWorkspaceEvidence
-→ BaselineEvidenceSet
-→ BaselineDecision
-→ ValidationManifestV1
-→ ReproductionEvaluation(CONFIRMED)
-→ ValidationManifestV2
-```
-
-ExistingFailure 在 `ValidationManifestV1` 后进入 `RUNNING(AGENT_LOOP)`，不创建 v2。NaturalLanguageDefect 在 v1 后进入 `RUNNING(REPRODUCTION)`，只有消费 3.8 已形成的精确 `ReproductionEvaluation(CONFIRMED)` 才能发布 v2 并进入 `RUNNING(AGENT_LOOP)`。
-
-`BaselineDecision{decision_value = REJECTED}` 表示证据完整但场景谓词不成立；该路线不生成 Manifest，并进入 `STOPPED(BASELINE_BLOCKED)`。证据缺失、矛盾、来源绑定失效、外部执行没有权威终态或控制面失败时，不形成 `BaselineEvidenceSet` 或 `BaselineDecision`，按执行错误或 `INTERNAL_ERROR` 失败关闭。
-
-链中对象均不可变、版本化并绑定规范语义摘要。引用只用于定位；对象类型、Schema 版本和摘要共同承担绑定。数据库 ID、物理地址、完成时间、线程顺序和人类说明不得进入语义摘要。
-
-规范路径 sequence 按版本化 Git 路径 UTF-8 字节序排序；映射按规范键排序；集合先拒绝重复和规范化碰撞，再形成规范 sequence。根摘要必须使用版本化规范序列化与域分离标签。计算任一对象自身的规范摘要或根摘要时，投影必须排除该对象中承载本次计算结果的 `digest` / `root_digest` 字段自身（包括 `evidence_digest`、`decision_digest`、`manifest_root_digest` 等同类字段），避免自引用；除此之外仍须覆盖全部其他规范字段，以及引用对象的类型、Schema 和语义摘要。不得把其他输入摘要或 `*_ref_and_digest` 字段一并排除。
-
-每次权威发布必须在一个事务中重验 `owner_run_id`、`WorkspaceIdentityRef`、当前 `workspace_lease_ref`、运行状态、阶段、`phase_entry_ref`、输入摘要、配置/profile 和优先取消。任一守卫失败不得发布部分对象。相同发布键和相同投影返回首次对象；相同键和不同投影返回稳定冲突错误，不得覆盖首次结果。
-
-控制面目录、内容对象和执行副本必须位于权威工作区之外。tracked 路径若与控制面保留路径冲突，准入必须拒绝，不得省略该路径。`SnapshotTree` 发布后，基线、复现、Agent 工具、候选和验证只能读取 Snapshot 或其不可变派生树，不得读取、执行或挂载权威工作区实时内容。
-
-### 3.4.2 `RepositoryPolicySnapshot`、路径与内容支持
-
-`RepositoryPolicySnapshot` 是解释 HEAD tree、index、忽略状态、属性和敏感路径的唯一策略输入：
-
-```text
-RepositoryPolicySnapshot {
-  schema_version
-  owner_run_id
-  workspace_identity_ref_and_digest
-  sealed_head_ref_and_tree_digest
-  sealed_index_ref_and_digest
-  tracked_policy_artifact_entries
-  supported_local_exclude_entry?
-  sensitive_path_policy_ref_and_digest
-  path_policy_ref_and_digest
-  content_classification_profile_ref_and_digest
-  repository_support_profile_ref_and_digest
-  policy_root_digest
-}
-```
-
-`tracked_policy_artifact_entries` 至少覆盖 HEAD tree 中存在的 `.gitattributes`、`.gitignore` 和 `.gitmodules`，并保存路径、tree mode、Git 对象身份、完整原始字节摘要和内容引用。正文必须从已封存 HEAD tree 读取；不得用实时工作区副本反向解释同一工作区。若支持 `.git/info/exclude`，必须独立受控读取并绑定来源对象身份与完整字节摘要。system/global Git 配置、外部 excludes、filters、hooks、fsmonitor 和协议 helper 不得进入策略快照。
-
-策略读取失败、超限、对象不支持或读取期间变化时不得发布。敏感路径硬拒绝不得被普通配置、模型或单动作批准放宽；命中时必须拒绝，不能从树中删去该路径规避。发布后的策略快照不可修改，Snapshot 与 Manifest 必须同时绑定其引用和根摘要。
-
-Snapshot 必须覆盖 HEAD tree 的完整 tracked 路径集合。每个路径须通过与 3.3 相同版本的 Windows 路径规则，并拒绝绝对路径、空分量、`.`、`..`、ADS、保留设备名、尾随点/空格、大小写或 Unicode 碰撞、超限路径、tracked symlink、Gitlink、submodule 和不支持 tree mode。
-
-对每个 tracked 路径必须从工作区根验证全部祖先和最终对象。首版只接受：祖先无 symlink、junction、mount point 或其他 reparse point；最终对象为普通文件；硬链接计数为 1；不存在 ADS；对象身份、mode、大小和完整原始字节可稳定复验。不得跟随不支持对象或复制其目标内容。
-
-内容分类固定为：
-
-```text
-SnapshotContentKind =
-  TEXT_SUPPORTED
-  | BINARY
-  | TEXT_UNSUPPORTED
-```
-
-v1 文本内容画像固定为：
-
-```text
-TextContentProfile =
-  UTF8
-  | UTF8_BOM
-```
-
-`UTF8` 要求全部原始字节以严格 UTF-8 解码且不存在 BOM。`UTF8_BOM` 只允许原始字节以单一 `EF BB BF` 前缀开始，其余字节必须以严格 UTF-8 解码；重复开头 BOM、缺失前缀或其他 BOM 形式都不属于该画像。原始字节长度、内容摘要、`expected_worktree_digest` 与 `snapshot_content_digest` 必须包含该 BOM。逻辑文本投影只移除这个单一开头 BOM，因此逻辑行号、列号和搜索位置不计入 BOM；不得移除或改写其他字节。对既有文件序列化补丁结果时，必须恢复其原 `TextContentProfile`，使 `UTF8_BOM` 输出重新带有同一单一开头 BOM，且候选内容摘要仍按完整输出原始字节计算。
-
-`TEXT_SUPPORTED` 必须符合上述画像及版本化换行和文本工具规则；`BINARY` 的完整原始字节仍进入快照和摘要，但不自动获得披露或文本修改资格；已确定为语义文本但采用其他编码或 BOM 形式时必须分类为 `TEXT_UNSUPPORTED`，快照失败关闭。普通二进制不得仅因 UTF-8 解码失败被误判。分类器版本、探测顺序和结果都进入 Snapshot 摘要；分类不确定时不得发布。
-
-### 3.4.3 `SnapshotTree` 与双观察
-
-`SNAPSHOT_TREE` 是判定以下实际仓库前置条件的唯一准入检查：HEAD 与 index 清洁一致、非忽略未跟踪状态为空、每个 tracked 路径的实际原始字节与实际 mode 符合预期树，以及上述事实在观察 A 与观察 B 之间未变化。`REPOSITORY_STATE` 的结构／策略通过结果不能替代这些观察，也不能提前发布其中任何结论。
-
-Snapshot 由已封存 HEAD tree、Git index、`RepositoryPolicySnapshot` 和权威工作区 tracked 原始字节共同证明：HEAD 给出路径、mode 与 Git 来源身份；index 必须以完整 stage-0 路径、对象身份和 mode 与 HEAD 清洁一致；策略确定预期工作区字节；工作区提供实际原始字节与 mode。四者必须逐条一致。
-
-`ExpectedWorktreeTree` 是由 sealed HEAD tree 与 `RepositoryPolicySnapshot` 纯确定性计算的未发布投影，只作为本次 Snapshot 构建的比较输入；它不是权威链对象、持久记录、job 或 lifecycle，也不得独立发布。投影中的每个规范路径、mode 和预期原始字节摘要必须分别逐项映射到唯一 `SnapshotEntry` 的 `canonical_git_path`、`tree_entry_mode` 和 `expected_worktree_digest`；任一项缺失、碰撞或无法确定时都不得发布 `SnapshotTree`。
-
-```text
-SnapshotEntry {
-  canonical_git_path
-  tree_entry_mode
-  content_kind
-  content_profile_ref_and_digest?
-  byte_length
-  git_object_identity
-  expected_worktree_digest
-  snapshot_content_digest
-  snapshot_content_ref
-}
-
-SnapshotTree {
-  schema_version
-  owner_run_id
-  workspace_identity_ref_and_digest
-  repository_policy_snapshot_ref_and_digest
-  sealed_head_ref_and_tree_digest
-  canonical_entries
-  tracked_path_sequence_digest
-  total_snapshot_bytes
-  snapshot_observation_evidence_ref_and_digest
-  path_and_content_profile_refs_and_digests
-  snapshot_root_digest
-}
-```
-
-`expected_worktree_digest` 是 HEAD 与策略确定的预期原始字节摘要；`snapshot_content_digest` 是实际复制的完整原始字节摘要；二者必须相等。`snapshot_content_ref` 只负责定位，每次读取都必须重算摘要，存储地址不能证明完整性。
-
-封存固定执行：
-
-```text
-观察 A：
-  验证 WorkspaceIdentity、HEAD、index、策略
-  比较完整 stage-0 index 与 HEAD 的路径、对象身份和 mode
-  枚举完整 tracked 集合与非忽略未跟踪状态
-  记录每项实际对象身份、mode、大小和完整字节摘要
-复制：
-  按规范路径顺序复制完整字节到未发布内容寻址临时区
-  重算摘要并分类
-观察 B：
-  再次执行观察 A 的全部项目
-  比较两次观察、临时正文和预期字节
-  计算根摘要并全有或全无发布
-```
-
-两个观察点都须完整读取所有 tracked 文件；mtime、USN、size 或变化标记只能辅助，不能替代第二次完整内容摘要。任一文件、mode、对象身份、路径集合、HEAD、index、策略、WorkspaceIdentity 或非忽略未跟踪状态变化都禁止发布混合时点树。
-
-`snapshot_observation_evidence` 必须保存两个观察点的结构化证据并绑定上述全部项目。相同事实在两个观察点都稳定存在，但 index 与 HEAD 不一致、存在非忽略未跟踪条目、tracked 路径集合不一致，或 tracked 实际字节／mode 与预期树不一致，属于初始前置条件不成立；任一 WorkspaceIdentity、HEAD、index、策略、tracked 路径、对象身份、实际字节、实际 mode 或非忽略未跟踪状态在两个观察点间发生变化，属于准入期间时间性变化；无法可靠观察但不能证明前两者属于观察不确定。三类不得互猜，也不得由 `REPOSITORY_STATE` 改写分类。
-
-发布后的 `SnapshotTree` 不可修改，其根摘要是后续执行副本、基线、候选和验证的原始来源锚点。正文缺失或摘要不匹配时按控制面存储/完整性错误失败关闭，不得从权威工作区或其他树补复制。
-
-### 3.4.4 容量、原子发布与准入错误
-
-```text
-SnapshotResourceLimits {
-  max_tracked_entry_count
-  max_canonical_path_bytes
-  max_path_depth
-  max_single_file_bytes
-  max_total_snapshot_bytes
-  max_policy_artifact_bytes
-  max_temporary_storage_bytes
-}
-```
-
-限制须在读取/写入前预检，并在完整大小已知后复验。超限不得通过截断、漏项、跳过二进制或降低摘要覆盖继续。复制前必须取得绑定本次发布输入的临时容量预留；它只保证构建期间容量，不形成独立权威对象或状态机。内容寻址可以去重，但每棵树仍保存完整条目、来源与摘要。
-
-成功时，控制面在一个事务中验证预留覆盖和所有内容摘要，将字节记入 `SnapshotTree` 的容量账，发布树元数据与根摘要并关闭临时预留；不得先释放再申请，也不得出现已发布树无正文容量保证。失败时清理未发布对象并释放预留；清理状态不确定则不发布、不开始基线，并按 `INTERNAL_ERROR` 关闭。
-
-初始稳定不一致固定映射；该映射唯一覆盖稳定的 HEAD/index 不清洁、非忽略未跟踪状态存在、tracked 路径集合不一致，以及 tracked 实际字节或 mode 与预期树不一致：
-
-```text
-error_code = WORKTREE_DIRTY
-AdmissionCheckResult = FAIL
-StopReason = PRECONDITION_REJECTED
-```
-
-双观察间任一上述事实发生变化必须复用 3.3 顶层错误：
-
-```text
-error_code = WORKSPACE_MUTATED_DURING_ADMISSION
-AdmissionCheckResult = FAIL
-StopReason = WORKSPACE_CHANGED
-```
-
-变化原因采用封闭联合：
-
-```text
-SnapshotSourceChangeReason =
-  WORKSPACE_IDENTITY_CHANGED
-  | HEAD_CHANGED
-  | INDEX_CHANGED
-  | REPOSITORY_POLICY_CHANGED
-  | TRACKED_PATH_SET_CHANGED
-  | TRACKED_OBJECT_IDENTITY_CHANGED
-  | TRACKED_CONTENT_CHANGED
-  | TRACKED_MODE_CHANGED
-  | NON_IGNORED_UNTRACKED_STATE_CHANGED
-```
-
-无法可靠观察且不能证明初始不一致或时间性变化时：
-
-```text
-error_code = SNAPSHOT_SOURCE_OBSERVATION_INCONCLUSIVE
-AdmissionCheckResult = UNKNOWN
-StopReason = EXECUTION_TERMINATED
-```
-
-```text
-SnapshotObservationInconclusiveReason =
-  SOURCE_ACCESS_DENIED
-  | SOURCE_SHARING_VIOLATION
-  | SOURCE_OBJECT_IDENTITY_UNAVAILABLE
-  | SOURCE_METADATA_READ_FAILED
-  | SOURCE_CONTENT_READ_FAILED
-  | SOURCE_OBSERVATION_TIMEOUT
-```
-
-timeout 必须由注入时钟、固定 deadline 和版本化 profile 判定。权限错误、缺失摘要或单个变化标记不得猜成脏或变化。迟到读取不得覆盖已形成的结果。
-
-| 错误码 | `AdmissionCheckResult` | `StopReason` |
-| --- | --- | --- |
-| `UNSUPPORTED_REPOSITORY_POLICY` | `FAIL` | `PRECONDITION_REJECTED` |
-| `UNSUPPORTED_FILESYSTEM_OBJECT` | `FAIL` | `PRECONDITION_REJECTED` |
-| `SNAPSHOT_CONTENT_UNSUPPORTED` | `FAIL` | `PRECONDITION_REJECTED` |
-| `SNAPSHOT_RESERVED_PATH_CONFLICT` | `FAIL` | `PRECONDITION_REJECTED` |
-| `SNAPSHOT_RESOURCE_LIMIT_EXCEEDED` | `FAIL` | `BUDGET_EXHAUSTED` |
-| `SNAPSHOT_STORAGE_CAPACITY_UNAVAILABLE` | `FAIL` | `BUDGET_EXHAUSTED` |
-| `SNAPSHOT_STORE_ERROR` | `UNKNOWN` | `INTERNAL_ERROR` |
-
-“不支持”只在证据充分时使用；根 `.git` 为普通文件的 gitdir 指针布局须拒绝且不得跟随。存储、规范序列化、摘要、容量核算或原子发布故障使用 `SNAPSHOT_STORE_ERROR`。主原因按版本化严格顺序选择。`SnapshotTree` 未发布时，3.3 的 `SNAPSHOT_TREE` 检查不得为 `PASS`。
-
-### 3.4.5 `ExecutionWorkspaceEvidence`
-
-执行副本绑定版本化 `ExecutionFilesystemProfile`，固定路径大小写/Unicode、mode 映射、目录顺序、确定性时间戳与精度、进程工作目录和元数据排除规则。副本不得继承权威工作区 ACL、ADS、扩展属性、所有者或访问时间；profile 漂移使尚未接受的结果无效。依赖 Git 历史、标签或动态 VCS 版本的项目不受首版支持，不能伪造 `.git`。
-
-```text
-ExecutionFilesystemProfile {
-  profile_id
-  profile_version
-  path_semantics
-  case_and_unicode_semantics
-  file_and_directory_mode_mapping
-  deterministic_timestamp_and_precision_rule
-  process_visible_working_directory
-  metadata_exclusion_rules
-  profile_digest
-}
-```
-
-每个正式 consumer 必须在启动前形成：
-
-```text
-ExecutionWorkspaceEvidence {
-  schema_version
-  workspace_instance_id
-  workspace_root_identity
-  source_tree_ref_and_digest
-  consumer_kind
-  consumer_ref
-  execution_profile_ref_and_digest
-  created_clean
-  git_metadata_absent
-  evidence_digest
-}
-```
-
-`workspace_instance_id` 由密码学安全随机源生成并永久禁止重发；根名称使用独立不可预测随机身份，`workspace_root_identity` 由 OS 对象身份机制取得，显示路径不能替代它。不同正式 consumer 的 instance ID、root identity 和 consumer ref 必须全部不同，即使源树和检查相同。成功清理或外部删除也不恢复旧名称/身份资格。
-
-源只可为已发布不可变 `SnapshotTree`、3.6 的 `CandidateTree` 或获批复现补丁确定性派生树；`consumer_kind` 的版本化允许列表决定合法来源类型，调用方不能混用。
-
-`created_clean = true` 要求：根以本次新随机名称创建；创建前名称不存在；根对象身份唯一绑定本 instance；内容只来自源树；不存在继承缓存、字节码、临时文件或其他 consumer 产物；完整字节、mode、权限和时间语义通过 profile 校验。
-
-`git_metadata_absent = true` 要求对完整副本和祖先边界 no-follow 验证，并证明不存在 `.git` 目录/指针、index、refs、config、hooks、remote URL、worktree 管理路径或指向权威 Git 元数据的路径。两个布尔值在正式使用中都必须为 true，且不能由调用方提交。
-
-证据发布后不可修改。consumer 只能使用其绑定的精确 root、source、profile 和工作目录；无证据的目录不得运行项目代码、文件工具或正式检查，也不得产生权威结果。
-
-### 3.4.6 全新副本、使用与结果接受
-
-每个正式 consumer 只执行简单顺序：
-
-```text
-materialize → verify → use → post-run verify
-→ 规范化并转存最小结果 payload，绑定待发布结果
-→ cleanup → publish/reject
-```
-
-物化按源树规范路径顺序创建目录/文件，每次读取正文都重算摘要。使用前须证明源引用/根摘要、instance/root identity、受控父目录边界、完整源条目、profile、无 Git、consumer 和环境绑定一致。任一源对象缺失或摘要错误按 `INTERNAL_ERROR` 关闭，不能从权威工作区补复制。
-
-以下每项均为独立正式 consumer：完整 pytest、完整显式目标重跑、每个 mandatory Ruff/Mypy 等检查、复现复合试验中的每项检查、复现目标专用试验，以及正式验证中的每项检查。它们必须从相应不可变源树物化全新副本，不共享目录、缓存卷、字节码、工具缓存、临时目录或运行产物。
-
-consumer 只能在绑定 root 内运行；禁止挂载权威工作区、其他副本、宿主 Git 元数据、控制面存储或 Docker 控制接口。
-
-接受输出前须重验：
-
-- 源树引用与摘要仍有效；
-- instance、root identity 和父边界未变化；
-- `.git` 与禁止 Git 元数据仍不存在；
-- 所有源条目字节/mode 与源树一致；
-- 基线 consumer 的受保护工件与已封存 Snapshot、项目画像和基线保护输入一致；
-- 当前 Manifest 已存在的复现、Agent 或验证 consumer，其受保护工件与该 Manifest 的 `protected_artifact_contract` 一致；
-- 输出绑定精确 consumer、root、source、环境与 profile；
-- 不存在对象替换、边界逃逸或跨 consumer 输入。
-
-运行新增缓存/普通产物只能由本次 cleanup 处置，不能成为后续输入。consumer 修改任一源条目、保护工件或根身份时，输出不得发布，并返回稳定 workspace 完整性错误。缺失或矛盾的验证字段不能降格为普通检查失败；它表示执行证据不完整或控制面错误。
-
-cleanup 前，控制面必须把后续消费所需的最小、精确、受限结果 payload 规范化并转存到执行根之外的受限控制面临时存储，计算精确 payload 摘要，并将该摘要和临时引用绑定到尚未发布的 consumer 结果。待发布结果不得引用执行根内路径、对象或临时文件；cleanup 后不得重新读取执行根来补齐、重算或替换 payload。转存、规范化或摘要失败时仍须在安全边界内尝试 cleanup，但 consumer 结果和 payload 均不得发布。
-
-### 3.4.7 清理与安全隔离
-
-```text
-ExecutionWorkspaceCleanupResult {
-  schema_version
-  workspace_instance_id
-  workspace_root_identity
-  consumer_ref
-  outcome:
-    CLEANED {
-      cleanup_evidence_ref_and_digest
+    ValidateRunRequestV1 {
+      schema_version: 1
+      workspace_path
+      target_test_ids: 1..20 unique exact pytest node IDs
+      llm_profile_id
+      reference_profile_id: "python-src-py312-v1"
+      limits: RunLimitsV1
     }
-    | QUARANTINED {
-      quarantine_record_ref_and_digest
+
+    RunLimitsV1 {
+      max_turns: 1..20
+      max_llm_calls: 1..20
+      max_run_wall_clock_seconds: 1..900
+      user_wait_timeout_seconds: 1..300
+      tool_timeout_seconds: 1..60
+      target_check_timeout_seconds: 1..120
+      full_check_timeout_seconds: 1..300
+      baseline_timeout_seconds: 1..600
+      formal_validation_timeout_seconds: 1..600
     }
-    | BOUNDARY_UNSAFE {
-      boundary_error_evidence_ref_and_digest
+
+    OptionalTemperatureMilliV1 =
+      ABSENT { kind: "ABSENT" }
+      | PRESENT { kind: "PRESENT", value_milli: 0..2000 }
+
+    OptionalTopPMilliV1 =
+      ABSENT { kind: "ABSENT" }
+      | PRESENT { kind: "PRESENT", value_milli: 0..1000 }
+
+    OptionalIntegerParameterV1 =
+      ABSENT { kind: "ABSENT" }
+      | PRESENT { kind: "PRESENT", value: signed 64-bit integer }
+
+    OpenAIFixedParametersV1 {
+      schema_version: 1
+      max_output_tokens: 1..8192
+      temperature: OptionalTemperatureMilliV1
+      top_p: OptionalTopPMilliV1
+      seed: OptionalIntegerParameterV1
+      response_format: "JSON_OBJECT"
     }
-  cleanup_result_digest
-}
 
-ExecutionWorkspaceQuarantineRecord {
-  workspace_instance_id
-  workspace_root_identity
-  consumer_ref
-  cleanup_error_code
-  isolation_evidence_ref_and_digest
-}
-```
-
-清理前重新验证受控父目录、instance、root identity 和 no-follow 边界。删除以已验证根对象为唯一边界；副本内 symlink、junction 或 reparse entry 只能删除目录项，不得遍历目标；字符串前缀或显示路径不能证明边界。
-
-`CLEANED` 只在根身份一致、边界安全、精确根已物理删除、删除后复验证明根对象不存在且未触及其他资源时成立。
-
-`QUARANTINED` 只在物理删除失败、但精确残留根已被移出或永久隔离于全部运行期 `OperationalArtifact` 命名空间、consumer 消费权限、容器挂载、allocator 和可复用命名空间时成立。残留只由不可变安全隔离证据约束，不再能作为执行副本、运行工件或其他 consumer 输入；仍可访问、挂载或复用的目录不能伴随结果发布。该结果必须引用已持久化的 `ExecutionWorkspaceQuarantineRecord`，其 isolation evidence 证明精确 instance/root、父目录、全部运行可达性和资格已清除，以及 allocator 拒绝规则。第 1 章“终态撤销运行可达性与复用资格”的承诺在该分支通过清除全部运行可达性与使用资格满足，而不是声称残留已被物理删除。
-
-Quarantine 记录不可修改、解除、重开或替换。每次进程启动后，allocator 在创建目录前读取这些记录并永久拒绝已有 instance/root；外部后来删除残留也不恢复资格；新 workspace 必须使用新 instance 和 root。`QUARANTINED` 可以永久保持，系统不承诺启动时或以后再次尝试物理删除；记录只证明禁用复用，不引入再次清理或恢复协议。
-
-Quarantine 记录的发布键固定为 `(workspace_instance_id, workspace_root_identity, consumer_ref)`。同键同规范投影返回首次记录；同键不同投影返回稳定 `EXECUTION_WORKSPACE_QUARANTINE_PUBLICATION_CONFLICT`，不得形成第二条记录，也不得形成第二个 cleanup/result 绑定。
-
-不能证明根身份、父边界、no-follow 语义或递归删除安全时必须返回 `BOUNDARY_UNSAFE`：禁止递归删除、禁止探测性遍历、禁止发布本 consumer 结果，并进入 `STOPPED(INTERNAL_ERROR)`。清理结果或必要隔离记录无法原子持久化时同样不得发布结果，并按 `INTERNAL_ERROR` 关闭。
-
-结果发布顺序固定为：
-
-```text
-consumer 结束
-→ post-run verify 成功
-→ 在执行根之外转存最小精确 payload、计算摘要并绑定待发布结果
-→ CLEANED
-   或 QUARANTINED + 不可变记录
-→ 原子发布该精确 payload、consumer 结果及 workspace/cleanup 绑定
-```
-
-`CLEANED` 证明物理删除；`QUARANTINED` 证明安全清除可达性；二者不改变原始检查状态。已发布结果不因后来追加的安全隔离记录而改写。独立来源/证据问题只能阻止后续消费，不能改写历史结果。
-
-### 3.4.8 基线执行集合
-
-基线只读同一个 `SnapshotTree`；调用方、用户和模型不能替换来源、目标、mandatory 检查、环境或 profile。
-
-```text
-ExistingFailure:
-  FULL_PYTEST
-  TARGET_SET_RERUN
-  每个 mandatory configured check 一个独立 consumer
-
-NaturalLanguageDefect:
-  FULL_PYTEST
-  每个 mandatory configured check 一个独立 consumer
-```
-
-`FULL_PYTEST` 执行完整 collection 和全部原始 pytest node。`TARGET_SET_RERUN` 在第二个全新副本执行完整显式目标集合。项目画像、仓库配置和支持矩阵确定 mandatory 检查集合；所有 configured 且 mandatory 的 Ruff、Mypy 等检查都必须纳入，每项使用独立全新 workspace。不得降为可选、合并后丢失独立结果或伪造未执行检查通过。
-
-consumer 可并发，但聚合按规范 consumer key 排序，完成顺序不进入摘要。每个结果须绑定其 `ExecutionWorkspaceEvidence`、post-run 证据、cleanup、Snapshot、Docker 环境和 profile。
-
-### 3.4.9 `BaselineEvidenceSet` 与完整性
-
-```text
-BaselineEvidenceSet {
-  schema_version
-  owner_run_id
-  baseline_phase_entry_ref
-  scenario_kind
-  repository_policy_snapshot_ref_and_digest
-  snapshot_tree_ref_and_digest
-  canonical_target_set?
-  original_pytest_collection_ref_and_digest
-  full_pytest_result_ref_and_digest
-  per_original_node_result_index_ref_and_digest
-  explicit_target_first_status_index?
-  explicit_target_rerun_result_ref_and_digest?
-  explicit_target_second_status_index?
-  stable_failure_fingerprint_index?
-  mandatory_check_contracts
-  mandatory_check_result_refs_and_digests
-  execution_workspace_evidence_refs_and_digests
-  cleanup_result_bindings
-  validation_environment_ref_and_digest
-  execution_profile_ref_and_digest
-  completeness_proof_ref_and_digest
-  evidence_set_digest
-}
-```
-
-`cleanup_result_bindings` 是按 consumer key 规范排序的 `ExecutionWorkspaceCleanupResult` 引用与摘要集合；其键集合必须与 `execution_workspace_evidence_refs_and_digests` 及已发布 consumer 结果精确相等，并逐项绑定相同 instance、root identity 和 consumer。EvidenceSet 只允许引用 `CLEANED` 或 `QUARANTINED` 变体；`BOUNDARY_UNSAFE` 不得进入 EvidenceSet。
-
-完整原始 collection 证据保存规范 node ID sequence、数量、收集能力/scope、pytest 配置和环境；不能只存目标子集、文件名、数量或 stdout 摘要。逐 node 索引的键严格等于完整 sequence，每个 node 必须实际执行；重复、缺失、额外、碰撞、`DESELECTED` 或未执行占位都会使证据不完整。
-
-ExistingFailure 的两份目标状态索引键均严格等于非空显式目标集合；失败指纹索引键严格等于第一次确定性 `FAIL` 的目标。NaturalLanguageDefect 必须省略这些场景外字段。
-
-mandatory 合同保存每项能力、scope、规范动作、配置和 required status；结果键集合与合同键集合精确相等，每项来自独立 workspace。
-
-只有所有要求 consumer 都形成结构完整权威终态、post-run 验证成功、cleanup 为 `CLEANED` 或带有效记录的 `QUARANTINED`、来源/环境/profile 一致、所有索引和键集合一致时，才能形成 EvidenceSet。`completeness_proof` 机械证明要求集合等于实际结果集合。
-
-结构完整的 `FAIL`、`SKIPPED`、`ERROR` 或 `TIMEOUT` 可证明场景不成立，因而可进入 EvidenceSet。执行中断无终态、结果缺失、环境漂移、workspace 完整性失败、`BOUNDARY_UNSAFE`、存储失败或摘要矛盾表示证据不完整：不得形成 EvidenceSet/Decision，也不得猜测缺失状态。摘要覆盖全部合同、结果语义、workspace/cleanup、环境和 profile，不覆盖物理位置或完成顺序。
-
-### 3.4.10 `ExistingFailure` 判定
-
-`BaselineDecision{decision_value = ACCEPTED}` 必须同时满足：
-
-1. 完整 pytest collection 成功且非空。
-2. 每个显式目标在 collection 中精确存在一次。
-3. 第一次完整 pytest 实际执行所有原始 node。
-4. 每个显式目标第一次只为测试调用阶段 `PASS` 或确定性 `FAIL`，且至少一个为 `FAIL`。
-5. 目标之外每个原始 node 实际执行并在测试调用阶段 `PASS`。
-6. 第二个全新副本重新执行完整显式目标集合，所有目标均实际收集和执行。
-7. 每个目标第二次 `PASS/FAIL` 与第一次一致；第一次通过者再次通过。
-8. 每个失败目标两次规范失败指纹满足 3.7 的稳定相等规则。
-9. 每个 configured+mandatory 检查在独立全新 workspace 中为 `PASS`。
-10. 所有来源、环境、scope、profile 和摘要一致。
-
-任一相关 pytest consumer 禁止 `SKIPPED`、`XFAIL`、`XPASS`、`DESELECTED`、`NOT_RUN`、未执行、收集错误、setup/teardown 错误、环境错误或 timeout。它们不能规范化为 `PASS` 或确定性测试 `FAIL`；setup/teardown 异常不能充当目标失败指纹。
-
-显式目标不要求全部失败；稳定 `PASS` 的目标仍写入 v1 状态索引并成为最终必须通过的义务。只有稳定失败目标进入指纹索引。全部目标通过、目标缺失、不稳定、非目标未通过或 mandatory 检查未通过均是证据完整但场景不成立。
-
-拒绝详情至少区分 `BASELINE_NO_TESTS`、`TARGET_NOT_FOUND`、`TARGET_BASELINE_INVALID`、`TARGET_NOT_REPRODUCED`、`TARGET_UNSTABLE`、`BASELINE_NON_TARGET_FAILED` 和 `BASELINE_MANDATORY_CHECK_FAILED`，按版本化优先级选主原因；全部映射 `STOPPED(BASELINE_BLOCKED)`。
-
-### 3.4.11 `NaturalLanguageDefect` 判定
-
-`BaselineDecision{decision_value = ACCEPTED}` 必须同时满足：
-
-1. 完整 collection 成功且非空。
-2. 所有原始 pytest node 都实际执行并在测试调用阶段为 `PASS`。
-3. 不存在 `SKIPPED`、`XFAIL`、`XPASS`、`DESELECTED`、`NOT_RUN`、未执行、收集错误、setup/teardown 错误、环境错误或 timeout。
-4. 每个 configured+mandatory 检查在独立全新 workspace 中为 `PASS`。
-5. 所有来源、环境、scope、profile 和摘要一致。
-
-零测试不能解释为通过；任何原始确定性 `FAIL` 也使该场景不成立，不能转作复现目标。证据完整但条件不满足时 `REJECTED → STOPPED(BASELINE_BLOCKED)`；证据不完整时不形成 decision。详情至少区分 `BASELINE_NO_TESTS`、`BASELINE_ORIGINAL_TEST_FAILED`、`BASELINE_PYTEST_INVALID` 和 `BASELINE_MANDATORY_CHECK_FAILED`。
-
-### 3.4.12 `BaselineDecision` 与 v1 发布
-
-```text
-BaselineDecision {
-  schema_version
-  baseline_evidence_set_ref_and_digest
-  scenario_kind
-  decision_profile_ref_and_digest
-  decision_value: ACCEPTED | REJECTED
-  reason_codes
-  decision_digest
-}
-```
-
-`BaselineDecision` 是最小不可变可引用记录，二值 `decision_value` 只允许由控制面机械计算，不是运行状态机。`ACCEPTED` 的 `reason_codes` 必须为空规范 sequence；`REJECTED` 的 `reason_codes` 必须为非空规范 sequence，并按判定 profile 的稳定顺序选出主原因。
-
-接受路线在一个事务中形成 `BaselineEvidenceSet`、`BaselineDecision{decision_value = ACCEPTED}`、`ValidationManifestV1` 和阶段转换。ExistingFailure 进入 `AGENT_LOOP`，NaturalLanguageDefect 进入 `REPRODUCTION`；目标阶段只由 scenario 决定。
-
-拒绝路线在一个事务中形成 EvidenceSet、`BaselineDecision{decision_value = REJECTED}`、错误信封、`StopRecord` 和 `STOPPED(BASELINE_BLOCKED)`，不得生成 Manifest。
-
-证据不完整时拒绝迟到/未绑定结果，不形成 EvidenceSet、Decision 或 Manifest；外部执行无权威终态按执行错误关闭，规范序列化、摘要、存储、原子提交或控制面不变量失败按 `INTERNAL_ERROR` 关闭。
-
-`REJECTED` 不能生成 Manifest；`ACCEPTED` 不能缺少 Manifest。不得观察到 accepted decision 已生效而 v1 尚不存在。
-
-### 3.4.13 `ValidationManifestV1` 与防篡改合同
-
-```text
-ValidationManifestV1 {
-  schema_version
-  manifest_kind = V1
-  owner_run_id
-  scenario_kind
-  baseline_evidence_set_ref_and_digest
-  baseline_decision_ref_and_digest
-  source_contract: ManifestSourceContract
-  original_pytest_collection_contract
-  scenario_contract
-  mandatory_check_contracts
-  protected_artifact_contract
-  validation_environment_contract
-  final_success_contract
-  canonicalization_profile_version
-  digest_algorithm
-  manifest_root_digest
-}
-```
-
-```text
-ManifestSourceContract {
-  repository_policy_snapshot_ref_and_digest
-  snapshot_tree_ref_and_digest
-  sealed_head_ref_and_tree_digest
-  workspace_identity_ref_and_digest
-  source_contract_digest
-}
-```
-
-`ValidationManifestV1.source_contract` 必须使用 `ManifestSourceContract`；`source_contract_digest` 按 3.4.1 的共同摘要规则计算并排除自身。
-
-来源合同精确绑定 `RepositoryPolicySnapshot`、`SnapshotTree`、sealed HEAD tree 和 `WorkspaceIdentityRef` 的引用与摘要；Snapshot 是原始源树，实时工作区路径不具验收效力。
-
-完整 collection 合同至少保存：
-
-```text
-OriginalPytestCollectionContract {
-  canonical_node_sequence
-  complete_node_set_digest
-  node_id_canonicalization_version
-  collection_capability_id
-  collection_scope
-  collection_action_digest
-  full_suite_execution_capability_id
-  full_suite_scope
-  full_suite_action_digest
-  pytest_configuration_digest
-  required_final_status = PASS
-  forbidden_outcomes
-}
-```
-
-node sequence 非空、无重复/碰撞，并精确等于 EvidenceSet 的完整原始 collection。能力、scope 和动作摘要来自 3.7 受控检查，不能是 shell 文本或自由 argv。
-
-场景合同为：
-
-```text
-ManifestV1ScenarioContract =
-  ExistingFailureV1Contract {
-    canonical_target_set
-    baseline_target_status_index
-    stable_failure_fingerprint_index
-  }
-  | NaturalLanguageV1Contract {
-    reproduction_patch_policy_ref_and_digest
-  }
-```
-
-ExistingFailure 状态索引键等于完整显式目标集合，值仅 `STABLE_PASS | STABLE_FAIL`，至少一个 `STABLE_FAIL`；指纹索引键等于稳定失败目标。稳定通过目标不得删除或降级。NaturalLanguage v1 不得含虚构目标、失败指纹或复现声明；`reproduction_patch_policy_ref_and_digest` 必须精确引用 3.4.14 的不可变 `ReproductionPatchPolicy` 及其语义摘要，且只允许该节规定的窄扩展。
-
-每个 mandatory 合同保存规范 check key、capability、scope、normalized action digest、adapter profile、configuration digest 和 `required_status = PASS`；key 唯一且规范排序。v1 保存完整合同，不能只保存工具名或退出码。发布后不得删除检查、改变 scope/config 或放宽 required status。
-
-```text
-MandatoryCheckContract {
-  canonical_check_key
-  check_capability_id
-  check_scope
-  normalized_action_digest
-  adapter_profile_ref_and_digest
-  configuration_digest
-  required_status = PASS
-}
-```
-
-保护合同以 `PRESENT | ABSENT` 路径约束和版本化 forbidden pattern 覆盖：原始测试、`conftest.py`、fixture/support、pytest/Ruff/Mypy 配置、依赖/解释器入口、collection hook、仓库策略工件，以及任意层级可新增的等价入口。创建、修改、删除、重命名和 mode 变化都受保护。修复补丁应用前和每次检查前后必须验证；NaturalLanguage 只有获批复现模块可在 v2 增加为新的 `PRESENT`。
-
-```text
-ProtectedArtifactConstraint =
-  PRESENT {
-    canonical_path
-    artifact_role
-    tree_mode
-    content_digest
-  }
-  | ABSENT {
-    canonical_path
-    artifact_role
-  }
-
-ForbiddenArtifactPatternConstraint {
-  artifact_role
-  canonical_path_pattern
-  matching_profile_version
-}
-```
-
-环境合同绑定 Docker daemon/context 能力与镜像内容、检查与文件系统 profile、Python、pytest/tool plugin 集合、configured toolchain、locale、timezone 和环境白名单摘要；不保存凭据或未授权环境变量。环境漂移只使请求失败，不能改写 v1。
-
-```text
-ValidationEnvironmentContract {
-  docker_environment_ref_and_digest
-  check_execution_profile_ref_and_digest
-  execution_filesystem_profile_ref_and_digest
-  python_runtime_ref_and_digest
-  pytest_toolchain_ref_and_digest
-  pytest_plugin_set_digest
-  configured_toolchain_refs_and_digests
-  locale
-  timezone
-  environment_allowlist_digest
-}
-```
-
-最终成功合同要求：完整 collection 等于当前 Manifest node sequence；所有原始 node、全部显式目标及 v2 中获批复现 node 都实际执行并 `PASS`；所有 mandatory 检查 `PASS`；禁止 skip/xfail/xpass/deselect/未执行/收集或环境错误/timeout；保护与环境精确一致。
-
-v1 发布键为 `(owner_run_id, baseline_phase_entry_ref, V1)`。同键不同规范投影返回 `VALIDATION_MANIFEST_PUBLICATION_CONFLICT`。v1 不可修改并永久保留；根摘要覆盖上述全部规范合同，不覆盖物理位置、时间、原始日志或说明。
-
-### 3.4.14 复现补丁与 3.8 边界
-
-只有已接受的 NaturalLanguage v1 可扩展；ExistingFailure 禁止 v2。复现补丁固定为：
-
-```text
-ReproductionPatchPolicy {
-  required_artifact_role = REPRODUCTION_TEST_SOURCE
-  allowed_existing_test_roots
-  forbidden_path_patterns
-  maximum_added_files = 1
-  maximum_test_functions = 1
-  maximum_added_bytes
-  profile_version
-}
-```
-
-补丁只能在一个 v1 已存在且支持画像允许的测试根下新增一个普通测试模块，并只定义一个非参数化 pytest 函数。不得修改/删除/重命名已有文件，不得新增第二文件、第二测试、helper、fixture、class、动态测试生成器、collection hook、参数化、`conftest.py`、`__init__.py`、plugin 注册、pytest/Ruff/Mypy 配置、依赖/解释器配置或 Git/attribute 策略工件。import 与既有 fixture 使用须通过版本化 AST/profile，不能借 side effect 改变收集。
-
-补丁精确字节、路径、mode、新增 node、失败 matcher、预期候选树、父 v1 和环境都须绑定 `ConfirmReproductionAction` 与一次性批准。普通批准不能放宽 v1。CONFIRMED 前不得写权威工作区或成为修复合同；v2 只能把该精确模块增加为 `PRESENT`，不能加入“相关”支持工件。
-
-`ReproductionEvaluation` 由 3.8 唯一形成。3.4 不执行试验、不解释原始 CheckResult、不计算 `CONFIRMED`，也不把预期 pytest `FAIL` 改写为 `PASS`。3.8 发布判定但不得发布 v2。
-
-3.4 只消费一个精确 `ReproductionEvaluation(CONFIRMED)` 引用，并要求其摘要投影绑定：父 v1、action、批准消费、补丁、reproduction candidate tree、获批新增 node sequence、matcher、稳定失败指纹、复合试验证据、目标专用试验证据和验证环境。其权威 Schema 与技术谓词仍由 3.8 定义。
-
-引用缺失、非 `CONFIRMED`、摘要不匹配或绑定不可验证时不得创建 v2；3.4 不补造 evaluation 或重跑试验。`NOT_CONFIRMED`/执行失败的停止由 3.8 与 3.2 负责，3.4 只保证无 v2 副作用。
-
-### 3.4.15 `ValidationManifestV2`、单调派生与最终义务
-
-```text
-ValidationManifestV2 {
-  schema_version
-  manifest_kind = V2
-  owner_run_id
-  parent_v1_ref_and_root_digest
-  reproduction_evaluation_confirmed_ref_and_digest
-  confirm_reproduction_action_ref_and_digest
-  approval_consumption_ref_and_digest
-  reproduction_patch_ref_and_digest
-  reproduction_candidate_tree_ref_and_digest
-  approved_added_node_sequence
-  failure_matcher_contract_refs_and_digests
-  stable_failure_fingerprint_index
-  compound_trial_evidence_ref_and_digest
-  target_only_trial_evidence_ref_and_digest
-  added_protected_artifact_constraints
-  effective_contract_projection_ref_and_digest
-  derivation_proof_ref_and_digest
-  canonicalization_profile_version
-  digest_algorithm
-  manifest_root_digest
-}
-```
-
-发布前验证：父 v1 是不可变 NaturalLanguage v1；confirmed evaluation 的父、action、批准、补丁、candidate tree、两类试验证据和环境完全匹配；新增 node 非空、无重复、与 v1 node 不相交且精确等于获批集合；每个新增 node 有 matcher 与稳定指纹；candidate tree 由父 Snapshot 加精确补丁派生；新增保护只覆盖获批模块；当前运行、阶段、租约和取消允许发布。
-
-有效合同由控制面重算：
-
-```text
-source_contract = parent_v1.source_contract
-original_snapshot_tree =
-  parent_v1.source_contract.snapshot_tree_ref_and_digest
-repair_base_tree = reproduction_candidate_tree_ref_and_digest
-pytest_node_sequence = canonical_union(
-  parent_v1.original_pytest_collection_contract.canonical_node_sequence,
-  approved_added_node_sequence
-)
-approved_reproduction_node_obligations = approved_added_node_sequence
-mandatory_check_contracts = parent_v1.mandatory_check_contracts
-validation_environment_contract = parent_v1.validation_environment_contract
-protected_artifact_contract = monotonic_union(
-  parent_v1.protected_artifact_contract,
-  added_protected_artifact_constraints
-)
-final_success_contract = monotonic_extend(
-  parent_v1.final_success_contract,
-  required_reproduction_node_sequence = approved_added_node_sequence
-)
-```
-
-父对象是 NaturalLanguage v1，因此不存在显式目标义务；v2 只能新增上面的获批复现 node 义务，不得构造或继承不存在的显式目标字段。
-
-v2 不得删除、替换、放宽或重新解释 v1：不得删除原始 node、显式目标、mandatory 检查或保护约束；不得改变 capability/scope/status、环境、源树、基线状态或历史指纹；只新增获批复现 node、matcher/指纹、repair base 和测试保护。派生证明机械证明完整继承、精确无交集并集、保护单调增强、环境相同和精确补丁派生；调用方提供的 effective 字段无权威效力。
-
-发布键为 `(owner_run_id, parent_v1_ref_and_root_digest, V2)`；同键不同投影返回 `VALIDATION_MANIFEST_V2_PUBLICATION_CONFLICT`。成功事务只消费既有 confirmed 引用，重算合同/证明/根摘要，并原子发布 `effective_contract_projection`、`derivation_proof`、v2、直接绑定已发布 v2 与 repair base 的新 phase entry，以及 `REPRODUCTION → AGENT_LOOP`。3.4 不在此事务创建或改写 evaluation，3.8 也不得在其事务发布 v2。任一步失败不得留下部分 v2、`effective_contract_projection`、`derivation_proof` 或阶段转换。
-
-父 v1 与 v2 都永久保留且不可修改。原始 Snapshot 始终是来源锚点，reproduction candidate tree 只是 repair base；`FinalDiff` 必须相对 Snapshot 表达复现测试加生产修复。
-
-ExistingFailure 最终以 v1 验证；NaturalLanguageDefect 最终以 v2 验证。正式成功要求当前 Manifest 的完整 node 集合精确收集，所有原始 node、显式目标和获批复现 node 实际执行并 `PASS`，所有 mandatory 检查 `PASS`，保护/环境一致，且每项检查使用独立全新 workspace。
-
-### 3.4.16 可确定性验证点
-
-1. tracked 路径与控制面保留路径冲突时不得省略后发布。
-2. HEAD 策略与实时策略不同时，使用 HEAD 解释并因原始字节不一致拒绝。
-3. 敏感 tracked 路径命中硬拒绝时不得从树中删去。
-4. 祖先 junction、最终 ADS/多硬链接或路径碰撞必须在复制前拒绝。
-5. 普通二进制完整字节进入 Snapshot；不支持语义文本使快照失败。
-6. 观察 A 后任一 tracked 字节变化必须由观察 B 检出并映射 `WORKSPACE_MUTATED_DURING_ADMISSION`。
-7. mtime 不变不能替代第二次完整摘要；读取不完整不能猜成脏或变化。
-8. 任一硬上限超出不得截断、漏项或发布部分树。
-9. 成功发布时正文、容量账、树元数据和根摘要原子成立。
-10. 失败清理不确定时不得发布 Snapshot 或开始基线。
-11. 内容寻址读取摘要不匹配时不得从权威工作区补复制。
-12. Snapshot 发布后后续正式阶段不得读取或挂载权威工作区。
-13. 不同正式 consumer 的 instance ID/root identity 必须不同，即使源与检查相同。
-14. 成功清理、外部删除或进程重启都不能使旧 instance/root 可复用。
-15. 存在 `.git` 指针时 `git_metadata_absent` 不得为 true。
-16. 依赖 Git 历史或动态 VCS 版本时必须拒绝，不得伪造元数据。
-17. 每个 pytest、目标重跑和 mandatory 检查使用独立全新 workspace，不能共享缓存。
-18. consumer 修改源条目或保护工件时 post-run 验证必须拒绝其结果。
-19. 只验证退出码而未验证源、根、无 Git 和完整树时不得发布结果。
-20. `CLEANED` 必须证明精确根物理删除并复验不存在。
-21. `QUARANTINED` 必须证明从所有运行/consumer/mount/allocator 清除可达性并引用不可变记录。
-22. 外部删除 quarantine 残留不恢复资格；新 workspace 必须有新 ID/root。
-23. 根身份或父边界不安全时禁止递归删除，返回 `BOUNDARY_UNSAFE`。
-24. `BOUNDARY_UNSAFE` 不发布 consumer 结果，并进入 `STOPPED(INTERNAL_ERROR)`。
-25. consumer 结果仅在 post-run 成功且 cleanup 为 `CLEANED` 或有效 `QUARANTINED` 后发布。
-26. 已发布结果不因后续安全隔离记录改写。
-27. 两类场景 collection 为零都必须 `REJECTED`。
-28. ExistingFailure 任一目标未收集、目标全通过或目标状态/指纹不稳定时必须拒绝。
-29. ExistingFailure 可接受一个稳定通过目标与一个稳定失败目标，并将二者都保留在 v1。
-30. 非目标 node 非 `PASS`，或目标出现 skip/setup/teardown/environment/timeout 时必须拒绝。
-31. 第二次必须在全新副本执行完整目标集合，不能只重跑失败子集。
-32. NaturalLanguageDefect 任一原始 node 非 `PASS` 时必须拒绝。
-33. 任一 configured+mandatory Ruff/Mypy 检查非 `PASS` 时必须拒绝。
-34. mandatory 结果缺失、绑定矛盾或 workspace 完整性失败时不得形成 EvidenceSet/Decision。
-35. EvidenceSet 完整但场景不成立时发布 `REJECTED`，不生成 Manifest。
-36. accepted decision、EvidenceSet、v1 和阶段转换必须原子发布。
-37. v1 缺少任一原始 node、显式目标状态、失败指纹或 mandatory 合同时必须拒绝发布。
-38. node 重复或规范化碰撞不得静默去重。
-39. capability、scope、配置或环境漂移时旧 Manifest 不接受新结果。
-40. 修改测试、fixture、配置或嵌套新增 `conftest.py` 必须由保护合同拒绝。
-41. 复现补丁不在已有支持测试根，或新增第二文件/helper/`__init__.py`/第二测试时必须拒绝。
-42. 参数化、plugin 注册或 collection hook 必须由复现策略拒绝。
-43. evaluation 缺失、非 `CONFIRMED` 或父/批准/补丁/目标/指纹/环境不匹配时不得创建 v2。
-44. 3.4 不重新判断复现，3.8 不发布 v2。
-45. v2 删除原始 node/目标/check、放宽保护、改变环境或加入未批准工件时必须拒绝。
-46. v2 成功时父 v1 与 v2 均保留且不可修改。
-47. v2 事务失败不得留下部分 v2、`effective_contract_projection`、`derivation_proof` 或阶段转换。
-48. ExistingFailure 请求 v2 必须在 Schema 和发布守卫拒绝。
-49. 最终 ExistingFailure 的全部原始 node/显式目标必须实际执行并 `PASS`。
-50. 最终 NaturalLanguageDefect 的全部原始 node/获批复现 node 必须实际执行并 `PASS`。
-51. 最终 collection 增删、重命名、deselect 或任一 mandatory 检查非 `PASS` 都不得成功。
-
-## 3.5 Agent 单轮、动作信封与上下文装配
-
-本节是 Agent 主循环单轮协议、上下文装配、LLM 调用边界、统一动作信封、动作绑定、分发衔接和反馈连续性的权威来源。3.5 是唯一的组合 dispatch checkpoint 编排权威，拥有该 checkpoint 的调用时点、turn／attempt／最终投影／最终请求绑定和 feedback reservations 消费。3.9 拥有权威披露子操作：`DisclosureGrant` 校验语义、披露预算账本、`DisclosureRecord` 领域与证明语义、发布键和幂等；该子操作可以全有或全无地加入 3.5 编排的同一权威提交，但不得在 checkpoint 之外先行或另行提交预算或记录。3.5 不得重实现或放宽 3.9 的 grant、账本、记录发布键或幂等语义。候选修订与补丁语义由 3.6 定义；检查能力、结果和失败指纹由 3.7 定义；场景编排和复现判定由 3.8 定义；正式验证和持久化由 3.10 定义。本节只能引用这些权威结果，不得重新定义或放宽。
-
-### 3.5.1 范围与 v1 不变量
-
-v1 Agent 主循环采用顺序单轮模型：同一运行任一时刻最多存在一个活动 `AgentTurn`。每个逻辑 turn 恰好关联一次 LLM 调用 attempt，并恰好形成一个 `AgentTurnCompletionKind` 与一个适用的 `TurnContinuationDisposition`。在创建并拥有该 turn 的进程内，dispatch checkpoint 提交后的正常或失败完成至多接受一个权威 `AgentTurnOutcome`。3.1 的 `SAME_ATTEMPT_REPLAY` 只允许相同 attempt 标识与相同规范输入返回首次已经形成的同一权威 outcome，绝不再次调用 LLM 适配器，也不创建新 turn。owning process 内尚无权威 outcome 时不得重发：checkpoint 前按既有取消或内部中止路线关闭，checkpoint 后的适配器失败按 `LLMCallFailureRecord` 关闭，已经收到响应但处理失败时按 `TurnProcessingFailureRecord + TURN_PROCESSING_FAILED + TURN_ABORTED + RUN_STOPPED + STOPPED(INTERNAL_ERROR)` 关闭；不得新增 replay 状态。3.3.7 正式启动终止或 3.3.14 Demo 启动失效是既有崩溃关闭例外：它们只形成 `TURN_ABORTED + RUN_STOPPED` 并闭合 feedback 消费对象，不创建 `AgentTurnOutcome`。迟到结果不得改写后续 turn、候选或阶段。
-
-模型没有授权权力。轮次主体、上下文选择、动作绑定、阶段资格、策略决定、权威结果、生命周期处置和 `StopReason` 都只能由控制面依据已发布事实确定；模型文字始终是不可信输入。
-
-在 owning process 内，确定性 dispatch checkpoint 一旦提交，每次 attempt 的正常或失败轮次结果必须恰好是以下互斥联合之一；checkpoint 前取消或内部中止按 3.5.7 关闭 turn，但不伪造该联合中的结果。3.3.7 正式启动终止或 3.3.14 Demo 启动失效可以在 checkpoint 后无 outcome 时关闭旧 turn，仍不得为未知的适配器执行事实伪造该联合中的结果。本节不展开完整记录字段：
-
-~~~text
-AgentTurnOutcome =
-  AcceptedTurnOutputRecord
-  | RejectedTurnOutputRecord
-  | LLMCallFailureRecord
-  | TurnProcessingFailureRecord
-~~~
-
-- `AcceptedTurnOutputRecord` 只表示唯一权威响应经规范化和严格 Schema 解析后被接受，并产生一个可绑定的 `AgentTurnOutput`。
-- `RejectedTurnOutputRecord` 表示已取得响应但未通过严格解析；它必须产生结构化解析反馈，不得产生动作或分发副作用，并消耗适用的调用、Token、时间和无效输出预算。
-- `LLMCallFailureRecord` 表示 dispatch checkpoint 后该 attempt 以适配器调用失败结束；它不得伪造模型输出或动作，也不得重新发出调用。
-- `TurnProcessingFailureRecord` 表示已经收到响应，但规范化、解析器执行或权威结果发布发生不可恢复的控制面故障；它不得产生动作或重发，并且必须按 3.5.4 与 3.5.8 的逐列权威路线映射为 `TURN_PROCESSING_FAILED + TURN_ABORTED + RUN_STOPPED + STOPPED(INTERNAL_ERROR)`。
-
-上述四值 `AgentTurnOutcome` 只属于 owning process 内 checkpoint 后的正常或失败完成。3.3.7 正式启动终止或 3.3.14 Demo 启动失效不新增 outcome 类型、恢复路线或 replay 状态；它们保留已有 outcome，在没有 outcome 时也只以既有 `TURN_ABORTED + RUN_STOPPED` 闭合 turn。无论通过 owning process 完成还是启动关闭，每个 turn 仍恰好只有一个完成类别和一个后续处置。
-
-真实路线的确定性 dispatch checkpoint 是唯一的 pre-dispatch commit；它在任何真实适配器调用前原子提交 `DisclosureRecord`、披露预算与 feedback 消费等调用前持久事实。
-其中的 `DisclosureRecord` 证明请求已通过授权并完成真实适配器调用前调度提交。
-它不证明适配器实际被调用，也不证明供应商已收到、处理或返回；checkpoint 后 owning process 消失时按 3.3.7、3.5.7 和 3.5.8 保留已提交事实并关闭未知外部边界。
-
-VesperCode 默认不持久化完整原始模型响应。受限运行缓冲区可以在解析和脱敏期间短暂持有响应；持久事实只保留被接受的结构化输出、结构化错误、允许的脱敏摘要和必要完整性摘要。
-
-本节只定义 v1 可观察功能合同。数据库表结构、具体存储／事务技术、内部引用拓扑、完整 CAS 字段清单和摘要 DAG 等实现细节下放到架构设计、数据模型和 `PLAN.md`；它们不构成 v1 功能验收条件。但本章明确规定的全有或全无发布、单一胜出、无部分对象可见、消费不可回退和外部调用前 checkpoint 均是规范性可观察功能合同，不得以“实现细节”为由放宽。
-
-### 3.5.2 轮次主体与顺序主循环
-
-`AgentTurnSubject` 是封闭判别联合：
-
-~~~text
-AgentTurnSubject =
-  ReproductionTurnSubject
-  | RepairTurnSubject
-~~~
-
-| 运行阶段 | 主体 | 必须绑定的权威对象 |
-| --- | --- | --- |
-| `RUNNING(REPRODUCTION)` | `ReproductionTurnSubject` | `ValidationManifestV1` 与当前 `SnapshotTree`；不得用空 candidate 或占位修订代替 |
-| `RUNNING(AGENT_LOOP)` | `RepairTurnSubject` | 有效 Manifest、当前 `CandidateRevision` 及其 `CandidateTree`，以及当前 repair base |
-
-ExistingFailure 的修复主体继续绑定 `ValidationManifestV1`，repair base 是原始 `SnapshotTree`。NaturalLanguageDefect 在 v2 发布后的修复主体继续绑定 `ValidationManifestV2` 的有效合同，repair base 是 3.4 冻结的 `reproduction_candidate_tree`。复现迭代上下文如存在，只能来自已关闭复现提案、用户修订反馈及其权威记录的受控投影，不表示已有复现候选被应用。
-
-主体只能由控制面从当前 phase-entry 的权威上下文取得。模型、调用方和普通配置都不能选择、替换或补写主体中的 Manifest、来源树、候选或 repair base。
-
-正式主循环顺序固定为：
-
-~~~text
-读取当前状态、phase-entry 与 AgentTurnSubject
-→ 构建非权威、非持久且无授权效力的 ContextProjectionDraft
-→ 校验取消、预算、DisclosureGrant 与单活动 turn 条件
-→ 授权不足：只创建 WaitContext 并结束本次启动分支
-→ 授权满足：在可执行 phase-entry 全量重算全部输入并重新校验上述守卫
-→ 原子创建 AgentTurn、最终 ContextProjection、LLM call attempt、
-  适用 AgentFeedbackRecord、AgentFeedbackConsumptionManifest 与 reservations
-→ 提交确定性 dispatch checkpoint；真实路线在同一权威 pre-dispatch commit 中
-  重验 DisclosureGrant、消费披露预算并创建和绑定 DisclosureRecord，
-  真实与 Mock 路线都全量消费 AgentFeedbackConsumptionManifest 的 reservations
-→ 调用 LLM
-→ 规范化唯一结果
-→ 严格解析 AgentTurnOutput
-→ 控制面绑定动作
-→ 检查阶段允许列表
-→ 执行 3.9 策略分类及适用批准
-→ 分发到动作权威合同
-→ 将权威结果转换为结构化反馈
-→ 发布完成结果并执行生命周期处置
-~~~
-
-授权不足分支不得创建 `AgentTurn`、调用 attempt、feedback records、`AgentFeedbackConsumptionManifest` 或 reservations。若披露等待后获得授权，关闭等待只能进入新的 `RUNNING` phase-entry，随后必须从读取状态与 subject 开始全量重算；等待前的 draft、请求摘要和反馈选择不得升级或复用。授权已经满足时，也只有原子创建成功且 dispatch checkpoint 的全部适用前置事实全有或全无地提交后才能调用适配器；真实路线的记录与披露预算、真实／Mock 路线的 feedback 消费均不得部分可见。调用失败闭合为 `LLMCallFailureRecord`，收到响应后的不可恢复控制面处理故障闭合为 `TurnProcessingFailureRecord`，两者都不得伪造解析成功或模型动作。其余步骤不得重排或跳过。任何一步都不得把模型文本当作控制面事实；反馈必须引用权威结果、稳定状态或错误码、适用候选和截断元数据，不能把未经解析的 stdout/stderr 直接当作事实。
-
-### 3.5.3 ContextProjection、预算与披露
-
-`ContextProjectionDraft` 是从当前状态、phase-entry 与 `AgentTurnSubject` 计算的非权威、非持久纯值，只用于估算预算、披露来源与数据类别、脱敏结果和最终请求候选；它不绑定 turn，不消费授权或预算，不创建反馈、`AgentFeedbackConsumptionManifest` 或 reservations，也不能直接渲染或发送供应商请求。等待、授权或其他权威状态变化后必须丢弃并全量重算。
-
-最终 `ContextProjection` 是授权满足后与 `AgentTurn`、LLM call attempt、适用反馈、`AgentFeedbackConsumptionManifest` 和 reservations 原子创建的不可变、版本化公共类型。它只规定以下语义类别，不规定数据库列、引用字段或存储布局：turn subject、Harness 合同、当前任务、当前 Manifest、来源树或候选、选中的权威反馈、选中的文件内容、选中的记忆、预算、装配版本和投影摘要。
-
-上下文装配不得发送完整原始对话历史。控制面只能从已完成 turn 的结构化动作、权威结果、反馈和摘要中选择当前必要内容；3.11 记忆由 Harness 确定性选择，始终是不可信辅助数据，模型不能创建、修改或授权持久记忆。
-
-预算使用版本化固定优先级。Harness 合同、当前任务、当前 Manifest、当前来源或候选绑定和最新权威反馈等 mandatory 项优先；可选项只能按完整语义项淘汰，不能截断后改变含义。mandatory 项按规范压缩后仍超过硬预算时，必须以 `CONTEXT_BUDGET_EXCEEDED` 形成 `STOPPED(BUDGET_EXHAUSTED)`；真实或 Mock LLM 都不得创建 `AgentTurn`、最终 `ContextProjection`、dispatch checkpoint 或适配器调用，也不得用额外真实 LLM 摘要调用绕过。
-
-真实供应商请求必须完全由最终 `ContextProjection` 确定性渲染并确定性序列化为最终规范外发载荷。对应 `DisclosureGrant` 只绑定当前运行、供应商、端点、模型、允许来源与数据类别、脱敏规则、累计预算和有效期；它不绑定最终请求摘要。最终请求必须落在该范围和剩余预算内，任一项不匹配都不得提交 dispatch checkpoint 或进入适配器调用阶段。
-
-由 3.5 编排的真实路线 dispatch checkpoint 是唯一的组合 pre-dispatch commit，必须在同一权威提交中全有或全无地：
-
-- 重验 `DisclosureGrant` 对当前运行、供应商、端点、模型、允许来源与数据类别、脱敏规则、累计预算和有效期的既有授权范围，并独立验证最终 `ContextProjection` 与最终规范外发请求均落在该授权范围内；
-- 以确定性序列化后的最终规范外发载荷字节数校验剩余预算，并消费本次累计披露预算；
-- 创建一条且仅一条既有 `DisclosureRecord`；
-- 将该 `DisclosureRecord` 通过最终请求摘要绑定最终规范供应商请求、实际来源、数据类别、规范外发载荷字节数、脱敏结果和所消费的 `DisclosureGrant`；
-- 全量消费 `AgentFeedbackConsumptionManifest` 的全部 ACTIVE reservations。
-
-前四项构成 3.9 的权威披露子操作，第五项是 3.5 的 feedback reservations 消费；3.5 负责把两者与自身拥有的最终调用绑定编排进同一权威提交。3.9 的披露子操作不得在该 checkpoint 之外先行或另行提交预算或记录，3.5 也不得复制或放宽 grant 校验、披露预算账本、`DisclosureRecord` 发布键或幂等语义。
-
-只有上述同一权威提交成功后才允许调用真实适配器；任一步失败都不得调用，且记录、披露预算与 feedback 消费不得部分可见。`DisclosureRecord` 不得在 checkpoint 前作为独立事务提前发布；“调用前已形成”严格指它与披露预算和 feedback 消费作为 checkpoint 的原子组成一起提交。
-`DisclosureRecord` 证明请求已通过授权并完成真实适配器调用前调度提交。
-它不证明适配器实际被调用，也不证明供应商已收到、处理或返回。记录不得保存完整请求正文，v1 不新增持久 `DisclosureAttempt`；供应商响应、工具格式和 usage 数据仍是不可信输入。
-
-需要披露等待时，控制面按 3.2 和 3.9 在创建任何 turn 或消费对象之前进入等待。恢复到新的 `RUNNING` phase-entry 后必须从权威状态重建 draft、最终投影和最终请求，并重新校验取消、预算、主体、绑定与 `DisclosureGrant`；不得直接复用等待前的 draft、请求摘要或反馈选择。
-
-Mock LLM 仍必须经过同一控制面 dispatch checkpoint，但不创建 `DisclosureRecord`、不消费真实披露预算，也不发生供应商网络调用；它不能绕过 `AgentFeedbackConsumptionManifest` 的 reservations 全量消费。单活动 turn、其他预算、draft 与最终投影装配、原子创建、Schema、绑定、阶段允许、策略、分发、反馈和完成处置必须与真实路线相同。
-
-### 3.5.4 单动作输出、绑定、阶段允许与完成处置
-
-模型输出合同为：
-
-~~~text
-AgentTurnOutput {
-  schema_version
-  reason_summary
-  action: AgentAction
-}
-~~~
-
-`reason_summary` 是有版本化上限的不可信解释文本，不能授权、改变策略、充当证据或证明完成。输出必须恰好包含一个动作；未知字段、动作数组、错误版本或其他 Schema 违规都必须拒绝，控制面不得从自由文本猜测、修复或提取动作。
-
-v1 `AgentAction` 是以下七值封闭联合：
-
-~~~text
-AgentAction =
-  ListFilesAction
-  | ReadFileAction
-  | SearchTextAction
-  | ApplyCandidatePatchAction
-  | RunCheckAction
-  | ProposeReproductionAction
-  | ProposeCompletionAction
-~~~
-
-动作载荷不得自签阶段、Manifest、候选、repair base、策略或权威摘要；相关字段出现时按未知字段拒绝。各动作的文件、补丁、检查和复现语义继续由本节后续子合同及 3.6、3.7、3.8 定义；`ProposeReproductionAction` 只是提案，不是控制面批准。
-
-解析出的动作没有执行资格。控制面必须把它绑定到当前 turn subject、phase-entry、Manifest、来源或候选、repair base 和适用策略后，才可进入阶段校验、3.9 和分发；本节不列 `BoundAgentActionRecord` 的完整字段。阶段、主体、Manifest、候选或策略变化后，旧动作必须作为 stale 输入拒绝，不得自动重绑定。
-
-以下允许列表是 v1 的封闭阶段合同：
-
-| 模型动作 | `REPRODUCTION` | `AGENT_LOOP` |
-| --- | --- | --- |
-| `ListFilesAction` | 允许 | 允许 |
-| `ReadFileAction` | 允许 | 允许 |
-| `SearchTextAction` | 允许 | 允许 |
-| `ApplyCandidatePatchAction` | 禁止 | 允许 |
-| `RunCheckAction` | 禁止 | 允许 |
-| `ProposeReproductionAction` | 允许 | 禁止 |
-| `ProposeCompletionAction` | 禁止 | 允许 |
-
-阶段不允许的动作返回稳定阶段错误，不得进入 3.9 或产生分发副作用；复现试验不得借普通 `RunCheckAction` 绕过 3.8 的批准。以下四个结果空间必须隔离：
-
-~~~text
-ActionParseResult
-StageEligibilityResult
-PolicyDecision
-ActionExecutionResult
-~~~
-
-解析成功不等于阶段允许，阶段允许不等于策略 `ALLOW`，策略允许也不等于执行成功。`ProposeCompletionAction` 被接受时只可进入 `FORMAL_VALIDATION`，不能声明成功或触发持久化。模型动作、`reason_summary` 和其他模型文本都不能请求、触发或选择停止；停止只由 3.2 冻结的控制面谓词、守卫和权威事实触发。
-
-完成类别与后续处置保持为两个封闭、可观察状态空间，不在本节展开完成记录字段：
-
-~~~text
-AgentTurnCompletionKind =
-  ACTION_COMPLETED
-  | ACTION_REJECTED
-  | OUTPUT_INVALID
-  | LLM_CALL_FAILED
-  | TURN_CANCELLED
-  | TURN_ABORTED
-
-TurnContinuationDisposition =
-  CREATE_NEXT_TURN
-  | WAITING_USER
-  | PHASE_TRANSITIONED
-  | RUN_STOPPED
-  | NO_CONTINUATION
-~~~
-
-每个 turn 恰好形成一个完成类别和一个适用的后续处置。至少保留下列可观察映射：
-
-- 普通工具或检查形成权威结果并继续：`ACTION_COMPLETED + CREATE_NEXT_TURN`。
-- 阶段非法或策略拒绝且允许修正：`ACTION_REJECTED + CREATE_NEXT_TURN`。
-- 复现提案形成审批等待：`ACTION_COMPLETED + WAITING_USER`。
-- 完成提议被接受并进入正式验证：`ACTION_COMPLETED + PHASE_TRANSITIONED`。
-- 输出 Schema 无效且尚未达到冻结阈值：`RejectedTurnOutputRecord -> OUTPUT_INVALID + CREATE_NEXT_TURN -> MODEL_OUTPUT_INVALID`。
-- 输出 Schema 无效且达到冻结阈值：`RejectedTurnOutputRecord -> OUTPUT_INVALID + RUN_STOPPED -> MODEL_OUTPUT_INVALID_LIMIT_REACHED -> STOPPED(NO_PROGRESS)`。
-- dispatch checkpoint 后 LLM 适配器终态失败：`LLMCallFailureRecord -> LLM_CALL_FAILED + RUN_STOPPED -> LLM_ADAPTER_CALL_FAILED -> STOPPED(EXECUTION_TERMINATED)`。
-- 收到响应后发生不可恢复控制面处理故障：`TurnProcessingFailureRecord -> TURN_ABORTED + RUN_STOPPED -> TURN_PROCESSING_FAILED -> STOPPED(INTERNAL_ERROR)`。
-- 取消胜出：`TURN_CANCELLED + RUN_STOPPED`。
-
-`OUTPUT_INVALID + CREATE_NEXT_TURN` 只允许用于尚未达到冻结无效输出阈值的路线；达到阈值后不得创建下一 turn。`LLM_CALL_FAILED` 不得与 `CREATE_NEXT_TURN` 组合，也不得在当前运行内重发适配器。
-
-`RUN_STOPPED` 只允许由取消、预算、无进展、策略、工作区变化、执行终止、内部错误或 3.2 明确规定的其他控制面停止谓词产生，不能由模型或普通 `AgentAction` 结果自行选择；3.5.5 的文件完整性内部错误仍属于控制面停止谓词。普通动作首次被 `DENY` 不自动终止运行；控制面必须记录拒绝并在预算允许时生成下一轮结构化反馈。相同候选、Manifest 和策略上下文中，规范动作—结果指纹重复且没有形成新候选修订或新权威证据时必须累计无进展计数；改变说明文字不得重置。达到冻结阈值后，只能按 3.2 的守卫进入 `STOPPED(NO_PROGRESS)` 或 `STOPPED(POLICY_TERMINATED)`。
-
-`CREATE_NEXT_TURN` 只让控制面重新检查取消、预算、披露、主体、绑定和资源条件；它不自动调用适配器，也不自动授权下一次 LLM 调用。
-
-### 3.5.5 不可变树上的只读文件工具
-
-`ListFilesAction`、`ReadFileAction` 和 `SearchTextAction` 是 Harness 控制面的只读查询。`REPRODUCTION` 直接读取当前 `AgentTurnSubject` 绑定的 `SnapshotTree`；`AGENT_LOOP` 直接读取当前 `AgentTurnSubject` 绑定的 `CandidateTree`。主体、phase-entry、Manifest、精确树引用和根摘要全部由控制面绑定，模型、工具参数和调用方均不能选择、替换或放宽这些绑定。
-
-三个动作直接解析树条目并读取其指向的内容对象；不得创建或挂载 `ExecutionWorkspace`，不得把树物化为宿主目录，也不产生文件工具专用的 cleanup、quarantine、领取或所有权状态。宿主目录、权威工作区、缓存和上一次调用留下的字节均不得成为补读或回退来源。
-
-初次解析或解析后的模型请求路径在当前 `CandidateTree` 不存在（`REPRODUCTION` 时对应当前 `SnapshotTree`），包括规范化合法但不存在的 `ReadFileAction.path`，必须返回 `TOOL_INPUT_INVALID`，保留 `AcceptedTurnOutputRecord` 并形成 `ACTION_REJECTED + CREATE_NEXT_TURN`；目标条目尚未成功绑定，因此不得将同一 missing path 解释为 `TOOL_RESULT_INTEGRITY_INVALID`。
-
-文件工具执行期的每次初始访问、分页继续和权威结果形成前，控制面都必须重新验证精确来源引用、树根摘要、主体、phase-entry、Manifest、规范路径、目标条目以及适用的内容摘要。只有规范路径和目标条目已经成功解析并绑定到不可变树后，精确树引用所指向的内容对象缺失、不可取得或无法按摘要验证，摘要发生失配，或者既有绑定完整性后来无法重验时，该次活动 turn 工具请求才必须返回 `TOOL_RESULT_INTEGRITY_INVALID`，保留已存在的 `AgentTurnOutcome`，并以 `TURN_ABORTED + RUN_STOPPED` 关闭 turn 和运行于 `STOPPED(INTERNAL_ERROR)`；不得发布权威成功结果、披露任何正文、形成可消费的上下文或调用 LLM，也不得从权威工作区或其他副本补读。权威结果形成后，正文在创建新 turn 前进入投影时仍须从同一不可变树确定性重读并完成相同校验；既有绑定的重读失败时同样返回 `TOOL_RESULT_INTEGRITY_INVALID` 并直接停止于 `STOPPED(INTERNAL_ERROR)`，不得使用或披露正文、调用 LLM、创建 `AgentTurn`、伪造 `TURN_ABORTED` 或伪造 `AgentTurnOutcome`，也不得回写原工具结果或从其他来源补读。文件工具只读已绑定的不可变树，宿主仓库或实际工作区后续变化既不是读取来源，也不得被解释为本路线的完整性失效。
-
-三个动作共享由控制面选择的不可变、版本化硬画像；模型不能选择画像或扩大限制，普通配置只能进一步收紧。路径采用仓库根相对、`/` 分隔的规范 Git 路径，表示仓库根时仅允许 `root_path = ""`。绝对路径、UNC、盘符、反斜杠、空段、`.`、`..`、ADS、NUL、平台保留名称以及任何规范化后与原输入不同的形式必须稳定拒绝。受限 glob 由 Harness 按版本化语法解释，不具有 Shell、正则、brace expansion、环境变量、命令替换、宿主转义或平台相关语义。路径、深度、页大小、glob、查询、行数、字节数或上下文超过硬限时必须返回稳定输入错误，不得静默裁剪、缩小范围或替换默认值。
-
-`ListFilesAction` 只返回有界深度和有界页大小内的稳定条目元数据；条目按规范 Git 路径的 UTF-8 字节序排序，不依赖宿主枚举顺序。仍有后续条目时只返回经过认证的 stateless page token；token 绑定精确来源树根摘要、规范查询和下一逻辑位置，不建立持久 cursor 状态。token 被改写、跨来源树使用或与查询、位置失配时必须在读取条目前拒绝；同一有效 token 重放必须得到同一逻辑页面。
-
-`ReadFileAction` 和 `SearchTextAction` 只能读取 `TEXT_SUPPORTED` 内容对象，其 `TextContentProfile` 必须是 3.4.2 的 `UTF8 | UTF8_BOM`。两者使用严格 UTF-8 逻辑投影；`UTF8_BOM` 的单一开头 BOM 保留在原始字节、长度和摘要中，但在逻辑投影前移除，因此行号、列号和搜索位置都不计入 BOM。行号和搜索列均从 1 开始，CRLF 计作一个换行边界，不执行换行改写或 Unicode normalization。读取必须同时满足 UTF-8 字节、完整逻辑行、单行和范围硬限；超长行、越过 EOF 的起始行、空文件上的行请求或其他非法范围必须返回稳定错误，不得截断半行、半个 Unicode 标量或返回无效 Unicode。后续候选补丁对既有文件序列化时必须恢复相同 `TextContentProfile`，不能因逻辑投影而丢失或新增 BOM；其他语义文本编码继续是 `TEXT_UNSUPPORTED`。
-
-`SearchTextAction` 只接受非空、区分大小写的字面量查询；不得执行 normalization、case-fold、正则解释、转义替换或跨行匹配。命中按规范路径 UTF-8 字节序、1-based 行号和 1-based 列稳定排序，并复用 `ListFilesAction` 的无状态 page token 规则；token 仍只绑定精确来源树根摘要、规范查询和下一命中逻辑位置。有后续命中时必须签发 token；命中数量和总字节硬上限按页约束，一页达到任一上限且仍有后续命中时必须在完整命中边界结束本页并正常续页，不得作为超限错误。画像固定的前后文和单个命中仍受硬限；单个完整命中或上下文超限时必须稳定拒绝，不得缩短上下文。
-
-权威文件工具结果只保存精确来源树引用与根摘要、规范请求、读取范围或搜索命中、相关内容摘要和画像允许的有界元数据；原始文件正文和搜索上下文不得写入审计、记忆或普通持久记录。下一轮需要正文时，控制面必须从同一不可变树确定性重读，重新校验条目、内容摘要、范围或命中，再把精确字节交给 3.5.3 的预算、脱敏和 `DisclosureGrant` 门。文件工具不建立独立正文缓冲区对象或 release 生命周期；调用专用 payload 不长期持久化，并只在调用及输出形成权威终态后丢弃。
-
-同一绑定请求的幂等重放和陈旧结果拒绝只适用 3.1 的共同规则；本节不建立文件工具 attempt 状态机、publication revision、持久 cursor 或恢复协议。`ApplyCandidatePatchAction` 仍必须交给 3.6 生成并激活新的 `CandidateRevision` 和 `CandidateTree`，不得修改本次动作读取的来源树。Mock 与真实 LLM 路线必须共享同一套文件工具控制面、画像、完整性校验、排序和错误语义。
-
-### 3.5.6 有界的下一轮结构化反馈
-
-反馈是控制面对既有权威结果生成的受限模型投影，只帮助控制面将要原子创建的下一 Agent turn 修正输出或动作，不具有执行、审批、证据、授权或生命周期转换效力。`RejectedTurnOutputRecord` 始终保存其结构化解析错误，作为权威来源事实；该事实的形成不以是否存在下一轮为条件。只有权威工具结果、严格输出或 Schema 验证结果、正式验证结果、动作或策略结果已经完整形成，并且生命周期处置允许创建一个具体下一轮时，控制面才可以从相应权威来源事实确定性计算适用反馈。等待授权前只能在 `ContextProjectionDraft` 中计算非权威候选，不得创建 feedback records；授权满足并完成 phase-entry 全量重算后，适用 `AgentFeedbackRecord` 必须与其目标 `AgentTurn`、最终 `ContextProjection`、调用 attempt、`AgentFeedbackConsumptionManifest` 和 reservations 原子创建。没有下一轮时不得创建反馈或虚构目标 turn。模型文本、模型异常文本、未经解析的 stdout/stderr 或调用方说明不能直接成为权威反馈；控制面只能从权威记录、稳定状态和错误码确定性转换反馈。
-
-`AgentFeedbackRecord` 必须直接绑定以下语义，不通过宽泛作用域或可变资格对象间接表达：
-
-~~~text
-AgentFeedbackRecord {
-  schema_version
-  feedback_id
-  owner_run_id
-  authoritative_source_ref_and_digest
-  target_phase_entry_ref
-  target_turn_ref
-  target_turn_subject_ref_and_digest
-  target_validation_manifest_ref_and_digest
-  target_candidate_binding
-  applicability_policy = NEXT_TURN_ONLY
-  summary_profile_ref_and_digest
-  structured_summary
-  feedback_digest
-}
-~~~
-
-`authoritative_source_ref_and_digest` 所引用对象的既有权威结果类型唯一决定来源类别；`AgentFeedbackRecord` 不保存第二个独立分类字段，也不得通过新来源枚举或调用方字段覆盖该类型。
-
-`target_candidate_binding` 在存在候选的阶段必须是目标 turn 当前 `CandidateRevision` 的精确引用与摘要；不存在候选的阶段必须使用规范 `NO_CANDIDATE` 值并同时绑定该事实的权威阶段或来源记录，不能使用调用方提供的空值或占位候选。目标 phase-entry、`AgentTurnSubject`、适用的 `ValidationManifest`、候选绑定和目标 turn 任一项不精确匹配时，该反馈都不得进入上下文。
-
-反馈发布后不得迁移或重绑定。候选、phase-entry、`AgentTurnSubject` 或 `ValidationManifest` 发生变化时，旧反馈只保留为历史事实；如果新轮仍需要反馈，必须根据新形成的权威转换结果重新生成一条精确绑定的新记录。候选 ancestry、相似错误、相同说明文字或模型请求均不能延续旧反馈。
-
-v1 的适用策略只有 `NEXT_TURN_ONLY`。`structured_summary` 是控制面按版本化 Schema 生成的有界、脱敏结构，不保存自由文本 detail。摘要画像必须固定允许字段、条目上限、单项长度上限、总字节上限、脱敏规则、规范排序和裁剪顺序；同一权威输入与画像必须产生相同字节。裁剪只能在完整结构化条目边界按稳定全序进行，并保留画像规定的有界裁剪元数据，不能依赖数据库返回顺序、线程完成顺序、错误发现顺序或模型文本。
-
-`ContextProjection` 对反馈只投影上述有界摘要，不持久化或投影反馈 detail 正文。文件正文仍按 3.5.5 从权威文件工具结果绑定的同一不可变树确定性重读并校验；创建新 turn 前无法得到相同内容时，控制面必须废弃尚未发布的反馈选择，以 `TOOL_RESULT_INTEGRITY_INVALID` 直接停止于 `STOPPED(INTERNAL_ERROR)`，不得创建 `AgentTurn`、伪造 `TURN_ABORTED` 或伪造任何 turn outcome，也不得回写原工具结果、从其他来源补读、重新计算后继续或静默降级。其他权威事实只能使用记录中受限的结构化字段或其有界摘要。
-
-原子创建目标 turn 与最终 `ContextProjection` 时，控制面只能创建并选择同时精确绑定该 turn、phase-entry、`AgentTurnSubject`、`ValidationManifest` 和候选绑定的反馈。选择优先级、同优先级决胜、条目顺序和预算裁剪由版本化画像给出严格全序；相同权威输入必须得到相同选择。mandatory 摘要按规范压缩后仍超过 3.5.3 的硬预算时，不得创建 turn、feedback records、`AgentFeedbackConsumptionManifest`、reservations、dispatch checkpoint 或 LLM 调用，也不得随机丢弃、截断字段或发起额外 LLM 摘要调用。
-
-### 3.5.7 reservation 与轮次终态
-
-一个目标 turn 恰好使用一个 `AgentFeedbackConsumptionManifest`。它绑定该 turn 及其最终 `ContextProjection`，并以规范顺序聚合同一 turn 选中的完整 reservation 集合；没有选中反馈时该集合为空。每个被选中的 `AgentFeedbackRecord` 恰好创建一个 `FeedbackConsumptionReservationRecord`，该 reservation 绑定反馈、精确目标 turn、`AgentFeedbackConsumptionManifest`、最终 `ContextProjection` 和对应 LLM call attempt。
-
-授权满足并在可执行 phase-entry 全量重算后，`AgentTurn`、最终 `ContextProjection`、LLM call attempt、适用 `AgentFeedbackRecord`、全部 reservations 和 `AgentFeedbackConsumptionManifest` 必须全有或全无地原子创建。任一步失败时，本次尚未发布的选择不生效，不得出现孤立 turn、部分反馈投影、缺少 reservation 的已投影反馈或不完整 `AgentFeedbackConsumptionManifest`。这里冻结的是全有或全无发布、单一胜出、无部分对象可见和消费不可回退等可观察结果；本节不冻结数据库表结构、具体存储／事务技术、内部引用拓扑、完整 CAS 字段清单、摘要 DAG、多对象事务布局或 attempt 状态机。
-
-`NEXT_TURN_ONLY` 反馈只可由其记录中精确指定的目标 turn 选择。任何其他 turn、候选、phase-entry、`AgentTurnSubject` 或 `ValidationManifest` 都必须拒绝；已关闭或已消费的反馈也不得重新选择。原子创建成功后、dispatch checkpoint 提交前，其中全部 reservations 均视为 ACTIVE。
-
-确定性 dispatch checkpoint 是保守消费边界，也是 3.5 拥有的唯一组合提交编排点。它必须精确绑定当前 turn、调用 attempt、最终 `ContextProjection`、完整 `AgentFeedbackConsumptionManifest`、全部 reservations 和待调用适配器的最终规范请求，并在任何真实或 Mock 适配器调用前以同一权威提交完成。
-
-对于真实路线，该 checkpoint 必须全有或全无地重验 `DisclosureGrant` 与当前绑定；以确定性序列化后的最终规范外发载荷字节数校验并消费累计披露预算；创建一条且仅一条既有 `DisclosureRecord`；将该记录通过最终请求摘要绑定最终规范供应商请求、实际来源、数据类别、规范外发载荷字节数、脱敏结果和所消费的 `DisclosureGrant`；并全量消费 `AgentFeedbackConsumptionManifest` 的全部 ACTIVE reservations。`DisclosureRecord` 不得在 checkpoint 前独立发布，记录、披露预算与 feedback 消费也不得部分可见。只有该提交成功后才允许调用真实适配器，任一步失败都不得调用。
-
-上述 grant 重验、披露预算消费以及 `DisclosureRecord` 创建与领域绑定仍是 3.9 的权威披露子操作；feedback reservations 消费与整个组合 checkpoint 的调用绑定和提交编排仍由 3.5 拥有。3.5 只能把该披露子操作全有或全无地加入同一提交，不得重实现其语义；该披露子操作不得离开 checkpoint 独立提交。
-
-Mock 路线经过同一控制面 checkpoint，不创建 `DisclosureRecord`、不消费真实披露预算，但仍必须在该提交中全量消费全部 ACTIVE reservations，不得借例外绕过 feedback 消费。checkpoint 后 reservations 不得因后续结果、网络事实或响应处理失败而退回；该边界不新增运行状态、replay 状态或通用恢复状态机。
-
-3.5.1 的四值 `AgentTurnOutcome` 共享同一消费规则：
-
-- `AcceptedTurnOutputRecord` 与 `RejectedTurnOutputRecord` 到达时，全部 reservations 已在 checkpoint 消费；后续阶段拒绝、策略拒绝、动作失败或无效输出都不撤销消费。
-- `LLMCallFailureRecord` 与 `TurnProcessingFailureRecord` 到达时，全部 reservations 同样保持已消费；调用失败和响应处理失败都不得把反馈退回。
-- 只有轮次对象已经原子创建、但 dispatch checkpoint 尚未提交时，由 owning process 内取消或内部中止胜出的 turn 才可全量关闭 ACTIVE reservations 而不标记消费；该路线不得调用适配器或形成虚假的 `AgentTurnOutcome`。授权不足的披露等待发生在轮次对象创建前，不存在可关闭或消费的 `AgentFeedbackConsumptionManifest` 与 reservations。
-
-3.3.7 正式启动终止或 3.3.14 Demo 启动失效沿用同一消费边界，但不是 `AgentTurnOutcome`：checkpoint 前必须闭合 `AgentFeedbackConsumptionManifest` 并全量关闭 ACTIVE reservations 且不消费；checkpoint 已提交但尚无 outcome 时必须闭合 `AgentFeedbackConsumptionManifest` 并保持 reservations 已消费。正式路线已经提交的 `DisclosureRecord`、披露预算与 feedback 消费均不得回退，适配器调用与供应商交付事实均为 `UNKNOWN`；新进程不得补发、对账、伪造适配器调用或供应商送达，也不得创建第二条 `DisclosureRecord`。Demo 路线不创建 `DisclosureRecord`、不消费真实披露预算，但保持 feedback 消费；Mock adapter 是否已调用或返回同样为 `UNKNOWN`。两种启动关闭都以 `TURN_ABORTED + RUN_STOPPED` 闭合未完成 turn，不得调用、恢复或重发适用适配器，也不得创建 `LLMCallFailureRecord`、`TurnProcessingFailureRecord` 或其他 outcome。已有 outcome 和已终局消费对象只可保留，不得改写；旧绑定的迟到结果必须拒绝。
-
-同一 `AgentFeedbackConsumptionManifest` 不允许部分消费、部分关闭或遗留 ACTIVE reservation。同一 turn 最多一个 owning-process 权威 outcome；每个 turn 仍只有一个完成类别与后续处置，3.3.7 正式启动终止或 3.3.14 Demo 启动失效的无 outcome 关闭不能与 owning-process 完成同时获胜。迟到或陈旧提交必须拒绝，不能改写首次终局。
-
-`SAME_ATTEMPT_REPLAY` 只有在同一 LLM call attempt 的首次权威 `AgentTurnOutcome` 已经形成时，才可把该同一结果连同原 `AgentFeedbackConsumptionManifest`、完整 reservations 和最终 `ContextProjection` 返回给相同标识与相同规范输入；它绝不得再次调用适配器、重新选择反馈、创建第二组 reservation、重新消费披露预算、创建第二条 `DisclosureRecord` 或创建新 turn。owning process 内尚无权威 outcome 时不得以该处置重发，必须按 checkpoint 前取消／内部中止、checkpoint 后 `LLMCallFailureRecord` 或收到响应后的 `TurnProcessingFailureRecord` 既有路线关闭；新进程发现旧 turn 时只可按部署模式走 3.3.7 正式启动终止或 3.3.14 Demo 启动失效的无 outcome 关闭。两类路线都不得新增 replay 状态。turn 已有权威终局后到达的迟到响应或其他结果不得重新打开 turn、`AgentFeedbackConsumptionManifest` 或 reservations，也不得形成第二个 outcome。
-
-### 3.5.8 内部故障关闭与明确非目标
-
-调用失败、解析失败或控制面内部错误不得伪装为模型动作。可确定的输出 Schema 无效继续形成 3.5.1 的 `RejectedTurnOutputRecord`；未达冻结阈值时使用 `MODEL_OUTPUT_INVALID`，达到阈值时使用 `MODEL_OUTPUT_INVALID_LIMIT_REACHED`。dispatch checkpoint 后的适配器终态调用失败形成 `LLMCallFailureRecord` 和 `LLM_ADAPTER_CALL_FAILED`；错误反馈只能由控制面从这些权威事实、稳定状态和错误码生成，异常文本本身不能成为反馈。
-
-以下九行是最小且逐列冻结的错误路由表：
-
-| 场景 | 稳定 `error_code` | 副作用判定对象 | `side_effect_status` | 轮次 outcome／完成处置 | `retry_disposition` | 运行路线 |
-| --- | --- | --- | --- | --- | --- | --- |
-| mandatory context 规范压缩后仍超预算 | `CONTEXT_BUDGET_EXCEEDED` | 拟议 LLM 适配器调用 | `NONE` | 不创建 `AgentTurn`、不伪造完成类别 | `NEW_RUN_REQUIRED` | `STOPPED(BUDGET_EXHAUSTED)` |
-| 模型输出 Schema 无效、未达阈值 | `MODEL_OUTPUT_INVALID` | 本次 LLM 适配器调用 | `COMMITTED` | `RejectedTurnOutputRecord + OUTPUT_INVALID + CREATE_NEXT_TURN` | `NEW_ATTEMPT_ALLOWED` | 当前运行非终态 |
-| 模型输出 Schema 无效、达到阈值 | `MODEL_OUTPUT_INVALID_LIMIT_REACHED` | 本次 LLM 适配器调用 | `COMMITTED` | `RejectedTurnOutputRecord + OUTPUT_INVALID + RUN_STOPPED` | `NEW_RUN_REQUIRED` | `STOPPED(NO_PROGRESS)` |
-| 阶段不允许已解析动作 | `ACTION_NOT_ALLOWED_IN_PHASE` | `AgentAction` 执行 | `NONE` | `AcceptedTurnOutputRecord + ACTION_REJECTED + CREATE_NEXT_TURN` | `NEW_ATTEMPT_ALLOWED` | 当前运行非终态 |
-| 文件工具路径／范围／glob／查询／分页输入非法 | `TOOL_INPUT_INVALID` | `AgentAction` 执行 | `NONE` | `AcceptedTurnOutputRecord + ACTION_REJECTED + CREATE_NEXT_TURN` | `NEW_ATTEMPT_ALLOWED` | 当前运行非终态 |
-| 活动 turn 文件工具发现内容对象／树引用／摘要完整性失效 | `TOOL_RESULT_INTEGRITY_INVALID` | `AgentAction` 执行 | `NONE` | 保留已存在 outcome；`TURN_ABORTED + RUN_STOPPED` | `NO_RETRY` | `STOPPED(INTERNAL_ERROR)` |
-| 创建新 turn 前重读发现同一完整性失效 | `TOOL_RESULT_INTEGRITY_INVALID` | 拟议下一次 LLM 适配器调用 | `NONE` | 尚无 turn，不伪造 `TURN_ABORTED` | `NO_RETRY` | `STOPPED(INTERNAL_ERROR)` |
-| dispatch checkpoint 后真实或 Mock LLM 适配器终态失败 | `LLM_ADAPTER_CALL_FAILED` | 本次 LLM 适配器调用所封装的下游请求效果 | `UNKNOWN` | `LLMCallFailureRecord + LLM_CALL_FAILED + RUN_STOPPED` | `NEW_RUN_REQUIRED` | `STOPPED(EXECUTION_TERMINATED)` |
-| 收到响应后不可恢复控制面处理故障 | `TURN_PROCESSING_FAILED` | 本次 LLM 适配器调用 | `COMMITTED` | `TurnProcessingFailureRecord + TURN_ABORTED + RUN_STOPPED` | `NO_RETRY` | `STOPPED(INTERNAL_ERROR)` |
-
-`side_effect_status` 始终相对于同一行的“副作用判定对象”解释。`LLM_ADAPTER_CALL_FAILED` 行的对象精确限定为“本次 LLM 适配器调用所封装的下游请求效果”，而不是 Harness 是否已经进入 adapter 方法。方法调用开始或 Mock `call_count` 增加只证明控制流进入适配器，不得据此把下游请求效果标为 `COMMITTED`；只有适配器返回可验证的权威下游效果证据或收据，才可证明该 effect committed。终态 `LLMCallFailureRecord` 没有该收据，因此真实与 Mock 路线的下游请求效果都必须保持 `UNKNOWN`，真实供应商是否收取或处理请求同样未知。`MODEL_OUTPUT_INVALID`、`MODEL_OUTPUT_INVALID_LIMIT_REACHED` 和 `TURN_PROCESSING_FAILED` 路线已经收到可归属的模型响应，所以其“本次 LLM 适配器调用”仍为 `COMMITTED`。即使失败行的下游效果为 `UNKNOWN`，pre-dispatch commit 已提交的 `DisclosureRecord`、披露预算和 feedback 消费也不得回退。
-
-`TOOL_INPUT_INVALID` 行的路径输入非法明确包括初次解析或解析后的模型请求路径在当前绑定树不存在；此时目标条目从未成功绑定，只能形成 `ACTION_REJECTED + CREATE_NEXT_TURN`。`TOOL_RESULT_INTEGRITY_INVALID` 行只适用于路径和条目已经成功解析并绑定到不可变树后，内容对象缺失或不可取得、摘要失配或既有绑定完整性后来无法重验；同一个 missing path 不得同时落入这两条路线，宿主仓库变化也不属于不可变树完整性失效。
-
-动作类只描述 `AgentAction` 执行，不混入此前已经发生的 LLM 调用。`COMMITTED` 只证明被引用操作已经发生，不表示输出有效或运行成功。`CREATE_NEXT_TURN` 只让控制面重新检查取消、预算、披露、主体、绑定和资源条件，不自动调用适配器。
-
-上述九行的场景、错误码、判定对象、状态、完成处置、重试处置和运行路线均不得由调用方、模型或普通配置改写。当前运行非终态的 `MODEL_OUTPUT_INVALID`、`ACTION_NOT_ALLOWED_IN_PHASE` 和 `TOOL_INPUT_INVALID` 不得携带 `StopReason` 或 `StopRecord`；终态错误必须与唯一 `StopRecord` 属于同一权威结果。
-
-响应已经收到，但控制面在规范化、解析器执行、权威结果发布或其他响应处理步骤发生不可恢复内部故障时，必须形成 `TurnProcessingFailureRecord` 和 `TURN_PROCESSING_FAILED`，以 `TURN_ABORTED + RUN_STOPPED` 关闭 turn，并停止运行于 `STOPPED(INTERNAL_ERROR)`。该路线不得创建 Accepted、Rejected 或 `LLMCallFailureRecord`，不得产生或分发动作，不得重新请求供应商，也不得把故障包装成模型动作。因为 dispatch checkpoint 已经提交，`AgentFeedbackConsumptionManifest` 的全部 reservations 保持已消费，checkpoint 中的 `DisclosureRecord` 与披露预算也不得回退。`DisclosureRecord` 本身不证明适配器实际被调用；本路线已经收到响应是 owning process 另外取得的执行事实，不得倒推改写 pre-dispatch 记录。
-
-3.3.7 正式启动终止或 3.3.14 Demo 启动失效与上述 owning-process 调用失败或响应处理失败严格分离。正式路线的新进程只能证明 checkpoint、feedback 消费以及已提交的 `DisclosureRecord` 和披露预算；适配器调用与供应商交付事实均为 `UNKNOWN`，不能证明供应商是否收到、处理或返回。新进程不得补发、恢复、对账或重发适配器，不得伪造调用或送达，也不得创建第二条 `DisclosureRecord`。Demo 路线的新进程只能证明 checkpoint、feedback 消费及其他已持久化预算事实；它不创建 `DisclosureRecord`、不消费真实披露预算，Mock adapter 是否已经调用或返回为 `UNKNOWN`。因此 checkpoint 后无 outcome 的旧 turn 不得被包装为 `LLMCallFailureRecord` 或 `TurnProcessingFailureRecord`。两种启动关闭都只使用既有 `TURN_ABORTED + RUN_STOPPED` 并闭合 `AgentFeedbackConsumptionManifest`，不新增供应商重发、generation、takeover、reconciliation 或恢复状态机。
-
-Mock LLM 与真实适配器必须经过相同的反馈生成、确定性选择、draft 与最终上下文投影、原子创建、dispatch checkpoint、严格解析、`AgentFeedbackConsumptionManifest`、reservation 和轮次 outcome 控制面。Mock 只豁免外部网络调用、`DisclosureRecord` 创建和真实披露预算消费，不能绕过 feedback reservations 全量消费、其他绑定、预算、checkpoint 或失败关闭语义。
-
-以下内容明确不属于 v1；这些术语只标识未来可能研究的概念，不建立当前记录、状态、转换或规范依赖：
-
-- 跨进程 Stage2 processing generation、reservation generation、执行接管、fencing、revocation 或 takeover；
-- 原始响应正文、解析过程或其他响应工件的跨崩溃恢复；
-- persistent processing block、successor reconciliation case、block handoff、恢复工件及 prepared/published 恢复状态机；
-- 完整迟到传输兼容矩阵、供应商响应 reconciliation 和多层资源 cleanup 状态机；
-- 跨候选或跨 phase-entry 的 feedback continuation、supersession、invalidation、自动迁移或回退；
-- `UNTIL_SUPERSEDED` 适用策略；
-- summary/detail 双模式及任何持久 detail 正文。
-
-遇到上述未支持情形时，v1 只使用已有的安全失败关闭路线：dispatch checkpoint 前由取消或内部中止关闭时，完整 reservation 集合关闭且不消费；checkpoint 后的适配器失败形成 `LLMCallFailureRecord + LLM_CALL_FAILED + RUN_STOPPED`、`LLM_ADAPTER_CALL_FAILED` 和 `STOPPED(EXECUTION_TERMINATED)`，收到响应后的不可恢复处理故障形成 `TurnProcessingFailureRecord + TURN_ABORTED + RUN_STOPPED`、`TURN_PROCESSING_FAILED` 和 `STOPPED(INTERNAL_ERROR)`，两种路线都保持 reservations 已消费且不得在当前运行内重试；owning process 已退出时只可按部署模式由 3.3.7 正式启动终止或 3.3.14 Demo 启动失效以 `TURN_ABORTED + RUN_STOPPED` 闭合，且不形成 outcome。不得为这些非目标补充 generation、接管、reconciliation、persistent block、cleanup、恢复记录或状态机。
-
-### 3.5.9 固定最低验收清单
-
-以下固定编号 1—21 是 3.5 的最低必测集合。3.5.1—3.5.8 中的其他规范性合同继续有效，本清单不得被解释为排除未逐项重复的规范要求。每项只引用前文既有合同，不新增运行时记录、状态、枚举、实现字段或第二套类型定义。
-
-1. 同一运行任一时刻最多存在一个活动 `AgentTurn`；`ContextProjectionDraft` 必须保持非权威、非持久且无授权效力，授权不足时只可创建 `WaitContext`，不得创建 `AgentTurn`、调用 attempt、feedback records、`AgentFeedbackConsumptionManifest` 或 reservations。
-2. 当前 phase 必须与 `AgentTurnSubject` 精确匹配；`ReproductionTurnSubject` 与 `RepairTurnSubject` 跨阶段使用时必须被拒绝。
-3. 授权满足后必须在可执行 phase-entry 全量重算；mandatory context 规范压缩后仍超过硬预算时必须形成 `CONTEXT_BUDGET_EXCEEDED`、`side_effect_status = NONE` 和 `STOPPED(BUDGET_EXHAUSTED)`，且不得创建 `AgentTurn`、最终投影、dispatch checkpoint 或真实／Mock LLM 调用。
-4. `DisclosureGrant` 只能绑定当前运行、供应商、端点、模型、允许来源与数据类别、脱敏规则、累计预算和有效期，不能绑定最终请求摘要；每个真实供应商请求的既有 `DisclosureRecord` 必须随适配器调用前 dispatch checkpoint 的 pre-dispatch commit 创建，通过最终请求摘要绑定最终规范供应商请求、实际来源、数据类别、确定性序列化后的规范外发载荷字节数、脱敏结果和所消费的 `DisclosureGrant`。该记录只证明请求已通过授权并完成调用前调度提交，不证明适配器实际被调用，也不证明供应商已收到、处理或返回；任一范围或预算不匹配都不得提交 checkpoint 或调用适配器。
-5. `AgentTurnOutput` 必须恰好包含一个动作；未知字段、动作数组、多动作或零动作都必须被拒绝。
-6. 七种 `AgentAction` 必须严格遵守 3.5.4 规定的阶段允许矩阵。
-7. Mock 与真实适配器必须经过相同的上下文装配、严格解析、动作绑定、策略、分发、反馈和停止控制面闭环。
-8. 路径逃逸、请求 Shell 或正则解释、超出受限 glob 语法或越界 glob、查询、页、行或字节的输入都必须被拒绝。
-9. `ListFilesAction`、`ReadFileAction` 与 `SearchTextAction` 只能读取精确绑定的不可变 `SnapshotTree | CandidateTree`，不得创建 `ExecutionWorkspace` 或执行副本。
-10. 活动 turn 的来源正文、树引用或摘要完整性失效时，必须以 `TOOL_RESULT_INTEGRITY_INVALID + TURN_ABORTED + RUN_STOPPED + STOPPED(INTERNAL_ERROR)` 关闭并保留已有 outcome；创建新 turn 前重读发生同一失效时必须直接停止，不得创建 `AgentTurn`、伪造 `TURN_ABORTED` 或 outcome。两种路线都不得发布成功结果、披露内容或调用 LLM。
-11. 对相同精确绑定和规范输入，list/read/search 必须产生相同结果、排序和分页；有效 page token 重放必须返回相同逻辑页。
-12. 反馈只能绑定精确下一轮 scope，不得跨候选或 phase 迁移。
-13. 除本项对禁用概念的否定验收点名外，`UNTIL_SUPERSEDED` 以及 feedback continuation、supersession、invalidation 只允许出现在 3.5.8 的明确非目标说明中；它们不得在当前规范中形成状态机或规范依赖。
-14. 授权满足且 phase-entry 全量重算通过后，`AgentTurn`、最终 `ContextProjection`、调用 attempt、适用 feedback records、`AgentFeedbackConsumptionManifest` 及全部 reservations 必须全有或全无地原子创建；每个选入反馈恰好对应一个 reservation。
-15. 真实与 Mock 适配器必须共享同一确定性 dispatch checkpoint。真实路线必须在尝试调用适配器前的同一权威 pre-dispatch commit 中全有或全无地完成 grant 重验、规范外发载荷字节预算消费、`DisclosureRecord` 创建与最终请求绑定，以及 `AgentFeedbackConsumptionManifest` 全部 reservations 消费；任一适用事实不得部分可见，只有该提交成功后才可尝试调用适配器。Mock 只豁免 `DisclosureRecord` 创建和真实披露预算消费，不能绕过同一 checkpoint 或 feedback reservations 的全量消费。
-16. `AcceptedTurnOutputRecord` 与 `RejectedTurnOutputRecord` 必须保持 checkpoint 已消费的全部 reservations，后续结果不得退回反馈。
-17. dispatch checkpoint 后真实或 Mock LLM 适配器终态失败时，必须形成 `LLMCallFailureRecord`、`LLM_ADAPTER_CALL_FAILED`、`side_effect_status = UNKNOWN`、`LLM_CALL_FAILED + RUN_STOPPED` 和 `STOPPED(EXECUTION_TERMINATED)`；`UNKNOWN` 必须按 3.5.8 的“本次 LLM 适配器调用所封装的下游请求效果”边界解释，且 checkpoint 已消费的 reservations、`DisclosureRecord` 与披露预算不得退回。
-18. 轮次对象已原子创建但 dispatch checkpoint 尚未提交时，owning process 内取消／内部中止、3.3.7 正式启动终止或 3.3.14 Demo 启动失效必须闭合 `AgentFeedbackConsumptionManifest`、全量关闭 ACTIVE reservations 且不消费；两种启动关闭还必须形成 `TURN_ABORTED + RUN_STOPPED`。该路线不得调用、恢复或重发适用适配器，不得伪造 `AgentTurnOutcome`，并与轮次对象创建前不存在消费对象的披露等待严格分离。
-19. `SAME_ATTEMPT_REPLAY` 只能为相同标识与相同规范输入返回首次已经形成的同一 `AgentTurnOutcome`，并复用相同 `AgentFeedbackConsumptionManifest`、reservations 和最终 `ContextProjection`。checkpoint 已提交但无 outcome 时，owning process 的适配器终态失败必须走 `LLMCallFailureRecord + LLM_CALL_FAILED + RUN_STOPPED`、`LLM_ADAPTER_CALL_FAILED` 和 `STOPPED(EXECUTION_TERMINATED)`，不得在当前运行重发；收到响应后的控制面故障走第 20 项。若 owning process 已退出，新进程只可按部署模式走 3.3.7 正式启动终止或 3.3.14 Demo 启动失效，保持 reservations 已消费、闭合 `AgentFeedbackConsumptionManifest` 并形成 `TURN_ABORTED + RUN_STOPPED`，不得创建 outcome。正式路线保留已提交的 `DisclosureRecord`、披露预算与 feedback 消费，真实适配器调用和供应商交付均为 `UNKNOWN`；Demo 路线不创建 `DisclosureRecord`、不消费真实披露预算并保留 feedback 消费，Mock adapter 调用或返回为 `UNKNOWN`。`SAME_ATTEMPT_REPLAY` 与两种启动关闭都不得补发、恢复、对账或重发适用适配器，不得伪造调用／送达、创建第二条 `DisclosureRecord` 或新增 replay 状态；迟到结果不得重新打开或改写既有对象。
-20. 已收到响应后的规范化、解析器执行或权威发布发生不可恢复控制面故障时，必须形成 `TurnProcessingFailureRecord`、`TURN_PROCESSING_FAILED`、`side_effect_status = COMMITTED`、`TURN_ABORTED + RUN_STOPPED` 和 `STOPPED(INTERNAL_ERROR)`；不得产生动作、重新请求供应商或把已消费 reservations 退回。
-21. 3.5.1—3.5.8 不得保留指向已删除旧类型、状态或枚举的规范依赖；3.5.8 九行错误路由的逐列值必须冻结，且其错误码和处置不得扩张公共类型联合；列出的非目标概念不得形成当前规范依赖。
+    OpenAIEndpointV1 = {
+      endpoint_id: "OPENAI_PUBLIC_API_V1"
+      scheme: "https"
+      host: "api.openai.com"
+      effective_port: 443
+      base_path: "/v1"
+    }
+
+    LLMProfileManifestV1 =
+      MockLLMProfileV1 {
+        schema_version: 1
+        profile_id: "mock-deterministic-v1"
+        mode: MOCK
+        adapter_version
+        script_id
+        script_digest
+        digest
+      }
+      | OpenAILLMProfileV1 {
+        schema_version: 1
+        profile_id: "openai-single-turn-v1"
+        mode: OPENAI
+        provider: "openai"
+        endpoint_id: "OPENAI_PUBLIC_API_V1"
+        model
+        adapter_version
+        request_serializer_version
+        fixed_parameters: OpenAIFixedParametersV1
+        redaction_profile_id: "NO_CONTENT_REDACTION_V1"
+        digest
+      }
+
+    validate_request(request) -> ValidatedRunRequest | CONFIG_INVALID
+    create_run(validated_request) -> Run(CREATED, frozen_config)
+    start_run(run_id) -> RUNNING(PREFLIGHT) | STOPPED
+
+### 行为
+
+1. `validate_request` 使用拒绝未知字段的版本化 Schema，只做语法、类型、枚举和基础值域校验；全部字段必填，解析器不得静默补默认值。单个 target node ID 必须为非空且不超过 1024 个 UTF-8 字节；重复值返回 `CONFIG_INVALID`，规范请求按 §0.1 排序后绑定。
+2. 发布包内置只读、封闭的 v1 endpoint 映射 `OpenAIEndpointV1`；origin 比较精确按 `(scheme, host, effective_port)` 进行。`llm_profile_id` 和 `reference_profile_id` 必须解析到发布包内置的只读 manifest，且 OpenAI endpoint 只能由所选 `OpenAILLMProfileV1.endpoint_id` 在该映射中解析。请求、普通配置、环境变量和用户输入均不得修改 endpoint 映射或 origin。`ReferenceProfileManifestV1` 是 requirements lock、Docker image、Docker execution profile、工具版本、检查计划和 `EditablePathPolicyV1` 的唯一执行身份；不得再解析、选择或冻结第二个 execution 或 editable policy manifest/digest。精确模型、endpoint、适配器、请求序列化器、封闭固定参数、Mock 脚本、工具版本、镜像摘要和 Candidate 可编辑范围由两个 manifest 决定，不能由请求自由覆盖。serializer 只能把 `value_milli / 1000` 映射为供应商参数；所选模型不支持任一 `PRESENT` 参数时 profile 无效，不得静默删除。v1 不支持自定义 endpoint、其他真实 LLM provider 或自定义 editable root/policy；用户请求或普通配置提交 `base_url`、任意 URL、自定义 endpoint、未知 endpoint id、editable root、operation 或 policy 字段时，封闭 Schema 必须以 `CONFIG_INVALID` 在创建摘要或调用前拒绝。
+3. `RunLimitsV1` 每个值只能等于或低于内建硬上限；WebUI 可以预填上述最大值，但 API 请求仍必须显式提交。子超时始终受剩余总墙钟约束。
+4. `create_run` 冻结规范 target 集合、`RunLimitsV1`、LLM profile digest 和唯一的 `ReferenceProfileManifestV1.digest`，形成不含秘密的 `RunConfigSnapshot` 并创建 `CREATED`。
+5. `start_run` 以原子状态转换进入 `RUNNING(PREFLIGHT)`，同时冻结 `started_at` 和 `run_deadline = started_at + max_run_wall_clock_seconds`，然后严格按以下顺序执行 Snapshot 前置检查、Snapshot 创建、静态项目画像和 readiness 检查；不得在预检运行项目代码。
+6. 规范化工作区身份后，使用以该身份摘要为键的 Windows named mutex 或等价 Win32 跨进程锁；仅“当前进程内锁”不合格。
+7. 若存在未解决 `PersistenceTransaction`，拒绝新运行并指向恢复入口。
+8. 执行 Snapshot 前置检查：冻结有效 HEAD、repository config、`.gitattributes`、ignore 规则和 repository policy；`repository_policy_digest` 与治理 `policy_digest` 必须绑定冻结 `ReferenceProfileManifestV1.editable_path_policy.digest`，不得再解析其他 editable policy。验证 index tree 等于 HEAD、tracked 工作区原始字节与 HEAD blob 一致、不存在 unmerged、非 stage-0、intent-to-add、skip-worktree、assume-unchanged 或不允许的 untracked 文件，并拒绝不支持的 Git 转换、文件系统对象、敏感路径及 Windows/Unicode 路径碰撞。任一前置检查失败时不得创建 `SnapshotTree`、调用 `detect_static`、执行 readiness 检查或进入 `BASELINE`。
+9. 只有全部 Snapshot 前置检查通过后，才从同一冻结 HEAD、已验证的 tracked 工作区原始字节和 repository policy 创建并封存本次 Run 唯一的不可变 `SnapshotTree`；允许的 ignored untracked 文件不进入 Snapshot。Snapshot 创建或完整性验证失败时以 `TREE_INTEGRITY_FAILED` 失败关闭，不得调用后续检查或创建第二份 Snapshot。
+10. 只把第 9 步封存的 `SnapshotTree` 和冻结 `ReferenceProfileManifestV1` 交给 `ProjectAdapter.detect_static`。所有结果的 `snapshot_root_digest`、`reference_profile_digest` 和 `repository_policy_digest` 必须分别等于输入 Snapshot、冻结 manifest 和前置检查冻结值。静态画像失败以 `UNSUPPORTED_PROJECT` 停止，且不执行后续 readiness 或 `BASELINE`。
+11. 静态画像通过后，验证 `ReferenceProfileManifestV1`、其绑定的镜像摘要、execution profile 版本和能力参数满足 §1.4.1 与 §1.4.5；该步骤验证实际 reference image/execution profile readiness，不重新创建或修改 Snapshot。
+12. 只有选中的 LLM profile 为 `OpenAILLMProfileV1` 时才检查凭据状态和安全后端，并验证 profile 的 `endpoint_id` 能唯一解析为 `OpenAIEndpointV1`、OpenAI 适配器的有效目标与该可信映射一致；检查不读取或记录秘密。
+13. 上述步骤全部通过后进入 `RUNNING(BASELINE)`，由 §4.5 在同一 `SnapshotTree` 上执行 `RuntimeCompatibilityCheckV1`；静态预检失败和动态基线阻断必须使用不同证据与错误语义。
+
+### 输出
+
+- 请求无效：`CONFIG_INVALID`，无 `run_id`。
+- 请求有效：`RunCreated(run_id, config_snapshot_id, status=CREATED)`；快照绑定 LLM profile digest 和唯一的 reference profile digest。
+- 预检：`AdmissionResult = ACCEPTED | REJECTED(error)`，并形成相应生命周期结果。
+
+### 错误
+
+`CONFIG_INVALID`、`LLM_ENDPOINT_MISMATCH`、`WORKTREE_DIRTY`、`UNSUPPORTED_REPOSITORY`、`UNSUPPORTED_PROJECT`、`UNSUPPORTED_FILESYSTEM_OBJECT`、`SENSITIVE_TRACKED_FILE`、`TREE_INTEGRITY_FAILED`、`EXECUTION_PROFILE_UNAVAILABLE`、`CREDENTIAL_MISSING`、`CREDENTIAL_BACKEND_UNSAFE`、`RECOVERY_BLOCKS_NEW_RUN`、`WORKSPACE_LOCKED`。
+
+所有预检拒绝发生在 LLM 调用、项目执行和权威工作区修改前。
+
+### 确定性测试
+
+- 无效 Schema 不产生 Run。
+- 有效请求先产生 `CREATED`，再进入 `PREFLIGHT`。
+- 重复、超过 20 个、超长 target ID，未知 profile、遗漏限制字段和放宽硬上限均为 `CONFIG_INVALID`；target 输入排列不同但集合相同时形成相同规范摘要。
+- 用户请求或普通配置含 `base_url`、自定义 URL 或未知 endpoint id 时为 `CONFIG_INVALID`，且不创建摘要或 Run。
+- 用户请求或普通配置含 editable root、operation、policy id/digest 或其他策略覆盖字段时为 `CONFIG_INVALID`；内建 `ReferenceProfileManifestV1` 缺少或篡改 `EditablePathPolicyV1` 时同样以 `CONFIG_INVALID` 拒绝，且不得创建 Run。
+- 冻结 profile 的 endpoint、可信映射解析或 OpenAI 适配器有效目标在预检不一致时为 `LLM_ENDPOINT_MISMATCH`；断言 LLM/网络、Grant 消费、authorization record 创建和 turn/call 增量均为零。
+- 为每种预检拒绝使用固定仓库或 stub；断言 LLM、项目执行容器和持久化调用次数均为零，reference image/execution profile readiness probe 只在其有序步骤实际到达时调用。
+- 预检不得调用 pytest、Ruff、Mypy 或导入目标项目；运行时兼容性只在 `BASELINE` 检查。
+- 使用记录调用顺序的 stub 断言成功路径严格为 workspace identity/lease → recovery gate → Snapshot 前置检查 → 创建并封存唯一 `SnapshotTree` → `detect_static` → reference image/execution profile readiness → OpenAI 模式 credential/endpoint readiness → `BASELINE`，且 `detect_static` 精确接收刚封存的 Snapshot。
+- Snapshot 前置检查失败时，Snapshot 创建、`detect_static`、readiness 和 `BASELINE` 调用次数均为零；Snapshot 创建或完整性验证失败时返回 `TREE_INTEGRITY_FAILED` 且后三者均为零；静态画像失败时 Snapshot 创建次数为一且 readiness/`BASELINE` 为零；readiness 失败时不进入 `BASELINE`。
+- `detect_static` 尝试读取权威工作区、重新执行 Git 干净检查或创建第二份 Snapshot 时失败；即使 Snapshot 已在 PREFLIGHT 建立，任何 Agent 文件动作和 `ApplyCandidatePatchAction` 在完整 PREFLIGHT 与 BASELINE 通过前仍不得分发。
+- 两个进程竞争同一规范工作区时最多一个获得 lease。
+
+## 4.2 FR-LOOP：主循环、动作协议、上下文和停止
+
+### 4.2.1 核心接口与状态
+
+    LLMAdapter.generate(PreparedModelRequestV1) -> ModelResponse
+    ActionParser.parse(ModelResponse) -> AgentAction | ParseError
+    ToolDispatcher.dispatch(AgentAction, RunContext) -> ActionResult
+    StopEvaluator.evaluate(RunState, Evidence) -> Continue | Validate | Stop
+
+`PreparedModelRequestV1` 是 `MockPreparedModelRequestV1 | OpenAIPreparedModelRequestV1` 的封闭联合。Mock adapter 只接受 `mode=MOCK` 变体，OpenAI adapter 只接受 `mode=OPENAI` 变体；控制面必须在 turn/call 计数前验证所选 adapter、冻结 profile 与具体请求变体一致。
+
+正式运行状态：
+
+    RunStatus = CREATED | RUNNING | WAITING_USER | RECOVERY_REQUIRED | SUCCEEDED | STOPPED
+    RunPhase  = PREFLIGHT | BASELINE | AGENT_LOOP | FORMAL_VALIDATION | PERSISTENCE
+
+公网 Demo 使用独立状态：
+
+    DemoRunStatus = DEMO_CREATED | DEMO_RUNNING | DEMO_WAITING_USER | DEMO_COMPLETED | DEMO_FAILED
+
+`DEMO_COMPLETED` 不是正式 `RunStatus`，不能生成 `VerifiedCandidate`、`FinalWritebackApproval`、`DisclosureGrant` 或权威工作区写入。
+
+### 4.2.2 封闭动作 Schema
+
+所有模型响应必须是一个 JSON 对象，且只包含一个动作；动作外自由文本、未知字段和多个动作均为无效输出。公共字段和具体动作字段位于同一个拒绝未知字段的对象中，所有下列字段均为必填字段，不应用解析器默认值补齐。
+
+模型提交的公共信封：
+
+    ActionEnvelope {
+      schema_version: 1
+      action_type: closed literal
+    }
+
+封闭联合及字段：
+
+    ListFilesAction = ActionEnvelope & {
+      action_type: "list_files"
+      root: RepositoryLocationV1
+      recursive: bool
+      max_entries: 1..500
+    }
+
+    ReadFileAction = ActionEnvelope & {
+      action_type: "read_file"
+      path: CanonicalRelativePathV1
+      start_line: >=1
+      line_count: 1..400
+      max_bytes: 1..32768
+    }
+
+    SearchTextAction = ActionEnvelope & {
+      action_type: "search_text"
+      query: literal UTF-8 string, 1..256 bytes
+      roots[]: 1..8 unique RepositoryLocationV1
+      case_sensitive: bool
+      context_lines: 0..2
+      max_results: 1..100
+    }
+
+    ApplyCandidatePatchAction = ActionEnvelope & {
+      action_type: "apply_candidate_patch"
+      base_candidate_digest
+      patch_format: "UNIFIED_DIFF_V1"
+      patch_text: UTF-8, <=128 KiB
+    }
+
+`ApplyCandidatePatchAction` 不携带 editable root、operation allowlist 或 policy digest；控制面只能从当前 Run 冻结的 `ReferenceProfileManifestV1.editable_path_policy` 取得这些值。
+
+    RunCheckAction = ActionEnvelope & {
+      action_type: "run_check"
+      check_plan_id: TARGET_TESTS | FULL_PYTEST | RUFF | MYPY
+    }
+
+    ProposeCompletionAction = ActionEnvelope & {
+      action_type: "propose_completion"
+      candidate_digest
+      rationale_summary: UTF-8, <=2048 bytes
+    }
+
+`RunCheckAction` 不含 executable、argv、工作目录、环境变量或命令文本；这些全部由可信 `PythonProjectAdapterV1` 根据冻结 profile 生成。模型没有任意 Shell 或任意命令能力。
+
+`RepositoryLocationV1.ROOT` 精确表示整个 `SnapshotTree`。`ListFilesAction.root=PATH` 时该路径必须指向现有目录；`SearchTextAction.roots[].PATH` 可以指向现有、对象类型受支持的普通文件或目录，普通文件是否属于可搜索文本由下文唯一的 `SupportedTextFileV1` 分类器决定。直接指向 `NON_TEXT_FILE` 的 search 成功返回零匹配并令本次 `skipped_non_text_count=1`，不得把同一文件改为动作 Schema 错误。`SearchTextAction.roots[]` 包含 `ROOT` 时，`ROOT` 必须是唯一元素；其他组合不得为空、重复或在 Windows/Unicode 折叠规则下形成别名。`ReadFileAction`、补丁中的文件路径和其他实际仓库对象路径继续使用 `CanonicalRelativePathV1`。
+
+文件工具结果的顺序分别冻结：`ListFilesResult.entries[]` 使用下文 `(directory_rank, canonical_path)`；`ReadFileResult` 正文保持原文件递增源码行顺序；`SearchTextResult.matches[]` 按 `(canonical_path, line, column)` 排序。Search v1 只支持字面量，不支持正则表达式。
+
+模型不得提交 `action_id`。`ActionParser` 成功得到封闭 `AgentAction` 后，Harness 使用可注入 ID 生成器创建：
+
+    ActionInstanceV1 {
+      schema_version: 1
+      action_id: Harness-generated non-empty UTF-8 string, <=128 bytes
+      action: AgentAction
+      semantic_digest
+      instance_digest
+    }
+
+`semantic_digest` 使用 `ActionSemanticDigestV1` 域对精确 `AgentAction` 计算；`instance_digest` 使用 `ActionInstanceDigestV1` 域对 `{schema_version, action_id, semantic_digest}` 计算。ID 只负责审计和动作—结果关联，不能影响重复动作、策略缓存、无进展或语义重放判断。注入时钟和 ID 生成器时，相同脚本必须可重复产生相同实例序列。
+
+    OptionalArtifactRefV1 =
+      ABSENT { kind: "ABSENT" }
+      | PRESENT { kind: "PRESENT", value: artifact_ref }
+
+    ActionErrorV1 {
+      error_code
+      bounded_message
+      evidence_ref: OptionalArtifactRefV1
+    }
+
+    OptionalActionErrorV1 =
+      ABSENT { kind: "ABSENT" }
+      | PRESENT { kind: "PRESENT", value: ActionErrorV1 }
+
+动作结果使用公共信封：
+
+    ActionResult {
+      schema_version: 1
+      action_id: Harness-generated
+      instance_digest
+      semantic_digest
+      status: SUCCEEDED | REJECTED | FAILED
+      result_type
+      payload_ref: OptionalArtifactRefV1
+      error: OptionalActionErrorV1
+    }
+
+List、Read 和 Search 必须共享唯一的 `SupportedTextFileV1` 分类器，并只对当前动作可见的 `SnapshotTree` 或 `CandidateTree` 原始文件字节分类。只有同时满足以下条件的单链接普通文件才是受支持文本文件：
+
+1. 原始字节以零个或一个 UTF-8 BOM 开始，移除该可选 BOM 后可按严格 UTF-8 解码为 Unicode scalar value 序列；
+2. 解码正文不含 U+0000；
+3. 换行只使用统一 LF 或统一 CRLF，不含裸 CR 或混合换行；
+4. 正文具有末尾换行，因而能唯一构造 §4.3 的 `TextMetadataV1`。
+
+空文件、没有末尾换行、混合换行、包含 U+0000、无效 UTF-8 或其他无法构造 `TextMetadataV1` 的普通文件都分类为 `NON_TEXT_FILE`。该名称只表示“不满足 v1 受支持文本合同”，不声称文件一定是二进制，也不构成仓库准入拒绝；非文本 tracked 普通文件仍可进入 Snapshot 和 List，但不能由 Read/Search 解释为正文，也不会因此获得二进制补丁能力。
+
+    ListFilesEntryV1 =
+      DIRECTORY {
+        path: CanonicalRelativePathV1
+        kind: "DIRECTORY"
+        size_bytes: ABSENT
+        text_profile: ABSENT
+      }
+      | TEXT_FILE {
+        path: CanonicalRelativePathV1
+        kind: "TEXT_FILE"
+        size_bytes: PRESENT(non-negative integer)
+        text_profile: PRESENT(TextMetadataV1)
+      }
+      | NON_TEXT_FILE {
+        path: CanonicalRelativePathV1
+        kind: "NON_TEXT_FILE"
+        size_bytes: PRESENT(non-negative integer)
+        text_profile: ABSENT
+      }
+
+`ListFilesEntryV1` 的全部字段必填并拒绝未知字段；三种变体以外的字段组合在结果发布前以 `INTERNAL_ERROR` 失败关闭，不得返回部分结果。`size_bytes` 是当前动作可见树中该普通文件完整原始字节的长度。List 的稳定排序键为 `(directory_rank, canonical_path)`：目录的 `directory_rank=0`，两种普通文件均为 `1`，因此目录整体优先，全部普通文件不按文本类型分组而只按规范路径排序；截断和继续参数必须基于这一排序。
+
+各动作的规范结果为：
+
+- `ListFilesResult`：`entries: ListFilesEntryV1[]` 与 `truncated`；每个返回条目都使用上述封闭变体和稳定排序。
+- `ReadFileResult`：`path`、`file_digest`、实际 `start_line/end_line`、`eof` 和有界正文。Read 只接受分类为 `TEXT_FILE` 的普通文件；目标通过路径和对象安全检查但分类为 `NON_TEXT_FILE` 时返回 `FILE_NOT_TEXT`，`ActionResult.status=FAILED`、`payload_ref=ABSENT`、`error=PRESENT(ActionErrorV1.error_code=FILE_NOT_TEXT)`，且不得返回正文或部分 `ReadFileResult`。`FILE_NOT_TEXT` 优先于行范围检查；受支持文本的 `start_line` 超过文件末行返回 `READ_RANGE_OUT_OF_BOUNDS`，请求范围越过 EOF 时返回已有内容并令 `eof=true`。
+- `SearchTextResult`：`matches[{path, line, column, excerpt}]`、`truncated` 和 `skipped_non_text_count`；只搜索同一分类器判定的 `TEXT_FILE`。每个按稳定遍历顺序实际检查、并在本次结果继续点之前跳过的 `NON_TEXT_FILE` 使 `skipped_non_text_count` 增加一次；目录不计数。
+- `ApplyCandidatePatchResult`：新 `candidate_digest`、规范 `FinalDiffV1.digest`、累计文件数和累计字节数。
+- `RunCheckResult`：对应 `CheckResult` 引用；原始输出不直接内嵌进模型上下文。
+- `ProposeCompletionResult`：`VALIDATION_REQUESTED` 或结构化拒绝；它不是成功记录。
+
+面向模型的单个结果正文统一不超过 32 KiB。允许截断的 list/read/search 结果必须返回 `truncated=true`、实际范围和稳定继续参数；不允许截断的 patch、check 和 completion 结果超限时返回稳定错误，不能把部分结果伪装成完整结果。动作已成功执行但客观检查为 `FAIL` 时，`ActionResult.status=SUCCEEDED` 且 `CheckResult.status=FAIL`；只有动作未能按合同完成时才使用 `FAILED`。
+
+### 4.2.3 动作—phase 矩阵
+
+| Phase / 状态 | 模型动作 |
+|---|---|
+| `RUNNING(AGENT_LOOP)` | 六种动作；`RunCheckAction` 可选择四个冻结计划，但受剩余运行和检查预算约束 |
+| `RUNNING(PREFLIGHT)`、`RUNNING(BASELINE)` | 无；由可信协调器执行 |
+| `RUNNING(FORMAL_VALIDATION)` | 无；由可信协调器执行完整冻结计划 |
+| `WAITING_USER`、`RUNNING(PERSISTENCE)`、`RECOVERY_REQUIRED` | 无 |
+
+任何不在矩阵中的模型动作返回 `ACTION_NOT_ALLOWED_IN_PHASE`，不得进入策略批准。正式验证不得通过伪造 `RunCheckAction` 启动，也不消费 Agent turn。
+
+### 4.2.4 `ContextProjection`
+
+每轮上下文由控制面确定性组装，顺序固定为：
+
+1. Harness 协议和动作 Schema；
+2. 冻结任务、目标测试和运行预算；
+3. 当前候选摘要、累计 `FinalDiffV1` 统计和最近动作结果；
+4. 未消费反馈，按严重级别、生成时间和稳定 ID 排序；
+5. 本次选中的仓库记忆；
+6. 经工具显式读取的有界文件片段和搜索结果。
+
+裁剪顺序固定为：先删除最旧记忆，再删除最旧成功动作摘要，再缩减非最近文件片段；Harness 协议、目标测试、当前候选绑定和最近失败反馈不得被裁掉。规范压缩后强制内容仍超过 64 KiB 时，以 `CONTEXT_BUDGET_EXCEEDED` 停止，不得静默截断成语义无效请求。
+
+投影必须按 §4.4.4 输出带来源的 `RequestContentSegmentV1`；每段正文、类别、相对路径、字节数和摘要在裁剪完成后同时冻结，以供披露授权和测试重放。
+
+### 4.2.5 主循环行为
+
+1. 同一运行任一时刻最多一个活动 `AgentTurn`。
+2. 每轮基于当前候选、有限记忆、未消费反馈和预算生成一个 `ContextProjection`。
+3. Mock 模式只有在 `MockPreparedModelRequestV1` 已冻结、其 profile/script/adapter 绑定已验证且即将调用 Mock adapter 时，控制面才原子创建 `AgentTurn` 并递增 turn/call；真实模式只有在有效 Grant、`OpenAIPreparedModelRequestV1` 和逐请求授权事务完成且即将调用 OpenAI adapter 时才执行同一计数点。该原子点之前的投影准备、请求冻结、授权展示和 `WAITING_USER` 均不创建 turn 或消耗 call。计数成功后，即使适配器调用前发生可捕获控制面失败、真实进程崩溃、调用失败或输出无效，该 turn/call 也已消费且不得重用；可捕获的调用前失败可记录 `NOT_ATTEMPTED`，真实进程崩溃不产生原进程调用结果，重启按 §4.2.7 停止且不恢复 turn。
+4. 动作依次经过 Schema、候选绑定、路径、阶段和策略校验，再分发。
+5. 结果发布为结构化 `ActionResult`；下一 turn 原子绑定并消费选中的 `feedback_refs`。
+6. `ProposeCompletionAction` 只请求进入 `FORMAL_VALIDATION`，不能声明成功。
+7. `StopEvaluator` 只负责 `Continue | Validate | Stop`；它不能发布 `SUCCEEDED`。正式成功只能由 `PersistenceCoordinator` 在 §4.6 的全部条件满足后发布。
+
+### 4.2.6 取消、预算与无进展
+
+- 用户通过 `CancelRun` 提交取消请求。动作边界、等待用户状态以及持久化首次替换前是安全点。
+- 若持久化已发生首个文件替换，取消保持待处理，必须先完成事务判定或进入恢复，不能中断并假定回滚成功。
+- `run_deadline` 在持久化中的唯一安全点和过期结果由 §4.6 定义；通用超时规则不得授权 deadline 后继续修改权威工作区。
+- 相同候选上，相同 `ActionSemanticDigestV1` 得到相同语义结果连续 3 次时，以 `REPEATED_ACTION_LIMIT` 停止；更换 Harness 实例 ID 不会重置计数。
+- 连续 6 个 turn 没有产生 `ProgressMarker` 时，以 `NO_PROGRESS_LIMIT` 停止。
+- `ProgressMarker` 只包括：候选树摘要变化；当前候选产生此前未见的语义检查结果；进入正式验证。语义检查结果按 §0.1 计算，排除时间、随机 ID、容器 ID 和审计序号；单纯重复读取、搜索、相同失败或只改变易变字段不算进展。
+- 冻结 `RunLimitsV1` 的 turn、LLM call 和总墙钟是整个正式运行的实际上限，且不得超过 §5.1 的内建硬上限；单动作、目标检查、用户等待和正式验证超时只是子上限，不能扩大总上限。Schema 无效、模型输出无效和 LLM 调用失败均消耗已开始的 turn/call；在预算不足以开始下一动作、等待或检查时必须于副作用前停止。
+
+超时映射是封闭的，不允许适配器自行选择：
+
+| 操作 | 子超时 |
+|---|---|
+| Agent `list/read/search/apply patch/propose completion` | `tool_timeout_seconds` |
+| Agent `TARGET_TESTS` | `target_check_timeout_seconds` |
+| Agent `FULL_PYTEST`、`RUFF`、`MYPY` | `full_check_timeout_seconds` |
+| BASELINE 的每次 collect-only、完整 pytest、目标复跑、Ruff、Mypy | 单项 `full_check_timeout_seconds`，且共同受 `baseline_timeout_seconds` 限制 |
+| BASELINE 整体 | `baseline_timeout_seconds` |
+| FORMAL_VALIDATION 的每个 pytest/Ruff/Mypy 子检查 | 单项 `full_check_timeout_seconds`，且共同受 `formal_validation_timeout_seconds` 限制 |
+| FORMAL_VALIDATION 整体 | `formal_validation_timeout_seconds` |
+| 用户等待 | `user_wait_timeout_seconds` |
+| 全部正常操作 | 同时受剩余 `run_deadline` 限制；取适用限制中的最小正值；持久化过期按 §4.6 失败关闭 |
+
+### 4.2.7 生命周期
+
+    WaitKind = DISCLOSURE_GRANT | FINAL_WRITEBACK
+
+    WaitContext {
+      wait_id
+      run_id
+      wait_kind
+      source_phase: AGENT_LOOP | FORMAL_VALIDATION
+      subject_digest
+      created_at
+      expires_at
+    }
+
+- 有效创建：无 Run → `CREATED`。
+- `CREATED` → `RUNNING(PREFLIGHT)` 或 `STOPPED`。
+- `RUNNING(PREFLIGHT)` → `RUNNING(BASELINE)` 或 `STOPPED`。
+- `RUNNING(BASELINE)` → `RUNNING(AGENT_LOOP)` 或 `STOPPED`。
+- `RUNNING(AGENT_LOOP)` 可继续、以 `DISCLOSURE_GRANT` 进入 `WAITING_USER`、进入 `FORMAL_VALIDATION` 或 `STOPPED`。
+- `RUNNING(FORMAL_VALIDATION)` 可回到新的 `AGENT_LOOP`、以 `FINAL_WRITEBACK` 进入 `WAITING_USER` 或 `STOPPED`。
+- `DISCLOSURE_GRANT` 只能绑定 `source_phase=AGENT_LOOP`；`FINAL_WRITEBACK` 只能绑定 `source_phase=FORMAL_VALIDATION`。其他 wait kind/phase 组合在创建前拒绝。
+- `DISCLOSURE_GRANT.subject_digest` 必须精确等于 §4.4.3 的 `DisclosureGrantSubjectV1.digest`；`FINAL_WRITEBACK.subject_digest` 必须精确等于 §4.4.2 的 `FinalWritebackSubjectV1.digest`。两类 subject 都不含可变状态或消费计数。
+- 用户决定必须同时绑定 `wait_id`、`run_id`、`wait_kind` 和 `subject_digest`。`WaitContext.expires_at = min(created_at + user_wait_timeout_seconds, run_deadline)`，并必须等于对应 subject 的 `expires_at`；若创建时已无正的等待区间，则在创建 subject 或 `WaitContext` 前以总墙钟预算耗尽停止。
+- `DISCLOSURE_GRANT` 等待被精确批准后回到来源 `AGENT_LOOP` 的新执行入口；`FINAL_WRITEBACK` 等待被精确批准后进入 `RUNNING(PERSISTENCE)`。
+- 等待被拒绝、过期或取消时进入带稳定原因的 `STOPPED`。`WaitKind`、subject 或绑定变化使旧决定失效；只有来源 phase 重新产生新的 subject 后才可创建新等待。
+- `WAITING_USER` 时间计入 `max_run_wall_clock_seconds`，但不创建 `AgentTurn`，也不消耗 LLM call。披露范围不足、累计预算不足、Grant 过期或撤销时，只要仍有正的等待区间就必须创建新的 `DISCLOSURE_GRANT` 等待；不得在“等待或停止”之间自由选择。
+- 最终候选、Manifest 或验证证据变化时必须重新进入适用的 `AGENT_LOOP` 或 `FORMAL_VALIDATION`；工作区前映像、配置、策略、适配器或执行 profile 变化时停止，不得只创建新的最终批准。
+- `RUNNING(PERSISTENCE)` 可进入 `SUCCEEDED`、`STOPPED` 或 `RECOVERY_REQUIRED`。
+- `RECOVERY_REQUIRED` 只能由 §4.6 的恢复结果进入 `SUCCEEDED`、`STOPPED` 或保持不变。
+- 非持久化阶段和两类 `WAITING_USER` 进程重启统一停止为 `PROCESS_RESTARTED_DURING_RUN`，不得恢复等待、turn 或重发 LLM 请求。
+
+### 4.2.8 错误
+
+- 模型输出无效：`MODEL_OUTPUT_INVALID`；连续两次无效则 `MODEL_OUTPUT_INVALID_LIMIT` 停止。
+- 动作阶段不允许：`ACTION_NOT_ALLOWED_IN_PHASE`，形成反馈；硬 `DENY` 不进入审批。
+- Read 的目标通过路径和对象安全检查但不是 `SupportedTextFileV1` 时返回 `FILE_NOT_TEXT`，不得发布正文或部分 `ReadFileResult`。
+- Harness 构造的动作结果违反封闭结果 Schema 时以 `INTERNAL_ERROR` 失败关闭，不得把非法组合或部分 payload 发布给下一 turn。
+- LLM 调用失败：`LLM_CALL_FAILED` 并停止；v1 不自动重试。
+- 准备请求与冻结 profile/adapter 不一致，或响应后控制面失败：`INTERNAL_ERROR` 并停止；前者必须发生在请求摘要、turn/call 计数和适配器调用前。
+- 等待拒绝、过期和绑定变化分别使用 `WAIT_REJECTED`、`WAIT_EXPIRED`、`WAIT_STALE`。
+- 预算、重复动作、无进展和取消使用各自稳定错误码。
+
+### 确定性测试
+
+脚本化 Mock LLM 依次返回读取、失败补丁、检查、修正补丁和 completion；每轮必须从冻结 Mock profile 构造不含任何 OpenAI 字段的 `MockPreparedModelRequestV1`，由控制面记录 `authorization_record_ref=ABSENT` 的 `LLMCallResultV1`，并断言凭据、Grant、authorization record 与网络调用次数均为零。相同 Mock profile、消息和来源产生相同 request digest 与 `canonical_byte_count`；script、消息或来源变化使 digest 变化。Mock 请求加入 endpoint/model/fixed parameters、OpenAI 请求加入 script 字段，或具体变体与 profile/adapter 不一致，均在请求摘要、turn/call 计数和适配器调用前拒绝；控制面尝试为 Mock 构造 `authorization_record_ref=PRESENT` 或 `DELIVERY_UNKNOWN` 的结果候选时，以 `INTERNAL_ERROR` 阻止结果发布，已消费的一次 turn/call 不回退且不得重试。另断言动作顺序、上下文摘要、反馈消费、无进展谓词和停止结果完全可重复；以模型提交 `action_id` 断言 Schema 拒绝，并让可注入 ID 生成器为同一语义动作产生不同实例 ID，断言 `semantic_digest` 不变、`instance_digest` 不同且第三次相同语义结果触发 `REPEATED_ACTION_LIMIT`。文件动作测试必须覆盖 list/search 使用 `ROOT`、使用 `PATH("src")`、list 的 `PATH` 指向非目录、search 的 `PATH` 指向文本文件、非文本普通文件或目录，以及空字符串、`.`、`./`、`/`、`src/` 和 `[ROOT, PATH(...)]` 在动作执行前被拒绝；直接搜索非文本普通文件必须成功返回零匹配和 `skipped_non_text_count=1`。使用 FakeClock/Executor 逐项命中 §4.2.6 的每个子超时和更短 `run_deadline`，并断言披露等待、授权不足、具体请求尚未冻结或请求/profile/adapter 尚未匹配时 turn/call 计数不变，越过原子计数点后的失败则精确增加一次。
+
+文件结果测试另使用同一 Fake Tree 构造目录、UTF-8 LF、UTF-8 BOM + CRLF、PNG/随机二进制、无效 UTF-8、U+0000、混合换行、无末尾换行和空文件。断言前三类分别形成 `DIRECTORY`、`TEXT_FILE`、`TEXT_FILE`，其余普通文件形成 `NON_TEXT_FILE`；所有普通文件的 `size_bytes` 等于完整原始字节长度。未知 `kind`、目录携带 `size_bytes`、`TEXT_FILE` 缺少 `text_profile`、`NON_TEXT_FILE` 携带 `text_profile` 或任一其他非法组合均以 `INTERNAL_ERROR` 阻止整个结果发布。对同一文件，List、Read 和 Search 必须得到相同分类；Read 非文本文件返回 `FILE_NOT_TEXT` 且无正文，Search 只对实际检查并跳过的非文本普通文件增加 `skipped_non_text_count`。相同树、边界和截断参数必须产生相同条目顺序、类型、计数与稳定继续参数。
+
+## 4.3 FR-WS：快照、路径、严格补丁和候选树
+
+### 输入
+
+Snapshot 创建入口是已取得 workspace lease、通过 §4.1 Snapshot 前置检查并冻结 HEAD、tracked 工作区原始字节和 repository policy 的 Git 工作区；该入口不要求静态画像、readiness 或完整 PREFLIGHT 已经通过。
+
+Candidate 操作入口是本次 Run 已封存的唯一 `SnapshotTree`，以及符合 §4.2.2 的文件动作或 `ApplyCandidatePatchAction`；只有完整 PREFLIGHT 和 BASELINE 已通过且当前 phase 允许 Candidate 操作时，才可使用该入口。
+
+### 行为
+
+1. 在 `RUNNING(PREFLIGHT)` 内，从同一冻结 HEAD、经逐文件原始字节校验的 tracked 工作区和 repository policy 创建并封存本次 Run 唯一的不可变 `SnapshotTree`；创建后不得重新读取权威工作区形成第二份 Snapshot。
+2. Snapshot 的创建不开放 Candidate 操作；完整 PREFLIGHT 和 BASELINE 通过前，任何 Agent 文件动作或 `ApplyCandidatePatchAction` 都必须拒绝且无候选副作用。
+3. `CandidateRevision` 从不可变父候选派生；不得原地修改 `SnapshotTree` 或权威工作区。
+4. 所有 Agent 路径必须是使用 `/` 的规范相对路径；拒绝绝对路径、`..`、盘符、UNC、ADS、设备名、尾随点/空格和保留路径。
+5. 文件访问在打开前后验证最终对象身份、授权根、reparse 状态和 link count；任一步不确定即拒绝。
+6. `ApplyCandidatePatchAction` 必须先完整解析全部 patch 条目，再按固定优先级执行 patch/Schema、规范路径与工作区边界、文件系统对象与敏感路径、保护工件、`EditablePathPolicyV1` 和候选硬上限检查；只有全部条目通过后才可原子派生一个 `CandidateRevision`。任一条目失败时整个动作无候选副作用，不得先应用合法条目。
+7. `CREATE` 和 `REPLACE` 使用同一冻结 editable root 与 operation 检查；每个条目都必须是 `src/` 的严格后代。`CREATE` 还必须在冻结 Git ignore 规则下为非忽略文件；现有文件不会因为已在 Snapshot 中就获得 `src/**` 之外的替换权限。
+8. 每次 Candidate 派生后，Harness 必须从当前 `CandidateTree` 重算完整 `FinalDiffV1`，并在发布 Candidate 前重新验证每个 entry 的 operation/path 与冻结 `EditablePathPolicyV1`。任一越界 entry 返回 `PATCH_PATH_NOT_EDITABLE` 且不发布该 Candidate；Snapshot、reference manifest、repository/governance policy digest 不一致则返回 `TREE_INTEGRITY_FAILED`。
+
+候选的安全绑定只使用以下语义身份：
+
+    CandidateIdentityV1 {
+      schema_version: 1
+      snapshot_tree_digest
+      candidate_tree_digest
+      final_diff_digest
+      digest
+    }
+
+`candidate_digest` 精确等于 `CandidateIdentityV1.digest`。`CandidateRevision.id`、`parent_id` 和易变元数据仅用于审计，不进入该摘要；同一 Snapshot 上相同 CandidateTree 与 `FinalDiffV1` 必须恢复相同摘要。`base_candidate_digest`、completion、验证和最终批准只引用该身份；三项输入任一变化都使旧引用陈旧。
+
+### `UNIFIED_DIFF_V1`
+
+- patch 文档本身必须为无 BOM 的 UTF-8、使用 LF，并仅允许标准 `--- a/path`、`+++ b/path` 和 `@@ -old +new @@` hunk；新文件使用 `--- /dev/null`、`+++ b/path`。
+- 禁止时间戳、rename/mode/binary 扩展头、`\ No newline at end of file`、删除文件和路径仅大小写变化。
+- 每个 hunk 的旧范围、上下文行和删除行必须与 `base_candidate_digest` 指向的候选精确匹配。
+- 不允许 fuzzy apply、自动 offset、自动冲突解决或“尽力应用”；任一 hunk 不匹配则整个动作无副作用失败。
+- 现有文件保持 BOM、统一换行风格和末尾换行；新文件固定为 UTF-8、无 BOM、LF、末尾换行。
+- `base_candidate_digest` 不等于当前候选时，以 `STALE_CANDIDATE` 拒绝。
+
+路径拒绝优先级固定为：patch/Schema 错误 → `PATH_INVALID`/`PATH_OUTSIDE_WORKSPACE` 和路径别名 → `UNSUPPORTED_FILESYSTEM_OBJECT`/`SENSITIVE_PATH` → `PROTECTED_ARTIFACT_CHANGED` → `PATCH_PATH_NOT_EDITABLE`。因此 `tests/test_a.py` 继续返回保护工件错误，结构合法但不属于 `src/**` 的 `README.md`、`docs/**`、`.github/**`、`.gitlab-ci.yml`、`Dockerfile*` 和 `scripts/**` 返回 `PATCH_PATH_NOT_EDITABLE`；用户批准和其他策略不能改变优先级或结果。
+
+### `FinalDiffV1`
+
+补丁是输入格式；批准、验证和持久化只绑定以下封闭结构：
+
+    TextMetadataV1 {
+      encoding: "UTF8" | "UTF8_BOM"
+      newline: "LF" | "CRLF"
+      final_newline: true
+    }
+
+    FinalDiffPreimageV1 =
+      ABSENT { kind: "ABSENT" }
+      | PRESENT {
+          kind: "PRESENT"
+          content_digest
+          text_metadata: TextMetadataV1
+        }
+
+    FinalDiffEntryV1 {
+      operation: "CREATE" | "REPLACE"
+      path: CanonicalRelativePathV1
+      preimage: FinalDiffPreimageV1
+      postimage_digest
+      postimage_text_metadata: TextMetadataV1
+    }
+
+    FinalDiffV1 {
+      schema_version: 1
+      snapshot_tree_digest
+      entries: 0..3 unique FinalDiffEntryV1, sorted by canonical path
+      added_and_replacement_text_bytes: 0..131072
+      digest
+    }
+
+`CREATE` 必须绑定 `ABSENT`，`REPLACE` 必须绑定 `PRESENT`；其他组合在生成摘要前拒绝。每次动作后重新计算当前候选相对 `SnapshotTree` 的完整 `FinalDiffV1`，对全部 entries 重新应用同一 `EditablePathPolicyV1` 和 §1.4.4 的累计限制；它不是历史 patch 文本的拼接。`snapshot_tree_digest` 必须解析到包含同一 `EditablePathPolicyV1.digest` 的 `repository_policy_digest`，策略变化使旧 `FinalDiffV1` 失效。
+
+`added_and_replacement_text_bytes` 是 Harness 派生字段，不接受模型、UI 或 patch 文本提供的值，其唯一计算式为：
+
+    FinalDiffV1.added_and_replacement_text_bytes
+    = Σ len(entry 对应的完整 postimage 原始字节)
+
+求和覆盖全部 `CREATE` 和 `REPLACE` 条目，字节序列必须与相应 `postimage_digest` 的输入完全相同，包括 UTF-8 BOM、非 ASCII 字符的 UTF-8 多字节、CRLF 的两个字节和末尾换行；`entries=[]` 时结果为 `0`。即使只替换一个字符或新旧文件等长，`REPLACE` 仍计算完整 postimage。该值不得使用 unified diff 文本、`+` 行、仅变化片段或历史 patch 累计长度计算。重算值超过 131072 时返回 `PATCH_LIMIT_EXCEEDED`；记录值与当前 `CandidateTree` 重算结果不一致时返回 `TREE_INTEGRITY_FAILED`。
+
+`digest` 按 §0.1 对除自身外的全部字段计算。WebUI 展示的 unified diff 必须由同一 `FinalDiffV1` 和可验证的 Snapshot/Candidate 字节确定性渲染；展示文本本身不作为批准、字节统计或持久化身份。
+
+### 输出
+
+不可变 `SnapshotTree`、`CandidateRevision`、当前规范 `FinalDiffV1`，或一个无候选副作用的稳定错误。
+
+### 错误
+
+`PATH_INVALID`、`PATH_OUTSIDE_WORKSPACE`、`UNSUPPORTED_FILESYSTEM_OBJECT`、`SENSITIVE_PATH`、`PROTECTED_ARTIFACT_CHANGED`、`PATCH_PATH_NOT_EDITABLE`、`UNSUPPORTED_PATCH_OPERATION`、`PATCH_CONTEXT_MISMATCH`、`STALE_CANDIDATE`、`PATCH_LIMIT_EXCEEDED`、`TREE_INTEGRITY_FAILED`。
+
+### 清理
+
+执行副本删除前验证 UUID 根身份且不跟随链接。删除失败时记录精确残留路径、使该名称在当前进程生命周期内不可复用并停止当前运行；v1 不因此建立通用恢复状态机。持久化恢复所需工件不受普通清理影响。
+
+### 确定性测试
+
+构造绝对路径、父目录、ADS、设备名、symlink/reparse、hard link、敏感路径、陈旧候选、hunk 不匹配、多动作累计超限和 ignored 新文件；断言全部在文件访问或候选发布前被稳定拒绝。`REPLACE src/a.py` 与 `CREATE src/new.py` 必须通过 editable gate；`README.md`、`docs/a.md`、`.github/workflows/x.yml`、`.gitlab-ci.yml`、`Dockerfile`、`scripts/x.py`、`src`、`src-old/a.py`、`src2/a.py` 和大小写/Unicode 路径别名必须拒绝，且 `tests/test_a.py` 仍优先返回 `PROTECTED_ARTIFACT_CHANGED`。合法与非法 entry 混合的单次 patch 整体无候选副作用，多次 patch 也不能产生越界的累计 `FinalDiffV1`。另构造 `CREATE`/`REPLACE` 混合候选，使用 UTF-8 BOM、中文、CRLF 和末尾换行复算完整 postimage 原始字节；断言单字符替换仍统计完整文件、`entries=[]` 为零、展示用 unified diff 不参与统计、越界 entry 返回 `PATCH_PATH_NOT_EDITABLE`、policy/Snapshot 绑定篡改返回 `TREE_INTEGRITY_FAILED`，以及重算结果超过 131072 时返回 `PATCH_LIMIT_EXCEEDED`。`CandidateIdentityV1` 测试还必须证明三项输入任一变化使旧引用陈旧，易变 revision 元数据不改变摘要，内容与 `FinalDiffV1` 恢复旧值时恢复原摘要。
+
+## 4.4 FR-GOV：策略、动作批准与真实 LLM 披露
+
+### 输入
+
+规范化 `AgentAction`、当前运行/候选/Manifest/配置绑定、可选用户决定，以及真实请求的供应商、模型、来源和规范摘要。
+
+### 4.4.1 动作策略
+
+    PolicyEngine.evaluate(action, context) -> ALLOW | ASK | DENY
+
+| 动作 | 默认决定 |
+|---|---|
+| 受限 list/read/literal search | ALLOW |
+| 候选树内、全部条目命中冻结 `EditablePathPolicyV1` 的受支持补丁 | ALLOW |
+| 选择预定义检查计划 | ALLOW |
+| `ProposeCompletionAction` | ALLOW，但仅进入正式验证 |
+| 最终权威写回 | ASK |
+| editable root 越界、敏感路径、任意命令、验收篡改、控制面修改 | DENY |
+
+硬 `DENY` 列表由代码中的单一版本化策略定义，治理 `policy_digest` 必须绑定 `ReferenceProfileManifestV1.editable_path_policy.digest`。配置、提示、仓库文本、`DisclosureGrant` 和用户批准都不能改变 `DENY`；任一 Candidate entry 越出 `src/**` 都是不可批准的硬拒绝。
+
+### 4.4.2 `FinalWritebackApproval`
+
+`FinalWritebackApproval` 只授权最终权威写回，不授权其他 `ASK`、本地工具、披露、Demo 决定或任何硬 `DENY`。批准身份由不可变 subject 定义：
+
+    FinalWritebackSubjectV1 {
+      schema_version: 1
+      run_id
+      action_type: "final_writeback"
+      action_semantic_digest
+      candidate_digest
+      final_diff_digest
+      validation_manifest_digest
+      formal_evidence_digest
+      workspace_preimage_digest
+      run_config_digest
+      policy_digest
+      reference_profile_digest
+      expires_at
+      digest
+    }
+
+    FinalWritebackApproval {
+      schema_version: 1
+      approval_id
+      subject_digest
+      created_at
+      status: PENDING | REJECTED | EXPIRED | CONSUMED
+    }
+
+`action_semantic_digest` 对封闭的 `{schema_version: 1, action_type: "final_writeback", candidate_digest, final_diff_digest}` 使用 `ActionSemanticDigestV1` 域计算。`FinalWritebackSubjectV1.digest` 排除自身 `digest`，并作为 `subject_digest`；`created_at` 和可变 `status` 不属于 subject。项目适配器身份已由包含 `adapter_version` 的 `validation_manifest_digest` 唯一传递，subject 不定义第二个 adapter identity。创建 subject 前必须重算 `FinalDiffV1`，验证其全部 entries 命中冻结 `EditablePathPolicyV1`，并验证 `policy_digest`、`reference_profile_digest`、`validation_manifest_digest` 和 `run_config_digest` 传递的是同一 editable policy identity；路径越界返回 `PATCH_PATH_NOT_EDITABLE`，identity 不一致返回 `TREE_INTEGRITY_FAILED`，两者都不得创建等待或批准。只有当前 `PENDING`、subject 未过期且全部 subject 字段仍匹配的批准可以在动作执行前通过一次原子更新变为 `CONSUMED`。消费动作不能改变 subject；消费失败不得执行写回。任何批准不得覆盖 `DENY`，也不得被转换为其他批准或授权类型。
+
+### 4.4.3 `DisclosureGrant`
+
+真实模式首次需要项目数据外发时，控制面展示并请求一个运行级不可变 subject：
+
+    RequestSourceCategoryV1 =
+      HARNESS_PROTOCOL | TASK | FILE_CONTENT | TOOL_RESULT | MEMORY | FEEDBACK
+
+    DisclosurePathScopeV1 =
+      ROOT { kind: "ROOT" }
+      | FILE {
+          kind: "FILE"
+          path: CanonicalRelativePathV1
+        }
+      | DIRECTORY {
+          kind: "DIRECTORY"
+          path: CanonicalRelativePathV1
+        }
+
+    DisclosureGrantSubjectV1 {
+      schema_version: 1
+      run_id
+      llm_profile_digest
+      provider
+      endpoint_id: "OPENAI_PUBLIC_API_V1"
+      model
+      request_serializer_version
+      allowed_source_paths: 0..500 unique DisclosurePathScopeV1,
+        sorted by ROOT < FILE < DIRECTORY, then path
+      allowed_source_categories: 1..6 unique RequestSourceCategoryV1, sorted by enum order
+      redaction_profile_id: "NO_CONTENT_REDACTION_V1"
+      cumulative_byte_budget: 1..1310720
+      expires_at
+      digest
+    }
+
+    DisclosureGrant {
+      schema_version: 1
+      grant_id
+      subject_digest
+      created_at
+      consumed_bytes
+      status: ACTIVE | REVOKED | EXPIRED | EXHAUSTED
+    }
+
+`DisclosurePathScopeV1.ROOT` 匹配任意 `source_path=PRESENT` 的规范路径；`FILE(path)` 只匹配完全相等的路径；`DIRECTORY(path)` 匹配路径自身，或匹配以 `path + "/"` 开头的后代路径。目录匹配不得退化为普通字符串前缀，因此 `DIRECTORY("src")` 不匹配 `src-old/a.py`。所有 `path` 都是不带尾随 `/` 的 `CanonicalRelativePathV1`。`ROOT` 出现时必须是唯一 scope；其余 scope 拒绝重复值以及 Windows/Unicode 折叠后的路径别名。
+
+`allowed_source_paths=[]` 精确表示不授权任何带路径来源，绝不表示全部仓库路径；只要来源类别合同允许，无路径来源仍可由 `allowed_source_categories` 独立授权。类别被允许不等于路径被允许，任一带路径来源必须额外命中至少一个 scope。
+
+`DisclosureGrantSubjectV1.digest` 排除自身 `digest`。Grant 不绑定尚未形成的最终请求摘要，也不授权任何本地工具或持久化动作。供应商、endpoint、模型和请求序列化方式来自冻结 `OpenAILLMProfileV1`，用户不能在 Grant 中改写。用户可以撤销；LLM profile、endpoint、路径 scope、数据类别、脱敏 profile、累计预算上限或有效期被修改，或者当前请求需要扩大这些范围时，必须创建新的 subject、等待和 Grant。旧 Grant、`OpenAIPreparedModelRequestV1` 和 authorization record 不得在 endpoint 变化后复用。`consumed_bytes` 与 `status` 是可变记录字段，不进入 subject；正常预算消费不会使 subject 失效。
+
+`NO_CONTENT_REDACTION_V1` 不扫描、替换或声称识别用户源码中的任意秘密。凭据、会话令牌和其他控制面秘密必须在 `ContextProjection` 形成前通过类型和来源隔离保证不可进入；违反该不变量时失败关闭，不能把事后字符串替换当作补救。授权界面必须明确告知用户：被选择的项目正文将在规范裁剪后原样发送，敏感路径拒绝不等于通用秘密扫描。
+
+在创建或复用 `DisclosureGrant` 的授权界面，控制面必须显示 `endpoint_id = OPENAI_PUBLIC_API_V1` 与由可信内建 `OpenAIEndpointV1` 映射解析的目的主机 `api.openai.com`；显示值不得来自环境、请求、普通配置或 DNS 文本。路径 scope 必须分别显示为“整个仓库”“单个文件：<path>”或“目录及其后代：<path>”，不得向用户显示或接受尾随 `/` 字符串哨兵。
+
+### 4.4.4 准备请求、调用结果与逐请求授权记录
+
+    OptionalCanonicalPathV1 =
+      ABSENT { kind: "ABSENT" }
+      | PRESENT { kind: "PRESENT", value: CanonicalRelativePathV1 }
+
+    RequestContentSegmentV1 {
+      source_category: RequestSourceCategoryV1
+      source_path: OptionalCanonicalPathV1
+      content: UTF-8 string
+      content_digest
+      byte_count: 0..65536
+    }
+
+    RequestMessageV1 {
+      role: "SYSTEM" | "USER"
+      segments: 1..1024 ordered RequestContentSegmentV1
+    }
+
+    RequestSourceV1 {
+      message_index: 0..127
+      segment_index: 0..1023
+      source_category: RequestSourceCategoryV1
+      source_path: OptionalCanonicalPathV1
+      content_digest
+      byte_count: 0..65536
+    }
+
+    MockAdapterPayloadV1 {
+      schema_version: 1
+      script_id
+      script_digest
+      messages: 1..128 ordered RequestMessageV1
+    }
+
+    PreparedModelRequestV1 =
+      MockPreparedModelRequestV1 {
+        schema_version: 1
+        mode: MOCK
+        llm_profile_digest
+        script_id
+        script_digest
+        messages: 1..128 ordered RequestMessageV1
+        canonical_byte_count: 1..65536
+        digest
+      }
+      | OpenAIPreparedModelRequestV1 {
+        schema_version: 1
+        mode: OPENAI
+        llm_profile_digest
+        provider: "openai"
+        endpoint_id: "OPENAI_PUBLIC_API_V1"
+        model
+        request_serializer_version
+        messages: 1..128 ordered RequestMessageV1
+        fixed_parameters: OpenAIFixedParametersV1
+        redaction_profile_id: "NO_CONTENT_REDACTION_V1"
+        canonical_byte_count: 1..65536
+        digest
+      }
+
+    DisclosureAuthorizationRecordV1 {
+      schema_version: 1
+      authorization_record_id
+      grant_id
+      grant_subject_digest
+      llm_profile_digest
+      provider
+      endpoint_id: "OPENAI_PUBLIC_API_V1"
+      model
+      request_serializer_version
+      request_digest
+      actual_sources: 1..1024 RequestSourceV1
+      canonical_byte_count: 1..65536
+      redaction_profile_id: "NO_CONTENT_REDACTION_V1"
+      created_at
+    }
+
+    OptionalAuthorizationRecordRefV1 =
+      ABSENT { kind: "ABSENT" }
+      | PRESENT {
+          kind: "PRESENT"
+          authorization_record_id
+        }
+
+    OptionalResponseDigestV1 =
+      ABSENT { kind: "ABSENT" }
+      | PRESENT {
+          kind: "PRESENT"
+          value: 64 lowercase hexadecimal SHA-256
+        }
+
+    OptionalLLMCallErrorV1 =
+      ABSENT { kind: "ABSENT" }
+      | PRESENT {
+          kind: "PRESENT"
+          stable_error_code
+        }
+
+    LLMCallResultV1 {
+      schema_version: 1
+      mode: MOCK | OPENAI
+      llm_profile_digest
+      request_digest
+      authorization_record_ref: OptionalAuthorizationRecordRefV1
+      status: NOT_ATTEMPTED | SUCCEEDED | FAILED | DELIVERY_UNKNOWN
+      response_digest: OptionalResponseDigestV1
+      error: OptionalLLMCallErrorV1
+    }
+
+消息和其中 segments 都保持发送顺序，每个具体请求的 segment 总数必须为 1..1024。`content_digest` 是 segment `content` 的无 BOM UTF-8 原始字节 SHA-256，`byte_count` 是同一字节序列长度；不一致时在请求摘要前拒绝。上述 Schema 全部拒绝未知字段，声明字段全部必填。`MockPreparedModelRequestV1` 只能由冻结 `MockLLMProfileV1` 构造，`mode`、`llm_profile_digest`、`script_id` 和 `script_digest` 必须完全一致，并禁止 provider、endpoint、model、serializer、OpenAI fixed parameters 和 redaction profile 字段。`OpenAIPreparedModelRequestV1` 只能由冻结 `OpenAILLMProfileV1` 构造，禁止 `script_id` 和 `script_digest`。任一模式、profile digest 或模式专属字段不一致，均在请求摘要、turn/call 计数和适配器调用前以 `INTERNAL_ERROR` 失败关闭；OpenAI endpoint 或有效目标不一致仍使用 `LLM_ENDPOINT_MISMATCH`。
+
+两个具体准备请求分别以自身类型名作为 §0.1 的 `object_type`，各自的 `digest` 排除自身且绑定其余全部字段；`PreparedModelRequestV1` 只是封闭联合别名，不产生第三种摘要。`DisclosureAuthorizationRecordV1.request_digest` 只能引用 `OpenAIPreparedModelRequestV1.digest`。`endpoint_id` 依 §0.1 自动进入 `OpenAILLMProfileV1`、`DisclosureGrantSubjectV1`、`OpenAIPreparedModelRequestV1` 和 `DisclosureAuthorizationRecordV1` 各自的规范摘要，四个对象的 endpoint 必须完全相同。
+
+`MockPreparedModelRequestV1.canonical_byte_count` 是按 §0.1 规则编码 `MockAdapterPayloadV1` 所得规范 JSON 的无 BOM UTF-8 字节长度，不包括摘要域分隔前缀；`MockAdapterPayloadV1` 是 Mock adapter 实际解释的完整负载。OpenAI serializer 对每条消息按 segment 顺序直接拼接 `content`，不插入隐式分隔符，也不把来源元数据写入 HTTP 正文；`OpenAIPreparedModelRequestV1.canonical_byte_count` 是该 serializer 实际交给 transport 的最终 UTF-8 请求体字节数。两者都是各自模式的真实适配器负载大小，不要求跨模式相等，也不是 UI 展示长度。
+
+`LLMCallResultV1.mode`、`llm_profile_digest` 和 `request_digest` 必须与被调用的具体准备请求一致。Mock 结果的 `request_digest` 必须引用 `MockPreparedModelRequestV1.digest`，`authorization_record_ref` 必须为 `ABSENT`，且不得使用 `DELIVERY_UNKNOWN`；OpenAI 结果的 `request_digest` 必须引用 `OpenAIPreparedModelRequestV1.digest`，`authorization_record_ref` 必须为 `PRESENT` 并指向 request digest 相同的已持久化 `DisclosureAuthorizationRecordV1`。`SUCCEEDED` 必须组合 `response_digest=PRESENT` 与 `error=ABSENT`；其他状态必须组合 `response_digest=ABSENT` 与 `error=PRESENT`。模式、请求、状态组合或授权记录引用不一致时，以 `INTERNAL_ERROR` 阻止结果发布；已消费的 turn/call 不回退，且不得重试适配器调用。
+
+`RequestContentSegmentV1.source_path` 的存在性由来源类别和可信来源分类器共同冻结：
+
+- `HARNESS_PROTOCOL`、`TASK` 和 `MEMORY` 必须为 `ABSENT`；
+- `FILE_CONTENT` 必须为 `PRESENT`；
+- `TOOL_RESULT` 和 `FEEDBACK` 的正文或事实可归属于一个具体仓库路径时必须为 `PRESENT`；只有纯运行级、检查级或控制面事实才允许为 `ABSENT`；
+- 一段正文包含多个仓库路径时，必须拆分为多个按路径绑定的 segment，公共无路径元数据另建 `ABSENT` segment；List/Read/Search 产生的文件名、文件正文摘录或匹配结果必须绑定对应路径，不得把整个结果降级为无路径 `TOOL_RESULT`。
+
+来源类别与 `source_path` 存在性合同适用于两个具体准备请求；违反该合同属于控制面构造错误，必须在具体请求摘要、turn/call 计数和适配器调用前以 `INTERNAL_ERROR` 失败关闭。只有 `OpenAIPreparedModelRequestV1` 需要 Disclosure Grant：每个 segment 必须命中 `allowed_source_categories`，`source_path=PRESENT` 时还必须按 §4.4.3 的精确算法命中至少一个 `allowed_source_paths`；类别或路径未命中活动 Grant 时以 `DISCLOSURE_SCOPE_EXCEEDED` 在 Grant 消费、durable authorization record 创建、turn/call 计数和网络调用前失败关闭，且这些副作用增量全部为零。Mock 不执行 Disclosure Grant 类别/scope、外发预算或 redaction 授权，但仍执行相同 ContextProjection 裁剪、segment 来源分类、路径存在性和 64 KiB 请求上限。
+
+`DisclosureAuthorizationRecordV1.actual_sources` 不是第二份调用输入。控制面必须对请求中每个 segment 生成且只生成一个 `RequestSourceV1`，使用从零开始的 `message_index`/`segment_index`，复制其类别、路径、摘要和字节数，并按该二元组排序；缺失、重复、多余或内容不一致的投影必须在 Grant 消费和持久化前以 `INTERNAL_ERROR` 拒绝。由此，准备请求正文是唯一来源事实，authorization record 只保存无正文、可验证的派生索引。
+
+每次 Mock 调用前：
+
+1. 从冻结 `MockLLMProfileV1` 和最终 `ContextProjection` 构造 `MockAdapterPayloadV1`，复算 `canonical_byte_count`，形成不可再追加正文的 `MockPreparedModelRequestV1`；
+2. 在请求摘要和计数前验证 request 的 `mode`、`llm_profile_digest`、`script_id`、`script_digest` 与冻结 profile 完全一致，且所选 adapter 精确为冻结 `adapter_version` 对应的 Mock adapter；
+3. 只有全部验证通过且 turn、LLM call 与剩余总墙钟允许时，才按 §4.2.5 原子创建计数点并把该请求交给 Mock adapter；
+4. 结果必须是 `mode=MOCK`、绑定同一 profile/request digest 且 `authorization_record_ref=ABSENT` 的 `LLMCallResultV1`。Mock 不读取凭据、不创建 Disclosure Grant/authorization record、不应用外发 redaction profile，也不访问网络。
+
+每次真实调用前：
+
+1. 创建或复用真实 Grant 时，调用门只验证冻结 `OpenAILLMProfileV1`、待创建或活动的 `DisclosureGrantSubjectV1`、可信内建 `OpenAIEndpointV1` 映射与 OpenAI 适配器的有效目标一致；此阶段 `OpenAIPreparedModelRequestV1` 与 authorization record 尚未形成，不得引用或验证它们。适配器必须显式仅由内建映射构造客户端，不得读取、接受或继承 `OPENAI_BASE_URL` 或 SDK 的等价自定义 base URL 设置。
+2. 重新生成最终 `ContextProjection`，应用冻结的 `NO_CONTENT_REDACTION_V1` 并形成不可再扩张正文的 `OpenAIPreparedModelRequestV1`。在 Grant 消费事务前，只从该请求的 segments 派生完整但未持久化的 `DisclosureAuthorizationRecordV1` candidate 字段；candidate 不是 durable authorization record，不得落库、写入审计记录或作为已创建 authorization record 返回。
+3. 在消费事务开始前，验证冻结 profile、活动 Grant subject、`OpenAIPreparedModelRequestV1`、未持久化 candidate 字段的 `endpoint_id` 与预期内建 `OpenAIEndpointV1` 一致，并验证适配器有效目标一致；再按固定来源路径存在性合同和 scope 匹配算法验证全部 segments 及其精确派生投影、redaction profile 应用结果和字节数均落在活动 Grant 内，且 turn、LLM call 和剩余总墙钟仍允许到达 §4.2.5 的计数点。
+4. 令 `charge_bytes = OpenAIPreparedModelRequestV1.canonical_byte_count`。只有全部验证通过且 `consumed_bytes + charge_bytes <= cumulative_byte_budget` 时，才在同一控制面事务中原子执行 `consumed_bytes := consumed_bytes + charge_bytes`，等于预算上限时转为 `EXHAUSTED`，并只用已验证的 candidate 字段持久化 `DisclosureAuthorizationRecordV1`；否则零消费、零 durable record，并按 §4.2.7 处理预算不足。相同正文或请求再次获准发送仍重新按其完整 `charge_bytes` 扣减。
+5. 只有该事务成功后，按 §4.2.5 原子创建 turn/call 计数点，真实调用门才可把同一 `OpenAIPreparedModelRequestV1` 和已持久化 authorization record 引用交给真实适配器；适配器不得追加项目正文、工具结果或记忆。
+
+`DisclosureAuthorizationRecordV1` 证明该精确 OpenAI 请求在调用前获得授权，不证明适配器被调用或供应商收到请求。控制面记录的 OpenAI 调用结果必须是 `mode=OPENAI`、绑定同一 profile/request digest 且 `authorization_record_ref=PRESENT` 的 `LLMCallResultV1`。
+
+若请求摘要变化但仍在 Grant 范围和预算内，自动创建新的逐请求记录，不重新要求用户点击。来源本身符合类别/路径存在性合同、但其类别或路径超出活动 Grant 时，以 `DISCLOSURE_SCOPE_EXCEEDED` 拒绝复用旧 Grant，并严格按 §4.2.7 创建新的 `DISCLOSURE_GRANT` 等待；预算不足、Grant 过期或撤销同样遵循该生命周期。只有没有正的等待区间时才因总墙钟预算耗尽而停止。上述情况下真实适配器调用次数均为零。来源本身违反类别/路径存在性合同不能通过扩大 Grant 修复，必须直接失败关闭。
+
+静态 endpoint/有效目标不一致必须以稳定错误 `LLM_ENDPOINT_MISMATCH` 失败关闭，且必须发生在 Grant 预算消费、durable authorization record 创建、turn/call 计数和网络请求之前；candidate 字段也不得落库。这些计数、durable record 和网络调用次数均为零。初次请求仅可发送到内建允许 origin；若初次请求已发送到该 origin 后收到跨 origin redirect，适配器必须在重发前以 `LLM_ENDPOINT_MISMATCH` 失败，不得跟随 redirect 或第二次发送正文。初次发送已按既有规则消费的 Grant/turn/call 不退款。
+
+预算消费表示一次真实发送尝试已经获准。事务提交后，即使进程在调用前崩溃、适配器返回错误或供应商是否收到请求无法证明，已消费字节也不退款；除上述禁止跨 origin redirect 重发外，v1 不自动重发。OpenAI `LLMCallResultV1` 可使用 `NOT_ATTEMPTED | SUCCEEDED | FAILED | DELIVERY_UNKNOWN`，但不得把授权记录显示为供应商已收到；Mock 结果只允许前三种状态。
+
+### 输出与错误
+
+输出：`PolicyDecision`、`FinalWritebackSubjectV1`、`FinalWritebackApproval` 状态变化、`DisclosureGrantSubjectV1`、`DisclosureGrant`、`DisclosureAuthorizationRecordV1`、具体 `PreparedModelRequestV1`、`LLMCallResultV1` 或稳定拒绝。
+
+错误：`ACTION_SCHEMA_INVALID`、`ACTION_DENIED`、`PATCH_PATH_NOT_EDITABLE`、`TREE_INTEGRITY_FAILED`、`APPROVAL_REJECTED`、`APPROVAL_EXPIRED`、`APPROVAL_STALE`、`APPROVAL_ALREADY_CONSUMED`、`DISCLOSURE_GRANT_REQUIRED`、`DISCLOSURE_GRANT_REJECTED`、`DISCLOSURE_SCOPE_EXCEEDED`、`DISCLOSURE_BUDGET_EXCEEDED`、`DISCLOSURE_GRANT_EXPIRED`、`DISCLOSURE_GRANT_REVOKED`、`LLM_ENDPOINT_MISMATCH`、`INTERNAL_ERROR`。
+
+### 确定性测试
+
+直接构造 `ALLOW`、`ASK`、`DENY`、批准竞态和 Grant 范围变化；断言硬拒绝不可覆盖，只有一个精确批准消费胜出，Approval/Grant 的状态与消费计数变化不改变 subject digest，任一 subject 字段变化使旧决定陈旧；越界 `FinalDiffV1` 以 `PATCH_PATH_NOT_EDITABLE`、editable policy identity 不一致以 `TREE_INTEGRITY_FAILED` 拒绝，且均不创建 `FINAL_WRITEBACK` 等待或 subject，已存在的旧批准也不能复用。Grant 测试按请求 `canonical_byte_count` 精确复算单次和重复发送消费，覆盖恰好耗尽、差一字节超限和并发竞争；未授权、超预算或 turn/call 预算不足时真实适配器调用次数为零，失败/未知交付不退款且不能重用记录。
+
+路径 scope 测试必须证明：`FILE("src/a.py")` 只匹配该文件；`DIRECTORY("src")` 匹配 `src` 与 `src/a.py` 但不匹配 `src-old/a.py`；`ROOT` 匹配任意规范路径且必须是唯一 scope；空 scope 拒绝全部 `PRESENT` segment 但允许类别合同支持的合法 `ABSENT` segment。另覆盖正文摘要/字节数不一致、`FILE_CONTENT + ABSENT`、`HARNESS_PROTOCOL`/`TASK`/`MEMORY + PRESENT`、应带路径的 `TOOL_RESULT`/`FEEDBACK` 被降级为 `ABSENT`、多路径正文未拆分，以及 authorization candidate 来源投影缺失、重复、多余或索引错误；这些构造错误在具体请求摘要或 Grant 消费前以 `INTERNAL_ERROR` 拒绝。合法但超出 Grant 类别或路径 scope 的 segment 以 `DISCLOSURE_SCOPE_EXCEEDED` 在消费、record、计数和网络前拒绝；Grant UI 只显示“整个仓库 / 单个文件 / 目录及其后代”。
+
+准备请求与结果 Schema 测试必须分别构造合法 Mock/OpenAI 变体，并拒绝缺少 `mode`、跨模式字段、profile/script/request digest 不一致以及非法 authorization record 引用。相同 Mock adapter payload 的字段插入顺序变化不得改变 `canonical_byte_count`，segment/message/script 变化必须改变 payload 字节或 request digest；两个具体 request 即使共享字段值相同也必须因不同 `object_type` 不可互换。Mock 成功、失败和计数后适配器调用前的可捕获控制面失败分别产生合法 `SUCCEEDED`、`FAILED`、`NOT_ATTEMPTED`，且 authorization record 始终为 `ABSENT`；真实进程崩溃只产生重启停止证据，不要求调用结果，Mock 的 `DELIVERY_UNKNOWN` 必须拒绝。
+
+离线可注入 HTTP transport 测试必须断言：设置恶意 `OPENAI_BASE_URL` 后，有效请求仍只指向 `https://api.openai.com/v1`；缺少 `endpoint_id`、未知 endpoint、`base_url` 或自定义 URL 在摘要或调用前以 `CONFIG_INVALID` 拒绝；profile、Grant subject、`OpenAIPreparedModelRequestV1`、未持久化 candidate 字段、适配器目标或已持久化 durable record 任一 endpoint 不一致时以 `LLM_ENDPOINT_MISMATCH` 拒绝。candidate 字段篡改与 durable record 不一致必须分别测试：candidate 篡改路径的 durable record 数为零，candidate 不得落库、进入审计或被当作已创建 record；durable record 不一致路径不创建新的 record。两类不一致尝试均断言本次尝试的网络调用、Grant 消费、durable record 创建与 turn/call 增量为零；合法 OpenAI 结果必须使用 `authorization_record_ref=PRESENT` 并绑定相同 request digest；跨 origin redirect 不被跟随、不重发正文，初次调用消费不退款；Grant UI 显示 endpoint ID 和 `api.openai.com`。
+
+## 4.5 FR-VAL：Python 适配器、基线、检查、Manifest 和反馈
+
+### 适配器边界
+
+    ProjectAdapter {
+      detect_static(
+        snapshot: SnapshotTree,
+        reference_manifest: ReferenceProfileManifestV1
+      ) -> StaticProjectProfileResult
+      build_baseline_plan(static_profile, target_test_ids) -> CheckPlan
+      evaluate_runtime_compatibility(baseline_evidence) -> RuntimeCompatibilityResult
+      build_validation_plan(manifest, candidate) -> CheckPlan
+      parse_check_result(raw_result) -> CheckResult
+      protected_artifacts(static_profile) -> ProtectedArtifactSet
+    }
+
+`detect_static` 只能读取当前 Run 已封存的唯一 `SnapshotTree`、其中绑定的 repository policy 元数据和内置 manifest，不能读取权威工作区、重新查询可变 Git 状态、创建第二份 Snapshot 或执行项目代码。所有结果都必须原样绑定输入 Snapshot 的 `root_digest` 和 `repository_policy_digest`，以及输入 manifest 的 `digest`。绑定不一致时失败关闭，不得构造基线计划。核心只理解 `CheckPlanId`、`CheckResult`、`TestIdentity`、`ProtectedArtifact`、`FailureFingerprintV1` 和 `ValidationManifestV1`。命令、argv、环境白名单和解析器属于 `PythonProjectAdapterV1`。
+
+### `PytestEvidenceV1`
+
+v1 假设目标项目可能包含缺陷、提示注入文本和非预期副作用，但不包含以破坏 Python 解释器、pytest、固定报告插件、容器内报告通道或检查进程为目的的主动恶意代码。只有在这一信任假设下，执行镜像内固定报告插件生成的完整 `PytestEvidenceV1` 才是权威检查输入；主动攻击测试运行器的项目在 v1 中不受支持。
+
+    ErrorPhase =
+      COLLECTION | SETUP | CALL | TEARDOWN | ENVIRONMENT
+
+    TestStatus =
+      PASS | FAIL | SKIP | XFAIL | XPASS | DESELECTED | ERROR | NOT_RUN
+
+    OptionalTextV1 =
+      ABSENT { kind: "ABSENT" }
+      | PRESENT { kind: "PRESENT", value: UTF-8 string }
+
+    OptionalBooleanV1 =
+      ABSENT { kind: "ABSENT" }
+      | PRESENT { kind: "PRESENT", value: bool }
+
+    OptionalErrorPhaseV1 =
+      ABSENT { kind: "ABSENT" }
+      | PRESENT { kind: "PRESENT", value: ErrorPhase }
+
+    OptionalTestStatusV1 =
+      ABSENT { kind: "ABSENT" }
+      | PRESENT { kind: "PRESENT", value: TestStatus }
+
+    StructuredExceptionV1 {
+      exception_type
+      normalized_message
+      normalized_assertion_diff: OptionalTextV1
+      project_frames[]: ordered {
+        relative_path: CanonicalRelativePathV1
+        function_name
+        line_number
+      }
+    }
+
+    OptionalStructuredExceptionV1 =
+      ABSENT { kind: "ABSENT" }
+      | PRESENT { kind: "PRESENT", value: StructuredExceptionV1 }
+
+    PytestEventV1 {
+      sequence: positive integer
+      event_type: SESSION_START | COLLECTION_ITEM | TEST_PHASE | DESELECTED | SESSION_ERROR | SESSION_END
+      node_id: OptionalTextV1
+      phase: OptionalErrorPhaseV1
+      outcome: OptionalTestStatusV1
+      wasxfail: OptionalBooleanV1
+      exception: OptionalStructuredExceptionV1
+      display_summary: OptionalTextV1
+    }
+
+    PytestEvidenceV1 {
+      schema_version: 1
+      report_plugin_version
+      run_kind: COLLECT_ONLY | FULL_PYTEST | TARGET_TESTS
+      planned_node_ids[]: ordered exact pytest node IDs
+      collected_node_ids[]: ordered exact pytest node IDs
+      events[]: ordered PytestEventV1
+      pytest_exit_code
+      event_count
+      normal_end_marker: true
+      integrity_digest
+    }
+
+所有字段必填并拒绝未知字段。事件类型与字段组合由固定插件 Schema 封闭校验：不适用字段必须显式为 `ABSENT`；`TEST_PHASE` 必须有 node、phase 和 outcome；失败/错误必须有结构化异常；`SESSION_END` 必须是最后事件。`integrity_digest` 按 §0.1 对除自身外的全部字段计算。
+
+缺少结束标记、事件序号断裂、重复或未知事件、报告截断、schema/插件版本不匹配、计划外 node ID、计划内 node ID 缺失，或事件摘要不一致时统一返回 `REPORTER_INVALID`。stdout/stderr 和 pytest 退出码不能补足或覆盖缺失的结构化事实。
+
+Ruff 和 Mypy 必须分别使用由 profile 冻结的结构化或稳定格式及对应解析器。缺失、截断、未知诊断类别、工具/格式版本不匹配或解析器无法证明完整性时返回 `CHECK_ERROR`，不能仅按进程退出码判定 `PASS`。
+
+### `FailureFingerprintV1` 与错误阶段
+
+    ProjectFrameSignatureV1 {
+      relative_path: CanonicalRelativePathV1
+      function_name
+      line_number
+    }
+
+    FailureFingerprintV1 {
+      schema_version: 1
+      node_id
+      failure_phase: CALL
+      exception_type
+      normalized_message
+      normalized_assertion_diff: OptionalTextV1
+      project_frame_signatures[]
+      digest
+    }
+
+只有完整 `PytestEvidenceV1` 中 outcome 为 `FAIL`、阶段为 `CALL` 且结构化异常字段齐全的目标才能产生指纹。collection、setup、teardown 和 environment error 使用 `TestStatus.ERROR + ErrorPhase`，不能伪装为目标失败。
+
+规范化固定为：
+
+1. node ID 使用 collect-only 返回的精确规范字符串；异常类型使用报告器给出的完整类型名。
+2. 消息和断言差异统一为 LF；只把 Harness 已知的执行副本根、tmp 根、当前 run/container ID 和报告器结构化标记的运行时对象地址替换为固定占位符。
+3. 项目栈帧只保留 `SnapshotTree` 内规范相对路径、函数名和行号，并保持调用顺序；pytest、标准库和 site-packages 帧不进入摘要。
+4. 报告中的时间戳、耗时、事件序号和审计元数据不进入指纹。不得用宽泛正则删除用户消息中的任意数字、时间文本或十六进制值；无法安全规范化的易变正文必须导致 `TARGET_UNSTABLE`。
+5. `normalized_message`、项目帧或适用的断言差异缺失、截断、解析失败时不能创建指纹；非断言异常必须显式记录 `normalized_assertion_diff=ABSENT`，不能省略字段。报告合同缺失返回 `REPORTER_INVALID`。
+
+### 基线固定顺序
+
+1. 在两个独立只读执行副本中分别运行 pytest collect-only，比较完整 node ID 集合；必须完全相同且非空。
+2. 在第三个独立副本中运行一次完整 pytest，建立逐测试基线。
+3. 在第四个独立副本中只运行目标集合；每个目标都必须与步骤 2 一致地在 `CALL` 阶段 `FAIL`，且 `FailureFingerprintV1.digest` 完全一致。
+4. Ruff 和 Mypy 各在自己的全新副本/容器中运行一次。
+5. 对步骤 1—4 的完整证据执行 `RuntimeCompatibilityCheckV1`；只能得到 `COMPATIBLE` 或 §1.4.1 定义的结构化 `BASELINE_BLOCKED`。
+
+基线通过条件：
+
+- 每个目标都存在并稳定产生相同 `CALL/FAIL` 指纹；任一目标 `PASS`、`ERROR`、缺失、未运行、无法指纹化或不稳定都拒绝整个 baseline。
+- 非目标测试全部实际执行并 `PASS`。
+- 不存在 `SKIP`、`XFAIL`、`XPASS`、`DESELECTED`、`NOT_RUN`、收集错误、setup/teardown 错误、环境错误或超时。
+- Ruff 和 Mypy 均 `PASS`。
+- `RuntimeCompatibilityResult` 为 `COMPATIBLE`。
+
+基线成功后创建以下封闭、不可变对象：
+
+    OptionalDigestV1 =
+      ABSENT { kind: "ABSENT" }
+      | PRESENT { kind: "PRESENT", value: digest }
+
+    BaselineTestRecordV1 {
+      node_id
+      status: TestStatus
+      error_phase: OptionalErrorPhaseV1
+      failure_fingerprint_digest: OptionalDigestV1
+    }
+
+    ValidationManifestV1 {
+      schema_version: 1
+      target_test_ids[]: sorted exact node IDs
+      collected_node_ids[]: ordered exact node IDs
+      baseline_test_records[]: sorted by node_id
+      protected_artifact_set_digest
+      reference_profile_digest
+      check_plan_version
+      adapter_version
+      python_version
+      pytest_version
+      report_plugin_version
+      ruff_version
+      mypy_version
+      collect_only_evidence_digests: exactly 2 digests in execution ordinal order
+      full_pytest_evidence_digest
+      target_rerun_evidence_digest
+      ruff_result_digest
+      mypy_result_digest
+      docker_image_digest
+      docker_execution_profile_version: 1
+      resource_parameters_digest
+      environment_whitelist_digest
+      repository_policy_digest
+      snapshot_tree_digest
+      digest
+    }
+
+所有字段必填并拒绝未知字段。只有目标 `CALL/FAIL` 记录允许 `failure_fingerprint_digest=PRESENT`；其他记录必须为 `ABSENT`，且 `error_phase` 与 `TestStatus` 组合必须符合封闭状态表。`ValidationManifestV1.digest` 按 §0.1 对除自身外的全部字段计算。工具、镜像和 execution profile 字段必须与同一 `reference_profile_digest` 解析出的 `ReferenceProfileManifestV1` 完全一致；`repository_policy_digest` 和 `snapshot_tree_digest` 必须传递该 manifest 内同一 `EditablePathPolicyV1.digest`，不能形成第二套 profile 或 editable policy 身份。
+
+### 检查执行
+
+- `RunCheckAction` 只能选择 §4.2.2 的封闭计划；适配器生成固定 argv，禁止 Shell。
+- 任一快速或正式检查创建容器前，必须重算当前 `FinalDiffV1` 并验证全部 entries 命中冻结 `EditablePathPolicyV1`，且 manifest/Snapshot/repository/governance policy digest 一致；越界路径以 `PATCH_PATH_NOT_EDITABLE` 硬拒绝，policy identity 不一致以 `TREE_INTEGRITY_FAILED` 失败，检查容器调用次数均为零。
+- 每项检查使用全新容器；候选树只读挂载；缓存和临时文件进入 tmpfs。
+- 机器可读报告是权威解析输入；stdout/stderr 只作为有界诊断工件，不能直接决定 PASS。
+- 检查前后都重验候选树、保护工件和 Manifest 环境；项目树出现任何写入或漂移即 `EXECUTION_WORKSPACE_MUTATED`。
+
+    CheckResult.status = PASS | FAIL | ERROR | TIMEOUT | NOT_RUN
+    TestError = {status: ERROR, error_phase: ErrorPhase, stable_error, evidence_ref}
+
+快速反馈可以只运行 `TARGET_TESTS`，但不能创建 `VerifiedCandidate` 或正式成功。
+
+### 结构化反馈
+
+- 反馈只从 `CheckResult`、`TestStatus`、`ErrorPhase`、`FailureFingerprintV1` 和稳定错误码生成。
+- 下一 turn 最多接收 10 条、32 KiB；最近失败的分类、位置和有界摘要必须保留。
+- 修改保护工件或越出 editable roots 的候选直接 `DENY`，不运行检查。
+
+### 正式成功谓词
+
+完整正式验证只有在以下条件全部满足时才创建 `VerifiedCandidate`：
+
+1. 重算 `FinalDiffV1` 的每个 entry 都命中同一冻结 `EditablePathPolicyV1`，且 manifest/Snapshot/repository/governance policy digest 一致；
+2. 最终 pytest 收集集合与 Manifest 完全一致；
+3. 每个 node ID 都实际执行且为 `PASS`；
+4. 不存在 skip、xfail、xpass、deselect、未执行、收集错误、setup/teardown 错误、环境错误或超时；
+5. 所有目标测试由 Manifest 记录的稳定 `CALL/FAIL` 指纹变为最终 `PASS`；
+6. Ruff 和 Mypy 均 `PASS`；
+7. 保护工件、检查计划、工具版本、镜像摘要和环境摘要保持一致；
+8. 候选项目树在所有检查后仍与正式验证输入完全一致。
+
+pytest 退出码为 0 但上述任一条件不成立时，正式验证仍失败。
+
+### 输出与错误
+
+输出：`StaticProjectProfileResult`、`RuntimeCompatibilityResult`、`BaselineResult`、`PytestEvidenceV1`、`FailureFingerprintV1`、`ValidationManifestV1`、`CheckResult`、`FeedbackRecord`、`VerifiedCandidate`。
+
+错误：`TARGET_NOT_FOUND`、`TARGET_NOT_REPRODUCED`、`TARGET_UNSTABLE`、`BASELINE_BLOCKED`、`REPORTER_INVALID`、`CHECK_ERROR`、`CHECK_TIMEOUT`、`PROTECTED_ARTIFACT_CHANGED`、`PATCH_PATH_NOT_EDITABLE`、`TREE_INTEGRITY_FAILED`、`EXECUTION_WORKSPACE_MUTATED`、`VALIDATION_ENVIRONMENT_CHANGED`、`FORMAL_VALIDATION_FAILED`。
+
+### 确定性测试
+
+使用固定机器可读报告夹具覆盖全部目标稳定 `CALL/FAIL`、目标意外 PASS/ERROR、执行根和 run ID 变化但指纹相同、用户正文变化导致指纹不稳定、节点漂移、skip/xfail/xpass/deselect、五种 `ErrorPhase`、事件缺失/重复/截断、结束标记或摘要损坏、未知/缺失 Schema 字段、Ruff/Mypy 解析错误、保护工件变化、项目树写入和正式全通过；另篡改 Candidate/FinalDiff 插入越界路径或替换 policy digest，断言所有快速/正式检查、`VerifiedCandidate` 创建和容器调用次数均为零。解析器单测不访问网络或真实 Docker。Docker 集成测试另见 §10.3。主动恶意代码攻击报告通道不作为通过用例，因为它明确超出 v1 信任边界。
+
+## 4.6 FR-PERSIST：最终批准、受控写回与恢复
+
+### 输入
+
+`VerifiedCandidate`、规范 `FinalDiffV1`、`ValidationManifestV1`、正式验证证据、工作区前映像和最终 `FinalWritebackApproval`。
+
+### 写回前置条件
+
+1. 在消费批准前重算 `FinalDiffV1`，验证每个 entry 都命中冻结 `EditablePathPolicyV1`，且 `ReferenceProfileManifestV1`、`SnapshotTree.repository_policy_digest`、`ValidationManifestV1.repository_policy_digest` 和 `FinalWritebackSubjectV1.policy_digest` 绑定同一 policy digest；越界时返回 `PATCH_PATH_NOT_EDITABLE`，identity 不一致时返回 `TREE_INTEGRITY_FAILED`，均不消费批准或写入文件。
+2. `FinalDiffV1` 不超过 §1.4.4 的 3 文件限制，且 `entries` 非空。
+3. `VerifiedCandidate` 精确绑定当前候选、Manifest 和 `FinalDiffV1.digest`。
+4. WebUI 同页展示精确 diff、Manifest 摘要和正式验证证据。
+5. `FinalWritebackApproval` 已按 §4.4.2 原子消费。
+6. 跨进程 workspace lease 仍由当前进程持有；权威工作区仍等于冻结前映像。
+
+### 持久化事务
+
+    PersistenceTransactionState =
+      PREPARED | WRITING | COMMITTED | ROLLED_BACK | UNRESOLVED
+
+    PreimageV1 =
+      PRESENT {
+        kind: "PRESENT"
+        raw_bytes_digest
+        text_metadata: TextMetadataV1
+        object_identity_digest
+      }
+      | ABSENT { kind: "ABSENT" }
+
+    PostimageV1 {
+      raw_bytes_digest
+      text_metadata: TextMetadataV1
+      required_object_policy_digest
+    }
+
+    PathWriteState =
+      NOT_STARTED | REPLACED | VERIFIED | ROLLED_BACK
+
+    PersistencePathRecord {
+      schema_version: 1
+      path
+      operation: CREATE | REPLACE
+      preimage: PreimageV1
+      postimage: PostimageV1
+      sequence
+      durable_state: PathWriteState
+      backup_ref: OptionalArtifactRefV1
+      last_evidence_digest: OptionalDigestV1
+    }
+
+现有文件使用 `PRESENT` 前映像；本事务创建的新文件使用 `ABSENT`。`ABSENT` 是类型化哨兵，不是空文件摘要。`CREATE` 必须绑定 `ABSENT` 且 `backup_ref=ABSENT`；`REPLACE` 必须绑定 `PRESENT` 和有效备份引用。违反组合时事务不能进入 `PREPARED`。
+
+1. 创建 `PREPARED` 前只从冻结 manifest 解析 `EditablePathPolicyV1`，重验全部 `PersistencePathRecord.operation/path` 与已批准 `FinalDiffV1` 一致且可编辑；不得读取配置、用户输入或仓库文本形成第二套策略。
+2. 创建状态为 `PREPARED` 的本地事务日志，为每个目标路径写入完整 `PersistencePathRecord`；所有记录初始为 `NOT_STARTED`。
+3. 首次工作区写入前再次验证 workspace lease、目标前映像、路径对象身份、全部 path 的 editable 匹配和 policy digest；此时失败必须保持全部 `durable_state=NOT_STARTED`、零文件写入且不得恢复已消费批准或自动重试。
+4. 每个文件写入前再次验证 workspace lease、目标前映像和路径对象身份。
+5. 首次替换前转为 `WRITING`；使用同目录临时文件，写入后 flush 文件内容，在可用时同步目录元数据，然后执行原子替换。
+6. 每次替换后，只有观察到当前对象精确匹配 postimage 且对象类型仍受支持，才能把该路径持久记录为 `REPLACED`；写后复验完成后记录为 `VERIFIED`。恢复前映像并复验后才可记录 `ROLLED_BACK`。
+7. 正常写回只允许 `NOT_STARTED → REPLACED → VERIFIED`；恢复可在重新验证实际字节后从前三种状态进入 `ROLLED_BACK`。不得跳过证据直接前移状态，也不得从 `ROLLED_BACK` 返回写回状态。
+8. `durable_state` 是最后一次成功持久化的进度事实，不是当前文件内容的权威替代。进程可能在文件替换与状态落盘之间崩溃；恢复必须重新读取当前字节、文本元数据和对象身份，并允许观测证据纠正滞后的状态。
+9. 全部替换完成后，逐文件比较期望后映像，并重验未涉及 tracked 文件未变化。
+10. 只有全部匹配时转为 `COMMITTED` 并由 `PersistenceCoordinator` 发布 `SUCCEEDED`；可证明全部恢复前映像时转为 `ROLLED_BACK`；其他未知或矛盾状态只能转为 `UNRESOLVED`。
+11. 每次权威工作区写入前检查 `run_deadline`。首次写入前过期时保持全部路径 `NOT_STARTED`、零工作区写入，将无写入事务结束为 `ROLLED_BACK` 并令 Run `STOPPED`；任一路径可能已替换后过期时，禁止继续写入或自动回滚，事务转为 `UNRESOLVED`，Run 转为 `RECOVERY_REQUIRED`，后续只能由显式 recovery 判定 `COMMITTED` 或 `ROLLED_BACK`。deadline 后只允许持久化该控制面终态，不得再修改权威工作区。
+
+事务数据库、前映像备份和恢复证据必须创建在当前 Windows 用户专属本地应用数据目录，并在写入前验证 ACL 只允许当前用户和操作系统必要主体访问。无法创建或证明安全 ACL 时以 `ARTIFACT_ACL_UNSAFE` 失败关闭，不得把源码备份写入目标仓库、通用临时目录或继承了宽权限的目录。
+
+### 恢复入口
+
+CLI 必须提供：
+
+    vespercode recover --workspace <path>
+    vespercode recover --workspace <path> --apply
+
+不带 `--apply` 时只读取事务、备份和当前字节，展示逐路径前/后映像匹配、拟执行动作和预计结果，且不得修改工作区、事务状态或备份。`--apply` 在重新取得同一 workspace lease、重验对象身份和备份完整性后才执行恢复。
+
+本地 WebUI 提供等价恢复页，先展示事务摘要、受影响路径、逐路径匹配状态和拟执行结果，再要求显式确认。不存在“忽略”“强制成功”或跳过未知路径的入口。
+
+恢复只产生：
+
+- `COMMITTED`：证明所有后映像匹配，重做写后核对；满足成功条件后进入 `SUCCEEDED`。
+- `ROLLED_BACK`：证明所有路径恢复到前映像，进入 `STOPPED`。前映像为 `ABSENT` 时，只有当前文件精确匹配本事务 postimage、操作为 `CREATE` 且对象身份仍受支持，才允许删除该新文件；若文件被外部改写、变为链接/特殊对象或身份无法证明，则不得删除并进入 `UNRESOLVED`。
+- `UNRESOLVED`：存在未知字节、缺失备份、矛盾证据或无法证明的对象身份，保持 `RECOVERY_REQUIRED`。
+
+存在 `UNRESOLVED` 事务时，同一工作区的新运行必须被拒绝。只有 `COMMITTED` 或 `ROLLED_BACK` 后，才可以释放恢复阻断并按保留策略删除不再需要的正文备份；删除前必须保留足以证明终局的摘要记录。`UNRESOLVED` 的事务、备份和最小证据不受普通清理或 30 天审计清理影响。
+
+若事务日志存在但尚无工作区写入，可安全结束为 `ROLLED_BACK`。取消、普通进程重启或用户声明放弃都不能把不确定事务改写为成功或安全停止。
+
+### 输出与错误
+
+输出：`PersistenceTransaction`、`RecoveryResult` 和 `SUCCEEDED | STOPPED | RECOVERY_REQUIRED`。
+
+错误：`APPROVAL_STALE`、`PATCH_PATH_NOT_EDITABLE`、`TREE_INTEGRITY_FAILED`、`WORKSPACE_CHANGED`、`WORKSPACE_LOCK_LOST`、`ARTIFACT_ACL_UNSAFE`、`PERSISTENCE_FAILED`、`PERSISTENCE_UNCERTAIN`、`WRITEBACK_MISMATCH`、`RECOVERY_UNRESOLVED`。
+
+### 确定性测试
+
+使用临时目录和逐故障点注入覆盖 preview 零写入、显式 apply、写入前失败、第一/第二文件替换后崩溃、文件替换后但 `REPLACED` 状态落盘前崩溃、首次写入前和首次替换后 deadline 到期、三文件混合 `CREATE/REPLACE`、新文件精确 postimage 的 `ABSENT` 回滚、新文件被外部改写或替换为特殊对象、ACL 不安全、完整提交、前映像变化、可回滚和未知字节；另篡改已验证 Candidate、`FinalDiffV1`、`PersistencePathRecord` 或 policy digest 注入非 `src/**` 路径，断言批准消费前路径失败不消费批准，批准消费后的首次写入前复验失败保持全部 `NOT_STARTED` 且工作区零写入。deadline 在首次写入前过期时同样零写入并停止，替换后过期时不再修改工作区且只能进入 `RECOVERY_REQUIRED`；状态滞后可由字节证据纠正，外部改写的新文件绝不删除，未知证据不能被普通启动绕过。
+
+## 4.7 FR-MEM：记忆与审计
+
+### 输入
+
+规范化工作区身份、当前运行主体、用户记忆操作和控制面事件。
+
+### 记忆写入权限
+
+| 类型 | 唯一创建者 | 内容来源 |
+|---|---|---|
+| `PROJECT_CONVENTION` | 用户显式创建或确认 | 用户可见文本与来源 |
+| `USER_DECISION` | 控制面根据真实用户决定创建 | 批准、拒绝或配置决定的结构化摘要 |
+| `RUN_SUMMARY` | 控制面 | 已结束运行的结构化状态、动作和结果，不调用模型自由总结 |
+| `KNOWN_FAILURE` | 控制面 | 结构化 `CheckResult` 和稳定失败指纹 |
+
+模型不得调用通用记忆写入工具，也不得通过输出伪造来源。所有条目记录创建者、来源引用、创建/更新时间和不可信标记。
+
+### 选择与清除
+
+- 每次上下文最多选择 20 条、16 KiB；按当前仓库、类型优先级、更新时间和稳定 ID 确定性排序。
+- 记忆不能修改策略、Manifest、审批、披露范围、配置或成功条件。
+- 用户清除后，后续 turn 和运行不得再选择该条目；已完成的外部请求和审计不被追溯改写。
+- 当前仓库字节和当前检查证据与记忆冲突时，以当前事实为准。
+
+### 审计
+
+- 记录生命周期、动作摘要、策略决定、FinalWritebackApproval、DisclosureGrant、逐请求披露授权元数据、检查结果、恢复和成功/停止证据。
+- 不记录凭据、完整 LLM 请求/响应、完整文件正文或未截断工具输出。
+- 审计事件不可由 Agent 修改；默认保留 30 天，用户可显式清除已结束运行的本地审计。
+
+### 输出与错误
+
+输出：`MemorySelection`、记忆查看/创建/确认/清除结果和按序 `AuditEvent`。
+
+错误：`MEMORY_SCOPE_VIOLATION`、`MEMORY_WRITE_NOT_AUTHORIZED`、`MEMORY_CONTENT_REJECTED`、`MEMORY_STORE_FAILED`、`AUDIT_STORE_FAILED`。
+
+### 确定性测试
+
+使用两个临时工作区、固定时钟和内存 SQLite，验证来源权限、选择顺序、跨仓库隔离、清除效果、模型写入拒绝、秘密字段拒绝和审计序号单调。
+
+## 4.8 FR-CRED：凭据生命周期
+
+### 接口
+
+    SetCredential(provider, secret) -> CredentialMutationResult
+    GetCredentialStatus(provider) -> CredentialStatus
+    ClearCredential(provider) -> CredentialMutationResult
+
+### 行为
+
+1. 只支持 `OPENAI` provider；秘密通过 WebUI password 控件进入后端，不允许通过 URL、CLI 参数或日志字段传递。
+2. 启动时和每次写入后必须验证实际后端为 Windows Credential Manager，并进行写入/读取状态能力探测。
+3. 若 keyring 退化为明文文件、环境模拟或其他不受支持后端，返回 `CREDENTIAL_BACKEND_UNSAFE`，不得存储。
+4. `GetCredentialStatus` 只返回配置状态、provider 和更新时间，不返回 secret、secret 长度或可用于猜测的派生值。
+5. 更新以新秘密覆盖旧条目；清除失败必须明确返回失败，不能假装已删除。
+
+### 错误
+
+`CREDENTIAL_INVALID`、`CREDENTIAL_BACKEND_UNSAFE`、`CREDENTIAL_STORE_FAILED`、`CREDENTIAL_CLEAR_FAILED`、`CREDENTIAL_MISSING`。
+
+### 确定性测试
+
+离线单测使用 `FakeCredentialStore` 验证录入、状态、覆盖、清除和日志脱敏；Windows 发布验证必须包含一次真实 Credential Manager smoke test，测试秘密在结束后清除。
+
+## 4.9 FR-UI：本地 WebUI 与公网 Demo
+
+### 本地模式
+
+- CLI 启动绑定 `127.0.0.1` 的 WebUI。
+- 使用随机本地会话令牌、严格 Host/Origin 校验和 CSRF 防护。
+- 提供运行创建、预检、状态、diff、最终批准、披露 Grant、凭据状态、记忆、审计和恢复页面。
+- 不可信文本以纯文本或安全转义方式渲染，不执行仓库 HTML。
+- `CREATED`、各 `RUNNING` phase、`WAITING_USER`、`RECOVERY_REQUIRED`、`SUCCEEDED`、`STOPPED` 使用不同、无歧义的标签。
+
+### 公网 Demo
+
+- 独立进程只注册 Mock LLM、内置场景和 `DemoExecutor`。
+- 不注册本地文件、Keyring、Docker、恢复或真实供应商适配器。
+- 固定场景展示：硬 `DENY`；一次检查失败使下一动作改变；保护工件修改被拒绝；没有最终批准时不写回。
+- Demo 只使用 `DemoRunStatus`；完成为 `DEMO_COMPLETED`，失败为 `DEMO_FAILED`。
+- 模拟用户选择形成 `DemoDecision {demo_session_id, subject_digest, decision, created_at}`；它只推进固定 Demo 场景，不得转换为 `FinalWritebackApproval`、`DisclosureGrant` 或正式 `AuditEvent`。
+- 会话有独立 UUID，最长 5 分钟；结束后丢弃。重置失败只使该会话失败，不创建跨进程恢复协议。
+
+### 输出、错误与测试
+
+输出安全渲染的状态、diff、授权、检查、记忆、恢复和审计页面。
+
+Host/Origin/CSRF 校验失败、无效会话、Demo 非法场景或能力请求必须拒绝。使用测试客户端验证安全 header、HTML 转义和状态映射；固定 Demo 重复两次，断言关键动作、状态和终态一致且真实适配器调用次数为零。
+
+# 5. 非功能需求与安全
+
+## 5.1 NFR-PERF：性能与预算
+
+- 内建硬上限为 20 个 Agent turn、20 次 LLM 调用和 900 秒总墙钟；实际上限使用冻结 `RunLimitsV1`。总墙钟从 `PREFLIGHT` 开始，到终态或 `RECOVERY_REQUIRED` 为止，并包含 `WAITING_USER`。
+- 子上限最大值为：用户等待 300 秒、普通工具 60 秒、目标检查 120 秒、完整单项检查 300 秒、baseline 整体 600 秒、正式验证整体 600 秒；精确映射使用 §4.2.6 的封闭表。任何子上限都不能扩大另一适用上限或剩余总墙钟。
+- `AgentTurn` 和 LLM call 只在 §4.2.5 的原子计数点消费；真实模式在 Grant、`OpenAIPreparedModelRequestV1` 和逐请求授权完成前，Mock 模式在 `MockPreparedModelRequestV1` 冻结且 profile/script/adapter 匹配前，以及任何 `WAITING_USER` 期间均不消费。计数点之后的崩溃、调用错误或无效输出仍占用预算。
+- 单次 LLM 规范请求不超过 64 KiB，单次工具反馈不超过 32 KiB。
+- 单次检查原始输出最多 4 MiB，超出即 `CHECK_OUTPUT_LIMIT_EXCEEDED`，不得把截断结果判为 PASS。
+- 仓库、候选和 Docker 资源上限使用 §1.4.4—1.4.5。
+- 公网 Demo 每会话最多 20 个动作、5 分钟；进程级并发上限 10。
+- 达到上限必须在动作或调用前停止，不得把截断、未运行或部分结果视为成功。
+
+## 5.2 NFR-REL：可靠性
+
+- 相同 Mock 脚本、快照、配置、时钟、ID 生成器和用户决定必须产生相同关键动作、状态和终态。
+- 相同语义对象在不同进程、映射插入顺序和易变运行元数据下必须产生相同 §0.1 摘要。
+- 相同 `ReferenceProfileManifestV1`、LLM profile 和 target 集合必须形成相同冻结配置；profile digest 变化必须被视为环境变化。
+- 所有核心机制使用离线、无网络的 Mock/Stub 单元测试。
+- 未知、不完整或矛盾证据默认失败关闭。
+- 只有权威工作区持久化允许恢复；其他重启统一停止。
+- 工作区 lease、批准消费、披露预算消费和持久化事务必须通过存储事务或 Win32 原语实现明确并发边界。
+
+## 5.3 NFR-USE：可用性
+
+- 所有拒绝和停止结果必须包含稳定代码、用户可理解原因和下一步建议。
+- WebUI 不直接暴露内部引用图或数据库字段。
+- 用户必须能区分准备中、预检、运行中、等待决定、恢复阻塞、成功和停止。
+- diff、批准对象、验证证据和工作区前映像状态必须在同一页面关联展示。
+- 恢复页在执行前展示受影响路径和拟判定；不存在“忽略并继续”按钮。
+
+## 5.4 NFR-OBS：可观测性
+
+- 每个正式运行有唯一 `run_id` 和按顺序递增的审计序号；Demo 使用独立 `demo_session_id`。
+- 日志使用结构化事件，并对路径、输出和错误文本执行长度限制与脱敏。
+- 测试模式允许注入时钟、ID 生成器和故障点，以获得稳定快照。
+- `.gitlab-ci.yml` 必须包含 §8.4 的四个精确 job 名称并遵守各自 push、merge request、main 和 release 触发合同。
+- 发布证据必须区分离线单测、Windows 集成、Docker 集成、端到端 fixture 和公网 smoke test。
+
+## 5.5 NFR-SEC：威胁模型
+
+| 资产/风险 | 攻击者或来源 | 对策 | 残余风险 |
+|---|---|---|---|
+| OpenAI API Key | 仓库文本、日志、命令历史、Demo 用户 | Windows Credential Manager；后端探测；隐藏录入；禁止 CLI 参数和明文配置；日志白名单 | 同一 Windows 用户或管理员仍可能访问凭据 |
+| Release/GHCR 凭据 | 恶意 MR、fork pipeline、日志或构建工件 | 独立最小权限 token；GitLab masked/protected variables；只注入受保护 tag job；普通流水线禁止推送/发布 | GitLab/GitHub 管理员和受保护 runner 管理员仍在平台信任边界内 |
+| 用户源码 | 恶意模型、提示注入、错误披露范围 | 本地读取与外发分离；冻结 LLM profile；运行级 Grant；逐请求授权记录；敏感 tracked 路径准入拒绝；明确 `NO_CONTENT_REDACTION_V1` 不扫描正文 | 被授权源码按范围原样外发；不能识别源码正文中的所有秘密 |
+| 权威工作区 | 越界路径、reparse/hard link、陈旧批准、并发进程 | 句柄级身份检查、单链接画像、named mutex、前映像绑定、逐文件复核、写后核对 | 最后检查与替换间仍有短暂本机竞争窗口 |
+| 验收契约 | 模型修改测试/配置、缺陷项目代码或非预期副作用 | 不可变 Manifest、保护工件、只读候选挂载、全新容器、正式重验 | 同一解释器/容器用户信任域中的主动恶意候选仍可能 monkeypatch pytest/报告插件、篡改 tmpfs 报告、伪造事件或干预退出流程 |
+| 控制面数据 | 项目代码或容器读取宿主数据 | 无网络、非 root、只读根、候选只读挂载、tmpfs、无 Docker socket | Docker Desktop/宿主管理员不在威胁模型内 |
+| WebUI | CSRF、恶意仓库 HTML、远程访问 | loopback、会话令牌、Host/Origin、CSRF、安全转义、CSP | 本机同用户恶意进程可能与服务竞争 |
+| 公网 Demo | 越权到真实能力、跨会话数据 | 独立状态和能力注册表、固定场景、无凭据、无持久磁盘 | 部署平台管理员仍可访问运行环境 |
+| 恢复工件 | 用户误删、未知外部修改 | 恢复阻断、前后映像、备份完整性、三值恢复结果 | 用户或管理员可在 Harness 外破坏恢复工件 |
+
+`PytestEvidenceV1` 的事件序号、结束标记和摘要只能检测信任假设内的缺失、损坏和普通漂移，不能证明抵御同信任域主动攻击。对主动攻击测试运行器的项目进行验证属于未来工作；v1 不通过增加哈希、事件编号或只读项目挂载声称解决该问题。
+
+安全属性必须表述为在上述前提下可测试的机制，不使用绝对安全或“识别所有攻击”的承诺。
+
+## 5.6 NFR-PRIV：数据保留
+
+- 凭据只存于 Windows Credential Manager。
+- 运行数据库、记忆、审计和恢复工件位于当前 Windows 用户专属本地应用数据目录，不进入目标仓库；创建时必须验证仅当前用户和操作系统必要主体可访问的 ACL。
+- 审计默认保留 30 天；普通执行副本在运行终止后立即尝试删除。
+- 已形成 `COMMITTED` 或 `ROLLED_BACK` 的事务按保留策略删除正文备份并保留摘要证据；未解决事务的最小日志和备份必须保留到恢复形成终局，不能被普通清理删除。
+- 公网 Demo 不接收用户仓库、真实凭据或任意文件上传，不挂载持久磁盘。
+
+# 6. 系统架构
+
+## 6.1 组件图
+
+    Local WebUI                         Public Demo UI
+         |                                    |
+    Application Service                  Demo Service
+         |                                    |
+      Run Service                         Demo Loop
+     /    |     \                             |
+ Admission Agent Loop Recovery        Mock LLM + DemoExecutor
+     |      /   |   \     |
+ Workspace Context LLM Tools Persistence
+     |       |    |    |       |
+ Win32   SQLite Mock/OpenAI Policy  Transaction Log
+ Lease              |       |
+                 Disclosure  PythonProjectAdapterV1
+                                |
+                         DockerExecutorV1
+                                |
+                       Read-only CandidateTree
+
+    CredentialService -> Windows Credential Manager
+    Admission -> Built-in Reference/LLM Profile Registry
+    PersistenceCoordinator -> Authoritative Workspace
+
+依赖方向从应用服务指向核心端口，再指向适配器。LLM、Docker、Credential Store、数据库、Win32 文件系统和时钟必须可替换为测试 double。WebUI 不直接访问仓库、凭据或数据库。
+
+## 6.2 正式修复数据流
+
+    ValidateRunRequestV1
+    → resolve Reference/LLM profile manifests + freeze RunLimitsV1
+    → Create Run(CREATED) + freeze config
+    → Start + RUNNING(PREFLIGHT)
+    → workspace identity + lease + recovery gate
+    → Git / filesystem object / sensitive-path / clean-state Snapshot prechecks
+    → create and seal the run's only SnapshotTree
+    → ProjectAdapter.detect_static(SnapshotTree, ReferenceProfileManifestV1)
+    → reference image / execution profile readiness
+    → OpenAI credential / endpoint readiness when applicable
+    → RUNNING(BASELINE)
+    → collect-only ×2 + full pytest + target rerun + Ruff + Mypy
+    → RuntimeCompatibilityResult(COMPATIBLE)
+    → ValidationManifestV1
+    → Agent turn / governance / parse candidate patch
+    → frozen EditablePathPolicyV1 gate + atomic Candidate/FinalDiffV1 publish
+    → structured feedback loop
+    → editable-policy recheck + fresh read-only formal validation
+    → VerifiedCandidate
+    → editable-policy-bound subject + user approves exact FinalDiffV1
+    → pre-write editable-policy recheck + persistence transaction + post-write verification
+    → SUCCEEDED | STOPPED | RECOVERY_REQUIRED
+
+## 6.3 LLM 调用数据流
+
+Mock 正式运行：
+
+    frozen MockLLMProfileV1 + ContextProjection
+    → classify exact sources, CanonicalRelativePathV1 bindings and bytes
+    → create MockAdapterPayloadV1
+    → freeze MockPreparedModelRequestV1
+    → verify mode + profile/script/adapter binding
+    → atomically create AgentTurn and consume turn/call budgets
+    → pass the same request to the Mock adapter
+    → LLMCallResultV1(mode=MOCK, authorization_record_ref=ABSENT)
+
+Mock 路线不读取凭据、不创建 Disclosure Grant 或 authorization record、不应用外发 redaction profile，且不访问网络；其来源路径存在性、ContextProjection 裁剪和请求大小限制仍与公共合同一致。
+
+OpenAI 真实运行：
+
+    frozen OpenAILLMProfileV1 + trusted OpenAIEndpointV1 + ContextProjection draft
+    → classify exact sources, CanonicalRelativePathV1 bindings and bytes
+    → create/reuse Grant: verify only profile + pending/active Grant subject + trusted mapping + adapter effective target
+    → active DisclosureGrant?
+        no: WAITING_USER(DISCLOSURE_GRANT, bounded by run deadline)
+        yes: apply NO_CONTENT_REDACTION_V1 and create exact OpenAIPreparedModelRequestV1
+    → assemble non-persisted authorization-record candidate fields
+    → verify profile + Grant subject + request + candidate + source categories/path scopes + adapter effective target
+    → atomically consume grant budget + persist DisclosureAuthorizationRecordV1 from verified candidate fields
+    → atomically create AgentTurn and consume turn/call budgets
+    → pass the same authorized request to one OpenAI adapter call at https://api.openai.com:443/v1
+    → LLMCallResultV1(mode=OPENAI, authorization_record_ref=PRESENT)
+
+授权事务提交后预算不退款。endpoint/目标不一致在提交前失败且零消费、零 durable record、零计数、零网络，candidate 不得落库；跨 origin redirect 在初次允许发送后失败且不得重发正文。适配器调用失败、调用前崩溃或交付状态未知都不得重用授权记录或自动重发。
+
+## 6.4 公网 Demo 数据流
+
+    Fixed Scenario
+    → Mock LLM script
+    → shared action parser / policy / feedback core
+    → DemoExecutor simulated result
+    → Demo audit
+    → DEMO_COMPLETED | DEMO_FAILED
+
+Demo 不经过 Credential Store、真实 LLM、Docker、workspace lease、恢复或权威持久化。
+
+## 6.5 外部依赖
+
+- OpenAI：仅单轮生成接口；不使用 Agent runner。
+- Docker Desktop：运行目标代码和正式检查。
+- Windows Credential Manager：真实 API Key 存储。
+- Win32 文件与同步 API：最终对象身份、hard link/reparse 检测和跨进程 named mutex。
+- Git：只读准入、HEAD/blob 身份和 ignore/attribute 策略检查。
+- pytest、机器可读 pytest 报告插件、Ruff、Mypy：由 Python 项目适配器调用并解析。
+
+# 7. 数据模型
+
+| 实体 | 关键字段 | 关系与约束 |
+|---|---|---|
+| Run | id、workspace_identity、status、phase、config_snapshot_id、started_at、run_deadline | `PREFLIGHT` 入口冻结 deadline；一个运行有多个 turn；终态不可重开 |
+| RunLimitsV1 | turns、LLM calls、run wall clock、wait/tool/target/full/baseline/formal timeouts | 全部必填且只能收紧内建硬上限；操作映射由 §4.2.6 封闭定义 |
+| EditablePathPolicyV1 | policy_id、exactly `src` directory root、`CREATE/REPLACE`、digest | 发布包唯一内建可编辑策略；路径按目录段匹配，不能由请求、配置、模型或仓库文本覆盖 |
+| ReferenceProfileManifestV1 | requirements/image/execution-profile/tool/check-plan versions、editable_path_policy、digest | `python-src-py312-v1` 的唯一权威可交付映射；执行身份和 Candidate 可编辑范围由该 digest 统一绑定 |
+| LLMProfileManifestV1 | mode、provider/model/endpoint_id 或 Mock script、adapter/serializer、fixed parameters、digest | 请求只选 profile id，不能覆盖 manifest 字段；OpenAI 只可解析内建 `OPENAI_PUBLIC_API_V1` |
+| RunConfigSnapshot | target IDs、limits、LLM/reference profile digests、digest | 创建后不可变；reference digest 已唯一绑定 execution image/profile 和 editable policy；不能包含秘密 |
+| WorkspaceLease | workspace_identity、mutex_name、process_id、acquired_at | 正式工作区同一时刻最多一个持有者 |
+| WaitContext | wait_id、run_id、wait_kind、source_phase、subject_digest、created_at、expires_at | 只允许 `DISCLOSURE_GRANT | FINAL_WRITEBACK`；决定绑定 wait 与 subject |
+| SnapshotTree | root_digest、entries、repository_policy_digest | Snapshot 前置检查通过后在 PREFLIGHT 内创建并封存；`root_digest` 绑定 entries 和含 editable policy digest 的 repository policy；一个运行只能有一个权威基线快照 |
+| StaticProjectProfileResult | `SUPPORTED(profile_id, reference_profile_digest, snapshot_root_digest, repository_policy_digest)` 或 `UNSUPPORTED_PROJECT(reference_profile_digest, snapshot_root_digest, repository_policy_digest, reasons)` | 只由 `detect_static` 基于当前 Run 的已封存 Snapshot 产生；两种结果都绑定 manifest/Snapshot/policy，失败结果阻止 readiness 与 BASELINE |
+| RepositoryLocationV1 | `ROOT` 或 `PATH(CanonicalRelativePathV1)` | 只供需要表达仓库根的 list/search 动作使用；实际文件路径不使用字符串哨兵 |
+| ListFilesEntryV1 | `DIRECTORY | TEXT_FILE | NON_TEXT_FILE` 封闭变体、size/text profile | List、Read、Search 共享 `SupportedTextFileV1` 分类；非文本普通文件可列出但不能作为正文读取或搜索 |
+| RuntimeCompatibilityResult | status、violation_kind、evidence_refs | BASELINE 中产生；非 `COMPATIBLE` 不创建 Manifest |
+| FailureFingerprintV1 | node、CALL phase、exception、message/diff、project frames、digest | 只由完整 pytest 证据创建；不安全规范化即不稳定 |
+| ValidationManifestV1 | §4.5 的完整封闭字段、digest | 由基线创建后不可变；未知字段拒绝；reference、repository policy 与 Snapshot 身份绑定同一 editable policy |
+| FinalDiffV1 | snapshot digest、排序 entries、完整 postimage 原始字节总量、digest | Harness 从 CandidateTree 重算并对每个 entry 重验冻结 editable policy；结构化净差异是批准、验证和持久化身份 |
+| CandidateIdentityV1 | snapshot_tree_digest、candidate_tree_digest、final_diff_digest、digest | Candidate 的唯一语义身份；相同三重绑定产生相同 `candidate_digest` |
+| CandidateRevision | id、parent_id、candidate_digest | 单父审计链；ID 和父链不进入候选语义摘要 |
+| AgentTurn | id、run_id、candidate_id、context_digest、consumed_feedback_refs、outcome | 只在 §4.2.5 原子计数点创建；同一运行最多一个活动 turn |
+| ActionRecord | action_id、action_type、instance_digest、semantic_digest、policy_decision、result_ref | 实例摘要用于审计关联，语义摘要用于重复/策略/进展；动作输入与结果不可被 Agent 改写 |
+| FeedbackRecord | source_ref、kind、bounded_payload、consumed_by_turn | 最多被一个下一 turn 消费 |
+| FinalWritebackSubjectV1 | §4.4.2 的不可变绑定、expires_at、digest | 项目 adapter 由 validation manifest 传递绑定，不定义第二个 adapter identity；Wait 与批准引用同一 digest |
+| FinalWritebackApproval | approval_id、subject_digest、created_at、status | 只授权最终权威写回；`PENDING` 只能一次转入一个终局状态 |
+| DisclosureGrantSubjectV1 | run/profile/provider/endpoint_id/model/serializer/category/path scope/redaction/budget/expiry/digest | `ROOT/FILE/DIRECTORY` 精确绑定带路径来源，空路径 scope 不授权任何带路径正文；endpoint 或授权范围变化必须新授权 |
+| DisclosureGrant | grant_id、subject_digest、created_at、consumed_bytes、status | 可变预算记录；不授权本地工具或写回 |
+| RequestContentSegmentV1 | category、path、content、content digest/bytes | 请求正文与来源的唯一事实；消息按 segment 顺序发送 |
+| MockAdapterPayloadV1 | script_id、script_digest、messages | Mock adapter 解释带来源 segments 的规范负载 |
+| PreparedModelRequestV1 | `MockPreparedModelRequestV1 | OpenAIPreparedModelRequestV1` | 独立摘要域和模式字段；OpenAI serializer 只投影 segment 正文 |
+| DisclosureAuthorizationRecordV1 | §4.4.4 的字段与派生 `actual_sources` | 只记录 OpenAI 授权；来源索引必须精确投影 request segments |
+| LLMCallResultV1 | mode、profile/request digest、authorization_record_ref、status、response/error | Mock 必须 `ABSENT` 且禁止 `DELIVERY_UNKNOWN`；OpenAI 必须 `PRESENT`；不把授权记录等同于供应商交付 |
+| PytestEvidenceV1 | §4.5 的完整封闭字段、integrity_digest | 在非主动恶意项目假设下权威；缺失、截断或完整性失败不能产生 PASS |
+| CheckResult | check_kind、status、structured_findings、raw_digest | 原始输出作为有界本地工件 |
+| VerifiedCandidate | candidate_id、manifest_id、formal_result_digest | 只有完整正式验证通过时创建 |
+| PersistenceTransaction | final_diff_digest、path_records、state、backup_refs | `PREPARED | WRITING | COMMITTED | ROLLED_BACK | UNRESOLVED`；未解决时阻止新运行 |
+| PersistencePathRecord | path、operation、PRESENT/ABSENT preimage、postimage、sequence、durable_state、evidence | 状态可滞后；恢复始终重验实际字节和对象身份 |
+| RecoveryResult | transaction_id、disposition、evidence_digest | `COMMITTED | ROLLED_BACK | UNRESOLVED` |
+| MemoryEntry | workspace_identity、kind、summary、creator、source、timestamps | 不保存秘密、权限或完整源码 |
+| AuditEvent | run_id、sequence、event_type、redacted_payload | 每个运行序号唯一且单调 |
+| DemoSession | id、scenario_version、status、state_digest、expires_at | 与正式 Run 和能力完全隔离 |
+| DemoDecision | demo_session_id、subject_digest、decision、created_at | 只推进固定 Demo 场景，不能转换为正式授权 |
+
+`StaticProjectProfileResult`、基线 `CheckPlan`、`RuntimeCompatibilityResult`、`ValidationManifestV1`、`CandidateRevision` 和 `FinalDiffV1` 必须直接或经不可变父引用传递同一 `SnapshotTree.root_digest`；任何阶段不得以当前权威工作区重新解析或替换该身份。
+
+控制存储使用 SQLite 事务保证本地状态比较与更新。大文件、执行副本、补丁正文、原始检查输出和恢复备份存为当前用户 ACL 受限的本地工件，只在数据库保存摘要与精确引用；凭据从不进入 SQLite。所有 digest 使用 §0.1。
+
+# 8. 凭据、分发与部署
+
+## 8.1 凭据流程
+
+1. 首次选择真实 LLM 时，WebUI 通过 password 输入控件收集 Key。
+2. 后端验证 Windows Credential Manager backend 后直接写入；不经过命令行参数、URL 或日志。
+3. 状态接口只返回配置状态、供应商和最近更新时间。
+4. 更新使用新秘密覆盖旧条目，并返回明确结果。
+5. 清除删除凭据条目；删除失败必须报告失败，不能假装成功。
+6. 公网 Demo 构建不包含凭据管理和真实 LLM 适配器注册。
+
+## 8.2 本地分发
+
+- 发布 Python wheel，并将版本化 wheel 作为 GitHub Release 附件提供；Release 同时发布 SHA-256 摘要。
+- README 必须记录 Release 下载位置、版本、摘要校验命令和从下载产物安装的步骤。
+- 正式 reference execution image 发布到与仓库同一所有者下的 GitHub Container Registry，规范引用为 `ghcr.io/ledstevenovo/vespercode-reference@sha256:<digest>`；tag 不构成运行身份，运行和证据只接受 digest。
+- README 必须给出 `docker pull ghcr.io/ledstevenovo/vespercode-reference@sha256:<digest>`、本地 RepoDigest 核验、镜像内 profile/version smoke，以及确认 wheel 内置 `ReferenceProfileManifestV1.docker_image_digest` 与所拉取 digest 完全一致的命令。无法获得或匹配镜像时本地正式运行失败关闭。
+- 从本地构建产物安装的规范命令为：
+
+      pipx install dist/vespercode-<version>-py3-none-any.whl
+
+- 只有在包实际发布到配置的 Python 包索引后，README 才可以写：
+
+      pipx install vespercode
+
+- `vespercode serve` 启动本地 WebUI。
+- `vespercode recover --workspace <path>` 只预览恢复；增加 `--apply` 后才执行。WebUI 提供等价的预览与显式确认入口。
+- 目标机器前提：Windows 11 x64、Python 3.12、Git、Docker Desktop Linux 容器模式，以及按不可变 digest 拉取并核验的 `python-src-py312-v1` reference execution image。
+- README 必须给出获取、安装、启动、凭据配置、reference/LLM profile manifest、执行镜像 digest 与精确模型、`NO_CONTENT_REDACTION_V1` 外发提示、恢复、目录结构和已知限制。
+
+## 8.3 公网 Demo 分发
+
+- 使用独立 Docker 镜像启动 Mock Demo。
+- 镜像不包含本地模式能力注册、真实凭据入口、恢复逻辑或 Docker socket。
+- 部署平台为 Render Web Service，使用 Demo Dockerfile 从 main 分支构建。
+- 容器读取平台注入的 `PORT` 并绑定 `0.0.0.0`，健康检查为 `GET /healthz`。
+- 服务不挂载持久磁盘；会话状态只存在进程内，进程重启后全部丢弃。
+- 环境不得配置真实 LLM Key、Docker socket 或目标仓库访问凭据。
+- README 记录公开 URL、服务配置、健康检查和免费实例可能冷启动的限制。
+
+## 8.4 发布构建要求
+
+GitHub 仓库是源码、版本 tag、Release 和 GHCR package 的发布权威；GitLab 项目是运行 `.gitlab-ci.yml` 的 CI 镜像。README 必须记录两端项目 URL、镜像方向和最后验证的同步方式。普通 CI 不反向改写 GitHub；受保护 release pipeline 只有在 GitLab `CI_COMMIT_SHA`、GitHub 同名 tag commit 和待发布 wheel 源提交三者一致时才可发布，任一查询失败或摘要不一致均停止。
+
+`.gitlab-ci.yml` 必须包含以下四个精确 job 名称；不能仅由人工发布脚本替代：
+
+| Job | 触发条件 | 必须执行 |
+|---|---|---|
+| `unit-test` | 每次 push 和每个 merge request | 在锁定依赖环境中运行离线 `python -m pytest -q`，保存测试报告 |
+| `wheel-build-smoke` | 每次 push 和每个 merge request | 在项目专属 Windows 11 x64 GitLab Runner 上构建 wheel、生成并校验 SHA-256，在全新 venv/pipx 环境中从该 wheel 安装并运行 `vespercode --help` |
+| `reference-image-build` | 每次 push、每个 merge request 和受保护版本 tag | 从固定 recipe、基础镜像 digest 和 lock 构建 reference OCI image，记录 digest，核验内置工具/execution profile 并运行 reference fixture smoke；普通 push/MR 只构建验证，受保护 tag 才推送 GHCR |
+| `demo-image-build` | 每个 merge request 和 main 分支 push | 使用 Demo Dockerfile 真实构建 OCI 镜像，记录镜像摘要并运行容器级 `/healthz` smoke |
+
+版本 tag/release 流水线复用通过验证的构建步骤，重新生成并校验版本化 wheel 和 SHA-256，把 reference image 推送到 GHCR，按 registry 返回的不可变 digest 重拉并 smoke，校验 wheel 内置 manifest 的 `docker_image_digest` 与该 digest 一致，然后创建或更新对应 GitHub Release wheel 工件。保存版本、Release URL、wheel 摘要、GHCR RepoDigest、Demo 镜像摘要、测试与 smoke 证据。
+
+GitHub Release 与 GHCR 使用彼此独立的最小权限发布凭据：前者只允许目标仓库 release/content 写入，后者只允许目标 package 写入。两者只能通过 GitLab masked、protected CI variable 注入受保护 tag job；不得提供给普通 push、merge request 或 fork pipeline，不得进入镜像层、日志、工件或 wheel。普通 push/MR 流水线不得推送 registry 或创建 Release。项目必须提供项目专属 Windows 11 x64 GitLab Runner；runner 不可用时 `wheel-build-smoke` 失败并阻断 merge/release，不得以 Linux smoke 或发布前人工日志替代。
+
+# 9. 技术选型
+
+| 项目 | 选择 | 理由 |
+|---|---|---|
+| 语言 | Python 3.12 | 与目标 profile 和测试生态一致，适合可注入端口 |
+| API/Web | FastAPI + Pydantic v2 | 严格请求 Schema、类型校验和本地/公网复用 |
+| UI | 服务端 HTML + HTMX；Open Design 作为设计系统；使用 `ui-ux-pro-max` skill 做交互、可访问性和安全渲染审查 | 降低前端状态复杂度，满足 WebUI 与安全渲染要求 |
+| 控制存储 | SQLite | 支持本地原子状态更新、无需额外服务 |
+| Windows 边界 | pywin32/Win32 API 封装 | 处理最终对象身份、reparse/hard link 和 named mutex |
+| 凭据 | keyring，且强制验证 Windows Credential Manager backend | 满足系统钥匙串要求并拒绝不安全 fallback |
+| LLM | 自定义 `LLMAdapter`；冻结 `LLMProfileManifestV1`；Mock + OpenAI 单轮适配器 | 固定模型/Mock 脚本、适配器、请求序列化器和参数；不依赖高层 Agent 框架 |
+| 执行 | Docker SDK for Python；固定 argv、无网络、只读根、候选只读挂载、tmpfs | 隔离项目代码并防止运行时临时篡改验收树 |
+| 检查 | pytest + 固定机器可读报告插件、Ruff、Mypy | 提供测试、lint、类型和结构化反馈 |
+| 测试 | pytest；单一离线命令 `python -m pytest -q` | 可注入、适合 TDD 与 Mock LLM |
+| CI | `.gitlab-ci.yml`，包含 `unit-test`、`wheel-build-smoke`、`reference-image-build`、`demo-image-build` | 冻结课程测试、Windows wheel smoke、正式执行镜像和 Demo 镜像构建的名称、触发与证据 |
+| 包分发 | wheel + pipx | 适合 Windows 本地 CLI/WebUI |
+| Demo | OCI 容器 | 与本地能力隔离，便于公网部署 |
+| 公网部署 | Render Web Service；Docker runtime、`/healthz`、无持久磁盘 | 冻结公开 WebUI 的端口、健康检查和无状态边界 |
+
+依赖必须锁定。不得引入 LangChain `AgentExecutor`、AutoGen、CrewAI、LlamaIndex Agent、OpenAI Agents SDK runner 或宿主编码智能体 runner 来替代自研主循环。
+
+# 10. 验收标准与追踪
+
+## 10.1 项目级验收
+
+- **AC-01：** 路径逃逸、绝对路径、ADS、设备名、symlink/reparse、hard link 和敏感 tracked 路径全部确定性拒绝。
+- **AC-02：** 硬 `DENY` 无法被配置、模型输出、DisclosureGrant 或批准覆盖。
+- **AC-03：** `FinalWritebackSubjectV1` 在过期或任一不可变字段变化时产生不同/陈旧 subject；项目 adapter 由 `validation_manifest_digest` 传递绑定，不存在第二个 adapter digest。`FinalWritebackApproval.status` 不进入 subject，且过期、绑定变化和重复消费时均不执行，也不能授权其他 `ASK`。
+- **AC-04：** 修改测试、检查配置或 Manifest 保护工件的补丁不能进入检查或正式验证。
+- **AC-05：** 注入固定检查失败后，Mock LLM 下一轮动作按脚本发生变化；每轮都能只由冻结 Mock profile 构造合法 `MockPreparedModelRequestV1`，Mock request/result 不含 OpenAI 字段且 `authorization_record_ref=ABSENT`，凭据、Grant、authorization record 和网络调用次数均为零。
+- **AC-06：** LLM completion 建议不能绕过正式成功谓词和最终批准。
+- **AC-07：** 写回内容精确等于已批准的结构化 `FinalDiffV1`；展示用 unified diff 不能改变批准身份，外部工作区变化阻止写入。
+- **AC-08：** 凭据录入、状态、更新、清除、后端探测和日志均不暴露测试秘密。
+- **AC-09：** 相同 Demo 输入产生相同关键状态和动作序列，且只进入 `DemoRunStatus`。
+- **AC-10：** `python -m pytest -q` 离线通过；`.gitlab-ci.yml` 的 `unit-test` 在每次 push 和 merge request 运行，最后一次记录通过。
+- **AC-11：** `wheel-build-smoke` 在每次 push 和 merge request 的项目专属 Windows 11 x64 runner 上构建 wheel、校验 SHA-256 并完成全新 pipx 安装/CLI smoke；runner 缺失或不可用时 job 失败，README 步骤可从发布产物启动 WebUI。
+- **AC-12：** `demo-image-build` 在每个 merge request 和 main push 真实构建镜像并通过容器 `/healthz` smoke；公网 Mock Demo URL 可访问且无法使用本地、恢复或真实能力。
+- **AC-13：** 真实请求的全部正文都来自带类别和路径的 `RequestContentSegmentV1`；authorization record 的 `actual_sources` 必须逐段精确派生，缺失、多余或错配时零消费、零 record、零计数、零网络。每个 segment 必须命中 Grant 类别与 `ROOT/FILE/DIRECTORY` scope，空 scope 不授权带路径正文；每次获准发送按 `canonical_byte_count` 原子扣减，重复发送重复扣减且并发不能超预算。profile、endpoint、request、record 和结果必须一致，恶意 base URL 或跨 origin redirect 不能改变或重发正文；未授权披露时真实适配器调用次数为零。
+- **AC-14：** 两个工作区的记忆相互隔离；模型不能直接写记忆；用户清除后后续 turn 不再选择该条目。
+- **AC-15：** 严格 `ValidateRunRequestV1` 拒绝重复/超量目标、未知 profile、缺失限制和放宽硬上限；有效请求先创建 `CREATED`，再严格按 workspace identity/lease → recovery gate → Snapshot 前置检查 → 创建并封存本次 Run 唯一 `SnapshotTree` → `detect_static` → reference image/execution profile readiness → OpenAI 模式 credential/endpoint readiness 的顺序完成 `PREFLIGHT`，最后才进入 `BASELINE`。任一阶段失败均不调用后续阶段；静态画像不运行项目代码、不重读权威工作区或创建第二份 Snapshot，动态兼容性只在 `BASELINE` 判定，Candidate 文件动作在完整 PREFLIGHT 与 BASELINE 通过前不可分发。
+- **AC-16：** 正式 Run 的六种状态和各 phase 显示正确；失败、超时、skip、xfail、xpass、deselect 和未运行不显示为通过。
+- **AC-17：** 六种动作及结果严格按封闭 Schema 解析；list/search 只能用 `RepositoryLocationV1.ROOT` 表示仓库根，空字符串、`.`、`./`、`/`、尾随 `/` 和 `[ROOT, PATH(...)]` 被拒绝。`ListFilesEntryV1` 只能使用 `DIRECTORY | TEXT_FILE | NON_TEXT_FILE` 及各自固定的 size/text profile 组合，List/Read/Search 对同一原始字节使用同一 `SupportedTextFileV1` 分类；非文本普通文件可列出，Read 以 `FILE_NOT_TEXT` 且零正文失败，Search 稳定计入 `skipped_non_text_count`。模型提交 `action_id`、`RunCheckAction` 携带 executable/argv/命令文本、多动作或自由文本响应均被拒绝；Harness 生成的实例 ID 只影响 `instance_digest`，不影响 `semantic_digest`。
+- **AC-18：** 多次 patch action 不能绕过累计 3 文件/128 KiB 限制；`FinalDiffV1` 由 Harness 重算完整 postimage 字节。`candidate_digest` 只由 Snapshot、CandidateTree 和该 FinalDiff 的封闭 `CandidateIdentityV1` 产生；任一输入变化使旧补丁、completion、验证和批准陈旧，revision ID/父链不改变语义摘要。
+- **AC-19：** Docker 检查中候选树只读、缓存进入 tmpfs、无 Docker socket、无网络；`RuntimeCompatibilityCheckV1` 对收集漂移、项目树写入、报告不完整或检查环境错误返回结构化 `BASELINE_BLOCKED`。
+- **AC-20：** 正式 pytest 只有在 node 集合一致、全部实际执行并 PASS、无所有禁止状态、Ruff/Mypy PASS、保护工件和环境一致时才创建 `VerifiedCandidate`。
+- **AC-21：** 两个进程竞争同一工作区时最多一个获得 lease；未解决恢复事务阻止新的正式 Run。
+- **AC-22：** 1—3 文件混合 `CREATE/REPLACE` 的故障注入只产生 `COMMITTED`、`ROLLED_BACK` 或 `UNRESOLVED`；deadline 在首次写入前到期时零写入停止，任一路径可能已替换后到期时不再修改工作区并进入 `RECOVERY_REQUIRED`。状态滞后由字节证据纠正，`UNRESOLVED` 保持阻断。
+- **AC-23：** `PROJECT_CONVENTION`/`USER_DECISION` 与 `RUN_SUMMARY`/`KNOWN_FAILURE` 的创建权限严格按 §4.7 执行。
+- **AC-24：** Windows、Docker、端到端和 §8.4 四个强制 CI job 均形成可保存证据；不能用解析器单测、Linux wheel smoke 或人工发布脚本替代真实 Windows 边界测试和镜像构建。
+- **AC-25：** 每个目标在全量基线和独立复跑中都稳定产生相同 `CALL/FAIL` 与 `FailureFingerprintV1.digest`；任一目标 PASS/ERROR、缺失、未运行、无法安全规范化、不稳定、运行时不兼容或 `PytestEvidenceV1` 不完整时不创建 Manifest。
+- **AC-26：** CTV-01—CTV-07 通过；相同 `CandidateIdentityV1`、profile、具体 Prepared request 和 target 集合跨进程产生相同 §0.1 摘要。Mock/OpenAI request 使用独立 `object_type`，segment 内容/来源进入具体请求绑定；未知字段、跨模式字段、非规范输入、路径别名或对象类型变化不能伪造身份。
+- **AC-27：** `DISCLOSURE_GRANT` 与 `FINAL_WRITEBACK` 等待的决定精确绑定 wait/run/kind 和对应不可变 subject digest；可变 Grant/Approval 状态不改变 subject，拒绝、过期、取消、绑定变化、总墙钟耗尽和重启严格按 §4.2.7 转换，旧决定不能复用。
+- **AC-28：** turn/call/墙钟和子超时都在下一副作用前执行；只有冻结具体请求、授权和 adapter 绑定完整且即将调用时才原子计数。计数后调用前的可捕获控制面失败产生 `NOT_ATTEMPTED`，真实进程崩溃只由重启停止证据表示；两者均保留已消费计数且不重试。等待不消费，进展排除实例 ID、时间和审计序号。
+- **AC-29：** 恢复默认 preview 且零写入，只有显式 `--apply` 修改工作区；新文件只有仍精确匹配本事务 postimage 时才能恢复为 `ABSENT`，外部改写或未知对象绝不删除并只能进入 `UNRESOLVED`。
+- **AC-30：** `reference-image-build` 在普通 push/MR 无发布凭据地构建并 smoke 正式执行镜像；受保护 tag 仅在 GitLab commit、GitHub tag 和 wheel 源提交一致时将其推送到 GHCR、按不可变 digest 重拉，且发布 wheel 内置 `ReferenceProfileManifestV1.docker_image_digest`、GHCR RepoDigest 和目标机实际拉取 digest 三者完全一致。
+- **AC-31：** 唯一内建 `EditablePathPolicyV1` 只允许 `CREATE`/`REPLACE` `src/**` 文件，已有文件与新文件使用同一目录段匹配规则；`src-old/**`、仓库根、文档、CI、Docker 和 scripts 路径均以 `PATCH_PATH_NOT_EDITABLE` 拒绝，保护工件仍优先使用 `PROTECTED_ARTIFACT_CHANGED`。合法/非法混合 patch 整体零候选副作用，多次 patch、篡改 Candidate/FinalDiff、检查、批准和持久化均不能绕过复验；manifest/repository/governance policy digest 必须绑定同一策略，变化使旧 Candidate、验证和批准失效。list/read/search 不受 editable policy 限制，用户或配置提交自定义策略时不创建 Run。
+
+## 10.2 用户故事—合同—验收追踪
+
+| 用户故事 | 权威功能合同 | 适用 NFR | 主要验收 |
+|---|---|---|---|
+| US-01 | FR-ADM、FR-LOOP | NFR-PERF、NFR-USE、NFR-SEC | AC-15、AC-16、AC-21、AC-26、AC-28、AC-30、AC-31 |
+| US-02 | FR-CRED、§8.1 | NFR-SEC、NFR-PRIV | AC-08 |
+| US-03 | FR-LOOP、FR-WS、FR-VAL | NFR-PERF、NFR-REL | AC-04—AC-06、AC-17—AC-20、AC-25、AC-26、AC-28、AC-31 |
+| US-04 | FR-GOV | NFR-SEC、NFR-PRIV | AC-13、AC-26、AC-27 |
+| US-05 | FR-GOV | NFR-REL、NFR-SEC | AC-01—AC-03、AC-26、AC-27、AC-31 |
+| US-06 | FR-PERSIST | NFR-REL、NFR-SEC | AC-07、AC-21、AC-22、AC-26、AC-29、AC-31 |
+| US-07 | FR-MEM | NFR-OBS、NFR-PRIV | AC-14、AC-23 |
+| US-08 | FR-LOOP、FR-MEM、FR-UI | NFR-USE、NFR-OBS | AC-06、AC-16、AC-27、AC-28 |
+| US-09 | FR-UI | NFR-PERF、NFR-REL、NFR-SEC | AC-09、AC-12 |
+
+## 10.3 验证环境矩阵
+
+| 层次 | 环境 | 主要 AC | 必须证明 | 证据 |
+|---|---|---|---|---|
+| 离线核心单测 | 无网络；Fake FS/DB/Clock/LLM/Credential/HTTP transport | AC-02、AC-03、AC-05、AC-06、AC-10、AC-13—AC-18、AC-20—AC-23、AC-25—AC-29、AC-31 | 封闭 Schema/canonicalization 向量（包含未经 normalization 的 scalar/key 排序、surrogate 拒绝、普通 ASCII/U+007F 直接 UTF-8、非强制转义 scalar 禁止 `\uXXXX`/`\/` 替代、UTF-8 与控制字符转义、`/`/U+2028/U+2029 不转义，以及 `CanonicalTimestampV1` 格式、日期、小时 `00`—`23`、分钟/秒 `00`—`59`、UTC epoch 毫秒向下截断和摘要前拒绝）、Mock/OpenAI Prepared request 封闭联合、模式专属 byte count 与摘要域、`LLMCallResultV1` 的 ABSENT/PRESENT authorization record 和状态约束、PREFLIGHT 的 Snapshot 前置检查/唯一 Snapshot/静态画像/readiness 顺序及每个失败点的零下游调用、`EditablePathPolicyV1` 的 `src/**` 目录段匹配、错误优先级、摘要传播、混合 patch 原子拒绝、读取不受限和 Candidate/验证/批准/持久化复验、`RepositoryLocationV1` 根/路径联合与字符串哨兵拒绝、`ListFilesEntryV1` 三变体字段组合、共享 `SupportedTextFileV1` 分类、`FILE_NOT_TEXT` 零正文和稳定 `skipped_non_text_count`、`ROOT/FILE/DIRECTORY` scope 及带路径/无路径来源矩阵、完整 postimage 原始字节统计、profile/config（含缺少/未知 endpoint、`base_url`/自定义 URL 和 editable policy 覆盖拒绝）、四对象 endpoint 摘要绑定、恶意 `OPENAI_BASE_URL` 仍固定 `https://api.openai.com/v1`、endpoint 不一致零消费/零记录/零计数/零网络、跨 origin redirect 不跟随且初次消费不退款、Grant UI endpoint 显示、失败指纹、主循环、实例/语义动作摘要、策略、不可变 subject、批准、带 deadline 的两类等待、Grant、反馈、记忆、停止和逐路径持久化故障注入 | `unit-test` job 日志与测试报告 |
+| Windows 集成 | 项目专属 Windows 11 x64 GitLab Runner | AC-01、AC-07、AC-08、AC-11、AC-21、AC-22、AC-24、AC-26、AC-29—AC-31 | ADS、reparse、hard link、设备名、路径碰撞、`src` 与大小写/Unicode/`src-old` editable policy 边界、Git EOL/encoding/filter 拒绝、最终对象身份、ACL、Credential Manager、named mutex、新文件恢复和发布 wheel pipx smoke | Windows runner job 日志、安装日志和环境版本；测试秘密已清除 |
+| Docker 集成 | Docker Desktop Linux 模式 | AC-04、AC-19、AC-20、AC-24、AC-25、AC-30 | `ReferenceProfileManifestV1` 唯一映射、无网络、非 root、只读根、候选只读、tmpfs、资源限制、动态兼容性、`PytestEvidenceV1` 和真实 pytest/Ruff/Mypy | 固定执行镜像摘要和可重复 Docker 集成脚本/runner 报告 |
+| 端到端 reference fixture | Windows + Docker + Mock LLM | AC-05—AC-07、AC-13、AC-15—AC-18、AC-20—AC-23、AC-25—AC-29、AC-31 | 冻结 profiles/limits/editable policy → Snapshot 前置检查 → 创建并封存唯一 Snapshot → 静态画像 → readiness → 动态兼容 → 全目标稳定指纹 → 越界补丁硬拒绝 → `src/**` 错误补丁 → 反馈回灌 → 修正 → editable-policy 复验 → 正式验证 → 最终批准 → 写回前复验与精确写回，以及等待拒绝和未批准不写回 | 可重复 reference fixture 脚本、审计导出和最终摘要 |
+| 恢复故障注入 | Windows 本地临时仓库 | AC-07、AC-21、AC-22、AC-24、AC-29、AC-31 | 1—3 文件混合事务、policy/路径记录篡改零写入、状态落盘前崩溃、外部改写新文件、preview 零写入、显式 apply 和安全 `ABSENT` 回滚 | 故障点矩阵和恢复日志 |
+| 包与正式镜像发布 smoke | 项目专属 Windows 11 runner + Docker + GHCR | AC-10、AC-11、AC-24、AC-30 | `wheel-build-smoke`、`reference-image-build`、从 GitHub Release 下载 wheel并校验 SHA-256、从 GHCR 按 digest 拉取 reference image、核对 wheel manifest、通过 pipx 安装并启动 WebUI | job 日志、Release URL、GHCR RepoDigest、wheel/manifest 摘要、安装日志和环境版本 |
+| 公网 smoke | `demo-image-build` + 部署后的 Demo | AC-09、AC-12、AC-24 | main/MR 镜像构建、容器及公网 `/healthz`、固定场景、`DemoDecision`、无真实能力 | job 日志、镜像摘要、部署记录与可访问 URL |
+
+没有可用的项目专属 Windows CI runner 时，`wheel-build-smoke`、merge 和 release 必须失败关闭；人工日志或 Linux smoke 只能作为诊断，不能替代强制证据。
+
+## 10.4 机制演示
+
+离线脚本或测试必须在同一场景中展示：
+
+1. Mock LLM 提交结构合法、路径规范但尝试创建 `docs/outside-scope.md` 的 `ApplyCandidatePatchAction`；路径校验通过后，`PolicyEngine` 返回 `DENY`，稳定错误码为 `PATCH_PATH_NOT_EDITABLE`，并断言工具分发和 Candidate 发布次数均为零；
+2. Mock LLM 可读取 `README.md`，但尝试修改它时以 `PATCH_PATH_NOT_EDITABLE` 硬拒绝；
+3. Mock LLM 提出合法但失败的 `src/**` 候选补丁，pytest 失败被结构化回灌，下一轮动作改变；
+4. Mock LLM 尝试修改受保护测试或 Ruff/Mypy 配置，Manifest 保护机制拒绝；
+5. 修正后的候选通过 editable-policy 复验和正式验证，但没有最终批准时不会写入权威工作区；
+6. 真实适配器 stub 在没有有效 Grant 或逐请求授权记录时调用次数为零。
+
+# 11. 风险、关闭清单与未来工作
+
+## 11.1 v1 风险
+
+| 风险 | 概率/影响 | 触发信号 | 缓解或降级 |
+|---|---|---|---|
+| 参考 profile 与真实项目差异过大 | 中/中 | 外部试用频繁命中不支持或动态阻断 | 交付权威 manifest/reference fixture；区分静态不支持与动态不兼容；不临时扩张 |
+| Win32 最终对象身份实现错误 | 中/高 | ADS/reparse/hard link 集成用例失败 | 使用 pywin32/Win32 API；失败关闭，不降级为字符串路径判断 |
+| Docker Desktop 行为或性能不稳定 | 中/高 | 只读挂载、tmpfs、资源限制或 runtime compatibility 失败 | 固定 manifest/镜像摘要；动态证据失败关闭 |
+| 正式执行镜像未发布或摘要错配 | 中/高 | wheel manifest、GHCR RepoDigest 或目标机拉取结果不一致 | `reference-image-build`、受保护发布、按 digest 重拉和 AC-30 三方核验 |
+| pytest/Ruff/Mypy 输出解析漂移 | 中/中 | 未知结果、指纹失败或解析错误 | 固定版本、机器可读报告和 `FailureFingerprintV1`；未知状态不通过 |
+| 候选代码主动攻击 pytest/报告通道 | 低/高 | monkeypatch、报告文件伪造、运行时 hook 或异常退出干预 | 输入限定为课程/reference fixture 并明确不作对抗性保证；不以同信任域哈希冒充隔离；进程外认证报告通道列为未来工作 |
+| 1—3 文件持久化中断 | 低/高 | 事务日志或逐路径状态未完成 | 类型化前映像、逐路径事实、实际字节复核、备份、三值恢复和工作区阻断 |
+| 真实 LLM 泄露未识别秘密 | 中/高 | 被授权正文含未分类敏感值 | 敏感路径拒绝、冻结 profile、Grant、逐请求记录、体量限制；明确 `NO_CONTENT_REDACTION_V1` 残余风险 |
+| SPEC 再次扩张 | 中/高 | 新增自然语言测试、多 Agent、通用恢复或大量兼容分支 | 所有新增先修改 §1.5/1.6 并经独立审查；PLAN 不得暗增 |
+| 公网 Demo 被误认为正式验证 | 低/中 | UI 或审计缺少模拟标识 | 独立状态、持续标识、独立能力注册表 |
+
+## 11.2 进入 PLAN 的关闭清单
+
+本版已冻结以下此前存在歧义的架构决定：
+
+- 准入、profiles、Snapshot 与生命周期：§4.1—§4.2，AC-15、AC-16、AC-21、AC-28、AC-30；
+- 动作、路径、Candidate identity 与 editable policy：§4.2—§4.3，AC-01、AC-17、AC-18、AC-26、AC-31；
+- 批准、披露、Prepared requests 与调用结果：§4.4，AC-02、AC-03、AC-13、AC-27、AC-28；
+- 项目验证、证据与受控持久化恢复：§4.5—§4.6，AC-04、AC-07、AC-19—AC-22、AC-25、AC-29；
+- 凭据、记忆和 UI 权限边界：§4.7—§4.9，AC-08、AC-09、AC-14、AC-23；
+- 分发、CI 与验证矩阵：§8—§10，AC-10—AC-12、AC-24、AC-30。
+
+因此，PLAN 不得再让实现者自行选择上述语义。精确依赖 patch 版本、OpenAI model、镜像摘要和部署 URL 由发布 manifest、lock file、README 与流水线证据记录，并通过 digest 绑定到运行。
+
+PLAN 的最前部必须安排三项技术验证任务，并采用失败关闭而不是放宽设计：
+
+1. Win32 最终对象身份、hard link/reparse/ADS 与 named mutex 集成验证；
+2. `ReferenceProfileManifestV1`/reference fixture 映射、`reference-image-build`/GHCR digest 交付、Docker 只读候选树、tmpfs、缓存、资源限制、完整报告和失败指纹集成验证；
+3. 1—3 文件持久化的逐故障点恢复验证。
+
+若第三项无法证明 3 文件事务安全，必须停止后续实现和发布；不得在 PLAN 或代码中把正式范围隐式改为单文件。改变 3 文件/1 新文件范围前，必须正式修订本 SPEC、相关用户故事、AC、验证矩阵和 PLAN，并重新审查；不得删除恢复语义或把未知状态视为成功。
+
+## 11.3 未来工作
+
+- `NaturalLanguageDefect`、测试提案审批和 `ValidationManifestV2`。
+- 更宽松但仍确定性的 skip/xfail 基线比较。
+- 多语言 `ProjectAdapter` 和更多预构建 reference profile。
+- 供应商请求重试、跨进程调用对账和普通 turn 恢复。
+- 删除、重命名、二进制补丁和更广 Git 策略。
+- 多用户部署、分布式配额和生产级工件清理。
+- 独立低权限测试用户、进程外认证报告通道或更强沙箱，用于验证主动攻击 Python/pytest/报告插件的项目。
+- 超过 3 文件的持久化事务。
+
+这些项目不得出现在 v1 的 PLAN、代码路径或验收门禁中。
