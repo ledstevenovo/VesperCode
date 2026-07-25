@@ -2,7 +2,7 @@
 
 > 面向对象：一个完全不了解当前聊天记录的新 Codex 对话。
 > 交接日期：2026-07-15（Asia/Taipei）。
-> 状态最后更新：2026-07-17。
+> 状态最后更新：2026-07-25。
 > 权威分支：`origin/main`。
 > 历史 Phase 2 现场：本文最初创建前，`main` 与 `origin/main` 曾均指向 `64de2a3846c05b81ad69909a6e59be976e87d2c1`；该 SHA 不代表本轮最终 HEAD。
 > 第一轮交叉审阅修正的历史基线为 `cf720407af69aaac235b2bb0f7923fecd0544c68`，历史分支为 `codex/ch3-review-fixes`；这些引用只用于保留历史证据。
@@ -643,7 +643,7 @@ Windows 沙箱的进程启动拒绝、权限审批延迟、Git ownership 提示�
 - 本轮只修改规范和两个上下文文件，没有新增实现代码、迁移或运行时配置。规范列出的单元、Windows、Docker 和端到端测试仍是未来实现验收要求，不是本轮已经存在或运行的代码测试。
 - 本节与 `AGENT_LOG.md`、`SPEC_v3.md` 由同一最终提交承载；最终提交 SHA 和 push 结果以 Git history 与 `origin/main` 为准，不在提交正文中制造自引用。
 
-### 13.2 本批七组权威合同
+### 13.2 当前十三组权威合同
 
 1. **规范编码：** `CanonicalizationV1` 不执行 Unicode normalization，按 Unicode scalar value 处理字符串和 key；非 ASCII scalar 直接写 UTF-8，冻结 JSON 强制转义、控制字符转义、`/`/U+2028/U+2029 不转义和 key 排序。时间只接受 `YYYY-MM-DDTHH:MM:SS.sssZ`；CTV-01—CTV-07 是固定兼容性向量。
 2. **真实 LLM 目的端点：** v1 只有 `OPENAI_PUBLIC_API_V1`，可信映射为 `https://api.openai.com:443/v1`。profile、Grant subject、OpenAI prepared request、逐请求授权记录和适配器有效目标必须一致；请求、配置和 `OPENAI_BASE_URL` 不能覆盖；跨 origin redirect 不得携带正文重发。
@@ -652,6 +652,12 @@ Windows 沙箱的进程启动拒绝、权限审批延迟、Git ownership 提示�
 5. **路径、披露和 FinalDiff：** 仓库根只能用 `RepositoryLocationV1.ROOT` 表示；披露 scope 使用 `ROOT | FILE | DIRECTORY`，空 scope 不授权带路径来源，目录按路径段匹配。`FinalDiffV1.added_and_replacement_text_bytes` 是全部 CREATE/REPLACE 完整 postimage 原始字节长度之和，不是 unified diff 或新增行长度。
 6. **可编辑路径：** 唯一内建 `EditablePathPolicyV1` 只允许 `CREATE/REPLACE src/**`。已有文件和新文件使用同一目录段匹配；仓库根、README/docs、CI、Docker 和 scripts 不可修改，保护工件错误优先。Candidate、FinalDiff、验证、最终批准和持久化都必须复验同一 policy identity；list/read/search 的可见范围不由 editable policy 收窄。
 7. **文件类型结果：** `ListFilesEntryV1` 只有 `DIRECTORY | TEXT_FILE | NON_TEXT_FILE` 三种封闭变体。List、Read、Search 共享 `SupportedTextFileV1`；`NON_TEXT_FILE` 只表示不满足 v1 文本合同，不是仓库准入拒绝，也不表示一定是二进制。Read 返回 `FILE_NOT_TEXT` 且零正文；Search 直接以非文本文件为 root 时成功返回零匹配和 `skipped_non_text_count=1`。List 使用 `(directory_rank, canonical_path)`，Search match 使用 `(canonical_path, line, column)`。
+8. **请求正文与授权来源：** `RequestContentSegmentV1` 同时冻结正文、类别、路径、摘要和字节数；`RequestMessageV1` 只由有序 segments 组成。Prepared request 不再接受独立 `actual_sources`，`DisclosureAuthorizationRecordV1.actual_sources` 必须按 message/segment index 从请求逐段精确派生，缺失、重复、多余或错配均在消费前失败。
+9. **Grant 字节预算：** 每次真实发送的唯一扣减值是 `OpenAIPreparedModelRequestV1.canonical_byte_count`；`consumed_bytes + charge_bytes` 必须原子校验与更新，重复正文或请求仍重复扣减，并发消费不能超出批准预算。
+10. **候选语义身份：** `CandidateIdentityV1` 只绑定 `snapshot_tree_digest`、`candidate_tree_digest` 和 `final_diff_digest`；`candidate_digest` 精确等于其摘要。revision ID、父链和易变元数据只用于审计；相同三重绑定恢复相同身份。
+11. **最终批准中的 adapter：** `FinalWritebackSubjectV1` 不再包含未定义的 `adapter_digest`；项目 adapter 已由包含 `adapter_version` 的 `validation_manifest_digest` 唯一传递，不得建立第二套 adapter identity。
+12. **调用前失败与真实崩溃：** 计数后、适配器调用前的可捕获控制面失败可以形成 `NOT_ATTEMPTED`；真实进程崩溃不产生原进程调用结果，重启按 `PROCESS_RESTARTED_DURING_RUN` 停止，不恢复或重发 turn。
+13. **持久化 deadline：** 每次权威写入前检查 `run_deadline`。首次写入前过期为零写入 `STOPPED`；任一路径可能已替换后过期时不得继续写入或自动回滚，事务进入 `UNRESOLVED`、Run 进入 `RECOVERY_REQUIRED`，后续只能显式 recovery。
 
 ### 13.3 实现时不可放宽或误读
 
@@ -662,12 +668,17 @@ Windows 沙箱的进程启动拒绝、权限审批延迟、Git ownership 提示�
 - `allowed_source_paths=[]` 表示不授权任何带路径来源；文件名、正文摘录和路径相关工具结果不能降级为 pathless。
 - 不得把“可读取整个 Snapshot”解释为“可修改整个 Snapshot”；候选修改仍严格限于 `src/**`。
 - 不得把 `NON_TEXT_FILE` 解释为拒绝仓库、删除文件或开放二进制 Read/Search/patch；它只能列出 size/path，并按文件工具合同跳过或失败。
+- 不得在 Prepared request 中重新引入调用方提供的 `actual_sources`，也不得用与 message segments 无法逐段对应的聚合来源记录授权。
+- 不得按来源正文、去重字节或估算 token 扣减 Grant；唯一口径是 OpenAI 最终请求体的 `canonical_byte_count`。
+- 不得恢复 `adapter_digest`、让 revision ID 进入 `candidate_digest`、把真实进程崩溃伪装成 `NOT_ATTEMPTED`，或在写回后 deadline 到期时继续隐式修改权威工作区。
 
 ### 13.4 已有验证与未完成门槛
 
 - 每项局部合同都执行了对应全文断言；最终 List 文件类型合同检查的旧表述清零、三变体、统一分类、Read/Search 行为、排序、测试要求、AC-17、数据模型摘要、验证矩阵和关闭清单全部命中。
+- 六项后续最小修复执行了 11 条规格断言并全部通过；`adapter_digest`、准备请求独立 `actual_sources` 和不可达崩溃测试措辞均已清零，派生来源、预算公式、候选身份、adapter 传递、调用结果和 deadline 终态均有权威定义与现有 AC 覆盖。
+- 六项修复并压缩 §11 后，`SPEC_v3.md` 仅增加 126 字节（+0.07%）和 15 行（+0.72%），非空白字符减少 227，未形成实质膨胀。
 - `git diff --check -- SPEC_v3.md` 退出码为 0；唯一提示是当前 Git 配置下工作树 LF 将来可能转换为 CRLF。该提示不是空白错误，但后续编辑仍应避免无意制造整文件换行噪声。
-- 上下文同步前，tracked diff 只有 `SPEC_v3.md`；`.gitignore`、`AGENTS.md`、`PLAN.md`、`REFLECTION.md` 和 `SPEC_v2.md` 是既有未跟踪文件，本轮不得把它们带入提交。
+- 上下文同步前 tracked diff 只有 `SPEC_v3.md`；本次提交范围必须精确为 `SPEC_v3.md`、`AGENT_LOG.md`、`TASK_HANDOFF.md`。`.gitignore`、`AGENTS.md`、`PLAN.md`、`REFLECTION.md` 和 `SPEC_v2.md` 是既有未跟踪文件，不得带入提交。
 - 尚未完成：基于实现代码的 TDD、完整 v3 独立冷启动实现试验、SPEC/PLAN 的课程最终批准和任何运行时交付。后续任务必须按实际完成范围记录，不能把规范中的测试计划写成已经通过。
 
 ### 13.5 后续任务启动检查
@@ -676,6 +687,6 @@ Windows 沙箱的进程启动拒绝、权限审批延迟、Git ownership 提示�
 
 1. 当前 `origin/main` 是否包含承载 `SPEC_v3.md`、`AGENT_LOG.md` 和本节的同一最终提交；
 2. 实现或继续审查时是否以 `SPEC_v3.md` 而不是旧聊天摘要重建合同；
-3. `CanonicalizationV1`、endpoint、请求模式、Snapshot 顺序、路径 scope、editable policy 和文件类型七组合同是否仍各有唯一权威来源；
-4. 新建议是否会新增自定义 endpoint、第二套 editable policy、字符串根哨兵、二进制补丁或状态机；若会，必须先正式修订 SPEC，不能作为“实现细节”偷偷加入；
+3. 本节十三组合同是否仍各有唯一权威来源，尤其是 message segments、Grant 扣减、Candidate identity、adapter 传递、真实崩溃和 persistence deadline；
+4. 新建议是否会重新引入独立 `actual_sources`、第二套身份/预算口径、自定义 endpoint、字符串根哨兵、二进制补丁或额外恢复状态机；若会，必须先正式修订 SPEC，不能作为“实现细节”偷偷加入；
 5. 若声称 v3 已可进入实现，是否补齐了本节明确未完成的全量独立冷启动验证和课程批准证据。

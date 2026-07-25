@@ -60,6 +60,7 @@
 - `MockPreparedModelRequestV1` 和 `OpenAIPreparedModelRequestV1`：分别以自身具体类型名作为 `object_type`，排除自身 `digest` 后绑定全部模式专属字段；联合别名 `PreparedModelRequestV1` 不具有独立摘要域；
 - `ValidationManifestV1`：全部规范字段，不含显示文本；
 - `FailureFingerprintV1`：规范测试身份、调用阶段失败事实、异常类型、规范消息、断言差异和项目栈帧；
+- `CandidateIdentityV1`：§4.3 定义的 Snapshot、CandidateTree 和规范 `FinalDiffV1` 三重绑定，排除自身 `digest`；
 - `FinalDiffV1`：§4.3 定义的封闭结构化净差异，排除自身 `digest`；
 - 工作区前/后映像：规范路径、`ABSENT` 或原始文件字节摘要、文本元数据和最终对象身份；
 - 语义检查结果：检查类型、输入树、环境、逐测试/诊断事实和稳定错误；排除执行时间、容器 ID 与审计序号。
@@ -810,13 +811,13 @@ List、Read 和 Search 必须共享唯一的 `SupportedTextFileV1` 分类器，�
 
 裁剪顺序固定为：先删除最旧记忆，再删除最旧成功动作摘要，再缩减非最近文件片段；Harness 协议、目标测试、当前候选绑定和最近失败反馈不得被裁掉。规范压缩后强制内容仍超过 64 KiB 时，以 `CONTEXT_BUDGET_EXCEEDED` 停止，不得静默截断成语义无效请求。
 
-投影必须记录来源类别、相对路径、字节数、裁剪决定和按 §0.1 计算的规范摘要，以供披露授权和测试重放。
+投影必须按 §4.4.4 输出带来源的 `RequestContentSegmentV1`；每段正文、类别、相对路径、字节数和摘要在裁剪完成后同时冻结，以供披露授权和测试重放。
 
 ### 4.2.5 主循环行为
 
 1. 同一运行任一时刻最多一个活动 `AgentTurn`。
 2. 每轮基于当前候选、有限记忆、未消费反馈和预算生成一个 `ContextProjection`。
-3. Mock 模式只有在 `MockPreparedModelRequestV1` 已冻结、其 profile/script/adapter 绑定已验证且即将调用 Mock adapter 时，控制面才原子创建 `AgentTurn` 并递增 turn/call；真实模式只有在有效 Grant、`OpenAIPreparedModelRequestV1` 和逐请求授权事务完成且即将调用 OpenAI adapter 时才执行同一计数点。该原子点之前的投影准备、请求冻结、授权展示和 `WAITING_USER` 均不创建 turn 或消耗 call。计数成功后，即使调用前崩溃、调用失败或输出无效，该 turn/call 也已消费且不得重用。
+3. Mock 模式只有在 `MockPreparedModelRequestV1` 已冻结、其 profile/script/adapter 绑定已验证且即将调用 Mock adapter 时，控制面才原子创建 `AgentTurn` 并递增 turn/call；真实模式只有在有效 Grant、`OpenAIPreparedModelRequestV1` 和逐请求授权事务完成且即将调用 OpenAI adapter 时才执行同一计数点。该原子点之前的投影准备、请求冻结、授权展示和 `WAITING_USER` 均不创建 turn 或消耗 call。计数成功后，即使适配器调用前发生可捕获控制面失败、真实进程崩溃、调用失败或输出无效，该 turn/call 也已消费且不得重用；可捕获的调用前失败可记录 `NOT_ATTEMPTED`，真实进程崩溃不产生原进程调用结果，重启按 §4.2.7 停止且不恢复 turn。
 4. 动作依次经过 Schema、候选绑定、路径、阶段和策略校验，再分发。
 5. 结果发布为结构化 `ActionResult`；下一 turn 原子绑定并消费选中的 `feedback_refs`。
 6. `ProposeCompletionAction` 只请求进入 `FORMAL_VALIDATION`，不能声明成功。
@@ -826,6 +827,7 @@ List、Read 和 Search 必须共享唯一的 `SupportedTextFileV1` 分类器，�
 
 - 用户通过 `CancelRun` 提交取消请求。动作边界、等待用户状态以及持久化首次替换前是安全点。
 - 若持久化已发生首个文件替换，取消保持待处理，必须先完成事务判定或进入恢复，不能中断并假定回滚成功。
+- `run_deadline` 在持久化中的唯一安全点和过期结果由 §4.6 定义；通用超时规则不得授权 deadline 后继续修改权威工作区。
 - 相同候选上，相同 `ActionSemanticDigestV1` 得到相同语义结果连续 3 次时，以 `REPEATED_ACTION_LIMIT` 停止；更换 Harness 实例 ID 不会重置计数。
 - 连续 6 个 turn 没有产生 `ProgressMarker` 时，以 `NO_PROGRESS_LIMIT` 停止。
 - `ProgressMarker` 只包括：候选树摘要变化；当前候选产生此前未见的语义检查结果；进入正式验证。语义检查结果按 §0.1 计算，排除时间、随机 ID、容器 ID 和审计序号；单纯重复读取、搜索、相同失败或只改变易变字段不算进展。
@@ -843,7 +845,7 @@ List、Read 和 Search 必须共享唯一的 `SupportedTextFileV1` 分类器，�
 | FORMAL_VALIDATION 的每个 pytest/Ruff/Mypy 子检查 | 单项 `full_check_timeout_seconds`，且共同受 `formal_validation_timeout_seconds` 限制 |
 | FORMAL_VALIDATION 整体 | `formal_validation_timeout_seconds` |
 | 用户等待 | `user_wait_timeout_seconds` |
-| 全部操作 | 同时受剩余 `run_deadline` 限制；取适用限制中的最小正值 |
+| 全部正常操作 | 同时受剩余 `run_deadline` 限制；取适用限制中的最小正值；持久化过期按 §4.6 失败关闭 |
 
 ### 4.2.7 生命周期
 
@@ -911,6 +913,18 @@ Candidate 操作入口是本次 Run 已封存的唯一 `SnapshotTree`，以及�
 6. `ApplyCandidatePatchAction` 必须先完整解析全部 patch 条目，再按固定优先级执行 patch/Schema、规范路径与工作区边界、文件系统对象与敏感路径、保护工件、`EditablePathPolicyV1` 和候选硬上限检查；只有全部条目通过后才可原子派生一个 `CandidateRevision`。任一条目失败时整个动作无候选副作用，不得先应用合法条目。
 7. `CREATE` 和 `REPLACE` 使用同一冻结 editable root 与 operation 检查；每个条目都必须是 `src/` 的严格后代。`CREATE` 还必须在冻结 Git ignore 规则下为非忽略文件；现有文件不会因为已在 Snapshot 中就获得 `src/**` 之外的替换权限。
 8. 每次 Candidate 派生后，Harness 必须从当前 `CandidateTree` 重算完整 `FinalDiffV1`，并在发布 Candidate 前重新验证每个 entry 的 operation/path 与冻结 `EditablePathPolicyV1`。任一越界 entry 返回 `PATCH_PATH_NOT_EDITABLE` 且不发布该 Candidate；Snapshot、reference manifest、repository/governance policy digest 不一致则返回 `TREE_INTEGRITY_FAILED`。
+
+候选的安全绑定只使用以下语义身份：
+
+    CandidateIdentityV1 {
+      schema_version: 1
+      snapshot_tree_digest
+      candidate_tree_digest
+      final_diff_digest
+      digest
+    }
+
+`candidate_digest` 精确等于 `CandidateIdentityV1.digest`。`CandidateRevision.id`、`parent_id` 和易变元数据仅用于审计，不进入该摘要；同一 Snapshot 上相同 CandidateTree 与 `FinalDiffV1` 必须恢复相同摘要。`base_candidate_digest`、completion、验证和最终批准只引用该身份；三项输入任一变化都使旧引用陈旧。
 
 ### `UNIFIED_DIFF_V1`
 
@@ -982,7 +996,7 @@ Candidate 操作入口是本次 Run 已封存的唯一 `SnapshotTree`，以及�
 
 ### 确定性测试
 
-构造绝对路径、父目录、ADS、设备名、symlink/reparse、hard link、敏感路径、陈旧候选、hunk 不匹配、多动作累计超限和 ignored 新文件；断言全部在文件访问或候选发布前被稳定拒绝。`REPLACE src/a.py` 与 `CREATE src/new.py` 必须通过 editable gate；`README.md`、`docs/a.md`、`.github/workflows/x.yml`、`.gitlab-ci.yml`、`Dockerfile`、`scripts/x.py`、`src`、`src-old/a.py`、`src2/a.py` 和大小写/Unicode 路径别名必须拒绝，且 `tests/test_a.py` 仍优先返回 `PROTECTED_ARTIFACT_CHANGED`。合法与非法 entry 混合的单次 patch 整体无候选副作用，多次 patch 也不能产生越界的累计 `FinalDiffV1`。另构造 `CREATE`/`REPLACE` 混合候选，使用 UTF-8 BOM、中文、CRLF 和末尾换行复算完整 postimage 原始字节；断言单字符替换仍统计完整文件、`entries=[]` 为零、展示用 unified diff 不参与统计、越界 entry 返回 `PATCH_PATH_NOT_EDITABLE`、policy/Snapshot 绑定篡改返回 `TREE_INTEGRITY_FAILED`，以及重算结果超过 131072 时返回 `PATCH_LIMIT_EXCEEDED`。
+构造绝对路径、父目录、ADS、设备名、symlink/reparse、hard link、敏感路径、陈旧候选、hunk 不匹配、多动作累计超限和 ignored 新文件；断言全部在文件访问或候选发布前被稳定拒绝。`REPLACE src/a.py` 与 `CREATE src/new.py` 必须通过 editable gate；`README.md`、`docs/a.md`、`.github/workflows/x.yml`、`.gitlab-ci.yml`、`Dockerfile`、`scripts/x.py`、`src`、`src-old/a.py`、`src2/a.py` 和大小写/Unicode 路径别名必须拒绝，且 `tests/test_a.py` 仍优先返回 `PROTECTED_ARTIFACT_CHANGED`。合法与非法 entry 混合的单次 patch 整体无候选副作用，多次 patch 也不能产生越界的累计 `FinalDiffV1`。另构造 `CREATE`/`REPLACE` 混合候选，使用 UTF-8 BOM、中文、CRLF 和末尾换行复算完整 postimage 原始字节；断言单字符替换仍统计完整文件、`entries=[]` 为零、展示用 unified diff 不参与统计、越界 entry 返回 `PATCH_PATH_NOT_EDITABLE`、policy/Snapshot 绑定篡改返回 `TREE_INTEGRITY_FAILED`，以及重算结果超过 131072 时返回 `PATCH_LIMIT_EXCEEDED`。`CandidateIdentityV1` 测试还必须证明三项输入任一变化使旧引用陈旧，易变 revision 元数据不改变摘要，内容与 `FinalDiffV1` 恢复旧值时恢复原摘要。
 
 ## 4.4 FR-GOV：策略、动作批准与真实 LLM 披露
 
@@ -1021,7 +1035,6 @@ Candidate 操作入口是本次 Run 已封存的唯一 `SnapshotTree`，以及�
       workspace_preimage_digest
       run_config_digest
       policy_digest
-      adapter_digest
       reference_profile_digest
       expires_at
       digest
@@ -1035,7 +1048,7 @@ Candidate 操作入口是本次 Run 已封存的唯一 `SnapshotTree`，以及�
       status: PENDING | REJECTED | EXPIRED | CONSUMED
     }
 
-`action_semantic_digest` 对封闭的 `{schema_version: 1, action_type: "final_writeback", candidate_digest, final_diff_digest}` 使用 `ActionSemanticDigestV1` 域计算。`FinalWritebackSubjectV1.digest` 排除自身 `digest`，并作为 `subject_digest`；`created_at` 和可变 `status` 不属于 subject。创建 subject 前必须重算 `FinalDiffV1`，验证其全部 entries 命中冻结 `EditablePathPolicyV1`，并验证 `policy_digest`、`reference_profile_digest`、`validation_manifest_digest` 和 `run_config_digest` 传递的是同一 editable policy identity；路径越界返回 `PATCH_PATH_NOT_EDITABLE`，identity 不一致返回 `TREE_INTEGRITY_FAILED`，两者都不得创建等待或批准。只有当前 `PENDING`、subject 未过期且全部 subject 字段仍匹配的批准可以在动作执行前通过一次原子更新变为 `CONSUMED`。消费动作不能改变 subject；消费失败不得执行写回。任何批准不得覆盖 `DENY`，也不得被转换为其他批准或授权类型。
+`action_semantic_digest` 对封闭的 `{schema_version: 1, action_type: "final_writeback", candidate_digest, final_diff_digest}` 使用 `ActionSemanticDigestV1` 域计算。`FinalWritebackSubjectV1.digest` 排除自身 `digest`，并作为 `subject_digest`；`created_at` 和可变 `status` 不属于 subject。项目适配器身份已由包含 `adapter_version` 的 `validation_manifest_digest` 唯一传递，subject 不定义第二个 adapter identity。创建 subject 前必须重算 `FinalDiffV1`，验证其全部 entries 命中冻结 `EditablePathPolicyV1`，并验证 `policy_digest`、`reference_profile_digest`、`validation_manifest_digest` 和 `run_config_digest` 传递的是同一 editable policy identity；路径越界返回 `PATCH_PATH_NOT_EDITABLE`，identity 不一致返回 `TREE_INTEGRITY_FAILED`，两者都不得创建等待或批准。只有当前 `PENDING`、subject 未过期且全部 subject 字段仍匹配的批准可以在动作执行前通过一次原子更新变为 `CONSUMED`。消费动作不能改变 subject；消费失败不得执行写回。任何批准不得覆盖 `DENY`，也不得被转换为其他批准或授权类型。
 
 ### 4.4.3 `DisclosureGrant`
 
@@ -1097,12 +1110,22 @@ Candidate 操作入口是本次 Run 已封存的唯一 `SnapshotTree`，以及�
       ABSENT { kind: "ABSENT" }
       | PRESENT { kind: "PRESENT", value: CanonicalRelativePathV1 }
 
+    RequestContentSegmentV1 {
+      source_category: RequestSourceCategoryV1
+      source_path: OptionalCanonicalPathV1
+      content: UTF-8 string
+      content_digest
+      byte_count: 0..65536
+    }
+
     RequestMessageV1 {
       role: "SYSTEM" | "USER"
-      content: UTF-8 string
+      segments: 1..1024 ordered RequestContentSegmentV1
     }
 
     RequestSourceV1 {
+      message_index: 0..127
+      segment_index: 0..1023
       source_category: RequestSourceCategoryV1
       source_path: OptionalCanonicalPathV1
       content_digest
@@ -1124,7 +1147,6 @@ Candidate 操作入口是本次 Run 已封存的唯一 `SnapshotTree`，以及�
         script_id
         script_digest
         messages: 1..128 ordered RequestMessageV1
-        actual_sources: 1..1024 RequestSourceV1
         canonical_byte_count: 1..65536
         digest
       }
@@ -1138,7 +1160,6 @@ Candidate 操作入口是本次 Run 已封存的唯一 `SnapshotTree`，以及�
         request_serializer_version
         messages: 1..128 ordered RequestMessageV1
         fixed_parameters: OpenAIFixedParametersV1
-        actual_sources: 1..1024 RequestSourceV1
         redaction_profile_id: "NO_CONTENT_REDACTION_V1"
         canonical_byte_count: 1..65536
         digest
@@ -1193,22 +1214,24 @@ Candidate 操作入口是本次 Run 已封存的唯一 `SnapshotTree`，以及�
       error: OptionalLLMCallErrorV1
     }
 
-`RequestSourceV1[]` 按 `(source_category, source_path.kind, source_path.value-or-empty, content_digest)` 排序；消息保持发送顺序。上述 Schema 全部拒绝未知字段，声明字段全部必填。`MockPreparedModelRequestV1` 只能由冻结 `MockLLMProfileV1` 构造，`mode`、`llm_profile_digest`、`script_id` 和 `script_digest` 必须完全一致，并禁止 provider、endpoint、model、serializer、OpenAI fixed parameters 和 redaction profile 字段。`OpenAIPreparedModelRequestV1` 只能由冻结 `OpenAILLMProfileV1` 构造，禁止 `script_id` 和 `script_digest`。任一模式、profile digest 或模式专属字段不一致，均在请求摘要、turn/call 计数和适配器调用前以 `INTERNAL_ERROR` 失败关闭；OpenAI endpoint 或有效目标不一致仍使用 `LLM_ENDPOINT_MISMATCH`。
+消息和其中 segments 都保持发送顺序，每个具体请求的 segment 总数必须为 1..1024。`content_digest` 是 segment `content` 的无 BOM UTF-8 原始字节 SHA-256，`byte_count` 是同一字节序列长度；不一致时在请求摘要前拒绝。上述 Schema 全部拒绝未知字段，声明字段全部必填。`MockPreparedModelRequestV1` 只能由冻结 `MockLLMProfileV1` 构造，`mode`、`llm_profile_digest`、`script_id` 和 `script_digest` 必须完全一致，并禁止 provider、endpoint、model、serializer、OpenAI fixed parameters 和 redaction profile 字段。`OpenAIPreparedModelRequestV1` 只能由冻结 `OpenAILLMProfileV1` 构造，禁止 `script_id` 和 `script_digest`。任一模式、profile digest 或模式专属字段不一致，均在请求摘要、turn/call 计数和适配器调用前以 `INTERNAL_ERROR` 失败关闭；OpenAI endpoint 或有效目标不一致仍使用 `LLM_ENDPOINT_MISMATCH`。
 
 两个具体准备请求分别以自身类型名作为 §0.1 的 `object_type`，各自的 `digest` 排除自身且绑定其余全部字段；`PreparedModelRequestV1` 只是封闭联合别名，不产生第三种摘要。`DisclosureAuthorizationRecordV1.request_digest` 只能引用 `OpenAIPreparedModelRequestV1.digest`。`endpoint_id` 依 §0.1 自动进入 `OpenAILLMProfileV1`、`DisclosureGrantSubjectV1`、`OpenAIPreparedModelRequestV1` 和 `DisclosureAuthorizationRecordV1` 各自的规范摘要，四个对象的 endpoint 必须完全相同。
 
-`MockPreparedModelRequestV1.canonical_byte_count` 是按 §0.1 规则编码 `MockAdapterPayloadV1` 所得规范 JSON 的无 BOM UTF-8 字节长度，不包括摘要域分隔前缀；`MockAdapterPayloadV1` 是 Mock adapter 实际解释的完整负载，`actual_sources` 只用于审计、来源绑定和预算检查，不进入该负载。`OpenAIPreparedModelRequestV1.canonical_byte_count` 继续表示冻结 OpenAI serializer 实际交给 HTTP transport 的最终 UTF-8 请求体字节数。两者都是各自模式的真实适配器负载大小，不要求跨模式相等，也不是 UI 展示长度。
+`MockPreparedModelRequestV1.canonical_byte_count` 是按 §0.1 规则编码 `MockAdapterPayloadV1` 所得规范 JSON 的无 BOM UTF-8 字节长度，不包括摘要域分隔前缀；`MockAdapterPayloadV1` 是 Mock adapter 实际解释的完整负载。OpenAI serializer 对每条消息按 segment 顺序直接拼接 `content`，不插入隐式分隔符，也不把来源元数据写入 HTTP 正文；`OpenAIPreparedModelRequestV1.canonical_byte_count` 是该 serializer 实际交给 transport 的最终 UTF-8 请求体字节数。两者都是各自模式的真实适配器负载大小，不要求跨模式相等，也不是 UI 展示长度。
 
 `LLMCallResultV1.mode`、`llm_profile_digest` 和 `request_digest` 必须与被调用的具体准备请求一致。Mock 结果的 `request_digest` 必须引用 `MockPreparedModelRequestV1.digest`，`authorization_record_ref` 必须为 `ABSENT`，且不得使用 `DELIVERY_UNKNOWN`；OpenAI 结果的 `request_digest` 必须引用 `OpenAIPreparedModelRequestV1.digest`，`authorization_record_ref` 必须为 `PRESENT` 并指向 request digest 相同的已持久化 `DisclosureAuthorizationRecordV1`。`SUCCEEDED` 必须组合 `response_digest=PRESENT` 与 `error=ABSENT`；其他状态必须组合 `response_digest=ABSENT` 与 `error=PRESENT`。模式、请求、状态组合或授权记录引用不一致时，以 `INTERNAL_ERROR` 阻止结果发布；已消费的 turn/call 不回退，且不得重试适配器调用。
 
-`RequestSourceV1.source_path` 的存在性由来源类别和可信来源分类器共同冻结：
+`RequestContentSegmentV1.source_path` 的存在性由来源类别和可信来源分类器共同冻结：
 
 - `HARNESS_PROTOCOL`、`TASK` 和 `MEMORY` 必须为 `ABSENT`；
 - `FILE_CONTENT` 必须为 `PRESENT`；
 - `TOOL_RESULT` 和 `FEEDBACK` 的正文或事实可归属于一个具体仓库路径时必须为 `PRESENT`；只有纯运行级、检查级或控制面事实才允许为 `ABSENT`；
-- 一个来源包含多个仓库路径时，必须拆分为多个按路径绑定的 `RequestSourceV1`，公共无路径元数据另建 `ABSENT` 来源；List/Read/Search 产生的文件名、文件正文摘录或匹配结果必须绑定对应路径，不得把整个结果降级为无路径 `TOOL_RESULT`。
+- 一段正文包含多个仓库路径时，必须拆分为多个按路径绑定的 segment，公共无路径元数据另建 `ABSENT` segment；List/Read/Search 产生的文件名、文件正文摘录或匹配结果必须绑定对应路径，不得把整个结果降级为无路径 `TOOL_RESULT`。
 
-来源类别与 `source_path` 存在性合同适用于两个具体准备请求；违反该合同属于控制面构造错误，必须在具体请求摘要、turn/call 计数和适配器调用前以 `INTERNAL_ERROR` 失败关闭。只有 `OpenAIPreparedModelRequestV1` 需要 Disclosure Grant：每个实际来源必须命中 `allowed_source_categories`，`source_path=PRESENT` 时还必须按 §4.4.3 的精确算法命中至少一个 `allowed_source_paths`；类别或路径未命中活动 Grant 时以 `DISCLOSURE_SCOPE_EXCEEDED` 在 Grant 消费、durable authorization record 创建、turn/call 计数和网络调用前失败关闭，且这些副作用增量全部为零。Mock 不执行 Disclosure Grant 类别/scope、外发预算或 redaction 授权，但仍执行相同 ContextProjection 裁剪、来源分类、路径存在性和 64 KiB 请求上限。
+来源类别与 `source_path` 存在性合同适用于两个具体准备请求；违反该合同属于控制面构造错误，必须在具体请求摘要、turn/call 计数和适配器调用前以 `INTERNAL_ERROR` 失败关闭。只有 `OpenAIPreparedModelRequestV1` 需要 Disclosure Grant：每个 segment 必须命中 `allowed_source_categories`，`source_path=PRESENT` 时还必须按 §4.4.3 的精确算法命中至少一个 `allowed_source_paths`；类别或路径未命中活动 Grant 时以 `DISCLOSURE_SCOPE_EXCEEDED` 在 Grant 消费、durable authorization record 创建、turn/call 计数和网络调用前失败关闭，且这些副作用增量全部为零。Mock 不执行 Disclosure Grant 类别/scope、外发预算或 redaction 授权，但仍执行相同 ContextProjection 裁剪、segment 来源分类、路径存在性和 64 KiB 请求上限。
+
+`DisclosureAuthorizationRecordV1.actual_sources` 不是第二份调用输入。控制面必须对请求中每个 segment 生成且只生成一个 `RequestSourceV1`，使用从零开始的 `message_index`/`segment_index`，复制其类别、路径、摘要和字节数，并按该二元组排序；缺失、重复、多余或内容不一致的投影必须在 Grant 消费和持久化前以 `INTERNAL_ERROR` 拒绝。由此，准备请求正文是唯一来源事实，authorization record 只保存无正文、可验证的派生索引。
 
 每次 Mock 调用前：
 
@@ -1220,9 +1243,9 @@ Candidate 操作入口是本次 Run 已封存的唯一 `SnapshotTree`，以及�
 每次真实调用前：
 
 1. 创建或复用真实 Grant 时，调用门只验证冻结 `OpenAILLMProfileV1`、待创建或活动的 `DisclosureGrantSubjectV1`、可信内建 `OpenAIEndpointV1` 映射与 OpenAI 适配器的有效目标一致；此阶段 `OpenAIPreparedModelRequestV1` 与 authorization record 尚未形成，不得引用或验证它们。适配器必须显式仅由内建映射构造客户端，不得读取、接受或继承 `OPENAI_BASE_URL` 或 SDK 的等价自定义 base URL 设置。
-2. 重新生成最终 `ContextProjection`，应用冻结的 `NO_CONTENT_REDACTION_V1` 并形成不可再扩张正文的 `OpenAIPreparedModelRequestV1`。在 Grant 消费事务前，组装完整但未持久化的 `DisclosureAuthorizationRecordV1` candidate 字段；candidate 不是 durable authorization record，不得落库、写入审计记录或作为已创建 authorization record 返回。
-3. 在消费事务开始前，验证冻结 profile、活动 Grant subject、`OpenAIPreparedModelRequestV1`、未持久化 candidate 字段的 `endpoint_id` 与预期内建 `OpenAIEndpointV1` 一致，并验证适配器有效目标一致；再按固定来源路径存在性合同和 scope 匹配算法验证 LLM profile、endpoint、全部实际来源、类别、路径、redaction profile 应用结果和字节数均落在活动 Grant 内，且 turn、LLM call 和剩余总墙钟仍允许到达 §4.2.5 的计数点。
-4. 只有全部验证通过后，才在同一控制面事务中以 subject 的 `cumulative_byte_budget` 校验并原子增加 `DisclosureGrant.consumed_bytes`，必要时转为 `EXHAUSTED`，并只用已验证的 candidate 字段持久化 `DisclosureAuthorizationRecordV1`。
+2. 重新生成最终 `ContextProjection`，应用冻结的 `NO_CONTENT_REDACTION_V1` 并形成不可再扩张正文的 `OpenAIPreparedModelRequestV1`。在 Grant 消费事务前，只从该请求的 segments 派生完整但未持久化的 `DisclosureAuthorizationRecordV1` candidate 字段；candidate 不是 durable authorization record，不得落库、写入审计记录或作为已创建 authorization record 返回。
+3. 在消费事务开始前，验证冻结 profile、活动 Grant subject、`OpenAIPreparedModelRequestV1`、未持久化 candidate 字段的 `endpoint_id` 与预期内建 `OpenAIEndpointV1` 一致，并验证适配器有效目标一致；再按固定来源路径存在性合同和 scope 匹配算法验证全部 segments 及其精确派生投影、redaction profile 应用结果和字节数均落在活动 Grant 内，且 turn、LLM call 和剩余总墙钟仍允许到达 §4.2.5 的计数点。
+4. 令 `charge_bytes = OpenAIPreparedModelRequestV1.canonical_byte_count`。只有全部验证通过且 `consumed_bytes + charge_bytes <= cumulative_byte_budget` 时，才在同一控制面事务中原子执行 `consumed_bytes := consumed_bytes + charge_bytes`，等于预算上限时转为 `EXHAUSTED`，并只用已验证的 candidate 字段持久化 `DisclosureAuthorizationRecordV1`；否则零消费、零 durable record，并按 §4.2.7 处理预算不足。相同正文或请求再次获准发送仍重新按其完整 `charge_bytes` 扣减。
 5. 只有该事务成功后，按 §4.2.5 原子创建 turn/call 计数点，真实调用门才可把同一 `OpenAIPreparedModelRequestV1` 和已持久化 authorization record 引用交给真实适配器；适配器不得追加项目正文、工具结果或记忆。
 
 `DisclosureAuthorizationRecordV1` 证明该精确 OpenAI 请求在调用前获得授权，不证明适配器被调用或供应商收到请求。控制面记录的 OpenAI 调用结果必须是 `mode=OPENAI`、绑定同一 profile/request digest 且 `authorization_record_ref=PRESENT` 的 `LLMCallResultV1`。
@@ -1241,11 +1264,11 @@ Candidate 操作入口是本次 Run 已封存的唯一 `SnapshotTree`，以及�
 
 ### 确定性测试
 
-直接构造 `ALLOW`、`ASK`、`DENY`、批准竞态和 Grant 范围变化；断言硬拒绝不可覆盖，只有一个精确批准消费胜出，Approval/Grant 的状态与消费计数变化不改变 subject digest，任一 subject 字段变化使旧决定陈旧；越界 `FinalDiffV1` 以 `PATCH_PATH_NOT_EDITABLE`、editable policy identity 不一致以 `TREE_INTEGRITY_FAILED` 拒绝，且均不创建 `FINAL_WRITEBACK` 等待或 subject，已存在的旧批准也不能复用；有效 Grant 内不同请求自动产生不同逐请求记录，未授权、超预算或 turn/call 预算不足时真实适配器调用次数为零，失败/未知交付不退款且不能重用记录。
+直接构造 `ALLOW`、`ASK`、`DENY`、批准竞态和 Grant 范围变化；断言硬拒绝不可覆盖，只有一个精确批准消费胜出，Approval/Grant 的状态与消费计数变化不改变 subject digest，任一 subject 字段变化使旧决定陈旧；越界 `FinalDiffV1` 以 `PATCH_PATH_NOT_EDITABLE`、editable policy identity 不一致以 `TREE_INTEGRITY_FAILED` 拒绝，且均不创建 `FINAL_WRITEBACK` 等待或 subject，已存在的旧批准也不能复用。Grant 测试按请求 `canonical_byte_count` 精确复算单次和重复发送消费，覆盖恰好耗尽、差一字节超限和并发竞争；未授权、超预算或 turn/call 预算不足时真实适配器调用次数为零，失败/未知交付不退款且不能重用记录。
 
-路径 scope 测试必须证明：`FILE("src/a.py")` 只匹配该文件；`DIRECTORY("src")` 匹配 `src` 与 `src/a.py` 但不匹配 `src-old/a.py`；`ROOT` 匹配任意规范路径且必须是唯一 scope；空 scope 拒绝全部 `PRESENT` 来源但允许类别合同支持的合法 `ABSENT` 来源。符合来源存在性合同但未命中 OpenAI Grant 类别或路径 scope 时，必须以 `DISCLOSURE_SCOPE_EXCEEDED` 在网络调用、Grant 消费、durable record 创建和 turn/call 计数前拒绝。另覆盖 `FILE_CONTENT + ABSENT`、`HARNESS_PROTOCOL`/`TASK`/`MEMORY + PRESENT`、应带路径的 `TOOL_RESULT`/`FEEDBACK` 被降级为 `ABSENT`，以及多路径来源未拆分；这些构造错误在 Mock/OpenAI 两种模式都必须以 `INTERNAL_ERROR` 在具体请求摘要、计数和适配器调用前拒绝。Grant UI 必须显示“整个仓库 / 单个文件 / 目录及其后代”，且不显示尾随 `/` 哨兵。
+路径 scope 测试必须证明：`FILE("src/a.py")` 只匹配该文件；`DIRECTORY("src")` 匹配 `src` 与 `src/a.py` 但不匹配 `src-old/a.py`；`ROOT` 匹配任意规范路径且必须是唯一 scope；空 scope 拒绝全部 `PRESENT` segment 但允许类别合同支持的合法 `ABSENT` segment。另覆盖正文摘要/字节数不一致、`FILE_CONTENT + ABSENT`、`HARNESS_PROTOCOL`/`TASK`/`MEMORY + PRESENT`、应带路径的 `TOOL_RESULT`/`FEEDBACK` 被降级为 `ABSENT`、多路径正文未拆分，以及 authorization candidate 来源投影缺失、重复、多余或索引错误；这些构造错误在具体请求摘要或 Grant 消费前以 `INTERNAL_ERROR` 拒绝。合法但超出 Grant 类别或路径 scope 的 segment 以 `DISCLOSURE_SCOPE_EXCEEDED` 在消费、record、计数和网络前拒绝；Grant UI 只显示“整个仓库 / 单个文件 / 目录及其后代”。
 
-准备请求与结果 Schema 测试必须分别构造合法 Mock/OpenAI 变体，并拒绝缺少 `mode`、跨模式字段、profile/script/request digest 不一致以及非法 authorization record 引用。相同 Mock adapter payload 的字段插入顺序变化不得改变 `canonical_byte_count`，script/message 变化必须改变 payload 字节或 request digest；`MockPreparedModelRequestV1` 与 `OpenAIPreparedModelRequestV1` 即使共享字段值相同也必须因不同 `object_type` 产生不可互换摘要。Mock 成功、失败和计数后调用前崩溃分别产生合法 `SUCCEEDED`、`FAILED`、`NOT_ATTEMPTED` 结果，且 authorization record 始终为 `ABSENT`；Mock 的 `DELIVERY_UNKNOWN` 必须拒绝。
+准备请求与结果 Schema 测试必须分别构造合法 Mock/OpenAI 变体，并拒绝缺少 `mode`、跨模式字段、profile/script/request digest 不一致以及非法 authorization record 引用。相同 Mock adapter payload 的字段插入顺序变化不得改变 `canonical_byte_count`，segment/message/script 变化必须改变 payload 字节或 request digest；两个具体 request 即使共享字段值相同也必须因不同 `object_type` 不可互换。Mock 成功、失败和计数后适配器调用前的可捕获控制面失败分别产生合法 `SUCCEEDED`、`FAILED`、`NOT_ATTEMPTED`，且 authorization record 始终为 `ABSENT`；真实进程崩溃只产生重启停止证据，不要求调用结果，Mock 的 `DELIVERY_UNKNOWN` 必须拒绝。
 
 离线可注入 HTTP transport 测试必须断言：设置恶意 `OPENAI_BASE_URL` 后，有效请求仍只指向 `https://api.openai.com/v1`；缺少 `endpoint_id`、未知 endpoint、`base_url` 或自定义 URL 在摘要或调用前以 `CONFIG_INVALID` 拒绝；profile、Grant subject、`OpenAIPreparedModelRequestV1`、未持久化 candidate 字段、适配器目标或已持久化 durable record 任一 endpoint 不一致时以 `LLM_ENDPOINT_MISMATCH` 拒绝。candidate 字段篡改与 durable record 不一致必须分别测试：candidate 篡改路径的 durable record 数为零，candidate 不得落库、进入审计或被当作已创建 record；durable record 不一致路径不创建新的 record。两类不一致尝试均断言本次尝试的网络调用、Grant 消费、durable record 创建与 turn/call 增量为零；合法 OpenAI 结果必须使用 `authorization_record_ref=PRESENT` 并绑定相同 request digest；跨 origin redirect 不被跟随、不重发正文，初次调用消费不退款；Grant UI 显示 endpoint ID 和 `api.openai.com`。
 
@@ -1532,6 +1555,7 @@ pytest 退出码为 0 但上述任一条件不成立时，正式验证仍失败�
 8. `durable_state` 是最后一次成功持久化的进度事实，不是当前文件内容的权威替代。进程可能在文件替换与状态落盘之间崩溃；恢复必须重新读取当前字节、文本元数据和对象身份，并允许观测证据纠正滞后的状态。
 9. 全部替换完成后，逐文件比较期望后映像，并重验未涉及 tracked 文件未变化。
 10. 只有全部匹配时转为 `COMMITTED` 并由 `PersistenceCoordinator` 发布 `SUCCEEDED`；可证明全部恢复前映像时转为 `ROLLED_BACK`；其他未知或矛盾状态只能转为 `UNRESOLVED`。
+11. 每次权威工作区写入前检查 `run_deadline`。首次写入前过期时保持全部路径 `NOT_STARTED`、零工作区写入，将无写入事务结束为 `ROLLED_BACK` 并令 Run `STOPPED`；任一路径可能已替换后过期时，禁止继续写入或自动回滚，事务转为 `UNRESOLVED`，Run 转为 `RECOVERY_REQUIRED`，后续只能由显式 recovery 判定 `COMMITTED` 或 `ROLLED_BACK`。deadline 后只允许持久化该控制面终态，不得再修改权威工作区。
 
 事务数据库、前映像备份和恢复证据必须创建在当前 Windows 用户专属本地应用数据目录，并在写入前验证 ACL 只允许当前用户和操作系统必要主体访问。无法创建或证明安全 ACL 时以 `ARTIFACT_ACL_UNSAFE` 失败关闭，不得把源码备份写入目标仓库、通用临时目录或继承了宽权限的目录。
 
@@ -1564,7 +1588,7 @@ CLI 必须提供：
 
 ### 确定性测试
 
-使用临时目录和逐故障点注入覆盖 preview 零写入、显式 apply、写入前失败、第一/第二文件替换后崩溃、文件替换后但 `REPLACED` 状态落盘前崩溃、三文件混合 `CREATE/REPLACE`、新文件精确 postimage 的 `ABSENT` 回滚、新文件被外部改写或替换为特殊对象、ACL 不安全、完整提交、前映像变化、可回滚和未知字节；另篡改已验证 Candidate、`FinalDiffV1`、`PersistencePathRecord` 或 policy digest 注入非 `src/**` 路径，断言批准消费前路径失败不消费批准，批准消费后的首次写入前复验失败保持全部 `NOT_STARTED` 且工作区零写入。状态滞后可由字节证据纠正，外部改写的新文件绝不删除，未知证据只能进入 `RECOVERY_REQUIRED`，且恢复阻断不能被普通启动绕过。
+使用临时目录和逐故障点注入覆盖 preview 零写入、显式 apply、写入前失败、第一/第二文件替换后崩溃、文件替换后但 `REPLACED` 状态落盘前崩溃、首次写入前和首次替换后 deadline 到期、三文件混合 `CREATE/REPLACE`、新文件精确 postimage 的 `ABSENT` 回滚、新文件被外部改写或替换为特殊对象、ACL 不安全、完整提交、前映像变化、可回滚和未知字节；另篡改已验证 Candidate、`FinalDiffV1`、`PersistencePathRecord` 或 policy digest 注入非 `src/**` 路径，断言批准消费前路径失败不消费批准，批准消费后的首次写入前复验失败保持全部 `NOT_STARTED` 且工作区零写入。deadline 在首次写入前过期时同样零写入并停止，替换后过期时不再修改工作区且只能进入 `RECOVERY_REQUIRED`；状态滞后可由字节证据纠正，外部改写的新文件绝不删除，未知证据不能被普通启动绕过。
 
 ## 4.7 FR-MEM：记忆与审计
 
@@ -1845,17 +1869,19 @@ Demo 不经过 Credential Store、真实 LLM、Docker、workspace lease、恢复
 | FailureFingerprintV1 | node、CALL phase、exception、message/diff、project frames、digest | 只由完整 pytest 证据创建；不安全规范化即不稳定 |
 | ValidationManifestV1 | §4.5 的完整封闭字段、digest | 由基线创建后不可变；未知字段拒绝；reference、repository policy 与 Snapshot 身份绑定同一 editable policy |
 | FinalDiffV1 | snapshot digest、排序 entries、完整 postimage 原始字节总量、digest | Harness 从 CandidateTree 重算并对每个 entry 重验冻结 editable policy；结构化净差异是批准、验证和持久化身份 |
-| CandidateRevision | id、parent_id、tree_digest、FinalDiffV1.digest | 单父链；限制基于相对 Snapshot 的累计净差异 |
+| CandidateIdentityV1 | snapshot_tree_digest、candidate_tree_digest、final_diff_digest、digest | Candidate 的唯一语义身份；相同三重绑定产生相同 `candidate_digest` |
+| CandidateRevision | id、parent_id、candidate_digest | 单父审计链；ID 和父链不进入候选语义摘要 |
 | AgentTurn | id、run_id、candidate_id、context_digest、consumed_feedback_refs、outcome | 只在 §4.2.5 原子计数点创建；同一运行最多一个活动 turn |
 | ActionRecord | action_id、action_type、instance_digest、semantic_digest、policy_decision、result_ref | 实例摘要用于审计关联，语义摘要用于重复/策略/进展；动作输入与结果不可被 Agent 改写 |
 | FeedbackRecord | source_ref、kind、bounded_payload、consumed_by_turn | 最多被一个下一 turn 消费 |
-| FinalWritebackSubjectV1 | §4.4.2 的不可变绑定、expires_at、digest | `policy_digest` 与 `reference_profile_digest` 绑定同一 editable policy；越界 FinalDiff 不创建 subject，Wait 与批准引用同一 digest |
+| FinalWritebackSubjectV1 | §4.4.2 的不可变绑定、expires_at、digest | 项目 adapter 由 validation manifest 传递绑定，不定义第二个 adapter identity；Wait 与批准引用同一 digest |
 | FinalWritebackApproval | approval_id、subject_digest、created_at、status | 只授权最终权威写回；`PENDING` 只能一次转入一个终局状态 |
 | DisclosureGrantSubjectV1 | run/profile/provider/endpoint_id/model/serializer/category/path scope/redaction/budget/expiry/digest | `ROOT/FILE/DIRECTORY` 精确绑定带路径来源，空路径 scope 不授权任何带路径正文；endpoint 或授权范围变化必须新授权 |
 | DisclosureGrant | grant_id、subject_digest、created_at、consumed_bytes、status | 可变预算记录；不授权本地工具或写回 |
-| MockAdapterPayloadV1 | script_id、script_digest、messages | Mock adapter 实际解释的规范负载；其规范 JSON UTF-8 长度产生 Mock request 的 `canonical_byte_count` |
-| PreparedModelRequestV1 | `MockPreparedModelRequestV1 | OpenAIPreparedModelRequestV1` | 两个封闭变体使用独立摘要域；Mock 绑定 script 且无 OpenAI 字段，OpenAI 绑定 endpoint/serializer/fixed parameters 且无 script 字段 |
-| DisclosureAuthorizationRecordV1 | §4.4.4 的完整封闭字段（含 endpoint_id） | 只记录 OpenAI 逐请求授权，不含正文；必须与 profile/Grant/OpenAI request endpoint 和 request digest 一致 |
+| RequestContentSegmentV1 | category、path、content、content digest/bytes | 请求正文与来源的唯一事实；消息按 segment 顺序发送 |
+| MockAdapterPayloadV1 | script_id、script_digest、messages | Mock adapter 解释带来源 segments 的规范负载 |
+| PreparedModelRequestV1 | `MockPreparedModelRequestV1 | OpenAIPreparedModelRequestV1` | 独立摘要域和模式字段；OpenAI serializer 只投影 segment 正文 |
+| DisclosureAuthorizationRecordV1 | §4.4.4 的字段与派生 `actual_sources` | 只记录 OpenAI 授权；来源索引必须精确投影 request segments |
 | LLMCallResultV1 | mode、profile/request digest、authorization_record_ref、status、response/error | Mock 必须 `ABSENT` 且禁止 `DELIVERY_UNKNOWN`；OpenAI 必须 `PRESENT`；不把授权记录等同于供应商交付 |
 | PytestEvidenceV1 | §4.5 的完整封闭字段、integrity_digest | 在非主动恶意项目假设下权威；缺失、截断或完整性失败不能产生 PASS |
 | CheckResult | check_kind、status、structured_findings、raw_digest | 原始输出作为有界本地工件 |
@@ -1956,7 +1982,7 @@ GitHub Release 与 GHCR 使用彼此独立的最小权限发布凭据：前者�
 
 - **AC-01：** 路径逃逸、绝对路径、ADS、设备名、symlink/reparse、hard link 和敏感 tracked 路径全部确定性拒绝。
 - **AC-02：** 硬 `DENY` 无法被配置、模型输出、DisclosureGrant 或批准覆盖。
-- **AC-03：** `FinalWritebackSubjectV1` 在过期或任一不可变字段变化时产生不同/陈旧 subject；`FinalWritebackApproval.status` 不进入 subject，且过期、绑定变化和重复消费时均不执行，也不能授权披露、Demo 或其他 `ASK`。
+- **AC-03：** `FinalWritebackSubjectV1` 在过期或任一不可变字段变化时产生不同/陈旧 subject；项目 adapter 由 `validation_manifest_digest` 传递绑定，不存在第二个 adapter digest。`FinalWritebackApproval.status` 不进入 subject，且过期、绑定变化和重复消费时均不执行，也不能授权其他 `ASK`。
 - **AC-04：** 修改测试、检查配置或 Manifest 保护工件的补丁不能进入检查或正式验证。
 - **AC-05：** 注入固定检查失败后，Mock LLM 下一轮动作按脚本发生变化；每轮都能只由冻结 Mock profile 构造合法 `MockPreparedModelRequestV1`，Mock request/result 不含 OpenAI 字段且 `authorization_record_ref=ABSENT`，凭据、Grant、authorization record 和网络调用次数均为零。
 - **AC-06：** LLM completion 建议不能绕过正式成功谓词和最终批准。
@@ -1966,22 +1992,22 @@ GitHub Release 与 GHCR 使用彼此独立的最小权限发布凭据：前者�
 - **AC-10：** `python -m pytest -q` 离线通过；`.gitlab-ci.yml` 的 `unit-test` 在每次 push 和 merge request 运行，最后一次记录通过。
 - **AC-11：** `wheel-build-smoke` 在每次 push 和 merge request 的项目专属 Windows 11 x64 runner 上构建 wheel、校验 SHA-256 并完成全新 pipx 安装/CLI smoke；runner 缺失或不可用时 job 失败，README 步骤可从发布产物启动 WebUI。
 - **AC-12：** `demo-image-build` 在每个 merge request 和 main push 真实构建镜像并通过容器 `/healthz` smoke；公网 Mock Demo URL 可访问且无法使用本地、恢复或真实能力。
-- **AC-13：** 未授权披露时真实适配器调用次数为零；`DisclosureGrantSubjectV1` 精确绑定冻结 LLM profile、serializer、`endpoint_id = OPENAI_PUBLIC_API_V1`、来源类别、`ROOT/FILE/DIRECTORY` 路径范围、预算、有效期和 `NO_CONTENT_REDACTION_V1`，且空路径 scope 不授权任何带路径来源；每个带路径来源必须使用 `CanonicalRelativePathV1` 并命中 scope，文件正文、路径相关工具结果或反馈不得降级为 pathless。可变消费计数/状态不进入 subject；profile、Grant subject、`OpenAIPreparedModelRequestV1` 和 authorization record 的 endpoint/request digest 必须一致，`mode=OPENAI` 调用结果必须引用同一 request digest 且 `authorization_record_ref=PRESENT`；任一 endpoint 或来源范围不一致均在消费、durable authorization record 创建、turn/call 计数和网络请求前失败且这些值全为零。不同请求生成不同 `DisclosureAuthorizationRecordV1`，endpoint 或其他 subject 字段变化、或请求需要扩大范围时，在有正等待区间时要求新 Grant；恶意 `OPENAI_BASE_URL` 不得改变 `https://api.openai.com/v1`，跨 origin redirect 不跟随且不重发正文、初次消费不退款。
+- **AC-13：** 真实请求的全部正文都来自带类别和路径的 `RequestContentSegmentV1`；authorization record 的 `actual_sources` 必须逐段精确派生，缺失、多余或错配时零消费、零 record、零计数、零网络。每个 segment 必须命中 Grant 类别与 `ROOT/FILE/DIRECTORY` scope，空 scope 不授权带路径正文；每次获准发送按 `canonical_byte_count` 原子扣减，重复发送重复扣减且并发不能超预算。profile、endpoint、request、record 和结果必须一致，恶意 base URL 或跨 origin redirect 不能改变或重发正文；未授权披露时真实适配器调用次数为零。
 - **AC-14：** 两个工作区的记忆相互隔离；模型不能直接写记忆；用户清除后后续 turn 不再选择该条目。
 - **AC-15：** 严格 `ValidateRunRequestV1` 拒绝重复/超量目标、未知 profile、缺失限制和放宽硬上限；有效请求先创建 `CREATED`，再严格按 workspace identity/lease → recovery gate → Snapshot 前置检查 → 创建并封存本次 Run 唯一 `SnapshotTree` → `detect_static` → reference image/execution profile readiness → OpenAI 模式 credential/endpoint readiness 的顺序完成 `PREFLIGHT`，最后才进入 `BASELINE`。任一阶段失败均不调用后续阶段；静态画像不运行项目代码、不重读权威工作区或创建第二份 Snapshot，动态兼容性只在 `BASELINE` 判定，Candidate 文件动作在完整 PREFLIGHT 与 BASELINE 通过前不可分发。
 - **AC-16：** 正式 Run 的六种状态和各 phase 显示正确；失败、超时、skip、xfail、xpass、deselect 和未运行不显示为通过。
 - **AC-17：** 六种动作及结果严格按封闭 Schema 解析；list/search 只能用 `RepositoryLocationV1.ROOT` 表示仓库根，空字符串、`.`、`./`、`/`、尾随 `/` 和 `[ROOT, PATH(...)]` 被拒绝。`ListFilesEntryV1` 只能使用 `DIRECTORY | TEXT_FILE | NON_TEXT_FILE` 及各自固定的 size/text profile 组合，List/Read/Search 对同一原始字节使用同一 `SupportedTextFileV1` 分类；非文本普通文件可列出，Read 以 `FILE_NOT_TEXT` 且零正文失败，Search 稳定计入 `skipped_non_text_count`。模型提交 `action_id`、`RunCheckAction` 携带 executable/argv/命令文本、多动作或自由文本响应均被拒绝；Harness 生成的实例 ID 只影响 `instance_digest`，不影响 `semantic_digest`。
-- **AC-18：** 多次 patch action 不能绕过累计 3 文件/128 KiB 限制；`FinalDiffV1` 是 Snapshot 到最终 CandidateTree 的封闭结构化净差异，`added_and_replacement_text_bytes` 等于所有 CREATE/REPLACE 完整 postimage 原始字节长度之和且由 Harness 重算，unified diff 或仅变化片段不参与统计；CREATE/REPLACE 与 `ABSENT/PRESENT` 组合错误、统计值不一致在摘要前拒绝。
+- **AC-18：** 多次 patch action 不能绕过累计 3 文件/128 KiB 限制；`FinalDiffV1` 由 Harness 重算完整 postimage 字节。`candidate_digest` 只由 Snapshot、CandidateTree 和该 FinalDiff 的封闭 `CandidateIdentityV1` 产生；任一输入变化使旧补丁、completion、验证和批准陈旧，revision ID/父链不改变语义摘要。
 - **AC-19：** Docker 检查中候选树只读、缓存进入 tmpfs、无 Docker socket、无网络；`RuntimeCompatibilityCheckV1` 对收集漂移、项目树写入、报告不完整或检查环境错误返回结构化 `BASELINE_BLOCKED`。
 - **AC-20：** 正式 pytest 只有在 node 集合一致、全部实际执行并 PASS、无所有禁止状态、Ruff/Mypy PASS、保护工件和环境一致时才创建 `VerifiedCandidate`。
 - **AC-21：** 两个进程竞争同一工作区时最多一个获得 lease；未解决恢复事务阻止新的正式 Run。
-- **AC-22：** 1—3 文件混合 `CREATE/REPLACE` 的故障注入只产生 `COMMITTED`、`ROLLED_BACK` 或 `UNRESOLVED`；`PersistencePathRecord` 状态滞后由实际字节证据纠正，`UNRESOLVED` 保持阻断且不能被忽略。
+- **AC-22：** 1—3 文件混合 `CREATE/REPLACE` 的故障注入只产生 `COMMITTED`、`ROLLED_BACK` 或 `UNRESOLVED`；deadline 在首次写入前到期时零写入停止，任一路径可能已替换后到期时不再修改工作区并进入 `RECOVERY_REQUIRED`。状态滞后由字节证据纠正，`UNRESOLVED` 保持阻断。
 - **AC-23：** `PROJECT_CONVENTION`/`USER_DECISION` 与 `RUN_SUMMARY`/`KNOWN_FAILURE` 的创建权限严格按 §4.7 执行。
 - **AC-24：** Windows、Docker、端到端和 §8.4 四个强制 CI job 均形成可保存证据；不能用解析器单测、Linux wheel smoke 或人工发布脚本替代真实 Windows 边界测试和镜像构建。
 - **AC-25：** 每个目标在全量基线和独立复跑中都稳定产生相同 `CALL/FAIL` 与 `FailureFingerprintV1.digest`；任一目标 PASS/ERROR、缺失、未运行、无法安全规范化、不稳定、运行时不兼容或 `PytestEvidenceV1` 不完整时不创建 Manifest。
-- **AC-26：** CTV-01—CTV-07 均按各自期望结果通过（包括正向复算和负向摘要前拒绝）；相同语义对象、profile、具体 Prepared request 和 target 集合在不同进程、映射插入顺序和易变元数据下产生相同 §0.1 摘要；Mock/OpenAI request 使用各自具体 `object_type` 且不可互换，未知字段、跨模式字段、`null`、字段缺失、字符串或时间的非规范输入、profile 内容、路径别名、大小写/Unicode 碰撞或对象类型变化不能伪造绑定。
+- **AC-26：** CTV-01—CTV-07 通过；相同 `CandidateIdentityV1`、profile、具体 Prepared request 和 target 集合跨进程产生相同 §0.1 摘要。Mock/OpenAI request 使用独立 `object_type`，segment 内容/来源进入具体请求绑定；未知字段、跨模式字段、非规范输入、路径别名或对象类型变化不能伪造身份。
 - **AC-27：** `DISCLOSURE_GRANT` 与 `FINAL_WRITEBACK` 等待的决定精确绑定 wait/run/kind 和对应不可变 subject digest；可变 Grant/Approval 状态不改变 subject，拒绝、过期、取消、绑定变化、总墙钟耗尽和重启严格按 §4.2.7 转换，旧决定不能复用。
-- **AC-28：** `RunLimitsV1` 的 turn/call/总墙钟和 §4.2.6 全部子超时映射均在下一副作用前执行；OpenAI 只有 Grant、`OpenAIPreparedModelRequestV1` 和逐请求授权完成且即将调用适配器时，Mock 只有 `MockPreparedModelRequestV1` 与冻结 profile/script/adapter 匹配且即将调用适配器时才原子消费 turn/call；模式/profile/request 不一致不计数也不调用，调用后结果绑定不一致则以 `INTERNAL_ERROR` 阻止结果发布但保留已消费的一次 turn/call 且不重试。等待不消费，进展使用排除实例 ID、时间和审计序号的语义摘要判断。
+- **AC-28：** turn/call/墙钟和子超时都在下一副作用前执行；只有冻结具体请求、授权和 adapter 绑定完整且即将调用时才原子计数。计数后调用前的可捕获控制面失败产生 `NOT_ATTEMPTED`，真实进程崩溃只由重启停止证据表示；两者均保留已消费计数且不重试。等待不消费，进展排除实例 ID、时间和审计序号。
 - **AC-29：** 恢复默认 preview 且零写入，只有显式 `--apply` 修改工作区；新文件只有仍精确匹配本事务 postimage 时才能恢复为 `ABSENT`，外部改写或未知对象绝不删除并只能进入 `UNRESOLVED`。
 - **AC-30：** `reference-image-build` 在普通 push/MR 无发布凭据地构建并 smoke 正式执行镜像；受保护 tag 仅在 GitLab commit、GitHub tag 和 wheel 源提交一致时将其推送到 GHCR、按不可变 digest 重拉，且发布 wheel 内置 `ReferenceProfileManifestV1.docker_image_digest`、GHCR RepoDigest 和目标机实际拉取 digest 三者完全一致。
 - **AC-31：** 唯一内建 `EditablePathPolicyV1` 只允许 `CREATE`/`REPLACE` `src/**` 文件，已有文件与新文件使用同一目录段匹配规则；`src-old/**`、仓库根、文档、CI、Docker 和 scripts 路径均以 `PATCH_PATH_NOT_EDITABLE` 拒绝，保护工件仍优先使用 `PROTECTED_ARTIFACT_CHANGED`。合法/非法混合 patch 整体零候选副作用，多次 patch、篡改 Candidate/FinalDiff、检查、批准和持久化均不能绕过复验；manifest/repository/governance policy digest 必须绑定同一策略，变化使旧 Candidate、验证和批准失效。list/read/search 不受 editable policy 限制，用户或配置提交自定义策略时不创建 Run。
@@ -2046,23 +2072,12 @@ GitHub Release 与 GHCR 使用彼此独立的最小权限发布凭据：前者�
 
 本版已冻结以下此前存在歧义的架构决定：
 
-- 请求校验、`CREATED`、`PREFLIGHT` 和正式生命周期的边界；
-- `PREFLIGHT` 内 workspace lease/recovery → Snapshot 前置检查 → 创建并封存唯一 `SnapshotTree` → `detect_static` → readiness → `BASELINE` 的唯一顺序，以及静态画像不重读权威工作区、不创建第二份 Snapshot且不提前开放 Candidate 动作的边界；
-- 严格 `ValidateRunRequestV1`、`RunLimitsV1`、reference/LLM profile manifest、唯一只读 `OPENAI_PUBLIC_API_V1` endpoint 映射和 `NO_CONTENT_REDACTION_V1`；
-- `CanonicalRelativePathV1`、无字符串哨兵的 `RepositoryLocationV1`、六种 AgentAction 及其结果的封闭字段、共享 `SupportedTextFileV1` 分类、`ListFilesEntryV1` 三变体、`FILE_NOT_TEXT`/非文本搜索语义、Harness 生成的 action ID、实例/语义摘要、封闭检查计划、literal search 和严格 `UNIFIED_DIFF_V1`；
-- 唯一内建 `EditablePathPolicyV1`、只允许 `CREATE`/`REPLACE src/**` 的目录段匹配、`PATCH_PATH_NOT_EDITABLE` 错误优先级，以及 Candidate/验证/批准/持久化全链路复验且 list/read/search 不受该策略限制；
-- `CanonicalizationV1` 的域分隔字节、封闭安全 Schema、字符串编码、`CanonicalTimestampV1`、固定向量、确定性 `ContextProjection` 顺序、裁剪和预算失败行为；
-- `MockPreparedModelRequestV1 | OpenAIPreparedModelRequestV1` 封闭联合、模式专属 adapter payload/byte count/摘要域，以及不伪造 OpenAI 字段或 authorization record 的 `LLMCallResultV1`；
-- 不可变 `DisclosureGrantSubjectV1`、`ROOT/FILE/DIRECTORY` 路径 scope、带路径/无路径来源合同、空 scope 不授权路径正文、可变 `DisclosureGrant`、含 endpoint_id 的逐请求 `DisclosureAuthorizationRecordV1`、OpenAI request 与 profile/Grant/request/record/adapter 目标一致的调用门，以及跨 origin redirect 失败关闭；
-- `FinalDiffV1.added_and_replacement_text_bytes` 使用全部 CREATE/REPLACE 完整 postimage 原始字节的唯一算法，不受 unified diff 展示影响；
-- 不可变 `FinalWritebackSubjectV1`、可变 `FinalWritebackApproval` 与带 wait/run/subject/deadline 绑定的两类 `WAITING_USER`；
-- `PythonProjectProfileV1` 的静态准入、动态兼容性、唯一 Reference Profile Manifest、正式执行镜像 GHCR 分发、保护工件、Git 转换策略、敏感路径和资源上限；
-- 封闭 `PytestEvidenceV1`/`ValidationManifestV1`、非主动恶意项目信任假设、`ErrorPhase`、`FailureFingerprintV1` 和所有目标稳定 `CALL/FAIL` 合同；
-- Docker 候选树只读、tmpfs、无网络、资源限制、运行时兼容性和正式成功谓词；
-- 跨进程 workspace lease、3 文件/1 新文件上限、`PersistencePathRecord`、恢复入口和三值恢复结果；
-- 独立 `FR-CRED` 与记忆创建权限；
-- 离线、Windows、Docker、reference fixture、恢复、包和公网验证矩阵；
-- 四个强制 CI job、项目专属 Windows runner、wheel 的 pipx 安装命令、GHCR reference image 与发布 smoke 要求。
+- 准入、profiles、Snapshot 与生命周期：§4.1—§4.2，AC-15、AC-16、AC-21、AC-28、AC-30；
+- 动作、路径、Candidate identity 与 editable policy：§4.2—§4.3，AC-01、AC-17、AC-18、AC-26、AC-31；
+- 批准、披露、Prepared requests 与调用结果：§4.4，AC-02、AC-03、AC-13、AC-27、AC-28；
+- 项目验证、证据与受控持久化恢复：§4.5—§4.6，AC-04、AC-07、AC-19—AC-22、AC-25、AC-29；
+- 凭据、记忆和 UI 权限边界：§4.7—§4.9，AC-08、AC-09、AC-14、AC-23；
+- 分发、CI 与验证矩阵：§8—§10，AC-10—AC-12、AC-24、AC-30。
 
 因此，PLAN 不得再让实现者自行选择上述语义。精确依赖 patch 版本、OpenAI model、镜像摘要和部署 URL 由发布 manifest、lock file、README 与流水线证据记录，并通过 digest 绑定到运行。
 

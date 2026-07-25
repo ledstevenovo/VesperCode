@@ -131,3 +131,26 @@
 - **Review boundary:** 本轮进行了逐问题合同审查和修改后机械复核，但没有执行一轮覆盖 `SPEC_v3.md` 全部 571 行差异的独立无背景冷启动实现试验；不得把局部审计描述为完整课程冷启动门槛已经通过。
 - **Git evidence:** 本条与 `TASK_HANDOFF.md`、`SPEC_v3.md` 在同一最终提交中记录；为避免提交对象自引用，本条不写自己的最终 commit SHA，Git history 与 `origin/main` 是提交和推送结果的权威证据。
 - **Lesson learned:** 局部 Schema 修复必须同时检查邻接合同。修复非文本 List 表示时，如果不复查 Search root 与全局排序，就会留下同一输入在动作校验、结果计数和分页中的不同解释。
+
+## SPEC-V3-SIX-MINIMAL-FIXES
+
+- **Timestamp (Asia/Taipei):** `2026-07-25T16:05:41.6185785+08:00`
+- **Task ID:** `SPEC-V3-SIX-MINIMAL-FIXES`
+- **Skills invoked:** `dispatching-parallel-agents`、`git-workflow`、`verification-before-completion`。
+- **Key prompt/context:** 用户要求先由两个独立 subagent 审阅 `SPEC_v3.md`：一个复核此前四项问题是否关闭，另一个只寻找新问题；在收到只读报告后，用户批准执行六项最小修复，同时要求控制规格膨胀，最后同步本日志与 `TASK_HANDOFF.md` 并直接提交、推送当前 `main`。
+- **Review agents/results:**
+  - `/root/verify_four_spec_issues`（McClintock）确认 Mock/OpenAI 请求分离、Snapshot/PREFLIGHT 顺序、editable path policy 和非文本 List 结果四项均已关闭，置信度高。
+  - `/root/find_new_spec_issues`（Confucius）独立发现六项新缺口：消息正文与授权来源无覆盖关系、Grant 扣减公式缺失、`candidate_digest` 无摘要域、`adapter_digest` 未定义、真实崩溃产生 `NOT_ATTEMPTED` 不可达、写回后 deadline 终态不唯一。该代理只读，未修改文件。
+- **Specification changes:**
+  - 新增 `RequestContentSegmentV1`，让正文、类别、路径、摘要和字节数成为单一来源事实；准备请求不再携带独立 `actual_sources`，authorization record 只保留按 message/segment index 精确派生的无正文投影。
+  - 冻结 `charge_bytes = OpenAIPreparedModelRequestV1.canonical_byte_count` 及原子累计公式；重复发送重复扣减，并覆盖边界与并发消费。
+  - 新增 `CandidateIdentityV1`，规定 `candidate_digest` 只绑定 Snapshot、CandidateTree 和 `FinalDiffV1`；revision ID/父链仅审计。
+  - 删除 `FinalWritebackSubjectV1.adapter_digest`；项目 adapter 通过 `validation_manifest_digest` 唯一传递，不再建立第二个身份。
+  - 将 Mock `NOT_ATTEMPTED` 限定为可捕获的适配器调用前控制面失败；真实进程崩溃只产生重启停止证据，不恢复 turn 或伪造调用结果。
+  - 冻结持久化 deadline：首次写入前过期为零写入 `STOPPED`；任一路径可能已替换后过期时禁止继续写入或自动回滚，进入 `UNRESOLVED/RECOVERY_REQUIRED`，只允许显式 recovery。
+  - 没有新增 FR、Run status、Run phase、AC 编号或恢复子系统；§11 关闭清单改为权威章节/AC 索引以抵消新增合同。
+- **Human intervention:** 用户先要求第二个 subagent 只整理问题、不得擅自修改；随后批准六项平衡方案并明确授权同步两个上下文文件、commit 和 push。用户未直接编辑本批文件。
+- **Verification:** 六项被转化为 11 条只读规格断言并全部为 `True`；旧语义扫描确认 `adapter_digest`、准备请求独立 `actual_sources`、`计数后调用前崩溃` 均无残留。`SPEC_v3.md` 从 176,927 增至 177,053 字节（+0.07%），从 2,088 增至 2,103 行（+0.72%），非空白字符减少 227；`git diff --check -- SPEC_v3.md` 无空白错误，仅有 LF→CRLF 配置提示。
+- **Review boundary:** 本轮是两名 subagent 的分工审阅、主代理逐项复核和修改后机械断言，没有执行覆盖完整 v3 的不同 Agent 类型冷启动实现试验，也没有实现代码或运行时测试；不得把本批描述为课程最终 SPEC/PLAN 批准。
+- **Git evidence:** 本条、`TASK_HANDOFF.md` 与 `SPEC_v3.md` 计划由同一提交承载；为避免自引用，不在提交前写最终 SHA，提交和 push 结果以 Git history 与 `origin/main` 为准。
+- **Lesson learned:** 控制规格膨胀的关键不是少写安全合同，而是让正文、身份和预算各有唯一权威来源，再把 AC、数据模型和关闭清单降为可观察断言与索引。
