@@ -61,7 +61,10 @@
 - All behavior changes use strict TDD: write and run the intended RED test, make the smallest GREEN change, then refactor without changing behavior.
 - Tasks 1–3 use one Task 1-owned feasibility-gate bootstrap: an isolated `.venv-gate`, `requirements/gate.lock` with exact direct/transitive versions and distribution hashes, explicit gate pytest/Ruff/Mypy configs, and `scripts/run_gate_checks.py`. Every gate command must use that environment and configuration; global tools and Task 4 project configuration are invalid inputs.
 - Task 1 selects, records, reviews, and freezes the exact Python/pytest/Ruff/Mypy versions and all gate file SHA-256 values. Tasks 2–3 consume those exact identities without re-resolution. The PLAN intentionally does not guess time-sensitive patch versions before the lock is created; a Task 1 GO is impossible until the complete hash-locked file and installed-version evidence exist.
-- The canonical offline suite is `python -m pytest -q`. From Task 4 onward every task also runs `python -m ruff format --check .`, `python -m ruff check .`, and `python -m mypy src tests`.
+- Task 4.A is the sole complete v1 project dependency-closure owner. It creates the dependency tables, Python range, reviewed source/index policy, minimal package identity, and hash-complete `requirements/dev.lock`; the closure includes every declared direct runtime, build/distribution, and development/verification dependency plus every transitive distribution and hash. Runtime families include FastAPI, Pydantic v2, pywin32, keyring with Windows Credential Manager verification support, Docker SDK for Python, and every low-level HTTP, test-client, template/form, or serving package imported or invoked directly by project code. Build/distribution families include Hatchling and `build`; development/verification families include pytest 8.x, Ruff, Mypy, and every directly used typing/test support package. Vendored HTMX remains package data, not a Python dependency. `requirements/gate.lock`, `requirements/reference.lock`, and `requirements/demo.lock` remain separate immutable profiles under Tasks 1.A, 2.A, and 34.B respectively and never merge into `requirements/dev.lock`.
+- Task 4.A selects the reviewed exact patch versions, transitive distributions, markers, and hashes at execution time without inventing them in this PLAN. Where pytest, Ruff, or Mypy overlaps the Task 1 gate toolchain, the exact Task 1-selected version is preserved. Task 4.F alone promotes those frozen tool identities, marker definitions, static rules, build backend, and canonical formal commands into the non-dependency sections of `pyproject.toml`.
+- After Task 4.A completes, no task may add, remove, resolve, upgrade, downgrade, or install an undeclared project package. Discovery of a missing package stops the current task. Any dependency-closure change requires a non-tracking PLAN semantic revision, dependency review, recomputation of every affected mechanical structure and digest, renewed human PLAN approval, and a repeated heterogeneous cold-start; M0 also repeats if the authoritative SPEC identity or requirements change. Ad-hoc installation and silent regeneration of `requirements/dev.lock` are prohibited.
+- The canonical offline suite is `python -m pytest -q`. Task 4.A runs its dependency-closure RED and lock/config consistency checks without claiming the formal tool configuration exists; Task 4.F establishes the canonical offline and closure commands. Every later task also runs `python -m ruff format --check .`, `python -m ruff check .`, and `python -m mypy src tests`.
 - The five standard closure commands referenced by Tasks 5–38 are exactly `python -m ruff format --check .`, `python -m ruff check .`, `python -m mypy src tests`, `python scripts/scan_credentials.py --changed --redact --fail-on-match`, and `git diff --check`.
 - One executable formal task uses one fresh implementation subagent, one isolated worktree, one branch, and one PR. Split Milestones use none. Use `superpowers:using-git-worktrees` before creating each formal worktree and `superpowers:test-driven-development` for every behavior change.
 - A task first receives a spec-compliance review and then a code-quality review. Critical or Important findings block dependents until the implementing or explicitly assigned repair subagent closes them and the same review stage passes.
@@ -80,9 +83,9 @@ The paths below lock file ownership before task decomposition. Files are small, 
 
 | Path | Single responsibility |
 |---|---|
-| `pyproject.toml` | Python package metadata, dependency ranges, pytest/Ruff/Mypy configuration, entry point, and build configuration |
+| `pyproject.toml` | Section-frozen project configuration: Task 4.A alone owns dependency tables, Python range, dependency source/index policy, and minimal package identity; Task 4.F alone adds the build backend and pytest/Ruff/Mypy/tooling configuration; Task 33.A alone later adds package data, version, distribution metadata, and the console entry point |
 | `requirements/gate.lock` | Task 1-frozen exact direct/transitive feasibility-gate dependencies and distribution hashes consumed unchanged by Tasks 2–3 |
-| `requirements/dev.lock` | Exact development and test dependency patch versions used by CI and local verification |
+| `requirements/dev.lock` | Exact hash-complete environment closure used by formal local/CI verification, including all declared runtime, build/distribution, and development/verification packages plus every transitive distribution |
 | `requirements/reference.lock` | Exact dependency set accepted by `python-src-py312-v1` and hashed by its manifest |
 | `requirements/demo.lock` | Exact hash-locked public Demo runtime dependencies with no formal capability extras |
 | `PLAN.md` | Content-addressed implementation tasks, dependencies, status, and real completion evidence |
@@ -337,7 +340,7 @@ This gate is not a formal implementation task and has no task number.
 
 - A heading named `Milestone N` is a non-executable traceability container. It may retain the former Task's aggregate Goal, SPEC references, file inventory, interfaces, acceptance example, review checklist, and proposed branch text so no domain contract is lost, but none of those retained tracking fields or steps authorizes execution. A Milestone has no implementation branch, worktree, commit, evidence commit, or PR of its own; its status and completion evidence are derived only from all listed executable child tasks.
 - A heading named `Task N.X` is one formal executable task. Each child receives a fresh subagent, branch, worktree, implementation commit, two review gates, evidence commit, and PR.
-- The executable registry is closed: retained integer Task 13 plus 132 dotted child Tasks, for 133 executable Tasks total. The 37 `Milestone N` headings are non-executable containers and never appear as nodes in canonical DAG, wave, ownership, coverage, test-environment, or release structures.
+- The executable registry is closed: retained integer Task 13 plus 133 dotted child Tasks, for 134 executable Tasks total. The 37 `Milestone N` headings are non-executable containers and never appear as nodes in canonical DAG, wave, ownership, coverage, test-environment, or release structures.
 - An implementer may rely only on Global Constraints, the applicable Milestone contract, and their own child-task block. Child blocks therefore declare exact files, interfaces, dependencies, RED test, implementation boundary, and commands.
 - Every executable child follows this exact workflow:
   1. Add the displayed intentionally failing test without production implementation.
@@ -710,7 +713,7 @@ def test_deadline_after_first_replace_stops_writes_and_requires_recovery(
 
 ### Milestone 4: Project Foundation and CanonicalizationV1
 
-**Execution notice:** Non-executable aggregate contract. Only Tasks 4.A–4.E are executable; they separately own formal project bootstrap, canonical bytes/digests, canonical time, lexical paths, and credential scanning.
+**Execution notice:** Non-executable aggregate contract. Only Tasks 4.A, 4.F, 4.B, 4.C, 4.D, and 4.E are executable; they separately own complete dependency closure, formal toolchain promotion, canonical bytes/digests, canonical time, lexical paths, and credential scanning. This Milestone is complete only when all six exact children are complete.
 
 **Status:** Not started
 
@@ -743,6 +746,8 @@ def test_deadline_after_first_replace_stops_writes_and_requires_recovery(
 - Test: `tests/unit/canonical/test_clock.py`
 - Test: `tests/unit/canonical/test_digest_vectors.py`
 - Test: `tests/unit/canonical/test_path_v1.py`
+- Test: `tests/unit/process/test_dependency_closure.py`
+- Test: `tests/unit/process/test_toolchain_promotion.py`
 - Test: `tests/unit/process/test_scan_credentials.py`
 - Modify: `PLAN.md` (completion record only)
 - Modify: `AGENT_LOG.md` (append only)
@@ -750,6 +755,8 @@ def test_deadline_after_first_replace_stops_writes_and_requires_recovery(
 **Interfaces:**
 - Consumes: Tasks 1–3 GO evidence; the frozen `requirements/gate.lock`, `gates/` configs, `scripts/run_gate_checks.py`, tool versions, and all GO-report identity matrices as read-only promotion inputs; Python `>=3.12,<3.13`; exact CTV-01–CTV-07 bytes and digests from SPEC §0.1.
 - Produces:
+  - `DependencyClosureV1`, the exact reviewed runtime/build/development direct requirements, Python range, source/index policy digest, hash-complete transitive distribution set, and closure digest produced by Task 4.A
+  - `FormalToolchainPromotionV1(gate_lock_sha256: str, pytest_version: str, ruff_version: str, mypy_version: str, marker_digest: str, static_rule_digest: str)` produced by Task 4.F
   - `CanonicalValueV1 = str | int | bool | tuple[CanonicalValueV1, ...] | Mapping[str, CanonicalValueV1]`
   - `canonical_json_bytes(value: CanonicalValueV1) -> bytes`
   - `domain_digest(object_type: str, schema_version: int, value: Mapping[str, CanonicalValueV1]) -> str`
@@ -769,11 +776,11 @@ def test_deadline_after_first_replace_stops_writes_and_requires_recovery(
 - Parse only `YYYY-MM-DDTHH:MM:SS.sssZ`; validate Gregorian dates and reject leap seconds and alternate UTC spellings before digesting.
 - `SystemClockV1` reads UTC epoch milliseconds and immediately converts through `CanonicalTimestampV1.from_epoch_milliseconds`; all decision, deadline, expiry, and evidence code receives a `ClockV1` port, while tests advance `FakeClockV1` explicitly.
 - Lexical canonical paths reject empty/root sentinels, absolute/drive/UNC/device forms, ADS, empty/dot/parent segments, trailing slash/dot/space, and reserved device names. Win32 final-object validation remains Task 9.
-- Promote the Task 1-verified Python/pytest/Ruff/Mypy patch versions, marker definitions, and static rules into `requirements/dev.lock` and `pyproject.toml`; this task does not select them for the first time. The dev lock must remain hash-complete for the promoted distributions and may add only reviewed project-development dependencies required by this task.
-- Generate and save a promotion comparison mapping every Task 1 gate version/marker/Ruff/Mypy rule to its formal destination. Any deliberate difference requires a SPEC/PLAN-compatible explanation plus fresh Task 1–3 execution and GO evidence before Task 4 can pass; any silent version/config drift fails closed.
+- Task 4.A declares every direct dependency family in the Tech Stack, classifies it as runtime, build/distribution, or development/verification, records the Python marker and reviewed source/index policy, and freezes every direct and transitive distribution with exact hashes in `requirements/dev.lock`. Its one closure RED fails on any missing/extra/misclassified direct dependency, missing transitive distribution/hash, inconsistent Python marker/source policy, or mismatch between `pyproject.toml` and the lock.
+- Task 4.F promotes the Task 1-verified pytest/Ruff/Mypy patch versions, marker definitions, and static rules into tooling/build sections of `pyproject.toml`; it does not select or resolve any package. It generates a promotion comparison mapping every Task 1 gate version/marker/Ruff/Mypy rule to its formal destination. Any deliberate difference requires a SPEC/PLAN-compatible explanation plus fresh Task 1–3 execution and GO evidence before Task 4 can pass; any silent version/config drift fails closed.
 - Preserve `requirements/gate.lock`, `gates/`, `scripts/run_gate_checks.py`, the Task 2 reporter/probe, and all three GO reports as immutable reproducibility evidence; formal commands never rewrite or delete them.
-- `pyproject.toml` keeps the public runtime range from SPEC and configures the promoted pytest 8.x, Ruff, and strict Mypy behavior.
-- Use exact locked Hatchling and `build` versions for PEP 517 wheel creation; do not leave the build backend for Task 33 to choose.
+- `pyproject.toml` keeps the public runtime range from SPEC. Task 4.A owns only its dependency tables, Python range, reviewed source/index policy, and minimal package identity; Task 4.F owns only its build backend and pytest/Ruff/Mypy/tooling sections; Task 33.A may later change only package data, version, distribution metadata, and the console entry point. No later modifier may change dependency tables, the Python range, dependency sources, or `requirements/dev.lock`.
+- Task 4.A freezes exact reviewed Hatchling and `build` distributions and hashes in the closure; Task 4.F configures Hatchling as the PEP 517 backend. Task 33.A cannot choose or change the backend.
 - Register the exact pytest markers `windows_integration`, `docker_integration`, `reference_e2e`, `package_smoke`, `oci_smoke`, and `deployment_smoke`. Default `python -m pytest -q` excludes these six real-environment groups; every dedicated environment command clears default addopts and selects its marker explicitly.
 - The credential scanner accepts an explicit changed-file list, reports only paths and rule ids, redacts matched values, ignores binary bytes, and exits nonzero on a match.
 
@@ -803,13 +810,13 @@ def test_ctv_01_exact_bytes_and_digest() -> None:
 - Expected: all CTV vectors, timestamp/path rejection cases, and scanner redaction tests pass offline.
 
 **Review gate:**
-1. Spec compliance review compares every encoded byte and rejection in CTV-01–CTV-07, verifies the gate-to-formal promotion map and absence of silent version/config drift, and verifies the project commands match SPEC §9.
+1. Spec compliance review compares every encoded byte and rejection in CTV-01–CTV-07, verifies the complete dependency closure, verifies the gate-to-formal promotion map and absence of silent version/config drift, and verifies the project commands match SPEC §9.
 2. Code quality review checks recursion bounds, scalar validation, deterministic error types, type checking, package boundaries, and scanner non-disclosure.
 3. Critical/Important findings block Task 5.
 
 **Completion evidence:** Not yet executed. On completion record the actual commit SHA, responsible subagent, tests executed, review results, human edits and PR URL.
 
-- [ ] **Step 1: Verify the gate promotion inputs and write the CTV-01 RED test.** Recompute all Task 1 gate file SHA-256 values, compare them with the Task 2/3 GO records, and write a reviewed gate-to-formal version/marker/Ruff/Mypy mapping. Add the exact test above and keep the expected bytes split only at Python literal boundaries; any identity mismatch stops before RED.
+- [ ] **Step 1: Verify the dependency closure and gate promotion inputs, then write the CTV-01 RED test.** Require the completed Task 4.A closure report and lock/config consistency result; recompute all Task 1 gate file SHA-256 values, compare them with the Task 2/3 GO records, and require the completed Task 4.F gate-to-formal version/marker/Ruff/Mypy mapping. Add the exact test above and keep the expected bytes split only at Python literal boundaries; any identity mismatch stops before RED.
 - [ ] **Step 2: Run RED.** Run `python -m pytest -q tests/unit/canonical/test_digest_vectors.py::test_ctv_01_exact_bytes_and_digest`. Expected: nonzero because the package and canonical functions do not exist.
 - [ ] **Step 3: Implement the minimal canonical encoder and digest.**
 
@@ -828,7 +835,7 @@ def test_ctv_01_exact_bytes_and_digest() -> None:
   `canonical_json_bytes` must use a dedicated recursive encoder; calling a standard JSON serializer and patching its output is not sufficient.
 - [ ] **Step 4: Run GREEN.** Re-run Step 2. Expected: exit `0` and exact byte/digest equality.
 - [ ] **Step 5: Refactor without behavior change.** Separate string/scalar encoding, timestamp parsing, domain digesting, and lexical path validation into the planned files; keep one public function for each responsibility.
-- [ ] **Step 6: Run domain and promotion tests.** Run `python -m pytest -q tests/unit/canonical tests/unit/process/test_scan_credentials.py` and mechanically compare formal versions/markers/Ruff/Mypy rules with the frozen Task 1 inputs. Expected: CTV-01–CTV-07, invalid timestamps, path sentinels, redacted scanner behavior, and every promotion mapping pass; a difference without fresh Task 1–3 GO evidence fails.
+- [ ] **Step 6: Run domain, closure, and promotion tests.** Run `python -m pytest -q tests/unit/canonical tests/unit/process/test_dependency_closure.py tests/unit/process/test_toolchain_promotion.py tests/unit/process/test_scan_credentials.py` and mechanically compare the dependency closure plus formal versions/markers/Ruff/Mypy rules with their frozen inputs. Expected: CTV-01–CTV-07, invalid timestamps, path sentinels, redacted scanner behavior, dependency closure, and every promotion mapping pass; a difference without the required semantic revision/reapproval or fresh Task 1–3 GO evidence fails.
 - [ ] **Step 7: Run the unified offline suite.** Run `python -m pytest -q`. Expected: exit `0`.
 - [ ] **Step 8: Run formatter, Ruff, Mypy, credential scan, and whitespace checks.** Run `python -m ruff format --check .`, `python -m ruff check .`, `python -m mypy src tests`, `python scripts/scan_credentials.py --changed --redact --fail-on-match`, and `git diff --check`. Expected: all exit `0` and no matched value is printed.
 - [ ] **Step 9: Request spec compliance review.** Give a fresh read-only reviewer Task 4, SPEC §0.1/§9/AC-26, exact CTV fixtures, dependency lock, and diff.
@@ -4232,7 +4239,7 @@ def test_formal_and_demo_compositions_execute_the_same_core_implementations(
 - Create: `tests/smoke/package/test_pipx_install.py`
 - Create: `tests/smoke/package/test_installed_cli.py`
 - Create: `tests/smoke/package/test_installed_webui.py`
-- Modify: `pyproject.toml` (package data, version, build backend, and console entry point only)
+- Modify: `pyproject.toml` (package data, version, distribution metadata, and console entry point only)
 - Modify: `src/vespercode/cli.py` (installed-resource resolution only if smoke exposes a packaging defect)
 - Modify: `PLAN.md` (completion record only)
 - Modify: `AGENT_LOG.md` (append only)
@@ -4737,7 +4744,7 @@ def test_release_evidence_rejects_commit_misalignment(
 - Record real GitHub/GitLab project URLs, synchronization direction/method/date, GitHub Release URL, GHCR digest, Render URL/health path/cold start, and actual last-passing GitHub workflow/job plus GitLab pipeline/job evidence.
 - `SPEC_PROCESS.md` contains brainstorming, at least three iterations, accepted/rejected suggestions, M0 SPEC path/SHA-256/blob/baseline/human approval, approved `PlanSemanticDigestV1` plus complete PLAN audit SHA-256, cold-start agent type/scope/pauses/findings/revisions/pass, and no fabricated approval or trial.
 - `AGENT_LOG.md` remains chronological with timestamp, task id, skills, context, responsible subagent, human edits, real commits/PRs/reviews/tests, failures, interventions, and lesson for every significant task.
-- Delivery verifier validates all 133 executable Task completion records and all 37 derived Milestone states, real SHAs in repository history, closed Critical/Important findings, required files, both CI platforms' exact job evidence, wheel/image/release/deployment alignment, no unresolved recovery, credential scan, and evidence freshness. It also requires `requirements/gate.lock`, all three `gates/` configs, `scripts/run_gate_checks.py`, the Task 2.D/2.E/2.F reporter/evidence/fingerprint producers, and Task 1.E, 2.G, and 3.G GO reports; recomputed SHA-256/version matrices must match across all three reports and the Task 4.A promotion record. Milestone 2 evidence must prove digest-pinned loopback registry, loopback-only bind, zero credentials/external pushes, cleanup on every exit, no final-manifest image member, and local OCI/registry/digest-pull equality with final `ReferenceProfileManifestV1.docker_image_digest`; Task 36.B must prove GHCR returned the same digest.
+- Delivery verifier validates all 134 executable Task completion records and all 37 derived Milestone states, real SHAs in repository history, closed Critical/Important findings, required files, both CI platforms' exact job evidence, wheel/image/release/deployment alignment, no unresolved recovery, credential scan, and evidence freshness. It also requires `requirements/gate.lock`, all three `gates/` configs, `scripts/run_gate_checks.py`, the Task 2.D/2.E/2.F reporter/evidence/fingerprint producers, and Task 1.E, 2.G, and 3.G GO reports; recomputed SHA-256/version matrices must match across all three reports, the Task 4.A dependency-closure record, and the Task 4.F promotion record. Milestone 2 evidence must prove digest-pinned loopback registry, loopback-only bind, zero credentials/external pushes, cleanup on every exit, no final-manifest image member, and local OCI/registry/digest-pull equality with final `ReferenceProfileManifestV1.docker_image_digest`; Task 36.B must prove GHCR returned the same digest.
 - Reflection verifier checks 1,500–2,500 words, required disclosure of any AI language polishing, and presence of student-specific process analysis; it never generates or scores substantive personal reflection.
 - Do not modify the reflection body unless the student supplies a complete draft and explicitly requests polishing. Record every agent edit/disclosure; otherwise report the checkpoint incomplete.
 - Re-run all mandatory offline, Windows, Docker, E2E, fault, WebUI, package, image, and live smoke commands in their declared environments or bind the verifier to current saved real evidence.
@@ -4788,7 +4795,7 @@ def test_readme_fails_when_release_digest_verification_is_missing(
 
   `verify_delivery` must parse real evidence schemas rather than search for success words.
 - [ ] **Step 4: Run GREEN.** Create the accurate README section set and rerun Step 2. Expected: the focused fixture passes while missing sections remain rejected.
-- [ ] **Step 5: Refactor without behavior change.** Separate README/process/task/commit/gate-bootstrap/CI/artifact/live/reflection checks and return all stable failures in one bounded report. The gate-bootstrap check recomputes file hashes, parses Task 1–3 GO matrices, and compares the Task 4.A promotion record without executing untrusted project code.
+- [ ] **Step 5: Refactor without behavior change.** Separate README/process/task/commit/gate-bootstrap/CI/artifact/live/reflection checks and return all stable failures in one bounded report. The gate-bootstrap check recomputes file hashes, parses Task 1–3 GO matrices, and compares the Task 4.A dependency-closure record plus Task 4.F promotion record without executing untrusted project code.
 - [ ] **Step 6: Run domain, full, delivery, and reflection checks.** Run all listed commands. Expected: all pass only with real current evidence and a valid student-authored reflection.
 - [ ] **Step 7: Re-run required environment suites.** Run or verify current saved evidence for Windows, Docker, reference E2E, persistence faults, WebUI browser, package, OCI, CI, release, and public Demo. Expected: no required skip or stale result.
 - [ ] **Step 8: Run closure checks.** Run all five standard formatter/lint/type/credential/whitespace commands plus a repository credential scan over tracked release artifacts. Expected: all exit `0`.
@@ -5593,11 +5600,11 @@ def test_missing_external_identity_case_forces_no_go(ntfs_workspace: Path) -> No
 
 **Completion evidence:** Not yet executed.
 
-#### Task 4.A: Formal Python Project and Frozen Toolchain Promotion
+#### Task 4.A: Complete v1 Dependency Closure
 
 **Status:** Not started
 
-**Goal:** Create the installable Python 3.12 project and promote the exact Task 1 gate identities into the sole runnable offline toolchain without silent version, marker, or rule drift.
+**Goal:** Create the minimal Python 3.12 project identity and freeze the sole complete, reviewed, hash-locked v1 runtime/build/development dependency closure without package, classification, marker, source, or lock ambiguity.
 
 **SPEC references:** Milestone 4 project/tooling scope; SPEC §9; course one-command test and locked-tool requirements.
 
@@ -5607,9 +5614,50 @@ def test_missing_external_identity_case_forces_no_go(ntfs_workspace: Path) -> No
 - Create: `pyproject.toml`
 - Create: `requirements/dev.lock`
 - Create: `src/vespercode/__init__.py`
+- Test: `tests/unit/process/test_dependency_closure.py`
+
+**Interfaces:** Consumes the declared PLAN Tech Stack, Python `>=3.12,<3.13`, `GateToolchainEvidenceV1` from Task 1.A, and unchanged Task 2.G/3.G identity matrices; produces `LockedDistributionV1(name: str, version: str, classification: Literal["RUNTIME","BUILD","DEVELOPMENT"], python_marker: str, hashes: tuple[str, ...])` and `DependencyClosureV1(python_range: Literal[">=3.12,<3.13"], runtime_direct_names: tuple[str, ...], build_direct_names: tuple[str, ...], development_direct_names: tuple[str, ...], locked_distributions: tuple[LockedDistributionV1, ...], source_policy_digest: str, closure_digest: str)`.
+
+**Intentionally failing test:**
+
+```python
+def test_declared_v1_dependency_closure_is_complete(
+    reviewed_plan_stack: DeclaredDependencySetV1,
+) -> None:
+    report = validate_dependency_closure(Path("."), reviewed_plan_stack)
+    assert report.missing_direct == ()
+    assert report.extra_or_misclassified_direct == ()
+    assert report.missing_transitive_or_hash == ()
+    assert report.marker_or_source_mismatches == ()
+    assert report.gate_tool_version_mismatches == ()
+```
+
+Expected RED: import/configuration failure because the project dependency tables, source policy, hash-complete environment lock, and closure validator do not exist.
+
+**Implementation boundary:** This child is the sole owner of all `pyproject.toml` dependency tables, the Python range, dependency source/index policy, minimal package identity, and `requirements/dev.lock`. It declares and classifies every direct runtime, build/distribution, and development/verification family listed by the PLAN; inventories every low-level HTTP/TestClient/template/form/server or typing/test package imported or invoked directly so none is hidden as a transitive; freezes every direct/transitive distribution and hash; and preserves exact Task 1 pytest/Ruff/Mypy versions where they overlap. It does not configure the build backend, pytest markers, Ruff, Mypy, canonical commands, package data/version/distribution metadata/entry point, canonical values, paths, scanning, or application behavior. It never modifies Task 1–3 evidence or the separate gate/reference/Demo locks.
+
+**Verification:**
+- Target: `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/unit/process/test_dependency_closure.py::test_declared_v1_dependency_closure_is_complete -q`
+- Domain: `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/unit/process/test_dependency_closure.py -q`
+- Expected GREEN: both checks exit `0`; every declared direct family is present and correctly classified, every transitive distribution has exact hashes and a consistent Python marker/source policy, the lock and dependency tables agree, and overlapping pytest/Ruff/Mypy versions exactly match Task 1.
+
+**Completion evidence:** Not yet executed.
+
+#### Task 4.F: Formal Toolchain Promotion
+
+**Status:** Not started
+
+**Goal:** Promote the exact Task 1 pytest/Ruff/Mypy identities, marker set, and static rules into the sole formal offline toolchain and configure the locked build backend without changing the completed dependency closure.
+
+**SPEC references:** Milestone 4 project/tooling scope; SPEC §9 and §11.2; course one-command test and locked-tool requirements.
+
+**Dependencies:** Tasks 1.E, 2.G, 3.G, and 4.A.
+
+**Files:**
+- Modify: `pyproject.toml` (build backend and pytest/Ruff/Mypy/tooling sections only)
 - Test: `tests/unit/process/test_toolchain_promotion.py`
 
-**Interfaces:** Consumes `GateToolchainEvidenceV1` from Task 1.A plus unchanged Task 2.G/3.G identity matrices; produces `FormalToolchainPromotionV1(gate_lock_sha256: str, pytest_version: str, ruff_version: str, mypy_version: str, marker_digest: str, static_rule_digest: str)` and the exact commands `python -m pytest -q`, `python -m ruff format --check .`, `python -m ruff check .`, and `python -m mypy src tests`.
+**Interfaces:** Consumes `DependencyClosureV1` from Task 4.A, `GateToolchainEvidenceV1` from Task 1.A, and unchanged Task 1.E/2.G/3.G terminal GO identity matrices; produces `FormalToolchainPromotionV1(gate_lock_sha256: str, pytest_version: str, ruff_version: str, mypy_version: str, marker_digest: str, static_rule_digest: str)` and the exact commands `python -m pytest -q`, `python -m ruff format --check .`, `python -m ruff check .`, and `python -m mypy src tests`.
 
 **Intentionally failing test:**
 
@@ -5624,14 +5672,15 @@ def test_formal_toolchain_matches_frozen_gate_identity(
     assert promotion.static_rule_digest == gate_evidence.static_rule_digest
 ```
 
-Expected RED: import/configuration failure because the formal package, lock, and promotion record do not exist.
+**Expected RED:** import/configuration failure because the build backend, formal marker/static-rule configuration, canonical commands, and promotion record do not exist.
 
-**Implementation boundary:** This child freezes project metadata, the full reviewed v1 runtime/development lock closure, markers, and static rules only. It does not implement canonical values, paths, scanning, or application behavior and never modifies Task 1–3 evidence.
+**Implementation boundary:** This child may modify only the build-system and pytest/Ruff/Mypy/tooling sections of `pyproject.toml`. It registers exactly `windows_integration`, `docker_integration`, `reference_e2e`, `package_smoke`, `oci_smoke`, and `deployment_smoke`; excludes those six markers from the default offline suite; makes every dedicated environment command clear default addopts, select exactly one marker, and name its test root; and records the gate-to-formal comparison. It may not add/remove/resolve/install a package, change dependency tables, Python range, minimal package identity, dependency source/index policy, `requirements/dev.lock`, or any separate lock. Discovery of a missing package stops this task and triggers the global dependency-change rule.
 
 **Verification:**
 - Target: `python -m pytest -q tests/unit/process/test_toolchain_promotion.py::test_formal_toolchain_matches_frozen_gate_identity`
-- Domain: `python -m pytest -q tests/unit/process/test_toolchain_promotion.py`
-- Expected GREEN: both commands exit `0`; all recorded versions/hashes equal the frozen gate evidence and the six real-environment markers are excluded from the default suite.
+- Domain: `python -m pytest -q tests/unit/process/test_dependency_closure.py tests/unit/process/test_toolchain_promotion.py`
+- Closure: `python -m ruff format --check .`; `python -m ruff check .`; `python -m mypy src tests`
+- Expected GREEN: all commands exit `0`; all recorded versions/hashes equal frozen gate and dependency evidence, the six real-environment markers are excluded from the default suite, dedicated commands are closed, and dependency tables/lock/source policy are byte-identical to Task 4.A output.
 
 **Completion evidence:** Not yet executed.
 
@@ -5643,7 +5692,7 @@ Expected RED: import/configuration failure because the formal package, lock, and
 
 **SPEC references:** Milestone 4 canonical-byte scope; SPEC §0.1 CTV-01–CTV-07 and AC-10/AC-26.
 
-**Dependencies:** Task 4.A.
+**Dependencies:** Task 4.F.
 
 **Files:**
 - Create: `src/vespercode/canonical/json_v1.py`
@@ -5792,7 +5841,7 @@ Expected RED: import failure because the changed-file scanner does not exist.
 
 **Goal:** Define closed generic optional-value objects so every absent/present field is explicit and cannot collapse into nullable ambiguity.
 
-**Dependencies:** Task 4.A.
+**Dependencies:** Task 4.F.
 
 **Files:**
 - Create: `src/vespercode/contracts/optional.py`
@@ -9250,7 +9299,7 @@ def test_formal_and_demo_execute_same_core_implementations(
 **Branch/worktree:** `codex/task-33a-wheel-build`; `.worktrees/task-33a-wheel-build`.
 
 **Files:**
-- Modify: `pyproject.toml` (package metadata/data/version/backend/entry point only)
+- Modify: `pyproject.toml` (package data, version, distribution metadata, and console entry point only)
 - Create: `tests/smoke/package/test_wheel_contents.py`
 - Create: `tests/smoke/package/test_wheel_digest.py`
 
@@ -9266,7 +9315,7 @@ def test_built_wheel_contains_all_runtime_resources(
     assert PROHIBITED_WHEEL_MEMBERS.isdisjoint(built_wheel.members)
 ```
 
-**Implementation boundary:** Packaging is declarative and may correct only installed-resource lookup defects exposed by the smoke. Tests/source/evidence/credentials/VCS metadata are excluded.
+**Implementation boundary:** Packaging is declarative and may correct only installed-resource lookup defects exposed by the smoke. It may modify package data, version, distribution metadata, and the console entry point only; dependency tables, Python range, dependency sources/index policy, `requirements/dev.lock`, build backend, and pytest/Ruff/Mypy/tooling configuration are immutable. Tests/source/evidence/credentials/VCS metadata are excluded.
 
 **Verification:**
 - Target: `python -m pytest -q -o addopts='' -m package_smoke tests/smoke/package/test_wheel_contents.py::test_built_wheel_contains_all_runtime_resources`
@@ -9766,7 +9815,7 @@ def test_process_evidence_rejects_missing_child_task_review(
 
 **Status:** Not started
 
-**Goal:** Aggregate every local/external/process/documentation check and report ready only with all 133 executable Tasks plus a valid student-authored reflection.
+**Goal:** Aggregate every local/external/process/documentation check and report ready only with all 134 executable Tasks plus a valid student-authored reflection.
 
 **SPEC references:** Milestone 37 delivery gate and reflection constraints.
 
@@ -9806,7 +9855,7 @@ def test_delivery_rejects_incomplete_executable_child(
 - Domain: `python -m pytest -q tests/unit/process/test_readme_contract.py tests/unit/process/test_delivery_evidence.py tests/unit/process/test_reflection_contract.py`
 - Delivery: `python scripts/verify_delivery.py --root . --require-live`
 - Reflection: `python scripts/verify_reflection.py REFLECTION.md`
-- Expected: readiness passes only when all 133 executable Tasks, reviews, environments, artifacts, live evidence, documents, and student reflection are current and valid.
+- Expected: readiness passes only when all 134 executable Tasks, reviews, environments, artifacts, live evidence, documents, and student reflection are current and valid.
 
 **Completion evidence:** Not yet executed.
 
@@ -10120,7 +10169,7 @@ def test_every_operations_form_has_label_focus_and_live_error_region(
 
 ## Task Dependency DAG
 
-Milestone ids remain stable traceability containers, but only retained integer Task 13 and the 132 dotted child Tasks are executable. The direct dependency table below is the sole machine-readable edge set.
+Milestone ids remain stable traceability containers, but only retained integer Task 13 and the 133 dotted child Tasks are executable. The direct dependency table below is the sole machine-readable edge set.
 
 The `Task predecessors` column contains only exact executable Task ids separated by commas; `—` means no task predecessor. Human approvals, GO outcomes, identity checks, reflection authorship, and real-platform results remain non-task gates in the executable Task block.
 
@@ -10145,19 +10194,20 @@ The `Task predecessors` column contains only exact executable Task ids separated
 | 3.E | 3.C, 3.D | Exact transaction protocol and final-object persistence observations. |
 | 3.F | 1.D, 3.E | Mutex evaluator plus persisted transaction observations. |
 | 3.G | 1.E, 2.G, 3.A, 3.B, 3.C, 3.D, 3.E, 3.F | Complete Task 3 fault matrix and recovery evidence; GO is required. |
-| 4.A | 1.E, 2.G, 3.G | All three feasibility gates GO with unchanged bootstrap identity. |
-| 4.B | 4.A | Frozen formal project/toolchain identity. |
+| 4.A | 1.E, 2.G, 3.G | All three feasibility gates GO with unchanged bootstrap identity and the complete declared v1 dependency set. |
+| 4.F | 1.E, 2.G, 3.G, 4.A | Complete reviewed dependency closure plus exact terminal gate identities and GO evidence. |
+| 4.B | 4.F | Complete v1 dependency closure and frozen formal toolchain promotion. |
 | 4.C | 4.B | Canonical JSON and digest contracts. |
 | 4.D | 4.C | Canonical timestamp and clock contracts. |
 | 4.E | 4.D | Canonical lexical path contract. |
-| 5.A | 4.A | Closed optional-value foundation. |
+| 5.A | 4.F | Complete v1 dependency closure and frozen formal toolchain promotion. |
 | 5.B | 4.C, 5.A | Canonical time plus location/run identities. |
-| 5.C | 4.B, 5.A, 5.B | Frozen toolchain plus shared action/policy identities. |
+| 5.C | 4.B, 5.A, 5.B | Canonical digest plus shared action/policy identities. |
 | 5.D | 4.B, 5.A, 5.B, 5.C, 5.E | Complete closed shared contract set. |
 | 5.E | 4.E | Canonical repository-location and disclosure-scope contracts. |
 | 6.A | 4.D, 5.D | Canonical time plus closed shared contracts. |
-| 6.B | 2.G, 4.B, 5.D | Task 2 reference evidence, toolchain identity, and shared contracts. |
-| 6.C | 4.B, 5.D | Frozen toolchain plus shared endpoint/profile contracts. |
+| 6.B | 2.G, 4.B, 5.D | Task 2 reference evidence, canonical identity, and shared contracts. |
+| 6.C | 4.B, 5.D | Canonical identity plus shared endpoint/profile contracts. |
 | 6.D | 5.E, 6.C | Location contracts plus endpoint/profile schemas. |
 | 6.E | 6.A, 6.B, 6.C, 6.D | Complete validated built-in profile registry and immutable digests. |
 | 7.A | 5.D | Shared storage and transaction identities. |
@@ -10250,7 +10300,7 @@ The `Task predecessors` column contains only exact executable Task ids separated
 | 36.B | 2.G, 33.A, 34.A, 35.C, 36.A | Task 2 frozen digest, wheel/image readiness, protected release rules, and closed evidence schema. |
 | 36.C | 34.B, 35.C, 36.A, 36.B | Demo image, protected CI closure, closed evidence, and released source identity. |
 | 37.A | 31.C, 32.C, 33.B, 34.A, 34.B, 35.C, 36.B, 36.C, 38.G | Stable verified commands, artifacts, URLs/digests, limitations, and browser evidence. |
-| 37.B | 1.A, 1.B, 1.C, 1.D, 1.E, 2.A, 2.B, 2.C, 2.D, 2.E, 2.F, 2.G, 3.A, 3.B, 3.C, 3.D, 3.E, 3.F, 3.G, 4.A, 4.B, 4.C, 4.D, 4.E, 5.A, 5.B, 5.C, 5.D, 5.E, 6.A, 6.B, 6.C, 6.D, 6.E, 7.A, 7.B, 7.C, 8.A, 8.B, 9.A, 9.B, 9.C, 9.D, 10.A, 10.B, 10.C, 11.A, 11.B, 12.A, 12.B, 12.C, 12.D, 13, 14.A, 14.B, 14.C, 15.A, 15.B, 15.C, 15.D, 15.E, 15.F, 16.A, 16.B, 17.A, 17.B, 17.C, 18.A, 18.B, 18.C, 18.D, 19.A, 19.B, 19.C, 20.A, 20.B, 21.A, 21.B, 21.C, 22.A, 22.B, 22.C, 23.A, 23.B, 23.C, 24.A, 24.B, 24.C, 25.A, 25.B, 25.C, 25.D, 25.E, 25.F, 25.G, 26.A, 26.B, 26.C, 27.A, 27.B, 28.A, 28.B, 29.A, 29.B, 29.C, 30.A, 30.B, 31.A, 31.B, 31.C, 32.A, 32.B, 32.C, 33.A, 33.B, 34.A, 34.B, 35.A, 35.B, 35.C, 36.A, 36.B, 36.C, 38.A, 38.B, 38.C, 38.D, 38.E, 38.F, 38.G | Complete per-task process evidence through Task 36.C and all Task 38 children. |
+| 37.B | 1.A, 1.B, 1.C, 1.D, 1.E, 2.A, 2.B, 2.C, 2.D, 2.E, 2.F, 2.G, 3.A, 3.B, 3.C, 3.D, 3.E, 3.F, 3.G, 4.A, 4.F, 4.B, 4.C, 4.D, 4.E, 5.A, 5.B, 5.C, 5.D, 5.E, 6.A, 6.B, 6.C, 6.D, 6.E, 7.A, 7.B, 7.C, 8.A, 8.B, 9.A, 9.B, 9.C, 9.D, 10.A, 10.B, 10.C, 11.A, 11.B, 12.A, 12.B, 12.C, 12.D, 13, 14.A, 14.B, 14.C, 15.A, 15.B, 15.C, 15.D, 15.E, 15.F, 16.A, 16.B, 17.A, 17.B, 17.C, 18.A, 18.B, 18.C, 18.D, 19.A, 19.B, 19.C, 20.A, 20.B, 21.A, 21.B, 21.C, 22.A, 22.B, 22.C, 23.A, 23.B, 23.C, 24.A, 24.B, 24.C, 25.A, 25.B, 25.C, 25.D, 25.E, 25.F, 25.G, 26.A, 26.B, 26.C, 27.A, 27.B, 28.A, 28.B, 29.A, 29.B, 29.C, 30.A, 30.B, 31.A, 31.B, 31.C, 32.A, 32.B, 32.C, 33.A, 33.B, 34.A, 34.B, 35.A, 35.B, 35.C, 36.A, 36.B, 36.C, 38.A, 38.B, 38.C, 38.D, 38.E, 38.F, 38.G | Complete per-task process evidence through Task 36.C and all Task 38 children. |
 | 37.C | 37.A, 37.B | Complete student-authored 1,500–2,500-word reflection and final human readiness decision. |
 | 38.A | 27.B, 28.B, 29.C | Credential service, safe shell, and governance route composition. |
 | 38.B | 22.C, 23.C, 28.B, 29.C | Memory/audit services, safe shell, and governance route composition. |
@@ -10262,7 +10312,7 @@ The `Task predecessors` column contains only exact executable Task ids separated
 
 ## Parallel Worktree Waves
 
-M0, human approval, and cold-start are pre-wave gates, not executable Tasks. There are **69 executable dependency waves** numbered 1–69. The `Executable tasks` column is the sole machine-readable membership set and contains exact Task ids only. Every predecessor must be in an earlier wave; tasks in one row may run in parallel only when their expanded owned core-file sets are disjoint. Evidence merges remain serialized by displayed Task order.
+M0, human approval, and cold-start are pre-wave gates, not executable Tasks. There are **70 executable dependency waves** numbered 1–70. The `Executable tasks` column is the sole machine-readable membership set and contains exact Task ids only. Every predecessor must be in an earlier wave; tasks in one row may run in parallel only when their expanded owned core-file sets are disjoint. Evidence merges remain serialized by displayed Task order.
 
 | Wave | Executable tasks | Execution and conflict rule |
 |---|---|---|
@@ -10282,59 +10332,60 @@ M0, human approval, and cold-start are pre-wave gates, not executable Tasks. The
 | 14 | 3.E | Implement fault-safe persistence transaction observations. |
 | 15 | 3.F | Implement recovery classification and held-mutex proof. |
 | 16 | 3.G | Assemble Task 3 evidence; GO is required before later waves. |
-| 17 | 4.A | Promote the verified gate environment into the formal project/toolchain. |
-| 18 | 4.B, 5.A | Canonical JSON/digests and optional values own disjoint files. |
-| 19 | 4.C | Implement canonical time and injected clock. |
-| 20 | 4.D, 5.B | Lexical paths and Run contracts own disjoint files. |
-| 21 | 4.E, 5.C | Credential scan and shared action contracts own disjoint files. |
-| 22 | 5.E | Freeze repository-location and disclosure-scope contracts. |
-| 23 | 5.D | Complete the closed shared contract set. |
-| 24 | 6.A, 6.B, 6.C, 7.A, 10.B, 15.A | Profile, storage, content, and disclosure foundations own disjoint files. |
-| 25 | 6.D, 7.B, 15.B | Registry assembly, Run lifecycle, and disclosure subjects own disjoint files. |
-| 26 | 6.E, 7.C, 15.C | Profile validation, idempotency, and authorization rules own disjoint files. |
-| 27 | 8.A, 15.D, 18.A, 23.A, 27.A | Request, decision, Docker request, audit, and credential ports are disjoint. |
-| 28 | 8.B, 15.F, 23.B, 27.B | Admission, revocation, audit repository, and WinCred adapter are disjoint. |
-| 29 | 9.A, 15.E, 23.C, 25.B | Identity, authorization ledger, visibility, and turn boundary own disjoint files. |
-| 30 | 9.B, 16.A, 25.F, 28.A | Mutex, Mock adapter, restart, and Web security are independent. |
-| 31 | 9.C, 16.B, 28.B | Git preflight, OpenAI transport, and application shell own disjoint files. |
-| 32 | 9.D, 25.C, 29.B | Path authorization, authorized call, and disclosure UI own disjoint files. |
-| 33 | 10.A | Implement Snapshot capture and content objects. |
-| 34 | 10.C | Seal SnapshotTree and content-object identities. |
-| 35 | 11.A, 12.A, 20.A | Read tools, diff parsing, and static support planning own disjoint files. |
-| 36 | 11.B, 12.B | Paged discovery and CandidateTree overlays own disjoint files. |
-| 37 | 12.C, 17.A | Atomic patch application and action parser own disjoint files. |
-| 38 | 12.D, 17.B | FinalDiff identity and action binding own disjoint files. |
-| 39 | 13, 18.B | Pure policy and Docker isolation inputs own disjoint files. |
-| 40 | 17.C, 18.C | Dispatcher and container lifecycle own disjoint files. |
-| 41 | 18.D | Seal production Docker execution results. |
-| 42 | 19.A | Freeze closed static-tool result contracts. |
-| 43 | 19.B | Implement authoritative pytest event evidence. |
-| 44 | 19.C | Implement stable target failure fingerprints. |
-| 45 | 20.B, 22.A, 24.A | Baseline/Manifest, memory repository, and context facts own disjoint files. |
-| 46 | 21.A, 22.B | Formal predicate and memory authorization own disjoint files. |
-| 47 | 21.B, 22.C, 24.B | Validation execution, memory lifecycle, and context projection own disjoint files. |
-| 48 | 21.C, 24.C | VerifiedCandidate and structured feedback own disjoint files. |
-| 49 | 14.A, 25.D | Approval subject and action pipeline own disjoint files. |
-| 50 | 14.B | Implement one-time approval persistence and expiry. |
-| 51 | 14.C | Complete approval consumption and revocation. |
-| 52 | 25.A, 25.E, 26.A | Stop/progress, wait/cancel, and writeback own disjoint files. |
-| 53 | 25.G, 26.B, 30.A | Loop composition, recovery preview, and Demo core own disjoint files. |
-| 54 | 26.C, 29.A, 30.B, 32.A | Recovery, Run UI, Demo app, and governance trace own disjoint files. |
-| 55 | 29.C, 32.B, 38.E | Governance composition, feedback trace, and recovery CLI are independent. |
-| 56 | 32.C, 38.A, 38.B, 38.C, 38.D | Shared-core proof and four local-operation workflows own disjoint files. |
-| 57 | 34.B, 38.F | Demo OCI smoke and local route composition own disjoint files. |
-| 58 | 31.A, 38.G | Reference happy path and browser acceptance consume frozen composition. |
-| 59 | 31.B | Add reference negative safety/call-gate cases. |
-| 60 | 31.C | Complete persistence/recovery/audit/determinism reference evidence. |
-| 61 | 33.A, 34.A | Wheel build and reference image smoke own disjoint artifacts. |
-| 62 | 33.B | Clean pipx smoke consumes the exact wheel. |
-| 63 | 35.A, 35.B | GitHub Actions and GitLab verification proceed independently. |
-| 64 | 35.C | Protected release rules and dual-platform evidence wait for both platforms. |
-| 65 | 36.A | Freeze closed delivery evidence and identity alignment. |
-| 66 | 36.B | Execute protected GitHub Release/GHCR publication. |
-| 67 | 36.C | Deploy and verify the exact public Demo source commit. |
-| 68 | 37.A, 37.B | README and final process/log evidence use stable producer facts and disjoint files. |
-| 69 | 37.C | Final delivery/reflection gate waits for all executable Tasks and the student-authored reflection. |
+| 17 | 4.A | Freeze the complete reviewed v1 dependency closure and minimal package identity. |
+| 18 | 4.F | Promote the frozen gate toolchain and configure the locked build backend without changing dependencies. |
+| 19 | 4.B, 5.A | Canonical JSON/digests and optional values own disjoint files. |
+| 20 | 4.C | Implement canonical time and injected clock. |
+| 21 | 4.D, 5.B | Lexical paths and Run contracts own disjoint files. |
+| 22 | 4.E, 5.C | Credential scan and shared action contracts own disjoint files. |
+| 23 | 5.E | Freeze repository-location and disclosure-scope contracts. |
+| 24 | 5.D | Complete the closed shared contract set. |
+| 25 | 6.A, 6.B, 6.C, 7.A, 10.B, 15.A | Profile, storage, content, and disclosure foundations own disjoint files. |
+| 26 | 6.D, 7.B, 15.B | Registry assembly, Run lifecycle, and disclosure subjects own disjoint files. |
+| 27 | 6.E, 7.C, 15.C | Profile validation, idempotency, and authorization rules own disjoint files. |
+| 28 | 8.A, 15.D, 18.A, 23.A, 27.A | Request, decision, Docker request, audit, and credential ports are disjoint. |
+| 29 | 8.B, 15.F, 23.B, 27.B | Admission, revocation, audit repository, and WinCred adapter are disjoint. |
+| 30 | 9.A, 15.E, 23.C, 25.B | Identity, authorization ledger, visibility, and turn boundary own disjoint files. |
+| 31 | 9.B, 16.A, 25.F, 28.A | Mutex, Mock adapter, restart, and Web security are independent. |
+| 32 | 9.C, 16.B, 28.B | Git preflight, OpenAI transport, and application shell own disjoint files. |
+| 33 | 9.D, 25.C, 29.B | Path authorization, authorized call, and disclosure UI own disjoint files. |
+| 34 | 10.A | Implement Snapshot capture and content objects. |
+| 35 | 10.C | Seal SnapshotTree and content-object identities. |
+| 36 | 11.A, 12.A, 20.A | Read tools, diff parsing, and static support planning own disjoint files. |
+| 37 | 11.B, 12.B | Paged discovery and CandidateTree overlays own disjoint files. |
+| 38 | 12.C, 17.A | Atomic patch application and action parser own disjoint files. |
+| 39 | 12.D, 17.B | FinalDiff identity and action binding own disjoint files. |
+| 40 | 13, 18.B | Pure policy and Docker isolation inputs own disjoint files. |
+| 41 | 17.C, 18.C | Dispatcher and container lifecycle own disjoint files. |
+| 42 | 18.D | Seal production Docker execution results. |
+| 43 | 19.A | Freeze closed static-tool result contracts. |
+| 44 | 19.B | Implement authoritative pytest event evidence. |
+| 45 | 19.C | Implement stable target failure fingerprints. |
+| 46 | 20.B, 22.A, 24.A | Baseline/Manifest, memory repository, and context facts own disjoint files. |
+| 47 | 21.A, 22.B | Formal predicate and memory authorization own disjoint files. |
+| 48 | 21.B, 22.C, 24.B | Validation execution, memory lifecycle, and context projection own disjoint files. |
+| 49 | 21.C, 24.C | VerifiedCandidate and structured feedback own disjoint files. |
+| 50 | 14.A, 25.D | Approval subject and action pipeline own disjoint files. |
+| 51 | 14.B | Implement one-time approval persistence and expiry. |
+| 52 | 14.C | Complete approval consumption and revocation. |
+| 53 | 25.A, 25.E, 26.A | Stop/progress, wait/cancel, and writeback own disjoint files. |
+| 54 | 25.G, 26.B, 30.A | Loop composition, recovery preview, and Demo core own disjoint files. |
+| 55 | 26.C, 29.A, 30.B, 32.A | Recovery, Run UI, Demo app, and governance trace own disjoint files. |
+| 56 | 29.C, 32.B, 38.E | Governance composition, feedback trace, and recovery CLI are independent. |
+| 57 | 32.C, 38.A, 38.B, 38.C, 38.D | Shared-core proof and four local-operation workflows own disjoint files. |
+| 58 | 34.B, 38.F | Demo OCI smoke and local route composition own disjoint files. |
+| 59 | 31.A, 38.G | Reference happy path and browser acceptance consume frozen composition. |
+| 60 | 31.B | Add reference negative safety/call-gate cases. |
+| 61 | 31.C | Complete persistence/recovery/audit/determinism reference evidence. |
+| 62 | 33.A, 34.A | Wheel build and reference image smoke own disjoint artifacts. |
+| 63 | 33.B | Clean pipx smoke consumes the exact wheel. |
+| 64 | 35.A, 35.B | GitHub Actions and GitLab verification proceed independently. |
+| 65 | 35.C | Protected release rules and dual-platform evidence wait for both platforms. |
+| 66 | 36.A | Freeze closed delivery evidence and identity alignment. |
+| 67 | 36.B | Execute protected GitHub Release/GHCR publication. |
+| 68 | 36.C | Deploy and verify the exact public Demo source commit. |
+| 69 | 37.A, 37.B | README and final process/log evidence use stable producer facts and disjoint files. |
+| 70 | 37.C | Final delivery/reflection gate waits for all executable Tasks and the student-authored reflection. |
 
 Every executable task uses a fresh subagent, branch, worktree, and PR. Milestones use none. Parallel worktrees may not update shared execution evidence concurrently: implementation commits may proceed in parallel, but merges and append-only `PLAN.md`/`AGENT_LOG.md` evidence commits occur in displayed task order within the wave.
 
@@ -10363,7 +10414,8 @@ The mechanically checked core-file set is formed only from exact backticked repo
 | 3.E | `spikes/persistence_recovery/recovery_preview.py`; `tests/feasibility/persistence/test_recovery_preview.py` | None | Owns read-only recovery preview only. |
 | 3.F | `spikes/persistence_recovery/recovery_apply.py`; `tests/feasibility/persistence/test_recovery_apply.py` | None | Owns guarded recovery apply only. |
 | 3.G | `spikes/persistence_recovery/report.py`; `tests/feasibility/persistence/test_recovery_gate.py` | None | Gate evidence freezes before Task 4.A. |
-| 4.A | `pyproject.toml`; `requirements/dev.lock`; `src/vespercode/__init__.py` | Task 33.A changes package-data/version/entry-point configuration only | Promotes but never modifies Milestone 1 gate files; Task 33.A starts after all runtime files exist. |
+| 4.A | `pyproject.toml`; `requirements/dev.lock`; `src/vespercode/__init__.py` | Task 4.F changes only build-system and pytest/Ruff/Mypy/tooling sections; Task 33.A changes only package-data/version/distribution-metadata/console-entry-point sections | Sole dependency/Python/source-policy/lock owner; never modifies Milestone 1 gate files, and no later task changes dependency tables, Python range, dependency sources, or `requirements/dev.lock`. |
+| 4.F | None (authorized tooling configuration plus test) | Task 4.A authorizes the build-system and pytest/Ruff/Mypy/tooling-only modification to `pyproject.toml` | Promotes exact gate identities and canonical commands without becoming a second owner of `pyproject.toml` or changing the dependency closure. |
 | 4.B | `src/vespercode/canonical/{json_v1.py,digest.py}` | None | Owns canonical bytes and domain digest only. |
 | 4.C | `src/vespercode/canonical/{timestamp_v1.py,clock.py}` | None | Owns time parsing/conversion and injected clocks only. |
 | 4.D | `src/vespercode/canonical/path_v1.py` | None | Owns lexical path validation only. |
@@ -10457,7 +10509,7 @@ The mechanically checked core-file set is formed only from exact backticked repo
 | 32.A | `scripts/run_mechanism_demo.py` | None | Owns reusable offline trace driver; exact supporting tests are frozen in Task 32.A. |
 | 32.B | None (test/evidence-only) | None | Exact supporting files are `tests/e2e/mechanism/{test_feedback_recovery.py,test_continuation_gate.py,test_trace_determinism.py}`; consumes Task 32.A driver only. |
 | 32.C | None (test/evidence-only) | None | Exact supporting files are `tests/e2e/mechanism/{test_disclosure_gate.py,test_credential_recheck.py,test_shared_core_reuse.py}`; finalizes provenance and zero-side-effect evidence. |
-| 33.A | None (authorized metadata modification plus test/evidence) | Task 4.A authorizes Task 33.A to modify package-data/version/entry-point fields in `pyproject.toml` | Produces one exact wheel/digest without becoming a second owner of `pyproject.toml`. |
+| 33.A | None (authorized metadata modification plus test/evidence) | Task 4.A authorizes Task 33.A to modify package-data/version/distribution-metadata/console-entry-point fields in `pyproject.toml` | Produces one exact wheel/digest without becoming a second owner of `pyproject.toml`; dependency/Python/source/lock/build-backend/tooling sections remain immutable. |
 | 33.B | `scripts/run_package_smoke.py` | Task 28.B authorizes an installed-resource-only correction in `src/vespercode/cli.py` | Consumes Task 33.A wheel; no source fallback. |
 | 34.A | `scripts/run_reference_image_smoke.py` | None | Milestone 2 recipe/manifest inputs are read-only; exact supporting tests are frozen in Task 34.A. |
 | 34.B | `containers/demo/Dockerfile`; `requirements/demo.lock`; `scripts/run_demo_image_smoke.py` | None | Curated Demo image only; exact supporting tests are frozen in Task 34.B. |
@@ -10515,7 +10567,7 @@ Every task list in the four coverage matrices below contains exact executable Ta
 | Non-functional requirement | Implementation tasks | Independent verification tasks | Test environment / release evidence |
 |---|---|---|---|
 | NFR-PERF — hard budgets and bounded resources | 5.A, 5.B, 5.C, 5.D, 5.E, 8.A, 8.B, 11.A, 11.B, 15.A, 15.B, 15.C, 15.D, 15.E, 15.F, 16.A, 16.B, 18.A, 18.B, 18.C, 18.D, 24.A, 24.B, 24.C, 25.A, 25.B, 25.C, 25.D, 25.E, 25.G, 30.A, 30.B | 31.A, 31.B, 32.B, 34.A, 34.B | FakeClock and boundary tests prove pre-side-effect limits; Docker/Demo image smoke and reference traces prove real resource ceilings. |
-| NFR-REL — deterministic and fail-closed behavior | 1.A, 1.B, 1.C, 1.D, 1.E, 2.A, 2.B, 2.C, 2.D, 2.E, 2.F, 2.G, 3.A, 3.B, 3.C, 3.D, 3.E, 3.F, 3.G, 4.A, 4.B, 4.C, 4.D, 4.E, 5.A, 5.B, 5.C, 5.D, 5.E, 6.A, 6.B, 6.C, 6.D, 6.E, 7.A, 7.B, 7.C, 8.A, 8.B, 9.A, 9.B, 9.C, 9.D, 10.A, 10.B, 10.C, 11.A, 11.B, 12.A, 12.B, 12.C, 12.D, 13, 14.A, 14.B, 14.C, 15.A, 15.B, 15.C, 15.D, 15.E, 15.F, 16.A, 16.B, 17.A, 17.B, 17.C, 18.A, 18.B, 18.C, 18.D, 19.A, 19.B, 19.C, 20.A, 20.B, 21.A, 21.B, 21.C, 22.A, 22.B, 22.C, 23.A, 23.B, 23.C, 24.A, 24.B, 24.C, 25.A, 25.B, 25.C, 25.D, 25.E, 25.F, 25.G, 26.A, 26.B, 26.C, 30.A | 30.B, 31.A, 31.B, 31.C, 32.A, 32.B, 32.C, 37.C | Gate identity, canonical vectors, immutable structures, closed schemas, transactions, repeated semantic traces, shared-core provenance, and final missing-evidence rejection prove determinism/fail-close. |
+| NFR-REL — deterministic and fail-closed behavior | 1.A, 1.B, 1.C, 1.D, 1.E, 2.A, 2.B, 2.C, 2.D, 2.E, 2.F, 2.G, 3.A, 3.B, 3.C, 3.D, 3.E, 3.F, 3.G, 4.A, 4.F, 4.B, 4.C, 4.D, 4.E, 5.A, 5.B, 5.C, 5.D, 5.E, 6.A, 6.B, 6.C, 6.D, 6.E, 7.A, 7.B, 7.C, 8.A, 8.B, 9.A, 9.B, 9.C, 9.D, 10.A, 10.B, 10.C, 11.A, 11.B, 12.A, 12.B, 12.C, 12.D, 13, 14.A, 14.B, 14.C, 15.A, 15.B, 15.C, 15.D, 15.E, 15.F, 16.A, 16.B, 17.A, 17.B, 17.C, 18.A, 18.B, 18.C, 18.D, 19.A, 19.B, 19.C, 20.A, 20.B, 21.A, 21.B, 21.C, 22.A, 22.B, 22.C, 23.A, 23.B, 23.C, 24.A, 24.B, 24.C, 25.A, 25.B, 25.C, 25.D, 25.E, 25.F, 25.G, 26.A, 26.B, 26.C, 30.A | 30.B, 31.A, 31.B, 31.C, 32.A, 32.B, 32.C, 37.C | Gate identity, dependency closure, formal toolchain promotion, canonical vectors, immutable structures, closed schemas, transactions, repeated semantic traces, shared-core provenance, and final missing-evidence rejection prove determinism/fail-close. |
 | NFR-USE — understandable status, decisions, diff, and recovery | 23.A, 23.B, 23.C, 28.A, 28.B, 29.A, 29.B, 29.C, 37.A, 38.A, 38.B, 38.C, 38.D, 38.E, 38.F | 33.B, 38.G | Local WebUI/browser/accessibility tests, installed UI smoke, and README contract prove understandable non-color-only operation. |
 | NFR-OBS — ordered evidence and categorized CI/release records | 7.A, 7.B, 7.C, 23.A, 23.B, 23.C, 31.A, 31.B, 31.C, 32.A, 32.B, 32.C, 35.A, 35.B, 35.C, 36.A, 36.B, 36.C, 38.C, 38.F | 37.B, 37.C, 38.G | Audit concurrency, deterministic reports, real dual-platform records, release/deployment JSON, browser evidence, and evidence-age checks prove observability. |
 | NFR-SEC — declared threat-boundary mechanisms | 1.A, 1.B, 1.C, 1.D, 1.E, 2.A, 2.B, 2.C, 2.D, 2.E, 2.F, 2.G, 3.A, 3.B, 3.C, 3.D, 3.E, 3.F, 3.G, 6.A, 6.B, 6.C, 6.D, 6.E, 9.A, 9.B, 9.C, 9.D, 12.A, 12.B, 12.C, 12.D, 13, 14.A, 14.B, 14.C, 15.A, 15.B, 15.C, 15.D, 15.E, 15.F, 16.A, 16.B, 17.A, 17.B, 17.C, 18.A, 18.B, 18.C, 18.D, 21.A, 21.B, 21.C, 25.A, 25.B, 25.C, 25.D, 25.E, 25.F, 25.G, 26.A, 26.B, 26.C, 27.A, 27.B, 28.A, 28.B, 29.A, 29.B, 29.C, 30.A, 30.B, 35.A, 35.B, 35.C, 36.A, 36.B, 38.A, 38.B, 38.C, 38.D, 38.E, 38.F | 31.B, 31.C, 32.A, 32.C, 34.A, 34.B, 36.C, 37.C, 38.G | Windows/Docker/fault/Web/Demo/dual-CI/live checks plus every credential scan prove the declared boundary without overclaiming SPEC §5.5. |
@@ -10534,7 +10586,7 @@ Every task list in the four coverage matrices below contains exact executable Ta
 | AC-07 | 12.D, 14.A, 14.B, 14.C, 21.A, 21.B, 21.C, 26.A, 29.C | 31.C, 38.G | Writeback preconditions/fault matrix/Web workflow plus approved FinalDiff/postimage/untouched-file digest report. |
 | AC-08 | 27.A, 27.B, 28.A, 28.B, 38.A, 38.F | 31.B, 33.B, 35.B, 35.C, 38.G | Credential status/redaction/WinCred/Web tests, cleared state, Windows CI log, and installed smoke. |
 | AC-09 | 13, 17.A, 17.B, 17.C, 24.A, 24.B, 24.C, 25.A, 25.D, 25.G, 30.A, 30.B | 32.A, 32.B, 32.C, 34.B, 36.C | Production-core call sequence, repeated trace, forbidden-adapter zero-call evidence, Demo image, and public scenario smoke. |
-| AC-10 | 4.A, 35.A, 35.B, 37.C | 35.C, 36.A, 37.B | `python -m pytest -q`, exact GitHub/GitLab contract tests, real unit-test jobs, and final process report. |
+| AC-10 | 4.A, 4.F, 35.A, 35.B, 37.C | 35.C, 36.A, 37.B | Complete hash-locked dependency closure, `python -m pytest -q`, exact GitHub/GitLab contract tests, real unit-test jobs, and final process report. |
 | AC-11 | 28.A, 28.B, 29.A, 29.B, 29.C, 33.A, 33.B, 35.A, 35.B, 35.C, 36.A, 36.B, 37.A, 38.A, 38.B, 38.C, 38.D, 38.E, 38.F | 37.C, 38.G | Clean pipx/installed CLI/WebUI, real wheel job, GitHub Release wheel/SHA, and verified install/start instructions. |
 | AC-12 | 30.A, 30.B, 34.B, 35.A, 35.B, 35.C, 36.A, 36.C | 32.C, 37.C | Demo container health/capability smoke, real image-build log/digest, Render URL, and live `/healthz`. |
 | AC-13 | 6.A, 6.B, 6.C, 6.D, 6.E, 15.A, 15.B, 15.C, 15.D, 15.E, 15.F, 16.A, 16.B, 24.A, 24.B, 24.C, 25.B, 25.C, 25.G, 27.A, 27.B, 29.B, 29.C | 31.B, 32.C | Source/scope/budget, fresh credential, counting, adapter, disclosure UI, and zero-side-effect reference/mechanism traces. |
@@ -10559,12 +10611,12 @@ Every task list in the four coverage matrices below contains exact executable Ta
 
 ## Test Environment Matrix
 
-Every `Owning tasks` cell below contains exact executable Task ids only. The feasibility children under Milestones 1, 2, and 3 run only through the environment frozen by Task 1.A. Task 4.A then promotes the verified versions, marker set, and static rules; its pytest configuration makes `python -m pytest -q` the deterministic formal offline command by excluding all six real-environment markers. A dedicated formal environment command always clears default addopts, selects exactly one marker, and names its test root.
+Every `Owning tasks` cell below contains exact executable Task ids only. The feasibility children under Milestones 1, 2, and 3 run only through the environment frozen by Task 1.A. Task 4.A then freezes the complete formal dependency closure while preserving overlapping gate tool versions; Task 4.F separately promotes the verified versions, marker set, and static rules. Task 4.F's pytest configuration makes `python -m pytest -q` the deterministic formal offline command by excluding all six real-environment markers. A dedicated formal environment command always clears default addopts, selects exactly one marker, and names its test root.
 
 | Layer | Exact environment and command | Owning tasks | Required proof | Saved evidence |
 |---|---|---|---|---|
-| Feasibility gate bootstrap | Windows 11 x64; `py -3.12 -m venv .venv-gate`; hash-only install from `requirements/gate.lock`; all checks via `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py {pytest|ruff-format|ruff-check|mypy} -- <explicit-targets>`; Task 2.C starts a digest-pinned registry on `127.0.0.1` with an OS-assigned port | 1.A, 1.B, 1.C, 1.D, 1.E, 2.A, 2.B, 2.C, 2.D, 2.E, 2.F, 2.G, 3.A, 3.B, 3.C, 3.D, 3.E, 3.F, 3.G, 4.A, 37.B, 37.C | Exact dependency hashes/markers/config; no global/Task 4.A config; Task 2.D/2.E/2.F reporter, evidence, and stable failure inputs; fixed OCI parameters, local OCI → loopback RepoDigest → digest-pull equality, zero credentials/external push, no manifest self-reference, verified cleanup; unchanged Milestone 1 identities in Milestones 2 and 3; reviewed Task 4.A promotion | Tool/file SHA-256, install log, registry image/config/bind/cleanup evidence, three equal digests, Milestone 1, 2, and 3 `GO` reports, Task 4.A comparison, Task 37.B recomputation and Task 37.C final gate |
-| Offline unit tests | Python 3.12, no network/Docker/WinCred; `python -m pytest -q` | 4.A, 4.B, 4.C, 4.D, 4.E, 5.A, 5.B, 5.C, 5.D, 5.E, 6.A, 6.B, 6.C, 6.D, 6.E, 7.A, 7.B, 7.C, 8.A, 8.B, 9.C, 9.D, 10.A, 10.B, 10.C, 11.A, 11.B, 12.A, 12.B, 12.C, 12.D, 13, 14.A, 14.B, 14.C, 15.A, 15.B, 15.C, 15.D, 15.E, 15.F, 16.A, 16.B, 17.A, 17.B, 17.C, 18.A, 18.B, 18.C, 18.D, 19.A, 19.B, 19.C, 20.A, 20.B, 21.A, 21.B, 21.C, 22.A, 22.B, 22.C, 23.A, 23.B, 23.C, 24.A, 24.B, 24.C, 25.A, 25.B, 25.C, 25.D, 25.E, 25.F, 25.G, 26.A, 26.B, 26.C, 27.A, 28.A, 28.B, 29.A, 29.B, 29.C, 30.A, 30.B, 32.A, 32.B, 32.C, 35.A, 35.B, 35.C, 37.A, 37.B, 37.C, 38.A, 38.B, 38.C, 38.D, 38.E, 38.F, 38.G | Canonical vectors, closed schemas/cursors, Mock/Stub core, policy, requests, per-call credential failure ordering, parsers, transactions, feedback, loop, memory, audit, WebUI client, Demo logic | Local output plus GitHub Actions and GitLab CI `unit-test` report artifacts |
+| Feasibility gate bootstrap | Windows 11 x64; `py -3.12 -m venv .venv-gate`; hash-only install from `requirements/gate.lock`; all checks via `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py {pytest|ruff-format|ruff-check|mypy} -- <explicit-targets>`; Task 2.C starts a digest-pinned registry on `127.0.0.1` with an OS-assigned port | 1.A, 1.B, 1.C, 1.D, 1.E, 2.A, 2.B, 2.C, 2.D, 2.E, 2.F, 2.G, 3.A, 3.B, 3.C, 3.D, 3.E, 3.F, 3.G, 4.A, 4.F, 37.B, 37.C | Exact dependency hashes/markers/config; no global/Task 4 project config; Task 2.D/2.E/2.F reporter, evidence, and stable failure inputs; fixed OCI parameters, local OCI → loopback RepoDigest → digest-pull equality, zero credentials/external push, no manifest self-reference, verified cleanup; unchanged Milestone 1 identities in Milestones 2 and 3; reviewed Task 4.A dependency closure and Task 4.F promotion | Tool/file SHA-256, install log, registry image/config/bind/cleanup evidence, three equal digests, Milestone 1, 2, and 3 `GO` reports, Task 4.A closure and Task 4.F promotion comparisons, Task 37.B recomputation and Task 37.C final gate |
+| Offline unit tests | Python 3.12, no network/Docker/WinCred; `python -m pytest -q` | 4.A, 4.F, 4.B, 4.C, 4.D, 4.E, 5.A, 5.B, 5.C, 5.D, 5.E, 6.A, 6.B, 6.C, 6.D, 6.E, 7.A, 7.B, 7.C, 8.A, 8.B, 9.C, 9.D, 10.A, 10.B, 10.C, 11.A, 11.B, 12.A, 12.B, 12.C, 12.D, 13, 14.A, 14.B, 14.C, 15.A, 15.B, 15.C, 15.D, 15.E, 15.F, 16.A, 16.B, 17.A, 17.B, 17.C, 18.A, 18.B, 18.C, 18.D, 19.A, 19.B, 19.C, 20.A, 20.B, 21.A, 21.B, 21.C, 22.A, 22.B, 22.C, 23.A, 23.B, 23.C, 24.A, 24.B, 24.C, 25.A, 25.B, 25.C, 25.D, 25.E, 25.F, 25.G, 26.A, 26.B, 26.C, 27.A, 28.A, 28.B, 29.A, 29.B, 29.C, 30.A, 30.B, 32.A, 32.B, 32.C, 35.A, 35.B, 35.C, 37.A, 37.B, 37.C, 38.A, 38.B, 38.C, 38.D, 38.E, 38.F, 38.G | Dependency closure, formal toolchain promotion, canonical vectors, closed schemas/cursors, Mock/Stub core, policy, requests, per-call credential failure ordering, parsers, transactions, feedback, loop, memory, audit, WebUI client, Demo logic | Local output plus GitHub Actions and GitLab CI `unit-test` report artifacts |
 | Windows integration tests | Project-specific Windows 11 x64 runner; `python -m pytest -q -o addopts='' -m windows_integration tests/integration/windows tests/feasibility/windows` | 1.A, 1.B, 1.C, 1.D, 1.E, 9.A, 9.B, 9.C, 10.A, 10.B, 10.C, 26.A, 26.C, 27.B | NTFS/Win32 final identity, path collision, ADS, reparse/hard link, named mutex, Git bytes, Snapshot source, ACL, persistence, WinCred lifecycle and fresh per-call lookup | Runner OS/Python/Git versions, test report, cleared credential state |
 | Docker integration tests | Docker Desktop Linux mode; `python -m pytest -q -o addopts='' -m docker_integration tests/integration/docker tests/feasibility/docker` | 2.A, 2.B, 2.C, 2.D, 2.E, 2.F, 2.G, 18.A, 18.B, 18.C, 18.D, 19.B, 20.B, 21.A, 21.B, 21.C | Immutable image/profile mapping, loopback registry round-trip/no-self-reference/cleanup, check containers with no network/root/write/socket, tmpfs/resources, complete reports, Baseline, formal validation | Docker/builder/registry versions, three-way image digest, lifecycle inspection, report/test artifacts |
 | Reference fixture E2E | Windows + Docker + Mock profile; `python -m pytest -q -o addopts='' -m reference_e2e tests/e2e/reference` | 31.A, 31.B, 31.C | Complete production admission → Baseline → feedback correction → formal validation → wait → exact writeback/recovery-block flow | Canonical Task 31.A/31.B/31.C traces/reports, final tree digests, cleanup evidence |
@@ -10584,17 +10636,17 @@ This audit is mandatory after every non-tracking PLAN edit. It parses only the e
 
 | Invariant | Current measured result | Status |
 |---|---|---|
-| Executable registry | 133 unique executable Tasks: retained integer Task 13 plus 132 dotted child Tasks; 37 Milestones remain non-executable containers | PASS |
-| Dependency table | 133 unique rows, 554 exact predecessor edges, one root (`1.A`), zero missing/self/unknown edges | PASS |
-| DAG topology | 133/133 nodes topologically sorted; 133/133 reachable from root `1.A`; zero cycles, isolated nodes, or unreachable nodes | PASS |
-| Executable waves | 69 waves, 133/133 Tasks assigned exactly once, zero predecessor-in-same-or-later-wave violations | PASS |
-| Ownership | 133 unique Task rows, 292 expanded core paths, zero duplicate primary owners | PASS |
+| Executable registry | 134 unique executable Tasks: retained integer Task 13 plus 133 dotted child Tasks; 37 Milestones remain non-executable containers | PASS |
+| Dependency table | 134 unique rows, 559 exact predecessor edges, one root (`1.A`), zero missing/self/unknown edges | PASS |
+| DAG topology | 134/134 nodes topologically sorted; 134/134 reachable from root `1.A`; zero cycles, isolated nodes, or unreachable nodes | PASS |
+| Executable waves | 70 waves, 134/134 Tasks assigned exactly once, zero predecessor-in-same-or-later-wave violations | PASS |
+| Ownership | 134 unique Task rows, 292 expanded core paths, zero duplicate primary owners | PASS |
 | Parallel conflicts | Zero same-wave intersections across expanded core-file ownership sets | PASS |
-| Interface provenance | All 133 Task blocks declare exact `Interfaces` without placeholder signatures; all 554 edges target an existing executable producer or a documented ordering/evidence predecessor. | PASS |
+| Interface provenance | All 134 Task blocks declare exact `Interfaces` without placeholder signatures; all 559 edges target an existing executable producer or a documented ordering/evidence predecessor. | PASS |
 | Requirement coverage | 9/9 US, 9/9 FR, 6/6 NFR, and 31/31 AC rows each have non-empty, valid, disjoint implementation and independent validation Task sets | PASS |
 | Test environments | 12/12 environment rows contain only existing exact executable Task ids | PASS |
 | Stale executable shorthand | Zero ranges, natural-language dependency sets, or aggregate Milestone ids in the canonical DAG, Wave, ownership target, coverage, Test Environment, or Release Gate structures | PASS |
-| Release count | Release Gate requires exactly the same 133 executable Tasks | PASS |
+| Release count | Release Gate requires exactly the same 134 executable Tasks | PASS |
 
 The audit fails closed if a later parser finds a count mismatch, unknown Task id, duplicate membership/owner, cycle, unreachable node, non-earlier dependency, parallel core-file collision, missing producer, uncovered requirement, aggregate Milestone target, range, or natural-language dependency. Stable Milestone headings and their retained non-executable domain contracts are intentional and are not stale executable references.
 
@@ -10602,13 +10654,13 @@ The audit fails closed if a later parser finds a count mismatch, unknown Task id
 
 Release readiness is `PASS` only when every condition below is true at the same source commit:
 
-- All **133 executable Tasks** are complete and each records a real implementation commit SHA, responsible subagent, human edits, exact tests, spec review, code-quality review, and PR URL. All 37 Milestones derive complete status from their exact children and have no aggregate implementation commit or PR.
-- The exact release registry is: 1.A, 1.B, 1.C, 1.D, 1.E, 2.A, 2.B, 2.C, 2.D, 2.E, 2.F, 2.G, 3.A, 3.B, 3.C, 3.D, 3.E, 3.F, 3.G, 4.A, 4.B, 4.C, 4.D, 4.E, 5.A, 5.B, 5.C, 5.D, 5.E, 6.A, 6.B, 6.C, 6.D, 6.E, 7.A, 7.B, 7.C, 8.A, 8.B, 9.A, 9.B, 9.C, 9.D, 10.A, 10.B, 10.C, 11.A, 11.B, 12.A, 12.B, 12.C, 12.D, 13, 14.A, 14.B, 14.C, 15.A, 15.B, 15.C, 15.D, 15.E, 15.F, 16.A, 16.B, 17.A, 17.B, 17.C, 18.A, 18.B, 18.C, 18.D, 19.A, 19.B, 19.C, 20.A, 20.B, 21.A, 21.B, 21.C, 22.A, 22.B, 22.C, 23.A, 23.B, 23.C, 24.A, 24.B, 24.C, 25.A, 25.B, 25.C, 25.D, 25.E, 25.F, 25.G, 26.A, 26.B, 26.C, 27.A, 27.B, 28.A, 28.B, 29.A, 29.B, 29.C, 30.A, 30.B, 31.A, 31.B, 31.C, 32.A, 32.B, 32.C, 33.A, 33.B, 34.A, 34.B, 35.A, 35.B, 35.C, 36.A, 36.B, 36.C, 37.A, 37.B, 37.C, 38.A, 38.B, 38.C, 38.D, 38.E, 38.F, and 38.G.
+- All **134 executable Tasks** are complete and each records a real implementation commit SHA, responsible subagent, human edits, exact tests, spec review, code-quality review, and PR URL. All 37 Milestones derive complete status from their exact children and have no aggregate implementation commit or PR.
+- The exact release registry is: 1.A, 1.B, 1.C, 1.D, 1.E, 2.A, 2.B, 2.C, 2.D, 2.E, 2.F, 2.G, 3.A, 3.B, 3.C, 3.D, 3.E, 3.F, 3.G, 4.A, 4.F, 4.B, 4.C, 4.D, 4.E, 5.A, 5.B, 5.C, 5.D, 5.E, 6.A, 6.B, 6.C, 6.D, 6.E, 7.A, 7.B, 7.C, 8.A, 8.B, 9.A, 9.B, 9.C, 9.D, 10.A, 10.B, 10.C, 11.A, 11.B, 12.A, 12.B, 12.C, 12.D, 13, 14.A, 14.B, 14.C, 15.A, 15.B, 15.C, 15.D, 15.E, 15.F, 16.A, 16.B, 17.A, 17.B, 17.C, 18.A, 18.B, 18.C, 18.D, 19.A, 19.B, 19.C, 20.A, 20.B, 21.A, 21.B, 21.C, 22.A, 22.B, 22.C, 23.A, 23.B, 23.C, 24.A, 24.B, 24.C, 25.A, 25.B, 25.C, 25.D, 25.E, 25.F, 25.G, 26.A, 26.B, 26.C, 27.A, 27.B, 28.A, 28.B, 29.A, 29.B, 29.C, 30.A, 30.B, 31.A, 31.B, 31.C, 32.A, 32.B, 32.C, 33.A, 33.B, 34.A, 34.B, 35.A, 35.B, 35.C, 36.A, 36.B, 36.C, 37.A, 37.B, 37.C, 38.A, 38.B, 38.C, 38.D, 38.E, 38.F, and 38.G.
 - M0 records the human-approved current SPEC path/SHA-256/blob/baseline and confirms the gate-bootstrap contract; Tasks 1.E, 2.G, and 3.G have `GO` outcomes under a cold-start record covering the approved `PlanSemanticDigestV1`.
-- `requirements/gate.lock`, `gates/pytest.ini`, `gates/ruff.toml`, `gates/mypy.ini`, `scripts/run_gate_checks.py`, the Task 2.D/2.E/2.F reporter/evidence/fingerprint producers, and the Task 1.E, 2.G, and 3.G `GO` reports remain present; Task 37.B recomputes their SHA-256/version matrix and proves it matches the Task 4.A promotion record without silent drift.
+- `requirements/gate.lock`, `gates/pytest.ini`, `gates/ruff.toml`, `gates/mypy.ini`, `scripts/run_gate_checks.py`, the Task 2.D/2.E/2.F reporter/evidence/fingerprint producers, and the Task 1.E, 2.G, and 3.G `GO` reports remain present; Task 37.B recomputes their SHA-256/version matrix and proves it matches the Task 4.A dependency closure and Task 4.F promotion records without silent drift.
 - Task 2.G `GO` proves a digest-pinned loopback-only registry with no credentials/external pushes, verified cleanup, no final-manifest self-reference, and local OCI/registry/digest-pull equality with final `ReferenceProfileManifestV1.docker_image_digest`; Task 34.A reproduces that exact identity, and Task 36.B's GHCR RepoDigest equals it.
 - Every Critical or Important review finding is closed and the same review stage passed after the fix.
-- `python -m pytest -q`, Ruff format, Ruff lint, and strict Mypy pass from the locked Python 3.12 environment.
+- The Task 4.A dependency tables, Python range, source/index policy, and `requirements/dev.lock` still match the reviewed closure; `python -m pytest -q`, Ruff format, Ruff lint, and strict Mypy pass from that locked Python 3.12 environment under Task 4.F's unchanged formal tooling configuration.
 - All required Windows, Docker, reference E2E, persistence fault, WebUI/browser, package, OCI, and live smoke results pass without a required skip.
 - Task 35.A's latest `.github/workflows/ci.yml` workflow for the released source commit passes exact `unit-test`, `reference-image-build`, and `demo-image-build` jobs for the applicable push/pull-request contract, with no publish credential/action.
 - Task 35.B's latest `.gitlab-ci.yml` pipeline for the released source commit passes all applicable exact jobs: `unit-test`, `wheel-build-smoke`, `reference-image-build`, and `demo-image-build`; Task 35.C proves both platform results and protected release rules refer to the same source commit.
