@@ -337,7 +337,7 @@ This gate is not a formal implementation task and has no task number.
 
 - A heading named `Milestone N` is a non-executable traceability container. It may retain the former Task's aggregate Goal, SPEC references, file inventory, interfaces, acceptance example, review checklist, and proposed branch text so no domain contract is lost, but none of those retained tracking fields or steps authorizes execution. A Milestone has no implementation branch, worktree, commit, evidence commit, or PR of its own; its status and completion evidence are derived only from all listed executable child tasks.
 - A heading named `Task N.X` is one formal executable task. Each child receives a fresh subagent, branch, worktree, implementation commit, two review gates, evidence commit, and PR.
-- The executable registry is closed: retained integer Task 13 plus 130 dotted child Tasks, for 131 executable Tasks total. The 37 `Milestone N` headings are non-executable containers and never appear as nodes in canonical DAG, wave, ownership, coverage, test-environment, or release structures.
+- The executable registry is closed: retained integer Task 13 plus 132 dotted child Tasks, for 133 executable Tasks total. The 37 `Milestone N` headings are non-executable containers and never appear as nodes in canonical DAG, wave, ownership, coverage, test-environment, or release structures.
 - An implementer may rely only on Global Constraints, the applicable Milestone contract, and their own child-task block. Child blocks therefore declare exact files, interfaces, dependencies, RED test, implementation boundary, and commands.
 - Every executable child follows this exact workflow:
   1. Add the displayed intentionally failing test without production implementation.
@@ -2168,7 +2168,7 @@ def test_exact_writeback_approval_can_be_consumed_only_once(
   - `DisclosureSubjectRepository.load_for_update(tx: ControlTransactionV1, run_id: str, subject_digest: DigestV1) -> DisclosureGrantSubjectV1`
   - `DisclosureLedger.activate(tx: ControlTransactionV1, wait: WaitContextV1, subject: DisclosureGrantSubjectV1, activated_at: CanonicalTimestampV1) -> DisclosureGrantV1`
   - `DisclosureLedger.authorize(command: AuthorizePreparedRequestV1) -> DisclosureAuthorizationOutcomeV1`
-  - `DisclosureLedger.revoke(command: RevokeDisclosureGrantV1) -> GrantMutationResultV1`
+  - `DisclosureRevocationServiceV1.revoke(command: RevokeDisclosureGrantV1) -> GrantMutationResultV1`
 
 **Implementation points:**
 - Validate source category/path presence exactly: protocol/task/memory are pathless; file content has a path; tool result/feedback uses a path whenever the fact belongs to one file.
@@ -2177,7 +2177,7 @@ def test_exact_writeback_approval_can_be_consumed_only_once(
 - Match `FILE` only exactly and `DIRECTORY` by equal path or the `path + "/"` descendant boundary.
 - Build Grant subject endpoint/model/serializer/redaction values only from the frozen profile and built-in endpoint. Mutable status and consumed bytes do not alter the subject.
 - Create the disclosure wait only from `AGENT_LOOP`; bind wait/run/kind/subject/expiry exactly.
-- `DisclosureDecisionServiceV1` reads `now` from its injected Task 4.C `ClockV1`, converts the specialized command to Task 5 `WaitDecisionV1`, locks the wait through Task 7.B, reloads the immutable subject/profile/endpoint, and applies the Grant mutation plus Task 7.B transition in one `ControlTransactionV1`. User input cannot supply an activation, rejection, expiry, or revocation timestamp.
+- `DisclosureDecisionServiceV1` reads `now` from its injected Task 4.C `ClockV1`, converts the specialized command to Task 5 `WaitDecisionV1`, locks the wait through Task 7.B, reloads the immutable subject/profile/endpoint, and applies Grant creation plus Task 7.B transition in one `ControlTransactionV1`. `DisclosureRevocationServiceV1` separately locks and revokes only the exact active Grant. User input cannot supply an activation, rejection, expiry, or revocation timestamp.
 - The decision event id is recorded/replayed through Task 7.C idempotency in the same transaction. Exact replay returns the original typed result; conflicting bytes return `EVENT_ID_REUSE_CONFLICT`; neither path creates or activates another Grant.
 - Exact `APPROVE` inserts one `DisclosureGrantV1(status="ACTIVE", consumed_bytes=0)` before atomically returning the Run to a new `AGENT_LOOP` entry. `REJECT` or an expired wait creates no Grant, stops through the closed wait lifecycle, and cannot call the real adapter.
 - Revocation binds grant/run/subject/event/time, changes only an active matching Grant to `REVOKED`, and never transitions a Run by itself. Task 25.G must create the newly required disclosure wait when positive wall-clock time remains.
@@ -4737,7 +4737,7 @@ def test_release_evidence_rejects_commit_misalignment(
 - Record real GitHub/GitLab project URLs, synchronization direction/method/date, GitHub Release URL, GHCR digest, Render URL/health path/cold start, and actual last-passing GitHub workflow/job plus GitLab pipeline/job evidence.
 - `SPEC_PROCESS.md` contains brainstorming, at least three iterations, accepted/rejected suggestions, M0 SPEC path/SHA-256/blob/baseline/human approval, approved `PlanSemanticDigestV1` plus complete PLAN audit SHA-256, cold-start agent type/scope/pauses/findings/revisions/pass, and no fabricated approval or trial.
 - `AGENT_LOG.md` remains chronological with timestamp, task id, skills, context, responsible subagent, human edits, real commits/PRs/reviews/tests, failures, interventions, and lesson for every significant task.
-- Delivery verifier validates all 131 executable Task completion records and all 37 derived Milestone states, real SHAs in repository history, closed Critical/Important findings, required files, both CI platforms' exact job evidence, wheel/image/release/deployment alignment, no unresolved recovery, credential scan, and evidence freshness. It also requires `requirements/gate.lock`, all three `gates/` configs, `scripts/run_gate_checks.py`, the Task 2.D/2.E/2.F reporter/evidence/fingerprint producers, and Task 1.E, 2.G, and 3.G GO reports; recomputed SHA-256/version matrices must match across all three reports and the Task 4.A promotion record. Milestone 2 evidence must prove digest-pinned loopback registry, loopback-only bind, zero credentials/external pushes, cleanup on every exit, no final-manifest image member, and local OCI/registry/digest-pull equality with final `ReferenceProfileManifestV1.docker_image_digest`; Task 36.B must prove GHCR returned the same digest.
+- Delivery verifier validates all 133 executable Task completion records and all 37 derived Milestone states, real SHAs in repository history, closed Critical/Important findings, required files, both CI platforms' exact job evidence, wheel/image/release/deployment alignment, no unresolved recovery, credential scan, and evidence freshness. It also requires `requirements/gate.lock`, all three `gates/` configs, `scripts/run_gate_checks.py`, the Task 2.D/2.E/2.F reporter/evidence/fingerprint producers, and Task 1.E, 2.G, and 3.G GO reports; recomputed SHA-256/version matrices must match across all three reports and the Task 4.A promotion record. Milestone 2 evidence must prove digest-pinned loopback registry, loopback-only bind, zero credentials/external pushes, cleanup on every exit, no final-manifest image member, and local OCI/registry/digest-pull equality with final `ReferenceProfileManifestV1.docker_image_digest`; Task 36.B must prove GHCR returned the same digest.
 - Reflection verifier checks 1,500–2,500 words, required disclosure of any AI language polishing, and presence of student-specific process analysis; it never generates or scores substantive personal reflection.
 - Do not modify the reflection body unless the student supplies a complete draft and explicitly requests polishing. Record every agent edit/disclosure; otherwise report the checkpoint incomplete.
 - Re-run all mandatory offline, Windows, Docker, E2E, fault, WebUI, package, image, and live smoke commands in their declared environments or bind the verifier to current saved real evidence.
@@ -4968,18 +4968,32 @@ The child tasks below are the only executable units for Milestones 1–12, 14–
 **Intentionally failing test:**
 
 ```python
-def test_runner_rejects_implicit_pytest_config(gate_runner: GateRunner) -> None:
-    assert gate_runner.run(("pytest", "-q")) == GateBootstrapErrorV1("IMPLICIT_CONFIG")
+class GateBootstrapContractTest(unittest.TestCase):
+    def test_required_bootstrap_artifacts_are_declared(self) -> None:
+        root = Path(__file__).resolve().parents[3]
+        required = (
+            "requirements/gate.lock",
+            "gates/pytest.ini",
+            "gates/ruff.toml",
+            "gates/mypy.ini",
+            "scripts/run_gate_checks.py",
+        )
+        missing = tuple(path for path in required if not (root / path).is_file())
+        self.assertEqual(
+            missing,
+            (),
+            "MISSING_BOOTSTRAP_ARTIFACTS:" + ",".join(missing),
+        )
 ```
 
-**Expected RED:** `GateRunner` and the digest-checked runner do not exist.
+**Expected RED:** the entry-runnable stdlib test starts without `.venv-gate`, pytest, or `scripts/run_gate_checks.py` and fails its assertion with `MISSING_BOOTSTRAP_ARTIFACTS:` followed by the absent lock/config/runner paths; runner startup failure is not accepted.
 
 **Implementation boundary:** Own only lock/config/runner identity and closed argv construction. Do not call Win32, Docker, persistence, or interpret any feasibility observation.
 
 **Verification:**
-- Target: `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/gate/test_gate_bootstrap.py::test_runner_rejects_implicit_pytest_config -q`
+- Target: `py -3.12 -m unittest -v tests.feasibility.gate.test_gate_bootstrap.GateBootstrapContractTest.test_required_bootstrap_artifacts_are_declared`
 - Domain: `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/gate/test_gate_bootstrap.py -q`
-- Expected GREEN: hash-only installation succeeds; wrong interpreter/config/digest/command cases fail closed and both commands exit `0`.
+- Expected GREEN: the Target assertion passes after all five artifacts exist; hash-only installation succeeds; the Domain command exits `0`; wrong interpreter/config/digest/command cases fail closed.
 
 **Completion evidence:** Not yet executed.
 
@@ -5772,38 +5786,36 @@ Expected RED: import failure because the changed-file scanner does not exist.
 
 **Completion evidence:** Not yet executed.
 
-#### Task 5.A: Optional and Repository-location Contracts
+#### Task 5.A: Closed Optional-value Contracts
 
 **Status:** Not started
 
-**Goal:** Define closed optional, canonical repository-location, and disclosure-scope value objects with no ambiguous root/path representation.
+**Goal:** Define closed generic optional-value objects so every absent/present field is explicit and cannot collapse into nullable ambiguity.
 
-**Dependencies:** Task 4.E.
+**Dependencies:** Task 4.A.
 
 **Files:**
 - Create: `src/vespercode/contracts/optional.py`
-- Create: `src/vespercode/contracts/location.py`
 - Test: `tests/unit/contracts/test_optional.py`
-- Test: `tests/unit/contracts/test_location.py`
 
-**Interfaces:** Produces `AbsentV1`, `PresentV1[T]`, every named optional union required by SPEC, `RepositoryLocationV1 = RootLocationV1 | PathLocationV1`, and `DisclosurePathScopeV1 = RootScopeV1 | FileScopeV1 | DirectoryScopeV1`.
+**Interfaces:** Produces `AbsentV1`, `PresentV1[T]`, and every named closed optional union required by SPEC.
 
 **Intentionally failing test:**
 
 ```python
-def test_repository_root_rejects_path_field() -> None:
+def test_present_optional_requires_value() -> None:
     with pytest.raises(ValidationError):
-        RootLocationV1.model_validate({"kind": "ROOT", "path": "src"})
+        PresentV1[str].model_validate({"kind": "PRESENT"})
 ```
 
-**Expected RED:** the closed discriminated location union does not exist.
+**Expected RED:** the closed generic present/absent optional union does not exist.
 
-**Implementation boundary:** Own optional/location/scope schemas only. Do not define Run state, actions, evidence, profile matching, or persistence behavior.
+**Implementation boundary:** Own optional-value schemas only. Do not define repository locations, disclosure scopes, Run state, actions, evidence, profile matching, or persistence behavior.
 
 **Verification:**
-- Target: `python -m pytest -q tests/unit/contracts/test_location.py::test_repository_root_rejects_path_field`
-- Domain: `python -m pytest -q tests/unit/contracts/test_optional.py tests/unit/contracts/test_location.py`
-- Expected GREEN: all unknown/ambiguous/root/path/scope variants reject deterministically and both commands exit `0`.
+- Target: `python -m pytest -q tests/unit/contracts/test_optional.py::test_present_optional_requires_value`
+- Domain: `python -m pytest -q tests/unit/contracts/test_optional.py`
+- Expected GREEN: every named present/absent union round-trips, missing/unknown/mixed variants reject deterministically, and both commands exit `0`.
 
 **Completion evidence:** Not yet executed.
 
@@ -5879,7 +5891,7 @@ def test_success_result_rejects_error_payload() -> None:
 
 **Goal:** Define the shared closed evidence/artifact/digest/location vocabulary consumed across tools, validation, audit, and delivery.
 
-**Dependencies:** Tasks 4.B, 5.A, 5.B, and 5.C.
+**Dependencies:** Tasks 4.B, 5.A, 5.B, 5.C, and 5.E.
 
 **Files:**
 - Create: `src/vespercode/contracts/evidence.py`
@@ -5903,6 +5915,39 @@ def test_artifact_reference_rejects_unbound_digest() -> None:
 - Target: `python -m pytest -q tests/unit/contracts/test_evidence.py::test_artifact_reference_rejects_unbound_digest`
 - Domain: `python -m pytest -q tests/unit/contracts/test_evidence.py`
 - Expected GREEN: every evidence variant is closed/digest-bound and invalid/unknown combinations reject.
+
+**Completion evidence:** Not yet executed.
+
+#### Task 5.E: Repository-location and Disclosure-scope Contracts
+
+**Status:** Not started
+
+**Goal:** Define canonical repository-location and disclosure-path-scope value objects with no ambiguous root/path representation.
+
+**Dependencies:** Task 4.E.
+
+**Files:**
+- Create: `src/vespercode/contracts/location.py`
+- Test: `tests/unit/contracts/test_location.py`
+
+**Interfaces:** Produces `RepositoryLocationV1 = RootLocationV1 | PathLocationV1` and `DisclosurePathScopeV1 = RootScopeV1 | FileScopeV1 | DirectoryScopeV1`.
+
+**Intentionally failing test:**
+
+```python
+def test_repository_root_rejects_path_field() -> None:
+    with pytest.raises(ValidationError):
+        RootLocationV1.model_validate({"kind": "ROOT", "path": "src"})
+```
+
+**Expected RED:** the closed discriminated repository-location and disclosure-scope unions do not exist.
+
+**Implementation boundary:** Own repository-location and disclosure-scope schemas only. Do not define generic optional values, Run state, actions, evidence, profile matching, or persistence behavior.
+
+**Verification:**
+- Target: `python -m pytest -q tests/unit/contracts/test_location.py::test_repository_root_rejects_path_field`
+- Domain: `python -m pytest -q tests/unit/contracts/test_location.py`
+- Expected GREEN: all unknown/ambiguous/root/path/scope variants reject deterministically and both commands exit `0`.
 
 **Completion evidence:** Not yet executed.
 
@@ -6014,7 +6059,7 @@ def test_mock_profile_rejects_openai_fields() -> None:
 
 **Goal:** Resolve only the built-in public OpenAI endpoint ID to an immutable trusted endpoint record.
 
-**Dependencies:** Tasks 5.A and 6.C.
+**Dependencies:** Tasks 5.E and 6.C.
 
 **Files:**
 - Create: `src/vespercode/profiles/endpoints.py`
@@ -6533,8 +6578,8 @@ def test_snapshot_rejects_preflight_object_identity_drift() -> None:
 **Implementation boundary:** Own Snapshot entry construction/root digest/verification only. Never reread mutable repository paths or redefine content/classification rules.
 
 **Verification:**
-- Target: `python -m pytest -q tests/unit/trees/test_snapshot.py::test_snapshot_rejects_preflight_object_identity_drift`
-- Domain: `python -m pytest -q tests/unit/trees/test_snapshot.py tests/integration/windows/test_snapshot_from_preflight.py`
+- Target: `python -m pytest -q -o addopts='' -m windows_integration tests/integration/windows/test_snapshot_from_preflight.py::test_snapshot_rejects_preflight_object_identity_drift`
+- Domain: `python -m pytest -q -o addopts='' -m windows_integration tests/integration/windows/test_snapshot_from_preflight.py`
 - Expected GREEN: exact sealed preflight builds one verified deterministic Snapshot and every size/order/content/object/policy drift rejects.
 
 **Completion evidence:** Not yet executed.
@@ -6921,7 +6966,7 @@ def test_file_segment_requires_canonical_path() -> None:
 
 **Goal:** Canonicalize disclosure scopes and match ROOT/FILE/DIRECTORY only at exact path-segment boundaries.
 
-**Dependencies:** Tasks 4.D, 5.A, and 15.A.
+**Dependencies:** Tasks 4.D, 5.E, and 15.A.
 
 **Files:**
 - Create: `src/vespercode/governance/disclosure_scope.py`
@@ -6980,20 +7025,19 @@ def test_subject_uses_frozen_endpoint_not_request_url() -> None:
 
 **Completion evidence:** Not yet executed.
 
-#### Task 15.D: Disclosure Grant Decision and Revocation Lifecycle
+#### Task 15.D: Disclosure Grant Decision Lifecycle
 
 **Status:** Not started
 
-**Goal:** Atomically approve/reject/expire/stale/replay the exact disclosure wait and explicitly revoke only a matching active Grant.
+**Goal:** Atomically approve/reject/expire/stale/replay the exact disclosure wait and create at most one matching active Grant.
 
 **Dependencies:** Tasks 4.C, 5.B, 7.B, 7.C, and 15.C.
 
 **Files:**
 - Create: `src/vespercode/governance/disclosure_decision.py`
 - Test: `tests/unit/governance/test_disclosure_decision.py`
-- Test: `tests/unit/governance/test_disclosure_revocation.py`
 
-**Interfaces:** Produces `DisclosureGrantV1`, `DecideDisclosureGrantV1`, `DisclosureDecisionResultV1`, `RevokeDisclosureGrantV1`, `DisclosureDecisionServiceV1.decide(command: DecideDisclosureGrantV1) -> DisclosureDecisionResultV1`, and `DisclosureDecisionServiceV1.revoke(command: RevokeDisclosureGrantV1) -> GrantMutationResultV1`.
+**Interfaces:** Produces `DisclosureGrantV1`, `DecideDisclosureGrantV1`, `DisclosureDecisionResultV1`, and `DisclosureDecisionServiceV1.decide(command: DecideDisclosureGrantV1) -> DisclosureDecisionResultV1`.
 
 **Intentionally failing test:**
 
@@ -7003,14 +7047,14 @@ def test_expired_disclosure_wait_creates_no_grant(service: DisclosureDecisionSer
     assert service.grant_count() == 0
 ```
 
-**Expected RED:** no transaction-bound Grant decision/revocation lifecycle exists.
+**Expected RED:** no transaction-bound Grant decision lifecycle exists.
 
-**Implementation boundary:** Own wait decision, active/exhausted/revoked state mutation, idempotency, and return-to-loop transition. Do not validate request bodies or authorize/charge a prepared request.
+**Implementation boundary:** Own wait decision, active Grant creation, expiry/stale/replay handling, idempotency, and return-to-loop transition. Do not revoke Grants, validate request bodies, or authorize/charge a prepared request.
 
 **Verification:**
 - Target: `python -m pytest -q tests/unit/governance/test_disclosure_decision.py::test_expired_disclosure_wait_creates_no_grant`
-- Domain: `python -m pytest -q tests/unit/governance/test_disclosure_decision.py tests/unit/governance/test_disclosure_revocation.py`
-- Expected GREEN: approve/reject/expire/stale/replay/revoke cases are atomic and never create duplicate/invalid Grants.
+- Domain: `python -m pytest -q tests/unit/governance/test_disclosure_decision.py`
+- Expected GREEN: approve/reject/expire/stale/replay cases are atomic and never create duplicate/invalid Grants.
 
 **Completion evidence:** Not yet executed.
 
@@ -7020,7 +7064,7 @@ def test_expired_disclosure_wait_creates_no_grant(service: DisclosureDecisionSer
 
 **Goal:** Revalidate one prepared request against the current active Grant and atomically charge cumulative bytes exactly once under races.
 
-**Dependencies:** Tasks 7.A, 7.C, 15.A, 15.B, 15.C, and 15.D.
+**Dependencies:** Tasks 7.A, 7.C, 15.A, 15.B, 15.C, 15.D, and 15.F.
 
 **Files:**
 - Create: `src/vespercode/governance/disclosure_ledger.py`
@@ -7045,6 +7089,42 @@ def test_two_requests_cannot_overdraw_one_grant(ledger: DisclosureLedger) -> Non
 - Target: `python -m pytest -q tests/unit/governance/test_disclosure_budget_race.py::test_two_requests_cannot_overdraw_one_grant`
 - Domain: `python -m pytest -q tests/unit/governance/test_disclosure_ledger.py tests/unit/governance/test_disclosure_budget_race.py`
 - Expected GREEN: only exact authorized requests commit one charge; scope/expiry/revocation/budget/race failures charge zero.
+
+**Completion evidence:** Not yet executed.
+
+#### Task 15.F: Active Disclosure Grant Revocation
+
+**Status:** Not started
+
+**Goal:** Atomically revoke only the exact matching active disclosure Grant, with idempotent replay and no mutation for stale or mismatched subjects.
+
+**Dependencies:** Tasks 7.A, 7.C, 15.C, and 15.D.
+
+**Files:**
+- Create: `src/vespercode/governance/disclosure_revocation.py`
+- Test: `tests/unit/governance/test_disclosure_revocation.py`
+
+**Interfaces:** Produces `RevokeDisclosureGrantV1`, `GrantMutationResultV1`, and `DisclosureRevocationServiceV1.revoke(command: RevokeDisclosureGrantV1) -> GrantMutationResultV1`.
+
+**Intentionally failing test:**
+
+```python
+def test_revoke_rejects_mismatched_subject(
+    service: DisclosureRevocationServiceV1,
+) -> None:
+    result = service.revoke(revoke_command_for_other_subject())
+    assert result.kind == "SUBJECT_MISMATCH"
+    assert service.active_grant_count() == 1
+```
+
+**Expected RED:** no separate transaction-bound disclosure revocation service exists.
+
+**Implementation boundary:** Own active-to-revoked mutation, subject/run binding, and idempotent revocation replay only. Do not approve/reject/expire waits, create Grants, authorize prepared requests, charge budgets, or refund committed charges.
+
+**Verification:**
+- Target: `python -m pytest -q tests/unit/governance/test_disclosure_revocation.py::test_revoke_rejects_mismatched_subject`
+- Domain: `python -m pytest -q tests/unit/governance/test_disclosure_revocation.py`
+- Expected GREEN: only the exact active Grant revokes once; stale/mismatched/replayed commands are deterministic, mutate no unrelated Grant, and both commands exit `0`.
 
 **Completion evidence:** Not yet executed.
 
@@ -7305,8 +7385,8 @@ def test_materialization_rejects_content_object_digest_drift() -> None:
 **Implementation boundary:** Own fresh root allocation, exact content write, identity/path verification, and pre-execution digest. Do not create containers, interpret checks, or persist to the real workspace.
 
 **Verification:**
-- Target: `python -m pytest -q tests/unit/execution/test_materialization.py::test_materialization_rejects_content_object_digest_drift`
-- Domain: `python -m pytest -q tests/unit/execution/test_materialization.py tests/integration/docker/test_fresh_candidate_materialization.py`
+- Target: `python -m pytest -q -o addopts='' -m docker_integration tests/integration/docker/test_fresh_candidate_materialization.py::test_materialization_rejects_content_object_digest_drift`
+- Domain: `python -m pytest -q -o addopts='' -m docker_integration tests/integration/docker/test_fresh_candidate_materialization.py`
 - Expected GREEN: each invocation creates a unique verified root and every content/path/object drift fails before Docker.
 
 **Completion evidence:** Not yet executed.
@@ -7341,8 +7421,8 @@ def test_output_limit_kills_exact_container(executor: DockerExecutor) -> None:
 **Implementation boundary:** Own container creation, isolation, deadline, bounded collectors, stop/kill, and raw evidence only. Do not parse PASS/FAIL or delete materialization roots.
 
 **Verification:**
-- Target: `python -m pytest -q tests/integration/docker/test_execution_output_limits.py::test_output_limit_kills_exact_container`
-- Domain: `python -m pytest -q tests/unit/execution/test_docker_executor.py tests/integration/docker/test_execution_isolation.py tests/integration/docker/test_execution_output_limits.py`
+- Target: `python -m pytest -q -o addopts='' -m docker_integration tests/integration/docker/test_execution_output_limits.py::test_output_limit_kills_exact_container`
+- Domain: `python -m pytest -q -o addopts='' -m docker_integration tests/integration/docker/test_execution_isolation.py tests/integration/docker/test_execution_output_limits.py`
 - Expected GREEN: exact isolation/resource/deadline/output controls hold and each execution returns bounded raw evidence.
 
 **Completion evidence:** Not yet executed.
@@ -7375,8 +7455,8 @@ def test_post_execution_candidate_mutation_fails_closed() -> None:
 **Implementation boundary:** Own post-run byte verification and exact cleanup/residue evidence only. Do not execute checks, classify check outcomes, reuse roots, or mutate the real workspace.
 
 **Verification:**
-- Target: `python -m pytest -q tests/integration/docker/test_execution_workspace_integrity.py::test_post_execution_candidate_mutation_fails_closed`
-- Domain: `python -m pytest -q tests/integration/docker/test_execution_cleanup.py tests/integration/docker/test_execution_workspace_integrity.py`
+- Target: `python -m pytest -q -o addopts='' -m docker_integration tests/integration/docker/test_execution_workspace_integrity.py::test_post_execution_candidate_mutation_fails_closed`
+- Domain: `python -m pytest -q -o addopts='' -m docker_integration tests/integration/docker/test_execution_cleanup.py tests/integration/docker/test_execution_workspace_integrity.py`
 - Expected GREEN: clean runs remove exact resources; mutation/link/cleanup failures return explicit non-success residue evidence.
 
 **Completion evidence:** Not yet executed.
@@ -7656,8 +7736,8 @@ def test_executor_must_run_every_frozen_request_once(executor: SpyDockerExecutio
 **Implementation boundary:** Own ordered invocation and complete raw/check evidence collection. Do not choose checks, alter the plan, evaluate formal success, return to loop, or create approvals.
 
 **Verification:**
-- Target: `python -m pytest -q tests/integration/docker/test_formal_execution_completeness.py::test_executor_must_run_every_frozen_request_once`
-- Domain: `python -m pytest -q tests/integration/docker/test_reference_formal_validation.py tests/integration/docker/test_formal_execution_completeness.py`
+- Target: `python -m pytest -q -o addopts='' -m docker_integration tests/integration/docker/test_formal_execution_completeness.py::test_executor_must_run_every_frozen_request_once`
+- Domain: `python -m pytest -q -o addopts='' -m docker_integration tests/integration/docker/test_reference_formal_validation.py tests/integration/docker/test_formal_execution_completeness.py`
 - Expected GREEN: every frozen request runs once with fresh boundaries and missing/duplicate/cleanup-failed evidence remains explicit.
 
 **Completion evidence:** Not yet executed.
@@ -9646,7 +9726,7 @@ def test_readme_fails_when_release_digest_verification_is_missing(
 
 **SPEC references:** Milestone 37 process/log evidence and course Superpowers-workflow requirements.
 
-**Dependencies:** Tasks 1.A, 1.B, 1.C, 1.D, 1.E, 2.A, 2.B, 2.C, 2.D, 2.E, 2.F, 2.G, 3.A, 3.B, 3.C, 3.D, 3.E, 3.F, 3.G, 4.A, 4.B, 4.C, 4.D, 4.E, 5.A, 5.B, 5.C, 5.D, 6.A, 6.B, 6.C, 6.D, 6.E, 7.A, 7.B, 7.C, 8.A, 8.B, 9.A, 9.B, 9.C, 9.D, 10.A, 10.B, 10.C, 11.A, 11.B, 12.A, 12.B, 12.C, 12.D, 13, 14.A, 14.B, 14.C, 15.A, 15.B, 15.C, 15.D, 15.E, 16.A, 16.B, 17.A, 17.B, 17.C, 18.A, 18.B, 18.C, 18.D, 19.A, 19.B, 19.C, 20.A, 20.B, 21.A, 21.B, 21.C, 22.A, 22.B, 22.C, 23.A, 23.B, 23.C, 24.A, 24.B, 24.C, 25.A, 25.B, 25.C, 25.D, 25.E, 25.F, 25.G, 26.A, 26.B, 26.C, 27.A, 27.B, 28.A, 28.B, 29.A, 29.B, 29.C, 30.A, 30.B, 31.A, 31.B, 31.C, 32.A, 32.B, 32.C, 33.A, 33.B, 34.A, 34.B, 35.A, 35.B, 35.C, 36.A, 36.B, 36.C, 38.A, 38.B, 38.C, 38.D, 38.E, 38.F, and 38.G.
+**Dependencies:** Tasks 1.A, 1.B, 1.C, 1.D, 1.E, 2.A, 2.B, 2.C, 2.D, 2.E, 2.F, 2.G, 3.A, 3.B, 3.C, 3.D, 3.E, 3.F, 3.G, 4.A, 4.B, 4.C, 4.D, 4.E, 5.A, 5.B, 5.C, 5.D, 5.E, 6.A, 6.B, 6.C, 6.D, 6.E, 7.A, 7.B, 7.C, 8.A, 8.B, 9.A, 9.B, 9.C, 9.D, 10.A, 10.B, 10.C, 11.A, 11.B, 12.A, 12.B, 12.C, 12.D, 13, 14.A, 14.B, 14.C, 15.A, 15.B, 15.C, 15.D, 15.E, 15.F, 16.A, 16.B, 17.A, 17.B, 17.C, 18.A, 18.B, 18.C, 18.D, 19.A, 19.B, 19.C, 20.A, 20.B, 21.A, 21.B, 21.C, 22.A, 22.B, 22.C, 23.A, 23.B, 23.C, 24.A, 24.B, 24.C, 25.A, 25.B, 25.C, 25.D, 25.E, 25.F, 25.G, 26.A, 26.B, 26.C, 27.A, 27.B, 28.A, 28.B, 29.A, 29.B, 29.C, 30.A, 30.B, 31.A, 31.B, 31.C, 32.A, 32.B, 32.C, 33.A, 33.B, 34.A, 34.B, 35.A, 35.B, 35.C, 36.A, 36.B, 36.C, 38.A, 38.B, 38.C, 38.D, 38.E, 38.F, and 38.G.
 
 **Blocks:** Task 37.C.
 
@@ -9686,7 +9766,7 @@ def test_process_evidence_rejects_missing_child_task_review(
 
 **Status:** Not started
 
-**Goal:** Aggregate every local/external/process/documentation check and report ready only with all 131 executable Tasks plus a valid student-authored reflection.
+**Goal:** Aggregate every local/external/process/documentation check and report ready only with all 133 executable Tasks plus a valid student-authored reflection.
 
 **SPEC references:** Milestone 37 delivery gate and reflection constraints.
 
@@ -9726,7 +9806,7 @@ def test_delivery_rejects_incomplete_executable_child(
 - Domain: `python -m pytest -q tests/unit/process/test_readme_contract.py tests/unit/process/test_delivery_evidence.py tests/unit/process/test_reflection_contract.py`
 - Delivery: `python scripts/verify_delivery.py --root . --require-live`
 - Reflection: `python scripts/verify_reflection.py REFLECTION.md`
-- Expected: readiness passes only when all 131 executable Tasks, reviews, environments, artifacts, live evidence, documents, and student reflection are current and valid.
+- Expected: readiness passes only when all 133 executable Tasks, reviews, environments, artifacts, live evidence, documents, and student reflection are current and valid.
 
 **Completion evidence:** Not yet executed.
 
@@ -10040,7 +10120,7 @@ def test_every_operations_form_has_label_focus_and_live_error_region(
 
 ## Task Dependency DAG
 
-Milestone ids remain stable traceability containers, but only retained integer Task 13 and the 130 dotted child Tasks are executable. The direct dependency table below is the sole machine-readable edge set.
+Milestone ids remain stable traceability containers, but only retained integer Task 13 and the 132 dotted child Tasks are executable. The direct dependency table below is the sole machine-readable edge set.
 
 The `Task predecessors` column contains only exact executable Task ids separated by commas; `—` means no task predecessor. Human approvals, GO outcomes, identity checks, reflection authorship, and real-platform results remain non-task gates in the executable Task block.
 
@@ -10070,14 +10150,15 @@ The `Task predecessors` column contains only exact executable Task ids separated
 | 4.C | 4.B | Canonical JSON and digest contracts. |
 | 4.D | 4.C | Canonical timestamp and clock contracts. |
 | 4.E | 4.D | Canonical lexical path contract. |
-| 5.A | 4.E | Canonical path and optional-value foundation. |
+| 5.A | 4.A | Closed optional-value foundation. |
 | 5.B | 4.C, 5.A | Canonical time plus location/run identities. |
 | 5.C | 4.B, 5.A, 5.B | Frozen toolchain plus shared action/policy identities. |
-| 5.D | 4.B, 5.A, 5.B, 5.C | Complete closed shared contract set. |
+| 5.D | 4.B, 5.A, 5.B, 5.C, 5.E | Complete closed shared contract set. |
+| 5.E | 4.E | Canonical repository-location and disclosure-scope contracts. |
 | 6.A | 4.D, 5.D | Canonical time plus closed shared contracts. |
 | 6.B | 2.G, 4.B, 5.D | Task 2 reference evidence, toolchain identity, and shared contracts. |
 | 6.C | 4.B, 5.D | Frozen toolchain plus shared endpoint/profile contracts. |
-| 6.D | 5.A, 6.C | Location contracts plus endpoint/profile schemas. |
+| 6.D | 5.E, 6.C | Location contracts plus endpoint/profile schemas. |
 | 6.E | 6.A, 6.B, 6.C, 6.D | Complete validated built-in profile registry and immutable digests. |
 | 7.A | 5.D | Shared storage and transaction identities. |
 | 7.B | 7.A | Checksum-verified control database and migrations. |
@@ -10102,10 +10183,11 @@ The `Task predecessors` column contains only exact executable Task ids separated
 | 14.B | 4.C, 5.B, 7.B, 7.C, 14.A | Canonical time, durable Run state, and exact approval subject. |
 | 14.C | 7.A, 7.C, 14.A, 14.B, 21.C | Transactional storage, one-time approval, and verified-candidate evidence. |
 | 15.A | 4.B, 5.D | Canonical digest and shared disclosure identities. |
-| 15.B | 4.D, 5.A, 15.A | Canonical time/location plus disclosure subject contract. |
+| 15.B | 4.D, 5.E, 15.A | Canonical time/location plus disclosure subject contract. |
 | 15.C | 4.C, 6.C, 6.D, 15.A, 15.B | Endpoint/profile contracts and canonical disclosure bindings. |
 | 15.D | 4.C, 5.B, 7.B, 7.C, 15.C | Canonical time, durable Run state, and disclosure authorization facts. |
-| 15.E | 7.A, 7.C, 15.A, 15.B, 15.C, 15.D | Complete transactional authorization ledger and disclosure grants. |
+| 15.E | 7.A, 7.C, 15.A, 15.B, 15.C, 15.D, 15.F | Complete transactional authorization ledger and disclosure grants. |
+| 15.F | 7.A, 7.C, 15.C, 15.D | Exact active-Grant revocation service. |
 | 16.A | 6.E, 15.E | Frozen LLM profiles and disclosure subjects/ledger. |
 | 16.B | 15.E, 16.A, 27.B | Authorization, prepared-request/call-result contracts, and fresh secret wrapper. |
 | 17.A | 5.C, 11.B, 12.A, 16.A | Closed shared actions, paged tools, strict diff parser, and common `ModelResponse`. |
@@ -10168,7 +10250,7 @@ The `Task predecessors` column contains only exact executable Task ids separated
 | 36.B | 2.G, 33.A, 34.A, 35.C, 36.A | Task 2 frozen digest, wheel/image readiness, protected release rules, and closed evidence schema. |
 | 36.C | 34.B, 35.C, 36.A, 36.B | Demo image, protected CI closure, closed evidence, and released source identity. |
 | 37.A | 31.C, 32.C, 33.B, 34.A, 34.B, 35.C, 36.B, 36.C, 38.G | Stable verified commands, artifacts, URLs/digests, limitations, and browser evidence. |
-| 37.B | 1.A, 1.B, 1.C, 1.D, 1.E, 2.A, 2.B, 2.C, 2.D, 2.E, 2.F, 2.G, 3.A, 3.B, 3.C, 3.D, 3.E, 3.F, 3.G, 4.A, 4.B, 4.C, 4.D, 4.E, 5.A, 5.B, 5.C, 5.D, 6.A, 6.B, 6.C, 6.D, 6.E, 7.A, 7.B, 7.C, 8.A, 8.B, 9.A, 9.B, 9.C, 9.D, 10.A, 10.B, 10.C, 11.A, 11.B, 12.A, 12.B, 12.C, 12.D, 13, 14.A, 14.B, 14.C, 15.A, 15.B, 15.C, 15.D, 15.E, 16.A, 16.B, 17.A, 17.B, 17.C, 18.A, 18.B, 18.C, 18.D, 19.A, 19.B, 19.C, 20.A, 20.B, 21.A, 21.B, 21.C, 22.A, 22.B, 22.C, 23.A, 23.B, 23.C, 24.A, 24.B, 24.C, 25.A, 25.B, 25.C, 25.D, 25.E, 25.F, 25.G, 26.A, 26.B, 26.C, 27.A, 27.B, 28.A, 28.B, 29.A, 29.B, 29.C, 30.A, 30.B, 31.A, 31.B, 31.C, 32.A, 32.B, 32.C, 33.A, 33.B, 34.A, 34.B, 35.A, 35.B, 35.C, 36.A, 36.B, 36.C, 38.A, 38.B, 38.C, 38.D, 38.E, 38.F, 38.G | Complete per-task process evidence through Task 36.C and all Task 38 children. |
+| 37.B | 1.A, 1.B, 1.C, 1.D, 1.E, 2.A, 2.B, 2.C, 2.D, 2.E, 2.F, 2.G, 3.A, 3.B, 3.C, 3.D, 3.E, 3.F, 3.G, 4.A, 4.B, 4.C, 4.D, 4.E, 5.A, 5.B, 5.C, 5.D, 5.E, 6.A, 6.B, 6.C, 6.D, 6.E, 7.A, 7.B, 7.C, 8.A, 8.B, 9.A, 9.B, 9.C, 9.D, 10.A, 10.B, 10.C, 11.A, 11.B, 12.A, 12.B, 12.C, 12.D, 13, 14.A, 14.B, 14.C, 15.A, 15.B, 15.C, 15.D, 15.E, 15.F, 16.A, 16.B, 17.A, 17.B, 17.C, 18.A, 18.B, 18.C, 18.D, 19.A, 19.B, 19.C, 20.A, 20.B, 21.A, 21.B, 21.C, 22.A, 22.B, 22.C, 23.A, 23.B, 23.C, 24.A, 24.B, 24.C, 25.A, 25.B, 25.C, 25.D, 25.E, 25.F, 25.G, 26.A, 26.B, 26.C, 27.A, 27.B, 28.A, 28.B, 29.A, 29.B, 29.C, 30.A, 30.B, 31.A, 31.B, 31.C, 32.A, 32.B, 32.C, 33.A, 33.B, 34.A, 34.B, 35.A, 35.B, 35.C, 36.A, 36.B, 36.C, 38.A, 38.B, 38.C, 38.D, 38.E, 38.F, 38.G | Complete per-task process evidence through Task 36.C and all Task 38 children. |
 | 37.C | 37.A, 37.B | Complete student-authored 1,500–2,500-word reflection and final human readiness decision. |
 | 38.A | 27.B, 28.B, 29.C | Credential service, safe shell, and governance route composition. |
 | 38.B | 22.C, 23.C, 28.B, 29.C | Memory/audit services, safe shell, and governance route composition. |
@@ -10180,7 +10262,7 @@ The `Task predecessors` column contains only exact executable Task ids separated
 
 ## Parallel Worktree Waves
 
-M0, human approval, and cold-start are pre-wave gates, not executable Tasks. There are **71 executable dependency waves** numbered 1–71. The `Executable tasks` column is the sole machine-readable membership set and contains exact Task ids only. Every predecessor must be in an earlier wave; tasks in one row may run in parallel only when their expanded owned core-file sets are disjoint. Evidence merges remain serialized by displayed Task order.
+M0, human approval, and cold-start are pre-wave gates, not executable Tasks. There are **69 executable dependency waves** numbered 1–69. The `Executable tasks` column is the sole machine-readable membership set and contains exact Task ids only. Every predecessor must be in an earlier wave; tasks in one row may run in parallel only when their expanded owned core-file sets are disjoint. Evidence merges remain serialized by displayed Task order.
 
 | Wave | Executable tasks | Execution and conflict rule |
 |---|---|---|
@@ -10201,60 +10283,58 @@ M0, human approval, and cold-start are pre-wave gates, not executable Tasks. The
 | 15 | 3.F | Implement recovery classification and held-mutex proof. |
 | 16 | 3.G | Assemble Task 3 evidence; GO is required before later waves. |
 | 17 | 4.A | Promote the verified gate environment into the formal project/toolchain. |
-| 18 | 4.B | Implement canonical JSON bytes and domain-separated digests. |
+| 18 | 4.B, 5.A | Canonical JSON/digests and optional values own disjoint files. |
 | 19 | 4.C | Implement canonical time and injected clock. |
-| 20 | 4.D | Freeze lexical canonical paths. |
-| 21 | 4.E | Add the redacted changed-file credential scan. |
-| 22 | 5.A | Freeze optional-value and location contracts. |
-| 23 | 5.B | Freeze Run state and durable location identities. |
-| 24 | 5.C | Freeze shared action, policy, and evidence subjects. |
-| 25 | 5.D | Complete the closed shared contract set. |
-| 26 | 6.A, 6.B, 6.C, 7.A, 10.B, 15.A | Profile, storage, content, and disclosure foundations own disjoint files. |
-| 27 | 6.D, 7.B, 15.B | Registry assembly, Run lifecycle, and disclosure subjects own disjoint files. |
-| 28 | 6.E, 7.C, 15.C | Profile validation, idempotency, and authorization rules own disjoint files. |
-| 29 | 8.A, 15.D, 18.A, 23.A, 27.A | Request, ledger storage, Docker request, audit, and credential ports are disjoint. |
-| 30 | 8.B, 15.E, 23.B, 27.B | Admission, authorization ledger, audit repository, and WinCred adapter are disjoint. |
-| 31 | 9.A, 16.A, 23.C, 25.B | Identity, Mock adapter, visibility, and turn boundary own disjoint files. |
-| 32 | 9.B, 16.B, 25.F, 28.A | Mutex, OpenAI transport, restart, and Web security are independent. |
-| 33 | 9.C, 25.C, 28.B | Git preflight, authorized call, and application shell own disjoint files. |
-| 34 | 9.D, 29.B | Path authorization and disclosure UI own disjoint files. |
-| 35 | 10.A | Implement Snapshot capture and supported-text classification. |
-| 36 | 10.C | Seal SnapshotTree and content-object identities. |
-| 37 | 11.A, 12.A, 20.A | Read tools, diff parsing, and static support planning own disjoint files. |
-| 38 | 11.B, 12.B | Paged discovery and CandidateTree overlays own disjoint files. |
-| 39 | 12.C, 17.A | Atomic patch application and action parser own disjoint files. |
-| 40 | 12.D, 17.B | FinalDiff identity and action binding own disjoint files. |
-| 41 | 13, 18.B | Pure policy and Docker isolation inputs own disjoint files. |
-| 42 | 17.C, 18.C | Dispatcher and container lifecycle own disjoint files. |
-| 43 | 18.D | Seal production Docker execution results. |
-| 44 | 19.A | Freeze closed static-tool result contracts. |
-| 45 | 19.B | Implement authoritative pytest event evidence. |
-| 46 | 19.C | Implement stable target failure fingerprints. |
-| 47 | 20.B, 22.A, 24.A | Baseline/Manifest, memory repository, and context facts own disjoint files. |
-| 48 | 21.A, 22.B | Formal predicate and memory authorization own disjoint files. |
-| 49 | 21.B, 22.C, 24.B | Validation execution, memory lifecycle, and context projection own disjoint files. |
-| 50 | 21.C, 24.C | VerifiedCandidate and structured feedback own disjoint files. |
-| 51 | 14.A, 25.D | Approval subject and action pipeline own disjoint files. |
-| 52 | 14.B | Implement one-time approval persistence and expiry. |
-| 53 | 14.C | Complete approval consumption and revocation. |
-| 54 | 25.A, 25.E, 26.A | Stop/progress, wait/cancel, and writeback own disjoint files. |
-| 55 | 25.G, 26.B, 30.A | Loop composition, recovery preview, and Demo core own disjoint files. |
-| 56 | 26.C, 29.A, 30.B, 32.A | Recovery, Run UI, Demo app, and governance trace own disjoint files. |
-| 57 | 29.C, 32.B, 38.E | Governance composition, feedback trace, and recovery CLI are independent. |
-| 58 | 32.C, 38.A, 38.B, 38.C, 38.D | Shared-core proof and four local-operation workflows own disjoint files. |
-| 59 | 34.B, 38.F | Demo OCI smoke and local route composition own disjoint files. |
-| 60 | 31.A, 38.G | Reference happy path and browser acceptance consume frozen composition. |
-| 61 | 31.B | Add reference negative safety/call-gate cases. |
-| 62 | 31.C | Complete persistence/recovery/audit/determinism reference evidence. |
-| 63 | 33.A, 34.A | Wheel build and reference image smoke own disjoint artifacts. |
-| 64 | 33.B | Clean pipx smoke consumes the exact wheel. |
-| 65 | 35.A, 35.B | GitHub Actions and GitLab verification proceed independently. |
-| 66 | 35.C | Protected release rules and dual-platform evidence wait for both platforms. |
-| 67 | 36.A | Freeze closed delivery evidence and identity alignment. |
-| 68 | 36.B | Execute protected GitHub Release/GHCR publication. |
-| 69 | 36.C | Deploy and verify the exact public Demo source commit. |
-| 70 | 37.A, 37.B | README and final process/log evidence use stable producer facts and disjoint files. |
-| 71 | 37.C | Final delivery/reflection gate waits for all executable Tasks and the student-authored reflection. |
+| 20 | 4.D, 5.B | Lexical paths and Run contracts own disjoint files. |
+| 21 | 4.E, 5.C | Credential scan and shared action contracts own disjoint files. |
+| 22 | 5.E | Freeze repository-location and disclosure-scope contracts. |
+| 23 | 5.D | Complete the closed shared contract set. |
+| 24 | 6.A, 6.B, 6.C, 7.A, 10.B, 15.A | Profile, storage, content, and disclosure foundations own disjoint files. |
+| 25 | 6.D, 7.B, 15.B | Registry assembly, Run lifecycle, and disclosure subjects own disjoint files. |
+| 26 | 6.E, 7.C, 15.C | Profile validation, idempotency, and authorization rules own disjoint files. |
+| 27 | 8.A, 15.D, 18.A, 23.A, 27.A | Request, decision, Docker request, audit, and credential ports are disjoint. |
+| 28 | 8.B, 15.F, 23.B, 27.B | Admission, revocation, audit repository, and WinCred adapter are disjoint. |
+| 29 | 9.A, 15.E, 23.C, 25.B | Identity, authorization ledger, visibility, and turn boundary own disjoint files. |
+| 30 | 9.B, 16.A, 25.F, 28.A | Mutex, Mock adapter, restart, and Web security are independent. |
+| 31 | 9.C, 16.B, 28.B | Git preflight, OpenAI transport, and application shell own disjoint files. |
+| 32 | 9.D, 25.C, 29.B | Path authorization, authorized call, and disclosure UI own disjoint files. |
+| 33 | 10.A | Implement Snapshot capture and content objects. |
+| 34 | 10.C | Seal SnapshotTree and content-object identities. |
+| 35 | 11.A, 12.A, 20.A | Read tools, diff parsing, and static support planning own disjoint files. |
+| 36 | 11.B, 12.B | Paged discovery and CandidateTree overlays own disjoint files. |
+| 37 | 12.C, 17.A | Atomic patch application and action parser own disjoint files. |
+| 38 | 12.D, 17.B | FinalDiff identity and action binding own disjoint files. |
+| 39 | 13, 18.B | Pure policy and Docker isolation inputs own disjoint files. |
+| 40 | 17.C, 18.C | Dispatcher and container lifecycle own disjoint files. |
+| 41 | 18.D | Seal production Docker execution results. |
+| 42 | 19.A | Freeze closed static-tool result contracts. |
+| 43 | 19.B | Implement authoritative pytest event evidence. |
+| 44 | 19.C | Implement stable target failure fingerprints. |
+| 45 | 20.B, 22.A, 24.A | Baseline/Manifest, memory repository, and context facts own disjoint files. |
+| 46 | 21.A, 22.B | Formal predicate and memory authorization own disjoint files. |
+| 47 | 21.B, 22.C, 24.B | Validation execution, memory lifecycle, and context projection own disjoint files. |
+| 48 | 21.C, 24.C | VerifiedCandidate and structured feedback own disjoint files. |
+| 49 | 14.A, 25.D | Approval subject and action pipeline own disjoint files. |
+| 50 | 14.B | Implement one-time approval persistence and expiry. |
+| 51 | 14.C | Complete approval consumption and revocation. |
+| 52 | 25.A, 25.E, 26.A | Stop/progress, wait/cancel, and writeback own disjoint files. |
+| 53 | 25.G, 26.B, 30.A | Loop composition, recovery preview, and Demo core own disjoint files. |
+| 54 | 26.C, 29.A, 30.B, 32.A | Recovery, Run UI, Demo app, and governance trace own disjoint files. |
+| 55 | 29.C, 32.B, 38.E | Governance composition, feedback trace, and recovery CLI are independent. |
+| 56 | 32.C, 38.A, 38.B, 38.C, 38.D | Shared-core proof and four local-operation workflows own disjoint files. |
+| 57 | 34.B, 38.F | Demo OCI smoke and local route composition own disjoint files. |
+| 58 | 31.A, 38.G | Reference happy path and browser acceptance consume frozen composition. |
+| 59 | 31.B | Add reference negative safety/call-gate cases. |
+| 60 | 31.C | Complete persistence/recovery/audit/determinism reference evidence. |
+| 61 | 33.A, 34.A | Wheel build and reference image smoke own disjoint artifacts. |
+| 62 | 33.B | Clean pipx smoke consumes the exact wheel. |
+| 63 | 35.A, 35.B | GitHub Actions and GitLab verification proceed independently. |
+| 64 | 35.C | Protected release rules and dual-platform evidence wait for both platforms. |
+| 65 | 36.A | Freeze closed delivery evidence and identity alignment. |
+| 66 | 36.B | Execute protected GitHub Release/GHCR publication. |
+| 67 | 36.C | Deploy and verify the exact public Demo source commit. |
+| 68 | 37.A, 37.B | README and final process/log evidence use stable producer facts and disjoint files. |
+| 69 | 37.C | Final delivery/reflection gate waits for all executable Tasks and the student-authored reflection. |
 
 Every executable task uses a fresh subagent, branch, worktree, and PR. Milestones use none. Parallel worktrees may not update shared execution evidence concurrently: implementation commits may proceed in parallel, but merges and append-only `PLAN.md`/`AGENT_LOG.md` evidence commits occur in displayed task order within the wave.
 
@@ -10288,10 +10368,11 @@ The mechanically checked core-file set is formed only from exact backticked repo
 | 4.C | `src/vespercode/canonical/{timestamp_v1.py,clock.py}` | None | Owns time parsing/conversion and injected clocks only. |
 | 4.D | `src/vespercode/canonical/path_v1.py` | None | Owns lexical path validation only. |
 | 4.E | `scripts/scan_credentials.py` | None | Owns redacted changed-file scanning only. |
-| 5.A | `src/vespercode/contracts/{optional.py,location.py}`; `tests/unit/contracts/{test_optional.py,test_location.py}` | None | Owns optional/location value objects only. |
+| 5.A | `src/vespercode/contracts/optional.py`; `tests/unit/contracts/test_optional.py` | None | Owns closed optional-value objects only. |
 | 5.B | `src/vespercode/contracts/run.py`; `tests/unit/contracts/test_run.py` | None | Owns Run/lifecycle value objects only. |
 | 5.C | `src/vespercode/contracts/action.py`; `tests/unit/contracts/test_action.py` | None | Owns action/policy value objects only. |
 | 5.D | `src/vespercode/contracts/evidence.py`; `tests/unit/contracts/test_evidence.py` | None | Completes shared evidence contracts; duplicate declarations are review failures. |
+| 5.E | `src/vespercode/contracts/location.py`; `tests/unit/contracts/test_location.py` | None | Owns repository-location and disclosure-scope value objects only. |
 | 6.A | `src/vespercode/profiles/editable.py`; `tests/unit/profiles/test_editable.py` | None | Owns editable-policy parsing and digest only. |
 | 6.B | `src/vespercode/profiles/reference.py`; `src/vespercode/profiles/builtin/reference-profile-v1.json`; `tests/unit/profiles/test_reference.py` | Task 2.G authorizes synchronization of `reference/manifest/reference-profile-v1.json` | Task 34.A reproduces the frozen image digest and revalidates these integrity vectors. |
 | 6.C | `src/vespercode/profiles/llm.py`; `src/vespercode/profiles/builtin/{mock-deterministic-v1.json,openai-single-turn-v1.json}`; `tests/unit/profiles/test_llm.py` | None | Owns closed LLM profile schemas and built-ins. |
@@ -10322,8 +10403,9 @@ The mechanically checked core-file set is formed only from exact backticked repo
 | 15.A | `src/vespercode/governance/request_sources.py`; `tests/unit/governance/test_request_sources.py` | None | Owns closed request-source vocabulary only. |
 | 15.B | `src/vespercode/governance/disclosure_scope.py`; `tests/unit/governance/test_disclosure_scope.py` | None | Owns disclosure scope normalization only. |
 | 15.C | `src/vespercode/governance/disclosure_subject.py`; `tests/unit/governance/test_disclosure_subject.py` | None | Owns canonical disclosure subject binding only. |
-| 15.D | `src/vespercode/governance/disclosure_decision.py`; `tests/unit/governance/{test_disclosure_decision.py,test_disclosure_revocation.py}` | None | Owns approval/revocation decision transitions only. |
+| 15.D | `src/vespercode/governance/disclosure_decision.py`; `tests/unit/governance/test_disclosure_decision.py` | None | Owns approval/rejection/expiry/stale/replay decision transitions only. |
 | 15.E | `src/vespercode/governance/disclosure_ledger.py`; `tests/unit/governance/{test_disclosure_ledger.py,test_disclosure_budget_race.py}` | None | LLM/UI tasks consume the transactional authorization ledger only through immutable interfaces. |
+| 15.F | `src/vespercode/governance/disclosure_revocation.py`; `tests/unit/governance/test_disclosure_revocation.py` | None | Owns exact active-Grant revocation and idempotent replay only. |
 | 16.A | `src/vespercode/llm/{base.py,prepared_request.py,mock_adapter.py,call_result.py}` | None | Mock owns no real-provider capability; exact supporting tests are frozen in Task 16.A. |
 | 16.B | `src/vespercode/llm/{openai_serializer.py,openai_adapter.py}` | None | Task 25.C composes the adapter through ports only; exact supporting tests are frozen in Task 16.B. |
 | 17.A | `src/vespercode/loop/{agent_actions.py,action_parser.py}`; `tests/unit/loop/{test_agent_actions.py,test_action_parser.py}` | None | Owns the closed six-action parser only. |
@@ -10407,8 +10489,8 @@ Every task list in the four coverage matrices below contains exact executable Ta
 | US-01 Configure and safely start a run | FR-ADM, FR-LOOP | NFR-PERF, NFR-USE, NFR-SEC | AC-15, AC-16, AC-21, AC-26, AC-28, AC-30, AC-31 | 6.A, 6.B, 6.C, 6.D, 6.E, 7.A, 7.B, 7.C, 8.A, 8.B, 9.A, 9.B, 9.C, 9.D, 10.A, 10.B, 10.C, 20.A, 20.B, 23.A, 23.B, 23.C, 25.A, 25.B, 25.C, 25.D, 25.E, 25.F, 25.G, 28.A, 28.B, 29.A, 29.C | 31.A, 31.B, 31.C, 33.B, 35.A, 35.B, 35.C, 37.A, 37.B, 37.C, 38.G |
 | US-02 Safely manage a real LLM credential | FR-CRED, SPEC §8.1 | NFR-SEC, NFR-PRIV | AC-08 | 16.B, 25.C, 27.A, 27.B, 38.A, 38.F | 31.B, 32.C, 33.B, 35.B, 35.C, 37.C, 38.G |
 | US-03 Repair an existing stable failure | FR-LOOP, FR-WS, FR-VAL | NFR-PERF, NFR-REL | AC-04, AC-05, AC-06, AC-17, AC-18, AC-19, AC-20, AC-25, AC-26, AC-28, AC-31 | 10.A, 10.B, 10.C, 11.A, 11.B, 12.A, 12.B, 12.C, 12.D, 13, 17.A, 17.B, 17.C, 18.A, 18.B, 18.C, 18.D, 19.A, 19.B, 19.C, 20.A, 20.B, 21.A, 21.B, 21.C, 24.A, 24.B, 24.C, 25.A, 25.B, 25.C, 25.D, 25.E, 25.F, 25.G | 31.A, 31.B, 31.C, 32.A, 32.B, 32.C, 34.A, 35.A, 35.B, 37.C |
-| US-04 Control external data disclosure | FR-GOV | NFR-SEC, NFR-PRIV | AC-13, AC-26, AC-27 | 15.A, 15.B, 15.C, 15.D, 15.E, 16.A, 16.B, 24.A, 24.B, 24.C, 25.B, 25.C, 25.G, 29.B, 29.C | 31.B, 32.C, 35.A, 35.B, 35.C, 37.B, 37.C, 38.G |
-| US-05 Rely on deterministic guardrails and one-time approval | FR-GOV | NFR-REL, NFR-SEC | AC-01, AC-02, AC-03, AC-26, AC-27, AC-31 | 9.A, 9.B, 9.C, 9.D, 12.A, 12.B, 12.C, 12.D, 13, 14.A, 14.B, 14.C, 15.A, 15.B, 15.C, 15.D, 15.E, 17.A, 17.B, 17.C, 25.D, 25.E, 25.G | 31.B, 31.C, 32.A, 32.C, 35.A, 35.B, 37.C |
+| US-04 Control external data disclosure | FR-GOV | NFR-SEC, NFR-PRIV | AC-13, AC-26, AC-27 | 15.A, 15.B, 15.C, 15.D, 15.E, 15.F, 16.A, 16.B, 24.A, 24.B, 24.C, 25.B, 25.C, 25.G, 29.B, 29.C | 31.B, 32.C, 35.A, 35.B, 35.C, 37.B, 37.C, 38.G |
+| US-05 Rely on deterministic guardrails and one-time approval | FR-GOV | NFR-REL, NFR-SEC | AC-01, AC-02, AC-03, AC-26, AC-27, AC-31 | 9.A, 9.B, 9.C, 9.D, 12.A, 12.B, 12.C, 12.D, 13, 14.A, 14.B, 14.C, 15.A, 15.B, 15.C, 15.D, 15.E, 15.F, 17.A, 17.B, 17.C, 25.D, 25.E, 25.G | 31.B, 31.C, 32.A, 32.C, 35.A, 35.B, 37.C |
 | US-06 Review, persist, and recover a verified diff | FR-PERSIST | NFR-REL, NFR-SEC | AC-07, AC-21, AC-22, AC-26, AC-29, AC-31 | 3.A, 3.B, 3.C, 3.D, 3.E, 3.F, 3.G, 9.A, 9.B, 9.C, 9.D, 12.A, 12.B, 12.C, 12.D, 14.A, 14.B, 14.C, 21.A, 21.B, 21.C, 26.A, 26.B, 26.C, 29.C, 38.D, 38.E, 38.F | 31.C, 33.B, 35.A, 35.B, 37.C, 38.G |
 | US-07 Inspect and clear repository memory | FR-MEM | NFR-OBS, NFR-PRIV | AC-14, AC-23 | 22.A, 22.B, 22.C, 23.A, 23.B, 23.C, 24.A, 24.B, 24.C, 38.B, 38.F | 31.C, 35.A, 35.B, 37.C, 38.G |
 | US-08 Understand status and audit evidence | FR-LOOP, FR-MEM, FR-UI | NFR-USE, NFR-OBS | AC-06, AC-16, AC-27, AC-28 | 7.A, 7.B, 7.C, 23.A, 23.B, 23.C, 25.F, 25.G, 28.A, 28.B, 29.A, 29.C, 38.C, 38.F | 31.C, 33.B, 35.A, 35.B, 37.A, 37.C, 38.G |
@@ -10419,9 +10501,9 @@ Every task list in the four coverage matrices below contains exact executable Ta
 | Functional requirement | Implementation tasks | Independent verification tasks | Verification/evidence contract |
 |---|---|---|---|
 | FR-ADM — request validation, Run creation, and ordered preflight | 6.A, 6.B, 6.C, 6.D, 6.E, 7.A, 7.B, 7.C, 8.A, 8.B, 9.A, 9.B, 9.C, 9.D, 10.A, 10.B, 10.C, 20.A, 20.B | 31.A, 31.B | Child RED/GREEN suites prove zero-downstream admission failures; Windows checks prove workspace/Git/Snapshot; Task 31.A records the production call order and Task 31.B records denials. |
-| FR-LOOP — loop, action protocol, context, budgets, stopping, and lifecycle | 5.A, 5.B, 5.C, 5.D, 7.B, 7.C, 11.A, 11.B, 15.A, 15.B, 15.C, 15.D, 15.E, 16.A, 16.B, 17.A, 17.B, 17.C, 24.A, 24.B, 24.C, 25.A, 25.B, 25.C, 25.D, 25.E, 25.F, 25.G | 31.A, 31.B, 31.C, 32.A, 32.B, 32.C | Component suites prove action, context, feedback, count, progress, timeout, cancel and restart rules; reference and mechanism traces prove composition. |
+| FR-LOOP — loop, action protocol, context, budgets, stopping, and lifecycle | 5.A, 5.B, 5.C, 5.D, 5.E, 7.B, 7.C, 11.A, 11.B, 15.A, 15.B, 15.C, 15.D, 15.E, 15.F, 16.A, 16.B, 17.A, 17.B, 17.C, 24.A, 24.B, 24.C, 25.A, 25.B, 25.C, 25.D, 25.E, 25.F, 25.G | 31.A, 31.B, 31.C, 32.A, 32.B, 32.C | Component suites prove action, context, feedback, count, progress, timeout, cancel and restart rules; reference and mechanism traces prove composition. |
 | FR-WS — Snapshot, path boundary, strict patches, and CandidateTree | 1.A, 1.B, 1.C, 1.D, 1.E, 4.B, 4.D, 6.A, 6.B, 6.C, 6.D, 6.E, 9.A, 9.B, 9.C, 9.D, 10.A, 10.B, 10.C, 11.A, 11.B, 12.A, 12.B, 12.C, 12.D | 31.A, 31.B, 32.A, 32.B | Task 1.E `GO` and Tasks 9.A–9.D Windows evidence prove object/path behavior; domain suites and later traces prove legal correction, cursor continuity, and denials. |
-| FR-GOV — policy, final approval, disclosure, and real LLM authorization | 13, 14.A, 14.B, 14.C, 15.A, 15.B, 15.C, 15.D, 15.E, 16.A, 16.B, 25.B, 25.C, 25.D, 25.E, 25.G, 29.B, 29.C | 31.B, 31.C, 32.A, 32.C, 38.G | Pure governance tests plus reference/mechanism/browser traces prove no unauthorized dispatch, network, approval consumption, or write. |
+| FR-GOV — policy, final approval, disclosure, and real LLM authorization | 13, 14.A, 14.B, 14.C, 15.A, 15.B, 15.C, 15.D, 15.E, 15.F, 16.A, 16.B, 25.B, 25.C, 25.D, 25.E, 25.G, 29.B, 29.C | 31.B, 31.C, 32.A, 32.C, 38.G | Pure governance tests plus reference/mechanism/browser traces prove no unauthorized dispatch, network, approval consumption, or write. |
 | FR-VAL — Python adapter, Baseline, checks, Manifest, feedback, and formal success | 18.A, 18.B, 18.C, 18.D, 19.A, 19.B, 19.C, 20.A, 20.B, 21.A, 21.B, 21.C, 24.A, 24.B, 24.C, 25.D, 25.G | 31.A, 31.C, 34.A | Docker commands prove isolation/report/Baseline/formal behavior; the reference flow and image smoke preserve the same Manifest and evidence. |
 | FR-PERSIST — final approval, controlled writeback, and recovery | 3.A, 3.B, 3.C, 3.D, 3.E, 3.F, 3.G, 9.A, 9.B, 9.C, 9.D, 12.A, 12.B, 12.C, 12.D, 14.A, 14.B, 14.C, 21.A, 21.B, 21.C, 26.A, 26.B, 26.C, 29.C, 38.D, 38.E, 38.F | 31.C, 33.B, 38.G | Task 3.G gate, production fault/Windows tests, recovery UI/CLI, reference terminal trace, and installed smoke prove exact writeback and three-value recovery. |
 | FR-MEM — memory and audit | 22.A, 22.B, 22.C, 23.A, 23.B, 23.C, 24.A, 24.B, 24.C, 38.B, 38.C, 38.F | 31.C, 38.G | Domain suites prove isolation/authority/order/retention; reference and browser evidence prove scoped visible operations. |
@@ -10432,19 +10514,19 @@ Every task list in the four coverage matrices below contains exact executable Ta
 
 | Non-functional requirement | Implementation tasks | Independent verification tasks | Test environment / release evidence |
 |---|---|---|---|
-| NFR-PERF — hard budgets and bounded resources | 5.A, 5.B, 5.C, 5.D, 8.A, 8.B, 11.A, 11.B, 15.A, 15.B, 15.C, 15.D, 15.E, 16.A, 16.B, 18.A, 18.B, 18.C, 18.D, 24.A, 24.B, 24.C, 25.A, 25.B, 25.C, 25.D, 25.E, 25.G, 30.A, 30.B | 31.A, 31.B, 32.B, 34.A, 34.B | FakeClock and boundary tests prove pre-side-effect limits; Docker/Demo image smoke and reference traces prove real resource ceilings. |
-| NFR-REL — deterministic and fail-closed behavior | 1.A, 1.B, 1.C, 1.D, 1.E, 2.A, 2.B, 2.C, 2.D, 2.E, 2.F, 2.G, 3.A, 3.B, 3.C, 3.D, 3.E, 3.F, 3.G, 4.A, 4.B, 4.C, 4.D, 4.E, 5.A, 5.B, 5.C, 5.D, 6.A, 6.B, 6.C, 6.D, 6.E, 7.A, 7.B, 7.C, 8.A, 8.B, 9.A, 9.B, 9.C, 9.D, 10.A, 10.B, 10.C, 11.A, 11.B, 12.A, 12.B, 12.C, 12.D, 13, 14.A, 14.B, 14.C, 15.A, 15.B, 15.C, 15.D, 15.E, 16.A, 16.B, 17.A, 17.B, 17.C, 18.A, 18.B, 18.C, 18.D, 19.A, 19.B, 19.C, 20.A, 20.B, 21.A, 21.B, 21.C, 22.A, 22.B, 22.C, 23.A, 23.B, 23.C, 24.A, 24.B, 24.C, 25.A, 25.B, 25.C, 25.D, 25.E, 25.F, 25.G, 26.A, 26.B, 26.C, 30.A | 30.B, 31.A, 31.B, 31.C, 32.A, 32.B, 32.C, 37.C | Gate identity, canonical vectors, immutable structures, closed schemas, transactions, repeated semantic traces, shared-core provenance, and final missing-evidence rejection prove determinism/fail-close. |
+| NFR-PERF — hard budgets and bounded resources | 5.A, 5.B, 5.C, 5.D, 5.E, 8.A, 8.B, 11.A, 11.B, 15.A, 15.B, 15.C, 15.D, 15.E, 15.F, 16.A, 16.B, 18.A, 18.B, 18.C, 18.D, 24.A, 24.B, 24.C, 25.A, 25.B, 25.C, 25.D, 25.E, 25.G, 30.A, 30.B | 31.A, 31.B, 32.B, 34.A, 34.B | FakeClock and boundary tests prove pre-side-effect limits; Docker/Demo image smoke and reference traces prove real resource ceilings. |
+| NFR-REL — deterministic and fail-closed behavior | 1.A, 1.B, 1.C, 1.D, 1.E, 2.A, 2.B, 2.C, 2.D, 2.E, 2.F, 2.G, 3.A, 3.B, 3.C, 3.D, 3.E, 3.F, 3.G, 4.A, 4.B, 4.C, 4.D, 4.E, 5.A, 5.B, 5.C, 5.D, 5.E, 6.A, 6.B, 6.C, 6.D, 6.E, 7.A, 7.B, 7.C, 8.A, 8.B, 9.A, 9.B, 9.C, 9.D, 10.A, 10.B, 10.C, 11.A, 11.B, 12.A, 12.B, 12.C, 12.D, 13, 14.A, 14.B, 14.C, 15.A, 15.B, 15.C, 15.D, 15.E, 15.F, 16.A, 16.B, 17.A, 17.B, 17.C, 18.A, 18.B, 18.C, 18.D, 19.A, 19.B, 19.C, 20.A, 20.B, 21.A, 21.B, 21.C, 22.A, 22.B, 22.C, 23.A, 23.B, 23.C, 24.A, 24.B, 24.C, 25.A, 25.B, 25.C, 25.D, 25.E, 25.F, 25.G, 26.A, 26.B, 26.C, 30.A | 30.B, 31.A, 31.B, 31.C, 32.A, 32.B, 32.C, 37.C | Gate identity, canonical vectors, immutable structures, closed schemas, transactions, repeated semantic traces, shared-core provenance, and final missing-evidence rejection prove determinism/fail-close. |
 | NFR-USE — understandable status, decisions, diff, and recovery | 23.A, 23.B, 23.C, 28.A, 28.B, 29.A, 29.B, 29.C, 37.A, 38.A, 38.B, 38.C, 38.D, 38.E, 38.F | 33.B, 38.G | Local WebUI/browser/accessibility tests, installed UI smoke, and README contract prove understandable non-color-only operation. |
 | NFR-OBS — ordered evidence and categorized CI/release records | 7.A, 7.B, 7.C, 23.A, 23.B, 23.C, 31.A, 31.B, 31.C, 32.A, 32.B, 32.C, 35.A, 35.B, 35.C, 36.A, 36.B, 36.C, 38.C, 38.F | 37.B, 37.C, 38.G | Audit concurrency, deterministic reports, real dual-platform records, release/deployment JSON, browser evidence, and evidence-age checks prove observability. |
-| NFR-SEC — declared threat-boundary mechanisms | 1.A, 1.B, 1.C, 1.D, 1.E, 2.A, 2.B, 2.C, 2.D, 2.E, 2.F, 2.G, 3.A, 3.B, 3.C, 3.D, 3.E, 3.F, 3.G, 6.A, 6.B, 6.C, 6.D, 6.E, 9.A, 9.B, 9.C, 9.D, 12.A, 12.B, 12.C, 12.D, 13, 14.A, 14.B, 14.C, 15.A, 15.B, 15.C, 15.D, 15.E, 16.A, 16.B, 17.A, 17.B, 17.C, 18.A, 18.B, 18.C, 18.D, 21.A, 21.B, 21.C, 25.A, 25.B, 25.C, 25.D, 25.E, 25.F, 25.G, 26.A, 26.B, 26.C, 27.A, 27.B, 28.A, 28.B, 29.A, 29.B, 29.C, 30.A, 30.B, 35.A, 35.B, 35.C, 36.A, 36.B, 38.A, 38.B, 38.C, 38.D, 38.E, 38.F | 31.B, 31.C, 32.A, 32.C, 34.A, 34.B, 36.C, 37.C, 38.G | Windows/Docker/fault/Web/Demo/dual-CI/live checks plus every credential scan prove the declared boundary without overclaiming SPEC §5.5. |
-| NFR-PRIV — local retention and minimal disclosure/storage | 15.A, 15.B, 15.C, 15.D, 15.E, 16.A, 16.B, 22.A, 22.B, 22.C, 23.A, 23.B, 23.C, 26.A, 26.B, 26.C, 27.A, 27.B, 30.A, 30.B, 36.A, 38.A, 38.B, 38.C, 38.D, 38.F | 31.B, 31.C, 32.C, 36.C, 38.G | Source/record rejection, ACL/retention, WinCred, no-disk Demo, non-secret evidence, and local response scans prove minimal disclosure/storage. |
+| NFR-SEC — declared threat-boundary mechanisms | 1.A, 1.B, 1.C, 1.D, 1.E, 2.A, 2.B, 2.C, 2.D, 2.E, 2.F, 2.G, 3.A, 3.B, 3.C, 3.D, 3.E, 3.F, 3.G, 6.A, 6.B, 6.C, 6.D, 6.E, 9.A, 9.B, 9.C, 9.D, 12.A, 12.B, 12.C, 12.D, 13, 14.A, 14.B, 14.C, 15.A, 15.B, 15.C, 15.D, 15.E, 15.F, 16.A, 16.B, 17.A, 17.B, 17.C, 18.A, 18.B, 18.C, 18.D, 21.A, 21.B, 21.C, 25.A, 25.B, 25.C, 25.D, 25.E, 25.F, 25.G, 26.A, 26.B, 26.C, 27.A, 27.B, 28.A, 28.B, 29.A, 29.B, 29.C, 30.A, 30.B, 35.A, 35.B, 35.C, 36.A, 36.B, 38.A, 38.B, 38.C, 38.D, 38.E, 38.F | 31.B, 31.C, 32.A, 32.C, 34.A, 34.B, 36.C, 37.C, 38.G | Windows/Docker/fault/Web/Demo/dual-CI/live checks plus every credential scan prove the declared boundary without overclaiming SPEC §5.5. |
+| NFR-PRIV — local retention and minimal disclosure/storage | 15.A, 15.B, 15.C, 15.D, 15.E, 15.F, 16.A, 16.B, 22.A, 22.B, 22.C, 23.A, 23.B, 23.C, 26.A, 26.B, 26.C, 27.A, 27.B, 30.A, 30.B, 36.A, 38.A, 38.B, 38.C, 38.D, 38.F | 31.B, 31.C, 32.C, 36.C, 38.G | Source/record rejection, ACL/retention, WinCred, no-disk Demo, non-secret evidence, and local response scans prove minimal disclosure/storage. |
 
 ## AC Coverage Matrix
 
 | AC | Implementation tasks | Independent validation tasks | Concrete test / required delivery evidence |
 |---|---|---|---|
 | AC-01 | 1.A, 1.B, 1.C, 1.D, 1.E, 4.B, 4.D, 9.A, 9.B, 9.C, 9.D, 12.A, 12.B, 12.C, 12.D, 13 | 31.B, 32.A | Win32 gate/object tests, strict patch tests, Task 1.E `GO`, Windows job log, and denial traces. |
-| AC-02 | 13, 14.A, 14.B, 14.C, 15.A, 15.B, 15.C, 15.D, 15.E, 17.A, 17.B, 17.C, 25.D, 30.A | 32.A, 32.C | Policy precedence, shared-core Demo composition, and mechanism hard-DENY report prove zero dispatch/publication. |
+| AC-02 | 13, 14.A, 14.B, 14.C, 15.A, 15.B, 15.C, 15.D, 15.E, 15.F, 17.A, 17.B, 17.C, 25.D, 30.A | 32.A, 32.C | Policy precedence, shared-core Demo composition, and mechanism hard-DENY report prove zero dispatch/publication. |
 | AC-03 | 7.B, 7.C, 12.C, 12.D, 13, 14.A, 14.B, 14.C, 20.B, 21.A, 21.B, 21.C, 26.A | 31.B, 31.C, 32.A | Subject/approval/race tests and stale/expiry/duplicate approval traces prove zero write. |
 | AC-04 | 12.A, 12.B, 12.C, 12.D, 13, 20.A, 20.B, 21.A, 21.B, 21.C | 31.B, 32.A | Patch/formal/protected-artifact tests and reference/mechanism zero-container evidence. |
 | AC-05 | 16.A, 19.A, 19.B, 19.C, 24.A, 24.B, 24.C, 25.D, 25.G, 30.A | 31.A, 32.B, 32.C | Main-loop, shared-core, and feedback-recovery traces prove the Task 24.C feedback consumption changes the next action once. |
@@ -10455,11 +10537,11 @@ Every task list in the four coverage matrices below contains exact executable Ta
 | AC-10 | 4.A, 35.A, 35.B, 37.C | 35.C, 36.A, 37.B | `python -m pytest -q`, exact GitHub/GitLab contract tests, real unit-test jobs, and final process report. |
 | AC-11 | 28.A, 28.B, 29.A, 29.B, 29.C, 33.A, 33.B, 35.A, 35.B, 35.C, 36.A, 36.B, 37.A, 38.A, 38.B, 38.C, 38.D, 38.E, 38.F | 37.C, 38.G | Clean pipx/installed CLI/WebUI, real wheel job, GitHub Release wheel/SHA, and verified install/start instructions. |
 | AC-12 | 30.A, 30.B, 34.B, 35.A, 35.B, 35.C, 36.A, 36.C | 32.C, 37.C | Demo container health/capability smoke, real image-build log/digest, Render URL, and live `/healthz`. |
-| AC-13 | 6.A, 6.B, 6.C, 6.D, 6.E, 15.A, 15.B, 15.C, 15.D, 15.E, 16.A, 16.B, 24.A, 24.B, 24.C, 25.B, 25.C, 25.G, 27.A, 27.B, 29.B, 29.C | 31.B, 32.C | Source/scope/budget, fresh credential, counting, adapter, disclosure UI, and zero-side-effect reference/mechanism traces. |
+| AC-13 | 6.A, 6.B, 6.C, 6.D, 6.E, 15.A, 15.B, 15.C, 15.D, 15.E, 15.F, 16.A, 16.B, 24.A, 24.B, 24.C, 25.B, 25.C, 25.G, 27.A, 27.B, 29.B, 29.C | 31.B, 32.C | Source/scope/budget, fresh credential, counting, adapter, disclosure UI, and zero-side-effect reference/mechanism traces. |
 | AC-14 | 22.A, 22.B, 22.C, 24.A, 24.B, 24.C, 38.B, 38.F | 31.C, 38.G | Memory repository/authorization/context tests plus cross-workspace/clear and visible-operation evidence. |
 | AC-15 | 6.A, 6.B, 6.C, 6.D, 6.E, 8.A, 8.B, 9.A, 9.B, 9.C, 9.D, 10.A, 10.B, 10.C, 20.A, 20.B, 25.B, 25.G | 31.A | Admission-order/static tests, Windows identity/Snapshot checks, and exact PREFLIGHT/one-Snapshot E2E trace. |
 | AC-16 | 7.A, 7.B, 7.C, 23.A, 23.B, 23.C, 25.F, 25.G, 28.A, 28.B, 29.A, 38.C, 38.F | 31.C, 33.B, 38.G | Audit projection/status/run/audit Web tests plus state trace and installed browser captures. |
-| AC-17 | 5.A, 5.B, 5.C, 5.D, 10.A, 10.B, 10.C, 11.A, 11.B, 17.A, 17.B, 17.C, 30.A | 31.B, 32.B, 32.C | Cursor round-trip/stale/invalid/excerpt, parser/binding, production Demo call sequence, and paged/unpaged traces. |
+| AC-17 | 5.A, 5.B, 5.C, 5.D, 5.E, 10.A, 10.B, 10.C, 11.A, 11.B, 17.A, 17.B, 17.C, 30.A | 31.B, 32.B, 32.C | Cursor round-trip/stale/invalid/excerpt, parser/binding, production Demo call sequence, and paged/unpaged traces. |
 | AC-18 | 10.A, 10.B, 10.C, 12.A, 12.B, 12.C, 12.D, 17.A, 17.B, 17.C, 20.A, 20.B, 21.A, 21.B, 21.C | 31.A, 31.C | FinalDiff/identity/patch/formal tests plus cumulative-patch, stale identity, and verified-candidate report. |
 | AC-19 | 2.A, 2.B, 2.C, 2.D, 2.E, 2.F, 2.G, 18.A, 18.B, 18.C, 18.D, 19.A, 19.B, 19.C, 20.B, 34.A | 31.A, 35.A, 35.B | Docker gate/isolation/reference baseline, frozen digest, image smoke, and real reference-image-build logs. |
 | AC-20 | 19.A, 19.B, 19.C, 20.A, 20.B, 21.A, 21.B, 21.C | 31.A, 31.C, 34.A | Formal predicate/reference Docker validation plus VerifiedCandidate digest and container smoke. |
@@ -10468,9 +10550,9 @@ Every task list in the four coverage matrices below contains exact executable Ta
 | AC-23 | 22.A, 22.B, 22.C, 38.B, 38.F | 31.C, 38.G | Memory authorization and Web workflow plus creator/source audit and scoped-form evidence. |
 | AC-24 | 1.A, 1.B, 1.C, 1.D, 1.E, 2.A, 2.B, 2.C, 2.D, 2.E, 2.F, 2.G, 3.A, 3.B, 3.C, 3.D, 3.E, 3.F, 3.G, 4.A, 4.B, 4.C, 4.D, 4.E, 18.A, 18.B, 18.C, 18.D, 19.A, 19.B, 19.C, 20.A, 20.B, 21.A, 21.B, 21.C, 26.A, 26.B, 26.C, 27.A, 27.B, 31.A, 31.B, 31.C, 33.A, 33.B, 34.A, 34.B, 35.A, 35.B, 35.C, 36.A, 36.B, 36.C, 37.B | 37.C | Gate identities, dedicated Windows/Docker/E2E/fault/package/OCI/CI/live commands, and categorized URLs/digests in closed evidence JSON. |
 | AC-25 | 2.A, 2.B, 2.C, 2.D, 2.E, 2.F, 2.G, 19.C, 20.B | 31.A, 31.C, 34.A | Gate-only normalized-input comparator, production fingerprint/Baseline tests, and stable full/target digests in reference/image reports. |
-| AC-26 | 4.B, 4.C, 4.D, 5.A, 5.B, 5.C, 5.D, 6.A, 6.B, 6.C, 6.D, 6.E, 10.A, 10.B, 10.C, 12.D, 14.A, 14.B, 14.C, 15.A, 15.B, 15.C, 15.D, 15.E, 16.A, 16.B, 17.A, 17.B, 17.C, 18.A, 18.B, 18.C, 18.D, 19.C, 20.A, 20.B, 21.A, 21.B, 21.C, 24.A, 24.B, 24.C, 25.A, 25.B, 25.C, 25.D, 25.E, 25.F, 25.G | 31.C, 37.B, 37.C | CTV vectors and candidate/profile/request/fingerprint/Manifest/subject digest suites plus cross-process trace and final digest audit. |
-| AC-27 | 7.B, 7.C, 14.A, 14.B, 14.C, 15.A, 15.B, 15.C, 15.D, 15.E, 25.E, 25.G, 29.B, 29.C | 31.B, 31.C, 38.G | Repository/approval/ledger/wait tests plus restart/wait decisions and browser-bound decision evidence. |
-| AC-28 | 5.A, 5.B, 5.C, 5.D, 7.B, 7.C, 8.A, 8.B, 15.A, 15.B, 15.C, 15.D, 15.E, 16.A, 16.B, 17.A, 17.B, 17.C, 24.A, 24.B, 24.C, 25.A, 25.B, 25.C, 25.E, 25.G, 27.A, 27.B | 31.B, 32.C | Counting/stopping/wait/credential/ledger tests plus deadline/order and cleared/unsafe zero-count reports. |
+| AC-26 | 4.B, 4.C, 4.D, 5.A, 5.B, 5.C, 5.D, 5.E, 6.A, 6.B, 6.C, 6.D, 6.E, 10.A, 10.B, 10.C, 12.D, 14.A, 14.B, 14.C, 15.A, 15.B, 15.C, 15.D, 15.E, 15.F, 16.A, 16.B, 17.A, 17.B, 17.C, 18.A, 18.B, 18.C, 18.D, 19.C, 20.A, 20.B, 21.A, 21.B, 21.C, 24.A, 24.B, 24.C, 25.A, 25.B, 25.C, 25.D, 25.E, 25.F, 25.G | 31.C, 37.B, 37.C | CTV vectors and candidate/profile/request/fingerprint/Manifest/subject digest suites plus cross-process trace and final digest audit. |
+| AC-27 | 7.B, 7.C, 14.A, 14.B, 14.C, 15.A, 15.B, 15.C, 15.D, 15.E, 15.F, 25.E, 25.G, 29.B, 29.C | 31.B, 31.C, 38.G | Repository/approval/ledger/wait tests plus restart/wait decisions and browser-bound decision evidence. |
+| AC-28 | 5.A, 5.B, 5.C, 5.D, 5.E, 7.B, 7.C, 8.A, 8.B, 15.A, 15.B, 15.C, 15.D, 15.E, 15.F, 16.A, 16.B, 17.A, 17.B, 17.C, 24.A, 24.B, 24.C, 25.A, 25.B, 25.C, 25.E, 25.G, 27.A, 27.B | 31.B, 32.C | Counting/stopping/wait/credential/ledger tests plus deadline/order and cleared/unsafe zero-count reports. |
 | AC-29 | 3.A, 3.B, 3.C, 3.D, 3.E, 3.F, 3.G, 26.A, 26.B, 26.C, 38.D, 38.E, 38.F | 31.C, 33.B, 38.G | External-change/recovery Web/CLI tests plus preview/apply/new-file and installed preview evidence. |
 | AC-30 | 2.A, 2.B, 2.C, 2.D, 2.E, 2.F, 2.G, 6.A, 6.B, 6.C, 6.D, 6.E, 18.A, 18.B, 18.C, 18.D, 20.B, 34.A, 35.A, 35.B, 35.C, 36.A, 36.B | 37.C | Local OCI/loopback/digest-pull proof, exact reproduction, protected pipeline, released manifest, GHCR RepoDigest, and target pull equality. |
 | AC-31 | 6.A, 6.B, 6.C, 6.D, 6.E, 9.A, 9.B, 9.C, 9.D, 10.A, 10.B, 10.C, 11.A, 11.B, 12.A, 12.B, 12.C, 12.D, 13, 14.A, 14.B, 14.C, 18.A, 18.B, 18.C, 18.D, 20.A, 20.B, 21.A, 21.B, 21.C, 26.A | 31.A, 31.B, 31.C, 32.A, 32.C | Editable/candidate/policy/formal/persistence tamper and Windows alias tests plus legal/illegal mixed-patch and hard-DENY reports. |
@@ -10482,7 +10564,7 @@ Every `Owning tasks` cell below contains exact executable Task ids only. The fea
 | Layer | Exact environment and command | Owning tasks | Required proof | Saved evidence |
 |---|---|---|---|---|
 | Feasibility gate bootstrap | Windows 11 x64; `py -3.12 -m venv .venv-gate`; hash-only install from `requirements/gate.lock`; all checks via `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py {pytest|ruff-format|ruff-check|mypy} -- <explicit-targets>`; Task 2.C starts a digest-pinned registry on `127.0.0.1` with an OS-assigned port | 1.A, 1.B, 1.C, 1.D, 1.E, 2.A, 2.B, 2.C, 2.D, 2.E, 2.F, 2.G, 3.A, 3.B, 3.C, 3.D, 3.E, 3.F, 3.G, 4.A, 37.B, 37.C | Exact dependency hashes/markers/config; no global/Task 4.A config; Task 2.D/2.E/2.F reporter, evidence, and stable failure inputs; fixed OCI parameters, local OCI → loopback RepoDigest → digest-pull equality, zero credentials/external push, no manifest self-reference, verified cleanup; unchanged Milestone 1 identities in Milestones 2 and 3; reviewed Task 4.A promotion | Tool/file SHA-256, install log, registry image/config/bind/cleanup evidence, three equal digests, Milestone 1, 2, and 3 `GO` reports, Task 4.A comparison, Task 37.B recomputation and Task 37.C final gate |
-| Offline unit tests | Python 3.12, no network/Docker/WinCred; `python -m pytest -q` | 4.A, 4.B, 4.C, 4.D, 4.E, 5.A, 5.B, 5.C, 5.D, 6.A, 6.B, 6.C, 6.D, 6.E, 7.A, 7.B, 7.C, 8.A, 8.B, 9.C, 9.D, 10.A, 10.B, 10.C, 11.A, 11.B, 12.A, 12.B, 12.C, 12.D, 13, 14.A, 14.B, 14.C, 15.A, 15.B, 15.C, 15.D, 15.E, 16.A, 16.B, 17.A, 17.B, 17.C, 18.A, 18.B, 18.C, 18.D, 19.A, 19.B, 19.C, 20.A, 20.B, 21.A, 21.B, 21.C, 22.A, 22.B, 22.C, 23.A, 23.B, 23.C, 24.A, 24.B, 24.C, 25.A, 25.B, 25.C, 25.D, 25.E, 25.F, 25.G, 26.A, 26.B, 26.C, 27.A, 28.A, 28.B, 29.A, 29.B, 29.C, 30.A, 30.B, 32.A, 32.B, 32.C, 35.A, 35.B, 35.C, 37.A, 37.B, 37.C, 38.A, 38.B, 38.C, 38.D, 38.E, 38.F, 38.G | Canonical vectors, closed schemas/cursors, Mock/Stub core, policy, requests, per-call credential failure ordering, parsers, transactions, feedback, loop, memory, audit, WebUI client, Demo logic | Local output plus GitHub Actions and GitLab CI `unit-test` report artifacts |
+| Offline unit tests | Python 3.12, no network/Docker/WinCred; `python -m pytest -q` | 4.A, 4.B, 4.C, 4.D, 4.E, 5.A, 5.B, 5.C, 5.D, 5.E, 6.A, 6.B, 6.C, 6.D, 6.E, 7.A, 7.B, 7.C, 8.A, 8.B, 9.C, 9.D, 10.A, 10.B, 10.C, 11.A, 11.B, 12.A, 12.B, 12.C, 12.D, 13, 14.A, 14.B, 14.C, 15.A, 15.B, 15.C, 15.D, 15.E, 15.F, 16.A, 16.B, 17.A, 17.B, 17.C, 18.A, 18.B, 18.C, 18.D, 19.A, 19.B, 19.C, 20.A, 20.B, 21.A, 21.B, 21.C, 22.A, 22.B, 22.C, 23.A, 23.B, 23.C, 24.A, 24.B, 24.C, 25.A, 25.B, 25.C, 25.D, 25.E, 25.F, 25.G, 26.A, 26.B, 26.C, 27.A, 28.A, 28.B, 29.A, 29.B, 29.C, 30.A, 30.B, 32.A, 32.B, 32.C, 35.A, 35.B, 35.C, 37.A, 37.B, 37.C, 38.A, 38.B, 38.C, 38.D, 38.E, 38.F, 38.G | Canonical vectors, closed schemas/cursors, Mock/Stub core, policy, requests, per-call credential failure ordering, parsers, transactions, feedback, loop, memory, audit, WebUI client, Demo logic | Local output plus GitHub Actions and GitLab CI `unit-test` report artifacts |
 | Windows integration tests | Project-specific Windows 11 x64 runner; `python -m pytest -q -o addopts='' -m windows_integration tests/integration/windows tests/feasibility/windows` | 1.A, 1.B, 1.C, 1.D, 1.E, 9.A, 9.B, 9.C, 10.A, 10.B, 10.C, 26.A, 26.C, 27.B | NTFS/Win32 final identity, path collision, ADS, reparse/hard link, named mutex, Git bytes, Snapshot source, ACL, persistence, WinCred lifecycle and fresh per-call lookup | Runner OS/Python/Git versions, test report, cleared credential state |
 | Docker integration tests | Docker Desktop Linux mode; `python -m pytest -q -o addopts='' -m docker_integration tests/integration/docker tests/feasibility/docker` | 2.A, 2.B, 2.C, 2.D, 2.E, 2.F, 2.G, 18.A, 18.B, 18.C, 18.D, 19.B, 20.B, 21.A, 21.B, 21.C | Immutable image/profile mapping, loopback registry round-trip/no-self-reference/cleanup, check containers with no network/root/write/socket, tmpfs/resources, complete reports, Baseline, formal validation | Docker/builder/registry versions, three-way image digest, lifecycle inspection, report/test artifacts |
 | Reference fixture E2E | Windows + Docker + Mock profile; `python -m pytest -q -o addopts='' -m reference_e2e tests/e2e/reference` | 31.A, 31.B, 31.C | Complete production admission → Baseline → feedback correction → formal validation → wait → exact writeback/recovery-block flow | Canonical Task 31.A/31.B/31.C traces/reports, final tree digests, cleanup evidence |
@@ -10502,17 +10584,17 @@ This audit is mandatory after every non-tracking PLAN edit. It parses only the e
 
 | Invariant | Current measured result | Status |
 |---|---|---|
-| Executable registry | 131 unique executable Tasks: retained integer Task 13 plus 130 dotted child Tasks; 37 Milestones remain non-executable containers | PASS |
-| Dependency table | 131 unique rows, 545 exact predecessor edges, one root (`1.A`), zero missing/self/unknown edges | PASS |
-| DAG topology | 131/131 nodes topologically sorted; 131/131 reachable from root `1.A`; zero cycles, isolated nodes, or unreachable nodes | PASS |
-| Executable waves | 71 waves, 131/131 Tasks assigned exactly once, zero predecessor-in-same-or-later-wave violations | PASS |
-| Ownership | 131 unique Task rows, 291 expanded core paths, zero duplicate primary owners | PASS |
+| Executable registry | 133 unique executable Tasks: retained integer Task 13 plus 132 dotted child Tasks; 37 Milestones remain non-executable containers | PASS |
+| Dependency table | 133 unique rows, 554 exact predecessor edges, one root (`1.A`), zero missing/self/unknown edges | PASS |
+| DAG topology | 133/133 nodes topologically sorted; 133/133 reachable from root `1.A`; zero cycles, isolated nodes, or unreachable nodes | PASS |
+| Executable waves | 69 waves, 133/133 Tasks assigned exactly once, zero predecessor-in-same-or-later-wave violations | PASS |
+| Ownership | 133 unique Task rows, 292 expanded core paths, zero duplicate primary owners | PASS |
 | Parallel conflicts | Zero same-wave intersections across expanded core-file ownership sets | PASS |
-| Interface provenance | All 131 Task blocks declare exact `Interfaces` without placeholder signatures; all 545 edges target an existing executable producer or a documented ordering/evidence predecessor. | PASS |
+| Interface provenance | All 133 Task blocks declare exact `Interfaces` without placeholder signatures; all 554 edges target an existing executable producer or a documented ordering/evidence predecessor. | PASS |
 | Requirement coverage | 9/9 US, 9/9 FR, 6/6 NFR, and 31/31 AC rows each have non-empty, valid, disjoint implementation and independent validation Task sets | PASS |
 | Test environments | 12/12 environment rows contain only existing exact executable Task ids | PASS |
 | Stale executable shorthand | Zero ranges, natural-language dependency sets, or aggregate Milestone ids in the canonical DAG, Wave, ownership target, coverage, Test Environment, or Release Gate structures | PASS |
-| Release count | Release Gate requires exactly the same 131 executable Tasks | PASS |
+| Release count | Release Gate requires exactly the same 133 executable Tasks | PASS |
 
 The audit fails closed if a later parser finds a count mismatch, unknown Task id, duplicate membership/owner, cycle, unreachable node, non-earlier dependency, parallel core-file collision, missing producer, uncovered requirement, aggregate Milestone target, range, or natural-language dependency. Stable Milestone headings and their retained non-executable domain contracts are intentional and are not stale executable references.
 
@@ -10520,8 +10602,8 @@ The audit fails closed if a later parser finds a count mismatch, unknown Task id
 
 Release readiness is `PASS` only when every condition below is true at the same source commit:
 
-- All **131 executable Tasks** are complete and each records a real implementation commit SHA, responsible subagent, human edits, exact tests, spec review, code-quality review, and PR URL. All 37 Milestones derive complete status from their exact children and have no aggregate implementation commit or PR.
-- The exact release registry is: 1.A, 1.B, 1.C, 1.D, 1.E, 2.A, 2.B, 2.C, 2.D, 2.E, 2.F, 2.G, 3.A, 3.B, 3.C, 3.D, 3.E, 3.F, 3.G, 4.A, 4.B, 4.C, 4.D, 4.E, 5.A, 5.B, 5.C, 5.D, 6.A, 6.B, 6.C, 6.D, 6.E, 7.A, 7.B, 7.C, 8.A, 8.B, 9.A, 9.B, 9.C, 9.D, 10.A, 10.B, 10.C, 11.A, 11.B, 12.A, 12.B, 12.C, 12.D, 13, 14.A, 14.B, 14.C, 15.A, 15.B, 15.C, 15.D, 15.E, 16.A, 16.B, 17.A, 17.B, 17.C, 18.A, 18.B, 18.C, 18.D, 19.A, 19.B, 19.C, 20.A, 20.B, 21.A, 21.B, 21.C, 22.A, 22.B, 22.C, 23.A, 23.B, 23.C, 24.A, 24.B, 24.C, 25.A, 25.B, 25.C, 25.D, 25.E, 25.F, 25.G, 26.A, 26.B, 26.C, 27.A, 27.B, 28.A, 28.B, 29.A, 29.B, 29.C, 30.A, 30.B, 31.A, 31.B, 31.C, 32.A, 32.B, 32.C, 33.A, 33.B, 34.A, 34.B, 35.A, 35.B, 35.C, 36.A, 36.B, 36.C, 37.A, 37.B, 37.C, 38.A, 38.B, 38.C, 38.D, 38.E, 38.F, and 38.G.
+- All **133 executable Tasks** are complete and each records a real implementation commit SHA, responsible subagent, human edits, exact tests, spec review, code-quality review, and PR URL. All 37 Milestones derive complete status from their exact children and have no aggregate implementation commit or PR.
+- The exact release registry is: 1.A, 1.B, 1.C, 1.D, 1.E, 2.A, 2.B, 2.C, 2.D, 2.E, 2.F, 2.G, 3.A, 3.B, 3.C, 3.D, 3.E, 3.F, 3.G, 4.A, 4.B, 4.C, 4.D, 4.E, 5.A, 5.B, 5.C, 5.D, 5.E, 6.A, 6.B, 6.C, 6.D, 6.E, 7.A, 7.B, 7.C, 8.A, 8.B, 9.A, 9.B, 9.C, 9.D, 10.A, 10.B, 10.C, 11.A, 11.B, 12.A, 12.B, 12.C, 12.D, 13, 14.A, 14.B, 14.C, 15.A, 15.B, 15.C, 15.D, 15.E, 15.F, 16.A, 16.B, 17.A, 17.B, 17.C, 18.A, 18.B, 18.C, 18.D, 19.A, 19.B, 19.C, 20.A, 20.B, 21.A, 21.B, 21.C, 22.A, 22.B, 22.C, 23.A, 23.B, 23.C, 24.A, 24.B, 24.C, 25.A, 25.B, 25.C, 25.D, 25.E, 25.F, 25.G, 26.A, 26.B, 26.C, 27.A, 27.B, 28.A, 28.B, 29.A, 29.B, 29.C, 30.A, 30.B, 31.A, 31.B, 31.C, 32.A, 32.B, 32.C, 33.A, 33.B, 34.A, 34.B, 35.A, 35.B, 35.C, 36.A, 36.B, 36.C, 37.A, 37.B, 37.C, 38.A, 38.B, 38.C, 38.D, 38.E, 38.F, and 38.G.
 - M0 records the human-approved current SPEC path/SHA-256/blob/baseline and confirms the gate-bootstrap contract; Tasks 1.E, 2.G, and 3.G have `GO` outcomes under a cold-start record covering the approved `PlanSemanticDigestV1`.
 - `requirements/gate.lock`, `gates/pytest.ini`, `gates/ruff.toml`, `gates/mypy.ini`, `scripts/run_gate_checks.py`, the Task 2.D/2.E/2.F reporter/evidence/fingerprint producers, and the Task 1.E, 2.G, and 3.G `GO` reports remain present; Task 37.B recomputes their SHA-256/version matrix and proves it matches the Task 4.A promotion record without silent drift.
 - Task 2.G `GO` proves a digest-pinned loopback-only registry with no credentials/external pushes, verified cleanup, no final-manifest self-reference, and local OCI/registry/digest-pull equality with final `ReferenceProfileManifestV1.docker_image_digest`; Task 34.A reproduces that exact identity, and Task 36.B's GHCR RepoDigest equals it.
