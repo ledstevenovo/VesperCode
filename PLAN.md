@@ -60,11 +60,12 @@
 - The repository implements context assembly, exactly one LLM call per turn, action parsing, policy, dispatch, result feedback, and stop evaluation. Replacing the real LLM with Mock/Stub must leave tool dispatch, governance, feedback correction, memory, and stopping deterministically testable offline.
 - All behavior changes use strict TDD: write and run the intended RED test, make the smallest GREEN change, then refactor without changing behavior.
 - Tasks 1–3 use one Task 1-owned feasibility-gate bootstrap: an isolated `.venv-gate`, `requirements/gate.lock` with exact direct/transitive versions and distribution hashes, explicit gate pytest/Ruff/Mypy configs, and `scripts/run_gate_checks.py`. Every gate command must use that environment and configuration; global tools and Task 4 project configuration are invalid inputs.
-- Task 1 selects, records, reviews, and freezes the exact Python/pytest/Ruff/Mypy versions and all gate file SHA-256 values. Tasks 2–3 consume those exact identities without re-resolution. The PLAN intentionally does not guess time-sensitive patch versions before the lock is created; a Task 1 GO is impossible until the complete hash-locked file and installed-version evidence exist.
+- Task 1 selects, records, reviews, and freezes the exact Python/pytest/Ruff/Mypy versions and all gate file SHA-256 values. Tasks 2–3 consume those exact identities without re-resolution. Task 4.A and Task 4.F each persist the exact Task 1 `python_version` and compare it character-for-character with the Task 1.E terminal `GO` evidence; the public compatibility range remains `>=3.12,<3.13` and never substitutes for that exact interpreter identity. The PLAN intentionally does not guess time-sensitive patch versions before the lock is created; a Task 1 GO is impossible until the complete hash-locked file and installed-version evidence exist.
 - Task 4.A is the sole complete v1 project dependency-closure owner. It creates the dependency tables, Python range, reviewed source/index policy, minimal package identity, and hash-complete `requirements/dev.lock`; the closure includes every declared direct runtime, build/distribution, and development/verification dependency plus every transitive distribution and hash. Runtime families include FastAPI, Pydantic v2, pywin32, keyring with Windows Credential Manager verification support, Docker SDK for Python, and every low-level HTTP, test-client, template/form, or serving package imported or invoked directly by project code. Build/distribution families include Hatchling and `build`; development/verification families include pytest 8.x, Ruff, Mypy, and every directly used typing/test support package. Vendored HTMX remains package data, not a Python dependency. `requirements/gate.lock`, `requirements/reference.lock`, and `requirements/demo.lock` remain separate immutable profiles under Tasks 1.A, 2.A, and 34.B respectively and never merge into `requirements/dev.lock`.
-- Task 4.A selects the reviewed exact patch versions, transitive distributions, markers, and hashes at execution time without inventing them in this PLAN. Where pytest, Ruff, or Mypy overlaps the Task 1 gate toolchain, the exact Task 1-selected version is preserved. Task 4.F alone promotes those frozen tool identities, marker definitions, static rules, build backend, and canonical formal commands into the non-dependency sections of `pyproject.toml`.
-- After Task 4.A completes, no task may add, remove, resolve, upgrade, downgrade, or install an undeclared project package. Discovery of a missing package stops the current task. Any dependency-closure change requires a non-tracking PLAN semantic revision, dependency review, recomputation of every affected mechanical structure and digest, renewed human PLAN approval, and a repeated heterogeneous cold-start; M0 also repeats if the authoritative SPEC identity or requirements change. Ad-hoc installation and silent regeneration of `requirements/dev.lock` are prohibited.
-- The canonical offline suite is `python -m pytest -q`. Task 4.A runs its dependency-closure RED and lock/config consistency checks without claiming the formal tool configuration exists; Task 4.F establishes the canonical offline and closure commands. Every later task also runs `python -m ruff format --check .`, `python -m ruff check .`, and `python -m mypy src tests`.
+- Task 4.A selects the reviewed exact patch versions, transitive distributions, markers, and hashes at execution time without inventing them in this PLAN. The exact Task 1 Python patch and every overlapping pytest/Ruff/Mypy version are preserved. Task 4.F alone promotes those frozen interpreter/tool identities, marker definitions, static rules, build backend, and canonical formal commands into the non-dependency sections of `pyproject.toml`.
+- After Task 4.A completes, no task may add, remove, resolve, upgrade, downgrade, or install an undeclared project package. Discovery of a missing package stops the current task. Any dependency-closure change requires a non-tracking PLAN semantic revision, dependency review, recomputation of every affected mechanical structure and digest, renewed human PLAN approval, and a repeated heterogeneous cold-start; M0 also repeats if the authoritative SPEC identity or requirements change. Ad-hoc installation and silent regeneration of `requirements/dev.lock` are prohibited. Rebuilding `.venv-formal` from the unchanged `requirements/dev.lock` with `--require-hashes --no-deps` is only materialization of the already-declared exact/hash-verified closure and is not a dependency change; resolution, upgrade, extra installation, or re-locking remains prohibited and triggers this fail-closed amendment rule.
+- Task 4.A solely owns `scripts/bootstrap_formal_env.py`. In every fresh formal-task worktree, the candidate interpreter is located only with `py -3.12`; before creating, rebuilding, or using `.venv-formal`, the bootstrap reads the Task 1.E terminal `GO` toolchain identity and requires `platform.python_version() == gate_evidence.python_version`. A mismatch exits nonzero before the environment is created or used. The bootstrap then materializes only the immutable `requirements/dev.lock` closure with `.venv-formal\Scripts\python.exe -m pip install --disable-pip-version-check --require-hashes --no-deps -r requirements/dev.lock`; it never reads another worktree's `.venv-gate`, invokes an ambient bare `python`, resolves packages, upgrades, or rewrites the lock.
+- The canonical offline suite is logically `python -m pytest -q`, executed in formal worktrees as `.venv-formal\Scripts\python.exe -m pytest -q`. Task 4.A runs its dependency-closure RED and lock/config consistency checks through that exact interpreter without claiming the formal tool configuration exists; Task 4.F establishes the canonical offline and closure commands through the same interpreter. Every later task also runs the logical commands `python -m ruff format --check .`, `python -m ruff check .`, and `python -m mypy src tests` from the verified `.venv-formal` environment.
 - The five standard closure commands referenced by Tasks 5–38 are exactly `python -m ruff format --check .`, `python -m ruff check .`, `python -m mypy src tests`, `python scripts/scan_credentials.py --changed --redact --fail-on-match`, and `git diff --check`.
 - One executable formal task uses one fresh implementation subagent, one isolated worktree, one branch, and one PR. Split Milestones use none. Use `superpowers:using-git-worktrees` before creating each formal worktree and `superpowers:test-driven-development` for every behavior change.
 - A task first receives a spec-compliance review and then a code-quality review. Critical or Important findings block dependents until the implementing or explicitly assigned repair subagent closes them and the same review stage passes.
@@ -110,6 +111,16 @@ The paths below lock file ownership before task decomposition. Files are small, 
 | `delivery/evidence/ci-v1.json` | Real last-passing GitHub workflow/job and GitLab pipeline/job identities with categorized evidence |
 | `delivery/evidence/release-v1.json` | Real source commit, GitHub Release, wheel, and GHCR immutable identity evidence |
 | `delivery/evidence/deployment-v1.json` | Real Render deployment, public URL, health, and fixed-scenario smoke evidence |
+
+### Project foundation records
+
+| Path | Single responsibility |
+|---|---|
+| `src/vespercode/project/dependency_closure.py` | Task 4.A-owned declared-set/lock validator plus strict loader for the unique dependency-closure record |
+| `config/dependency-closure-v1.json` | Unique persistent, machine-readable, non-secret `DependencyClosureV1` record carrying the public Python range and exact Task 1 Python identity |
+| `scripts/bootstrap_formal_env.py` | Task 4.A-owned fail-closed `.venv-formal` materializer that verifies Task 1 exact Python identity before hash-only/no-dependency installation |
+| `src/vespercode/project/toolchain_promotion.py` | Task 4.F-owned strict loader and gate-to-formal comparison for the promotion record |
+| `config/formal-toolchain-promotion-v1.json` | Unique persistent, machine-readable, non-secret `FormalToolchainPromotionV1` record carrying the exact promoted Python/tool/config identities |
 
 ### Feasibility gates
 
@@ -735,6 +746,11 @@ def test_deadline_after_first_replace_stops_writes_and_requires_recovery(
 - Create: `pyproject.toml`
 - Create: `requirements/dev.lock`
 - Create: `src/vespercode/__init__.py`
+- Create: `src/vespercode/project/dependency_closure.py`
+- Create: `config/dependency-closure-v1.json`
+- Create: `scripts/bootstrap_formal_env.py`
+- Create: `src/vespercode/project/toolchain_promotion.py`
+- Create: `config/formal-toolchain-promotion-v1.json`
 - Create: `src/vespercode/canonical/json_v1.py`
 - Create: `src/vespercode/canonical/timestamp_v1.py`
 - Create: `src/vespercode/canonical/clock.py`
@@ -753,10 +769,11 @@ def test_deadline_after_first_replace_stops_writes_and_requires_recovery(
 - Modify: `AGENT_LOG.md` (append only)
 
 **Interfaces:**
-- Consumes: Tasks 1–3 GO evidence; the frozen `requirements/gate.lock`, `gates/` configs, `scripts/run_gate_checks.py`, tool versions, and all GO-report identity matrices as read-only promotion inputs; Python `>=3.12,<3.13`; exact CTV-01–CTV-07 bytes and digests from SPEC §0.1.
+- Consumes: Tasks 1–3 GO evidence; the frozen `requirements/gate.lock`, `gates/` configs, `scripts/run_gate_checks.py`, exact Task 1 `python_version`, tool versions, and all GO-report identity matrices as read-only promotion inputs; public Python compatibility range `>=3.12,<3.13`; exact CTV-01–CTV-07 bytes and digests from SPEC §0.1.
 - Produces:
-  - `DependencyClosureV1`, the exact reviewed runtime/build/development direct requirements, Python range, source/index policy digest, hash-complete transitive distribution set, and closure digest produced by Task 4.A
-  - `FormalToolchainPromotionV1(gate_lock_sha256: str, pytest_version: str, ruff_version: str, mypy_version: str, marker_digest: str, static_rule_digest: str)` produced by Task 4.F
+  - `DependencyClosureV1(python_range: Literal[">=3.12,<3.13"], python_version: str, runtime_direct_names: tuple[str, ...], build_direct_names: tuple[str, ...], development_direct_names: tuple[str, ...], locked_distributions: tuple[LockedDistributionV1, ...], source_policy_digest: str, closure_digest: str)` persisted uniquely by Task 4.A at `config/dependency-closure-v1.json`
+  - `FormalToolchainPromotionV1(python_version: str, gate_lock_sha256: str, pytest_version: str, ruff_version: str, mypy_version: str, marker_digest: str, static_rule_digest: str)` persisted uniquely by Task 4.F at `config/formal-toolchain-promotion-v1.json`
+  - `bootstrap_formal_environment(root: Path, gate_evidence: GateToolchainEvidenceV1) -> FormalEnvironmentBootstrapResultV1`
   - `CanonicalValueV1 = str | int | bool | tuple[CanonicalValueV1, ...] | Mapping[str, CanonicalValueV1]`
   - `canonical_json_bytes(value: CanonicalValueV1) -> bytes`
   - `domain_digest(object_type: str, schema_version: int, value: Mapping[str, CanonicalValueV1]) -> str`
@@ -776,8 +793,10 @@ def test_deadline_after_first_replace_stops_writes_and_requires_recovery(
 - Parse only `YYYY-MM-DDTHH:MM:SS.sssZ`; validate Gregorian dates and reject leap seconds and alternate UTC spellings before digesting.
 - `SystemClockV1` reads UTC epoch milliseconds and immediately converts through `CanonicalTimestampV1.from_epoch_milliseconds`; all decision, deadline, expiry, and evidence code receives a `ClockV1` port, while tests advance `FakeClockV1` explicitly.
 - Lexical canonical paths reject empty/root sentinels, absolute/drive/UNC/device forms, ADS, empty/dot/parent segments, trailing slash/dot/space, and reserved device names. Win32 final-object validation remains Task 9.
-- Task 4.A declares every direct dependency family in the Tech Stack, classifies it as runtime, build/distribution, or development/verification, records the Python marker and reviewed source/index policy, and freezes every direct and transitive distribution with exact hashes in `requirements/dev.lock`. Its one closure RED fails on any missing/extra/misclassified direct dependency, missing transitive distribution/hash, inconsistent Python marker/source policy, or mismatch between `pyproject.toml` and the lock.
-- Task 4.F promotes the Task 1-verified pytest/Ruff/Mypy patch versions, marker definitions, and static rules into tooling/build sections of `pyproject.toml`; it does not select or resolve any package. It generates a promotion comparison mapping every Task 1 gate version/marker/Ruff/Mypy rule to its formal destination. Any deliberate difference requires a SPEC/PLAN-compatible explanation plus fresh Task 1–3 execution and GO evidence before Task 4 can pass; any silent version/config drift fails closed.
+- Task 4.A declares every direct dependency family in the Tech Stack, classifies it as runtime, build/distribution, or development/verification, records the public Python range, exact Task 1 `python_version`, Python marker, and reviewed source/index policy, and freezes every direct and transitive distribution with exact hashes in `requirements/dev.lock`. Its one closure RED fails on any missing/extra/misclassified direct dependency, missing transitive distribution/hash, inconsistent Python marker/source policy, mismatch between `pyproject.toml` and the lock, or character-for-character mismatch between the persisted closure `python_version` and Task 1.E terminal `GO` evidence.
+- Task 4.A's bootstrap locates the candidate interpreter with `py -3.12`, reads Task 1.E terminal `GO` identity before any `.venv-formal` creation/use, and fails unless `platform.python_version() == gate_evidence.python_version`. It installs every and only locked distribution with `--require-hashes --no-deps`; it never resolves, upgrades, re-locks, reads another worktree's `.venv-gate`, or treats an ambient bare `python` as an input.
+- Task 4.F promotes the Task 1-verified exact Python/pytest/Ruff/Mypy patch versions, marker definitions, and static rules into tooling/build sections of `pyproject.toml`; it does not select or resolve any package. It generates a promotion comparison mapping every Task 1 gate version/marker/Ruff/Mypy rule to its formal destination and persists the exact Python identity in its unique record. Any deliberate difference requires a SPEC/PLAN-compatible explanation plus fresh Task 1–3 execution and GO evidence before Task 4 can pass; any silent version/config drift fails closed.
+- `config/dependency-closure-v1.json` and `config/formal-toolchain-promotion-v1.json` are the sole persistent, machine-readable, non-secret records for their respective v1 schemas; no log, environment directory, test output, or prose completion note substitutes for either JSON record.
 - Preserve `requirements/gate.lock`, `gates/`, `scripts/run_gate_checks.py`, the Task 2 reporter/probe, and all three GO reports as immutable reproducibility evidence; formal commands never rewrite or delete them.
 - `pyproject.toml` keeps the public runtime range from SPEC. Task 4.A owns only its dependency tables, Python range, reviewed source/index policy, and minimal package identity; Task 4.F owns only its build backend and pytest/Ruff/Mypy/tooling sections; Task 33.A may later change only package data, version, distribution metadata, and the console entry point. No later modifier may change dependency tables, the Python range, dependency sources, or `requirements/dev.lock`.
 - Task 4.A freezes exact reviewed Hatchling and `build` distributions and hashes in the closure; Task 4.F configures Hatchling as the PEP 517 backend. Task 33.A cannot choose or change the backend.
@@ -804,20 +823,20 @@ def test_ctv_01_exact_bytes_and_digest() -> None:
 ```
 
 **Verification:**
-- Target RED/GREEN: `python -m pytest -q tests/unit/canonical/test_digest_vectors.py::test_ctv_01_exact_bytes_and_digest`
-- Domain: `python -m pytest -q tests/unit/canonical tests/unit/process/test_scan_credentials.py`
-- Full: `python -m pytest -q`
+- Target RED/GREEN: `.venv-formal\Scripts\python.exe -m pytest -q tests/unit/canonical/test_digest_vectors.py::test_ctv_01_exact_bytes_and_digest`
+- Domain: `.venv-formal\Scripts\python.exe -m pytest -q tests/unit/canonical tests/unit/process/test_scan_credentials.py`
+- Full: `.venv-formal\Scripts\python.exe -m pytest -q`
 - Expected: all CTV vectors, timestamp/path rejection cases, and scanner redaction tests pass offline.
 
 **Review gate:**
-1. Spec compliance review compares every encoded byte and rejection in CTV-01–CTV-07, verifies the complete dependency closure, verifies the gate-to-formal promotion map and absence of silent version/config drift, and verifies the project commands match SPEC §9.
+1. Spec compliance review compares every encoded byte and rejection in CTV-01–CTV-07, verifies the complete dependency closure, compares both persisted records' `python_version` character-for-character with Task 1.E terminal `GO` evidence, verifies the gate-to-formal promotion map and absence of silent version/config drift, and verifies the project commands match SPEC §9.
 2. Code quality review checks recursion bounds, scalar validation, deterministic error types, type checking, package boundaries, and scanner non-disclosure.
 3. Critical/Important findings block Task 5.
 
 **Completion evidence:** Not yet executed. On completion record the actual commit SHA, responsible subagent, tests executed, review results, human edits and PR URL.
 
-- [ ] **Step 1: Verify the dependency closure and gate promotion inputs, then write the CTV-01 RED test.** Require the completed Task 4.A closure report and lock/config consistency result; recompute all Task 1 gate file SHA-256 values, compare them with the Task 2/3 GO records, and require the completed Task 4.F gate-to-formal version/marker/Ruff/Mypy mapping. Add the exact test above and keep the expected bytes split only at Python literal boundaries; any identity mismatch stops before RED.
-- [ ] **Step 2: Run RED.** Run `python -m pytest -q tests/unit/canonical/test_digest_vectors.py::test_ctv_01_exact_bytes_and_digest`. Expected: nonzero because the package and canonical functions do not exist.
+- [ ] **Step 1: Verify the dependency closure and gate promotion inputs, then write the CTV-01 RED test.** Require the completed Task 4.A closure record and lock/config consistency result; recompute all Task 1 gate file SHA-256 values, compare them with the Task 2/3 GO records, compare `DependencyClosureV1.python_version` and `FormalToolchainPromotionV1.python_version` character-for-character with Task 1.E terminal `GO` `GateToolchainEvidenceV1.python_version`, and require the completed Task 4.F gate-to-formal version/marker/Ruff/Mypy mapping. Add the exact test above and keep the expected bytes split only at Python literal boundaries; any identity mismatch stops before RED.
+- [ ] **Step 2: Run RED.** Run `.venv-formal\Scripts\python.exe -m pytest -q tests/unit/canonical/test_digest_vectors.py::test_ctv_01_exact_bytes_and_digest`. Expected: nonzero because the canonical functions do not exist.
 - [ ] **Step 3: Implement the minimal canonical encoder and digest.**
 
   ```python
@@ -835,9 +854,9 @@ def test_ctv_01_exact_bytes_and_digest() -> None:
   `canonical_json_bytes` must use a dedicated recursive encoder; calling a standard JSON serializer and patching its output is not sufficient.
 - [ ] **Step 4: Run GREEN.** Re-run Step 2. Expected: exit `0` and exact byte/digest equality.
 - [ ] **Step 5: Refactor without behavior change.** Separate string/scalar encoding, timestamp parsing, domain digesting, and lexical path validation into the planned files; keep one public function for each responsibility.
-- [ ] **Step 6: Run domain, closure, and promotion tests.** Run `python -m pytest -q tests/unit/canonical tests/unit/process/test_dependency_closure.py tests/unit/process/test_toolchain_promotion.py tests/unit/process/test_scan_credentials.py` and mechanically compare the dependency closure plus formal versions/markers/Ruff/Mypy rules with their frozen inputs. Expected: CTV-01–CTV-07, invalid timestamps, path sentinels, redacted scanner behavior, dependency closure, and every promotion mapping pass; a difference without the required semantic revision/reapproval or fresh Task 1–3 GO evidence fails.
-- [ ] **Step 7: Run the unified offline suite.** Run `python -m pytest -q`. Expected: exit `0`.
-- [ ] **Step 8: Run formatter, Ruff, Mypy, credential scan, and whitespace checks.** Run `python -m ruff format --check .`, `python -m ruff check .`, `python -m mypy src tests`, `python scripts/scan_credentials.py --changed --redact --fail-on-match`, and `git diff --check`. Expected: all exit `0` and no matched value is printed.
+- [ ] **Step 6: Run domain, closure, and promotion tests.** Run `.venv-formal\Scripts\python.exe -m pytest -q tests/unit/canonical tests/unit/process/test_dependency_closure.py tests/unit/process/test_toolchain_promotion.py tests/unit/process/test_scan_credentials.py` and mechanically compare both records' exact `python_version`, the dependency closure, and formal versions/markers/Ruff/Mypy rules with their frozen inputs. Expected: CTV-01–CTV-07, invalid timestamps, path sentinels, redacted scanner behavior, dependency closure, exact Python identity, and every promotion mapping pass; a difference without the required semantic revision/reapproval or fresh Task 1–3 GO evidence fails.
+- [ ] **Step 7: Run the unified offline suite.** Run `.venv-formal\Scripts\python.exe -m pytest -q`. Expected: exit `0`.
+- [ ] **Step 8: Run formatter, Ruff, Mypy, credential scan, and whitespace checks.** Run `.venv-formal\Scripts\python.exe -m ruff format --check .`, `.venv-formal\Scripts\python.exe -m ruff check .`, `.venv-formal\Scripts\python.exe -m mypy src tests`, `.venv-formal\Scripts\python.exe scripts/scan_credentials.py --changed --redact --fail-on-match`, and `git diff --check`. Expected: all exit `0` and no matched value is printed.
 - [ ] **Step 9: Request spec compliance review.** Give a fresh read-only reviewer Task 4, SPEC §0.1/§9/AC-26, exact CTV fixtures, dependency lock, and diff.
 - [ ] **Step 10: Close spec findings.** The Task 4 subagent fixes every Critical/Important finding, reruns Steps 6–8, and obtains a passing spec re-review.
 - [ ] **Step 11: Request code quality review.** Require a fresh read-only reviewer to inspect Unicode correctness, recursion/size bounds, deterministic errors, scanner redaction, and package configuration.
@@ -4744,7 +4763,7 @@ def test_release_evidence_rejects_commit_misalignment(
 - Record real GitHub/GitLab project URLs, synchronization direction/method/date, GitHub Release URL, GHCR digest, Render URL/health path/cold start, and actual last-passing GitHub workflow/job plus GitLab pipeline/job evidence.
 - `SPEC_PROCESS.md` contains brainstorming, at least three iterations, accepted/rejected suggestions, M0 SPEC path/SHA-256/blob/baseline/human approval, approved `PlanSemanticDigestV1` plus complete PLAN audit SHA-256, cold-start agent type/scope/pauses/findings/revisions/pass, and no fabricated approval or trial.
 - `AGENT_LOG.md` remains chronological with timestamp, task id, skills, context, responsible subagent, human edits, real commits/PRs/reviews/tests, failures, interventions, and lesson for every significant task.
-- Delivery verifier validates all 134 executable Task completion records and all 37 derived Milestone states, real SHAs in repository history, closed Critical/Important findings, required files, both CI platforms' exact job evidence, wheel/image/release/deployment alignment, no unresolved recovery, credential scan, and evidence freshness. It also requires `requirements/gate.lock`, all three `gates/` configs, `scripts/run_gate_checks.py`, the Task 2.D/2.E/2.F reporter/evidence/fingerprint producers, and Task 1.E, 2.G, and 3.G GO reports; recomputed SHA-256/version matrices must match across all three reports, the Task 4.A dependency-closure record, and the Task 4.F promotion record. Milestone 2 evidence must prove digest-pinned loopback registry, loopback-only bind, zero credentials/external pushes, cleanup on every exit, no final-manifest image member, and local OCI/registry/digest-pull equality with final `ReferenceProfileManifestV1.docker_image_digest`; Task 36.B must prove GHCR returned the same digest.
+- Delivery verifier validates all 134 executable Task completion records and all 37 derived Milestone states, real SHAs in repository history, closed Critical/Important findings, required files, both CI platforms' exact job evidence, wheel/image/release/deployment alignment, no unresolved recovery, credential scan, and evidence freshness. It also requires `requirements/gate.lock`, all three `gates/` configs, `scripts/run_gate_checks.py`, the Task 2.D/2.E/2.F reporter/evidence/fingerprint producers, Task 1.E, 2.G, and 3.G GO reports, `config/dependency-closure-v1.json`, and `config/formal-toolchain-promotion-v1.json`; recomputed SHA-256/version matrices must match across all three reports and both records, and both persisted `python_version` values must equal Task 1.E terminal `GO` `GateToolchainEvidenceV1.python_version` character-for-character. The public `>=3.12,<3.13` range is checked separately and cannot satisfy exact identity. Milestone 2 evidence must prove digest-pinned loopback registry, loopback-only bind, zero credentials/external pushes, cleanup on every exit, no final-manifest image member, and local OCI/registry/digest-pull equality with final `ReferenceProfileManifestV1.docker_image_digest`; Task 36.B must prove GHCR returned the same digest.
 - Reflection verifier checks 1,500–2,500 words, required disclosure of any AI language polishing, and presence of student-specific process analysis; it never generates or scores substantive personal reflection.
 - Do not modify the reflection body unless the student supplies a complete draft and explicitly requests polishing. Record every agent edit/disclosure; otherwise report the checkpoint incomplete.
 - Re-run all mandatory offline, Windows, Docker, E2E, fault, WebUI, package, image, and live smoke commands in their declared environments or bind the verifier to current saved real evidence.
@@ -4795,7 +4814,7 @@ def test_readme_fails_when_release_digest_verification_is_missing(
 
   `verify_delivery` must parse real evidence schemas rather than search for success words.
 - [ ] **Step 4: Run GREEN.** Create the accurate README section set and rerun Step 2. Expected: the focused fixture passes while missing sections remain rejected.
-- [ ] **Step 5: Refactor without behavior change.** Separate README/process/task/commit/gate-bootstrap/CI/artifact/live/reflection checks and return all stable failures in one bounded report. The gate-bootstrap check recomputes file hashes, parses Task 1–3 GO matrices, and compares the Task 4.A dependency-closure record plus Task 4.F promotion record without executing untrusted project code.
+- [ ] **Step 5: Refactor without behavior change.** Separate README/process/task/commit/gate-bootstrap/CI/artifact/live/reflection checks and return all stable failures in one bounded report. The gate-bootstrap check recomputes file hashes, parses Task 1–3 GO matrices, strictly loads `config/dependency-closure-v1.json` and `config/formal-toolchain-promotion-v1.json`, and compares each record's exact `python_version` character-for-character with Task 1.E terminal `GO` evidence before comparing the remaining closure/promotion identities, all without executing untrusted project code.
 - [ ] **Step 6: Run domain, full, delivery, and reflection checks.** Run all listed commands. Expected: all pass only with real current evidence and a valid student-authored reflection.
 - [ ] **Step 7: Re-run required environment suites.** Run or verify current saved evidence for Windows, Docker, reference E2E, persistence faults, WebUI browser, package, OCI, CI, release, and public Demo. Expected: no required skip or stale result.
 - [ ] **Step 8: Run closure checks.** Run all five standard formatter/lint/type/credential/whitespace commands plus a repository credential scan over tracked release artifacts. Expected: all exit `0`.
@@ -5614,32 +5633,40 @@ def test_missing_external_identity_case_forces_no_go(ntfs_workspace: Path) -> No
 - Create: `pyproject.toml`
 - Create: `requirements/dev.lock`
 - Create: `src/vespercode/__init__.py`
+- Create: `src/vespercode/project/dependency_closure.py`
+- Create: `config/dependency-closure-v1.json`
+- Create: `scripts/bootstrap_formal_env.py`
 - Test: `tests/unit/process/test_dependency_closure.py`
 
-**Interfaces:** Consumes the declared PLAN Tech Stack, Python `>=3.12,<3.13`, `GateToolchainEvidenceV1` from Task 1.A, and unchanged Task 2.G/3.G identity matrices; produces `LockedDistributionV1(name: str, version: str, classification: Literal["RUNTIME","BUILD","DEVELOPMENT"], python_marker: str, hashes: tuple[str, ...])` and `DependencyClosureV1(python_range: Literal[">=3.12,<3.13"], runtime_direct_names: tuple[str, ...], build_direct_names: tuple[str, ...], development_direct_names: tuple[str, ...], locked_distributions: tuple[LockedDistributionV1, ...], source_policy_digest: str, closure_digest: str)`.
+**Interfaces:** Consumes the declared PLAN Tech Stack, public Python range `>=3.12,<3.13`, exact Task 1.E terminal `GO` `GateToolchainEvidenceV1.python_version`, and unchanged Task 2.G/3.G identity matrices. `src/vespercode/project/dependency_closure.py` produces `DeclaredDependencySetV1(runtime_direct_names: tuple[str, ...], build_direct_names: tuple[str, ...], development_direct_names: tuple[str, ...])`, `LockedDistributionV1(name: str, version: str, classification: Literal["RUNTIME","BUILD","DEVELOPMENT"], python_marker: str, hashes: tuple[str, ...])`, `DependencyClosureV1(python_range: Literal[">=3.12,<3.13"], python_version: str, runtime_direct_names: tuple[str, ...], build_direct_names: tuple[str, ...], development_direct_names: tuple[str, ...], locked_distributions: tuple[LockedDistributionV1, ...], source_policy_digest: str, closure_digest: str)`, `DependencyClosureValidationReportV1(missing_direct: tuple[str, ...], extra_or_misclassified_direct: tuple[str, ...], missing_transitive_or_hash: tuple[str, ...], marker_or_source_mismatches: tuple[str, ...], gate_tool_version_mismatches: tuple[str, ...], python_version_mismatches: tuple[str, ...])`, `load_dependency_closure(root: Path) -> DependencyClosureV1`, and `validate_dependency_closure(root: Path, reviewed_plan_stack: DeclaredDependencySetV1) -> DependencyClosureValidationReportV1`. `scripts/bootstrap_formal_env.py` produces `bootstrap_formal_environment(root: Path, gate_evidence: GateToolchainEvidenceV1) -> FormalEnvironmentBootstrapResultV1`, where `FormalEnvironmentBootstrapResultV1(python_version: str, lock_sha256: str, installed_distribution_names: tuple[str, ...])`.
 
 **Intentionally failing test:**
 
 ```python
 def test_declared_v1_dependency_closure_is_complete(
     reviewed_plan_stack: DeclaredDependencySetV1,
+    gate_evidence: GateToolchainEvidenceV1,
 ) -> None:
     report = validate_dependency_closure(Path("."), reviewed_plan_stack)
+    record = load_dependency_closure(Path("."))
+    assert record.python_version == gate_evidence.python_version
     assert report.missing_direct == ()
     assert report.extra_or_misclassified_direct == ()
     assert report.missing_transitive_or_hash == ()
     assert report.marker_or_source_mismatches == ()
     assert report.gate_tool_version_mismatches == ()
+    assert report.python_version_mismatches == ()
 ```
 
-Expected RED: import/configuration failure because the project dependency tables, source policy, hash-complete environment lock, and closure validator do not exist.
+Expected RED: import/configuration failure because the project dependency tables, source policy, hash-complete environment lock, closure validator/loader, unique persisted closure record, and verified formal environment do not exist.
 
-**Implementation boundary:** This child is the sole owner of all `pyproject.toml` dependency tables, the Python range, dependency source/index policy, minimal package identity, and `requirements/dev.lock`. It declares and classifies every direct runtime, build/distribution, and development/verification family listed by the PLAN; inventories every low-level HTTP/TestClient/template/form/server or typing/test package imported or invoked directly so none is hidden as a transitive; freezes every direct/transitive distribution and hash; and preserves exact Task 1 pytest/Ruff/Mypy versions where they overlap. It does not configure the build backend, pytest markers, Ruff, Mypy, canonical commands, package data/version/distribution metadata/entry point, canonical values, paths, scanning, or application behavior. It never modifies Task 1–3 evidence or the separate gate/reference/Demo locks.
+**Implementation boundary:** This child is the sole owner of all `pyproject.toml` dependency tables, the public Python range, dependency source/index policy, minimal package identity, `requirements/dev.lock`, `src/vespercode/project/dependency_closure.py`, the unique persistent machine-readable non-secret `config/dependency-closure-v1.json`, and `scripts/bootstrap_formal_env.py`. It declares and classifies every direct runtime, build/distribution, and development/verification family listed by the PLAN; inventories every low-level HTTP/TestClient/template/form/server or typing/test package imported or invoked directly so none is hidden as a transitive; freezes every direct/transitive distribution and hash; preserves exact Task 1 Python/pytest/Ruff/Mypy versions; and writes the closure record only when its `python_version` equals Task 1.E terminal `GO` evidence character-for-character. Before creating, rebuilding, or using `.venv-formal`, the bootstrap locates the candidate only with `py -3.12`, reads that terminal `GO` identity, evaluates `platform.python_version() == gate_evidence.python_version`, and exits nonzero on mismatch. On equality it creates/rebuilds `.venv-formal` and invokes only `.venv-formal\Scripts\python.exe -m pip install --disable-pip-version-check --require-hashes --no-deps -r requirements/dev.lock`; this hash-only materialization is not a dependency change. The bootstrap never reads another worktree's `.venv-gate`, invokes an ambient bare `python`, resolves, upgrades, installs an undeclared distribution, or re-locks. This child does not configure the build backend, pytest markers, Ruff, Mypy, canonical commands, package data/version/distribution metadata/entry point, canonical values, paths, scanning, or application behavior. It never modifies Task 1–3 evidence or the separate gate/reference/Demo locks.
 
 **Verification:**
-- Target: `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/unit/process/test_dependency_closure.py::test_declared_v1_dependency_closure_is_complete -q`
-- Domain: `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/unit/process/test_dependency_closure.py -q`
-- Expected GREEN: both checks exit `0`; every declared direct family is present and correctly classified, every transitive distribution has exact hashes and a consistent Python marker/source policy, the lock and dependency tables agree, and overlapping pytest/Ruff/Mypy versions exactly match Task 1.
+- Bootstrap/rebuild: `py -3.12 scripts/bootstrap_formal_env.py`
+- RED/Target GREEN: `.venv-formal\Scripts\python.exe -m pytest -q tests/unit/process/test_dependency_closure.py::test_declared_v1_dependency_closure_is_complete`
+- Domain: `.venv-formal\Scripts\python.exe -m pytest -q tests/unit/process/test_dependency_closure.py`
+- Expected GREEN: all checks exit `0`; the bootstrap proves exact Task 1 Python equality before environment creation/use; every declared direct family is present and correctly classified; every transitive distribution has exact hashes and a consistent Python marker/source policy; the lock, dependency tables, and unique persisted record agree; `record.python_version == gate_evidence.python_version`; and overlapping pytest/Ruff/Mypy versions exactly match Task 1.
 
 **Completion evidence:** Not yet executed.
 
@@ -5655,9 +5682,11 @@ Expected RED: import/configuration failure because the project dependency tables
 
 **Files:**
 - Modify: `pyproject.toml` (build backend and pytest/Ruff/Mypy/tooling sections only)
+- Create: `src/vespercode/project/toolchain_promotion.py`
+- Create: `config/formal-toolchain-promotion-v1.json`
 - Test: `tests/unit/process/test_toolchain_promotion.py`
 
-**Interfaces:** Consumes `DependencyClosureV1` from Task 4.A, `GateToolchainEvidenceV1` from Task 1.A, and unchanged Task 1.E/2.G/3.G terminal GO identity matrices; produces `FormalToolchainPromotionV1(gate_lock_sha256: str, pytest_version: str, ruff_version: str, mypy_version: str, marker_digest: str, static_rule_digest: str)` and the exact commands `python -m pytest -q`, `python -m ruff format --check .`, `python -m ruff check .`, and `python -m mypy src tests`.
+**Interfaces:** Consumes `DependencyClosureV1` from Task 4.A, exact `GateToolchainEvidenceV1` from Task 1.A, unchanged Task 1.E/2.G/3.G terminal GO identity matrices, and the verified `.venv-formal` interpreter materialized only by Task 4.A's bootstrap; produces `FormalToolchainPromotionV1(python_version: str, gate_lock_sha256: str, pytest_version: str, ruff_version: str, mypy_version: str, marker_digest: str, static_rule_digest: str)`, `load_formal_toolchain_promotion(root: Path) -> FormalToolchainPromotionV1`, and the logical exact commands `python -m pytest -q`, `python -m ruff format --check .`, `python -m ruff check .`, and `python -m mypy src tests`, each executed through `.venv-formal\Scripts\python.exe`.
 
 **Intentionally failing test:**
 
@@ -5665,22 +5694,24 @@ Expected RED: import/configuration failure because the project dependency tables
 def test_formal_toolchain_matches_frozen_gate_identity(
     gate_evidence: GateToolchainEvidenceV1,
 ) -> None:
-    promotion = load_formal_toolchain_promotion(Path("."))
-    assert promotion.gate_lock_sha256 == gate_evidence.gate_lock_sha256
-    assert promotion.version_tuple == gate_evidence.version_tuple
-    assert promotion.marker_digest == gate_evidence.marker_digest
-    assert promotion.static_rule_digest == gate_evidence.static_rule_digest
+    record = load_formal_toolchain_promotion(Path("."))
+    assert record.python_version == gate_evidence.python_version
+    assert record.gate_lock_sha256 == gate_evidence.gate_lock_sha256
+    assert record.pytest_version == gate_evidence.pytest_version
+    assert record.ruff_version == gate_evidence.ruff_version
+    assert record.mypy_version == gate_evidence.mypy_version
 ```
 
-**Expected RED:** import/configuration failure because the build backend, formal marker/static-rule configuration, canonical commands, and promotion record do not exist.
+**Expected RED:** import/configuration failure because the promotion loader, unique persisted promotion record, build backend, formal marker/static-rule configuration, and canonical commands do not exist.
 
-**Implementation boundary:** This child may modify only the build-system and pytest/Ruff/Mypy/tooling sections of `pyproject.toml`. It registers exactly `windows_integration`, `docker_integration`, `reference_e2e`, `package_smoke`, `oci_smoke`, and `deployment_smoke`; excludes those six markers from the default offline suite; makes every dedicated environment command clear default addopts, select exactly one marker, and name its test root; and records the gate-to-formal comparison. It may not add/remove/resolve/install a package, change dependency tables, Python range, minimal package identity, dependency source/index policy, `requirements/dev.lock`, or any separate lock. Discovery of a missing package stops this task and triggers the global dependency-change rule.
+**Implementation boundary:** This child solely owns `src/vespercode/project/toolchain_promotion.py` and the unique persistent machine-readable non-secret `config/formal-toolchain-promotion-v1.json`, and may modify only the build-system and pytest/Ruff/Mypy/tooling sections of Task 4.A-owned `pyproject.toml`. It consumes but never owns, creates, repairs, or mutates `.venv-formal` or `scripts/bootstrap_formal_env.py`. It first requires `.venv-formal\Scripts\python.exe` to report exactly the Task 1.E terminal `GO` `python_version`, then persists the same exact value. It registers exactly `windows_integration`, `docker_integration`, `reference_e2e`, `package_smoke`, `oci_smoke`, and `deployment_smoke`; excludes those six markers from the default offline suite; makes every dedicated environment command clear default addopts, select exactly one marker, and name its test root; and records the gate-to-formal comparison. It may not add/remove/resolve/install a package, change dependency tables, Python range, minimal package identity, dependency source/index policy, `requirements/dev.lock`, or any separate lock. Discovery of a missing package stops this task and triggers the global dependency-change rule.
 
 **Verification:**
-- Target: `python -m pytest -q tests/unit/process/test_toolchain_promotion.py::test_formal_toolchain_matches_frozen_gate_identity`
-- Domain: `python -m pytest -q tests/unit/process/test_dependency_closure.py tests/unit/process/test_toolchain_promotion.py`
-- Closure: `python -m ruff format --check .`; `python -m ruff check .`; `python -m mypy src tests`
-- Expected GREEN: all commands exit `0`; all recorded versions/hashes equal frozen gate and dependency evidence, the six real-environment markers are excluded from the default suite, dedicated commands are closed, and dependency tables/lock/source policy are byte-identical to Task 4.A output.
+- Bootstrap/rebuild through the Task 4.A-owned consumer interface: `py -3.12 scripts/bootstrap_formal_env.py`
+- RED/Target GREEN: `.venv-formal\Scripts\python.exe -m pytest -q tests/unit/process/test_toolchain_promotion.py::test_formal_toolchain_matches_frozen_gate_identity`
+- Domain: `.venv-formal\Scripts\python.exe -m pytest -q tests/unit/process/test_dependency_closure.py tests/unit/process/test_toolchain_promotion.py`
+- Closure: `.venv-formal\Scripts\python.exe -m ruff format --check .`; `.venv-formal\Scripts\python.exe -m ruff check .`; `.venv-formal\Scripts\python.exe -m mypy src tests`
+- Expected GREEN: all commands exit `0`; `record.python_version == gate_evidence.python_version`; all recorded tool versions/hashes equal frozen gate and dependency evidence; the six real-environment markers are excluded from the default suite; dedicated commands are closed; and dependency tables/lock/source policy plus the Task 4.A closure record are byte-identical to Task 4.A output.
 
 **Completion evidence:** Not yet executed.
 
@@ -9785,11 +9816,13 @@ def test_readme_fails_when_release_digest_verification_is_missing(
 
 **Files:**
 - Create: `src/vespercode/delivery/process_verifier.py`
+- Read: `config/dependency-closure-v1.json`
+- Read: `config/formal-toolchain-promotion-v1.json`
 - Modify: `SPEC_PROCESS.md` (preserve history; add exact final evidence only)
 - Modify: `AGENT_LOG.md` (append-only final chronology)
 - Test: `tests/unit/process/test_delivery_evidence.py` (process-record cases)
 
-**Interfaces:** Produces `verify_process_evidence(root: Path) -> ProcessEvidenceResultV1` with stable missing/mismatch codes and no execution of repository code.
+**Interfaces:** Consumes the Task 1.E terminal `GO` `GateToolchainEvidenceV1`, `load_dependency_closure(root: Path) -> DependencyClosureV1`, and `load_formal_toolchain_promotion(root: Path) -> FormalToolchainPromotionV1` as strict read-only record inputs; produces `verify_process_evidence(root: Path) -> ProcessEvidenceResultV1` with stable missing/mismatch codes and no execution of repository code.
 
 **Intentionally failing test:**
 
@@ -9800,14 +9833,32 @@ def test_process_evidence_rejects_missing_child_task_review(
     remove_review_record(repository_copy, "25.D")
     result = verify_process_evidence(repository_copy)
     assert "TASK_REVIEW_EVIDENCE_MISSING:25.D" in result.error_codes
+
+
+def test_process_evidence_rejects_formal_python_identity_drift(
+    repository_copy: Path,
+) -> None:
+    record_path = (
+        repository_copy / "config/formal-toolchain-promotion-v1.json"
+    )
+    record = json.loads(record_path.read_text(encoding="utf-8"))
+    record["python_version"] = "different-exact-patch"
+    record_path.write_text(
+        json.dumps(record, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
+        + "\n",
+        encoding="utf-8",
+        newline="\n",
+    )
+    result = verify_process_evidence(repository_copy)
+    assert "FORMAL_PYTHON_IDENTITY_MISMATCH" in result.error_codes
 ```
 
-**Implementation boundary:** Preserve historical failures/revisions; never fabricate approval, cold-start pass, subagent, review, commit, PR, human edit, or external outcome.
+**Implementation boundary:** Preserve historical failures/revisions; never fabricate approval, cold-start pass, subagent, review, commit, PR, human edit, or external outcome. Load the two unique JSON records as data without importing or executing repository code, require `dependency_closure.python_version == formal_toolchain_promotion.python_version == gate_evidence.python_version` by exact string comparison, and report stable missing/schema/identity errors. Validate the public compatibility range `>=3.12,<3.13` independently; range membership never replaces exact equality.
 
 **Verification:**
-- Target: `python -m pytest -q tests/unit/process/test_delivery_evidence.py::test_process_evidence_rejects_missing_child_task_review`
+- Target: `python -m pytest -q tests/unit/process/test_delivery_evidence.py::test_process_evidence_rejects_formal_python_identity_drift`
 - Domain: `python -m pytest -q tests/unit/process/test_delivery_evidence.py`
-- Expected: M0/PLAN identities, child task chronology, reviews and real repository SHAs/PRs reconcile exactly.
+- Expected: M0/PLAN identities, child task chronology, reviews and real repository SHAs/PRs reconcile exactly; both persistent records exist and parse; both records' `python_version` values equal Task 1.E terminal `GO` evidence character-for-character; a range-only match fails with `FORMAL_PYTHON_IDENTITY_MISMATCH`.
 
 **Completion evidence:** Not yet executed.
 
@@ -10414,8 +10465,8 @@ The mechanically checked core-file set is formed only from exact backticked repo
 | 3.E | `spikes/persistence_recovery/recovery_preview.py`; `tests/feasibility/persistence/test_recovery_preview.py` | None | Owns read-only recovery preview only. |
 | 3.F | `spikes/persistence_recovery/recovery_apply.py`; `tests/feasibility/persistence/test_recovery_apply.py` | None | Owns guarded recovery apply only. |
 | 3.G | `spikes/persistence_recovery/report.py`; `tests/feasibility/persistence/test_recovery_gate.py` | None | Gate evidence freezes before Task 4.A. |
-| 4.A | `pyproject.toml`; `requirements/dev.lock`; `src/vespercode/__init__.py` | Task 4.F changes only build-system and pytest/Ruff/Mypy/tooling sections; Task 33.A changes only package-data/version/distribution-metadata/console-entry-point sections | Sole dependency/Python/source-policy/lock owner; never modifies Milestone 1 gate files, and no later task changes dependency tables, Python range, dependency sources, or `requirements/dev.lock`. |
-| 4.F | None (authorized tooling configuration plus test) | Task 4.A authorizes the build-system and pytest/Ruff/Mypy/tooling-only modification to `pyproject.toml` | Promotes exact gate identities and canonical commands without becoming a second owner of `pyproject.toml` or changing the dependency closure. |
+| 4.A | `pyproject.toml`; `requirements/dev.lock`; `src/vespercode/__init__.py`; `src/vespercode/project/dependency_closure.py`; `config/dependency-closure-v1.json`; `scripts/bootstrap_formal_env.py` | Task 4.F changes only build-system and pytest/Ruff/Mypy/tooling sections of `pyproject.toml`; Task 33.A changes only package-data/version/distribution-metadata/console-entry-point sections of `pyproject.toml` | Sole dependency/Python/source-policy/lock/closure-record/formal-bootstrap owner; never modifies Milestone 1 gate files, and no later task changes dependency tables, Python range, dependency sources, `requirements/dev.lock`, the closure verifier/record, or bootstrap. |
+| 4.F | `src/vespercode/project/toolchain_promotion.py`; `config/formal-toolchain-promotion-v1.json` | None | Sole promotion verifier/record owner; consumes Task 4.A's `.venv-formal` bootstrap and authorized `pyproject.toml` tooling-only modification without becoming a second owner of `pyproject.toml`, the bootstrap, or the dependency closure. |
 | 4.B | `src/vespercode/canonical/{json_v1.py,digest.py}` | None | Owns canonical bytes and domain digest only. |
 | 4.C | `src/vespercode/canonical/{timestamp_v1.py,clock.py}` | None | Owns time parsing/conversion and injected clocks only. |
 | 4.D | `src/vespercode/canonical/path_v1.py` | None | Owns lexical path validation only. |
@@ -10520,7 +10571,7 @@ The mechanically checked core-file set is formed only from exact backticked repo
 | 36.B | `delivery/evidence/release-v1.json` | None | File receives only real confirmed Release/GHCR values. |
 | 36.C | `render.yaml`; `delivery/evidence/deployment-v1.json` | None | Files receive only real confirmed Render values; exact supporting tests are frozen in Task 36.C. |
 | 37.A | `README.md`; `src/vespercode/delivery/readme_verifier.py` | None | Documentation contract only; no application behavior. |
-| 37.B | `src/vespercode/delivery/process_verifier.py` | Appends only to `SPEC_PROCESS.md` and `AGENT_LOG.md` under their existing ownership rules | Preserves history and verifies all executable child evidence. |
+| 37.B | `src/vespercode/delivery/process_verifier.py` | Appends only to `SPEC_PROCESS.md` and `AGENT_LOG.md` under their existing ownership rules | Preserves history, reads both Task 4 records without modifying them, and verifies all executable child evidence plus exact Task 1 Python identity continuity. |
 | 37.C | `scripts/{verify_delivery.py,verify_reflection.py}` | Human owns substantive `REFLECTION.md` | Final gate only; no application or SPEC changes. |
 | 38.A | `src/vespercode/web/routes_credentials.py`; `src/vespercode/web/templates/credential_status.html` | None | Credential workflow only. |
 | 38.B | `src/vespercode/web/routes_memory.py`; `src/vespercode/web/templates/memory.html` | None | Memory workflow only. |
@@ -10611,12 +10662,12 @@ Every task list in the four coverage matrices below contains exact executable Ta
 
 ## Test Environment Matrix
 
-Every `Owning tasks` cell below contains exact executable Task ids only. The feasibility children under Milestones 1, 2, and 3 run only through the environment frozen by Task 1.A. Task 4.A then freezes the complete formal dependency closure while preserving overlapping gate tool versions; Task 4.F separately promotes the verified versions, marker set, and static rules. Task 4.F's pytest configuration makes `python -m pytest -q` the deterministic formal offline command by excluding all six real-environment markers. A dedicated formal environment command always clears default addopts, selects exactly one marker, and names its test root.
+Every `Owning tasks` cell below contains exact executable Task ids only. The feasibility children under Milestones 1, 2, and 3 run only through the environment frozen by Task 1.A. Task 4.A then freezes the complete formal dependency closure, exact Task 1 Python identity, and sole `.venv-formal` bootstrap; Task 4.F separately promotes that exact interpreter/tool identity, marker set, and static rules. In every fresh formal worktree, `py -3.12 scripts/bootstrap_formal_env.py` must compare `platform.python_version()` character-for-character with Task 1.E terminal `GO` evidence before creating or using `.venv-formal`, then install only `requirements/dev.lock` with `--require-hashes --no-deps`. Task 4.F's pytest configuration makes logical `python -m pytest -q`, executed as `.venv-formal\Scripts\python.exe -m pytest -q`, the deterministic formal offline command by excluding all six real-environment markers. A dedicated formal environment command always clears default addopts, selects exactly one marker, and names its test root.
 
 | Layer | Exact environment and command | Owning tasks | Required proof | Saved evidence |
 |---|---|---|---|---|
-| Feasibility gate bootstrap | Windows 11 x64; `py -3.12 -m venv .venv-gate`; hash-only install from `requirements/gate.lock`; all checks via `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py {pytest|ruff-format|ruff-check|mypy} -- <explicit-targets>`; Task 2.C starts a digest-pinned registry on `127.0.0.1` with an OS-assigned port | 1.A, 1.B, 1.C, 1.D, 1.E, 2.A, 2.B, 2.C, 2.D, 2.E, 2.F, 2.G, 3.A, 3.B, 3.C, 3.D, 3.E, 3.F, 3.G, 4.A, 4.F, 37.B, 37.C | Exact dependency hashes/markers/config; no global/Task 4 project config; Task 2.D/2.E/2.F reporter, evidence, and stable failure inputs; fixed OCI parameters, local OCI → loopback RepoDigest → digest-pull equality, zero credentials/external push, no manifest self-reference, verified cleanup; unchanged Milestone 1 identities in Milestones 2 and 3; reviewed Task 4.A dependency closure and Task 4.F promotion | Tool/file SHA-256, install log, registry image/config/bind/cleanup evidence, three equal digests, Milestone 1, 2, and 3 `GO` reports, Task 4.A closure and Task 4.F promotion comparisons, Task 37.B recomputation and Task 37.C final gate |
-| Offline unit tests | Python 3.12, no network/Docker/WinCred; `python -m pytest -q` | 4.A, 4.F, 4.B, 4.C, 4.D, 4.E, 5.A, 5.B, 5.C, 5.D, 5.E, 6.A, 6.B, 6.C, 6.D, 6.E, 7.A, 7.B, 7.C, 8.A, 8.B, 9.C, 9.D, 10.A, 10.B, 10.C, 11.A, 11.B, 12.A, 12.B, 12.C, 12.D, 13, 14.A, 14.B, 14.C, 15.A, 15.B, 15.C, 15.D, 15.E, 15.F, 16.A, 16.B, 17.A, 17.B, 17.C, 18.A, 18.B, 18.C, 18.D, 19.A, 19.B, 19.C, 20.A, 20.B, 21.A, 21.B, 21.C, 22.A, 22.B, 22.C, 23.A, 23.B, 23.C, 24.A, 24.B, 24.C, 25.A, 25.B, 25.C, 25.D, 25.E, 25.F, 25.G, 26.A, 26.B, 26.C, 27.A, 28.A, 28.B, 29.A, 29.B, 29.C, 30.A, 30.B, 32.A, 32.B, 32.C, 35.A, 35.B, 35.C, 37.A, 37.B, 37.C, 38.A, 38.B, 38.C, 38.D, 38.E, 38.F, 38.G | Dependency closure, formal toolchain promotion, canonical vectors, closed schemas/cursors, Mock/Stub core, policy, requests, per-call credential failure ordering, parsers, transactions, feedback, loop, memory, audit, WebUI client, Demo logic | Local output plus GitHub Actions and GitLab CI `unit-test` report artifacts |
+| Feasibility gate bootstrap | Windows 11 x64; `py -3.12 -m venv .venv-gate`; hash-only install from `requirements/gate.lock`; all checks via `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py {pytest|ruff-format|ruff-check|mypy} -- <explicit-targets>`; Task 2.C starts a digest-pinned registry on `127.0.0.1` with an OS-assigned port | 1.A, 1.B, 1.C, 1.D, 1.E, 2.A, 2.B, 2.C, 2.D, 2.E, 2.F, 2.G, 3.A, 3.B, 3.C, 3.D, 3.E, 3.F, 3.G | Exact dependency hashes/markers/config; no global/Task 4 project config; Task 2.D/2.E/2.F reporter, evidence, and stable failure inputs; fixed OCI parameters, local OCI → loopback RepoDigest → digest-pull equality, zero credentials/external push, no manifest self-reference, verified cleanup; unchanged Milestone 1 identities in Milestones 2 and 3 | Tool/file SHA-256, install log, registry image/config/bind/cleanup evidence, three equal digests, and Milestone 1, 2, and 3 `GO` reports |
+| Offline unit tests | Fresh Windows worktree; `py -3.12 scripts/bootstrap_formal_env.py`; exact Task 1 `python_version`; hash-only/no-dependency materialization from immutable `requirements/dev.lock`; no network/Docker/WinCred during tests; `.venv-formal\Scripts\python.exe -m pytest -q` | 4.A, 4.F, 4.B, 4.C, 4.D, 4.E, 5.A, 5.B, 5.C, 5.D, 5.E, 6.A, 6.B, 6.C, 6.D, 6.E, 7.A, 7.B, 7.C, 8.A, 8.B, 9.C, 9.D, 10.A, 10.B, 10.C, 11.A, 11.B, 12.A, 12.B, 12.C, 12.D, 13, 14.A, 14.B, 14.C, 15.A, 15.B, 15.C, 15.D, 15.E, 15.F, 16.A, 16.B, 17.A, 17.B, 17.C, 18.A, 18.B, 18.C, 18.D, 19.A, 19.B, 19.C, 20.A, 20.B, 21.A, 21.B, 21.C, 22.A, 22.B, 22.C, 23.A, 23.B, 23.C, 24.A, 24.B, 24.C, 25.A, 25.B, 25.C, 25.D, 25.E, 25.F, 25.G, 26.A, 26.B, 26.C, 27.A, 28.A, 28.B, 29.A, 29.B, 29.C, 30.A, 30.B, 32.A, 32.B, 32.C, 35.A, 35.B, 35.C, 37.A, 37.B, 37.C, 38.A, 38.B, 38.C, 38.D, 38.E, 38.F, 38.G | Bootstrap rejects non-exact Python before environment creation/use; dependency closure and both unique records match terminal gate evidence; formal toolchain promotion, canonical vectors, closed schemas/cursors, Mock/Stub core, policy, requests, per-call credential failure ordering, parsers, transactions, feedback, loop, memory, audit, WebUI client, Demo logic | Bootstrap identity/install result, both persistent Task 4 records, local output, plus GitHub Actions and GitLab CI `unit-test` report artifacts |
 | Windows integration tests | Project-specific Windows 11 x64 runner; `python -m pytest -q -o addopts='' -m windows_integration tests/integration/windows tests/feasibility/windows` | 1.A, 1.B, 1.C, 1.D, 1.E, 9.A, 9.B, 9.C, 10.A, 10.B, 10.C, 26.A, 26.C, 27.B | NTFS/Win32 final identity, path collision, ADS, reparse/hard link, named mutex, Git bytes, Snapshot source, ACL, persistence, WinCred lifecycle and fresh per-call lookup | Runner OS/Python/Git versions, test report, cleared credential state |
 | Docker integration tests | Docker Desktop Linux mode; `python -m pytest -q -o addopts='' -m docker_integration tests/integration/docker tests/feasibility/docker` | 2.A, 2.B, 2.C, 2.D, 2.E, 2.F, 2.G, 18.A, 18.B, 18.C, 18.D, 19.B, 20.B, 21.A, 21.B, 21.C | Immutable image/profile mapping, loopback registry round-trip/no-self-reference/cleanup, check containers with no network/root/write/socket, tmpfs/resources, complete reports, Baseline, formal validation | Docker/builder/registry versions, three-way image digest, lifecycle inspection, report/test artifacts |
 | Reference fixture E2E | Windows + Docker + Mock profile; `python -m pytest -q -o addopts='' -m reference_e2e tests/e2e/reference` | 31.A, 31.B, 31.C | Complete production admission → Baseline → feedback correction → formal validation → wait → exact writeback/recovery-block flow | Canonical Task 31.A/31.B/31.C traces/reports, final tree digests, cleanup evidence |
@@ -10640,7 +10691,7 @@ This audit is mandatory after every non-tracking PLAN edit. It parses only the e
 | Dependency table | 134 unique rows, 559 exact predecessor edges, one root (`1.A`), zero missing/self/unknown edges | PASS |
 | DAG topology | 134/134 nodes topologically sorted; 134/134 reachable from root `1.A`; zero cycles, isolated nodes, or unreachable nodes | PASS |
 | Executable waves | 70 waves, 134/134 Tasks assigned exactly once, zero predecessor-in-same-or-later-wave violations | PASS |
-| Ownership | 134 unique Task rows, 292 expanded core paths, zero duplicate primary owners | PASS |
+| Ownership | 134 unique Task rows, 297 expanded core paths, zero duplicate primary owners | PASS |
 | Parallel conflicts | Zero same-wave intersections across expanded core-file ownership sets | PASS |
 | Interface provenance | All 134 Task blocks declare exact `Interfaces` without placeholder signatures; all 559 edges target an existing executable producer or a documented ordering/evidence predecessor. | PASS |
 | Requirement coverage | 9/9 US, 9/9 FR, 6/6 NFR, and 31/31 AC rows each have non-empty, valid, disjoint implementation and independent validation Task sets | PASS |
@@ -10657,10 +10708,10 @@ Release readiness is `PASS` only when every condition below is true at the same 
 - All **134 executable Tasks** are complete and each records a real implementation commit SHA, responsible subagent, human edits, exact tests, spec review, code-quality review, and PR URL. All 37 Milestones derive complete status from their exact children and have no aggregate implementation commit or PR.
 - The exact release registry is: 1.A, 1.B, 1.C, 1.D, 1.E, 2.A, 2.B, 2.C, 2.D, 2.E, 2.F, 2.G, 3.A, 3.B, 3.C, 3.D, 3.E, 3.F, 3.G, 4.A, 4.F, 4.B, 4.C, 4.D, 4.E, 5.A, 5.B, 5.C, 5.D, 5.E, 6.A, 6.B, 6.C, 6.D, 6.E, 7.A, 7.B, 7.C, 8.A, 8.B, 9.A, 9.B, 9.C, 9.D, 10.A, 10.B, 10.C, 11.A, 11.B, 12.A, 12.B, 12.C, 12.D, 13, 14.A, 14.B, 14.C, 15.A, 15.B, 15.C, 15.D, 15.E, 15.F, 16.A, 16.B, 17.A, 17.B, 17.C, 18.A, 18.B, 18.C, 18.D, 19.A, 19.B, 19.C, 20.A, 20.B, 21.A, 21.B, 21.C, 22.A, 22.B, 22.C, 23.A, 23.B, 23.C, 24.A, 24.B, 24.C, 25.A, 25.B, 25.C, 25.D, 25.E, 25.F, 25.G, 26.A, 26.B, 26.C, 27.A, 27.B, 28.A, 28.B, 29.A, 29.B, 29.C, 30.A, 30.B, 31.A, 31.B, 31.C, 32.A, 32.B, 32.C, 33.A, 33.B, 34.A, 34.B, 35.A, 35.B, 35.C, 36.A, 36.B, 36.C, 37.A, 37.B, 37.C, 38.A, 38.B, 38.C, 38.D, 38.E, 38.F, and 38.G.
 - M0 records the human-approved current SPEC path/SHA-256/blob/baseline and confirms the gate-bootstrap contract; Tasks 1.E, 2.G, and 3.G have `GO` outcomes under a cold-start record covering the approved `PlanSemanticDigestV1`.
-- `requirements/gate.lock`, `gates/pytest.ini`, `gates/ruff.toml`, `gates/mypy.ini`, `scripts/run_gate_checks.py`, the Task 2.D/2.E/2.F reporter/evidence/fingerprint producers, and the Task 1.E, 2.G, and 3.G `GO` reports remain present; Task 37.B recomputes their SHA-256/version matrix and proves it matches the Task 4.A dependency closure and Task 4.F promotion records without silent drift.
+- `requirements/gate.lock`, `gates/pytest.ini`, `gates/ruff.toml`, `gates/mypy.ini`, `scripts/run_gate_checks.py`, the Task 2.D/2.E/2.F reporter/evidence/fingerprint producers, the Task 1.E, 2.G, and 3.G `GO` reports, `config/dependency-closure-v1.json`, and `config/formal-toolchain-promotion-v1.json` remain present; Task 37.B recomputes their SHA-256/version matrix and proves both records' `python_version` values equal Task 1.E terminal `GO` `GateToolchainEvidenceV1.python_version` character-for-character before proving the remaining closure/promotion identities match without silent drift.
 - Task 2.G `GO` proves a digest-pinned loopback-only registry with no credentials/external pushes, verified cleanup, no final-manifest self-reference, and local OCI/registry/digest-pull equality with final `ReferenceProfileManifestV1.docker_image_digest`; Task 34.A reproduces that exact identity, and Task 36.B's GHCR RepoDigest equals it.
 - Every Critical or Important review finding is closed and the same review stage passed after the fix.
-- The Task 4.A dependency tables, Python range, source/index policy, and `requirements/dev.lock` still match the reviewed closure; `python -m pytest -q`, Ruff format, Ruff lint, and strict Mypy pass from that locked Python 3.12 environment under Task 4.F's unchanged formal tooling configuration.
+- The Task 4.A dependency tables, public Python range `>=3.12,<3.13`, exact Task 1 `python_version`, source/index policy, `requirements/dev.lock`, and unique closure record still match the reviewed closure; Task 4.F's unique promotion record carries the same exact `python_version`; `.venv-formal\Scripts\python.exe -m pytest -q`, Ruff format, Ruff lint, and strict Mypy pass from the environment materialized only by `py -3.12 scripts/bootstrap_formal_env.py` with `--require-hashes --no-deps` under Task 4.F's unchanged formal tooling configuration.
 - All required Windows, Docker, reference E2E, persistence fault, WebUI/browser, package, OCI, and live smoke results pass without a required skip.
 - Task 35.A's latest `.github/workflows/ci.yml` workflow for the released source commit passes exact `unit-test`, `reference-image-build`, and `demo-image-build` jobs for the applicable push/pull-request contract, with no publish credential/action.
 - Task 35.B's latest `.gitlab-ci.yml` pipeline for the released source commit passes all applicable exact jobs: `unit-test`, `wheel-build-smoke`, `reference-image-build`, and `demo-image-build`; Task 35.C proves both platform results and protected release rules refer to the same source commit.
