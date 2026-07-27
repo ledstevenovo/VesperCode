@@ -611,14 +611,13 @@ def test_gate_fails_when_lexical_path_and_final_object_disagree(
 **Interfaces:**
 - Consumes: Task 1 GO evidence and its immutable `requirements/gate.lock`, gate configs, runner, tool versions, and SHA-256 matrix; Docker Desktop Linux-container mode; a digest-pinned Linux base image; a digest-pinned loopback registry image embedded as a closed Task 2 probe constant. Task 2 may add the separately locked reference-image dependencies, but may not re-resolve or upgrade the host gate toolchain.
 - Produces:
-  - `ReferenceProfileManifestV1` JSON with the exact SPEC fields and computed digest
-  - `run_reference_boundary_gate(manifest_output_path: Path, fixture_path: Path) -> DockerBoundaryGateReportV1`
-  - `GatePytestReportV1` events written only by explicitly loading `spikes.docker_reference_boundary.pytest_reporter`
-  - `normalize_call_fail_input(report: GatePytestReportV1, node_id: str) -> GateFailureFingerprintInputV1`
-  - `compare_failure_inputs(left: GateFailureFingerprintInputV1, right: GateFailureFingerprintInputV1) -> GateFingerprintComparisonV1`
-  - `LoopbackRegistryEvidenceV1(registry_image_digest: str, bind_host: Literal["127.0.0.1"], assigned_port: int, credentials_used: Literal[False], external_push_count: Literal[0], local_oci_manifest_digest: str, registry_repo_digest: str, digest_pull_repo_digest: str, cleanup_verified: Literal[True])`
-  - `DockerBoundaryCheckSequenceV1`, an immutable ordered tuple of zero or more `DockerBoundaryCheckV1` values
-  - `DockerBoundaryGateReportV1(outcome: Literal["GO","NO_GO"], base_image_digest: str, docker_image_digest: str, loopback_registry: LoopbackRegistryEvidenceV1, gate_toolchain: GateToolchainEvidenceV1, reporter_version: str, reporter_sha256: str, fingerprint_probe_version: str, fingerprint_probe_sha256: str, checks: DockerBoundaryCheckSequenceV1, evidence_digest: str)`
+  - `ReferenceBuildInputV1(base_image_digest: str, registry_image_digest: str, requirements_digest: str, fixture_tree_digest: str, tool_versions_digest: str, build_recipe_version: str)` and `freeze_reference_build_input(root: Path) -> ReferenceBuildInputV1`
+  - `ReferenceImageBuildEvidenceV1(local_oci_manifest_digest: str, image_config_digest: str, recipe_digest: str, platform: str, self_reference_scan_passed: bool)` and `build_reference_image(build_input: ReferenceBuildInputV1) -> ReferenceImageBuildEvidenceV1`
+  - `LoopbackRegistryEvidenceV1(registry_image_digest: str, bind_host: Literal["127.0.0.1"], assigned_port: int, credentials_used: Literal[False], external_push_count: Literal[0], local_oci_manifest_digest: str, registry_repo_digest: str, digest_pull_repo_digest: str, cleanup_verified: bool)` and `probe_loopback_registry(build: ReferenceImageBuildEvidenceV1) -> LoopbackRegistryEvidenceV1`
+  - `ContainerIsolationEvidenceV1(network_disabled: bool, non_root: bool, root_read_only: bool, capabilities_dropped: bool, docker_socket_absent: bool, workspace_read_only: bool, tmpfs_bounded: bool, cpu_limit: int, memory_limit_bytes: int, pid_limit: int, cleanup_verified: bool)` and `probe_reference_container(build: ReferenceImageBuildEvidenceV1, fixture: Path) -> ContainerIsolationEvidenceV1`
+  - `GatePytestEventSequenceV1`, an immutable ordered tuple of `GatePytestEventV1` values, `GatePytestReportV1(planned_node_ids: TestIdSequenceV1, collected_node_ids: TestIdSequenceV1, events: GatePytestEventSequenceV1, normal_end: bool, exit_code: int, integrity_digest: str)`, and `validate_gate_pytest_report(report: GatePytestReportV1) -> GatePytestEvidenceResultV1`
+  - `GateFailureFingerprintInputV1(node_id: str, phase: Literal["CALL"], outcome: Literal["FAIL"], normalized_message: str, location: CanonicalGateLocationV1)`, `GateFingerprintComparisonV1(equal: bool, left_digest: str, right_digest: str)`, `normalize_call_fail_input(report: GatePytestReportV1, node_id: str) -> GateFailureFingerprintInputV1`, and `compare_failure_inputs(left: GateFailureFingerprintInputV1, right: GateFailureFingerprintInputV1) -> GateFingerprintComparisonV1`
+  - `ReferenceProfileManifestV1`, `DockerBoundaryGateReportV1(outcome: Literal["GO","NO_GO"], build_input: ReferenceBuildInputV1, build: ReferenceImageBuildEvidenceV1, registry: LoopbackRegistryEvidenceV1, isolation: ContainerIsolationEvidenceV1, pytest_evidence: GatePytestEvidenceResultV1, fingerprint: GateFingerprintComparisonV1, gate_toolchain: GateToolchainEvidenceV1, evidence_digest: str)`, and `assemble_reference_gate_report(command: AssembleReferenceGateReportV1) -> DockerBoundaryGateReportV1`
   - a fixed reference fixture whose target failure has one byte-identical normalized `GateFailureFingerprintInputV1` across independent runs; Task 19.C remains the sole owner of production `FailureFingerprintV1`
 
 **Implementation points:**
@@ -641,16 +640,8 @@ def test_gate_fails_when_lexical_path_and_final_object_disagree(
 **Intentionally failing test:**
 
 ```python
-def test_gate_rejects_loopback_registry_digest_mismatch(
-    fake_docker: FakeDockerBoundary,
-    valid_reference_manifest: ReferenceProfileManifestV1,
-) -> None:
-    fake_docker.loopback_registry.local_oci_manifest_digest = "sha256:" + "1" * 64
-    fake_docker.loopback_registry.registry_repo_digest = "sha256:" + "2" * 64
-    fake_docker.loopback_registry.digest_pull_repo_digest = "sha256:" + "2" * 64
-    report = evaluate_docker_boundary(fake_docker.inspect(), valid_reference_manifest)
-    assert report.outcome == "NO_GO"
-    assert report.failed_codes == ("OCI_REGISTRY_DIGEST_MISMATCH",)
+def test_gate_rejects_loopback_registry_digest_mismatch() -> None:
+    assert assemble_reference_gate_report(mismatched_digest_command()).outcome == "NO_GO"
 ```
 
 **Verification:**
@@ -668,22 +659,21 @@ def test_gate_rejects_loopback_registry_digest_mismatch(
 
 - [ ] **Step 1: Write the digest-mismatch RED test.** Create the exact test above plus a closed fake inspection object; also add the writable-candidate-mount rejection case as a second pure test. Mark real-Docker cases `docker_integration`, keep pure inspection cases marker-free, and require callers to receive `outcome` from evaluation rather than set it.
 - [ ] **Step 2: Run RED.** Verify Task 1 lock/config/runner SHA-256 values, then run the exact Target command above. Expected: nonzero because manifest and boundary evaluators do not exist; any bootstrap drift fails before pytest.
-- [ ] **Step 3: Implement the smallest boundary evaluator and manifest loader.**
+- [ ] **Step 3: Implement the smallest child-owned evidence composition and final report assembler.**
 
   ```python
-  def evaluate_docker_boundary(
-      inspection: DockerInspectionV1,
-      manifest: ReferenceProfileManifestV1,
-  ) -> DockerBoundaryGateReportV1:
-      checks = run_closed_boundary_checks(inspection, manifest)
-      return DockerBoundaryGateReportV1.from_checks(
-          docker_image_digest=inspection.loopback_registry.registry_repo_digest,
-          loopback_registry=inspection.loopback_registry,
-          checks=checks,
-      )
+  build_input = freeze_reference_build_input(fixture_root)
+  build = build_reference_image(build_input)
+  registry = probe_loopback_registry(build)
+  isolation = probe_reference_container(build, fixture_root)
+  pytest_evidence = validate_gate_pytest_report(pytest_report)
+  first_input = normalize_call_fail_input(first_pytest_report, target_node_id)
+  second_input = normalize_call_fail_input(second_pytest_report, target_node_id)
+  fingerprint = compare_failure_inputs(first_input, second_input)
+  report = assemble_reference_gate_report(assemble_command)
   ```
 
-  `run_closed_boundary_checks` must enumerate the complete required-code set and mark an absent observation as failure. Implement the gate-only reporter and fingerprint input comparator in their two owned modules; neither may import a future production `src/vespercode/validation` module.
+  `assemble_command` is the exact `AssembleReferenceGateReportV1` value containing those Task 2.A–2.F child results and Task 1 gate toolchain evidence. Task 2.G validates and assembles it but does not repeat any upstream operation. Implement the gate-only reporter and fingerprint input comparator in their two owned modules; neither may import a future production `src/vespercode/validation` module.
 - [ ] **Step 4: Run GREEN.** Re-run the exact Target command through Task 1's environment/runner. Expected: exit `0` with the sole failed code `OCI_REGISTRY_DIGEST_MISMATCH`.
 - [ ] **Step 5: Refactor without behavior change.** Keep OCI export/digesting, loopback registry lifecycle, manifest generation, Docker inspection, report validation, reporter events, and failure-input comparison as separate responsibilities in the four planned spike files; the registry lifecycle owns cleanup through one `try/finally` boundary.
 - [ ] **Step 6: Run the real reference boundary gate.** Build from `containers/reference/Dockerfile`, export the frozen single-platform OCI manifest, start the digest-pinned registry on `127.0.0.1:0`, push/pull by digest, generate the final manifest only after equality, and run the exact Real build/probe command above. Require explicit `-p spikes.docker_reference_boundary.pytest_reporter` with autoload disabled. Expected: GO with three equal digests, zero credential/external push, verified registry cleanup, no final-manifest image member, and the existing no-network/non-root/read-only/tmpfs/report/fingerprint contracts.
@@ -2077,23 +2067,9 @@ def test_user_approval_cannot_override_noneditable_path_deny(
 **Interfaces:**
 - Consumes: Task 4.C `ClockV1`; Task 7.A `ControlDatabase.immediate_transaction`; Task 7.B wait lock/commit/expiry primitives and run repositories; Task 7.C idempotency; Task 12.D `CandidateIdentityV1`/`FinalDiffV1`; Task 13 policy digest; Task 20.B `ValidationManifestV1`; Task 21 `VerifiedCandidateV1` and formal evidence digest.
 - Produces:
-  - `FinalWritebackSubjectV1`
-  - `FinalWritebackBindingV1`
-  - `FinalWritebackApprovalV1`
-  - `DecideFinalWritebackV1(wait_id: str, run_id: str, wait_kind: Literal["FINAL_WRITEBACK"], subject_digest: DigestV1, decision: WaitDecisionChoiceV1, event_id: str)`
-  - `FinalWritebackDecisionResultV1 = WritebackApprovedV1 | WritebackRejectedV1 | WritebackExpiredV1 | WritebackStaleV1 | WritebackAlreadyDecidedV1`
-  - result discriminators and payloads: `WritebackApprovedV1(kind="APPROVED", approval_id, subject_digest)`; `WritebackRejectedV1(kind="REJECTED", approval_id, subject_digest, error_code="APPROVAL_REJECTED")`; `WritebackExpiredV1(kind="EXPIRED", approval_id, subject_digest, error_code="APPROVAL_EXPIRED")`; `WritebackStaleV1(kind="STALE", error_code="APPROVAL_STALE")`; `WritebackAlreadyDecidedV1(kind="ALREADY_DECIDED", error_code="WAIT_STALE")`
-  - `ConsumeWritebackApprovalV1(approval_id: str, wait_id: str, run_id: str, subject_digest: DigestV1, current: FinalWritebackBindingV1, consumed_at: CanonicalTimestampV1)`
-  - `build_final_writeback_subject(binding: FinalWritebackBindingV1, expires_at: CanonicalTimestampV1) -> FinalWritebackSubjectV1`
-  - `FinalWritebackDecisionServiceV1.decide(command: DecideFinalWritebackV1) -> FinalWritebackDecisionResultV1`
-  - `WritebackApprovalRepository.record_user_decision(tx: ControlTransactionV1, wait: WaitContextV1, subject: FinalWritebackSubjectV1, decision: WaitDecisionChoiceV1, decided_at: CanonicalTimestampV1) -> FinalWritebackApprovalV1`
-  - `WritebackApprovalRepository.record_expired(tx: ControlTransactionV1, wait: WaitContextV1, subject: FinalWritebackSubjectV1, expired_at: CanonicalTimestampV1) -> FinalWritebackApprovalV1`
-  - `WritebackApprovalRepository.consume(command: ConsumeWritebackApprovalV1) -> ApprovalConsumptionResultV1`
-  - `WritebackApprovalRepository.get(approval_id: str) -> FinalWritebackApprovalV1`
-  - `WritebackBindingRepository.load_for_update(tx: ControlTransactionV1, run_id: str) -> tuple[FinalWritebackSubjectV1, FinalWritebackBindingV1]`
-  - `map_writeback_wait_failure(result: WaitDecisionUnavailableV1) -> WritebackStaleV1 | WritebackAlreadyDecidedV1`
-  - `verify_consumable(approval: FinalWritebackApprovalV1, command: ConsumeWritebackApprovalV1) -> None`
-  - `verify_writeback_binding(subject: FinalWritebackSubjectV1, current: FinalWritebackBindingV1, now: CanonicalTimestampV1) -> WritebackBindingResultV1`
+  - `FinalWritebackBindingV1`, `FinalWritebackSubjectV1`, and pure `build_final_writeback_subject(binding: FinalWritebackBindingV1, expires_at: CanonicalTimestampV1) -> FinalWritebackSubjectV1`
+  - immutable `WRITEBACK_APPROVALS_V1_MIGRATION = MigrationV1(version=10, name="writeback_approvals_v1", ...)`, `DecideFinalWritebackV1`, closed `FinalWritebackDecisionResultV1`, and `FinalWritebackDecisionServiceV1.decide(command: DecideFinalWritebackV1) -> FinalWritebackDecisionResultV1`
+  - `ConsumeWritebackApprovalV1`, `ApprovalConsumptionResultV1`, `WritebackApprovalRepository.consume(command: ConsumeWritebackApprovalV1) -> ApprovalConsumptionResultV1`, and `verify_consumable(approval: FinalWritebackApprovalV1, command: ConsumeWritebackApprovalV1) -> None`
 
 **Implementation points:**
 - Recompute the current `FinalDiffV1`, enforce non-empty editable entries, and verify the reference/Snapshot/Manifest/governance policy identities before creating a subject or wait.
@@ -2101,6 +2077,7 @@ def test_user_approval_cannot_override_noneditable_path_deny(
 - Subject digest includes every immutable field in SPEC §4.4.2 except its own digest. Approval id, creation time, and mutable approval status do not alter it.
 - Bind the wait id/run id/kind/subject/expiry exactly. Only `FINAL_WRITEBACK` from `FORMAL_VALIDATION` is accepted.
 - `FinalWritebackDecisionServiceV1` reads `now` from its injected Task 4.C `ClockV1`, converts the specialized command to Task 5 `WaitDecisionV1`, locks the wait through Task 7.B, reloads the current subject/binding, and performs the approval-record mutation plus wait transition in the same `ControlTransactionV1`. User input cannot supply a decision timestamp.
+- Its closed result discriminators and payloads are `WritebackApprovedV1(kind="APPROVED", approval_id, subject_digest)`, `WritebackRejectedV1(kind="REJECTED", approval_id, subject_digest, error_code="APPROVAL_REJECTED")`, `WritebackExpiredV1(kind="EXPIRED", approval_id, subject_digest, error_code="APPROVAL_EXPIRED")`, `WritebackStaleV1(kind="STALE", error_code="APPROVAL_STALE")`, and `WritebackAlreadyDecidedV1(kind="ALREADY_DECIDED", error_code="WAIT_STALE")`.
 - The decision event id uses Task 7.C idempotency in that same transaction: exact replay returns the originally stored typed result; reuse with different decision bytes returns `EVENT_ID_REUSE_CONFLICT`; neither path creates another approval or persistence attempt.
 - An exact `APPROVE` creates one `FinalWritebackApprovalV1(status="PENDING")` and moves the Run to `RUNNING(PERSISTENCE)`; it does not consume the approval and does not write the workspace. Task 26.A is the only consumer.
 - `REJECT` records `status="REJECTED"` and stops the Run. A server-observed expired wait records `status="EXPIRED"` through the expiry path. Both return closed non-approved results and make zero persistence calls.
@@ -2132,13 +2109,11 @@ def test_exact_writeback_approval_can_be_consumed_only_once(
         )
     )
     assert decision.kind == "APPROVED"
-    pending_approval = approval_repository.get(decision.approval_id)
-    assert pending_approval.status == "PENDING"
     consume = ConsumeWritebackApprovalV1(
-        approval_id=pending_approval.approval_id,
+        approval_id=decision.approval_id,
         wait_id=final_writeback_wait.wait_id,
         run_id=final_writeback_wait.run_id,
-        subject_digest=pending_approval.subject_digest,
+        subject_digest=decision.subject_digest,
         current=current_binding,
         consumed_at=fixed_clock.now(),
     )
@@ -2146,7 +2121,6 @@ def test_exact_writeback_approval_can_be_consumed_only_once(
     second = approval_repository.consume(consume)
     assert first.kind == "CONSUMED"
     assert second.kind == "ALREADY_CONSUMED"
-    assert approval_repository.get(pending_approval.approval_id).status == "CONSUMED"
 ```
 
 **Verification:**
@@ -2164,7 +2138,7 @@ def test_exact_writeback_approval_can_be_consumed_only_once(
 
 - [ ] **Step 1: Write the one-consumer RED test.** Add the exact test and obtain the pending approval only through `FinalWritebackDecisionServiceV1.decide`; direct fixture/repository insertion is forbidden.
 - [ ] **Step 2: Run RED.** Run the target command. Expected: nonzero because the writeback subject and repository do not exist.
-- [ ] **Step 3: Implement the minimum atomic consumption.**
+- [ ] **Step 3: Implement the minimum atomic consumption.** The underscored helpers in this example are private/local implementation details inside the Task 14.B/14.C services, have no downstream consumer, and are not Milestone APIs.
 
   ```python
   def decide(
@@ -2176,12 +2150,12 @@ def test_exact_writeback_approval_can_be_consumed_only_once(
       with self._db.immediate_transaction() as tx:
           lock_result = self._runs.lock_wait_for_decision(tx, wait_decision)
           if isinstance(lock_result, WaitDecisionUnavailableV1):
-              return map_writeback_wait_failure(lock_result)
+              return _map_writeback_wait_failure(lock_result)
           lock = lock_result
-          subject, current = self._bindings.load_for_update(tx, command.run_id)
-          binding = verify_writeback_binding(subject, current, now)
+          subject, current = self._bindings._load_for_update(tx, command.run_id)
+          binding = _verify_writeback_binding(subject, current, now)
           if binding.kind == "EXPIRED":
-              expired = self._approvals.record_expired(tx, lock.wait, subject, now)
+              expired = self._approvals._record_expired(tx, lock.wait, subject, now)
               self._runs.expire_wait(tx, lock, now)
               return WritebackExpiredV1(
                   kind="EXPIRED",
@@ -2194,7 +2168,7 @@ def test_exact_writeback_approval_can_be_consumed_only_once(
                   kind="STALE",
                   error_code="APPROVAL_STALE",
               )
-          approval = self._approvals.record_user_decision(
+          approval = self._approvals._record_user_decision(
               tx, lock.wait, subject, command.decision, now
           )
           self._runs.commit_wait_decision(tx, lock, wait_decision)
@@ -2216,9 +2190,9 @@ def test_exact_writeback_approval_can_be_consumed_only_once(
       command: ConsumeWritebackApprovalV1,
   ) -> ApprovalConsumptionResultV1:
       with self._db.immediate_transaction() as tx:
-          approval = tx.load_writeback_approval(command.approval_id)
+          approval = tx._load_writeback_approval(command.approval_id)
           verify_consumable(approval, command)
-          changed = tx.consume_if_pending(approval.approval_id, command.subject_digest)
+          changed = tx._consume_if_pending(approval.approval_id, command.subject_digest)
           if not changed:
               return ApprovalConsumptionResultV1(
                   kind="ALREADY_CONSUMED",
@@ -2848,13 +2822,13 @@ def test_missing_session_end_is_reporter_invalid(
 **Interfaces:**
 - Consumes: Task 5 `CheckPlanIdV1`; Task 6 reference manifest; Task 8 admission ports/config/targets; Task 10 sealed Snapshot; Task 18 executor; Task 19 check evidence/fingerprints.
 - Produces:
+  - `TargetTestIdSequenceV1`, an immutable ordered tuple of one or more target ids
   - `StaticProjectProfileResultV1 = SupportedProjectV1 | UnsupportedProjectV1`
-  - `RuntimeCompatibilityResultV1 = CompatibleRuntimeV1 | BaselineBlockedV1`
-  - `CheckPlanV1`
   - `PythonProjectAdapterV1.detect_static(snapshot: SnapshotTreeV1, reference_manifest: ReferenceProfileManifestV1) -> StaticProjectProfileResultV1`
   - `PythonProjectAdapterV1.build_baseline_plan(static_profile: SupportedProjectV1, target_test_ids: TargetTestIdSequenceV1) -> BaselineCheckPlanV1`
+  - `PythonProjectAdapterV1.build_formal_plan(manifest: ValidationManifestV1, candidate: CandidateIdentityV1) -> FormalValidationCheckPlanV1`
+  - `BaselineResultV1 = PassingBaselineV1 | BaselineBlockedV1`
   - `run_baseline(plan: BaselineCheckPlanV1, snapshot: SnapshotTreeV1, executor: DockerExecutor) -> BaselineResultV1`
-  - `evaluate_runtime_compatibility(evidence: BaselineEvidenceV1, manifest: ReferenceProfileManifestV1) -> RuntimeCompatibilityResultV1`
   - `create_validation_manifest(baseline: PassingBaselineV1, bindings: ManifestBindingsV1) -> ValidationManifestV1`
 
 **Implementation points:**
@@ -2864,7 +2838,7 @@ def test_missing_session_end_is_reporter_invalid(
 - Execute baseline in the exact order: collect-only A, collect-only B, full pytest, target-only rerun, Ruff, Mypy; each check receives a fresh Docker invocation and candidate materialization.
 - Require identical, non-empty collection sets. Every target must be present and produce identical complete `CALL/FAIL` fingerprints in full and target rerun.
 - Require every non-target actually run and PASS; reject skip, xfail, xpass, deselect, not-run, any error phase, timeout, report failure, Ruff failure, or Mypy failure.
-- Evaluate image/tool/profile/environment/read-only/runtime facts as `COMPATIBLE` or a structured `BASELINE_BLOCKED`; no Manifest is created for a blocked result.
+- Task 20.B evaluates image/tool/profile/environment/read-only/runtime facts as `COMPATIBLE` or a structured `BASELINE_BLOCKED` through a private local `_evaluate_runtime_compatibility` helper. It is not exported, has no downstream consumer, and cannot replace `run_baseline`; no Manifest is created for a blocked result.
 - Build all Manifest fields explicitly, sort only the specified target/test record collections, preserve the two collect evidence digests in execution order, and verify every tool/image/policy/Snapshot binding against the same reference profile.
 - Unknown, contradictory, truncated, unstable, or mismatched evidence fails closed with a stable baseline error; a pytest exit code alone never passes.
 
@@ -2897,10 +2871,10 @@ def test_target_that_passes_in_full_baseline_creates_no_manifest(
 
 - [ ] **Step 1: Write the target-PASS RED test.** Add the exact test with complete reports in which only the target outcome violates the stable-failure contract.
 - [ ] **Step 2: Run RED.** Run the target command. Expected: nonzero because the baseline evaluator does not exist.
-- [ ] **Step 3: Implement the minimum target-reproduction predicate.**
+- [ ] **Step 3: Implement the minimum target-reproduction predicate.** `_require_stable_targets` is a private local Task 20.B helper with no downstream consumer, not an alternate Milestone API.
 
   ```python
-  def require_stable_targets(
+  def _require_stable_targets(
       full: PytestEvidenceV1,
       rerun: PytestEvidenceV1,
       targets: tuple[str, ...],
@@ -2953,10 +2927,10 @@ def test_target_that_passes_in_full_baseline_creates_no_manifest(
 **Interfaces:**
 - Consumes: Task 12.D current `CandidateRevisionV1`, `FinalDiffV1`, and policy integrity; Task 18 Docker executor; Task 19.C authoritative check results; Task 20.B `ValidationManifestV1` and Python adapter.
 - Produces:
-  - `FormalValidationPlanV1`
-  - `FormalValidationEvidenceV1`
+  - `FormalValidationPlanV1`, `FormalValidationRequestV1`, and `build_formal_validation_plan(manifest: ValidationManifestV1, candidate: CandidateRevisionV1, final_diff: FinalDiffV1) -> FormalValidationPlanV1`
+  - `FormalValidationEvidenceV1` and `execute_formal_plan(plan: FormalValidationPlanV1, executor: DockerExecutionPortV1) -> FormalValidationEvidenceV1`
+  - `FormalValidationOutcomeV1`
   - `VerifiedCandidateV1(candidate_id: str, candidate_digest: str, final_diff_digest: str, validation_manifest_digest: str, formal_result_digest: str)`
-  - `run_formal_validation(request: FormalValidationRequestV1, adapter: PythonProjectAdapterV1, executor: DockerExecutor) -> FormalValidationOutcomeV1`
   - `evaluate_formal_success(manifest: ValidationManifestV1, candidate: CandidateRevisionV1, plan: FormalValidationPlanV1, evidence: FormalValidationEvidenceV1) -> VerifiedCandidateV1 | FormalValidationFailureV1`
 
 **Implementation points:**
@@ -2979,11 +2953,13 @@ def test_target_that_passes_in_full_baseline_creates_no_manifest(
 def test_pytest_exit_zero_with_skipped_node_creates_no_verified_candidate(
     validation_manifest: ValidationManifestV1,
     current_candidate: CandidateRevisionV1,
+    formal_plan: FormalValidationPlanV1,
     formal_evidence_with_skip: FormalValidationEvidenceV1,
 ) -> None:
     outcome = evaluate_formal_success(
         validation_manifest,
         current_candidate,
+        formal_plan,
         formal_evidence_with_skip,
     )
     assert isinstance(outcome, FormalValidationFailureV1)
@@ -3007,20 +2983,21 @@ def test_pytest_exit_zero_with_skipped_node_creates_no_verified_candidate(
 
 - [ ] **Step 1: Write the skipped-node RED test.** Add the exact test with a valid exit code and one complete structured SKIP event.
 - [ ] **Step 2: Run RED.** Run the target command. Expected: nonzero because the formal predicate does not exist.
-- [ ] **Step 3: Implement the minimum all-node predicate.**
+- [ ] **Step 3: Implement the minimum child-owned formal-validation composition.**
 
   ```python
-  def require_every_node_passed(
-      manifest: ValidationManifestV1,
-      pytest_evidence: PytestEvidenceV1,
-  ) -> None:
-      if tuple(pytest_evidence.collected_node_ids) != tuple(manifest.collected_node_ids):
-          raise FormalValidationError("FORMAL_VALIDATION_FAILED")
-      records = final_test_records(pytest_evidence)
-      if set(records) != set(manifest.collected_node_ids):
-          raise FormalValidationError("FORMAL_VALIDATION_FAILED")
-      if any(record.status != TestStatus.PASS for record in records.values()):
-          raise FormalValidationError("FORMAL_VALIDATION_FAILED")
+  plan = build_formal_validation_plan(
+      validation_manifest,
+      current_candidate,
+      final_diff,
+  )
+  evidence = execute_formal_plan(plan, executor)
+  outcome = evaluate_formal_success(
+      validation_manifest,
+      current_candidate,
+      plan,
+      evidence,
+  )
   ```
 
 - [ ] **Step 4: Run GREEN.** Re-run Step 2. Expected: exit `0`, no verified candidate.
@@ -3073,7 +3050,7 @@ def test_pytest_exit_zero_with_skipped_node_creates_no_verified_candidate(
   - `MemoryRepository.create(command: CreateMemoryCommandV1) -> MemoryMutationResultV1`
   - `MemoryRepository.confirm(command: ConfirmProjectConventionV1) -> MemoryMutationResultV1`
   - `MemoryRepository.list(workspace_identity_digest: str) -> MemoryEntrySequenceV1`
-  - `MemoryRepository.clear(command: ClearMemoryCommandV1) -> MemoryMutationResultV1`
+  - `ClearMemoryCommandV1`, `MemoryClearResultV1`, and `MemoryClearService.clear(command: ClearMemoryCommandV1) -> MemoryClearResultV1`
   - `select_memory(query: MemorySelectionQueryV1, entries: MemoryEntrySequenceV1) -> MemorySelectionV1`
 
 **Implementation points:**
@@ -3908,22 +3885,16 @@ def test_state_change_rejects_non_loopback_origin(
 **Interfaces:**
 - Consumes: Task 8 `ValidateRunRequestV1`, validation/creation/admission services; Task 14 `DecideFinalWritebackV1` and `FinalWritebackDecisionServiceV1`; Task 15 `DecideDisclosureGrantV1` and `DisclosureDecisionServiceV1`; Task 16 endpoint display facts; Task 21 formal evidence; Task 23 `RunVisibilityV1`; Task 25 engine/cancel; Task 26 `PersistenceCommandFactoryV1` and `PersistenceCoordinator`; Task 28 security/app shell and `LocalRouteInstallerV1`.
 - Produces:
-  - `RunGovernanceRouteInstallerV1(ports: RunGovernanceWorkflowPortsV1).install(app: FastAPI) -> None`
-  - `RunCreationWorkflowPortV1.create(request: ValidateRunRequestV1, event_id: str) -> RunCreationWorkflowResultV1`
-  - `RunCreationWorkflowResultV1` as a closed `RUNNING | CONFIG_INVALID | STOPPED` union; only `RUNNING` and `STOPPED` contain a server-created run id, while `CONFIG_INVALID` proves no Run was created
-  - `RunVisibilityWorkflowPortV1.get(run_id: str) -> RunVisibilityV1`
+  - Task 29.A child-owned `RunCreationWorkflowPortV1`, `RunVisibilityWorkflowPortV1`, `RunCancellationWorkflowPortV1`, their closed result unions, and `RunLifecycleRouteInstallerV1`
   - `DisclosureDecisionWorkflowPortV1.decide(command: DecideDisclosureGrantV1) -> DisclosureDecisionResultV1`
-  - `FinalWritebackWorkflowPortV1.decide(command: DecideFinalWritebackV1) -> FinalWritebackWorkflowResultV1`
-  - `RunCancellationWorkflowPortV1.request(run_id: str, event_id: str) -> CancelRequestResultV1`
-  - `RunGovernanceWorkflowPortsV1(runs: RunCreationWorkflowPortV1, visibility: RunVisibilityWorkflowPortV1, disclosure: DisclosureDecisionWorkflowPortV1, final_writeback: FinalWritebackWorkflowPortV1, cancellation: RunCancellationWorkflowPortV1)`
-  - `ProductionFinalWritebackWorkflowV1(decisions: FinalWritebackDecisionServiceV1, persistence_commands: PersistenceCommandFactoryV1, persistence: PersistenceCoordinator).decide(command: DecideFinalWritebackV1) -> FinalWritebackWorkflowResultV1`
-  - `FinalWritebackWorkflowResultV1` as a closed union with exact `PERSISTED | REJECTED | EXPIRED | STALE | ALREADY_DECIDED | STOPPED | RECOVERY_REQUIRED` discriminators and the applicable Task 14/26 typed result, never a free-form exception
+  - `AuthorizationSummaryV1`, `build_authorization_summary(subject: DisclosureGrantSubjectV1, endpoint: OpenAIEndpointV1) -> AuthorizationSummaryV1`, `render_authorization_summary(summary: AuthorizationSummaryV1) -> Markup`, and `DisclosureRouteInstallerV1.install(app: FastAPI) -> None`
+  - Task 29.C child-owned `FinalWritebackWorkflowPortV1`, `ProductionFinalWritebackWorkflowV1`, `WritebackReviewV1`, `RunGovernanceWorkflowPortsV1`, and `RunGovernanceRouteInstallerV1`
+  - The Task 29.A closed run-creation result union has `RUNNING | CONFIG_INVALID | STOPPED` discriminators; only `RUNNING` and `STOPPED` contain a server-created run id, while `CONFIG_INVALID` proves no Run was created
+  - The Task 29.C child-owned `FinalWritebackWorkflowResultV1` is a closed union with exact `PERSISTED | REJECTED | EXPIRED | STALE | ALREADY_DECIDED | STOPPED | RECOVERY_REQUIRED` discriminators and the applicable Task 14/26 typed result, never a free-form exception
   - closed route form adapters that accept only visible request fields, exact wait bindings, `APPROVE|REJECT`, CSRF/session data handled by Task 28, and an idempotency event id; Task 14/15 services obtain `decided_at` from their injected `ClockV1`
   - `AuthorizationSummaryV1`, `RenderedFinalDiffV1`, `FormalEvidenceProjectionV1`, and `WritebackReviewV1` as view-only, escaped projections with no domain mutation method
   - server-rendered pages for every formal run state and governance decision
-  - `build_authorization_summary(subject: DisclosureGrantSubjectV1, endpoint: OpenAIEndpointV1) -> AuthorizationSummaryV1`
-  - `render_authorization_summary(summary: AuthorizationSummaryV1) -> Markup`
-  - `render_writeback_review(subject: FinalWritebackSubjectV1, diff: RenderedFinalDiffV1, evidence: FormalEvidenceProjectionV1) -> WritebackReviewV1`
+  - Rendering of the final writeback review is an internal Task 29.C route-composition detail, not a separate exported Milestone API
 
 **Implementation points:**
 - Run creation exposes every required request/limit/profile field and no base URL/editable-policy/secret override. Invalid input shows stable reasons and creates no run.
@@ -4040,11 +4011,10 @@ def test_stale_writeback_subject_never_calls_persistence(
 **Interfaces:**
 - Consumes: Task 4.E canonical path utilities; Task 5.D evidence/artifact contracts; Task 13 `PolicyEngine`; Tasks 17.A–17.C `ActionParser.parse`, `bind_action`, `ToolDispatcher`, and `ToolPortsV1`; Tasks 24.A–24.C `build_feedback`, context projection, and feedback consumption; Task 25.A `StopEvaluator.evaluate`; Task 25.D `ActionPipeline.execute`.
 - Produces:
-  - `DemoRunStatus`, `DemoDecisionV1`, `DemoSessionV1`, and `DemoTraceEventV1`
-  - `DemoScenarioV1.load_builtin("governance-feedback-v1") -> DemoScenarioV1`
+  - Task 30.A child-owned `DemoScenarioV1`, `DemoRunStatus`, `DemoDecision`, and `DemoTraceV1`
   - `DemoExecutor.tool_ports() -> ToolPortsV1`, whose six callables return only the exact fixed simulated pure/domain result types accepted by Task 17.C for the built-in scenario
   - `DemoScenarioRunner.advance(session: DemoSessionV1, decision: DemoDecisionV1 | None) -> DemoStepResultV1`
-  - `DEMO_SHARED_CORE_MODULES_V1`, the exact curated module tuple consumed by Task 34: `vespercode.governance.policy`, `vespercode.loop.agent_actions`, `vespercode.loop.action_parser`, `vespercode.loop.action_binding`, `vespercode.loop.context_projection`, `vespercode.loop.feedback`, `vespercode.loop.stopping`, `vespercode.loop.action_pipeline`, and `vespercode.tools.dispatcher`
+  - exact constant `DEMO_SHARED_CORE_MODULES_V1: frozenset[str] = frozenset({"vespercode.governance.policy", "vespercode.loop.agent_actions", "vespercode.loop.action_parser", "vespercode.loop.action_binding", "vespercode.loop.context_projection", "vespercode.loop.feedback", "vespercode.loop.stopping", "vespercode.loop.action_pipeline", "vespercode.tools.dispatcher"})`
   - `create_demo_app(config: DemoAppConfigV1) -> FastAPI`
   - `healthcheck.main() -> int`, using only a bounded stdlib HTTP request to loopback `/healthz`
   - `GET /healthz` and fixed-scenario Demo routes
@@ -4104,11 +4074,11 @@ def test_demo_step_invokes_shared_core_and_only_demo_tool_ports(
 
 - [ ] **Step 1: Write the shared-core composition RED test.** Add the exact test using call-recording wrappers around the production Task 13/17/24/25 components and explicit zero-call spies for every forbidden capability; do not infer reuse from labels, class-name strings, or source inspection.
 - [ ] **Step 2: Run RED.** Run the target command. Expected: nonzero because the Demo runner and shared-core composition do not exist.
-- [ ] **Step 3: Implement the minimum shared-core Demo composition.**
+- [ ] **Step 3: Implement the minimum shared-core Demo composition.** `_load_builtin_demo_scenario` and `_compose_demo_fastapi` are private/local Task 30.B composition helpers with no downstream consumer; the exported app boundary remains the child-owned `create_demo_app(config: DemoAppConfigV1) -> FastAPI`.
 
   ```python
   def create_demo_app(config: DemoAppConfigV1) -> FastAPI:
-      scenario = DemoScenarioV1.load_builtin("governance-feedback-v1")
+      scenario = _load_builtin_demo_scenario("governance-feedback-v1")
       executor = DemoExecutor(scenario)
       action_pipeline = ActionPipeline(
           parser=ActionParser(),
@@ -4130,7 +4100,7 @@ def test_demo_step_invokes_shared_core_and_only_demo_tool_ports(
           demo_sessions=InMemoryDemoSessionStore(config.clock),
           demo_renderer=DemoRenderer(),
       )
-      return compose_demo_fastapi(capabilities, runner, config)
+      return _compose_demo_fastapi(capabilities, runner, config)
   ```
 
 - [ ] **Step 4: Run GREEN.** Re-run Step 2. Expected: exit `0` with the exact shared-core call sequence, only `DEMO_EXECUTOR` dispatch, zero forbidden-capability calls, and no formal object conversion.
