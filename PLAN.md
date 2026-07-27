@@ -24,7 +24,7 @@
 
 **Cold-start isolation:** Cold-start trial code, branches, worktrees, and commits must be disposable, must not be merged, and must not be reused by formal implementation.
 
-**Completion evidence rule:** Only an executable integer or dotted child Task receives an actual implementation commit SHA, and only after its tests and both review gates pass. A split Milestone receives no aggregate implementation SHA or PR; its completion is derived from its exact children. A SHA must never be predicted, prefilled, or invented. Because a commit cannot contain its own SHA, every executable task uses an implementation commit followed by a narrow PLAN/`AGENT_LOG.md` evidence commit in the same PR. SPEC §11.2 mechanically normalizes every syntactically matching `Status`, checkbox, and one-line `Completion evidence` field in the Formal Tasks region, including the aggregate fields retained inside Milestone contracts. Retained Milestone tracking/checklist fields are frozen and ignored by execution; only truthful executable-task tracking updates are authorized without semantic reapproval.
+**Completion evidence rule:** Only an executable integer or dotted child Task receives an actual implementation commit SHA, and only after its tests and both review gates pass. Aggregate Milestones have no tracking field, checklist/checkbox, completion-evidence field, aggregate implementation SHA, or PR; their completion is derived externally from the truthful evidence of their exact children. A SHA must never be predicted, prefilled, or invented. Because a commit cannot contain its own SHA, every executable task uses an implementation commit followed by a narrow PLAN/`AGENT_LOG.md` evidence commit in the same PR. SPEC §11.2 defines the Formal Tasks region as the full-line range from `## Formal Tasks` through immediately before `## Task Dependency DAG`; only full-line executable-task `Status`, checkbox tokens, and one-line executable-task `Completion evidence` are normalized there. The complete-file SHA-256 and `PlanSemanticDigestV1` remain external, and no removed aggregate field is retained, frozen, or normalized.
 
 **PLAN content address:** The approval record must compute both the complete-file SHA-256 and SPEC §11.2 `PlanSemanticDigestV1` externally. Neither digest is embedded into this file because doing so would create a self-referential identity. Complete-file SHA-256 identifies each evidence snapshot; semantic approval and cold-start bind `PlanSemanticDigestV1`.
 
@@ -6867,26 +6867,91 @@ Every `Owning tasks` cell below contains exact executable Task ids only. The fea
 
 No parser-only test, Linux wheel install, manually copied log, tag-based image reference, or local schema result can replace a required Windows, Docker, package, OCI, CI, or live deployment result.
 
-## Plan Mechanical Closure Audit
+## Plan Mechanical and Semantic Closure Audit
 
-This audit is mandatory after every non-tracking PLAN edit. It parses only the exact executable headings and the canonical tables in this section; prose Milestone contracts are not executable graph nodes. The current semantic revision passes all checks below:
+This section defines `PlanAuditContractV1`. It is a reproducible audit contract, not a hand-written proof. It is mandatory after every non-tracking PLAN edit. Current values below are derived evidence only; the authoritative result objects, hashes, commands, exit codes, and Git identity stay in the ignored Task 6 review package.
 
-| Invariant | Current measured result | Status |
-|---|---|---|
-| Executable registry | 135 unique executable Tasks: retained integer Task 13 plus 134 dotted child Tasks; 37 Milestones remain non-executable containers | PASS |
-| Dependency table | 135 unique rows, 578 exact predecessor edges, one root (`1.A`), zero missing/self/unknown edges | PASS |
-| DAG topology | 135/135 nodes topologically sorted; 135/135 reachable from root `1.A`; zero cycles, isolated nodes, or unreachable nodes | PASS |
-| Executable waves | 70 longest-path waves, 135/135 Tasks assigned exactly once, zero predecessor-in-same-or-later-wave violations | PASS |
-| Ownership | 135 unique Task rows, 328 expanded core paths, zero duplicate primary owners | PASS |
-| Parallel conflicts | Zero same-wave intersections across expanded core-file ownership sets | PASS |
-| Migration ownership | One framework owner; 12 ordered domain migration owners for exact v0001–v0012; one composition-only registry owner whose 12 direct predecessors equal all producers; its test-only prefix audit proves exact per-version table deltas and the final 18-table set; all runtime/full-database consumers depend transitively on Task 7.D | PASS |
-| Interface provenance | All 135 Task blocks declare exact `Interfaces` without placeholder signatures; all 578 edges target an existing executable producer or a documented ordering/evidence predecessor. | PASS |
-| Requirement coverage | 9/9 US, 9/9 FR, 6/6 NFR, and 31/31 AC rows each have non-empty, valid, disjoint implementation and independent validation Task sets | PASS |
-| Test environments | 12/12 environment rows contain only existing exact executable Task ids | PASS |
-| Stale executable shorthand | Zero ranges, natural-language dependency sets, or aggregate Milestone ids in the canonical DAG, Wave, ownership target, coverage, Test Environment, or Release Gate structures | PASS |
-| Release count | Release Gate requires exactly the same 135 executable Tasks | PASS |
+### Exact inputs, decoding, and section discovery
 
-The audit fails closed if a later parser finds a count mismatch, unknown Task id, duplicate membership/owner, cycle, unreachable node, non-earlier dependency, parallel core-file collision, missing producer, uncovered requirement, aggregate Milestone target, range, or natural-language dependency. Stable Milestone headings and their retained non-executable domain contracts are intentional and are not stale executable references.
+- The verifier has three explicit CLI inputs: the candidate `PLAN.md` path, the authoritative `D:/code/VesperCode/SPEC.md` path, and one ignored result path. Both input paths are resolved and normalized to absolute identities in the result.
+- Both inputs must decode as strict UTF-8. PLAN must have no UTF-8 BOM, no CR byte, and exactly one final LF. The authoritative SPEC SHA-256 must equal `80ccc86d9c06bdf7b4fed8673e2e6879942ca2cbc2b07c91bf1276b19a7447aa`.
+- Section discovery uses exact full-line heading equality. A heading mentioned inside prose or inline code is not a boundary; substring `indexOf` discovery is forbidden.
+- Markdown table rows are split only on `|` outside a balanced inline-code backtick span. A `|` inside one or more matching backticks remains part of the same cell.
+- Executable headings are exact full lines matching `#### Task <integer>.<uppercase-letter>: <non-empty title>`, plus the one retained exact full-line form `### Task 13: <non-empty title>`. Aggregate headings are exact full lines matching `### Milestone <integer>: <non-empty title>` and are never graph nodes.
+- Every aggregate has exactly these four ordered fields, once each: `Goal`, `SPEC scope`, `Executable children`, and `Aggregate completion condition`. Its children are exact dotted executable ids with the same integer prefix. The 37 aggregate child lists are unique and their union equals all 134 dotted executable headings; retained Task 13 is separate. Exact heading boundaries must keep Task 13 out of Milestone 12 and Milestone 14, and must end Milestone 38 immediately before the exact executable-child heading.
+
+### Canonical mechanical structures
+
+- Parse and cross-check executable headings, child fields, the canonical DAG, longest-path waves, planned file ownership, durable-storage/migration ownership, all four coverage matrices, the Test Environment Matrix, and the Release registry. Each canonical table header and row width is exact.
+- The DAG is the sole machine-readable edge set. Every child `Dependencies` set equals its DAG predecessors. Every present `Blocks` field equals its DAG successors. A semicolon may append a non-task gate only after the exact executable predecessor set; it cannot add or remove an edge.
+- DAG, wave, ownership target/modifier, coverage, environment-owner, and release cells admit exact executable ids only. Aggregate ids, unknown ids, ranges, expansion shorthand, duplicate ids within a cell, and natural-language executable sets are rejected. `—` is allowed only for the empty DAG-predecessor cell.
+- The verifier validates one root `1.A`, all 135 nodes reachable from that root, no self/unknown edge, acyclicity, 578 edges, and the exact longest-path wave of every node. Waves 1–70 contain every executable exactly once, and every predecessor is in an earlier wave.
+- Ownership parses only exact backticked repository paths in `Owned core files`; one-level brace notation expands comma-separated filenames and no wildcard. It requires one primary row per executable, 328 unique expanded paths, no duplicate primary owner, valid authorized modifiers, and no intersection between expanded core paths of tasks in the same wave.
+- The storage audit cross-checks the framework-only `schema_migrations` owner, the exact v0001–v0012 producer constant/name/file/table maps, the 18-table final set, Task 7.D's exact 12-producer predecessor set and composition-only boundary, and transitive Task 7.D reachability for every full-database production consumer.
+- Every US, FR, NFR, and AC row has non-empty exact implementation and independent-validation sets, the two sets are disjoint, every id exists, and each validator is downstream of at least one implementation owner. Counts are exactly 9 US, 9 FR, 6 NFR, and 31 AC. The 12 Test Environment owner cells contain only exact executables. The Release registry equals the complete executable registry.
+- Aggregate completion is not counted from an aggregate field. Current tracking counts are computed only from executable bodies: 135 `Not started` and 135 `Not yet executed`; the document-level Draft status occurs once.
+
+### Semantic consistency structures
+
+- An aggregate owns no API, file, dependency, schedule, branch/worktree, status, implementation, test, verification/review procedure, or evidence. Any retained aggregate reference to a child-owned public callable may mirror only that callable's exact name and arity; it cannot create a second signature authority.
+- Inline-code arrow signatures under each executable `Interfaces` field form the public interface registry. Each public interface has one executable producer; a consumer may repeat only the producer's exact name and arity. Statically resolvable calls in fenced Python RED/examples use the receiver's declared type or a unique public function name and must fall within the producer signature's required/maximum arity.
+- Required Task 11, 16, 20, 25, and 26 families are checked both against their concrete child-owned signatures and the authoritative SPEC families: typed List/Read/Search over `(tree, action)`; one-request `LLMAdapter.generate` and the bound single-call OpenAI path; static detection, baseline-plan/formal-plan construction, one baseline, and immutable Manifest creation; pure stopping plus turn/count/call/action-pipeline/formal-loop composition; and approval-bound persistence with read-only preview, three-value classification, explicit recovery apply, and unresolved-workspace blocking. A SPEC-level conceptual signature may be refined into explicit immutable inputs only where the owning child declares that refinement; incompatible same-name arity is drift.
+- Dependency/toolchain ownership is closed: Task 4.A alone owns dependency tables, `requirements/dev.lock`, the exact-Python bootstrap, and the closure record; Task 4.F owns promotion and authorized tooling-only configuration; later metadata changes do not become dependency ownership. Critical ownership paths and their authorized modifiers are cross-checked against task files and DAG reachability.
+- Migration ownership is exact for v0001–v0012. Task 7.A contains no domain DDL; Task 7.D imports all and only the twelve producer constants and owns no DDL. Production Web/CLI recovery composition must call `apply_migrations(db, ALL_V1_MIGRATIONS)` before constructing any repository/service port, bind the Task 38.E parser to the Task 26.C service through Task 38.F, and expose no alternate database or recovery composition.
+- `DEMO_SHARED_CORE_MODULES_V1` is parsed as the exact nine-item `frozenset` owned by Tasks 13, 17.A–17.C, 24.A–24.C, 25.A, and 25.D. `PROHIBITED_DEMO_MODULE_PREFIXES_V1` is the exact sixteen-item `frozenset`. Every shared producer must reach Task 30.A in the DAG. Demo composition must construct and inject the real Task 25.D `ActionPipeline` and provenance must begin with the actual `ActionPipeline.execute`; `vespercode.loop.engine`, formal `AgentLoopEngine`, and Task 25.G reuse are prohibited in Demo runtime, allowlists, evidence, and smoke claims.
+- Outside this closed rejection-set declaration, these known stale findings are forbidden exact tokens: `probe_workspace_boundary`, `acquire_workspace_mutex`, `run_reference_boundary_gate`, `run_formal_validation`, `MemoryRepository.clear`, `DemoScenarioV1.load_builtin`, `baseline_runner.evaluate`, `AgentLoopEngine.request_cancel`, `stop_nonpersistent_restart`, `create_at_call_boundary`, `evaluate_and_persist`, `recovery.preview("tx-1")`, `Task 38 chain`, `run_next`, `LoopDecisionV1`, `LoopStepOutcomeV1`, and `25.G pure core`.
+
+### `PlanSemanticDigestV1` projection and metamorphic tests
+
+The verifier independently reproduces SPEC §11.2 in this exact order:
+
+1. Decode no-BOM strict UTF-8, normalize CRLF to LF for the projection, and reject any bare CR. This PLAN's stricter input contract separately rejects every CR byte.
+2. Find exactly one full line `## Formal Tasks` and exactly one later full line `## Task Dependency DAG`. The Formal Tasks region includes the former line and ends immediately before the latter. Missing, duplicate, or reversed boundaries fail.
+3. Only inside that region, replace a complete line beginning `**Status:** ` with `**Status:** TRACKING_STATUS_EXCLUDED_V1`; normalize every exact checkbox token `[ ]` or `[x]` to `[ ]`; and replace a complete one-line field beginning `**Completion evidence:** ` with `**Completion evidence:** TRACKING_EVIDENCE_EXCLUDED_V1`. Every other byte remains.
+4. Compute `SHA-256(b"VesperCode\0PLAN_SEMANTIC_CONTRACT_V1\0" + projected_plan_bytes)`.
+
+Metamorphic projection tests mutate one executable status, one checkbox, and one deliberately long one-line completion-evidence value and require all three digests to remain equal. Separate mutations in each non-excluded class—Goal, dependency, interface, command/review content, and matrix/gate text—must each change the digest. Missing/duplicate boundaries, BOM, and bare CR must each reject. The current complete-file SHA-256 and current semantic digest are output only to external evidence and must not appear in this PLAN.
+
+### Deterministic result and independent agreement
+
+`PlanAuditResultV1` is one deterministic UTF-8 JSON object with a final LF. It contains: audit contract version; normalized absolute PLAN/SPEC input identities; verifier source SHA-256; PLAN complete-file SHA-256; authoritative SPEC SHA-256; `PlanSemanticDigestV1`; registry/count metrics; a sorted mechanical issue list; a sorted semantic issue list; ordered projection-test results; and final `PASS` or `FAIL`. Object field order, metric field order, projection-test order, and issue ordering are deterministic.
+
+`PASS` is permitted only when both issue lists are empty, every projection test passes, and the SPEC SHA-256 matches the authoritative identity. An exception, unreadable input, output failure, disagreement, unproved check, or parser ambiguity is `FAIL`; absence of an issue is never inferred from a hand-written table.
+
+Verifier A and Verifier B use independently written implementations and different parsing routes. They may share this prose contract and input bytes but may not import or copy one another. Before approval, their results must agree exactly on PLAN SHA-256, SPEC SHA-256, `PlanSemanticDigestV1`, every registry/count metric, and both empty issue lists. Source hashes are expected to differ. Any field disagreement is `FAIL`.
+
+### Exact planning-only commands and external evidence
+
+Run from the repository worktree root:
+
+```text
+node .superpowers/sdd/PLAN/task-6-verifier-a.mjs --plan PLAN.md --spec D:/code/VesperCode/SPEC.md --out .superpowers/sdd/PLAN/task-6-result-a.json
+```
+
+```text
+node .superpowers/sdd/PLAN/task-6-verifier-b.mjs --plan PLAN.md --spec D:/code/VesperCode/SPEC.md --out .superpowers/sdd/PLAN/task-6-result-b.json
+```
+
+Each command reads PLAN/SPEC only and writes its one ignored JSON result. The ignored Task 6 report/review package records the exact command text, verifier source SHA-256, stdout/result SHA-256, exit code, and Git HEAD observed before and after the run. It also compares the two typed results field by field. These planning artifacts are not implementation dependencies, are not referenced by executable tasks, and are never committed.
+
+### Current derived results under `PlanAuditContractV1`
+
+The following is a concise rendering of Verifier A's current derived evidence. It is not self-proving and does not substitute for its ignored JSON, the independent Verifier B result, or their required comparison.
+
+| Derived invariant | Current measured result |
+|---|---|
+| Aggregate registry | 37 exact four-field Milestones; 134 unique same-prefix child memberships; no aggregate execution authority |
+| Executable registry and tracking | 135 executables: retained Task 13 plus 134 dotted children; 135 `Not started`; 135 `Not yet executed`; document Draft once |
+| DAG topology | 135 rows; 578 edges; root `1.A`; 135 reachable; zero self/unknown edge, cycle, dependency mismatch, or present-Blocks mismatch |
+| Longest-path schedule | 70 waves; 135 exact memberships; zero missing/duplicate member or predecessor-order error |
+| Ownership | 135 primary rows; 328 expanded paths; zero duplicate primary owner or same-wave path conflict |
+| Storage and migrations | v0001–v0012 exact producer/registry closure; 18 final SQLite tables; zero owner/composition mismatch |
+| Coverage and environments | US 9/9, FR 9/9, NFR 6/6, AC 31/31; all implementation/validator sets non-empty and disjoint; 12 exact environment rows |
+| Release registry | Exact equality with all 135 executables |
+| Interfaces and examples | Required Task 11/16/20/25/26 families present; zero incompatible same-name arity, resolvable RED/example arity, SPEC-family, dependency/toolchain, recovery-composition, or stale-token issue |
+| Demo provenance | 9 shared modules; 16 prohibited prefixes; all producers reachable; real `ActionPipeline.execute` provenance present; formal engine absent from Demo reuse |
+| Projection tests | Status, checkbox, and long completion evidence preserve; Goal, dependency, interface, command/review, and matrix/gate mutations change; missing/duplicate boundaries, BOM, and bare CR reject |
+| Current issue sets | Zero mechanical issues; zero semantic issues |
 
 ## Release Readiness Gate
 
