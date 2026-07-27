@@ -20,7 +20,7 @@
 
 **Planning method:** The installed `superpowers:writing-plans` skill was loaded and used to produce this plan. The user-selected repository-root location overrides the skill's default dated-plan location.
 
-**Implementation prohibition:** Formal implementation, CI work, release work, and deployment are prohibited until M0 approves the exact SPEC identity, a human approves the exact SPEC plus `PlanSemanticDigestV1` contract, and the heterogeneous-agent cold-start gate below passes.
+**Implementation prohibition:** Formal implementation, CI work, release work, and deployment are prohibited until `PlanAuditContractV1` Verifier A/B agree on `PASS` for the exact candidate, the Independent PLAN Review Gate separately passes both reviews, M0 and the human approve the exact SPEC identity, the PLAN complete-file SHA-256 and external `PlanSemanticDigestV1` are independently calculated and human-approved, and the heterogeneous-agent cold-start gate passes; only then may Task 1 begin.
 
 **Cold-start isolation:** Cold-start trial code, branches, worktrees, and commits must be disposable, must not be merged, and must not be reused by formal implementation.
 
@@ -384,9 +384,71 @@ This table is the complete storage-class decision for every SPEC §7 entity plus
 
 The ordered migration sequence is exactly v0001 through v0012 with no duplicate, gap, or unexpected version. A domain migration test applies Task 7.A's engine to the tuple of the actual immutable predecessor constants plus the current constant; no domain task edits or imports `registry.py`. Task 7.D alone imports the twelve constants, verifies the declared `(version, name, checksum)` order, and exports `ALL_V1_MIGRATIONS`. Its test-only owner map applies every exact prefix to empty temporary SQLite, proves each version's newly visible `sqlite_schema` table delta matches the sole-owner rows above, handles Task 7.A's `schema_migrations` bootstrap separately at v0001, and proves the final set is exactly all 18 declared SQLite tables; production registry code neither contains nor imports that expected map. Complete file bodies, complete LLM requests/responses, raw check output, and recovery backup bytes remain current-user ACL-restricted artifacts; only the explicitly allowed digests/refs above may enter SQLite, and credentials never do.
 
+## Independent PLAN Review Gate
+
+This planning-only gate is not a formal implementation task and has no task number. It runs only after independent `PlanAuditContractV1` Verifier A and Verifier B records agree on `PASS` for the exact candidate, and it must pass before M0 or human approval may be used. Mechanical audit agreement proves neither full SPEC/course compliance nor task-by-task executability.
+
+### Exact inputs and reviewer independence
+
+- Each review receives the exact candidate `PLAN.md`; authoritative `SPEC.md`; `AI4SE_Final_Project_通用要求.md`; `AI4SE_Final_Project_A_Coding_Agent_Harness(1).md`; every applicable `AGENTS.md`; matching Verifier A/B `PlanAuditResultV1` records; and the fixed candidate Git HEAD, complete PLAN SHA-256, SPEC SHA-256/Git blob, and externally computed `PlanSemanticDigestV1`.
+- The input identity set records canonical absolute path plus SHA-256 for every file/result, the SPEC Git blob, candidate Git HEAD, and both verifier source/result identities. A path, byte, digest, HEAD, or audit-result mismatch is an input failure, not a reviewable exception.
+- The reviewer is independent from every PLAN author and fixer. The reviewer must not accept this PLAN's prose, an embedded PASS claim, Verifier A alone, or either review's other PASS as evidence.
+- `PLAN_SPEC_COMPLIANCE` and `PLAN_EXECUTABILITY` are separate, independently decidable passes. One PASS never implies the other. One independent reviewer instance may execute both only as two explicit fresh checklists, with separate evidence, findings, source/checklist digests, result objects, and result digests.
+
+### Typed checklist records
+
+Each pass emits its own `PlanReviewChecklistV1`. Its ordered fields are `gateVersion`, `reviewKind`, `inputIdentities`, `candidateGitHead`, `planCompleteFileSha256`, `specSha256`, `specGitBlob`, `planSemanticDigestV1`, `reviewerIdentity`, `reviewerType`, `auditEvidence`, `reviewSourceSha256`, `items`, and `checklistSha256`. `gateVersion` is exactly `IndependentPlanReviewGateV1`; `reviewKind` is exactly `PLAN_SPEC_COMPLIANCE` or `PLAN_EXECUTABILITY`, and no combined value exists. `inputIdentities` has ordered fields `plan`, `spec`, `courseGeneral`, `courseHarness`, `agents`, `verifierAResult`, and `verifierBResult`; each single-file entry is an ordered canonical-absolute-path/SHA-256 pair and `agents` is an ascending UTF-8-byte-sorted array of those pairs. `auditEvidence` contains ordered A then B entries, each with `auditContractVersion`, `verifierSourceSha256`, `resultSha256`, `planCompleteFileSha256`, `specSha256`, `planSemanticDigestV1`, and `verdict`.
+
+Every `items` entry is a `PlanReviewChecklistItemV1` with ordered fields `itemId`, `reviewKind`, `scopeKind`, `scopeId`, `criterion`, `requirementLocations`, `planLocations`, `evidence`, `outcome`, and `findingIds`. Locations are sorted exact document/section-or-task/line-range objects; finding ids are sorted. `outcome` is exactly `PASS`, `FAIL`, or `UNREVIEWED`; omission is invalid. Item ids are stable within the frozen review kind. The compliance checklist contains one item for every leaf mandatory contract plus each global consistency criterion below. The executability checklist contains every criterion below for each of all 135 executable tasks, plus the named cross-task/DAG/global checks; aggregate prose is context, never a substitute task result.
+
+Each checklist is deterministic UTF-8 JSON with no BOM and exactly one final LF. Object fields use the declared order; input/location/item arrays use ascending UTF-8 byte order by their stable identity. `reviewSourceSha256` identifies the exact independent review procedure/source. `checklistSha256` is SHA-256 of the canonical checklist bytes with `checklistSha256` set to 64 lowercase zeroes. Neither checklist may contain a time, random value, host-dependent path alias, or unstated input.
+
+### `PLAN_SPEC_COMPLIANCE` exhaustive checklist
+
+The independent reviewer fails closed unless all of the following are exhaustively evidenced:
+
+1. Every mandatory SPEC user story, FR, NFR, acceptance criterion, architecture, data-model, security, distribution, delivery, and process contract has at least one executable implementation owner and at least one disjoint independent validation owner.
+2. Traceability is semantic, not ID-count-only: each cited task's Goal, Files, Interfaces, RED, implementation boundary, verification, and dependencies actually implement or validate the cited contract.
+3. The PLAN does not weaken, widen, contradict, or invent product semantics relative to SPEC.
+4. SPEC non-goals and future work acquire no implementation task, test exception, compatibility branch, or release gate.
+5. Course/Harness mandatory deliverables and process evidence, TDD, deterministic mock-LLM tests, security/credential constraints, CI `unit-test`, distribution, WebUI, Demo separation, README obligations, and the human reflection boundary are neither omitted nor downgraded.
+6. Exact feasibility/bootstrap, dependency/toolchain, migration, persistence/recovery, credential, Demo, CI/release, and deployment contracts are included.
+7. Every unknown or unreviewed SPEC/course/AGENTS section and every unmapped mandatory contract is a finding; none can become implicit PASS.
+
+### `PLAN_EXECUTABILITY` exhaustive checklist
+
+The independent reviewer evaluates every one of the 135 executable tasks and fails closed unless all of the following are exhaustively evidenced:
+
+1. Each task is a real single-session unit or a bounded final composition/verification unit.
+2. Each child is self-contained when given Global Constraints, its four-field aggregate context, and its own block.
+3. Goal, exact files, unique interfaces, exact Dependencies/Blocks/scheduling, intentionally failing RED, implementation boundary, verification commands, review gates, and completion evidence are present and mutually consistent.
+4. RED can fail before the named implementation exists and proves the intended behavior; it is not a post-hoc assertion or a call to a different API.
+5. Commands, tools, configuration, and dependencies exist at that wave or are produced by exact predecessors; none assumes future files, ambient tools, network, credentials, or global configuration.
+6. DAG, wave, ownership/modifier, migration/storage, environment, and release placement are executable, not merely mechanically parseable.
+7. Every producer-to-consumer API has one owner, exact compatible signature and arity, and transitive dependency reachability.
+8. No child hides a second independently rejectable behavior, unbounded repository sweep, unspecified design choice, dependency resolution, migration ownership, or release authorization.
+9. Every external Windows, Docker, browser, CI, release, or deployment task has a local RED/verifier-first phase plus the declared real-environment evidence.
+10. Every Critical, Important, or Minor ambiguity is a finding; guessing is prohibited.
+
+### Findings, results, and PASS
+
+`PlanReviewFindingV1` has ordered fields `findingId`, `reviewKind`, `severity`, `locations`, `contract`, `evidence`, `impact`, `requiredRemediation`, and `status`. A location is an exact PLAN/SPEC/course/AGENTS document, section-or-task, and inclusive line range. `severity` is exactly `Critical`, `Important`, or `Minor`; `status` is exactly `OPEN` or `CLOSED`. Finding ids are stable and findings are sorted by UTF-8 bytes of `findingId`.
+
+Each separate pass emits `PlanReviewResultV1` with ordered fields `gateVersion`, `reviewKind`, `inputIdentities`, `candidateGitHead`, `planCompleteFileSha256`, `specSha256`, `specGitBlob`, `planSemanticDigestV1`, `reviewerIdentity`, `reviewerType`, `auditEvidence`, `reviewSourceSha256`, `checklistSha256`, `checklistMetrics`, `findings`, `resultSha256`, and `verdict`. `checklistMetrics` has ordered non-negative integer fields `itemsExpected`, `itemsRecorded`, `itemsPassed`, `itemsFailed`, `itemsUnreviewed`, `tasksExpected`, `tasksReviewed`, `openCritical`, `openImportant`, and `openMinor`; the executability result requires `tasksExpected = tasksReviewed = 135`.
+
+Each result is deterministic UTF-8 JSON with no BOM and exactly one final LF, the declared field order, and sorted findings. `resultSha256` is SHA-256 of the canonical result bytes with `resultSha256` set to 64 lowercase zeroes. Thus each review exposes its own review-source, checklist, and result digest without self-reference.
+
+A review verdict is `PASS` only when all expected checklist items are recorded and passed, `itemsFailed = itemsUnreviewed = 0`, every open-severity count is zero, findings contain no `OPEN` item, all exact candidate identities match, and both matching Verifier A/B records are `PASS`. Any exception, skipped or unreviewed section/task, missing evidence, evidence disagreement, candidate change, stale input/result, reviewer dependence, or invalid ordering/encoding is `FAIL`.
+
+Overall gate PASS requires both separate result objects to be `PASS` for the same candidate PLAN bytes, Git HEAD, SPEC SHA/blob, course/AGENTS inputs, A/B audit identities, and external `PlanSemanticDigestV1`. Any remediation that changes candidate bytes invalidates both checklists and results; matching Verifier A/B and both fresh reviews must repeat. This PLAN never embeds a current checklist/result digest and never claims this gate has passed.
+
+Before M0 or human approval, `SPEC_PROCESS.md` must register both checklist/result identities, both reviewer identity/type and independence evidence, matching A/B source/result identities, every finding and closure, exact candidate identities, and the final overall gate decision. Missing, stale, or incomplete registration blocks M0 use.
+
 ## M0 — SPEC Readiness Gate
 
 M0 is not a formal implementation task and has no task number. This PLAN revision remains a non-authoritative draft until every M0 check passes.
+
+The exact-candidate Independent PLAN Review Gate above must have overall PASS and complete `SPEC_PROCESS.md` registration before any M0 check or human approval may be used. Any candidate PLAN byte or required input identity change invalidates that evidence and blocks M0 until matching Verifier A/B and both independent reviews repeat.
 
 1. Resolve exactly one authoritative SPEC path from the user's designation, document status, and current Git/filesystem facts. Any unresolved competing SPEC candidate fails M0.
 2. Recompute, never copy, the authoritative SPEC identities with SHA-256 and `git hash-object --no-filters SPEC.md`, and record `git rev-parse HEAD`.
@@ -402,7 +464,7 @@ After M0 passes, compute `PlanSemanticDigestV1` exactly as SPEC §11.2: normaliz
 
 This gate is not a formal implementation task and has no task number.
 
-1. M0 must have passed, and the user must approve the exact `SPEC.md` SHA-256/Git blob plus externally computed `PlanSemanticDigestV1` as one semantic contract. The complete `PLAN.md` SHA-256 is recorded as the audit snapshot.
+1. The registered Independent PLAN Review Gate must still identify the exact unchanged candidate, M0 must have passed, and the user must approve the exact `SPEC.md` SHA-256/Git blob plus the independently computed complete `PLAN.md` SHA-256 and external `PlanSemanticDigestV1` as one semantic/full-identity contract.
 2. The trial agent must be a different agent type from the primary development agent.
 3. The trial uses a new session with no prior conversation, memory, `AGENT_LOG.md`, `SPEC_PROCESS.md`, `TASK_HANDOFF.md`, or oral explanation.
 4. The trial agent receives only the approved SPEC and PLAN.
