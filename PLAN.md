@@ -475,7 +475,7 @@ This gate is not a formal implementation task and has no task number.
 - Produces:
   - a reviewed `requirements/gate.lock` containing exact direct/transitive versions and distribution hashes for pytest 8.x, Ruff, Mypy, and the minimum typed Windows test dependencies
   - `GateArgumentSequenceV1`, `BoundaryCaseSequenceV1`, `BoundaryObservationSequenceV1`, and `MissingContractSequenceV1`, immutable ordered tuples of zero or more values of their named item types
-  - `run_gate_checks(command: Literal["pytest","ruff-format","ruff-check","mypy"], paths_or_pytest_args: GateArgumentSequenceV1) -> int`
+  - `run_gate_checks(command: GateCommandV1, arguments: GateArgumentSequenceV1) -> int`
   - `GateToolchainEvidenceV1(python_version: str, pytest_version: str, ruff_version: str, mypy_version: str, gate_lock_sha256: str, pytest_config_sha256: str, ruff_config_sha256: str, mypy_config_sha256: str, runner_sha256: str)`
   - `probe_workspace_boundary(workspace: Path, cases: BoundaryCaseSequenceV1) -> WorkspaceBoundaryGateReportV1`
   - `WorkspaceObjectIdentityV1(canonical_absolute_path: str, volume_serial_number: int, file_id_128: bytes, object_kind: Literal["FILE","DIRECTORY"], link_count: int, reparse_tag: int | None)`
@@ -714,9 +714,9 @@ def test_gate_rejects_loopback_registry_digest_mismatch(
 - Produces:
   - `GateWriteEntrySequenceV1` and `FaultCaseResultSequenceV1`, immutable ordered tuples of zero or more values of their named item types
   - `prepare_transaction(workspace: Path, entries: GateWriteEntrySequenceV1, deadline_ms: int, clock: ClockPort, faults: FaultPort) -> GateTransactionV1`
-  - `apply_transaction(transaction_id: str) -> GatePersistenceResultV1`
-  - `preview_recovery(workspace: Path) -> GateRecoveryPreviewV1`
-  - `apply_recovery(workspace: Path) -> GateRecoveryResultV1`
+  - `apply_transaction(transaction_id: str, fault_point: PersistenceFaultPointV1, clock: ClockPort) -> GatePersistenceResultV1`
+  - `preview_recovery(workspace: Path, transaction_id: str) -> GateRecoveryPreviewV1`
+  - `apply_recovery(command: GateRecoveryCommandV1) -> GateRecoveryResultV1`
   - `GateRecoveryDispositionV1 = Literal["COMMITTED","ROLLED_BACK","UNRESOLVED"]`
   - `PersistenceRecoveryGateReportV1(outcome: Literal["GO","NO_GO"], cases: FaultCaseResultSequenceV1, evidence_digest: str)`
 
@@ -850,7 +850,7 @@ def test_deadline_after_first_replace_stops_writes_and_requires_recovery(
   - `CanonicalTimestampV1.from_epoch_milliseconds(value: int) -> CanonicalTimestampV1`
   - `ClockV1.now() -> CanonicalTimestampV1`
   - `SystemClockV1` for production and `FakeClockV1` for deterministic tests
-  - `validate_canonical_relative_path(value: str) -> str`
+  - `validate_canonical_relative_path(value: str) -> CanonicalRelativePathV1`
   - `scan_changed_files(paths: Sequence[Path]) -> CredentialScanReportV1`
   - canonical offline command `python -m pytest -q`
 
@@ -1086,9 +1086,9 @@ def test_repository_root_requires_the_closed_root_variant() -> None:
 - Consumes: Task 4.B digest functions; Task 4.D path functions; Task 5 frozen contracts; Task 2 image/lock/tool evidence.
 - Produces:
   - `EditablePathPolicyV1.matches(path: CanonicalRelativePathV1, operation: EditableOperationV1) -> bool`
-  - `ReferenceProfileManifestV1.verify_integrity() -> None`
+  - `ReferenceProfileManifestV1.verify_integrity(gate_manifest: GateReferenceProfileManifestV1) -> None`
   - `MockLLMProfileV1`, `OpenAILLMProfileV1`, and `LLMProfileManifestV1`
-  - `OpenAIEndpointRegistry.resolve("OPENAI_PUBLIC_API_V1") -> OpenAIEndpointV1`
+  - `OpenAIEndpointRegistry.resolve(endpoint_id: str) -> OpenAIEndpointV1`
   - `ProfileRegistry.resolve_reference(profile_id: str) -> ReferenceProfileManifestV1`
   - `ProfileRegistry.resolve_llm(profile_id: str) -> LLMProfileManifestV1`
 
@@ -1462,8 +1462,8 @@ def test_custom_base_url_is_rejected_without_creating_a_run(
   - `WorkspaceMutex.acquire(identity: WorkspaceIdentityV1, timeout_ms: int) -> WorkspaceLeaseV1`
   - `WorkspaceMutex.release(lease: WorkspaceLeaseV1) -> None`
   - `run_git_snapshot_prechecks(identity: WorkspaceIdentityV1, reference: ReferenceProfileManifestV1) -> GitPreflightResultV1`
-  - `PathGuard.authorize_existing(root, path, expected_kind) -> AuthorizedObjectHandleV1`
-  - `PathGuard.authorize_create(root, path) -> AuthorizedParentHandleV1`
+  - `PathGuard.authorize_existing(root: WorkspaceIdentityV1, path: CanonicalRelativePathV1, expected_kind: WorkspaceObjectKindV1) -> AuthorizedObjectHandleV1`
+  - `PathGuard.authorize_create(root: WorkspaceIdentityV1, path: CanonicalRelativePathV1) -> AuthorizedParentHandleV1`
 
 **Implementation points:**
 - Use production pywin32/Win32 wrappers behind narrow functions and preserve Task 1's handle-derived volume/file identity checks.
@@ -1566,7 +1566,7 @@ def test_tracked_file_with_skip_worktree_is_rejected_before_snapshot(
 - Produces:
   - `ContentObjectStore.put(raw_bytes: bytes) -> ContentObjectRefV1`
   - `ContentObjectStore.get(ref: ContentObjectRefV1) -> bytes`
-  - `create_snapshot(preflight: AcceptedGitPreflightV1, store: ContentObjectStore) -> SnapshotTreeV1`
+  - `create_snapshot(preflight: AcceptedGitPreflightV1, store: ContentObjectStore, classifier: SupportedTextClassifierV1) -> SnapshotTreeV1`
   - `verify_snapshot(snapshot: SnapshotTreeV1, store: ContentObjectStore) -> SnapshotIntegrityResultV1`
   - `classify_supported_text(raw_bytes: bytes) -> TextFileClassificationV1`
   - `TextMetadataV1(encoding: Literal["UTF8","UTF8_BOM"], newline: Literal["LF","CRLF"], final_newline: Literal[True])`
@@ -1681,23 +1681,24 @@ def test_supported_text_classifier_is_closed(raw: bytes, kind: str) -> None:
 - Consumes: Task 5 `RepositoryLocationV1`, `ActionResultV1`, `ArtifactRefV1`, and stable error objects; Task 10 `SnapshotTreeV1`, `TextMetadataV1`, and `classify_supported_text`.
 - Produces:
   - `ListFilesQueryV1`, `SearchTextQueryV1`, `ListFilesCursorV1`, `SearchTextCursorV1`, and their distinct `ABSENT|PRESENT` unions
-  - `ListFilesAction`, `ReadFileAction`, and `SearchTextAction`, with required typed cursor fields on List/Search
+  - `ListFilesActionV1`, `ReadFileActionV1`, and `SearchTextActionV1`, with required typed cursor fields on List/Search
   - `ListFilesEntryV1`, `ListFilesResultV1`, `ReadFileResultV1`, `SearchMatchV1`, and `SearchTextResultV1`, with typed `next_cursor`
-  - `ArtifactStorePortV1.put(payload: ClosedFileToolPayloadV1) -> ArtifactRefV1`
-  - `list_files(action: ListFilesAction, tree: ReadableTreeV1, *, artifact_store: ArtifactStorePortV1) -> FileToolOutcomeV1`
-  - `read_file(action: ReadFileAction, tree: ReadableTreeV1, *, artifact_store: ArtifactStorePortV1) -> FileToolOutcomeV1`
-  - `search_text(action: SearchTextAction, tree: ReadableTreeV1, *, artifact_store: ArtifactStorePortV1) -> FileToolOutcomeV1`
+  - `FileToolActionV1 = ListFilesActionV1 | ReadFileActionV1 | SearchTextActionV1`
+  - `FileToolResultV1 = ListFilesResultV1 | ReadFileResultV1 | SearchTextResultV1`
+  - `list_files(tree: SnapshotTreeV1 | CandidateTreeV1, action: ListFilesActionV1) -> ListFilesResultV1`
+  - `read_file(tree: SnapshotTreeV1 | CandidateTreeV1, action: ReadFileActionV1) -> ReadFileResultV1`
+  - `search_text(tree: SnapshotTreeV1 | CandidateTreeV1, action: SearchTextActionV1) -> SearchTextResultV1`
   - `ReadableTreeV1` protocol exposing immutable path/type/raw-byte lookup without a workspace path
 
 **Implementation points:**
 - Parse every action with required fields, `extra="forbid"`, exact byte/range limits, canonical locations, unique roots, and the rule that `ROOT` is the sole root when present.
 - List only entries visible in the supplied immutable tree. Synthesize directories deterministically, classify every ordinary file with Task 10's function, and sort by `(directory_rank, canonical_path)`.
 - Reject a list `PATH` that is not an existing directory before traversing. List is not constrained by `EditablePathPolicyV1`.
-- Read performs path/object/type checks before range checks. `NON_TEXT_FILE` returns `FAILED`, `FILE_NOT_TEXT`, `payload_ref=ABSENT`, and no body.
+- Read performs path/object/type checks before range checks. A `NON_TEXT_FILE` pure result carries `FILE_NOT_TEXT` and no body; Task 17.C alone converts it to `ActionResultV1(status=FAILED, payload_ref=ABSENT, error=PRESENT(FILE_NOT_TEXT))`.
 - Preserve original line order, BOM/newline metadata, exact raw-byte digest, requested byte cap, actual line range, and EOF. A start beyond a supported text file's final source line returns `READ_RANGE_OUT_OF_BOUNDS`.
 - Search is literal only. Traverse roots and entries in canonical order, preserve `(path,line,column)` ordering, bind excerpts to their file paths, and count each actually visited non-text ordinary file once.
 - Search directed at one non-text file succeeds with zero matches and `skipped_non_text_count=1`; a directory never increments that counter.
-- Validate the complete payload against the closed result schema before publishing an artifact. An invalid variant combination or untruncatable over-limit payload returns `INTERNAL_ERROR` with no partial payload.
+- Validate the complete pure result against the closed schema before returning it. An invalid variant combination or untruncatable over-limit result returns the typed `INTERNAL_ERROR` failure with no partial payload; Task 17.C alone publishes successful bounded payloads to ArtifactStore.
 - Build each cursor from its distinct concrete type, visible-tree digest, cursor-free query digest, next stable scan position, and self-excluding digest. Include the cursor in `ActionSemanticDigestV1` but exclude it from the query digest.
 - List resumes at the exact next `(directory_rank, canonical_path)`. Search de-duplicates overlapping roots into canonical file order and resumes at `(next_canonical_path, next_match_index)`, advancing across no-match and non-text files.
 - Enforce `truncated=true` iff a typed `next_cursor=PRESENT` exists; complete results use `truncated=false` and `ABSENT`. A visible-tree mismatch returns `CONTINUATION_STALE`; wrong type, digest, query, encoding, or position returns `CONTINUATION_INVALID`; both publish zero partial payload.
@@ -1708,9 +1709,8 @@ def test_supported_text_classifier_is_closed(raw: bytes, kind: str) -> None:
 ```python
 def test_list_cursor_pages_equal_unpaged_without_gaps(
     tree_with_nested_entries: ReadableTreeV1,
-    artifact_store: SpyArtifactStore,
 ) -> None:
-    first_action = ListFilesAction(
+    first_action = ListFilesActionV1(
         schema_version=1,
         action_type="list_files",
         root={"kind": "ROOT"},
@@ -1719,25 +1719,23 @@ def test_list_cursor_pages_equal_unpaged_without_gaps(
         cursor={"kind": "ABSENT"},
     )
     first = list_files(
-        first_action,
         tree_with_nested_entries,
-        artifact_store=artifact_store,
+        first_action,
     )
-    first_payload = artifact_store.require(first.payload_ref, ListFilesResultV1)
     second = list_files(
-        ListFilesAction(
+        tree_with_nested_entries,
+        ListFilesActionV1(
             schema_version=1,
             action_type="list_files",
             root={"kind": "ROOT"},
             recursive=True,
             max_entries=500,
-            cursor=first_payload.next_cursor,
+            cursor=first.next_cursor,
         ),
-        tree_with_nested_entries,
-        artifact_store=artifact_store,
     )
     unpaged = list_files(
-        ListFilesAction(
+        tree_with_nested_entries,
+        ListFilesActionV1(
             schema_version=1,
             action_type="list_files",
             root={"kind": "ROOT"},
@@ -1745,16 +1743,12 @@ def test_list_cursor_pages_equal_unpaged_without_gaps(
             max_entries=500,
             cursor={"kind": "ABSENT"},
         ),
-        tree_with_nested_entries,
-        artifact_store=artifact_store,
     )
-    second_payload = artifact_store.require(second.payload_ref, ListFilesResultV1)
-    unpaged_payload = artifact_store.require(unpaged.payload_ref, ListFilesResultV1)
-    assert first_payload.entries + second_payload.entries == unpaged_payload.entries
-    assert len({entry.path for entry in unpaged_payload.entries}) == len(
-        unpaged_payload.entries
+    assert first.entries + second.entries == unpaged.entries
+    assert len({entry.path for entry in unpaged.entries}) == len(
+        unpaged.entries
     )
-    assert second_payload.next_cursor.kind == "ABSENT"
+    assert second.next_cursor.kind == "ABSENT"
 ```
 
 **Verification:**
@@ -1765,7 +1759,7 @@ def test_list_cursor_pages_equal_unpaged_without_gaps(
 
 **Review gate:**
 1. Spec compliance review traces every action/query/cursor/result field, digest input, ordering rule, continuation failure, limit, non-text rule, and editable-policy independence to §4.2.2.
-2. Code quality review checks bounded forward-only iteration, raw-byte accounting, cursor/query digest separation, stable ordering, artifact publication atomicity, and that no tool reads a workspace path.
+2. Code quality review checks bounded forward-only iteration, raw-byte accounting, cursor/query digest separation, stable ordering, pure typed results, and that no tool reads a workspace path; ArtifactStore publication remains solely in Task 17.C.
 3. Critical/Important findings block Task 17.
 
 **Completion evidence:** Not yet executed. On completion record the actual commit SHA, responsible subagent, tests executed, review results, human edits and PR URL.
@@ -1776,11 +1770,9 @@ def test_list_cursor_pages_equal_unpaged_without_gaps(
 
   ```python
   def list_files(
-      action: ListFilesAction,
-      tree: ReadableTreeV1,
-      *,
-      artifact_store: ArtifactStorePortV1,
-  ) -> FileToolOutcomeV1:
+      tree: SnapshotTreeV1 | CandidateTreeV1,
+      action: ListFilesActionV1,
+  ) -> ListFilesResultV1:
       query = ListFilesQueryV1.from_action(action)
       ordered = build_directory_first_entries(tree, query)
       start = validate_and_resolve_list_cursor(action.cursor, tree.digest, query)
@@ -1789,7 +1781,7 @@ def test_list_cursor_pages_equal_unpaged_without_gaps(
           page,
           next_cursor=make_list_cursor(tree.digest, query.digest, next_position),
       )
-      return publish_validated_file_result(result, artifact_store)
+      return result
   ```
 
 - [ ] **Step 4: Run GREEN.** Re-run Step 2. Expected: exit `0`; concatenated pages equal the unpaged order with no duplicate path.
@@ -1938,9 +1930,9 @@ def test_mixed_legal_and_noneditable_patch_has_no_candidate_side_effect(
 
 **Dependencies:** Tasks 5.D, 6.E, and 12.D.
 
-**Blocks:** Tasks 14, 17, 25, 29, 31–32, and 38.
+**Blocks:** Tasks 14.A, 17.C, 25.D, 30.A, 31.A, 31.B, 32.A, and 37.B.
 
-**Parallelization:** Parallel with Task 18 after Task 12; the tasks own disjoint files.
+**Parallelization:** Parallelizable with Task 18.A; Task 13 and Task 18.A each start only after their exact executable Dependencies are satisfied, and they own disjoint files.
 
 **Recommended branch:** `codex/task-13-policy-engine`
 
@@ -2273,7 +2265,7 @@ def test_exact_writeback_approval_can_be_consumed_only_once(
   - result discriminators and payloads: `GrantActivatedV1(kind="GRANT_ACTIVATED", grant_id, subject_digest)`; `DisclosureRejectedV1(kind="REJECTED", error_code="DISCLOSURE_GRANT_REJECTED")`; `DisclosureExpiredV1(kind="EXPIRED", error_code="DISCLOSURE_GRANT_EXPIRED")`; `DisclosureStaleV1(kind="STALE", error_code="WAIT_STALE")`; `DisclosureAlreadyDecidedV1(kind="ALREADY_DECIDED", error_code="WAIT_STALE")`
   - `RevokeDisclosureGrantV1(grant_id: str, run_id: str, subject_digest: DigestV1, event_id: str)`
   - `AuthorizePreparedRequestV1(request_digest: str, messages: RequestMessageSequenceV1, canonical_byte_count: int, llm_profile_digest: str, provider: str, endpoint_id: str, model: str, request_serializer_version: str, redaction_profile_id: str, remaining_turns: int, remaining_calls: int, remaining_wall_clock_ms: int)`
-  - `build_disclosure_subject(request: DisclosureSubjectRequestV1, profile: OpenAILLMProfileV1, endpoint: OpenAIEndpointV1) -> DisclosureGrantSubjectV1`
+  - `build_disclosure_subject(request: DisclosureSubjectRequestV1, sources: SourceProjectionV1, scopes: DisclosureScopeSequenceV1, profile: OpenAILLMProfileV1, endpoint: OpenAIEndpointV1) -> DisclosureGrantSubjectV1`
   - `validate_segment_sources(messages: RequestMessageSequenceV1) -> SourceProjectionV1`
   - `scope_matches(scope: DisclosurePathScopeV1, path: CanonicalRelativePathV1) -> bool`
   - `DisclosureDecisionServiceV1.decide(command: DecideDisclosureGrantV1) -> DisclosureDecisionResultV1`
@@ -2396,7 +2388,6 @@ def test_directory_scope_does_not_match_string_prefix_alias() -> None:
   - `MockLLMAdapter.generate(request: MockPreparedModelRequestV1) -> ModelResponse`
   - `OpenAILLMAdapter.bind(authorization: DisclosureAuthorizationRecordV1, credential: SecretCredentialV1) -> BoundOpenAILLMAdapterV1`
   - `BoundOpenAILLMAdapterV1.generate(request: OpenAIPreparedModelRequestV1) -> ModelResponse`
-  - `build_call_result(request: PreparedModelRequestV1, authorization_ref: OptionalAuthorizationRecordRefV1, outcome: AdapterOutcomeV1) -> LLMCallResultV1`
 
 **Implementation points:**
 - Reject unknown, missing, cross-mode, null, or profile-inconsistent fields before computing a request digest. The two concrete request type names are distinct digest domains.
@@ -2406,7 +2397,7 @@ def test_directory_scope_does_not_match_string_prefix_alias() -> None:
 - Construct the OpenAI transport only from the built-in endpoint mapping. Ignore `OPENAI_BASE_URL` and equivalent SDK environment overrides; accept no base URL parameter.
 - Use an injectable transport with one initial request, no automatic retry, and redirect handling disabled. A cross-origin redirect returns `LLM_ENDPOINT_MISMATCH` before replaying content.
 - Bind a per-call OpenAI adapter to one durable authorization record and the fresh in-memory secret wrapper obtained by the call gate for that exact attempt, then expose the same one-argument `generate(request)` protocol. The adapter never caches or re-fetches credentials; an inconsistent record or missing fresh binding causes zero transport calls.
-- Enforce result combinations: success has response digest and no error; every other status has no response digest and one stable error. Mock forbids `DELIVERY_UNKNOWN` and always has an absent authorization reference; OpenAI always has a present record reference.
+- Define and validate the closed `LLMCallResultV1` combinations: success has response digest and no error; every other status has no response digest and one stable error. Mock forbids `DELIVERY_UNKNOWN` and always has an absent authorization reference; OpenAI always has a present record reference. Task 25.C alone constructs this orchestration result from a provider response or typed adapter failure.
 - A transport ambiguity may produce `DELIVERY_UNKNOWN`; failure, ambiguity, or a pre-call crash never causes an automatic retry or byte refund.
 - Keep secret values in a non-serializable redacted wrapper passed directly to transport authorization headers. No adapter output, exception, repr, or log may reveal them.
 
@@ -2505,6 +2496,9 @@ def test_mock_prepared_request_rejects_openai_fields(
   - `ActionParser.parse(response: ModelResponse) -> AgentAction | ParseErrorV1`
   - `bind_action(action: AgentAction, id_generator: ActionIdGeneratorV1) -> ActionInstanceV1`
   - `DispatchContextV1(run_id: str, phase: RunPhase, current_candidate_digest: str, policy_context: PolicyContextV1, ports: ToolPortsV1)`
+  - `ArtifactStorePortV1.put(payload: FileToolResultV1) -> ArtifactRefV1`
+  - `FileToolOutcomeV1`, the file-action subset of `ActionResultV1`
+  - `publish_file_tool_outcome(instance: ActionInstanceV1, result: FileToolResultV1, artifact_store: ArtifactStorePortV1) -> FileToolOutcomeV1`
   - `ToolDispatcher.dispatch(instance: ActionInstanceV1, context: DispatchContextV1) -> ActionResultV1`
   - `ToolPortsV1(list_files, read_file, search_text, apply_candidate_patch, run_check, propose_completion)`
 
@@ -2516,7 +2510,7 @@ def test_mock_prepared_request_rejects_openai_fields(
 - Enforce the dispatch order: closed schema → base/current candidate binding → path/object facts → phase matrix → policy → exact registered port.
 - Phase-forbidden actions return `ACTION_NOT_ALLOWED_IN_PHASE` and never create an approval. A hard `DENY` never invokes the port and publishes a structured rejection.
 - Candidate-stale patch/completion/check requests are rejected before policy and tool calls. File reads/searches/listing use the current immutable tree but are not restricted to `src/**`.
-- A port exception becomes a typed failed action result. Validate the entire result envelope and payload artifact reference before publishing; illegal combinations fail closed as `INTERNAL_ERROR`.
+- Task 11 file ports return only their exact typed pure results. Task 17.C validates each complete `FileToolResultV1`, converts deterministic failures to a zero-payload `FileToolOutcomeV1`, and publishes successful bounded payloads atomically through `ArtifactStorePortV1`; illegal combinations or a port exception fail closed as `INTERNAL_ERROR`.
 - Track repeated-action semantics by semantic digest/result digest, not action id; the main-loop counters remain Task 25.
 
 **Implementation boundary:** This executable Task owns one closed action parse → identity-bind → phase-aware dispatch boundary. It does not assemble context, call an LLM, evaluate stopping, persist loop state, or implement concrete tool/domain behavior.
@@ -2611,7 +2605,7 @@ def test_model_cannot_supply_action_id(action_parser: ActionParser) -> None:
   - `ExecutionRequestV1(check_kind: CheckPlanIdV1, argv: ExecutionArgumentSequenceV1, environment: Mapping[str, str], candidate_tree_digest: str, timeout_seconds: int)`
   - `RawExecutionResultV1(exit_code: int | None, stdout_ref: ArtifactRefV1, stderr_ref: ArtifactRefV1, report_ref: ArtifactRefV1 | None, output_bytes: int, timed_out: bool, execution_identity_digest: str)`
   - `DockerExecutor.verify_readiness(reference: ReferenceProfileManifestV1) -> ExecutionReadinessResultV1`
-  - `DockerExecutor.execute(request: ExecutionRequestV1, candidate: CandidateTreeV1) -> RawExecutionResultV1`
+  - `DockerExecutor.execute(request: ExecutionRequestV1, candidate: MaterializedCandidateV1) -> RawExecutionResultV1`
   - `materialize_candidate(candidate: CandidateTreeV1, root: AuthorizedExecutionRootV1) -> MaterializedCandidateV1`
 
 **Implementation points:**
@@ -2837,7 +2831,7 @@ def test_missing_session_end_is_reporter_invalid(
   - `RuntimeCompatibilityResultV1 = CompatibleRuntimeV1 | BaselineBlockedV1`
   - `CheckPlanV1`
   - `PythonProjectAdapterV1.detect_static(snapshot: SnapshotTreeV1, reference_manifest: ReferenceProfileManifestV1) -> StaticProjectProfileResultV1`
-  - `PythonProjectAdapterV1.build_baseline_plan(static_profile: SupportedProjectV1, target_test_ids: tuple[str, ...]) -> BaselineCheckPlanV1`
+  - `PythonProjectAdapterV1.build_baseline_plan(static_profile: SupportedProjectV1, target_test_ids: TargetTestIdSequenceV1) -> BaselineCheckPlanV1`
   - `run_baseline(plan: BaselineCheckPlanV1, snapshot: SnapshotTreeV1, executor: DockerExecutor) -> BaselineResultV1`
   - `evaluate_runtime_compatibility(evidence: BaselineEvidenceV1, manifest: ReferenceProfileManifestV1) -> RuntimeCompatibilityResultV1`
   - `create_validation_manifest(baseline: PassingBaselineV1, bindings: ManifestBindingsV1) -> ValidationManifestV1`
@@ -2943,7 +2937,7 @@ def test_target_that_passes_in_full_baseline_creates_no_manifest(
   - `FormalValidationEvidenceV1`
   - `VerifiedCandidateV1(candidate_id: str, candidate_digest: str, final_diff_digest: str, validation_manifest_digest: str, formal_result_digest: str)`
   - `run_formal_validation(request: FormalValidationRequestV1, adapter: PythonProjectAdapterV1, executor: DockerExecutor) -> FormalValidationOutcomeV1`
-  - `evaluate_formal_success(manifest: ValidationManifestV1, candidate: CandidateRevisionV1, evidence: FormalValidationEvidenceV1) -> VerifiedCandidateV1 | FormalValidationFailureV1`
+  - `evaluate_formal_success(manifest: ValidationManifestV1, candidate: CandidateRevisionV1, plan: FormalValidationPlanV1, evidence: FormalValidationEvidenceV1) -> VerifiedCandidateV1 | FormalValidationFailureV1`
 
 **Implementation points:**
 - Enter formal validation only from a valid current-candidate completion proposal; Agent actions and turn consumption are disabled during this phase.
@@ -3171,7 +3165,7 @@ def test_memory_never_crosses_workspace_identity(
   - `AuditRepository.append(command: AppendAuditEventV1) -> AuditAppendResultV1`
   - `AuditRepository.list_run(run_id: str, page: AuditPageRequestV1) -> AuditPageV1`
   - `AuditRepository.clear_ended_run(command: ClearEndedRunAuditV1) -> AuditClearResultV1`
-  - `build_run_visibility(run: RunRecordV1, waits: tuple[WaitContextV1, ...], events: tuple[AuditEventV1, ...]) -> RunVisibilityV1`
+  - `build_run_visibility(run: RunRecordV1, waits: WaitContextSequenceV1, events: AuditEventSequenceV1) -> RunVisibilityV1`
   - `apply_audit_retention(now: CanonicalTimestampV1, repository: AuditRepository) -> AuditRetentionResultV1`
 
 **Implementation points:**
@@ -3388,12 +3382,14 @@ def test_trimming_never_removes_most_recent_failure_feedback(
 **Interfaces:**
 - Consumes: Tasks 7.B–7.C lifecycle/storage; Task 8 run/deadline; Task 11–13 tools/candidate/policy; Task 14–16 waits/authorization/adapters; Task 17 parser/dispatcher; Task 18–21 checks/Baseline/formal validation; Task 22–24 memory/audit/context/feedback.
 - Produces:
-  - `ProgressMarkerV1`, `StopEvidenceV1`, and `LoopDecisionV1 = ContinueV1 | ValidateV1 | StopV1`
-  - `StopEvaluator.evaluate(state: RunLoopStateV1, evidence: LoopEvidenceV1) -> LoopDecisionV1`
-  - `AgentLoopEngine.run_next(run_id: str) -> LoopStepOutcomeV1`
+  - `ProgressMarkerV1`, `StopEvidenceV1`, and `StopDecisionV1 = ContinueV1 | ValidateV1 | StopV1`
+  - `StopEvaluator.evaluate(state: RunLoopStateV1, evidence: LoopEvidenceV1, progress: ProgressDecisionV1, now: CanonicalTimestampV1) -> StopDecisionV1`
+  - `AgentLoopEngine.step(run_id: str) -> LoopStepResultV1`
+  - `AgentLoopEngine.run_until_boundary(run_id: str) -> LoopBoundaryResultV1`
   - `AgentLoopEngine.request_cancel(run_id: str, event_id: str) -> CancelRequestResultV1`
   - `stop_nonpersistent_restart(run_id: str) -> RestartStopResultV1`
   - `TurnRepository.create_at_call_boundary(command: CreateTurnCommandV1) -> AgentTurnV1`
+  - `build_call_result(request: PreparedModelRequestV1, authorization_ref: OptionalAuthorizationRecordRefV1, outcome: AdapterOutcomeV1) -> LLMCallResultV1`
 
 **Implementation points:**
 - Permit one active turn per run and one adapter call per turn. Never use LangChain AgentExecutor, AutoGen, CrewAI, LlamaIndex Agent, OpenAI Agents SDK runner, or a host coding-agent loop.
@@ -3445,7 +3441,7 @@ def test_failed_check_feedback_changes_the_next_mock_action(
 - [ ] **Step 3: Implement the minimum one-step sequential loop.**
 
   ```python
-  def run_next(self, run_id: str) -> LoopStepOutcomeV1:
+  def step(self, run_id: str) -> LoopStepResultV1:
       state = self.load_active_loop_state(run_id)
       projection = self.context_builder.build(state)
       prepared = self.call_gate.prepare_and_authorize(state, projection)
@@ -3515,7 +3511,7 @@ def test_failed_check_feedback_changes_the_next_mock_action(
 - Produces:
   - `PreimageV1`, `PostimageV1`, `PersistencePathRecordV1`, and `PersistenceTransactionV1`
   - `PersistenceCommandFactoryV1.for_approved_run(run_id: str, approval_id: str, event_id: str) -> PersistVerifiedCandidateV1`
-  - `PersistenceCoordinator.persist(command: PersistVerifiedCandidateV1) -> PersistenceOutcomeV1`
+  - `PersistenceCoordinator.persist(command: PersistVerifiedCandidateV1) -> PersistenceResultV1`
   - `RecoveryService.preview(workspace: WorkspaceIdentityV1) -> RecoveryPreviewV1`
   - `RecoveryService.apply(command: ApplyRecoveryV1) -> RecoveryResultV1`
   - `RecoveryDispositionV1 = Literal["COMMITTED","ROLLED_BACK","UNRESOLVED"]`
@@ -3751,10 +3747,10 @@ def test_credential_status_never_contains_secret_or_derivative(
 **Interfaces:**
 - Consumes: Task 7.B Run records; Task 8 run creation contract; Task 23 `RunVisibilityV1`; Task 27 credential service port.
 - Produces:
-  - `LocalShellPortsV1.list_recent_runs() -> tuple[RunVisibilityV1, ...]`
+  - `LocalShellPortsV1.list_recent_runs() -> RunVisibilitySequenceV1`
   - `LocalShellPortsV1.credential_status() -> CredentialStatusV1`
   - `LocalRouteInstallerV1.install(app: FastAPI) -> None`
-  - `create_local_app(shell_ports: LocalShellPortsV1, security: LocalWebSecurityConfigV1, route_installers: tuple[LocalRouteInstallerV1, ...] = ()) -> FastAPI`
+  - `create_local_app(shell_ports: LocalShellPortsV1, security: LocalWebSecurityConfigV1, route_installers: LocalRouteInstallerSequenceV1) -> FastAPI`
   - `LocalSessionManager.create() -> LocalSessionV1`
   - `verify_local_request(request: Request, session: LocalSessionV1) -> LocalRequestAuthorizationV1`
   - `render_status_badge(visibility: RunVisibilityV1) -> Markup`
@@ -3873,7 +3869,8 @@ def test_state_change_rejects_non_loopback_origin(
   - closed route form adapters that accept only visible request fields, exact wait bindings, `APPROVE|REJECT`, CSRF/session data handled by Task 28, and an idempotency event id; Task 14/15 services obtain `decided_at` from their injected `ClockV1`
   - `AuthorizationSummaryV1`, `RenderedFinalDiffV1`, `FormalEvidenceProjectionV1`, and `WritebackReviewV1` as view-only, escaped projections with no domain mutation method
   - server-rendered pages for every formal run state and governance decision
-  - `render_authorization_summary(subject: DisclosureGrantSubjectV1, endpoint: OpenAIEndpointV1) -> AuthorizationSummaryV1`
+  - `build_authorization_summary(subject: DisclosureGrantSubjectV1, endpoint: OpenAIEndpointV1) -> AuthorizationSummaryV1`
+  - `render_authorization_summary(summary: AuthorizationSummaryV1) -> Markup`
   - `render_writeback_review(subject: FinalWritebackSubjectV1, diff: RenderedFinalDiffV1, evidence: FormalEvidenceProjectionV1) -> WritebackReviewV1`
 
 **Implementation points:**
@@ -3955,7 +3952,7 @@ def test_stale_writeback_subject_never_calls_persistence(
 
 **Status:** Not started
 
-**Goal:** Deliver a deterministic, short-lived public scenario that reuses the production action parser, policy, dispatcher, feedback, and stopping core through Demo-only simulated tool ports and identities, with no path to local files, Docker, credentials, recovery, persistence, or a real provider.
+**Goal:** Deliver a deterministic, short-lived public scenario that reuses only the production pure parser/binding/policy/dispatcher/action-pipeline/feedback/context/stopping modules through Demo-only simulated tool ports and identities, with no formal loop engine, Run/turn repository, local files, Docker, credentials, recovery, persistence, or real provider.
 
 **SPEC / FR / NFR / AC references:** SPEC §1.5 public demo goal; §2.9 US-09; §4.2.1 Demo states; §4.9 public Demo; §5.1–§5.2; §5.5–§5.6; §6.4; §7 Demo rows; §8.3; §10.1 AC-02, AC-05, AC-09, AC-12, AC-17, AC-24; §10.4 visual scenario.
 
@@ -3989,13 +3986,13 @@ def test_stale_writeback_subject_never_calls_persistence(
 - Modify: `AGENT_LOG.md` (append only)
 
 **Interfaces:**
-- Consumes: Task 4 canonical digest/time utilities; Task 5 Demo identities and closed-schema discipline; Task 13 `PolicyEngine`; Task 17 `ActionParser.parse`, `bind_action`, `ToolDispatcher`, and `ToolPortsV1`; Task 24 `build_feedback`, `select_feedback`, and `consume_feedback`; Task 25 `StopEvaluator.evaluate`.
+- Consumes: Task 4.E canonical path utilities; Task 5.D evidence/artifact contracts; Task 13 `PolicyEngine`; Tasks 17.A–17.C `ActionParser.parse`, `bind_action`, `ToolDispatcher`, and `ToolPortsV1`; Tasks 24.A–24.C `build_feedback`, context projection, and feedback consumption; Task 25.A `StopEvaluator.evaluate`; Task 25.D `ActionPipeline.execute`.
 - Produces:
   - `DemoRunStatus`, `DemoDecisionV1`, `DemoSessionV1`, and `DemoTraceEventV1`
   - `DemoScenarioV1.load_builtin("governance-feedback-v1") -> DemoScenarioV1`
-  - `DemoExecutor.tool_ports() -> ToolPortsV1`, whose six callables return only fixed simulated `ActionResultV1` values for the built-in scenario
+  - `DemoExecutor.tool_ports() -> ToolPortsV1`, whose six callables return only the exact fixed simulated pure/domain result types accepted by Task 17.C for the built-in scenario
   - `DemoScenarioRunner.advance(session: DemoSessionV1, decision: DemoDecisionV1 | None) -> DemoStepResultV1`
-  - `DEMO_SHARED_CORE_MODULES_V1`, the exact curated module tuple consumed by Task 34: `vespercode.governance.policy`, `vespercode.loop.agent_actions`, `vespercode.loop.action_parser`, `vespercode.loop.action_binding`, `vespercode.loop.context_projection`, `vespercode.loop.feedback`, `vespercode.loop.stopping`, and `vespercode.tools.dispatcher`
+  - `DEMO_SHARED_CORE_MODULES_V1`, the exact curated module tuple consumed by Task 34: `vespercode.governance.policy`, `vespercode.loop.agent_actions`, `vespercode.loop.action_parser`, `vespercode.loop.action_binding`, `vespercode.loop.context_projection`, `vespercode.loop.feedback`, `vespercode.loop.stopping`, `vespercode.loop.action_pipeline`, and `vespercode.tools.dispatcher`
   - `create_demo_app(config: DemoAppConfigV1) -> FastAPI`
   - `healthcheck.main() -> int`, using only a bounded stdlib HTTP request to loopback `/healthz`
   - `GET /healthz` and fixed-scenario Demo routes
@@ -4003,12 +4000,12 @@ def test_stale_writeback_subject_never_calls_persistence(
 **Implementation points:**
 - Define Demo-only states/ids/subject digests. No Demo type subclasses, validates as, serializes to, or converts into a formal Run, Approval, Grant, AuditEvent, VerifiedCandidate, or persistence command.
 - The versioned built-in script contains only fixed Mock model responses, simulated tool-result fixtures, and presentation labels. It defines no action parser, policy rule, feedback selector/consumer, stop evaluator, or alternative state-machine semantics.
-- `DemoScenarioRunner.advance` must execute the fixed sequence `Mock response → ActionParser.parse → bind_action → PolicyEngine.evaluate → ToolDispatcher.dispatch with DemoExecutor.tool_ports() → build_feedback/select_feedback/consume_feedback → StopEvaluator.evaluate → Demo result`. A hard `DENY` skips dispatch; a simulated check failure must change the next Mock action only through the Task 24 feedback projection.
+- `DemoScenarioRunner.advance` must execute the fixed sequence `Mock response → Task 25.D ActionPipeline.execute`, whose injected production components perform `ActionParser.parse → bind_action → PolicyEngine.evaluate → ToolDispatcher.dispatch with DemoExecutor.tool_ports() → build_feedback/select_feedback/consume_feedback`, then `Task 25.A StopEvaluator.evaluate → Demo result`. A hard `DENY` skips dispatch; a simulated check failure must change the next Mock action only through the Task 24 feedback projection.
 - The fixed scenario shows a non-editable hard DENY, one failed simulated check followed by a different correction action, protected-artifact rejection, formal-looking simulated pass, and no write without simulated approval.
 - All code/result/diff text is fixed package data; accept no repository path, upload, arbitrary prompt, command, external URL, provider setting, or secret.
-- Register only `DemoExecutor`, in-memory session store, clock/id generator, and template renderer as capability adapters. Compose Task 13/17/24/25 pure core internally; shared pure core is not a capability adapter. Dependency graph tests must prove file, WinCred, Docker, recovery, SQLite persistence, and OpenAI adapters are absent.
+- Register only `DemoExecutor`, in-memory session store, clock/id generator, and template renderer as capability adapters. Compose only the exact Task 13/17.A–17.C/24.A–24.C/25.A/25.D pure modules in `DEMO_SHARED_CORE_MODULES_V1`; shared pure core is not a capability adapter. Dependency graph tests must prove every `PROHIBITED_DEMO_MODULE_PREFIXES_V1` member, including the formal engine/storage/file/WinCred/Docker/recovery/SQLite/OpenAI boundaries, is absent.
 - The in-memory Demo session store implements the Task 24 `FeedbackRepositoryV1` port only for the current five-minute session. It performs no disk/database write and discards feedback on completion, expiry, reset, or error.
-- Use the Task 25 `StopEvaluator` for terminal meaning without constructing a formal `AgentLoopEngine`, formal Run repository, or recovery lifecycle. Demo session transitions adapt the typed stop decision to `DEMO_COMPLETED | DEMO_FAILED` and never create a formal stop/audit record.
+- Use only Task 25.A `StopEvaluator` for terminal meaning. Never import, construct, subclass, wrap, or adapt the formal loop engine; never construct a formal Run/turn repository or recovery lifecycle. Demo session transitions adapt `StopDecisionV1` to `DEMO_COMPLETED | DEMO_FAILED` and never create a formal stop/audit record.
 - Limit a session to 20 actions and five minutes; limit process concurrency to 10 using an atomic semaphore. Reject or expire excess sessions deterministically.
 - Create a fresh UUID session, keep it only in process memory, discard it at completion/expiry/reset, and create no cross-process recovery.
 - `DemoDecisionV1` binds demo session/subject/decision/time and advances only the fixed script.
@@ -4239,7 +4236,7 @@ def test_verified_candidate_without_final_approval_never_writes_workspace(
   - `run_mechanism_demo(config: MechanismDemoConfigV1) -> MechanismDemoResultV1`
   - `MechanismDemoTraceV1` with ordered actions, decisions, dispatch counts, candidate digests, feedback refs, adapter calls, waits, and terminal proof
   - a text-safe console summary and canonical JSON report at caller-selected paths
-  - a runtime reuse assertion that the formal harness and public Demo invoke the same Task 13/17/24/25 implementations, plus a separate presentation-label alignment assertion
+  - a runtime reuse assertion that the formal harness and public Demo invoke the same exact Task 13, 17.A–17.C, 24.A–24.C, 25.A, and 25.D pure implementations, plus a separate presentation-label alignment assertion; formal engine composition is outside this comparison
 
 **Implementation points:**
 - First action submits a valid `docs/outside-scope.md` create; prove path syntax passes, policy returns `DENY/PATCH_PATH_NOT_EDITABLE`, and both dispatch/publish counts remain zero.
@@ -4251,7 +4248,7 @@ def test_verified_candidate_without_final_approval_never_writes_workspace(
 - Exercise a real-adapter spy first with no Grant/record, then with an otherwise valid Grant but a credential cleared after readiness, and finally with a backend changed to unsafe. Prove transport calls, turn/call increments, authorization records, and charged bytes remain zero; the latter two paths return `CREDENTIAL_MISSING` and `CREDENTIAL_BACKEND_UNSAFE` and stop without retry.
 - Run the same fixed inputs twice and compare policy decisions, semantic action/result digests, candidate identities, feedback consumption, and terminal state.
 - Keep the script offline: use fixed tree/check/transport and fake safe/unsafe credential fixtures, no workspace write, no Docker, no real keyring, no provider request, and no external URL.
-- Run Task 30's `DemoScenarioRunner` headlessly with call-recording wrappers around the same production `ActionParser`, `bind_action`, `PolicyEngine`, `ToolDispatcher`, Task 24 feedback functions, and `StopEvaluator`. Prove both compositions execute those implementations; prove only the Demo composition dispatches through `DemoExecutor.tool_ports()`.
+- Run Task 30's `DemoScenarioRunner` headlessly with call-recording wrappers around the exact `DEMO_SHARED_CORE_MODULES_V1` functions, including `ActionPipeline.execute` and `StopEvaluator.evaluate`. Prove both compositions execute that shared pure subset and only the Demo dispatches through `DemoExecutor.tool_ports()`; engine coverage remains in the separate formal-loop trace.
 - Compare scenario meaning and labels only after runtime reuse is proven. Never convert Demo decisions/types into formal objects, and never treat label equality as evidence of implementation reuse.
 
 **Intentionally failing test:**
@@ -4275,7 +4272,7 @@ def test_formal_and_demo_compositions_execute_the_same_core_implementations(
 ) -> None:
     formal_harness.run_step("feedback-correction")
     demo_runner.advance(demo_session, decision=None)
-    assert shared_core_spies.formal_implementations == (
+    assert shared_core_spies.formal_shared_pure_implementations == (
         ActionParser.parse,
         bind_action,
         PolicyEngine.evaluate,
@@ -4283,9 +4280,13 @@ def test_formal_and_demo_compositions_execute_the_same_core_implementations(
         build_feedback,
         select_feedback,
         consume_feedback,
+        ActionPipeline.execute,
         StopEvaluator.evaluate,
     )
-    assert shared_core_spies.demo_implementations == shared_core_spies.formal_implementations
+    assert (
+        shared_core_spies.demo_shared_pure_implementations
+        == shared_core_spies.formal_shared_pure_implementations
+    )
     assert shared_core_spies.demo_executor_calls > 0
     assert shared_core_spies.demo_formal_capability_calls == 0
 ```
@@ -4489,8 +4490,8 @@ def test_built_wheel_contains_all_runtime_resources(
 - Treat Task 2's `containers/reference/Dockerfile`, reference lock, fixture, manifest bytes, builder/output parameters, registry image digest, and GO report as read-only inputs. Re-run its no-credential loopback-registry procedure and require local OCI, registry response, digest pull, Task 2 GO `docker_image_digest`, and Task 6 manifest `docker_image_digest` all to equal; a mismatch returns NO-GO, reopens Tasks 2/6 and approval, and never edits the manifest in this task.
 - Set the fixed non-root user, report entry point/assets, work/tmp/cache ownership, and no Docker client/socket dependency in the reference image.
 - Build and inspect the reference image, then invoke it through the production executor to prove no network, read-only root/workspace, tmpfs/cache, resource caps, full report, fingerprint, and reference fixture behavior.
-- Demo recipe contains only the public Demo application/runtime/static assets, Task 30 `DEMO_SHARED_CORE_MODULES_V1` plus their Task 4/5 canonical/contract imports, and a non-root user. It does not copy formal local composition, file-action implementations, WinCred adapter, OpenAI adapter, recovery/persistence code, Docker executor/client/socket, release credentials, or target repository.
-- Build the Demo runtime from an explicit allowlist containing `src/vespercode/demo/`, the exact `DEMO_SHARED_CORE_MODULES_V1` tuple, their reviewed Task 4/5 canonical/contract import closure, and the exact hash-locked `requirements/demo.lock`; do not install the full formal VesperCode wheel. Fail if static import closure contains a module outside that allowlist or if any prohibited capability adapter is present.
+- Demo recipe contains only the public Demo application/runtime/static assets, Task 30 `DEMO_SHARED_CORE_MODULES_V1` plus their reviewed Task 4.E/5.D import closure, and a non-root user. It does not copy the formal engine, Run/turn/SQLite storage, formal local composition, file-action implementations, WinCred adapter, OpenAI adapter, recovery/persistence code, Docker executor/client/socket, release credentials, or target repository.
+- Build the Demo runtime from an explicit allowlist containing `src/vespercode/demo/`, the exact `DEMO_SHARED_CORE_MODULES_V1` tuple, their reviewed Task 4.E/5.D canonical/contract import closure, and the exact hash-locked `requirements/demo.lock`; do not install the full formal VesperCode wheel. Fail if static import closure contains a module outside that allowlist or matches any `PROHIBITED_DEMO_MODULE_PREFIXES_V1` member.
 - Demo reads PORT, binds `0.0.0.0`, serves `/healthz`, retains no persistent disk/state, and reproduces the fixed scenario in a real container.
 - Inspect both image histories/filesystems/configs for forbidden secret/config members and capability separation; never log environment values.
 - Compute local image ids/digests from real builds, but use only the fixed single-platform OCI/registry manifest digest as identity. The reference digest must match the Task 2 GO report and frozen manifest; do not claim a GHCR RepoDigest until Task 36 pushes and re-pulls it.
@@ -4509,10 +4510,12 @@ def test_demo_image_contains_shared_core_but_no_formal_adapters(
     assert "vespercode.governance.policy" in members
     assert "vespercode.loop.feedback" in members
     assert "vespercode.loop.stopping" in members
-    assert "vespercode.execution.docker_executor" not in members
-    assert "vespercode.credentials.wincred_store" not in members
-    assert "vespercode.llm.openai_adapter" not in members
-    assert "vespercode.persistence.writeback" not in members
+    assert "vespercode.loop.action_pipeline" in members
+    assert not any(
+        member == prefix or member.startswith(prefix + ".")
+        for member in members
+        for prefix in PROHIBITED_DEMO_MODULE_PREFIXES_V1
+    )
     assert built_demo_image.has_docker_socket_mount is False
 ```
 
@@ -4974,7 +4977,7 @@ def test_readme_fails_when_release_digest_verification_is_missing(
   - `LocalOperationsRouteInstallerV1(ports: LocalOperationsWorkflowPortsV1).install(app: FastAPI) -> None`
   - `LocalOperationsWorkflowPortsV1(credentials: CredentialWorkflowPortsV1, memory: MemoryWorkflowPortsV1, audit: AuditWorkflowPortsV1, recovery: RecoveryWorkflowPortsV1)`
   - `ProductionLocalWorkflowPortsV1(shell: LocalShellPortsV1, governance: RunGovernanceWorkflowPortsV1, operations: LocalOperationsWorkflowPortsV1)`
-  - `build_local_route_installers(ports: ProductionLocalWorkflowPortsV1) -> tuple[LocalRouteInstallerV1, ...]`, returning exactly `(RunGovernanceRouteInstallerV1(ports.governance), LocalOperationsRouteInstallerV1(ports.operations))`
+  - `build_local_route_installers(ports: ProductionLocalWorkflowPortsV1) -> LocalRouteInstallerSequenceV1`, returning exactly `(RunGovernanceRouteInstallerV1(ports.governance), LocalOperationsRouteInstallerV1(ports.operations))`
   - `build_local_application(ports: ProductionLocalWorkflowPortsV1, security: LocalWebSecurityConfigV1) -> FastAPI`, which calls Task 28 `create_local_app` with `ports.shell` and that exact installer tuple
   - Task 38.E `install_recover_command(app, recovery_handler: RecoveryCliHandlerV1) -> None`, accepting an injected Spy in unit tests and owning no production default
   - Task 38.F `bind_production_recover_command(app, database_path: Path, workspace_service: WorkspaceServiceV1) -> None`, which initializes the complete registry, constructs the Task 26 recovery service/handler, then injects it into Task 38.E
@@ -6443,7 +6446,7 @@ Expected RED: import failure because the idempotency repository does not exist.
 
 **Dependencies:** Tasks 7.B, 7.C, 14.B, 15.D, 15.E, 22.A, 23.A, 24.C, 25.B, 25.D, 26.A, and 26.C.
 
-**Blocks:** Task 38.F and every complete formal database consumer transitively composed through it.
+**Blocks:** Tasks 37.B and 38.F.
 
 **Files:**
 - Create: `src/vespercode/storage/migrations/registry.py`
@@ -6541,9 +6544,9 @@ def test_registry_prefixes_match_exact_schema_owner_map(
 
 **Dependencies:** Tasks 6.E and 7.C.
 
-**Blocks:** Task 8.B.
+**Blocks:** Tasks 8.B and 37.B.
 
-**Parallelization:** Parallel with Tasks 15, 23, and 27 after Tasks 6–7.
+**Parallelization:** Parallelizable with Tasks 15.A, 23.A, and 27.A; each task starts only after its exact executable Dependencies are satisfied.
 
 **Branch/worktree:** `codex/task-8a-run-request`; `.worktrees/task-8a-run-request`.
 
@@ -6586,7 +6589,7 @@ def test_custom_base_url_is_rejected_without_creating_a_run(
 
 **Dependencies:** Task 8.A.
 
-**Blocks:** Tasks 9, 20.A, 25.B, 28.A, 29.A, and every dependency formerly stated as Task 8.
+**Blocks:** Tasks 9.A, 20.A, 25.B, 25.G, 28.A, 29.A, and 37.B.
 
 **Parallelization:** Sequential after Task 8.A.
 
@@ -6890,9 +6893,9 @@ def test_snapshot_rejects_preflight_object_identity_drift() -> None:
 
 **Dependencies:** Tasks 5.D and 10.C.
 
-**Blocks:** Task 11.B and Task 17.
+**Blocks:** Tasks 11.B and 37.B.
 
-**Parallelization:** Parallel with Task 12 after Task 10.
+**Parallelization:** Parallelizable with Task 12.A once the exact Dependencies of both executable children are satisfied.
 
 **Branch/worktree:** `codex/task-11a-read-tool`; `.worktrees/task-11a-read-tool`.
 
@@ -6936,7 +6939,7 @@ def test_read_uses_only_bound_snapshot_bytes(
 
 **Dependencies:** Task 11.A.
 
-**Blocks:** Tasks 17, 24, 25.D, 31.B, and 32.B.
+**Blocks:** Tasks 17.A, 17.C, 24.A, 25.D, 31.A, 31.B, 32.B, and 37.B.
 
 **Parallelization:** Sequential after Task 11.A because it consumes the frozen common cursor/result contracts.
 
@@ -6948,7 +6951,7 @@ def test_read_uses_only_bound_snapshot_bytes(
 - Test: `tests/unit/tools/test_list_files.py`
 - Test: `tests/unit/tools/test_search_text.py`
 
-**Interfaces:** Produces `list_files(tree, action) -> ListFilesResultV1` and `search_text(tree, action) -> SearchTextResultV1`; uses separate List/Search cursor types binding visible-tree digest, cursor-free query digest, next scan position, and cursor self-digest.
+**Interfaces:** Produces `list_files(tree: SnapshotTreeV1 | CandidateTreeV1, action: ListFilesActionV1) -> ListFilesResultV1` and `search_text(tree: SnapshotTreeV1 | CandidateTreeV1, action: SearchTextActionV1) -> SearchTextResultV1`; uses separate List/Search cursor types binding visible-tree digest, cursor-free query digest, next scan position, and cursor self-digest.
 
 **Intentionally failing test:**
 
@@ -7449,9 +7452,9 @@ def test_revoke_rejects_mismatched_subject(
 
 **Dependencies:** Tasks 6.E and 15.E.
 
-**Blocks:** Task 16.B and Mock-mode consumers.
+**Blocks:** Tasks 16.B, 17.A, and 37.B.
 
-**Parallelization:** Parallel with Task 9 after Tasks 15 and 27; this child itself does not consume credentials.
+**Parallelization:** Parallelizable with Task 9.A once each exact executable Dependencies field is satisfied; Task 16.A itself does not consume credentials.
 
 **Branch/worktree:** `codex/task-16a-prepared-mock`; `.worktrees/task-16a-prepared-mock`.
 
@@ -7464,14 +7467,14 @@ def test_revoke_rejects_mismatched_subject(
 - Test: `tests/unit/llm/test_mock_adapter.py`
 - Test: `tests/unit/llm/test_call_result.py`
 
-**Interfaces:** Produces protocol `LLMAdapter.call(request: PreparedModelRequestV1) -> LLMCallResultV1`, closed `PreparedModelRequestV1 = MockPreparedRequestV1 | OpenAIPreparedRequestV1`, `ModelResponse`, `LLMCallResultV1`, and `MockLLMAdapter.call(request: MockPreparedRequestV1) -> LLMCallResultV1`.
+**Interfaces:** Produces protocol `LLMAdapter.generate(request: PreparedModelRequestV1) -> ModelResponse`, closed `PreparedModelRequestV1 = MockPreparedModelRequestV1 | OpenAIPreparedModelRequestV1`, `ModelResponse`, closed `LLMCallResultV1`, and `MockLLMAdapter.generate(request: MockPreparedModelRequestV1) -> ModelResponse`.
 
 **Intentionally failing test:**
 
 ```python
 def test_mock_request_rejects_openai_transport_fields() -> None:
     with pytest.raises(ValidationError):
-        MockPreparedRequestV1.model_validate(
+        MockPreparedModelRequestV1.model_validate(
             valid_mock_request() | {"endpoint_id": "OPENAI_PUBLIC_API_V1"}
         )
 ```
@@ -7489,13 +7492,13 @@ def test_mock_request_rejects_openai_transport_fields() -> None:
 
 **Status:** Not started
 
-**Goal:** Serialize one authorized `OpenAIPreparedRequestV1` to the sole trusted endpoint and perform at most one non-retried transport call with bounded typed results.
+**Goal:** Serialize one authorized `OpenAIPreparedModelRequestV1` to the sole trusted endpoint and perform at most one non-retried transport call through a freshly bound adapter.
 
 **SPEC references:** Milestone 16 references; owns OpenAI serialization, redirect/endpoint enforcement, transport invocation, and error projection.
 
 **Dependencies:** Tasks 15.E, 16.A, and 27.B.
 
-**Blocks:** Tasks 17, 24, 25.C, 29.B, 31.B, and 32.C.
+**Blocks:** Tasks 17.C, 24.B, 25.C, 29.B, 31.A, 31.B, 32.C, and 37.B.
 
 **Parallelization:** Sequential after Task 16.A.
 
@@ -7507,7 +7510,7 @@ def test_mock_request_rejects_openai_transport_fields() -> None:
 - Test: `tests/unit/llm/test_openai_serializer.py`
 - Test: `tests/unit/llm/test_openai_adapter.py`
 
-**Interfaces:** Produces `serialize_openai_request(request: OpenAIPreparedRequestV1) -> OpenAIRequestBodyV1` and `OpenAILLMAdapter.call(request: OpenAIPreparedRequestV1, authorization: DisclosureAuthorizationRecordV1, credential: SecretCredentialV1) -> LLMCallResultV1`; consumes only Task 15.E authorization and a Task 27.A fresh secret wrapper supplied for this call.
+**Interfaces:** Produces `serialize_openai_request(request: OpenAIPreparedModelRequestV1) -> OpenAIRequestBodyV1`, `OpenAILLMAdapter.bind(authorization: DisclosureAuthorizationRecordV1, credential: SecretCredentialV1) -> BoundOpenAILLMAdapterV1`, and `BoundOpenAILLMAdapterV1.generate(request: OpenAIPreparedModelRequestV1) -> ModelResponse`; consumes only Task 15.E authorization and a Task 27.B fresh secret wrapper supplied for this call.
 
 **Intentionally failing test:**
 
@@ -7516,12 +7519,13 @@ def test_openai_adapter_never_retries_transport(
     adapter: OpenAILLMAdapter,
     failing_transport: RecordingTransport,
 ) -> None:
-    result = adapter.call(valid_openai_request(), valid_authorization(), test_secret())
-    assert result.kind == "TRANSPORT_ERROR"
+    bound = adapter.bind(valid_authorization(), test_secret())
+    with pytest.raises(OpenAITransportFailure):
+        bound.generate(valid_openai_prepared_request())
     assert failing_transport.call_count == 1
 ```
 
-**Implementation boundary:** The adapter accepts no custom base URL, alternate endpoint, retry policy, environment credential, or redirect replay. Per-call credential/Grant/count ordering belongs to Task 25.C.
+**Implementation boundary:** The unbound adapter cannot generate. The bound adapter accepts no custom base URL, alternate endpoint, retry policy, environment credential, or redirect replay and returns only `ModelResponse` or raises one bounded typed adapter failure. Per-call credential/Grant/count ordering and `LLMCallResultV1` construction belong to Task 25.C.
 
 **Verification:**
 - Target: `python -m pytest -q tests/unit/llm/test_openai_adapter.py::test_openai_adapter_never_retries_transport`
@@ -7612,7 +7616,7 @@ def test_same_semantics_different_harness_ids_change_instance_digest() -> None:
 - Test: `tests/unit/tools/test_dispatcher.py`
 - Test: `tests/unit/tools/test_dispatch_order.py`
 
-**Interfaces:** Produces `DispatchContextV1`, `ToolPortsV1(list_files, read_file, search_text, apply_candidate_patch, run_check, propose_completion)`, and `ToolDispatcher.dispatch(instance: ActionInstanceV1, context: DispatchContextV1) -> ActionResultV1`.
+**Interfaces:** Produces `DispatchContextV1`, `ArtifactStorePortV1.put(payload: FileToolResultV1) -> ArtifactRefV1`, `FileToolOutcomeV1`, `publish_file_tool_outcome(instance: ActionInstanceV1, result: FileToolResultV1, artifact_store: ArtifactStorePortV1) -> FileToolOutcomeV1`, `ToolPortsV1(list_files, read_file, search_text, apply_candidate_patch, run_check, propose_completion)` whose three file ports use the exact Task 11.A/11.B pure signatures, and `ToolDispatcher.dispatch(instance: ActionInstanceV1, context: DispatchContextV1) -> ActionResultV1`.
 
 **Intentionally failing test:**
 
@@ -7625,7 +7629,7 @@ def test_hard_deny_never_invokes_tool_port(dispatcher: ToolDispatcher, ports: Sp
 
 **Expected RED:** no ordered guarded dispatcher exists.
 
-**Implementation boundary:** Own deterministic pre-dispatch ordering, exact port selection, result-envelope validation, and exception conversion. Do not parse/bind actions, implement tools, or create approval waits.
+**Implementation boundary:** Own deterministic pre-dispatch ordering, exact port selection, Task 11 pure-result conversion, bounded ArtifactStore publication, result-envelope validation, and exception conversion. Do not parse/bind actions, implement tools, or create approval waits.
 
 **Verification:**
 - Target: `python -m pytest -q tests/unit/tools/test_dispatch_order.py::test_hard_deny_never_invokes_tool_port`
@@ -7903,9 +7907,9 @@ Expected RED: import failure because fingerprint normalization does not exist.
 
 **Dependencies:** Tasks 5.D, 6.E, 8.B, and 10.C.
 
-**Blocks:** Task 20.B.
+**Blocks:** Tasks 20.B and 37.B.
 
-**Parallelization:** Parallel with Task 22 after Task 19.
+**Parallelization:** Parallelizable with Task 22.A once the exact Dependencies of both executable children are satisfied.
 
 **Branch/worktree:** `codex/task-20a-python-check-plan`; `.worktrees/task-20a-python-check-plan`.
 
@@ -7914,7 +7918,7 @@ Expected RED: import failure because fingerprint normalization does not exist.
 - Test: `tests/unit/validation/test_python_adapter_static.py`
 - Test: `tests/unit/validation/test_check_plan.py`
 
-**Interfaces:** Produces `TargetTestIdSequenceV1`, an immutable ordered tuple of one or more target ids, `PythonProjectAdapterV1.detect_static(snapshot: SnapshotTreeV1) -> StaticSupportResultV1`, `PythonProjectAdapterV1.build_baseline_plan(static_profile: SupportedProjectV1, target_test_ids: TargetTestIdSequenceV1) -> BaselineCheckPlanV1`, and `PythonProjectAdapterV1.build_formal_plan(manifest: ValidationManifestV1, candidate: CandidateIdentityV1) -> FormalValidationCheckPlanV1`.
+**Interfaces:** Produces `TargetTestIdSequenceV1`, an immutable ordered tuple of one or more target ids, `StaticProjectProfileResultV1 = SupportedProjectV1 | UnsupportedProjectV1`, `PythonProjectAdapterV1.detect_static(snapshot: SnapshotTreeV1, reference_manifest: ReferenceProfileManifestV1) -> StaticProjectProfileResultV1`, `PythonProjectAdapterV1.build_baseline_plan(static_profile: SupportedProjectV1, target_test_ids: TargetTestIdSequenceV1) -> BaselineCheckPlanV1`, and `PythonProjectAdapterV1.build_formal_plan(manifest: ValidationManifestV1, candidate: CandidateIdentityV1) -> FormalValidationCheckPlanV1`.
 
 **Intentionally failing test:**
 
@@ -7923,7 +7927,7 @@ def test_static_unsupported_result_performs_no_execution(
     adapter: PythonProjectAdapterV1,
     executor: SpyExecutor,
 ) -> None:
-    result = adapter.detect_static(unsupported_snapshot())
+    result = adapter.detect_static(unsupported_snapshot(), frozen_reference_manifest())
     assert result.kind == "UNSUPPORTED"
     assert executor.call_count == 0
 ```
@@ -7947,7 +7951,7 @@ def test_static_unsupported_result_performs_no_execution(
 
 **Dependencies:** Tasks 18.D, 19.C, and 20.A.
 
-**Blocks:** Tasks 14, 21, 25.G, 34.A, and every dependency formerly stated as Task 20.
+**Blocks:** Tasks 14.A, 21.A, 21.C, 31.A, 34.A, and 37.B.
 
 **Parallelization:** Sequential after Task 20.A.
 
@@ -7961,17 +7965,22 @@ def test_static_unsupported_result_performs_no_execution(
 - Test: `tests/unit/validation/test_manifest.py`
 - Test: `tests/integration/docker/test_reference_baseline.py`
 
-**Interfaces:** Produces `run_baseline(plan: BaselineCheckPlanV1, snapshot: SnapshotTreeV1, executor: DockerExecutor) -> BaselineOutcomeV1` and `create_validation_manifest(baseline: PassingBaselineV1, bindings: ManifestBindingsV1) -> ValidationManifestV1`; consumes Task 20.A's exact plan, Task 18.D closed execution boundary, and Task 19.C authoritative check/fingerprint evidence.
+**Interfaces:** Produces `BaselineResultV1 = PassingBaselineV1 | BaselineBlockedV1`, `run_baseline(plan: BaselineCheckPlanV1, snapshot: SnapshotTreeV1, executor: DockerExecutor) -> BaselineResultV1`, and `create_validation_manifest(baseline: PassingBaselineV1, bindings: ManifestBindingsV1) -> ValidationManifestV1`; consumes Task 20.A's exact plan, Task 18.D closed execution boundary, and Task 19.C authoritative check/fingerprint evidence.
 
 **Intentionally failing test:**
 
 ```python
 def test_unstable_target_fingerprint_creates_no_manifest(
-    baseline_runner: BaselineRunner,
+    baseline_fixture: BaselineFixture,
+    executor: DockerExecutor,
 ) -> None:
-    outcome = baseline_runner.run(fixture_with_mismatched_target_fingerprints())
-    assert outcome.kind == "BASELINE_UNSTABLE"
-    assert outcome.manifest is None
+    result = run_baseline(
+        baseline_fixture.plan_with_mismatched_target_fingerprints,
+        baseline_fixture.snapshot,
+        executor,
+    )
+    assert isinstance(result, BaselineBlockedV1)
+    assert result.reason == "BASELINE_UNSTABLE"
 ```
 
 **Implementation boundary:** Every check gets a fresh execution. Forbidden pytest states, non-target failure, collection drift, incomplete report, Ruff/Mypy failure, or unstable full/target fingerprints prevent Manifest creation.
@@ -8436,7 +8445,7 @@ def test_two_turns_cannot_consume_one_feedback_record(repository: FeedbackReposi
 
 **Dependencies:** Tasks 5.D, 7.C, 14.C, and 24.C.
 
-**Blocks:** Task 25.G and Task 30.A.
+**Blocks:** Tasks 25.G, 30.A, 32.A, and 37.B.
 
 **Parallelization:** Parallel with Tasks 25.B, 25.C, 25.E, and 25.F after dependencies freeze their interfaces.
 
@@ -8478,7 +8487,7 @@ def test_repeated_semantic_action_stops_at_exact_limit() -> None:
 
 **Dependencies:** Tasks 7.C, 8.B, and 23.A.
 
-**Blocks:** Tasks 25.C and 25.G.
+**Blocks:** Tasks 7.D, 24.C, 25.C, 25.G, and 37.B.
 
 **Parallelization:** Parallel with Task 25.A.
 
@@ -8525,7 +8534,7 @@ def test_pre_call_failure_does_not_increment_turn_or_call(
 
 **Dependencies:** Tasks 15.E, 16.B, 25.B, and 27.B.
 
-**Blocks:** Task 25.G and credential call-gate E2E tasks.
+**Blocks:** Tasks 25.G and 37.B.
 
 **Parallelization:** Parallel with Tasks 25.A, 25.D, 25.E, and 25.F after Task 25.B.
 
@@ -8535,7 +8544,7 @@ def test_pre_call_failure_does_not_increment_turn_or_call(
 - Create: `src/vespercode/loop/call_orchestrator.py`
 - Test: `tests/unit/loop/test_call_orchestrator.py`
 
-**Interfaces:** Produces `CallOrchestrator.call_once(command: CallOnceV1) -> LLMCallResultV1`; consumes Task 16.B adapters, Task 15.E authorization ledger, Task 27.A `get_for_call`, and Task 25.B counting port.
+**Interfaces:** Produces `build_call_result(request: PreparedModelRequestV1, authorization_ref: OptionalAuthorizationRecordRefV1, outcome: AdapterOutcomeV1) -> LLMCallResultV1` and `CallOrchestrator.call_once(command: CallOnceV1) -> LLMCallResultV1`; consumes Task 16.B's exact unbound/bound `generate` adapters, Task 15.E authorization ledger, Task 27.B `get_for_call`, and Task 25.B counting port.
 
 **Intentionally failing test:**
 
@@ -8549,7 +8558,7 @@ def test_cleared_credential_stops_before_every_charge_or_count(
     assert spies.counts() == {"grant": 0, "authorization": 0, "turn": 0, "call": 0, "transport": 0}
 ```
 
-**Implementation boundary:** No retry, provider fallback, cached credential, or reconstruction after uncertain transport is permitted.
+**Implementation boundary:** This orchestration child alone converts a `ModelResponse` or bounded adapter failure into `LLMCallResultV1`. No retry, provider fallback, cached credential, or reconstruction after uncertain transport is permitted.
 
 **Verification:**
 - Target: `python -m pytest -q tests/unit/loop/test_call_orchestrator.py::test_cleared_credential_stops_before_every_charge_or_count`
@@ -8568,7 +8577,7 @@ def test_cleared_credential_stops_before_every_charge_or_count(
 
 **Dependencies:** Tasks 11.B, 12.D, 13, 17.C, 19.C, and 24.C.
 
-**Blocks:** Tasks 25.G, 30.A, and 32.A.
+**Blocks:** Tasks 7.D, 14.B, 25.G, 30.A, 32.A, and 37.B.
 
 **Parallelization:** Parallel with Tasks 25.A, 25.C, 25.E, and 25.F.
 
@@ -8618,7 +8627,7 @@ def test_policy_deny_skips_dispatch_and_returns_feedback(
 
 **Dependencies:** Tasks 7.C and 14.C.
 
-**Blocks:** Task 25.G.
+**Blocks:** Tasks 25.G and 37.B.
 
 **Parallelization:** Parallel with Tasks 25.A, 25.C, 25.D, and 25.F.
 
@@ -8661,7 +8670,7 @@ def test_expired_wait_never_resumes_agent_action(
 
 **Dependencies:** Tasks 7.C and 23.C.
 
-**Blocks:** Task 25.G.
+**Blocks:** Tasks 25.G and 37.B.
 
 **Parallelization:** Parallel with Tasks 25.A, 25.C, 25.D, and 25.E.
 
@@ -8703,9 +8712,9 @@ def test_restart_during_active_turn_stops_without_resend(
 
 **Dependencies:** Tasks 8.B, 17.C, 21.C, 24.C, 25.A, 25.B, 25.C, 25.D, 25.E, and 25.F.
 
-**Blocks:** Tasks 29.A, 31.A, and every dependency formerly stated as Task 25.
+**Blocks:** Tasks 29.A, 31.A, and 37.B.
 
-**Parallelization:** Sequential composition after all six child components.
+**Parallelization:** Sequential after Tasks 8.B, 17.C, 21.C, 24.C, 25.A, 25.B, 25.C, 25.D, 25.E, and 25.F.
 
 **Branch/worktree:** `codex/task-25g-loop-engine`; `.worktrees/task-25g-loop-engine`.
 
@@ -8744,11 +8753,13 @@ def test_one_engine_step_calls_each_stage_once_in_order(
 
 **SPEC references:** Milestone 26 writeback requirements.
 
-**Dependencies:** Tasks 3.G, 7.C, 9.D, 12.D, 14.C, 21.C, and 23.C; Task 3.G `GO` is the non-task entry gate.
+**Dependencies:** Tasks 3.G, 7.C, 9.D, 12.D, 14.C, 21.C, and 23.C.
 
-**Blocks:** Tasks 26.B and 29.C.
+**Non-task entry gate:** The terminal Task 3.G outcome is `GO`.
 
-**Parallelization:** Parallel with Milestone 25 after Task 14/21.
+**Blocks:** Tasks 7.D, 26.B, 29.C, 31.A, and 37.B.
+
+**Parallelization:** Parallelizable with Tasks 25.A, 25.B, 25.C, 25.D, 25.E, 25.F, and 25.G once each exact executable Dependencies field is satisfied.
 
 **Branch/worktree:** `codex/task-26a-writeback`; `.worktrees/task-26a-writeback`.
 
@@ -8764,7 +8775,7 @@ def test_one_engine_step_calls_each_stage_once_in_order(
 - Test: `tests/unit/persistence/test_writeback_preconditions.py`
 - Test: `tests/fault_injection/persistence/test_writeback_fault_matrix.py`
 
-**Interfaces:** Produces immutable `PERSISTENCE_V1_MIGRATION = MigrationV1(version=11, name="persistence_v1", ...)`, the Milestone 26 path/transaction/artifact contracts, and `PersistenceCoordinator.persist(command) -> PersistenceResultV1`.
+**Interfaces:** Produces immutable `PERSISTENCE_V1_MIGRATION = MigrationV1(version=11, name="persistence_v1", ...)`, the Milestone 26 path/transaction/artifact contracts, and `PersistenceCoordinator.persist(command: PersistVerifiedCandidateV1) -> PersistenceResultV1`.
 
 **Intentionally failing test:**
 
@@ -8800,7 +8811,7 @@ def test_missing_exact_approval_writes_no_workspace_bytes(
 
 **Dependencies:** Task 26.A.
 
-**Blocks:** Task 26.C and Recovery UI/CLI preview.
+**Blocks:** Tasks 26.C and 37.B.
 
 **Parallelization:** Sequential after Task 26.A defines durable records.
 
@@ -8810,7 +8821,7 @@ def test_missing_exact_approval_writes_no_workspace_bytes(
 - Create: `src/vespercode/persistence/recovery_preview.py`
 - Test: `tests/unit/persistence/test_recovery_decision.py`
 
-**Interfaces:** Produces `PersistencePathRecordSequenceV1` and `RecoveryPathObservationSequenceV1`, immutable ordered tuples of their named item types, `RecoveryPreviewService.preview(transaction_id: str) -> RecoveryPreviewV1`, and pure `classify_recovery(records: PersistencePathRecordSequenceV1, observations: RecoveryPathObservationSequenceV1) -> RecoveryDispositionV1`.
+**Interfaces:** Produces `PersistencePathRecordSequenceV1` and `RecoveryPathObservationSequenceV1`, immutable ordered tuples of their named item types, `RecoveryPreviewService.preview_transaction(transaction_id: str) -> RecoveryPreviewV1`, and pure `classify_recovery(records: PersistencePathRecordSequenceV1, observations: RecoveryPathObservationSequenceV1) -> RecoveryDispositionV1`.
 
 **Intentionally failing test:**
 
@@ -8843,7 +8854,7 @@ def test_recovery_preview_is_read_only(
 
 **Dependencies:** Tasks 7.C, 9.D, 23.C, and 26.B.
 
-**Blocks:** Tasks 31.C, 33, 38.D, 38.E, and every dependency formerly stated as Task 26.
+**Blocks:** Tasks 7.D, 31.C, 33.A, 37.B, 38.D, and 38.E.
 
 **Parallelization:** Sequential after Task 26.B.
 
@@ -8858,7 +8869,7 @@ def test_recovery_preview_is_read_only(
 - Test: `tests/fault_injection/persistence/test_external_change_faults.py`
 - Test: `tests/integration/windows/test_persistence_acl_and_identity.py`
 
-**Interfaces:** Produces immutable `RECOVERY_V1_MIGRATION = MigrationV1(version=12, name="recovery_v1", ...)`, `RecoveryService.preview(workspace: WorkspaceIdentityV1) -> RecoveryPreviewV1` by delegating to Task 26.B, and `RecoveryService.apply(command: ApplyRecoveryV1) -> RecoveryResultV1` using Task 26.A artifacts/records.
+**Interfaces:** Produces immutable `RECOVERY_V1_MIGRATION = MigrationV1(version=12, name="recovery_v1", ...)`, `RecoveryService.preview(workspace: WorkspaceIdentityV1) -> RecoveryPreviewV1` by selecting the workspace-bound transaction and delegating only to Task 26.B `preview_transaction(transaction_id: str)`, and `RecoveryService.apply(command: ApplyRecoveryV1) -> RecoveryResultV1` using Task 26.A artifacts/records.
 
 **Intentionally failing test:**
 
@@ -8984,9 +8995,9 @@ Expected RED: import failure because the Windows Credential Manager adapter does
 
 **Dependencies:** Tasks 7.C, 8.B, 23.C, and 27.B.
 
-**Blocks:** Task 28.B and every state-changing WebUI child.
+**Blocks:** Tasks 28.B and 37.B.
 
-**Parallelization:** Parallel with Tasks 9 and 16.B.
+**Parallelization:** Parallelizable with Tasks 9.A, 9.B, 9.C, 9.D, and 16.B once each exact executable Dependencies field is satisfied.
 
 **Branch/worktree:** `codex/task-28a-web-security`; `.worktrees/task-28a-web-security`.
 
@@ -9031,7 +9042,7 @@ def test_state_change_rejects_non_loopback_origin(
 
 **Dependencies:** Task 28.A.
 
-**Blocks:** Milestones 29 and 38, Task 33.B, and every dependency formerly stated as Task 28.
+**Blocks:** Tasks 29.A, 29.B, 29.C, 31.A, 33.A, 37.B, 38.A, 38.B, 38.C, 38.D, and 38.E.
 
 **Parallelization:** Sequential after Task 28.A.
 
@@ -9080,7 +9091,7 @@ def test_untrusted_run_text_is_escaped(local_web_client: TestClient) -> None:
 
 **Dependencies:** Tasks 8.B, 23.C, 25.G, and 28.B.
 
-**Blocks:** Task 29.C.
+**Blocks:** Tasks 29.C and 37.B.
 
 **Parallelization:** Parallel with Task 29.B.
 
@@ -9128,7 +9139,7 @@ def test_invalid_run_form_creates_no_run(
 
 **Dependencies:** Tasks 15.E, 16.B, 23.C, and 28.B.
 
-**Blocks:** Task 29.C.
+**Blocks:** Tasks 29.C and 37.B.
 
 **Parallelization:** Parallel with Task 29.A.
 
@@ -9140,7 +9151,7 @@ def test_invalid_run_form_creates_no_run(
 - Create: `src/vespercode/web/templates/disclosure_wait.html`
 - Test: `tests/web/test_disclosure_workflow.py`
 
-**Interfaces:** Produces `DisclosureDecisionWorkflowPortV1.decide(command: DecideDisclosureGrantV1) -> DisclosureDecisionResultV1`, `AuthorizationSummaryV1`, `render_authorization_summary(summary: AuthorizationSummaryV1) -> Markup`, and `DisclosureRouteInstallerV1.install(app: FastAPI) -> None`.
+**Interfaces:** Produces `DisclosureDecisionWorkflowPortV1.decide(command: DecideDisclosureGrantV1) -> DisclosureDecisionResultV1`, `AuthorizationSummaryV1`, `build_authorization_summary(subject: DisclosureGrantSubjectV1, endpoint: OpenAIEndpointV1) -> AuthorizationSummaryV1`, `render_authorization_summary(summary: AuthorizationSummaryV1) -> Markup`, and `DisclosureRouteInstallerV1.install(app: FastAPI) -> None`.
 
 **Intentionally failing test:**
 
@@ -9177,9 +9188,9 @@ def test_disclosure_form_cannot_supply_scope_or_endpoint_override(
 
 **Dependencies:** Tasks 14.C, 21.C, 26.A, 28.B, 29.A, and 29.B.
 
-**Blocks:** Tasks 31.A, 38.A–38.E, and every dependency formerly stated as Task 29.
+**Blocks:** Tasks 31.A, 33.A, 37.B, 38.A, 38.B, 38.C, 38.D, and 38.F.
 
-**Parallelization:** Sequential after Tasks 29.A–29.B.
+**Parallelization:** Sequential after Tasks 29.A and 29.B.
 
 **Branch/worktree:** `codex/task-29c-writeback-web`; `.worktrees/task-29c-writeback-web`.
 
@@ -9229,9 +9240,9 @@ def test_stale_writeback_subject_never_calls_persistence(
 
 **Dependencies:** Tasks 4.E, 5.D, 13, 17.C, 24.C, 25.A, and 25.D.
 
-**Blocks:** Task 30.B and mechanism-demo children.
+**Blocks:** Tasks 30.B, 32.A, and 37.B.
 
-**Parallelization:** Parallel with Milestone 29 after the shared core exists.
+**Parallelization:** Parallelizable with Tasks 29.A, 29.B, and 29.C once each exact executable Dependencies field is satisfied.
 
 **Branch/worktree:** `codex/task-30a-demo-core`; `.worktrees/task-30a-demo-core`.
 
@@ -9246,7 +9257,7 @@ def test_stale_writeback_subject_never_calls_persistence(
 - Test: `tests/demo/test_shared_core_composition.py`
 - Test: `tests/demo/test_session_limits.py`
 
-**Interfaces:** Produces `DemoScenarioV1`, `DemoExecutor.tool_ports() -> ToolPortsV1`, `DemoScenarioRunner.advance(session: DemoSessionV1, decision: DemoDecisionV1 | None) -> DemoStepResultV1`, `DemoRunStatus`, `DemoDecision`, `DemoTraceV1`, and constant `DEMO_SHARED_CORE_MODULES_V1: frozenset[str]`.
+**Interfaces:** Produces `DemoScenarioV1`, `DemoExecutor.tool_ports() -> ToolPortsV1`, `DemoScenarioRunner.advance(session: DemoSessionV1, decision: DemoDecisionV1 | None) -> DemoStepResultV1`, `DemoRunStatus`, `DemoDecision`, `DemoTraceV1`, and exact constant `DEMO_SHARED_CORE_MODULES_V1: frozenset[str] = frozenset({"vespercode.governance.policy", "vespercode.loop.agent_actions", "vespercode.loop.action_parser", "vespercode.loop.action_binding", "vespercode.loop.context_projection", "vespercode.loop.feedback", "vespercode.loop.stopping", "vespercode.loop.action_pipeline", "vespercode.tools.dispatcher"})`.
 
 **Intentionally failing test:**
 
@@ -9262,7 +9273,7 @@ def test_demo_step_invokes_shared_core_and_only_demo_tool_ports(
     assert shared_core_spies.formal_capability_calls == 0
 ```
 
-**Implementation boundary:** The scenario stores only data. Parser, policy, dispatcher, feedback, and stopping execute the production implementations; sessions are in-memory, five-minute/20-action/10-concurrent bounded, and non-recoverable.
+**Implementation boundary:** The scenario stores only data. The exact Task 13/17.A–17.C/24.A–24.C/25.A/25.D parser, binding, policy, dispatcher, context, feedback, action-pipeline, and stopping modules execute the production pure implementations; every prohibited formal-capability module prefix is absent. Sessions are in-memory, five-minute/20-action/10-concurrent bounded, and non-recoverable.
 
 **Verification:**
 - Target: `python -m pytest -q tests/demo/test_shared_core_composition.py::test_demo_step_invokes_shared_core_and_only_demo_tool_ports`
@@ -9281,7 +9292,7 @@ def test_demo_step_invokes_shared_core_and_only_demo_tool_ports(
 
 **Dependencies:** Task 30.A.
 
-**Blocks:** Tasks 32.C, 34.B, and every dependency formerly stated as Task 30.
+**Blocks:** Tasks 32.C, 34.B, and 37.B.
 
 **Parallelization:** Sequential after Task 30.A.
 
@@ -9326,9 +9337,9 @@ def test_demo_app_registers_no_formal_capability_adapter(
 
 **Dependencies:** Tasks 9.D, 10.C, 11.B, 12.D, 13, 14.C, 15.E, 16.B, 17.C, 18.D, 19.C, 20.B, 21.C, 22.C, 23.C, 24.C, 25.G, 26.A, 27.B, 28.B, 29.C, and 38.F.
 
-**Blocks:** Tasks 31.B and 31.C.
+**Blocks:** Tasks 31.B, 31.C, and 37.B.
 
-**Parallelization:** Sequential after production local composition is merged.
+**Parallelization:** Sequential after Tasks 9.D, 10.C, 11.B, 12.D, 13, 14.C, 15.E, 16.B, 17.C, 18.D, 19.C, 20.B, 21.C, 22.C, 23.C, 24.C, 25.G, 26.A, 27.B, 28.B, 29.C, and 38.F.
 
 **Branch/worktree:** `codex/task-31a-reference-happy`; `.worktrees/task-31a-reference-happy`.
 
@@ -9368,9 +9379,9 @@ def test_reference_happy_path_reaches_verified_candidate(
 
 **Dependencies:** Tasks 11.B, 13, 14.C, 15.E, 16.B, 27.B, and 31.A.
 
-**Blocks:** Task 31.C.
+**Blocks:** Tasks 31.C and 37.B.
 
-**Parallelization:** Sequential after the shared E2E harness; test files are disjoint from Task 31.C.
+**Parallelization:** Sequential after Task 31.A; test files are disjoint from Task 31.C.
 
 **Branch/worktree:** `codex/task-31b-reference-safety`; `.worktrees/task-31b-reference-safety`.
 
@@ -9412,9 +9423,9 @@ def test_cleared_credential_has_zero_real_call_side_effects(
 
 **Dependencies:** Tasks 26.C, 31.A, 31.B, and 38.G.
 
-**Blocks:** Tasks 33.A, 34.A, 35, 36, and 37.
+**Blocks:** Tasks 33.A, 34.A, 37.A, and 37.B.
 
-**Parallelization:** Sequential final reference E2E child.
+**Parallelization:** Sequential after Tasks 26.C, 31.A, 31.B, and 38.G; this is the final reference E2E child.
 
 **Branch/worktree:** `codex/task-31c-reference-terminal`; `.worktrees/task-31c-reference-terminal`.
 
@@ -9455,9 +9466,9 @@ def test_uncertain_transaction_blocks_new_admission_until_proven_recovery(
 
 **Dependencies:** Tasks 12.D, 13, 17.C, 24.C, 25.A, 25.D, and 30.A.
 
-**Blocks:** Tasks 32.B and 32.C.
+**Blocks:** Tasks 32.B, 32.C, and 37.B.
 
-**Parallelization:** Parallel with Milestone 38.
+**Parallelization:** Parallelizable with Tasks 38.A, 38.B, 38.C, 38.D, 38.E, 38.F, and 38.G once each exact executable Dependencies field is satisfied.
 
 **Branch/worktree:** `codex/task-32a-governance-trace`; `.worktrees/task-32a-governance-trace`.
 
@@ -9499,7 +9510,7 @@ def test_outside_scope_patch_is_denied_before_dispatch_or_publish(
 
 **Dependencies:** Tasks 11.B, 19.C, 24.C, and 32.A.
 
-**Blocks:** Task 32.C.
+**Blocks:** Tasks 32.C and 37.B.
 
 **Parallelization:** Sequential after Task 32.A's driver.
 
@@ -9536,15 +9547,15 @@ def test_failed_check_feedback_changes_next_action_once(
 
 **Status:** Not started
 
-**Goal:** Prove formal and public Demo compositions execute the same production core while disclosure and credential failures create zero unauthorized real-call side effects.
+**Goal:** Prove formal and public Demo compositions execute the same exact pure-core subset while disclosure/credential failures create zero unauthorized real-call side effects.
 
 **SPEC references:** Milestone 32 shared-core, disclosure, credential, and capability-isolation requirements.
 
 **Dependencies:** Tasks 15.E, 16.B, 27.B, 30.B, 32.A, and 32.B.
 
-**Blocks:** Tasks 33–37.
+**Blocks:** Tasks 33.A, 34.A, 34.B, 37.A, and 37.B.
 
-**Parallelization:** Sequential final mechanism child.
+**Parallelization:** Sequential after Tasks 15.E, 16.B, 27.B, 30.B, 32.A, and 32.B; this is the final mechanism child.
 
 **Branch/worktree:** `codex/task-32c-shared-core-proof`; `.worktrees/task-32c-shared-core-proof`.
 
@@ -9553,7 +9564,7 @@ def test_failed_check_feedback_changes_next_action_once(
 - Create: `tests/e2e/mechanism/test_credential_recheck.py`
 - Create: `tests/e2e/mechanism/test_shared_core_reuse.py`
 
-**Interfaces:** Consumes Task 32.A `MechanismHarness`/`MechanismDemoTraceV1`, Task 32.B evidence stages, Task 15.E/16.B disclosure/adapter contracts, Task 27.A credential port, and Task 30.B Demo composition; produces the finalized `MechanismDemoTraceV1` report with implementation provenance, ordered core calls, adapter counters, and separate formal/Demo presentation alignment.
+**Interfaces:** Consumes Task 32.A `MechanismHarness`/`MechanismDemoTraceV1`, Task 32.B evidence stages, Task 15.E/16.B disclosure/adapter contracts, Task 27.B credential port, and Task 30.B Demo composition; produces the finalized `MechanismDemoTraceV1` report with exact `DEMO_SHARED_CORE_MODULES_V1` implementation provenance, ordered pure-core calls, prohibited-capability absence, adapter counters, and separate formal/Demo presentation alignment.
 
 **Intentionally failing test:**
 
@@ -9565,11 +9576,14 @@ def test_formal_and_demo_execute_same_core_implementations(
 ) -> None:
     formal_harness.run_step("feedback-correction")
     demo_runner.advance(new_demo_session(), decision=None)
-    assert shared_core_spies.demo_implementations == shared_core_spies.formal_implementations
+    assert (
+        shared_core_spies.demo_shared_pure_implementations
+        == shared_core_spies.formal_shared_pure_implementations
+    )
     assert shared_core_spies.demo_formal_capability_calls == 0
 ```
 
-**Implementation boundary:** Label equality is not reuse proof. Missing/unsafe credentials and missing Grants stop before authorization, count, charge, or transport.
+**Implementation boundary:** Label equality is not reuse proof. Provenance equality covers only the pure modules in `DEMO_SHARED_CORE_MODULES_V1`; formal engine execution is recorded only in the separate formal-loop trace. Missing/unsafe credentials and missing Grants stop before authorization, count, charge, or transport.
 
 **Verification:**
 - Target: `python -m pytest -q tests/e2e/mechanism/test_shared_core_reuse.py::test_formal_and_demo_execute_same_core_implementations`
@@ -9589,9 +9603,9 @@ def test_formal_and_demo_execute_same_core_implementations(
 
 **Dependencies:** Tasks 26.C, 28.B, 29.C, 31.C, 32.C, and 38.F.
 
-**Blocks:** Task 33.B and both CI platform children.
+**Blocks:** Tasks 33.B, 36.B, and 37.B.
 
-**Parallelization:** Parallel with Milestone 34 after E2E/mechanism evidence freezes.
+**Parallelization:** Parallelizable with Tasks 34.A and 34.B once each exact executable Dependencies field is satisfied.
 
 **Branch/worktree:** `codex/task-33a-wheel-build`; `.worktrees/task-33a-wheel-build`.
 
@@ -9632,7 +9646,7 @@ def test_built_wheel_contains_all_runtime_resources(
 
 **Dependencies:** Tasks 33.A and 38.G.
 
-**Blocks:** Tasks 35.A, 35.B, 36.B, and 37.A.
+**Blocks:** Tasks 35.A, 35.B, 37.A, and 37.B.
 
 **Parallelization:** Sequential after Task 33.A.
 
@@ -9676,9 +9690,11 @@ def test_installed_cli_does_not_import_source_checkout(
 
 **SPEC references:** Milestone 34 reference image, digest continuity, no-self-reference, and isolation requirements.
 
-**Dependencies:** Tasks 2.G, 18.D, 20.B, 31.C, and 32.C; Task 2.G `GO` is the non-task entry gate.
+**Dependencies:** Tasks 2.G, 18.D, 20.B, 31.C, and 32.C.
 
-**Blocks:** Tasks 35.A, 35.B, and 36.B.
+**Non-task entry gate:** The terminal Task 2.G outcome is `GO`.
+
+**Blocks:** Tasks 35.A, 35.B, 36.B, 37.A, and 37.B.
 
 **Parallelization:** Parallel with Task 34.B.
 
@@ -9722,7 +9738,7 @@ def test_rebuilt_reference_manifest_matches_frozen_task2_digest(
 
 **Dependencies:** Tasks 30.B and 32.C.
 
-**Blocks:** Tasks 35.A, 35.B, and 36.C.
+**Blocks:** Tasks 35.A, 35.B, 36.C, 37.A, and 37.B.
 
 **Parallelization:** Parallel with Task 34.A.
 
@@ -9736,7 +9752,7 @@ def test_rebuilt_reference_manifest_matches_frozen_task2_digest(
 - Create: `tests/smoke/images/test_demo_container_health.py`
 - Create: `tests/smoke/images/test_image_capability_separation.py`
 
-**Interfaces:** Produces `run_image_smoke(config: ImageSmokeConfigV1) -> ImageSmokeResultV1`, Demo image digest, filesystem/import inspection, `/healthz`, and fixed-trace report.
+**Interfaces:** Produces `run_image_smoke(config: ImageSmokeConfigV1) -> ImageSmokeResultV1`, Demo image digest, filesystem/import inspection, `/healthz`, fixed-trace report, and exact `PROHIBITED_DEMO_MODULE_PREFIXES_V1: frozenset[str] = frozenset({"vespercode.loop.engine", "vespercode.loop.turn_boundary", "vespercode.loop.call_orchestrator", "vespercode.storage", "vespercode.workspace", "vespercode.tools.list_files", "vespercode.tools.read_file", "vespercode.tools.search_text", "vespercode.execution", "vespercode.persistence", "vespercode.credentials", "vespercode.llm.openai_adapter", "vespercode.audit", "vespercode.memory", "vespercode.web", "vespercode.cli_composition"})`.
 
 **Intentionally failing test:**
 
@@ -9745,10 +9761,14 @@ def test_demo_image_contains_shared_core_but_no_formal_adapters(
     built_demo_image: OCIImageInspection,
 ) -> None:
     assert set(DEMO_SHARED_CORE_MODULES_V1) <= built_demo_image.python_members
-    assert PROHIBITED_FORMAL_ADAPTER_MODULES.isdisjoint(built_demo_image.python_members)
+    assert not any(
+        member == prefix or member.startswith(prefix + ".")
+        for member in built_demo_image.python_members
+        for prefix in PROHIBITED_DEMO_MODULE_PREFIXES_V1
+    )
 ```
 
-**Implementation boundary:** Build from the reviewed allowlist and hash-locked Demo requirements, not the formal wheel. No WinCred/OpenAI/file/Docker/persistence/recovery/local-composition code, socket, secret, or repository enters the image.
+**Implementation boundary:** Build from the reviewed allowlist and hash-locked Demo requirements, not the formal wheel. No formal engine, Run/turn/SQLite repository, WinCred/OpenAI/file/Docker/persistence/recovery/local-composition code, socket, secret, or repository enters the image.
 
 **Verification:**
 - Target: `python -m pytest -q -o addopts='' -m oci_smoke tests/smoke/images/test_image_capability_separation.py::test_demo_image_contains_shared_core_but_no_formal_adapters`
@@ -9769,7 +9789,7 @@ def test_demo_image_contains_shared_core_but_no_formal_adapters(
 
 **Dependencies:** Tasks 33.B, 34.A, and 34.B.
 
-**Blocks:** Task 35.C.
+**Blocks:** Tasks 35.C and 37.B.
 
 **Parallelization:** Parallel with Task 35.B.
 
@@ -9812,7 +9832,7 @@ def test_github_runs_three_no_publish_jobs_on_push_and_pr(
 
 **Dependencies:** Tasks 33.B, 34.A, and 34.B.
 
-**Blocks:** Task 35.C.
+**Blocks:** Tasks 35.C and 37.B.
 
 **Parallelization:** Parallel with Task 35.A.
 
@@ -9855,9 +9875,9 @@ def test_gitlab_runs_all_four_verification_jobs_for_merge_request(
 
 **Dependencies:** Tasks 35.A and 35.B; their passing real branch/MR/main results are non-task entry gates.
 
-**Blocks:** Milestone 36 and every dependency formerly stated as Task 35.
+**Blocks:** Tasks 36.A, 36.B, 36.C, 37.A, and 37.B.
 
-**Parallelization:** Sequential after both platform workflows exist.
+**Parallelization:** Sequential after Tasks 35.A and 35.B.
 
 **Branch/worktree:** `codex/task-35c-ci-release-contract`; `.worktrees/task-35c-ci-release-contract`.
 
@@ -9899,9 +9919,9 @@ def test_unprotected_tag_cannot_enter_release_stage(
 
 **Dependencies:** Task 35.C.
 
-**Blocks:** Tasks 36.B and 36.C.
+**Blocks:** Tasks 36.B, 36.C, and 37.B.
 
-**Parallelization:** Sequential after real CI evidence exists.
+**Parallelization:** Sequential after Task 35.C.
 
 **Branch/worktree:** `codex/task-36a-delivery-evidence`; `.worktrees/task-36a-delivery-evidence`.
 
@@ -9943,11 +9963,13 @@ def test_release_evidence_rejects_commit_misalignment(
 
 **SPEC references:** Milestone 36 GitHub Release/GHCR/credential/digest continuity requirements.
 
-**Dependencies:** Tasks 2.G, 33.A, 34.A, 35.C, and 36.A; Task 2.G `GO` and passing source-commit CI are non-task entry gates.
+**Dependencies:** Tasks 2.G, 33.A, 34.A, 35.C, and 36.A.
 
-**Blocks:** Task 36.C and final delivery.
+**Non-task entry gates:** The terminal Task 2.G outcome is `GO`, and the source-commit CI result passes.
 
-**Parallelization:** Serial protected external operation.
+**Blocks:** Tasks 36.C, 37.A, and 37.B.
+
+**Parallelization:** Sequential after Tasks 2.G, 33.A, 34.A, 35.C, and 36.A; this is a protected external operation.
 
 **Branch/worktree:** `codex/task-36b-github-ghcr-release`; `.worktrees/task-36b-github-ghcr-release`.
 
@@ -9987,9 +10009,9 @@ def test_release_rejects_ghcr_digest_different_from_frozen_manifest(
 
 **Dependencies:** Tasks 34.B, 35.C, 36.A, and 36.B.
 
-**Blocks:** Milestone 37 and every dependency formerly stated as Task 36.
+**Blocks:** Tasks 37.A and 37.B.
 
-**Parallelization:** Serial after release identity freezes the source commit.
+**Parallelization:** Sequential after Tasks 34.B, 35.C, 36.A, and 36.B; the release identity must freeze the source commit.
 
 **Branch/worktree:** `codex/task-36c-render-deploy`; `.worktrees/task-36c-render-deploy`.
 
@@ -10033,7 +10055,7 @@ def test_render_contract_has_no_disk_or_real_provider_secret(
 
 **Blocks:** Task 37.C.
 
-**Parallelization:** Parallel with Task 37.B after all producers are stable.
+**Parallelization:** May run in parallel with Task 37.B after Tasks 31.C, 32.C, 33.B, 34.A, 34.B, 35.C, 36.B, 36.C, and 38.G have completed.
 
 **Branch/worktree:** `codex/task-37a-readme`; `.worktrees/task-37a-readme`.
 
@@ -10076,7 +10098,7 @@ def test_readme_fails_when_release_digest_verification_is_missing(
 
 **Blocks:** Task 37.C.
 
-**Parallelization:** Parallel with Task 37.A only after all evidence producers stop writing.
+**Parallelization:** May run in parallel with Task 37.A only after Tasks 1.A, 1.B, 1.C, 1.D, 1.E, 2.A, 2.B, 2.C, 2.D, 2.E, 2.F, 2.G, 3.A, 3.B, 3.C, 3.D, 3.E, 3.F, 3.G, 4.A, 4.F, 4.B, 4.C, 4.D, 4.E, 5.A, 5.B, 5.C, 5.D, 5.E, 6.A, 6.B, 6.C, 6.D, 6.E, 7.A, 7.B, 7.C, 7.D, 8.A, 8.B, 9.A, 9.B, 9.C, 9.D, 10.A, 10.B, 10.C, 11.A, 11.B, 12.A, 12.B, 12.C, 12.D, 13, 14.A, 14.B, 14.C, 15.A, 15.B, 15.C, 15.D, 15.E, 15.F, 16.A, 16.B, 17.A, 17.B, 17.C, 18.A, 18.B, 18.C, 18.D, 19.A, 19.B, 19.C, 20.A, 20.B, 21.A, 21.B, 21.C, 22.A, 22.B, 22.C, 23.A, 23.B, 23.C, 24.A, 24.B, 24.C, 25.A, 25.B, 25.C, 25.D, 25.E, 25.F, 25.G, 26.A, 26.B, 26.C, 27.A, 27.B, 28.A, 28.B, 29.A, 29.B, 29.C, 30.A, 30.B, 31.A, 31.B, 31.C, 32.A, 32.B, 32.C, 33.A, 33.B, 34.A, 34.B, 35.A, 35.B, 35.C, 36.A, 36.B, 36.C, 38.A, 38.B, 38.C, 38.D, 38.E, 38.F, and 38.G have completed and no predecessor is still writing evidence.
 
 **Branch/worktree:** `codex/task-37b-process-evidence`; `.worktrees/task-37b-process-evidence`.
 
@@ -10140,7 +10162,7 @@ def test_process_evidence_rejects_formal_python_identity_drift(
 
 **Blocks:** Final course delivery only.
 
-**Parallelization:** Final serial executable task.
+**Parallelization:** Sequential after Tasks 37.A and 37.B; this is the final executable task.
 
 **Branch/worktree:** `codex/task-37c-delivery-gate`; `.worktrees/task-37c-delivery-gate`.
 
@@ -10186,9 +10208,9 @@ def test_delivery_rejects_incomplete_executable_child(
 
 **Dependencies:** Tasks 27.B, 28.B, and 29.C.
 
-**Blocks:** Task 38.F.
+**Blocks:** Tasks 37.B and 38.F.
 
-**Parallelization:** Parallel with Tasks 38.B–38.E.
+**Parallelization:** Parallelizable with Tasks 38.B, 38.C, 38.D, and 38.E.
 
 **Branch/worktree:** `codex/task-38a-credential-web`; `.worktrees/task-38a-credential-web`.
 
@@ -10231,9 +10253,9 @@ def test_credential_response_never_contains_secret_or_derivative(
 
 **Dependencies:** Tasks 22.C, 23.C, 28.B, and 29.C.
 
-**Blocks:** Task 38.F.
+**Blocks:** Tasks 37.B and 38.F.
 
-**Parallelization:** Parallel with Tasks 38.A and 38.C–38.E.
+**Parallelization:** Parallelizable with Tasks 38.A, 38.C, 38.D, and 38.E.
 
 **Branch/worktree:** `codex/task-38b-memory-web`; `.worktrees/task-38b-memory-web`.
 
@@ -10278,9 +10300,9 @@ def test_memory_form_cannot_select_foreign_workspace(
 
 **Dependencies:** Tasks 23.C, 28.B, and 29.C.
 
-**Blocks:** Task 38.F.
+**Blocks:** Tasks 37.B and 38.F.
 
-**Parallelization:** Parallel with Tasks 38.A–38.B and 38.D–38.E.
+**Parallelization:** Parallelizable with Tasks 38.A, 38.B, 38.D, and 38.E.
 
 **Branch/worktree:** `codex/task-38c-audit-web`; `.worktrees/task-38c-audit-web`.
 
@@ -10321,9 +10343,9 @@ def test_audit_page_contains_only_redacted_projection(
 
 **Dependencies:** Tasks 9.D, 23.C, 26.C, 28.B, and 29.C.
 
-**Blocks:** Task 38.F.
+**Blocks:** Tasks 37.B and 38.F.
 
-**Parallelization:** Parallel with Tasks 38.A–38.C and 38.E.
+**Parallelization:** Parallelizable with Tasks 38.A, 38.B, 38.C, and 38.E.
 
 **Branch/worktree:** `codex/task-38d-recovery-web`; `.worktrees/task-38d-recovery-web`.
 
@@ -10365,9 +10387,9 @@ def test_recovery_preview_is_read_only_and_has_no_force_control(
 
 **Dependencies:** Tasks 9.D, 26.C, and 28.B.
 
-**Blocks:** Task 38.F.
+**Blocks:** Tasks 37.B and 38.F.
 
-**Parallelization:** Parallel with Tasks 38.A–38.D.
+**Parallelization:** Parallelizable with Tasks 38.A, 38.B, 38.C, and 38.D.
 
 **Branch/worktree:** `codex/task-38e-recovery-cli`; `.worktrees/task-38e-recovery-cli`.
 
@@ -10409,9 +10431,9 @@ def test_recover_without_apply_never_writes(
 
 **Dependencies:** Tasks 7.D, 29.C, 38.A, 38.B, 38.C, 38.D, and 38.E.
 
-**Blocks:** Tasks 31.A, 33.A, and 38.G.
+**Blocks:** Tasks 31.A, 33.A, 37.B, and 38.G.
 
-**Parallelization:** Sequential composition after all operation workflows.
+**Parallelization:** Sequential after Tasks 7.D, 29.C, 38.A, 38.B, 38.C, 38.D, and 38.E.
 
 **Branch/worktree:** `codex/task-38f-local-composition`; `.worktrees/task-38f-local-composition`.
 
@@ -10483,9 +10505,9 @@ The installed CLI fixture resolves the configured `vespercode` console entry poi
 
 **Dependencies:** Task 38.F.
 
-**Blocks:** Tasks 31.C, 33.B, 37.A, and every dependency formerly stated as Task 38.
+**Blocks:** Tasks 31.C, 33.B, 37.A, and 37.B.
 
-**Parallelization:** Sequential final Milestone 38 child.
+**Parallelization:** Sequential after Task 38.F; this is the final executable child in the Task 38 chain.
 
 **Branch/worktree:** `codex/task-38g-operations-acceptance`; `.worktrees/task-38g-operations-acceptance`.
 
@@ -10934,7 +10956,7 @@ Every task list in the four coverage matrices below contains exact executable Ta
 | AC-06 | 14.A, 14.B, 14.C, 17.A, 17.B, 17.C, 20.B, 21.A, 21.B, 21.C, 25.D, 25.G, 29.C | 31.A, 31.C, 38.G | Formal predicate, loop, writeback workflow, and completion → validation → final-wait/no-write evidence. |
 | AC-07 | 12.D, 14.A, 14.B, 14.C, 21.A, 21.B, 21.C, 26.A, 29.C | 31.C, 38.G | Writeback preconditions/fault matrix/Web workflow plus approved FinalDiff/postimage/untouched-file digest report. |
 | AC-08 | 27.A, 27.B, 28.A, 28.B, 38.A, 38.F | 31.B, 33.B, 35.B, 35.C, 38.G | Credential status/redaction/WinCred/Web tests, cleared state, Windows CI log, and installed smoke. |
-| AC-09 | 13, 17.A, 17.B, 17.C, 24.A, 24.B, 24.C, 25.A, 25.D, 25.G, 30.A, 30.B | 32.A, 32.B, 32.C, 34.B, 36.C | Production-core call sequence, repeated trace, forbidden-adapter zero-call evidence, Demo image, and public scenario smoke. |
+| AC-09 | 13, 17.A, 17.B, 17.C, 24.A, 24.B, 24.C, 25.A, 25.D, 30.A, 30.B | 32.A, 32.B, 32.C, 34.B, 36.C | Exact shared-pure-core call sequence, repeated Demo trace, forbidden-capability absence, Demo image, and public scenario smoke. |
 | AC-10 | 4.A, 4.F, 35.A, 35.B, 37.C | 35.C, 36.A, 37.B | Complete hash-locked dependency closure, `python -m pytest -q`, exact GitHub/GitLab contract tests, real unit-test jobs, and final process report. |
 | AC-11 | 28.A, 28.B, 29.A, 29.B, 29.C, 33.A, 33.B, 35.A, 35.B, 35.C, 36.A, 36.B, 37.A, 38.A, 38.B, 38.C, 38.D, 38.E, 38.F | 37.C, 38.G | Clean pipx/installed CLI/WebUI, real wheel job, GitHub Release wheel/SHA, and verified install/start instructions. |
 | AC-12 | 30.A, 30.B, 34.B, 35.A, 35.B, 35.C, 36.A, 36.C | 32.C, 37.C | Demo container health/capability smoke, real image-build log/digest, Render URL, and live `/healthz`. |
@@ -10971,7 +10993,7 @@ Every `Owning tasks` cell below contains exact executable Task ids only. The fea
 | Reference fixture E2E | Windows + Docker + Mock profile; `python -m pytest -q -o addopts='' -m reference_e2e tests/e2e/reference` | 31.A, 31.B, 31.C | Complete production admission → Baseline → feedback correction → formal validation → wait → exact writeback/recovery-block flow | Canonical Task 31.A/31.B/31.C traces/reports, final tree digests, cleanup evidence |
 | Persistence fault injection | FakeClock/FaultPort offline: `python -m pytest -q tests/fault_injection/persistence`; real identity/ACL cases use the Windows command | 3.A, 3.B, 3.C, 3.D, 3.E, 3.F, 3.G, 26.A, 26.B, 26.C | Every named crash/deadline/state-lag/external-change point across 1–3 mixed files; preview zero write; three dispositions only | Gate and production fault matrices, transaction/evidence digests |
 | WebUI local tests | TestClient plus loopback browser; `python -m pytest -q tests/web` followed by the Tasks 29.A, 29.B, 29.C, 38.A, 38.B, 38.C, 38.D, 38.E, 38.F, and 38.G keyboard workflows | 28.A, 28.B, 29.A, 29.B, 29.C, 38.A, 38.B, 38.C, 38.D, 38.E, 38.F, 38.G | Host/Origin/CSRF/session/headers, escaping, state labels, all local workflows, accessibility, no domain bypass | Test report and browser screenshots/captures without secrets |
-| Public Mock Demo smoke | Offline `python -m pytest -q tests/demo`; real container/public checks run under `oci_smoke` and `deployment_smoke` | 30.A, 30.B, 32.A, 32.B, 32.C, 34.B, 36.C | Fixed deterministic trace, runtime reuse of Tasks 13, 17.C, 24.C, 25.A, 25.D, and 25.G pure core, Demo-only state/tool ports, forbidden-capability absence, session/time/concurrency bounds, health | Shared-core implementation provenance/call sequence, forbidden-adapter zero-call counters, repeated trace digests, Demo image digest, deployment id, public URL/health result |
+| Public Mock Demo smoke | Offline `python -m pytest -q tests/demo`; real container/public checks run under `oci_smoke` and `deployment_smoke` | 30.A, 30.B, 32.A, 32.B, 32.C, 34.B, 36.C | Fixed deterministic trace; runtime reuse only of the exact Task 13, 17.A–17.C, 24.A–24.C, 25.A, and 25.D pure modules; Demo-only state/tool ports; complete prohibited-module absence; session/time/concurrency bounds; health | Exact shared-pure-core implementation provenance/call sequence, prohibited-capability absence/counters, repeated trace digests, Demo image digest, deployment id, public URL/health result |
 | Wheel/pipx smoke | Project Windows runner; `python -m pytest -q -o addopts='' -m package_smoke tests/smoke/package` | 33.A, 33.B, 35.A, 35.B, 35.C, 36.A, 36.B | One wheel, RECORD/resources, SHA-256, clean pipx install, installed CLI/WebUI, recovery preview, cleanup | Wheel filename/version/digest, pipx/Python versions, installed smoke log |
 | OCI image smoke | Docker runner; `python -m pytest -q -o addopts='' -m oci_smoke tests/smoke/images` | 34.A, 34.B, 35.A, 35.B, 35.C | Real reference/Demo builds, runtime contracts, tool/profile/fixture health, capability separation | Build logs, local image digests, inspections, container smoke report |
 | Dual CI contract and runs | GitHub Actions push/PR plus GitLab push/MR/main/tag; `python scripts/verify_ci_contract.py .github/workflows/ci.yml .gitlab-ci.yml` | 35.A, 35.B, 35.C, 36.A, 37.B, 37.C | Exact job/event matrices, real test/image builds, no-publish/no-secret GitHub boundary, GitLab Windows wheel and protected release boundary | Real GitHub workflow/job and GitLab pipeline/job URLs, reports, image digests, permission/secret checks |
