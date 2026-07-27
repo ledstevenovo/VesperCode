@@ -302,6 +302,7 @@ The paths below lock file ownership before task decomposition. Files are small, 
 | `src/vespercode/demo/healthcheck.py` | Stdlib-only loopback `/healthz` probe used by the Demo container |
 | `src/vespercode/demo/templates/demo.html` | Escaped, accessible, persistently simulation-labeled Demo presentation |
 | `src/vespercode/cli.py` | `serve`, `recover`, status, and help entry points without secret arguments |
+| `src/vespercode/cli_composition.py` | Task 38.F sole production recovery-CLI handler/service wiring after complete v1 database initialization |
 | `src/vespercode/delivery/evidence.py` | Closed non-secret CI, release, and deployment evidence schemas |
 | `src/vespercode/delivery/readme_verifier.py` | Read-only README section/command/link/digest contract verifier |
 | `src/vespercode/delivery/process_verifier.py` | Read-only M0/cold-start/task/review/commit/PR process-evidence verifier |
@@ -381,7 +382,7 @@ This table is the complete storage-class decision for every SPEC §7 entity plus
 | DemoSession | in-memory only | Task 30.A owns the bounded expiring Demo session store; it is capability-isolated from the formal control database. |
 | DemoDecision | in-memory only | Task 30.A owns the fixed-scenario decision in its Demo session; it cannot become a formal authorization. |
 
-The ordered migration sequence is exactly v0001 through v0012 with no duplicate, gap, or unexpected version. A domain migration test applies Task 7.A's engine to the tuple of the actual immutable predecessor constants plus the current constant; no domain task edits or imports `registry.py`. Task 7.D alone imports the twelve constants, verifies the declared `(version, name, checksum)` order, and exports `ALL_V1_MIGRATIONS`. Complete file bodies, complete LLM requests/responses, raw check output, and recovery backup bytes remain current-user ACL-restricted artifacts; only the explicitly allowed digests/refs above may enter SQLite, and credentials never do.
+The ordered migration sequence is exactly v0001 through v0012 with no duplicate, gap, or unexpected version. A domain migration test applies Task 7.A's engine to the tuple of the actual immutable predecessor constants plus the current constant; no domain task edits or imports `registry.py`. Task 7.D alone imports the twelve constants, verifies the declared `(version, name, checksum)` order, and exports `ALL_V1_MIGRATIONS`. Its test-only owner map applies every exact prefix to empty temporary SQLite, proves each version's newly visible `sqlite_schema` table delta matches the sole-owner rows above, handles Task 7.A's `schema_migrations` bootstrap separately at v0001, and proves the final set is exactly all 18 declared SQLite tables; production registry code neither contains nor imports that expected map. Complete file bodies, complete LLM requests/responses, raw check output, and recovery backup bytes remain current-user ACL-restricted artifacts; only the explicitly allowed digests/refs above may enter SQLite, and credentials never do.
 
 ## M0 — SPEC Readiness Gate
 
@@ -1166,13 +1167,13 @@ def test_editable_policy_uses_directory_segments(path: str, expected: bool) -> N
 
 **Status:** Not started
 
-**Goal:** Establish a domain-independent transactional migration engine, early Run/wait/idempotency storage, and one late checksum-verified composition of all domain-owned v1 migrations without storing secrets or application bodies.
+**Goal:** Establish a domain-independent transactional migration engine, early Run/wait/idempotency storage, and one late checksum-verified composition whose test-only prefix audit proves every domain-owned v1 migration introduces exactly its declared tables and the final database has exactly the 18 classified SQLite tables, without storing secrets or application bodies.
 
 **SPEC / FR / NFR / AC references:** SPEC §4.2.1; §4.2.7; §4.7 audit ordering; §5.2; §5.4; §5.6; §7 complete data model and storage split; §10.1 AC-16, AC-21, AC-27, AC-28.
 
 **Dependencies:** Tasks 7.A–7.C depend on exact Task 5 children as listed in the canonical DAG. Task 7.D depends on every exact v1 migration producer: Tasks 7.B, 7.C, 14.B, 15.D, 15.E, 22.A, 23.A, 24.C, 25.B, 25.D, 26.A, and 26.C.
 
-**Blocks:** Early Tasks 7.A–7.C block their exact repository consumers. Late Task 7.D blocks only Task 38.F's complete formal control-database composition; E2E and package consumers receive the registry transitively through Task 38.F.
+**Blocks:** Early Tasks 7.A–7.C block their exact repository consumers. Task 38.F is the only runtime/full-database consumer of late Task 7.D and passes that composition transitively to E2E/package consumers; Task 37.B separately depends on 7.D only to verify final process/evidence completeness.
 
 **Parallelization:** Tasks 7.A–7.C may proceed with the early storage wave after Task 5. Task 7.D is composition-only and runs after all twelve migration producers; merge/evidence updates remain serialized.
 
@@ -1224,7 +1225,7 @@ def test_editable_policy_uses_directory_segments(path: str, expected: bool) -> N
 - Task 7.A owns only connection/transaction policy, the closed migration descriptor, `schema_migrations` checksum history, and an ordered idempotent atomic runner. It may bootstrap only migration-history metadata and may neither contain domain DDL nor import the incomplete/final registry.
 - Task 7.B owns v0001 Run/config/wait DDL with exact keys, uniqueness, foreign keys, and prohibited-column assertions; Task 7.C owns v0002 idempotency DDL under the same rule.
 - Every later SQLite-owning domain task owns exactly one immutable migration module and focused schema contract test. It applies the actual predecessor constants plus its own constant through Task 7.A and never edits the final registry.
-- Task 7.D contains no DDL or repository behavior. It imports exactly the twelve declared producer constants, requires versions 1–12 with the expected names/order/checksums, rejects missing/duplicate/gapped/reordered/unexpected/drifted migrations, and exports `ALL_V1_MIGRATIONS`.
+- Task 7.D contains no DDL or repository behavior. It imports exactly the twelve declared producer constants, requires versions 1–12 with the expected names/order/checksums, rejects missing/duplicate/gapped/reordered/unexpected/drifted migrations, and exports `ALL_V1_MIGRATIONS`. Only `test_migration_registry.py` owns the exact expected table-delta map: it applies prefixes v0001 through v0012 to empty temporary SQLite, subtracts the Task 7.A `schema_migrations` bootstrap from the v0001 domain delta, and checks both every version delta and the final exact 18-table set.
 - Run creation, phase/status transition, wait creation/decision, approval/grant budget hooks, and monotonic sequence allocation use compare-and-update predicates.
 - Legal lifecycle follows SPEC §4.2.7 exactly; terminal states cannot reopen; non-persistence restart stops; persistence/recovery remains Task 26's specialized path.
 - `lock_wait_for_decision` validates and locks the active wait plus all four binding fields without changing the Run. The appropriate Task 14/15 coordinator records the Approval or Grant outcome in the same transaction before `commit_wait_decision`; rollback at any point leaves both the domain record and Run state unchanged.
@@ -1271,11 +1272,11 @@ def test_same_wait_decision_can_win_only_once(
 - Target: `python -m pytest -q tests/unit/storage/test_run_repository.py::test_same_wait_decision_can_win_only_once`
 - Domain: `python -m pytest -q tests/unit/storage tests/unit/runs`
 - Full: `python -m pytest -q`
-- Expected: the engine's order/idempotency/atomicity/checksum tests, exact v0001/v0002 schema contracts, final registry completeness contract, and concurrent decision/idempotency/lifecycle cases pass on temporary SQLite databases.
+- Expected: the engine's order/idempotency/atomicity/checksum tests, exact v0001/v0002 schema contracts, final registry descriptor closure, every v0001–v0012 prefix table delta, the exact final 18-table set, and concurrent decision/idempotency/lifecycle cases pass on temporary SQLite databases.
 
 **Review gate:**
-1. Spec compliance review checks the entire transition matrix, wait binding, restart boundary, idempotency result, and prohibited stored content.
-2. Code quality review checks transaction ownership, rollback behavior, migration checksums, concurrency tests, repository API size, and typed failures.
+1. Spec compliance review checks the entire transition matrix, wait binding, restart boundary, idempotency result, prohibited stored content, each version's exact table-owner delta, and the final 18-table set.
+2. Code quality review checks transaction ownership, rollback behavior, migration checksums, prefix-by-prefix `sqlite_schema` introspection, test-only owner-map isolation, concurrency tests, repository API size, and typed failures.
 3. Critical/Important findings block Task 8.
 
 **Completion evidence:** Not yet executed. On completion record the actual commit SHA, responsible subagent, tests executed, review results, human edits and PR URL.
@@ -3721,7 +3722,7 @@ def test_credential_status_never_contains_secret_or_derivative(
 
 **SPEC / FR / NFR / AC references:** SPEC §4.9 local mode and tests; §5.3; §5.5 WebUI threat; §8.2 `vespercode serve`; §9 UI choice; §10.1 AC-08, AC-11, AC-13, AC-16, AC-24; course WebUI deliverable.
 
-**Dependencies:** Exact executable children under Tasks 7.B–7.C, 8, 23, and 27 as listed in the canonical DAG; late Task 7.D is consumed only by final production composition Task 38.F.
+**Dependencies:** Exact executable children under Tasks 7.B–7.C, 8, 23, and 27 as listed in the canonical DAG; Task 38.F is the only runtime consumer of late Task 7.D, while Task 37.B separately consumes its final process/evidence record.
 
 **Blocks:** Tasks 29, 31, 33, 35–37, and 38.
 
@@ -4929,7 +4930,7 @@ def test_readme_fails_when_release_digest_verification_is_missing(
 
 **Status:** Not started
 
-**Goal:** Expose the remaining formal local operations—non-revealing credential lifecycle, workspace-scoped memory, redacted audit, and read-only-first recovery—through typed, secure, accessible pages plus the exact recovery CLI entry point, without duplicating or bypassing their domain services.
+**Goal:** Expose the remaining formal local operations—non-revealing credential lifecycle, workspace-scoped memory, redacted audit, and read-only-first recovery—through typed, secure, accessible pages plus the exact recovery CLI entry point whose sole production binding uses the complete v1 database composition, without duplicating or bypassing domain services.
 
 **SPEC / FR / NFR / AC references:** SPEC §2 US-02 and US-06–US-08; §4.6 recovery; §4.7 FR-MEM; §4.8 FR-CRED; §4.9 local mode; §5.3–§5.6; §7 MemoryEntry/AuditEvent/PersistenceTransaction; §8.1–§8.2; §10.1 AC-08, AC-14, AC-16, AC-21–AC-24, AC-29; §10.3 local, Windows, and recovery verification.
 
@@ -4946,6 +4947,7 @@ def test_readme_fails_when_release_digest_verification_is_missing(
 **Files:**
 - Create: `src/vespercode/web/local_composition.py`
 - Create: `src/vespercode/web/routes_operations.py`
+- Create: `src/vespercode/cli_composition.py`
 - Create: `src/vespercode/web/routes_credentials.py`
 - Create: `src/vespercode/web/routes_memory.py`
 - Create: `src/vespercode/web/routes_recovery.py`
@@ -4961,18 +4963,21 @@ def test_readme_fails_when_release_digest_verification_is_missing(
 - Test: `tests/web/test_operations_accessibility.py`
 - Test: `tests/web/test_local_composition.py`
 - Test: `tests/unit/test_recovery_cli.py`
-- Modify: `src/vespercode/cli.py` (add only `recover --workspace PATH` and its explicit `--apply` switch)
+- Test: `tests/unit/test_cli_composition.py`
+- Modify: `src/vespercode/cli.py` (Task 38.E adds only `recover --workspace PATH` parsing/typed delegation and its explicit `--apply` switch; Task 38.F adds only the production recover-handler binding)
 - Modify: `PLAN.md` (completion record only)
 - Modify: `AGENT_LOG.md` (append only)
 
 **Interfaces:**
-- Consumes: Task 9 workspace identity/lease resolution; Task 22 `MemoryRepository.create/confirm/list/clear`; Task 23 `AuditRepository.list_run/clear_ended_run` and redacted `AuditPageV1`; Task 26 `RecoveryService.preview/apply`; Task 27 `CredentialService.set/status/update/clear`; Task 28 `LocalRouteInstallerV1`, `LocalShellPortsV1`, CLI root, local-session authorization, CSRF protection, and escaped template shell; Task 29 `RunGovernanceRouteInstallerV1` and `RunGovernanceWorkflowPortsV1`.
+- Consumes: Task 7.D `ALL_V1_MIGRATIONS` through Task 38.F; Task 9 workspace identity/lease resolution; Task 22 `MemoryRepository.create/confirm/list/clear`; Task 23 `AuditRepository.list_run/clear_ended_run` and redacted `AuditPageV1`; Task 26 `RecoveryService.preview/apply`; Task 27 `CredentialService.set/status/update/clear`; Task 28 `LocalRouteInstallerV1`, `LocalShellPortsV1`, CLI root, local-session authorization, CSRF protection, and escaped template shell; Task 29 `RunGovernanceRouteInstallerV1` and `RunGovernanceWorkflowPortsV1`.
 - Produces:
   - `LocalOperationsRouteInstallerV1(ports: LocalOperationsWorkflowPortsV1).install(app: FastAPI) -> None`
   - `LocalOperationsWorkflowPortsV1(credentials: CredentialWorkflowPortsV1, memory: MemoryWorkflowPortsV1, audit: AuditWorkflowPortsV1, recovery: RecoveryWorkflowPortsV1)`
   - `ProductionLocalWorkflowPortsV1(shell: LocalShellPortsV1, governance: RunGovernanceWorkflowPortsV1, operations: LocalOperationsWorkflowPortsV1)`
   - `build_local_route_installers(ports: ProductionLocalWorkflowPortsV1) -> tuple[LocalRouteInstallerV1, ...]`, returning exactly `(RunGovernanceRouteInstallerV1(ports.governance), LocalOperationsRouteInstallerV1(ports.operations))`
   - `build_local_application(ports: ProductionLocalWorkflowPortsV1, security: LocalWebSecurityConfigV1) -> FastAPI`, which calls Task 28 `create_local_app` with `ports.shell` and that exact installer tuple
+  - Task 38.E `install_recover_command(app, recovery_handler: RecoveryCliHandlerV1) -> None`, accepting an injected Spy in unit tests and owning no production default
+  - Task 38.F `bind_production_recover_command(app, database_path: Path, workspace_service: WorkspaceServiceV1) -> None`, which initializes the complete registry, constructs the Task 26 recovery service/handler, then injects it into Task 38.E
   - `CredentialWorkflowPortsV1.set(provider: Literal["OPENAI"], secret: SecretCredentialV1, event_id: str) -> CredentialMutationResultV1`
   - `CredentialWorkflowPortsV1.status(provider: Literal["OPENAI"]) -> CredentialStatusV1`
   - `CredentialWorkflowPortsV1.update(provider: Literal["OPENAI"], secret: SecretCredentialV1, event_id: str) -> CredentialMutationResultV1`
@@ -4993,7 +4998,7 @@ def test_readme_fails_when_release_digest_verification_is_missing(
 
 **Implementation points:**
 - Register the four routers through `LocalOperationsRouteInstallerV1`; do not modify Task 28's `app.py`, import SQLite internals, inspect WinCred directly, read recovery backup bodies, or reproduce any domain predicate in a route.
-- Build the sole production installer tuple in `local_composition.py` in the fixed order Task 29 run/governance routes then Task 38 local-operations routes. `vespercode serve` calls `build_local_application`; tests and package smoke cannot substitute a different tuple.
+- Build the sole production installer tuple in `local_composition.py` in the fixed order Task 29 run/governance routes then Task 38 local-operations routes. In `cli_composition.py`, apply Task 7.D's complete `ALL_V1_MIGRATIONS` through Task 7.A before constructing the Task 26 recovery repository/service and binding that handler to Task 38.E's parser. `vespercode serve` and installed `vespercode recover` use only these production compositions; tests and package smoke cannot substitute a source-only tuple or production handler.
 - Credential entry uses only a password form body held for the duration of the Task 27 service call. Neither successful nor failed responses, templates, audit events, exception text, form redisplay, URLs, or logs contain the secret, its length, prefix/suffix, hash, or another derivative.
 - Credential status shows only provider, configured state, and updated timestamp. Set/update/clear call the verified backend service and render explicit stable failures; a failed clear never displays an unconfigured state.
 - Memory workspace identity is resolved server-side from the authorized Run/session. The UI permits user-authored `PROJECT_CONVENTION`, explicit confirmation, view, and clear, but exposes no model-originated generic write, cross-workspace selector, or field capable of changing policy, Manifest, approval, disclosure, configuration, or success conditions.
@@ -5002,7 +5007,7 @@ def test_readme_fails_when_release_digest_verification_is_missing(
 - Audit clear is available only for an ended Run, is explicitly confirmed, and delegates to `clear_ended_run`; unresolved recovery evidence remains protected. Active-run, foreign-run, stale, or duplicate-invalid requests make zero deletion calls.
 - Recovery begins with `preview`, which is read-only for the workspace, transaction, backups, and audit. The page shows transaction summary, every affected path, actual pre/post/unknown match status, proposed disposition, and the consequences of COMMITTED, ROLLED_BACK, or UNRESOLVED.
 - Recovery apply requires a separate explicit confirmation bound to the current preview/run/workspace/transaction and an idempotency event id. It reacquires the Task 26 lease through the service; the UI offers no force-success, ignore, skip-path, edit-record, or user-declared-abandon control.
-- The recovery CLI resolves `--workspace` through Task 9, defaults to Task 26 preview with zero writes, and invokes apply only when the literal `--apply` switch is present. It accepts no transaction edits, disposition override, force/ignore flag, credential, secret, or recovery-body argument.
+- Task 38.E parses `--workspace`, defaults to preview, invokes apply only for literal `--apply`, and delegates through an injected typed handler so `SpyRecoveryService` unit tests require no database or 7.D dependency. Task 38.F alone supplies the installed production handler: it resolves the workspace through Task 9, initializes the full registry before service construction, and delegates to Task 26. Neither layer accepts transaction edits, disposition override, force/ignore flags, credentials, secrets, or recovery-body arguments.
 - `UNRESOLVED` remains visibly `RECOVERY_REQUIRED` and blocking. Only service-proven COMMITTED or ROLLED_BACK results render terminal next actions; routes never convert exceptions, stale previews, or partial results into success.
 - Every state-changing request uses Task 28's session, Host, Origin, CSRF, closed-form, and idempotency checks before its first domain call. All untrusted text remains escaped, and forms use semantic labels, keyboard focus, live error regions, non-color-only states, and confirmation copy that names the exact effect.
 - The Task 33 installed-WebUI smoke must invoke the production `vespercode serve` composition and prove both installers and all formal local capabilities are reachable without a service-locator or untyped port registry.
@@ -5030,14 +5035,14 @@ def test_recovery_preview_is_read_only_and_has_no_force_control(
 
 **Verification:**
 - Target: `python -m pytest -q tests/web/test_recovery_workflow.py::test_recovery_preview_is_read_only_and_has_no_force_control`
-- Domain: `python -m pytest -q tests/web/test_credential_workflow.py tests/web/test_memory_workflow.py tests/web/test_audit_workflow.py tests/web/test_recovery_workflow.py tests/web/test_operations_accessibility.py tests/web/test_local_composition.py tests/unit/test_recovery_cli.py`
+- Domain: `python -m pytest -q tests/web/test_credential_workflow.py tests/web/test_memory_workflow.py tests/web/test_audit_workflow.py tests/web/test_recovery_workflow.py tests/web/test_operations_accessibility.py tests/web/test_local_composition.py tests/unit/test_recovery_cli.py tests/unit/test_cli_composition.py`
 - Full: `python -m pytest -q`
 - Browser verification: start `vespercode serve` with deterministic fake application ports and exercise hidden credential set/status/update/clear, memory create/confirm/view/clear, paginated redacted audit/ended-run clear, and recovery preview → explicit apply using keyboard navigation.
-- Expected: the production installer order is exact; secrets never enter output; workspace scoping and creator rules hold; audit remains redacted/ordered; WebUI and CLI preview perform zero writes; only explicit `--apply` can request recovery application; no bypass control exists; service results govern recovery state; and all pages meet local security/accessibility requirements.
+- Expected: the production installer order is exact; secrets never enter output; workspace scoping and creator rules hold; audit remains redacted/ordered; WebUI and CLI preview perform zero writes; only explicit `--apply` can request recovery application; installed preview/apply both initialize the complete registry before Task 26 service construction; the parser remains independently testable with a Spy; no bypass control exists; service results govern recovery state; and all pages meet local security/accessibility requirements.
 
 **Review gate:**
 1. Spec compliance review traces every §4.6–§4.9 local capability, user operation, forbidden path, recovery disposition, creator/source rule, and credential/audit privacy rule to one route, test, and exact upstream service call.
-2. Code quality plus UI/UX review checks installer composition, form/CLI argument closure, server-derived scope, security ordering, idempotency, secret lifetime, escaped projections, accessible confirmations/errors, and absence of duplicated domain logic.
+2. Code quality plus UI/UX review checks installer and recovery-CLI production composition, registry-before-service ordering, parser/production-binding separation, form/CLI argument closure, server-derived scope, security ordering, idempotency, secret lifetime, escaped projections, accessible confirmations/errors, and absence of duplicated domain logic.
 3. Critical/Important findings block E2E, package smoke, CI, release, and final delivery.
 
 **Completion evidence:** Not yet executed. On completion record the actual commit SHA, responsible subagent, tests executed, review results, human edits and PR URL.
@@ -5058,7 +5063,7 @@ def test_recovery_preview_is_read_only_and_has_no_force_control(
 
   `ports.preview` derives and authorizes the workspace from the Run/session and delegates to Task 26; the renderer has no apply side effect.
 - [ ] **Step 4: Run GREEN.** Re-run Step 2. Expected: exit `0`, exactly one preview call, zero apply/workspace writes, and no force/ignore control.
-- [ ] **Step 5: Refactor without behavior change.** Keep router installation, each workflow adapter, recovery CLI parsing, closed form parsing, and templates separated in the planned files; retain all credential/memory/audit/recovery predicates in Tasks 22, 23, 26, and 27.
+- [ ] **Step 5: Refactor without behavior change.** Keep router installation, each workflow adapter, recovery CLI parsing, production recovery-CLI wiring, closed form parsing, and templates separated in the planned files; retain all credential/memory/audit/recovery predicates in Tasks 22, 23, 26, and 27.
 - [ ] **Step 6: Run domain and browser tests.** Run the exact domain command and browser workflow. Expected: every operation succeeds or fails through its typed upstream service, with no secret output, cross-workspace access, audit-body leakage, recovery bypass, or accessibility failure.
 - [ ] **Step 7: Run the unified offline suite.** Run `python -m pytest -q`. Expected: exit `0`.
 - [ ] **Step 8: Run closure checks.** Run all five standard formatter/lint/type/credential/whitespace commands and scan rendered-response fixtures for the inert credential sentinel. Expected: all exit `0` and the sentinel is absent.
@@ -6432,7 +6437,7 @@ Expected RED: import failure because the idempotency repository does not exist.
 
 **Status:** Not started
 
-**Goal:** Compose the exact immutable domain migration constants into the sole complete v1 registry and fail closed when any required SQLite owner/migration is missing, duplicated, gapped, reordered, unexpected, or checksum-drifted.
+**Goal:** Compose the exact immutable domain migration constants into the sole complete v1 registry and, through a test-only expected owner map, fail closed when any required migration or per-version/final SQLite table ownership is missing, duplicated, introduced by the wrong version, early, late, reordered, unexpected, or checksum-drifted.
 
 **SPEC references:** Milestone 7 final registry scope; SPEC §5.2, §5.6, and complete §7 storage classification.
 
@@ -6457,16 +6462,72 @@ def test_registry_rejects_missing_required_domain_migration() -> None:
     )
     with pytest.raises(MigrationRegistryError, match="MIGRATION_SET_INCOMPLETE"):
         compose_v1_migrations(incomplete)
+
+
+EXPECTED_V1_TABLE_DELTAS_BY_VERSION = {
+    1: {"run_config_snapshots", "runs", "wait_contexts"},
+    2: {"idempotency_events"},
+    3: {"disclosure_grant_subjects", "disclosure_grants"},
+    4: {"disclosure_authorizations"},
+    5: {"memory_entries"},
+    6: {"audit_events"},
+    7: {"agent_turns"},
+    8: {"feedback_records"},
+    9: {"action_records"},
+    10: {"final_writeback_subjects", "final_writeback_approvals"},
+    11: {"persistence_transactions", "persistence_path_records"},
+    12: {"recovery_results"},
+}
+
+
+def test_registry_prefixes_match_exact_schema_owner_map(
+    empty_control_database: ControlDatabase,
+) -> None:
+    before: set[str] = set()
+    for version in range(1, 13):
+        statements: list[str] = []
+        empty_control_database.set_trace_callback(statements.append)
+        apply_migrations(
+            empty_control_database,
+            ALL_V1_MIGRATIONS[:version],
+        )
+        empty_control_database.set_trace_callback(None)
+        domain_create_targets = (
+            create_table_targets(statements) - {"schema_migrations"}
+        )
+        assert domain_create_targets == (
+            EXPECTED_V1_TABLE_DELTAS_BY_VERSION[version]
+        )
+        assert no_if_not_exists_for_domain_tables(statements)
+        after = {
+            row[0]
+            for row in empty_control_database.execute(
+                "SELECT name FROM sqlite_schema "
+                "WHERE type = 'table' AND name NOT LIKE 'sqlite_%'"
+            )
+        }
+        framework_delta = {"schema_migrations"} if version == 1 else set()
+        assert after - before == (
+            EXPECTED_V1_TABLE_DELTAS_BY_VERSION[version] | framework_delta
+        )
+        before = after
+
+    expected_final = {"schema_migrations"} | set().union(
+        *EXPECTED_V1_TABLE_DELTAS_BY_VERSION.values()
+    )
+    assert len(expected_final) == 18
+    assert before == expected_final
 ```
 
-Expected RED: import failure because no final registry/composition contract exists.
+`create_table_targets` is a strict test-only parser for SQLite `CREATE TABLE` trace statements; it rejects an unparseable domain statement, and `no_if_not_exists_for_domain_tables` permits framework bootstrap handling only for `schema_migrations`. Expected RED: import failure because no final registry/composition contract exists. After the registry exists, the schema-owner RED still fails if a migration introduces an undeclared table, omits its declared table, attempts to repeat an already owned table, or moves a table to an earlier/later version; v0001 alone may add the framework-owned `schema_migrations` table in addition to its exact domain delta.
 
-**Implementation boundary:** This child is composition-only. It owns no DDL, connection policy, migration execution, domain repository, fixture table, or product behavior and cannot modify any domain migration module. The declared direct predecessor set must equal the complete migration-producer set. It checks exact versions `1..12`, exact expected names/order, unique checksums, and descriptor checksums before exporting the tuple.
+**Implementation boundary:** This child is composition-only. It owns no DDL, connection policy, migration execution, domain repository, fixture table, or product behavior and cannot modify any domain migration module. The declared direct predecessor set must equal the complete migration-producer set. Production `registry.py` checks exact versions `1..12`, exact expected names/order, unique checksums, and descriptor checksums before exporting the tuple. The exact table-delta/final-set map exists only in `test_migration_registry.py`; production registry code cannot import, export, derive behavior from, or duplicate it. Prefix application uses Task 7.A unchanged, and read-only `sqlite_schema` introspection asserts ownership without creating a second schema owner.
 
 **Verification:**
 - Target: `python -m pytest -q tests/unit/storage/test_migration_registry.py::test_registry_rejects_missing_required_domain_migration`
+- Schema owner: `python -m pytest -q tests/unit/storage/test_migration_registry.py::test_registry_prefixes_match_exact_schema_owner_map`
 - Domain: `python -m pytest -q tests/unit/storage/test_migration_registry.py tests/unit/storage/test_migration_engine.py`
-- Expected GREEN: both commands exit `0`; exact complete composition applies atomically, while missing/duplicate/gapped/reordered/unexpected/checksum-drifted inputs fail before domain DDL executes.
+- Expected GREEN: all three commands exit `0`; exact complete composition applies atomically; every prefix adds only its owner-map delta; v0001 separately adds framework `schema_migrations`; the final set equals exactly 18 tables; and missing/duplicate/wrong-owner/early/late/gapped/reordered/unexpected/checksum-drifted inputs fail closed.
 
 **Completion evidence:** Not yet executed.
 
@@ -10298,7 +10359,7 @@ def test_recovery_preview_is_read_only_and_has_no_force_control(
 
 **Status:** Not started
 
-**Goal:** Add `vespercode recover --workspace PATH` as read-only preview and require the literal `--apply` switch for the only recovery mutation path.
+**Goal:** Add injectable typed parsing/delegation for `vespercode recover --workspace PATH` as read-only preview and require the literal `--apply` switch for the only recovery mutation path, without owning production database or service wiring.
 
 **SPEC references:** Milestone 38 recovery CLI requirements.
 
@@ -10314,7 +10375,7 @@ def test_recovery_preview_is_read_only_and_has_no_force_control(
 - Modify: `src/vespercode/cli.py` (recover command only)
 - Create: `tests/unit/test_recovery_cli.py`
 
-**Interfaces:** Produces exact preview/apply CLI parsing and delegates after Task 9.D identity/lease resolution to Task 26.C services.
+**Interfaces:** Produces exact preview/apply CLI parsing and `install_recover_command(app, recovery_handler: RecoveryCliHandlerV1) -> None`; unit tests inject `SpyRecoveryService`, while the handler delegates after Task 9.D identity/lease resolution to Task 26.C services.
 
 **Intentionally failing test:**
 
@@ -10329,12 +10390,12 @@ def test_recover_without_apply_never_writes(
     assert recovery_service.apply_call_count == 0
 ```
 
-**Implementation boundary:** No transaction edit, disposition override, force/ignore, credential, secret, or recovery-body CLI argument exists.
+**Implementation boundary:** This child owns only the recover command parser, closed arguments, typed delegation, help/error projection, and injection seam. It opens no control database, applies no migration, constructs no repository or production `RecoveryService`, and provides no production default handler; Task 38.F alone owns that binding. No transaction edit, disposition override, force/ignore, credential, secret, or recovery-body CLI argument exists.
 
 **Verification:**
 - Target: `python -m pytest -q tests/unit/test_recovery_cli.py::test_recover_without_apply_never_writes`
 - Domain: `python -m pytest -q tests/unit/test_recovery_cli.py tests/unit/test_cli.py`
-- Expected: default preview zero-write, literal apply requirement, safe errors, help text, and closed argument surface pass.
+- Expected: default preview zero-write, literal apply requirement, safe errors, help text, closed argument surface, and injection through `SpyRecoveryService` pass without opening SQLite or importing Task 7.D.
 
 **Completion evidence:** Not yet executed.
 
@@ -10342,7 +10403,7 @@ def test_recover_without_apply_never_writes(
 
 **Status:** Not started
 
-**Goal:** Install Credential, Memory, Audit, and Recovery routes through typed ports and freeze the sole production installer tuple after Run/Governance routes.
+**Goal:** Install Credential, Memory, Audit, and Recovery routes through typed ports, freeze the sole production installer tuple after Run/Governance routes, and own the sole installed recovery-CLI handler/service binding after complete v1 database initialization.
 
 **SPEC references:** Milestone 38 composition and package-reachability requirements.
 
@@ -10357,9 +10418,12 @@ def test_recover_without_apply_never_writes(
 **Files:**
 - Create: `src/vespercode/web/routes_operations.py`
 - Create: `src/vespercode/web/local_composition.py`
+- Create: `src/vespercode/cli_composition.py`
+- Modify: `src/vespercode/cli.py` (production recover-handler binding only, authorized by Task 28.B after Task 38.E freezes parsing)
 - Test: `tests/web/test_local_composition.py`
+- Test: `tests/unit/test_cli_composition.py`
 
-**Interfaces:** Consumes Task 7.D `ALL_V1_MIGRATIONS` and Task 7.A `apply_migrations`; produces `initialize_production_control_database(path: Path) -> ControlDatabase`, `LocalOperationsWorkflowPortsV1(credentials: CredentialWorkflowPortsV1, memory: MemoryWorkflowPortsV1, audit: AuditWorkflowPortsV1, recovery: RecoveryWorkflowPortsV1)`, `LocalOperationsRouteInstallerV1(ports: LocalOperationsWorkflowPortsV1).install(app: FastAPI) -> None`, `ProductionLocalWorkflowPortsV1(shell: LocalShellPortsV1, governance: RunGovernanceWorkflowPortsV1, operations: LocalOperationsWorkflowPortsV1)`, `build_local_route_installers(ports: ProductionLocalWorkflowPortsV1) -> LocalRouteInstallerSequenceV1`, and `build_local_application(ports: ProductionLocalWorkflowPortsV1, security: LocalWebSecurityConfigV1) -> FastAPI`.
+**Interfaces:** Consumes Task 7.D `ALL_V1_MIGRATIONS`, Task 7.A `apply_migrations`, Task 38.E `install_recover_command`, and the existing Task 26.C recovery-service contract through its Task 38.D/38.E dependency closure; produces `initialize_production_control_database(path: Path) -> ControlDatabase`, `build_production_recovery_cli_handler(db: ControlDatabase, workspace_service: WorkspaceServiceV1) -> RecoveryCliHandlerV1`, `bind_production_recover_command(app, database_path: Path, workspace_service: WorkspaceServiceV1) -> None`, `LocalOperationsWorkflowPortsV1(credentials: CredentialWorkflowPortsV1, memory: MemoryWorkflowPortsV1, audit: AuditWorkflowPortsV1, recovery: RecoveryWorkflowPortsV1)`, `LocalOperationsRouteInstallerV1(ports: LocalOperationsWorkflowPortsV1).install(app: FastAPI) -> None`, `ProductionLocalWorkflowPortsV1(shell: LocalShellPortsV1, governance: RunGovernanceWorkflowPortsV1, operations: LocalOperationsWorkflowPortsV1)`, `build_local_route_installers(ports: ProductionLocalWorkflowPortsV1) -> LocalRouteInstallerSequenceV1`, and `build_local_application(ports: ProductionLocalWorkflowPortsV1, security: LocalWebSecurityConfigV1) -> FastAPI`.
 
 **Intentionally failing test:**
 
@@ -10371,15 +10435,41 @@ def test_production_installer_tuple_has_exact_order(
     assert tuple(type(item).__name__ for item in installers) == (
         "RunGovernanceRouteInstallerV1", "LocalOperationsRouteInstallerV1"
     )
+
+
+@pytest.mark.parametrize(
+    ("arguments", "terminal_event"),
+    (
+        (("recover", "--workspace", "C:\\repo"), "preview"),
+        (("recover", "--workspace", "C:\\repo", "--apply"), "apply"),
+    ),
+)
+def test_installed_recover_binds_complete_database_before_handler(
+    installed_cli_runner: InstalledCliRunner,
+    production_recovery_probe: ProductionRecoveryProbe,
+    arguments: tuple[str, ...],
+    terminal_event: str,
+) -> None:
+    result = installed_cli_runner.invoke(arguments)
+    assert result.exit_code == 0
+    assert production_recovery_probe.applied_migrations == ALL_V1_MIGRATIONS
+    assert production_recovery_probe.events == (
+        "apply_complete_registry",
+        "construct_recovery_service",
+        terminal_event,
+    )
 ```
 
-**Implementation boundary:** The only permitted storage composition is `apply_migrations(db, ALL_V1_MIGRATIONS)` before constructing typed repository ports. This task may import the Task 7.A engine and Task 7.D registry only; it contains no DDL, migration reordering, service locator, untyped registry, duplicate domain predicate, other SQLite internals, or alternate package-smoke composition.
+The installed CLI fixture resolves the configured `vespercode` console entry point and cannot call a source-only helper directly. Expected RED: `cli_composition.py` and its production binding do not exist, so installed preview/apply cannot prove registry-before-service ordering even though Task 38.E's Spy unit test remains independently executable.
+
+**Implementation boundary:** The only permitted storage composition is `apply_migrations(db, ALL_V1_MIGRATIONS)` before constructing any typed repository/service port. This task owns one final local production-composition behavior across Web and CLI entry points: `local_composition.py` wires routes and `cli_composition.py` wires only the Task 38.E recover parser to the same initialized repository/service graph. Its authorized `cli.py` edit selects that production handler only; it cannot change command syntax, help/errors, preview/apply branching, or any other CLI feature. This task may import the Task 7.A engine and Task 7.D registry only for composition; it contains no DDL, migration reordering, parser copy, recovery predicate, service locator, untyped registry, duplicate domain behavior, other SQLite internals, or alternate package-smoke composition.
 
 **Verification:**
 - Target: `python -m pytest -q tests/web/test_local_composition.py::test_production_installer_tuple_has_exact_order`
-- Domain: `python -m pytest -q tests/web/test_local_composition.py tests/web/test_credential_workflow.py tests/web/test_memory_workflow.py tests/web/test_audit_workflow.py tests/web/test_recovery_workflow.py tests/unit/test_recovery_cli.py`
-- Registry: `python -m pytest -q tests/unit/storage/test_migration_registry.py tests/web/test_local_composition.py`
-- Expected: the complete registry applies before port construction, exact route order and all typed ports/routes are reachable, and `vespercode serve` uses only this production composition.
+- CLI production: `python -m pytest -q tests/unit/test_cli_composition.py::test_installed_recover_binds_complete_database_before_handler`
+- Domain: `python -m pytest -q tests/web/test_local_composition.py tests/web/test_credential_workflow.py tests/web/test_memory_workflow.py tests/web/test_audit_workflow.py tests/web/test_recovery_workflow.py tests/unit/test_recovery_cli.py tests/unit/test_cli_composition.py`
+- Registry: `python -m pytest -q tests/unit/storage/test_migration_registry.py tests/web/test_local_composition.py tests/unit/test_cli_composition.py`
+- Expected: all four commands exit `0`; the complete registry applies before Web port or CLI recovery-service construction; exact route order and all typed ports/routes are reachable; installed recover preview/apply use the sole production handler; Task 38.E's Spy tests remain database-independent; and `vespercode serve`/`recover` use only the declared production compositions.
 
 **Completion evidence:** Not yet executed.
 
@@ -10756,7 +10846,7 @@ The mechanically checked core-file set is formed only from exact backticked repo
 | 27.A | `src/vespercode/credentials/{port.py,service.py}` | None | Owns secret wrapper, store protocol, and pure lifecycle service. |
 | 27.B | `src/vespercode/credentials/wincred_store.py` | None | Owns the sole real WinCred implementation. |
 | 28.A | `src/vespercode/web/security.py`; `tests/web/test_security.py` | None | Every later Web child consumes this boundary before its first domain call. |
-| 28.B | `src/vespercode/web/app.py`; `src/vespercode/web/templates/{base.html,home.html}`; `src/vespercode/web/templates/components/status_badge.html`; `src/vespercode/web/static/htmx.min.js`; `src/vespercode/cli.py` | 38.E adds only the recover command to `src/vespercode/cli.py`; 33.B may later correct installed-resource lookup in that file | Route children install through ports and never modify `src/vespercode/web/app.py`; 38.E precedes 33.B by wave order. |
+| 28.B | `src/vespercode/web/app.py`; `src/vespercode/web/templates/{base.html,home.html}`; `src/vespercode/web/templates/components/status_badge.html`; `src/vespercode/web/static/htmx.min.js`; `src/vespercode/cli.py` | 38.E adds only recover parsing and typed delegation to `src/vespercode/cli.py`; 38.F adds only its production recover-handler binding; 33.B may later correct installed-resource lookup in that file | Route children install through ports and never modify `src/vespercode/web/app.py`; wave order is 38.E parser, 38.F production binding, then any 33.B installed-resource correction. |
 | 29.A | `src/vespercode/web/{run_lifecycle_workflow.py,routes_runs.py}`; `src/vespercode/web/templates/{run_create.html,run_detail.html}` | None | Run create/status/cancel only. |
 | 29.B | `src/vespercode/web/{disclosure_workflow.py,routes_disclosure.py}`; `src/vespercode/web/templates/disclosure_wait.html` | None | Disclosure decision only. |
 | 29.C | `src/vespercode/web/{writeback_workflow.py,routes_writeback.py,run_workflows.py}` | None | Owns final writeback and Milestone 29 installer composition; exact supporting tests are frozen in Task 29.C. |
@@ -10785,8 +10875,8 @@ The mechanically checked core-file set is formed only from exact backticked repo
 | 38.B | `src/vespercode/web/routes_memory.py`; `src/vespercode/web/templates/memory.html` | None | Memory workflow only. |
 | 38.C | `src/vespercode/web/routes_audit.py`; `src/vespercode/web/templates/audit.html` | None | Audit workflow only. |
 | 38.D | `src/vespercode/web/routes_recovery.py`; `src/vespercode/web/templates/recovery_preview.html` | None | Recovery Web workflow only. |
-| 38.E | None (authorized core-file modification plus test) | Task 28.B authorizes the recover-only modification to `src/vespercode/cli.py` | Preview by default; literal apply only; Task 38.E is not a second owner of `src/vespercode/cli.py`. |
-| 38.F | `src/vespercode/web/{routes_operations.py,local_composition.py}`; local composition test | None | Sole production installer tuple. |
+| 38.E | None (authorized core-file modification plus test) | Task 28.B authorizes only recover parsing/typed delegation in `src/vespercode/cli.py`; Task 38.F alone owns the production handler/service composition | Preview by default; literal apply only; injectable Spy tests; no database initialization or production default; Task 38.E is not a second owner of `src/vespercode/cli.py`. |
+| 38.F | `src/vespercode/web/{routes_operations.py,local_composition.py}`; `src/vespercode/cli_composition.py`; `tests/unit/test_cli_composition.py`; local composition test | Task 28.B authorizes only the production recover-handler binding in `src/vespercode/cli.py` after Task 38.E freezes parsing | Sole Web installer and recovery-CLI production composition; complete registry precedes all repository/service construction; no parser or recovery behavior duplication. |
 | 38.G | `tests/web/test_operations_accessibility.py`; browser evidence | None | Cross-workflow acceptance adds no production behavior. |
 | Shared evidence | `PLAN.md`; `AGENT_LOG.md` | Every completed task, evidence-only | Merge and append in ascending task order within each wave; only SPEC §11.2 tracking fields preserve `PlanSemanticDigestV1`, while any other PLAN change triggers reapproval and cold-start. |
 | Process record | `SPEC_PROCESS.md` | Cold-start recorder plus Tasks 37.B and 37.C final evidence | Historical content is preserved; only truthful append/revision evidence is permitted. |
@@ -10899,9 +10989,9 @@ This audit is mandatory after every non-tracking PLAN edit. It parses only the e
 | Dependency table | 135 unique rows, 578 exact predecessor edges, one root (`1.A`), zero missing/self/unknown edges | PASS |
 | DAG topology | 135/135 nodes topologically sorted; 135/135 reachable from root `1.A`; zero cycles, isolated nodes, or unreachable nodes | PASS |
 | Executable waves | 70 longest-path waves, 135/135 Tasks assigned exactly once, zero predecessor-in-same-or-later-wave violations | PASS |
-| Ownership | 135 unique Task rows, 326 expanded core paths, zero duplicate primary owners | PASS |
+| Ownership | 135 unique Task rows, 328 expanded core paths, zero duplicate primary owners | PASS |
 | Parallel conflicts | Zero same-wave intersections across expanded core-file ownership sets | PASS |
-| Migration ownership | One framework owner; 12 ordered domain migration owners for exact v0001–v0012; one composition-only registry owner whose 12 direct predecessors equal all producers; all complete formal database consumers depend transitively on Task 7.D | PASS |
+| Migration ownership | One framework owner; 12 ordered domain migration owners for exact v0001–v0012; one composition-only registry owner whose 12 direct predecessors equal all producers; its test-only prefix audit proves exact per-version table deltas and the final 18-table set; all runtime/full-database consumers depend transitively on Task 7.D | PASS |
 | Interface provenance | All 135 Task blocks declare exact `Interfaces` without placeholder signatures; all 578 edges target an existing executable producer or a documented ordering/evidence predecessor. | PASS |
 | Requirement coverage | 9/9 US, 9/9 FR, 6/6 NFR, and 31/31 AC rows each have non-empty, valid, disjoint implementation and independent validation Task sets | PASS |
 | Test environments | 12/12 environment rows contain only existing exact executable Task ids | PASS |
@@ -10916,7 +11006,7 @@ Release readiness is `PASS` only when every condition below is true at the same 
 
 - All **135 executable Tasks** are complete and each records a real implementation commit SHA, responsible subagent, human edits, exact tests, spec review, code-quality review, and PR URL. All 37 Milestones derive complete status from their exact children and have no aggregate implementation commit or PR.
 - The exact release registry is: 1.A, 1.B, 1.C, 1.D, 1.E, 2.A, 2.B, 2.C, 2.D, 2.E, 2.F, 2.G, 3.A, 3.B, 3.C, 3.D, 3.E, 3.F, 3.G, 4.A, 4.F, 4.B, 4.C, 4.D, 4.E, 5.A, 5.B, 5.C, 5.D, 5.E, 6.A, 6.B, 6.C, 6.D, 6.E, 7.A, 7.B, 7.C, 7.D, 8.A, 8.B, 9.A, 9.B, 9.C, 9.D, 10.A, 10.B, 10.C, 11.A, 11.B, 12.A, 12.B, 12.C, 12.D, 13, 14.A, 14.B, 14.C, 15.A, 15.B, 15.C, 15.D, 15.E, 15.F, 16.A, 16.B, 17.A, 17.B, 17.C, 18.A, 18.B, 18.C, 18.D, 19.A, 19.B, 19.C, 20.A, 20.B, 21.A, 21.B, 21.C, 22.A, 22.B, 22.C, 23.A, 23.B, 23.C, 24.A, 24.B, 24.C, 25.A, 25.B, 25.C, 25.D, 25.E, 25.F, 25.G, 26.A, 26.B, 26.C, 27.A, 27.B, 28.A, 28.B, 29.A, 29.B, 29.C, 30.A, 30.B, 31.A, 31.B, 31.C, 32.A, 32.B, 32.C, 33.A, 33.B, 34.A, 34.B, 35.A, 35.B, 35.C, 36.A, 36.B, 36.C, 37.A, 37.B, 37.C, 38.A, 38.B, 38.C, 38.D, 38.E, 38.F, and 38.G.
-- Task 7.A's engine passes independent order/idempotency/atomicity/checksum tests; every v0001–v0012 domain owner passes its exact table/key/unique/FK/prohibited-column contract; Task 7.D's direct predecessors equal the twelve migration producers; `ALL_V1_MIGRATIONS` has exact versions/names/order/checksums with no missing/duplicate/gap/unexpected entry; and Task 38.F applies only that tuple before constructing production repository ports.
+- Task 7.A's engine passes independent order/idempotency/atomicity/checksum tests; every v0001–v0012 domain owner passes its exact table/key/unique/FK/prohibited-column contract; Task 7.D's direct predecessors equal the twelve migration producers; `ALL_V1_MIGRATIONS` has exact versions/names/order/checksums with no missing/duplicate/gap/unexpected entry; its test-only prefix audit proves each migration's exact owner-map table delta plus the final 18-table set including framework `schema_migrations`; and Task 38.F applies only that tuple before constructing production Web ports or the installed recover CLI's Task 26 service/handler, while Task 38.E parser tests remain injectable and database-independent.
 - M0 records the human-approved current SPEC path/SHA-256/blob/baseline and confirms the gate-bootstrap contract; Tasks 1.E, 2.G, and 3.G have `GO` outcomes under a cold-start record covering the approved `PlanSemanticDigestV1`.
 - `requirements/gate.lock`, `gates/pytest.ini`, `gates/ruff.toml`, `gates/mypy.ini`, `scripts/run_gate_checks.py`, the Task 2.D/2.E/2.F reporter/evidence/fingerprint producers, the Task 1.E, 2.G, and 3.G `GO` reports, `config/dependency-closure-v1.json`, and `config/formal-toolchain-promotion-v1.json` remain present; Task 37.B recomputes their SHA-256/version matrix and proves both records' `python_version` values equal Task 1.E terminal `GO` `GateToolchainEvidenceV1.python_version` character-for-character before proving the remaining closure/promotion identities match without silent drift.
 - Task 2.G `GO` proves a digest-pinned loopback-only registry with no credentials/external pushes, verified cleanup, no final-manifest self-reference, and local OCI/registry/digest-pull equality with final `ReferenceProfileManifestV1.docker_image_digest`; Task 34.A reproduces that exact identity, and Task 36.B's GHCR RepoDigest equals it.
