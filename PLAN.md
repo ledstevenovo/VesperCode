@@ -474,13 +474,16 @@ This gate is not a formal implementation task and has no task number.
 - Consumes: Windows 11 x64; Python `>=3.12,<3.13`; an isolated `.venv-gate`; a disposable NTFS workspace; Win32 handle, volume, file-information, ACL, and named-mutex APIs. No global pytest/Ruff/Mypy or later formal-project file is a valid dependency.
 - Produces:
   - a reviewed `requirements/gate.lock` containing exact direct/transitive versions and distribution hashes for pytest 8.x, Ruff, Mypy, and the minimum typed Windows test dependencies
-  - `GateArgumentSequenceV1`, `BoundaryCaseSequenceV1`, `BoundaryObservationSequenceV1`, and `MissingContractSequenceV1`, immutable ordered tuples of zero or more values of their named item types
+  - `GateArgumentSequenceV1`, an immutable ordered tuple of zero or more `str` values, and `BoundaryObservationSequenceV1`, an immutable ordered tuple of one or more `BoundaryObservationV1` values
   - `run_gate_checks(command: GateCommandV1, arguments: GateArgumentSequenceV1) -> int`
   - `GateToolchainEvidenceV1(python_version: str, pytest_version: str, ruff_version: str, mypy_version: str, gate_lock_sha256: str, pytest_config_sha256: str, ruff_config_sha256: str, mypy_config_sha256: str, runner_sha256: str)`
-  - `probe_workspace_boundary(workspace: Path, cases: BoundaryCaseSequenceV1) -> WorkspaceBoundaryGateReportV1`
-  - `WorkspaceObjectIdentityV1(canonical_absolute_path: str, volume_serial_number: int, file_id_128: bytes, object_kind: Literal["FILE","DIRECTORY"], link_count: int, reparse_tag: int | None)`
-  - `WorkspaceBoundaryGateReportV1(outcome: Literal["GO","NO_GO"], observations: BoundaryObservationSequenceV1, missing_contracts: MissingContractSequenceV1)`
-  - `acquire_workspace_mutex(workspace_identity_digest: str, timeout_ms: int) -> WorkspaceMutexProbeResultV1`
+  - `WorkspaceObjectIdentityV1(canonical_absolute_path: str, volume_serial_number: int, file_id_128: bytes, object_kind: Literal["FILE","DIRECTORY"], link_count: int, reparse_tag: int)`
+  - `WorkspaceObjectProbeResultV1(observations: BoundaryObservationSequenceV1, cleanup_verified: bool)`
+  - `probe_workspace_objects(workspace: Path, case_manifest: BoundaryCaseManifestV1) -> WorkspaceObjectProbeResultV1`
+  - `WorkspaceMutexProbeResultV1(workspace_identity_digest: str, contender_count: int, maximum_concurrent_holders: int, timeout_count: int, cleanup_verified: bool)`
+  - `probe_workspace_mutex(workspace_identity_digest: str, contender_count: int, timeout_ms: int) -> WorkspaceMutexProbeResultV1`
+  - `WorkspaceBoundaryGateReportV1(outcome: Literal["GO","NO_GO"], gate_toolchain: GateToolchainEvidenceV1, object_probe: WorkspaceObjectProbeResultV1, mutex_probe: WorkspaceMutexProbeResultV1, evaluation: BoundaryEvaluationV1, evidence_digest: str)`
+  - `assemble_workspace_boundary_report(toolchain: GateToolchainEvidenceV1, object_probe: WorkspaceObjectProbeResultV1, mutex_probe: WorkspaceMutexProbeResultV1) -> WorkspaceBoundaryGateReportV1`
 
 **Implementation points:**
 - Before the first RED command, create `.venv-gate` with Python 3.12, install only with `--require-hashes -r requirements/gate.lock`, and capture exact installed versions. The lock is GO evidence: it must enumerate every direct/transitive distribution and hash, and Tasks 2–3 may not resolve or upgrade it.
@@ -503,14 +506,23 @@ This gate is not a formal implementation task and has no task number.
 def test_gate_fails_when_lexical_path_and_final_object_disagree(
     ntfs_boundary_case: NTFSBoundaryCase,
 ) -> None:
-    report = probe_workspace_boundary(
+    object_probe = probe_workspace_objects(
         ntfs_boundary_case.workspace,
-        cases=(ntfs_boundary_case.junction_escape,),
+        ntfs_boundary_case.case_manifest,
+    )
+    mutex_probe = probe_workspace_mutex(
+        ntfs_boundary_case.workspace_identity_digest,
+        contender_count=2,
+        timeout_ms=2_000,
+    )
+    report = assemble_workspace_boundary_report(
+        ntfs_boundary_case.toolchain,
+        object_probe,
+        mutex_probe,
     )
     assert report.outcome == "NO_GO"
-    assert report.missing_contracts == ()
-    assert report.observations[0].code == "FINAL_OBJECT_IDENTITY_MISMATCH"
-    assert report.observations[0].passed is False
+    assert report.object_probe.observations[0].code == "FINAL_OBJECT_IDENTITY_MISMATCH"
+    assert report.evaluation.passed is False
 ```
 
 **Verification:**
@@ -528,22 +540,22 @@ def test_gate_fails_when_lexical_path_and_final_object_disagree(
 **Completion evidence:** Not yet executed. On completion record the actual commit SHA, responsible subagent, tests executed, review results, human edits and PR URL.
 
 - [ ] **Step 1: Establish the exact gate bootstrap and write the failing final-object test.** Create the hash-complete `requirements/gate.lock`, the three explicit `gates/` configs, and `scripts/run_gate_checks.py`; record the version-selection source and complete direct/transitive hashes in the review evidence. Create the test above and the `NTFSBoundaryCase` fixture in `tests/feasibility/windows/test_workspace_boundary_gate.py`; mark the module `windows_integration`, and make the fixture create a real junction whose lexical child resolves outside the authorized directory.
-- [ ] **Step 2: Build the isolated gate environment and run RED.** Run the two Bootstrap commands, then the exact Target command above. Expected: the install uses only locked hashes; the test exits nonzero because `probe_workspace_boundary` and its closed report do not exist. A global-tool fallback, missing hash, unregistered marker, or implicit config is a gate failure, not permission to continue.
+- [ ] **Step 2: Build the isolated gate environment and run RED.** Run the two Bootstrap commands, then the exact Target command above. Expected: the install uses only locked hashes; the test exits nonzero because `probe_workspace_objects`, `probe_workspace_mutex`, and `assemble_workspace_boundary_report` do not exist. A global-tool fallback, missing hash, unregistered marker, or implicit config is a gate failure, not permission to continue.
 - [ ] **Step 3: Implement the smallest handle-based probe.**
 
   ```python
-  def probe_workspace_boundary(
-      workspace: Path,
-      cases: tuple[BoundaryCaseV1, ...],
-  ) -> WorkspaceBoundaryGateReportV1:
-      root = inspect_final_object(workspace, require_directory=True)
-      observations = tuple(run_boundary_case(root, case) for case in cases)
-      return WorkspaceBoundaryGateReportV1.from_observations(observations)
+  object_probe = probe_workspace_objects(workspace, case_manifest)
+  mutex_probe = probe_workspace_mutex(
+      workspace_identity_digest,
+      contender_count=2,
+      timeout_ms=2_000,
+  )
+  report = assemble_workspace_boundary_report(toolchain, object_probe, mutex_probe)
   ```
 
-  `inspect_final_object` must use Win32 handle information and must return a stable error observation when any identity field cannot be proven.
+  `probe_workspace_objects` must use Win32 handle information and return a stable error observation when any identity field cannot be proven; the mutex probe and report assembler remain their exact child-owned boundaries.
 - [ ] **Step 4: Run GREEN.** Re-run the exact Target command through `.venv-gate` and `scripts/run_gate_checks.py`. Expected: exit `0`, with the junction rejected by final-object identity rather than by a lexical prefix comparison.
-- [ ] **Step 5: Refactor without behavior change.** Separate Win32 API calls, case construction, and closed report calculation inside the two planned spike files; do not add a production workspace adapter in this task.
+- [ ] **Step 5: Refactor without behavior change.** Keep observation evaluation, Win32 object probing, mutex probing, and closed report assembly in their exact Task 1.B–1.E owner modules; do not add a production workspace adapter in this task.
 - [ ] **Step 6: Run the complete Windows gate.** Run the exact Full gate command through `.venv-gate` and the gate runner. Expected: all collision, ADS, device/UNC/drive-relative, reparse, hard-link, file/directory identity, ACL, and mutex cases pass, and the report includes matching toolchain/file identities.
 - [ ] **Step 7: Run the current offline suite.** Run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- -q`. Expected: exit `0`; only existing documentation/gate tests run at this stage and pytest reports `gates/pytest.ini` as its sole project config.
 - [ ] **Step 8: Run static, whitespace, and secret checks.** Run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py ruff-format -- spikes/win32_workspace_boundary tests/feasibility/windows`, `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py ruff-check -- spikes/win32_workspace_boundary tests/feasibility/windows`, `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py mypy -- spikes/win32_workspace_boundary tests/feasibility/windows`, and `git diff --check`. Then run this filename-only scan:
@@ -768,14 +780,18 @@ def test_deadline_after_first_replace_stops_writes_and_requires_recovery(
 - [ ] **Step 3: Implement the minimum transaction state machine.**
 
   ```python
-  def apply_transaction(transaction_id: str) -> GatePersistenceResultV1:
+  def apply_transaction(
+      transaction_id: str,
+      fault_point: PersistenceFaultPointV1,
+      clock: ClockPort,
+  ) -> GatePersistenceResultV1:
       tx = load_and_verify_transaction(transaction_id)
       for record in tx.path_records:
-          if tx.any_path_may_have_changed and tx.clock.expired():
+          if tx.any_path_may_have_changed and clock.expired():
               return persist_unresolved(tx, reason="DEADLINE_AFTER_WRITE")
-          if tx.clock.expired():
+          if clock.expired():
               return persist_zero_write_rollback(tx, reason="DEADLINE_BEFORE_WRITE")
-          replace_one_verified_path(tx, record)
+          replace_one_verified_path(tx, record, fault_point)
       return verify_all_postimages_and_commit(tx)
   ```
 
@@ -1351,6 +1367,7 @@ def test_same_wait_decision_can_win_only_once(
   - `validate_request(request: Mapping[str, object], profiles: ProfileRegistry) -> ValidatedRunRequestV1 | ConfigInvalidV1`
   - `freeze_run_config(request: ValidatedRunRequestV1) -> RunConfigSnapshotV1`
   - `create_run(request: ValidatedRunRequestV1, repository: RunRepository) -> RunCreatedV1`
+  - `RunRequestService.validate_and_create(raw_request: Mapping[str, object]) -> RunCreatedV1 | ConfigInvalidV1`
   - `AdmissionPortsV1(workspace, recovery, snapshot, static_profile, execution_readiness, credential_readiness, baseline)`
   - `AdmissionCoordinator.start_run(run_id: str) -> AdmissionResultV1`
 
@@ -1368,13 +1385,13 @@ def test_same_wait_decision_can_win_only_once(
 
 ```python
 def test_custom_base_url_is_rejected_without_creating_a_run(
-    profiles: ProfileRegistry,
+    request_service: RunRequestService,
     run_repository: SpyRunRepository,
 ) -> None:
     request = valid_request_dict()
     request["base_url"] = "https://example.invalid/v1"
-    result = validate_and_create(request, profiles, run_repository)
-    assert result.error_code == "CONFIG_INVALID"
+    result = request_service.validate_and_create(request)
+    assert result.kind == "CONFIG_INVALID"
     assert run_repository.insert_count == 0
 ```
 
@@ -1396,15 +1413,19 @@ def test_custom_base_url_is_rejected_without_creating_a_run(
 - [ ] **Step 3: Implement the minimum strict validation path.**
 
   ```python
-  def validate_and_create(
-      raw: Mapping[str, object],
-      profiles: ProfileRegistry,
-      repository: RunRepository,
-  ) -> RunCreatedV1 | ConfigInvalidV1:
-      parsed = ValidateRunRequestV1.model_validate(raw)
-      validated = resolve_and_validate_profiles(parsed, profiles)
-      snapshot = freeze_run_config(validated)
-      return repository.insert_created(new_created_run(snapshot))
+  class RunRequestService:
+      def __init__(self, profiles: ProfileRegistry, repository: RunRepository) -> None:
+          self._profiles = profiles
+          self._repository = repository
+
+      def validate_and_create(
+          self,
+          raw_request: Mapping[str, object],
+      ) -> RunCreatedV1 | ConfigInvalidV1:
+          validated = validate_request(raw_request, self._profiles)
+          if isinstance(validated, ConfigInvalidV1):
+              return validated
+          return create_run(validated, self._repository)
   ```
 
   Pydantic validation must complete before `insert_created`.
@@ -2851,14 +2872,13 @@ def test_missing_session_end_is_reporter_invalid(
 
 ```python
 def test_target_that_passes_in_full_baseline_creates_no_manifest(
-    baseline_runner: BaselineRunner,
     baseline_plan: BaselineCheckPlanV1,
-    target_passes_evidence: BaselineEvidenceFixture,
+    snapshot: SnapshotTreeV1,
+    executor: DockerExecutor,
 ) -> None:
-    result = baseline_runner.evaluate(baseline_plan, target_passes_evidence)
-    assert result.kind == "BLOCKED"
-    assert result.error_code == "TARGET_NOT_REPRODUCED"
-    assert result.validation_manifest is None
+    result = run_baseline(baseline_plan, snapshot, executor)
+    assert isinstance(result, BaselineBlockedV1)
+    assert result.reason == "TARGET_NOT_REPRODUCED"
 ```
 
 **Verification:**
@@ -3382,13 +3402,21 @@ def test_trimming_never_removes_most_recent_failure_feedback(
 **Interfaces:**
 - Consumes: Tasks 7.B–7.C lifecycle/storage; Task 8 run/deadline; Task 11–13 tools/candidate/policy; Task 14–16 waits/authorization/adapters; Task 17 parser/dispatcher; Task 18–21 checks/Baseline/formal validation; Task 22–24 memory/audit/context/feedback.
 - Produces:
-  - `ProgressMarkerV1`, `StopEvidenceV1`, and `StopDecisionV1 = ContinueV1 | ValidateV1 | StopV1`
+  - `ProgressWindowV1` and `StopDecisionV1 = ContinueV1 | ValidateV1 | StopV1`
+  - `ProgressEvaluator.evaluate(window: ProgressWindowV1, observation: ProgressObservationV1) -> ProgressDecisionV1`
   - `StopEvaluator.evaluate(state: RunLoopStateV1, evidence: LoopEvidenceV1, progress: ProgressDecisionV1, now: CanonicalTimestampV1) -> StopDecisionV1`
+  - `TurnBoundary.begin(run_id: str, expected_state: RunStateV1) -> BeginTurnResultV1`
+  - `TurnBoundary.record_call_started(run_id: str, turn_id: str, expected_revision: int) -> RecordCallStartedResultV1`
+  - `TurnBoundary.close_turn(run_id: str, turn_id: str, outcome: TurnOutcomeV1, expected_revision: int) -> CloseTurnResultV1`
+  - `CallOrchestrator.call_once(command: CallOnceV1) -> LLMCallResultV1`
+  - `ActionPipeline.execute(response: ModelResponse, context: ActionPipelineContextV1) -> ActionStepResultV1`
+  - `WaitController.enter(wait: WaitContextV1, now: CanonicalTimestampV1) -> WaitTransitionResultV1`
+  - `WaitController.resume(wait: WaitContextV1, decision: WaitDecisionV1, now: CanonicalTimestampV1) -> WaitTransitionResultV1`
+  - `WaitController.expire(wait: WaitContextV1, now: CanonicalTimestampV1) -> WaitTransitionResultV1`
+  - `CancellationController.evaluate_safe_point(run: RunRecordV1, cancellation_requested: bool) -> CancellationDecisionV1`
+  - `RestartGuard.inspect(run) -> RestartDispositionV1`
   - `AgentLoopEngine.step(run_id: str) -> LoopStepResultV1`
   - `AgentLoopEngine.run_until_boundary(run_id: str) -> LoopBoundaryResultV1`
-  - `AgentLoopEngine.request_cancel(run_id: str, event_id: str) -> CancelRequestResultV1`
-  - `stop_nonpersistent_restart(run_id: str) -> RestartStopResultV1`
-  - `TurnRepository.create_at_call_boundary(command: CreateTurnCommandV1) -> AgentTurnV1`
   - `build_call_result(request: PreparedModelRequestV1, authorization_ref: OptionalAuthorizationRecordRefV1, outcome: AdapterOutcomeV1) -> LLMCallResultV1`
 
 **Implementation points:**
@@ -3442,19 +3470,43 @@ def test_failed_check_feedback_changes_the_next_mock_action(
 
   ```python
   def step(self, run_id: str) -> LoopStepResultV1:
-      state = self.load_active_loop_state(run_id)
-      projection = self.context_builder.build(state)
-      prepared = self.call_gate.prepare_and_authorize(state, projection)
-      turn = self.turns.create_at_call_boundary(prepared.turn_command)
-      response, call_result = self.call_once(prepared, turn)
-      action = self.action_parser.parse(response)
-      instance = self.action_binder.bind(action)
-      result = self.dispatcher.dispatch(instance, state.dispatch_context)
-      feedback = self.feedback_builder.build(result)
-      return self.stop_evaluator.evaluate_and_persist(state, turn, result, feedback)
+      inputs = self.load_step_inputs(run_id)
+      restart = self.restart_guard.inspect(inputs.run)
+      cancellation = self.cancellation_controller.evaluate_safe_point(
+          inputs.run,
+          inputs.cancellation_requested,
+      )
+      if self.is_pre_turn_stop(restart, cancellation):
+          return self.compose_pre_turn_boundary(inputs, restart, cancellation)
+      projection = self.context_builder.build(inputs.loop_state)
+      turn = self.turn_boundary.begin(run_id, inputs.expected_state)
+      call_result = self.call_orchestrator.call_once(
+          self.compose_call_once(inputs, projection, turn)
+      )
+      action_step = self.action_pipeline.execute(
+          inputs.model_response_for(call_result),
+          inputs.action_pipeline_context,
+      )
+      progress = self.progress_evaluator.evaluate(
+          inputs.progress_window,
+          inputs.progress_observation_for(action_step),
+      )
+      decision = self.stop_evaluator.evaluate(
+          inputs.loop_state,
+          inputs.loop_evidence_for(action_step),
+          progress,
+          inputs.now,
+      )
+      closed = self.turn_boundary.close_turn(
+          run_id,
+          turn.turn_id,
+          self.compose_turn_outcome(call_result, action_step, decision),
+          turn.revision,
+      )
+      return self.compose_loop_step_result(action_step, decision, closed)
   ```
 
-- [ ] **Step 4: Run GREEN.** Re-run Step 2. Expected: exit `0` with one-time feedback consumption and a changed correction action.
+- [ ] **Step 4: Run GREEN.** Re-run Step 2. Expected: exit `0` with one-time feedback consumption, a changed correction action, and a closed `ContinueV1 | ValidateV1 | StopV1` decision persisted only by the owning turn/lifecycle boundary.
 - [ ] **Step 5: Refactor without behavior change.** Keep pure stopping/progress rules separate from the sequential orchestration engine; leave domain work behind injected ports.
 - [ ] **Step 6: Run domain tests.** Run the domain command. Expected: all count, per-call credential removal/backend-change, Grant/record ordering, call, action, feedback, progress, wait, timeout, cancel, restart, and stop cases pass; failed credential rechecks have zero charged bytes, record, count, and transport increments.
 - [ ] **Step 7: Run the unified offline suite.** Run `python -m pytest -q`. Expected: exit `0` with Mock/Stub adapters and no network or Docker.
@@ -4023,6 +4075,7 @@ def test_demo_step_invokes_shared_core_and_only_demo_tool_ports(
 ) -> None:
     result = demo_runner.advance(demo_session, decision=None)
     assert shared_core_spies.calls == (
+        "ActionPipeline.execute",
         "ActionParser.parse",
         "bind_action",
         "PolicyEngine.evaluate",
@@ -4057,15 +4110,19 @@ def test_demo_step_invokes_shared_core_and_only_demo_tool_ports(
   def create_demo_app(config: DemoAppConfigV1) -> FastAPI:
       scenario = DemoScenarioV1.load_builtin("governance-feedback-v1")
       executor = DemoExecutor(scenario)
-      runner = DemoScenarioRunner(
+      action_pipeline = ActionPipeline(
           parser=ActionParser(),
           binder=bind_action,
           policy=PolicyEngine(),
           dispatcher=ToolDispatcher(),
-          tool_ports=executor.tool_ports(),
           feedback_builder=build_feedback,
           feedback_selector=select_feedback,
           feedback_consumer=consume_feedback,
+      )
+      runner = DemoScenarioRunner(
+          action_pipeline=action_pipeline,
+          tool_ports=executor.tool_ports(),
+          context_builder=build_context,
           stop_evaluator=StopEvaluator(),
       )
       capabilities = DemoCapabilityRegistryV1(
@@ -4273,6 +4330,7 @@ def test_formal_and_demo_compositions_execute_the_same_core_implementations(
     formal_harness.run_step("feedback-correction")
     demo_runner.advance(demo_session, decision=None)
     assert shared_core_spies.formal_shared_pure_implementations == (
+        ActionPipeline.execute,
         ActionParser.parse,
         bind_action,
         PolicyEngine.evaluate,
@@ -4280,7 +4338,6 @@ def test_formal_and_demo_compositions_execute_the_same_core_implementations(
         build_feedback,
         select_feedback,
         consume_feedback,
-        ActionPipeline.execute,
         StopEvaluator.evaluate,
     )
     assert (
@@ -4313,12 +4370,11 @@ def test_formal_and_demo_compositions_execute_the_same_core_implementations(
   ```python
   def run_step(self, step_id: str) -> MechanismStepTraceV1:
       response = self.script.response_for(step_id)
-      action = self.parser.parse(response)
-      instance = self.binder.bind(action)
-      evaluation = self.policy.evaluate(instance, self.policy_context)
-      if evaluation.decision == "DENY":
-          return self.trace_denial(instance, evaluation)
-      return self.trace_dispatch(instance, evaluation)
+      action_step = self.action_pipeline.execute(
+          response,
+          self.action_pipeline_context_for(step_id),
+      )
+      return self.trace_action_step(action_step)
   ```
 
 - [ ] **Step 4: Run GREEN.** Re-run Step 2. Expected: exit `0`, zero dispatch, and zero candidate publication.
@@ -8463,8 +8519,14 @@ def test_two_turns_cannot_consume_one_feedback_record(repository: FeedbackReposi
 
 ```python
 def test_repeated_semantic_action_stops_at_exact_limit() -> None:
-    decision = StopEvaluator().evaluate(state_with_same_action_digest(repetitions=3))
-    assert decision.stop is True
+    state = state_with_same_action_digest(repetitions=3)
+    decision = StopEvaluator().evaluate(
+        state,
+        loop_evidence(state),
+        no_progress_decision(state),
+        current_time(state),
+    )
+    assert isinstance(decision, StopV1)
     assert decision.reason == "REPEATED_ACTION_LIMIT"
 ```
 
@@ -8646,7 +8708,8 @@ def test_policy_deny_skips_dispatch_and_returns_feedback(
 def test_expired_wait_never_resumes_agent_action(
     wait_control: WaitController,
 ) -> None:
-    result = wait_control.resume(expired_wait(), valid_decision())
+    wait = expired_wait()
+    result = wait_control.resume(wait, valid_decision(), after(wait.expires_at))
     assert result.kind == "WAIT_EXPIRED"
     assert result.resume_action is None
 ```
@@ -8830,8 +8893,8 @@ def test_recovery_preview_is_read_only(
     recovery: RecoveryPreviewService,
     workspace: SpyWorkspace,
 ) -> None:
-    preview = recovery.preview("tx-1")
-    assert preview.disposition in {"COMMITTED", "ROLLED_BACK", "UNRESOLVED"}
+    preview = recovery.preview_transaction("tx-1")
+    assert preview.disposition in ("COMMITTED", "ROLLED_BACK", "UNRESOLVED")
     assert workspace.write_count == 0
 ```
 
@@ -9268,12 +9331,22 @@ def test_demo_step_invokes_shared_core_and_only_demo_tool_ports(
     demo_session: DemoSessionV1,
 ) -> None:
     result = demo_runner.advance(demo_session, decision=None)
-    assert shared_core_spies.calls == EXPECTED_SHARED_CORE_CALLS
+    assert shared_core_spies.calls == (
+        "ActionPipeline.execute",
+        "ActionParser.parse",
+        "bind_action",
+        "PolicyEngine.evaluate",
+        "ToolDispatcher.dispatch",
+        "build_feedback",
+        "select_feedback",
+        "consume_feedback",
+        "StopEvaluator.evaluate",
+    )
     assert result.executor_kind == "DEMO_EXECUTOR"
     assert shared_core_spies.formal_capability_calls == 0
 ```
 
-**Implementation boundary:** The scenario stores only data. The exact Task 13/17.A–17.C/24.A–24.C/25.A/25.D parser, binding, policy, dispatcher, context, feedback, action-pipeline, and stopping modules execute the production pure implementations; every prohibited formal-capability module prefix is absent. Sessions are in-memory, five-minute/20-action/10-concurrent bounded, and non-recoverable.
+**Implementation boundary:** The scenario stores only data. Composition constructs the production Task 25.D `ActionPipeline` from the exact Task 13/17.A–17.C/24.A/24.C components, injects that instance into `DemoScenarioRunner`, and wraps its real `ActionPipeline.execute` call in the runtime spy trace; Task 24.B context and Task 25.A stopping remain injected production pure functions. No Demo module copies their orchestration, and every prohibited formal-capability module prefix is absent. Sessions are in-memory, five-minute/20-action/10-concurrent bounded, and non-recoverable.
 
 **Verification:**
 - Target: `python -m pytest -q tests/demo/test_shared_core_composition.py::test_demo_step_invokes_shared_core_and_only_demo_tool_ports`
@@ -9576,6 +9649,17 @@ def test_formal_and_demo_execute_same_core_implementations(
 ) -> None:
     formal_harness.run_step("feedback-correction")
     demo_runner.advance(new_demo_session(), decision=None)
+    assert shared_core_spies.formal_shared_pure_implementations == (
+        ActionPipeline.execute,
+        ActionParser.parse,
+        bind_action,
+        PolicyEngine.evaluate,
+        ToolDispatcher.dispatch,
+        build_feedback,
+        select_feedback,
+        consume_feedback,
+        StopEvaluator.evaluate,
+    )
     assert (
         shared_core_spies.demo_shared_pure_implementations
         == shared_core_spies.formal_shared_pure_implementations
@@ -10507,7 +10591,7 @@ The installed CLI fixture resolves the configured `vespercode` console entry poi
 
 **Blocks:** Tasks 31.C, 33.B, 37.A, and 37.B.
 
-**Parallelization:** Sequential after Task 38.F; this is the final executable child in the Task 38 chain.
+**Parallelization:** Sequential after Task 38.F; no additional scheduling predecessor.
 
 **Branch/worktree:** `codex/task-38g-operations-acceptance`; `.worktrees/task-38g-operations-acceptance`.
 
