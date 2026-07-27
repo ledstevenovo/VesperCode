@@ -170,7 +170,21 @@ The paths below lock file ownership before task decomposition. Files are small, 
 | Path | Single responsibility |
 |---|---|
 | `src/vespercode/storage/connection.py` | SQLite connection policy, foreign keys, WAL choice, and transaction context |
-| `src/vespercode/storage/migrations.py` | Ordered idempotent SQLite migrations |
+| `src/vespercode/storage/migration_engine.py` | Closed `MigrationV1`, checksum history, and injectable ordered/atomic migration runner; no application-domain DDL or final registry import |
+| `src/vespercode/storage/migrations/__init__.py` | Migration package marker with no registry or side-effect import |
+| `src/vespercode/storage/migrations/v0001_run_wait.py` | Task 7.B immutable Run/config/wait schema migration |
+| `src/vespercode/storage/migrations/v0002_idempotency.py` | Task 7.C immutable event-idempotency schema migration |
+| `src/vespercode/storage/migrations/v0003_disclosure_grants.py` | Task 15.D immutable disclosure subject/Grant schema migration |
+| `src/vespercode/storage/migrations/v0004_disclosure_authorizations.py` | Task 15.E immutable disclosure-authorization schema migration |
+| `src/vespercode/storage/migrations/v0005_memory.py` | Task 22.A immutable workspace-memory schema migration |
+| `src/vespercode/storage/migrations/v0006_audit.py` | Task 23.A immutable redacted-audit schema migration |
+| `src/vespercode/storage/migrations/v0007_agent_turns.py` | Task 25.B immutable active-turn/counter schema migration |
+| `src/vespercode/storage/migrations/v0008_feedback.py` | Task 24.C immutable feedback/consume-once schema migration |
+| `src/vespercode/storage/migrations/v0009_actions.py` | Task 25.D immutable action-record schema migration |
+| `src/vespercode/storage/migrations/v0010_writeback_approvals.py` | Task 14.B immutable final-writeback subject/approval schema migration |
+| `src/vespercode/storage/migrations/v0011_persistence.py` | Task 26.A immutable persistence transaction/path schema migration |
+| `src/vespercode/storage/migrations/v0012_recovery.py` | Task 26.C immutable terminal recovery-result schema migration |
+| `src/vespercode/storage/migrations/registry.py` | Task 7.D sole composition of the exact immutable v1 migration constants as `ALL_V1_MIGRATIONS` |
 | `src/vespercode/storage/run_repository.py` | Run, wait, and lifecycle compare-and-update persistence |
 | `src/vespercode/storage/idempotency.py` | Event idempotency-key digest and conflict enforcement |
 | `src/vespercode/runs/lifecycle.py` | Closed legal run transitions and terminal-state invariants |
@@ -315,6 +329,60 @@ The paths below lock file ownership before task decomposition. Files are small, 
 | `tests/smoke/images/` | Reference and Demo OCI build/run contract tests |
 | `tests/smoke/release/` | GitHub/GHCR/Render evidence-schema and alignment tests |
 
+### Durable record storage classification and v1 migration ownership
+
+This table is the complete storage-class decision for every SPEC §7 entity plus the additional durable repository records named by this PLAN. Each row has exactly one storage class. `SQLite migration owner` names the sole executable task that may introduce the listed v1 table; later tasks may consume or transactionally update that table only through the declared repository interface. `local artifact/config owner` means an ACL-restricted content-addressed artifact or immutable packaged configuration, not a SQLite body column. `in-memory only` means the state intentionally ends with the bounded process/session. `value object/no durable table` means the value may be embedded canonically in an owning record or referenced by digest but has no independent v1 table.
+
+| SPEC §7 / PLAN record | Storage class | Sole owner and v1 representation |
+|---|---|---|
+| Migration history (PLAN migration-engine record) | SQLite migration owner | Task 7.A bootstraps only table `schema_migrations` with columns `(version PRIMARY KEY, name UNIQUE, checksum, applied_at)` inside `migration_engine.py`; no domain DDL is permitted there. |
+| Run | SQLite migration owner | Task 7.B, `v0001_run_wait.py`, table `runs`; primary key `run_id`, immutable config FK, lifecycle revision compare-and-update fields, deadline/status/phase, and no body/secret columns. |
+| RunLimitsV1 | value object/no durable table | Task 5.B owns the closed value; Task 8.A canonically embeds it inside the Task 7.B `run_config_snapshots` record. |
+| EditablePathPolicyV1 | local artifact/config owner | Task 6.A owns the packaged immutable policy and digest; only the digest may be referenced by control records. |
+| ReferenceProfileManifestV1 | local artifact/config owner | Task 6.B owns the packaged manifest bytes and digest. |
+| LLMProfileManifestV1 | local artifact/config owner | Task 6.C owns the packaged Mock/OpenAI manifest bytes and digests. |
+| RunConfigSnapshot | SQLite migration owner | Task 7.B, `v0001_run_wait.py`, table `run_config_snapshots`; primary key `config_snapshot_id`, unique canonical digest, frozen profile/policy/target/limit identities, and no credential value. |
+| WorkspaceLease | in-memory only | Task 9.B owns the held Win32 named-mutex/handle lifetime; audit may retain bounded identity/timestamp facts, but SQLite never substitutes for the OS lease. |
+| WaitContext | SQLite migration owner | Task 7.B, `v0001_run_wait.py`, table `wait_contexts`; primary key `wait_id`, FK `run_id → runs`, unique active wait per Run, exact kind/subject/expiry/decision binding, and no subject body. |
+| SnapshotTree | local artifact/config owner | Tasks 10.A/10.C own content-addressed file bodies and the immutable tree manifest under the current-user artifact root; SQLite may retain only root digest/ref through owning Run records. |
+| StaticProjectProfileResult | value object/no durable table | Task 20.A owns the closed result; its digest/evidence ref may be attached to Run/audit facts. |
+| RepositoryLocationV1 | value object/no durable table | Task 5.E owns the closed location union. |
+| ListFilesEntryV1 | value object/no durable table | Task 11.A owns the bounded result value. |
+| RuntimeCompatibilityResult | local artifact/config owner | Task 20.B owns the bounded baseline evidence artifact; only digest/ref and closed status may enter control/audit records. |
+| FailureFingerprintV1 | value object/no durable table | Task 19.C owns the deterministic derived value; owning evidence artifacts retain the source report. |
+| ValidationManifestV1 | local artifact/config owner | Task 20.B owns the immutable manifest artifact and digest; control rows store only its identity/ref. |
+| FinalDiffV1 | local artifact/config owner | Task 12.D owns the immutable structured artifact; complete postimage bytes remain in the Task 10.A content store and SQLite stores only allowed digest/ref fields. |
+| CandidateIdentityV1 | value object/no durable table | Task 12.D owns the derived three-way identity. |
+| CandidateRevision | local artifact/config owner | Tasks 12.B/12.C own the immutable candidate-tree artifact and parent metadata; ordinary turn restart remains non-persistent. |
+| AgentTurn | SQLite migration owner | Task 25.B, `v0007_agent_turns.py`, table `agent_turns`; primary key `turn_id`, FK `run_id → runs`, partial uniqueness for one active turn per Run, exact counters/revision/outcome, and body-free request/result refs only. |
+| ActionRecord | SQLite migration owner | Task 25.D, `v0009_actions.py`, table `action_records`; primary key `action_id`, FK `turn_id → agent_turns`, unique `(turn_id, action_id)`, digests/decision/result ref only, and no action/result body. |
+| FeedbackRecord | SQLite migration owner | Task 24.C, `v0008_feedback.py`, table `feedback_records`; primary key `feedback_id`, nullable FK `consumed_by_turn_id → agent_turns`, one-winner consume predicate, bounded payload plus evidence refs, and no raw check body. |
+| FinalWritebackSubjectV1 | SQLite migration owner | Task 14.B, `v0010_writeback_approvals.py`, table `final_writeback_subjects`; primary/unique subject digest, exact immutable binding columns, and artifact digests/refs rather than postimage bytes. |
+| FinalWritebackApproval | SQLite migration owner | Task 14.B, `v0010_writeback_approvals.py`, table `final_writeback_approvals`; primary key `approval_id`, FK subject digest and wait id, one terminal decision plus one `PENDING → CONSUMED` winner, and no workspace bytes. |
+| DisclosureGrantSubjectV1 | SQLite migration owner | Task 15.D, `v0003_disclosure_grants.py`, table `disclosure_grant_subjects`; primary/unique subject digest, frozen provider/endpoint/model/serializer/scope/category/budget/expiry facts, and no segment content. |
+| DisclosureGrant | SQLite migration owner | Task 15.D, `v0003_disclosure_grants.py`, table `disclosure_grants`; primary key `grant_id`, FK subject digest/run/wait, `consumed_bytes` and `ACTIVE/REVOKED` state. Task 15.F owns the exact active-to-revoked transaction on this existing row; SPEC defines no separate revocation entity or v1 revocation table. |
+| RequestContentSegmentV1 | local artifact/config owner | Tasks 15.A/25.C own the ACL-restricted complete prepared-request artifact; SQLite authorization/audit rows may retain only verified source indexes, paths, byte counts, digests, and refs. |
+| MockAdapterPayloadV1 | local artifact/config owner | Task 16.A owns immutable Mock script/config plus bounded request artifact identity; it has no control table. |
+| PreparedModelRequestV1 | local artifact/config owner | Tasks 16.A/16.B/25.C own the ACL-restricted request artifact; only request digest/ref and allowed source facts may be referenced in SQLite. |
+| DisclosureAuthorizationRecordV1 | SQLite migration owner | Task 15.E, `v0004_disclosure_authorizations.py`, table `disclosure_authorizations`; primary key `authorization_id`, FK `grant_id → disclosure_grants`, unique request identity/charge, exact body-free actual-source projection, and no refund/body column. |
+| LLMCallResultV1 | local artifact/config owner | Tasks 16.A/16.B/25.C own the ACL-restricted bounded response/error artifact; `agent_turns`, `action_records`, and audit may retain only closed status, digest, and ref. |
+| PytestEvidenceV1 | local artifact/config owner | Task 19.B owns the complete bounded report artifact and integrity digest; SQLite stores at most an allowed digest/ref. |
+| CheckResult | local artifact/config owner | Task 19.A owns the structured result plus ACL-restricted raw-output artifact; raw output never enters SQLite. |
+| VerifiedCandidate | local artifact/config owner | Task 21.C owns the immutable verification evidence artifact and digest; writeback subject/approval rows bind its identity/ref. |
+| PersistenceTransaction | SQLite migration owner | Task 26.A, `v0011_persistence.py`, table `persistence_transactions`; primary key `transaction_id`, FKs to Run/approval, unique active transaction per workspace, exact state/digests/artifact refs, and no backup bytes. |
+| PersistencePathRecord | SQLite migration owner | Task 26.A, `v0011_persistence.py`, table `persistence_path_records`; composite primary key `(transaction_id, sequence)`, FK to transaction, unique `(transaction_id, canonical_path)`, operation/preimage/postimage digests and progress evidence refs only. |
+| RecoveryResult | SQLite migration owner | Task 26.C, `v0012_recovery.py`, table `recovery_results`; primary key `recovery_result_id`, FK/unique terminal `transaction_id`, closed disposition and evidence digest/ref only. Recovery backup bytes stay in Task 26.A ACL artifacts. |
+| MemoryEntry | SQLite migration owner | Task 22.A, `v0005_memory.py`, table `memory_entries`; primary key `memory_id`, indexed workspace identity, closed kind/creator/source/bounds/timestamps and nullable clear tombstone; no secret, permission, or complete source body. |
+| AuditEvent | SQLite migration owner | Task 23.A, `v0006_audit.py`, table `audit_events`; composite uniqueness `(run_id, sequence)`, FK `run_id → runs`, allowlisted bounded redacted payload and evidence refs only. |
+| Idempotency event (PLAN repository record) | SQLite migration owner | Task 7.C, `v0002_idempotency.py`, table `idempotency_events`; composite primary key `(scope, event_id)`, immutable request/result digests, and no reconstructed domain body. |
+| Content object / complete file body (PLAN artifact record) | local artifact/config owner | Task 10.A owns digest-verified ACL-restricted bytes; control rows retain only content digests/refs. |
+| Persistence backup and raw recovery evidence (PLAN artifact record) | local artifact/config owner | Task 26.A owns ACL-restricted bytes and verified refs; Task 26.C never copies the bodies into `recovery_results`. |
+| Credential record (PLAN external-store record) | local artifact/config owner | Task 27.B owns the Windows Credential Manager entry outside repository artifacts and SQLite; status/audit exposes no value or derivative. |
+| DemoSession | in-memory only | Task 30.A owns the bounded expiring Demo session store; it is capability-isolated from the formal control database. |
+| DemoDecision | in-memory only | Task 30.A owns the fixed-scenario decision in its Demo session; it cannot become a formal authorization. |
+
+The ordered migration sequence is exactly v0001 through v0012 with no duplicate, gap, or unexpected version. A domain migration test applies Task 7.A's engine to the tuple of the actual immutable predecessor constants plus the current constant; no domain task edits or imports `registry.py`. Task 7.D alone imports the twelve constants, verifies the declared `(version, name, checksum)` order, and exports `ALL_V1_MIGRATIONS`. Complete file bodies, complete LLM requests/responses, raw check output, and recovery backup bytes remain current-user ACL-restricted artifacts; only the explicitly allowed digests/refs above may enter SQLite, and credentials never do.
+
 ## M0 — SPEC Readiness Gate
 
 M0 is not a formal implementation task and has no task number. This PLAN revision remains a non-authoritative draft until every M0 check passes.
@@ -351,7 +419,7 @@ This gate is not a formal implementation task and has no task number.
 
 - A heading named `Milestone N` is a non-executable traceability container. It may retain the former Task's aggregate Goal, SPEC references, file inventory, interfaces, acceptance example, review checklist, and proposed branch text so no domain contract is lost, but none of those retained tracking fields or steps authorizes execution. A Milestone has no implementation branch, worktree, commit, evidence commit, or PR of its own; its status and completion evidence are derived only from all listed executable child tasks.
 - A heading named `Task N.X` is one formal executable task. Each child receives a fresh subagent, branch, worktree, implementation commit, two review gates, evidence commit, and PR.
-- The executable registry is closed: retained integer Task 13 plus 133 dotted child Tasks, for 134 executable Tasks total. The 37 `Milestone N` headings are non-executable containers and never appear as nodes in canonical DAG, wave, ownership, coverage, test-environment, or release structures.
+- The executable registry is closed: retained integer Task 13 plus 134 dotted child Tasks, for 135 executable Tasks total. The 37 `Milestone N` headings are non-executable containers and never appear as nodes in canonical DAG, wave, ownership, coverage, test-environment, or release structures.
 - An implementer may rely only on Global Constraints, the applicable Milestone contract, and their own child-task block. Child blocks therefore declare exact files, interfaces, dependencies, RED test, implementation boundary, and commands.
 - Every executable child follows this exact workflow:
   1. Add the displayed intentionally failing test without production implementation.
@@ -989,7 +1057,7 @@ def test_repository_root_requires_the_closed_root_variant() -> None:
 
 **Blocks:** Tasks 8, 12–21, 24–29, and 31–38.
 
-**Parallelization:** Parallel with Task 7 after Task 5; these tasks own disjoint files.
+**Parallelization:** Parallel with early Tasks 7.A–7.C after Task 5; these tasks own disjoint files. Late Task 7.D is not part of this wave.
 
 **Recommended branch:** `codex/task-06-profile-registry`
 
@@ -1094,19 +1162,19 @@ def test_editable_policy_uses_directory_segments(path: str, expected: bool) -> N
 
 ### Milestone 7: SQLite Repository, Idempotency, and Run Lifecycle
 
-**Execution notice:** Non-executable aggregate contract. Only Tasks 7.A–7.C are executable; they separately own the checksum-verified database, transactional Run/wait lifecycle, and idempotency ledger.
+**Execution notice:** Non-executable aggregate contract. Only Tasks 7.A–7.D are executable. Tasks 7.A–7.C own the early migration framework, Run/wait repository, and idempotency ledger; late Task 7.D owns only final v1 migration-registry composition after every domain migration producer completes. Aggregate Task 7 is never a graph predecessor.
 
 **Status:** Not started
 
-**Goal:** Establish transactional local control storage and enforce every legal run/wait transition, idempotency conflict, and monotonic audit-ready revision without storing secrets.
+**Goal:** Establish a domain-independent transactional migration engine, early Run/wait/idempotency storage, and one late checksum-verified composition of all domain-owned v1 migrations without storing secrets or application bodies.
 
-**SPEC / FR / NFR / AC references:** SPEC §4.2.1; §4.2.7; §4.7 audit ordering; §5.2; §5.4; §5.6; §7 Run/Wait/Action/Feedback/Persistence relationships; §10.1 AC-16, AC-21, AC-27, AC-28.
+**SPEC / FR / NFR / AC references:** SPEC §4.2.1; §4.2.7; §4.7 audit ordering; §5.2; §5.4; §5.6; §7 complete data model and storage split; §10.1 AC-16, AC-21, AC-27, AC-28.
 
-**Dependencies:** Task 5.
+**Dependencies:** Tasks 7.A–7.C depend on exact Task 5 children as listed in the canonical DAG. Task 7.D depends on every exact v1 migration producer: Tasks 7.B, 7.C, 14.B, 15.D, 15.E, 22.A, 23.A, 24.C, 25.B, 25.D, 26.A, and 26.C.
 
-**Blocks:** Tasks 8, 14–17, 22–29, and 31–38.
+**Blocks:** Early Tasks 7.A–7.C block their exact repository consumers. Late Task 7.D blocks only Task 38.F's complete formal control-database composition; E2E and package consumers receive the registry transitively through Task 38.F.
 
-**Parallelization:** Parallel with Task 6 after Task 5; merge/evidence updates remain serialized.
+**Parallelization:** Tasks 7.A–7.C may proceed with the early storage wave after Task 5. Task 7.D is composition-only and runs after all twelve migration producers; merge/evidence updates remain serialized.
 
 **Recommended branch:** `codex/task-07-sqlite-lifecycle`
 
@@ -1114,12 +1182,19 @@ def test_editable_policy_uses_directory_segments(path: str, expected: bool) -> N
 
 **Files:**
 - Create: `src/vespercode/storage/connection.py`
-- Create: `src/vespercode/storage/migrations.py`
+- Create: `src/vespercode/storage/migration_engine.py`
+- Create: `src/vespercode/storage/migrations/__init__.py`
+- Create: `src/vespercode/storage/migrations/v0001_run_wait.py`
+- Create: `src/vespercode/storage/migrations/v0002_idempotency.py`
+- Create: `src/vespercode/storage/migrations/registry.py`
 - Create: `src/vespercode/storage/run_repository.py`
 - Create: `src/vespercode/storage/idempotency.py`
 - Create: `src/vespercode/runs/lifecycle.py`
 - Test: `tests/unit/storage/test_connection.py`
-- Test: `tests/unit/storage/test_migrations.py`
+- Test: `tests/unit/storage/test_migration_engine.py`
+- Test: `tests/unit/storage/test_run_wait_migration.py`
+- Test: `tests/unit/storage/test_idempotency_migration.py`
+- Test: `tests/unit/storage/test_migration_registry.py`
 - Test: `tests/unit/storage/test_run_repository.py`
 - Test: `tests/unit/storage/test_idempotency.py`
 - Test: `tests/unit/runs/test_lifecycle.py`
@@ -1131,7 +1206,9 @@ def test_editable_policy_uses_directory_segments(path: str, expected: bool) -> N
 - Produces:
   - `open_control_database(path: Path) -> ControlDatabase`
   - `ControlDatabase.immediate_transaction() -> AbstractContextManager[ControlTransactionV1]`
-  - `apply_migrations(db: ControlDatabase) -> MigrationResultV1`
+  - `MigrationV1(version: int, name: str, checksum: DigestV1, apply: MigrationApplyV1)`
+  - `apply_migrations(db: ControlDatabase, migrations: tuple[MigrationV1, ...]) -> MigrationResultV1`
+  - `RUN_WAIT_V1_MIGRATION`, `IDEMPOTENCY_V1_MIGRATION`, and late `ALL_V1_MIGRATIONS`
   - `RunRepository.insert_created(run: RunRecordV1) -> None`
   - `RunRepository.compare_and_transition(command: TransitionCommandV1) -> TransitionResultV1`
   - `RunRepository.create_wait(context: WaitContextV1) -> None`
@@ -1144,8 +1221,10 @@ def test_editable_policy_uses_directory_segments(path: str, expected: bool) -> N
 
 **Implementation points:**
 - Enable foreign keys and explicit transactions. Standalone public repository methods own one transaction boundary; the three wait-decision primitives require one caller-owned `ControlTransactionV1`, reject a transaction from another database, and exist only so Tasks 14 and 15 can atomically store the domain decision before the Run transition.
-- Migrations are ordered, checksum-verified, idempotent, and fail closed on checksum drift.
-- The Task 7 migration set creates every v1 control-record table named in SPEC §7, including subsequent domain-owned approval, Grant, authorization, feedback, memory, audit, and persistence records; subsequent tasks own behavior repositories and do not mutate the canonical migration file.
+- Task 7.A owns only connection/transaction policy, the closed migration descriptor, `schema_migrations` checksum history, and an ordered idempotent atomic runner. It may bootstrap only migration-history metadata and may neither contain domain DDL nor import the incomplete/final registry.
+- Task 7.B owns v0001 Run/config/wait DDL with exact keys, uniqueness, foreign keys, and prohibited-column assertions; Task 7.C owns v0002 idempotency DDL under the same rule.
+- Every later SQLite-owning domain task owns exactly one immutable migration module and focused schema contract test. It applies the actual predecessor constants plus its own constant through Task 7.A and never edits the final registry.
+- Task 7.D contains no DDL or repository behavior. It imports exactly the twelve declared producer constants, requires versions 1–12 with the expected names/order/checksums, rejects missing/duplicate/gapped/reordered/unexpected/drifted migrations, and exports `ALL_V1_MIGRATIONS`.
 - Run creation, phase/status transition, wait creation/decision, approval/grant budget hooks, and monotonic sequence allocation use compare-and-update predicates.
 - Legal lifecycle follows SPEC §4.2.7 exactly; terminal states cannot reopen; non-persistence restart stops; persistence/recovery remains Task 26's specialized path.
 - `lock_wait_for_decision` validates and locks the active wait plus all four binding fields without changing the Run. The appropriate Task 14/15 coordinator records the Approval or Grant outcome in the same transaction before `commit_wait_decision`; rollback at any point leaves both the domain record and Run state unchanged.
@@ -1153,7 +1232,7 @@ def test_editable_policy_uses_directory_segments(path: str, expected: bool) -> N
 - A stale, wrong-kind, cancelled, or duplicate decision cannot obtain `LockedWaitDecisionV1` and therefore cannot create a domain record or transition the Run. An otherwise exact but expired wait may be locked only so the owning Task 14/15 coordinator can record its permitted expiry evidence and call `expire_wait`; `commit_wait_decision` rejects it.
 - Same idempotency key plus same request digest returns the first result; same key plus different digest returns `EVENT_ID_REUSE_CONFLICT`.
 - Coordinators calculate the closed decision/result digest before mutation, call `record_or_replay` inside their existing `ControlTransactionV1`, and mutate only on `NEW`. `REPLAY` reconstructs the stored typed result from its domain record and `CONFLICT` performs no mutation.
-- SQLite contains no credential value, complete file body, complete LLM request/response, or recovery backup bytes.
+- SQLite contains no credential value, complete file body, complete LLM request/response, raw check output, or recovery backup bytes.
 - Transaction errors propagate as typed control-store failures; no exception is swallowed or converted to success.
 
 **Intentionally failing test:**
@@ -1192,7 +1271,7 @@ def test_same_wait_decision_can_win_only_once(
 - Target: `python -m pytest -q tests/unit/storage/test_run_repository.py::test_same_wait_decision_can_win_only_once`
 - Domain: `python -m pytest -q tests/unit/storage tests/unit/runs`
 - Full: `python -m pytest -q`
-- Expected: migrations and concurrent decision/idempotency/lifecycle cases pass on temporary SQLite databases.
+- Expected: the engine's order/idempotency/atomicity/checksum tests, exact v0001/v0002 schema contracts, final registry completeness contract, and concurrent decision/idempotency/lifecycle cases pass on temporary SQLite databases.
 
 **Review gate:**
 1. Spec compliance review checks the entire transition matrix, wait binding, restart boundary, idempotency result, and prohibited stored content.
@@ -1225,15 +1304,15 @@ def test_same_wait_decision_can_win_only_once(
   ```
 
 - [ ] **Step 4: Run GREEN.** Re-run Step 2. Expected: exit `0`.
-- [ ] **Step 5: Refactor without behavior change.** Keep SQL connection, migrations, run repository, idempotency, and pure lifecycle rules separate; remove duplicate transition logic from repository methods.
+- [ ] **Step 5: Refactor without behavior change.** Keep SQL connection, migration engine, immutable domain migration modules, final registry, run repository, idempotency, and pure lifecycle rules separate; remove duplicate transition logic from repository methods.
 - [ ] **Step 6: Run domain tests.** Run `python -m pytest -q tests/unit/storage tests/unit/runs`. Expected: all transition, migration, rollback, replay, conflict, and concurrent winner tests pass.
 - [ ] **Step 7: Run the unified offline suite.** Run `python -m pytest -q`. Expected: exit `0`.
 - [ ] **Step 8: Run closure checks.** Run all five standard formatter/lint/type/credential/whitespace commands. Expected: all exit `0`.
-- [ ] **Step 9: Request spec compliance review.** Give a fresh reviewer Task 7, SPEC §4.2.7/§5.2/§7, schema dump, and tests.
+- [ ] **Step 9: Request spec compliance review.** Give a fresh reviewer Tasks 7.A–7.D, SPEC §4.2.7/§5.2/§7, the complete storage-class/owner map, schema dumps, producer/registry closure, and tests.
 - [ ] **Step 10: Close spec findings.** Apply minimal fixes, rerun Steps 6–8, and obtain passing spec re-review.
 - [ ] **Step 11: Request code quality review.** Require inspection of SQLite isolation, deadlock/rollback paths, migration drift, public API boundaries, and data minimization.
 - [ ] **Step 12: Close quality findings.** Close all Critical/Important issues, rerun Steps 6–8, and obtain passing quality re-review.
-- [ ] **Step 13: Commit and record.** Commit with subject `Add transactional run lifecycle`; capture SHA; update this task and `AGENT_LOG.md`; commit evidence; push and open one Task 7 PR.
+- [ ] **Step 13: Commit and record.** Each executable child records only its own real commit/review/PR evidence; aggregate completion is derived after Task 7.D and creates no aggregate implementation commit or PR.
 
 ### Milestone 8: Strict Run Request and Ordered Admission Coordinator
 
@@ -1265,7 +1344,7 @@ def test_same_wait_decision_can_win_only_once(
 - Modify: `AGENT_LOG.md` (append only)
 
 **Interfaces:**
-- Consumes: `RunLimitsV1` and run contracts from Task 5; `ProfileRegistry` from Task 6; `RunRepository` and lifecycle rules from Task 7.
+- Consumes: `RunLimitsV1` and run contracts from Task 5; `ProfileRegistry` from Task 6; `RunRepository` and lifecycle rules from Tasks 7.B–7.C.
 - Produces:
   - `ValidateRunRequestV1`
   - `validate_request(request: Mapping[str, object], profiles: ProfileRegistry) -> ValidatedRunRequestV1 | ConfigInvalidV1`
@@ -1375,7 +1454,7 @@ def test_custom_base_url_is_rejected_without_creating_a_run(
 - Modify: `AGENT_LOG.md` (append only)
 
 **Interfaces:**
-- Consumes: Task 1 probe semantics/evidence; Task 4 canonical path/digest; Task 5 evidence contracts; Task 7 storage hooks; Task 8.B `AdmissionPortsV1`, specifically its workspace port.
+- Consumes: Task 1 probe semantics/evidence; Task 4 canonical path/digest; Task 5 evidence contracts; Tasks 7.B–7.C Run/idempotency storage hooks; Task 8.B `AdmissionPortsV1`, specifically its workspace port.
 - Produces:
   - `resolve_workspace_identity(locator: Path) -> WorkspaceIdentityV1`
   - `inspect_workspace_object(root: WorkspaceIdentityV1, path: CanonicalRelativePathV1) -> FinalObjectIdentityV1`
@@ -1960,7 +2039,7 @@ def test_user_approval_cannot_override_noneditable_path_deny(
 
 **SPEC / FR / NFR / AC references:** SPEC §4.2.7 final-writeback wait; §4.4.1–§4.4.2; §4.6 writeback preconditions; §5.2; §7 subject/approval rows; §10.1 AC-02, AC-03, AC-06, AC-07, AC-27, AC-31.
 
-**Dependencies:** Tasks 7.C, 12.D, 13, 20.B, and 21.
+**Dependencies:** Exact child dependencies are canonical: Task 14.A consumes Tasks 7.C/12.D/13/20.B/21.C; Task 14.B additionally consumes Task 25.D as the v0009 predecessor; Task 14.C consumes the resulting v0010 approval repository. Aggregate Task 14 is not a predecessor.
 
 **Blocks:** Tasks 25–26, 29, 31–32, and 38.
 
@@ -1971,8 +2050,10 @@ def test_user_approval_cannot_override_noneditable_path_deny(
 **Recommended worktree:** `.worktrees/task-14-writeback-approval`
 
 **Files:**
+- Create: `src/vespercode/storage/migrations/v0010_writeback_approvals.py`
 - Create: `src/vespercode/governance/writeback_subject.py`
 - Create: `src/vespercode/governance/writeback_approval.py`
+- Test: `tests/unit/storage/test_writeback_approvals_migration.py`
 - Test: `tests/unit/governance/test_writeback_subject.py`
 - Test: `tests/unit/governance/test_writeback_approval.py`
 - Test: `tests/unit/governance/test_writeback_approval_race.py`
@@ -2165,9 +2246,13 @@ def test_exact_writeback_approval_can_be_consumed_only_once(
 **Recommended worktree:** `.worktrees/task-15-disclosure-ledger`
 
 **Files:**
+- Create: `src/vespercode/storage/migrations/v0003_disclosure_grants.py`
+- Create: `src/vespercode/storage/migrations/v0004_disclosure_authorizations.py`
 - Create: `src/vespercode/governance/request_sources.py`
 - Create: `src/vespercode/governance/disclosure_subject.py`
 - Create: `src/vespercode/governance/disclosure_ledger.py`
+- Test: `tests/unit/storage/test_disclosure_grants_migration.py`
+- Test: `tests/unit/storage/test_disclosure_authorizations_migration.py`
 - Test: `tests/unit/governance/test_request_sources.py`
 - Test: `tests/unit/governance/test_disclosure_subject.py`
 - Test: `tests/unit/governance/test_disclosure_scope.py`
@@ -2942,7 +3027,7 @@ def test_pytest_exit_zero_with_skipped_node_creates_no_verified_candidate(
 
 **SPEC / FR / NFR / AC references:** SPEC §4.2.4 context memory; §4.7 memory write/selection/clear; §5.2; §5.4; §5.6; §7 MemoryEntry; §10.1 AC-14, AC-23, AC-26; §10.3 offline tests.
 
-**Dependencies:** Tasks 7.C, 10, and 19.C.
+**Dependencies:** Exact child dependencies are canonical; Task 22.A additionally follows Task 15.E so v0005 is tested with actual v0001–v0004 predecessors.
 
 **Blocks:** Tasks 24–25, 29, 31, and 38.
 
@@ -2953,9 +3038,11 @@ def test_pytest_exit_zero_with_skipped_node_creates_no_verified_candidate(
 **Recommended worktree:** `.worktrees/task-22-repository-memory`
 
 **Files:**
+- Create: `src/vespercode/storage/migrations/v0005_memory.py`
 - Create: `src/vespercode/memory/entry.py`
 - Create: `src/vespercode/memory/repository.py`
 - Create: `src/vespercode/memory/selection.py`
+- Test: `tests/unit/storage/test_memory_migration.py`
 - Test: `tests/unit/memory/test_entry.py`
 - Test: `tests/unit/memory/test_repository.py`
 - Test: `tests/unit/memory/test_selection.py`
@@ -3051,21 +3138,23 @@ def test_memory_never_crosses_workspace_identity(
 
 **SPEC / FR / NFR / AC references:** SPEC §4.7 audit; §5.3–§5.6; §7 AuditEvent; §8.4 evidence separation; §10.1 AC-08, AC-13, AC-16, AC-21–AC-24, AC-27–AC-29; §10.3 evidence matrix.
 
-**Dependencies:** Task 7.
+**Dependencies:** Tasks 7.B, 7.C, and 22.A as assigned to exact executable children.
 
 **Blocks:** Tasks 25–26, 28–29, 31, 36–37, and 38.
 
-**Parallelization:** Parallel with Tasks 8, 15, 27, and 30 after Task 7; file ownership is disjoint.
+**Parallelization:** The pure projection/retention children remain parallel where their exact dependencies allow; Task 23.A follows the v0005 owner Task 22.A so v0006 can be tested with its actual predecessors. Late Task 7.D is downstream, not a prerequisite.
 
 **Recommended branch:** `codex/task-23-audit-projection`
 
 **Recommended worktree:** `.worktrees/task-23-audit-projection`
 
 **Files:**
+- Create: `src/vespercode/storage/migrations/v0006_audit.py`
 - Create: `src/vespercode/audit/event.py`
 - Create: `src/vespercode/audit/repository.py`
 - Create: `src/vespercode/audit/projection.py`
 - Create: `src/vespercode/audit/retention.py`
+- Test: `tests/unit/storage/test_audit_migration.py`
 - Test: `tests/unit/audit/test_event.py`
 - Test: `tests/unit/audit/test_repository.py`
 - Test: `tests/unit/audit/test_projection.py`
@@ -3075,7 +3164,7 @@ def test_memory_never_crosses_workspace_identity(
 - Modify: `AGENT_LOG.md` (append only)
 
 **Interfaces:**
-- Consumes: Task 7 run/wait lifecycle, idempotency, monotonic sequence allocation, and predeclared v1 audit tables.
+- Consumes: Tasks 7.B–7.C Run/wait lifecycle and idempotency; Task 23.A itself owns v0006 audit DDL and monotonic sequence allocation.
 - Produces:
   - `AuditEventV1(run_id: str, sequence: int, event_type: AuditEventTypeV1, redacted_payload: AuditPayloadV1, created_at: CanonicalTimestampV1)`
   - `AuditRepository.append(command: AppendAuditEventV1) -> AuditAppendResultV1`
@@ -3157,7 +3246,7 @@ def test_audit_rejects_complete_request_body_and_secret_fields(
 
 **SPEC / FR / NFR / AC references:** SPEC §4.2.4–§4.2.6; §4.4.4 source segments; §4.5 structured feedback; §5.1–§5.2; §5.5 disclosure isolation; §7 FeedbackRecord; §10.1 AC-05, AC-13–AC-14, AC-17, AC-26, AC-28.
 
-**Dependencies:** Tasks 10, 11.B, 15, 16.B, 19.C, and 22.
+**Dependencies:** Exact child dependencies are canonical; Task 24.C additionally follows Task 25.B so v0008 can enforce `consumed_by_turn_id → agent_turns` against actual v0007.
 
 **Blocks:** Tasks 25 and 31–32.
 
@@ -3168,8 +3257,10 @@ def test_audit_rejects_complete_request_body_and_secret_fields(
 **Recommended worktree:** `.worktrees/task-24-context-feedback`
 
 **Files:**
+- Create: `src/vespercode/storage/migrations/v0008_feedback.py`
 - Create: `src/vespercode/loop/context_projection.py`
 - Create: `src/vespercode/loop/feedback.py`
+- Test: `tests/unit/storage/test_feedback_migration.py`
 - Test: `tests/unit/loop/test_context_projection.py`
 - Test: `tests/unit/loop/test_context_trimming.py`
 - Test: `tests/unit/loop/test_context_sources.py`
@@ -3266,7 +3357,7 @@ def test_trimming_never_removes_most_recent_failure_feedback(
 
 **SPEC / FR / NFR / AC references:** SPEC §3.2 dimensions; §4.2 in full; §4.4.4 call ordering; §4.5 feedback/formal transition; §5.1–§5.4; §7 AgentTurn/Action/Feedback; §9 LLM boundary; §10.1 AC-02, AC-05–AC-06, AC-13, AC-15–AC-18, AC-20, AC-27–AC-28, AC-31; Harness requirement prohibiting high-level agent executors.
 
-**Dependencies:** Tasks 7–8 and 11–24.
+**Dependencies:** Exact child dependencies span Tasks 7.B–7.C, 8.A–8.B, and the declared 11–24 children; Task 25.B additionally follows Task 23.A for v0007, while Task 25.D follows Task 24.C for v0009. Late Task 7.D is downstream.
 
 **Blocks:** Tasks 29 and 31–32.
 
@@ -3277,8 +3368,12 @@ def test_trimming_never_removes_most_recent_failure_feedback(
 **Recommended worktree:** `.worktrees/task-25-main-loop`
 
 **Files:**
+- Create: `src/vespercode/storage/migrations/v0007_agent_turns.py`
+- Create: `src/vespercode/storage/migrations/v0009_actions.py`
 - Create: `src/vespercode/loop/stopping.py`
 - Create: `src/vespercode/loop/engine.py`
+- Test: `tests/unit/storage/test_agent_turns_migration.py`
+- Test: `tests/unit/storage/test_actions_migration.py`
 - Test: `tests/unit/loop/test_stopping.py`
 - Test: `tests/unit/loop/test_progress.py`
 - Test: `tests/unit/loop/test_turn_counting.py`
@@ -3290,7 +3385,7 @@ def test_trimming_never_removes_most_recent_failure_feedback(
 - Modify: `AGENT_LOG.md` (append only)
 
 **Interfaces:**
-- Consumes: Task 7 lifecycle/storage; Task 8 run/deadline; Task 11–13 tools/candidate/policy; Task 14–16 waits/authorization/adapters; Task 17 parser/dispatcher; Task 18–21 checks/Baseline/formal validation; Task 22–24 memory/audit/context/feedback.
+- Consumes: Tasks 7.B–7.C lifecycle/storage; Task 8 run/deadline; Task 11–13 tools/candidate/policy; Task 14–16 waits/authorization/adapters; Task 17 parser/dispatcher; Task 18–21 checks/Baseline/formal validation; Task 22–24 memory/audit/context/feedback.
 - Produces:
   - `ProgressMarkerV1`, `StopEvidenceV1`, and `LoopDecisionV1 = ContinueV1 | ValidateV1 | StopV1`
   - `StopEvaluator.evaluate(state: RunLoopStateV1, evidence: LoopEvidenceV1) -> LoopDecisionV1`
@@ -3383,7 +3478,7 @@ def test_failed_check_feedback_changes_the_next_mock_action(
 
 **SPEC / FR / NFR / AC references:** SPEC §4.2.6–§4.2.7 persistence cancellation/lifecycle; §4.4.2 approval; §4.6 in full; §5.2; §5.5–§5.6; §7 persistence rows; §8.2 recovery CLI; §10.1 AC-03, AC-07, AC-21–AC-22, AC-26–AC-29, AC-31; §10.3 recovery fault injection.
 
-**Dependencies:** Task 3 GO and Tasks 7, 9, 12, 14, 21, and 23.
+**Dependencies:** Task 3 GO and exact children under Tasks 7.B–7.C, 9, 12, 14, 21, and 23 as listed in the canonical DAG. Late Task 7.D depends on Tasks 26.A and 26.C and is not a persistence prerequisite.
 
 **Blocks:** Tasks 29, 31, 33–37, and 38.
 
@@ -3394,11 +3489,15 @@ def test_failed_check_feedback_changes_the_next_mock_action(
 **Recommended worktree:** `.worktrees/task-26-persistence-recovery`
 
 **Files:**
+- Create: `src/vespercode/storage/migrations/v0011_persistence.py`
+- Create: `src/vespercode/storage/migrations/v0012_recovery.py`
 - Create: `src/vespercode/persistence/path_record.py`
 - Create: `src/vespercode/persistence/transaction.py`
 - Create: `src/vespercode/persistence/artifacts.py`
 - Create: `src/vespercode/persistence/writeback.py`
 - Create: `src/vespercode/persistence/recovery.py`
+- Test: `tests/unit/storage/test_persistence_migration.py`
+- Test: `tests/unit/storage/test_recovery_migration.py`
 - Test: `tests/unit/persistence/test_path_record.py`
 - Test: `tests/unit/persistence/test_transaction.py`
 - Test: `tests/unit/persistence/test_writeback_preconditions.py`
@@ -3411,7 +3510,7 @@ def test_failed_check_feedback_changes_the_next_mock_action(
 - Modify: `AGENT_LOG.md` (append only)
 
 **Interfaces:**
-- Consumes: Task 7 lifecycle/storage; Task 9 workspace lease/final-object identity; Task 12 FinalDiff/postimages/policy; Task 14 consumed approval authorization; Task 21 VerifiedCandidate/formal evidence; Task 23 audit append.
+- Consumes: Tasks 7.B–7.C lifecycle/storage; Task 9 workspace lease/final-object identity; Task 12 FinalDiff/postimages/policy; Task 14 consumed approval authorization; Task 21 VerifiedCandidate/formal evidence; Task 23 audit append.
 - Produces:
   - `PreimageV1`, `PostimageV1`, `PersistencePathRecordV1`, and `PersistenceTransactionV1`
   - `PersistenceCommandFactoryV1.for_approved_run(run_id: str, approval_id: str, event_id: str) -> PersistVerifiedCandidateV1`
@@ -3622,7 +3721,7 @@ def test_credential_status_never_contains_secret_or_derivative(
 
 **SPEC / FR / NFR / AC references:** SPEC §4.9 local mode and tests; §5.3; §5.5 WebUI threat; §8.2 `vespercode serve`; §9 UI choice; §10.1 AC-08, AC-11, AC-13, AC-16, AC-24; course WebUI deliverable.
 
-**Dependencies:** Tasks 7–8, 23, and 27.
+**Dependencies:** Exact executable children under Tasks 7.B–7.C, 8, 23, and 27 as listed in the canonical DAG; late Task 7.D is consumed only by final production composition Task 38.F.
 
 **Blocks:** Tasks 29, 31, 33, 35–37, and 38.
 
@@ -3649,7 +3748,7 @@ def test_credential_status_never_contains_secret_or_derivative(
 - Modify: `AGENT_LOG.md` (append only)
 
 **Interfaces:**
-- Consumes: Task 7 run records; Task 8 run creation contract; Task 23 `RunVisibilityV1`; Task 27 credential service port.
+- Consumes: Task 7.B Run records; Task 8 run creation contract; Task 23 `RunVisibilityV1`; Task 27 credential service port.
 - Produces:
   - `LocalShellPortsV1.list_recent_runs() -> tuple[RunVisibilityV1, ...]`
   - `LocalShellPortsV1.credential_status() -> CredentialStatusV1`
@@ -4763,7 +4862,7 @@ def test_release_evidence_rejects_commit_misalignment(
 - Record real GitHub/GitLab project URLs, synchronization direction/method/date, GitHub Release URL, GHCR digest, Render URL/health path/cold start, and actual last-passing GitHub workflow/job plus GitLab pipeline/job evidence.
 - `SPEC_PROCESS.md` contains brainstorming, at least three iterations, accepted/rejected suggestions, M0 SPEC path/SHA-256/blob/baseline/human approval, approved `PlanSemanticDigestV1` plus complete PLAN audit SHA-256, cold-start agent type/scope/pauses/findings/revisions/pass, and no fabricated approval or trial.
 - `AGENT_LOG.md` remains chronological with timestamp, task id, skills, context, responsible subagent, human edits, real commits/PRs/reviews/tests, failures, interventions, and lesson for every significant task.
-- Delivery verifier validates all 134 executable Task completion records and all 37 derived Milestone states, real SHAs in repository history, closed Critical/Important findings, required files, both CI platforms' exact job evidence, wheel/image/release/deployment alignment, no unresolved recovery, credential scan, and evidence freshness. It also requires `requirements/gate.lock`, all three `gates/` configs, `scripts/run_gate_checks.py`, the Task 2.D/2.E/2.F reporter/evidence/fingerprint producers, Task 1.E, 2.G, and 3.G GO reports, `config/dependency-closure-v1.json`, and `config/formal-toolchain-promotion-v1.json`; recomputed SHA-256/version matrices must match across all three reports and both records, and both persisted `python_version` values must equal Task 1.E terminal `GO` `GateToolchainEvidenceV1.python_version` character-for-character. The public `>=3.12,<3.13` range is checked separately and cannot satisfy exact identity. Milestone 2 evidence must prove digest-pinned loopback registry, loopback-only bind, zero credentials/external pushes, cleanup on every exit, no final-manifest image member, and local OCI/registry/digest-pull equality with final `ReferenceProfileManifestV1.docker_image_digest`; Task 36.B must prove GHCR returned the same digest.
+- Delivery verifier validates all 135 executable Task completion records and all 37 derived Milestone states, real SHAs in repository history, closed Critical/Important findings, required files, both CI platforms' exact job evidence, wheel/image/release/deployment alignment, no unresolved recovery, credential scan, and evidence freshness. It also requires `requirements/gate.lock`, all three `gates/` configs, `scripts/run_gate_checks.py`, the Task 2.D/2.E/2.F reporter/evidence/fingerprint producers, Task 1.E, 2.G, and 3.G GO reports, `config/dependency-closure-v1.json`, and `config/formal-toolchain-promotion-v1.json`; recomputed SHA-256/version matrices must match across all three reports and both records, and both persisted `python_version` values must equal Task 1.E terminal `GO` `GateToolchainEvidenceV1.python_version` character-for-character. The public `>=3.12,<3.13` range is checked separately and cannot satisfy exact identity. Milestone 2 evidence must prove digest-pinned loopback registry, loopback-only bind, zero credentials/external pushes, cleanup on every exit, no final-manifest image member, and local OCI/registry/digest-pull equality with final `ReferenceProfileManifestV1.docker_image_digest`; Task 36.B must prove GHCR returned the same digest.
 - Reflection verifier checks 1,500–2,500 words, required disclosure of any AI language polishing, and presence of student-specific process analysis; it never generates or scores substantive personal reflection.
 - Do not modify the reflection body unless the student supplies a complete draft and explicitly requests polishing. Record every agent edit/disclosure; otherwise report the checkpoint incomplete.
 - Re-run all mandatory offline, Windows, Docker, E2E, fault, WebUI, package, image, and live smoke commands in their declared environments or bind the verifier to current saved real evidence.
@@ -6199,42 +6298,46 @@ def test_registry_rejects_duplicate_profile_id() -> None:
 
 **Completion evidence:** Not yet executed.
 
-#### Task 7.A: Checksum-verified SQLite Control Database
+#### Task 7.A: Domain-independent SQLite Migration Framework
 
 **Status:** Not started
 
-**Goal:** Open the local control database with explicit transaction semantics and create the complete ordered v1 schema only through checksum-verified idempotent migrations.
+**Goal:** Open the local control database with explicit transaction semantics and apply an injected tuple of closed migrations in order, atomically, idempotently, and fail-closed on checksum drift without knowing any application-domain schema.
 
-**SPEC references:** Milestone 7 database/migration scope; SPEC §5.2 and §7.
+**SPEC references:** Milestone 7 migration-framework scope; SPEC §5.2 and §7 storage split.
 
 **Dependencies:** Task 5.D.
 
 **Files:**
 - Create: `src/vespercode/storage/connection.py`
-- Create: `src/vespercode/storage/migrations.py`
+- Create: `src/vespercode/storage/migration_engine.py`
+- Create: `src/vespercode/storage/migrations/__init__.py`
 - Test: `tests/unit/storage/test_connection.py`
-- Test: `tests/unit/storage/test_migrations.py`
+- Test: `tests/unit/storage/test_migration_engine.py`
 
-**Interfaces:** Produces `open_control_database(path: Path) -> ControlDatabase`, `ControlDatabase.immediate_transaction() -> AbstractContextManager[ControlTransactionV1]`, and `apply_migrations(db: ControlDatabase) -> MigrationResultV1`.
+**Interfaces:** Produces `open_control_database(path: Path) -> ControlDatabase`, `ControlDatabase.immediate_transaction() -> AbstractContextManager[ControlTransactionV1]`, closed `MigrationV1(version: int, name: str, checksum: DigestV1, apply: MigrationApplyV1)`, and `apply_migrations(db: ControlDatabase, migrations: tuple[MigrationV1, ...]) -> MigrationResultV1`.
 
 **Intentionally failing test:**
 
 ```python
-def test_changed_applied_migration_checksum_fails_closed(control_database: ControlDatabase) -> None:
-    apply_migrations(control_database)
+def test_changed_applied_migration_checksum_fails_closed(
+    control_database: ControlDatabase,
+    synthetic_migrations: tuple[MigrationV1, ...],
+) -> None:
+    apply_migrations(control_database, synthetic_migrations)
     control_database.replace_recorded_migration_checksum(version=1, checksum="0" * 64)
-    result = apply_migrations(control_database)
+    result = apply_migrations(control_database, synthetic_migrations)
     assert result.kind == "MIGRATION_CHECKSUM_MISMATCH"
 ```
 
-Expected RED: import failure because the database and migration registry do not exist.
+Expected RED: import failure because the database, closed migration descriptor, checksum history, and injected runner do not exist.
 
-**Implementation boundary:** This child owns connection flags, transaction identity, the frozen Task 7 migration set, and checksum enforcement only. It implements no domain repository, transition, replay, projection, or retention behavior.
+**Implementation boundary:** This child owns connection flags, transaction identity, the `schema_migrations` bootstrap, closed descriptor validation, checksum calculation/history, and injected runner only. It contains no application-domain DDL, domain migration constant, repository behavior, transition, replay, projection, retention, or import of `migrations/registry.py`. Synthetic RED fixtures prove strict order, replay idempotency, whole-batch rollback/atomicity, duplicate/gap rejection, and checksum drift without importing any application domain.
 
 **Verification:**
-- Target: `python -m pytest -q tests/unit/storage/test_migrations.py::test_changed_applied_migration_checksum_fails_closed`
-- Domain: `python -m pytest -q tests/unit/storage/test_connection.py tests/unit/storage/test_migrations.py`
-- Expected GREEN: both commands exit `0`; foreign keys, immediate rollback, first apply, replay, order, and checksum-drift cases pass.
+- Target: `python -m pytest -q tests/unit/storage/test_migration_engine.py::test_changed_applied_migration_checksum_fails_closed`
+- Domain: `python -m pytest -q tests/unit/storage/test_connection.py tests/unit/storage/test_migration_engine.py`
+- Expected GREEN: both commands exit `0`; foreign keys, transaction identity, first apply, replay, strict order, duplicate/gap rejection, whole-batch rollback, and checksum-drift cases pass using synthetic migrations only.
 
 **Completion evidence:** Not yet executed.
 
@@ -6249,12 +6352,14 @@ Expected RED: import failure because the database and migration registry do not 
 **Dependencies:** Task 7.A.
 
 **Files:**
+- Create: `src/vespercode/storage/migrations/v0001_run_wait.py`
 - Create: `src/vespercode/storage/run_repository.py`
 - Create: `src/vespercode/runs/lifecycle.py`
+- Test: `tests/unit/storage/test_run_wait_migration.py`
 - Test: `tests/unit/storage/test_run_repository.py`
 - Test: `tests/unit/runs/test_lifecycle.py`
 
-**Interfaces:** Produces `RunRepository.insert_created(run: RunRecordV1) -> None`, `RunRepository.compare_and_transition(command: TransitionCommandV1) -> TransitionResultV1`, `RunRepository.create_wait(context: WaitContextV1) -> None`, `RunRepository.lock_wait_for_decision(tx: ControlTransactionV1, decision: WaitDecisionV1) -> WaitDecisionLockResultV1`, `RunRepository.commit_wait_decision(tx: ControlTransactionV1, lock: LockedWaitDecisionV1, decision: WaitDecisionV1) -> WaitDecisionResultV1`, `RunRepository.expire_wait(tx: ControlTransactionV1, lock: LockedWaitDecisionV1, now: CanonicalTimestampV1) -> WaitDecisionResultV1`, and `LifecycleRules.evaluate(current: RunStateV1, event: LifecycleEventV1) -> RunStateV1`.
+**Interfaces:** Produces immutable `RUN_WAIT_V1_MIGRATION = MigrationV1(version=1, name="run_wait_v1", ...)`, `RunRepository.insert_created(run: RunRecordV1) -> None`, `RunRepository.compare_and_transition(command: TransitionCommandV1) -> TransitionResultV1`, `RunRepository.create_wait(context: WaitContextV1) -> None`, `RunRepository.lock_wait_for_decision(tx: ControlTransactionV1, decision: WaitDecisionV1) -> WaitDecisionLockResultV1`, `RunRepository.commit_wait_decision(tx: ControlTransactionV1, lock: LockedWaitDecisionV1, decision: WaitDecisionV1) -> WaitDecisionResultV1`, `RunRepository.expire_wait(tx: ControlTransactionV1, lock: LockedWaitDecisionV1, now: CanonicalTimestampV1) -> WaitDecisionResultV1`, and `LifecycleRules.evaluate(current: RunStateV1, event: LifecycleEventV1) -> RunStateV1`.
 
 **Intentionally failing test:**
 
@@ -6268,12 +6373,15 @@ def test_same_wait_decision_can_win_only_once(run_repository: RunRepository, dec
 
 Expected RED: import failure because the Run repository and lifecycle rules do not exist.
 
-**Implementation boundary:** This child owns Run/wait persistence and pure target-state derivation. Approval, Grant, authorization, idempotency replay, audit projection, and persistence recovery remain later tasks.
+**Schema RED:** `tests/unit/storage/test_run_wait_migration.py::test_run_wait_migration_has_exact_schema` applies only `RUN_WAIT_V1_MIGRATION` through Task 7.A and asserts exact `run_config_snapshots`, `runs`, and `wait_contexts` tables; their primary/foreign/unique keys; one active wait per Run; lifecycle revision predicates; and absence of credential, complete request/response, file-body, raw-output, or backup-byte columns.
+
+**Implementation boundary:** This child owns one coupled Run/config/wait storage behavior: immutable v0001 DDL, Run/wait persistence, and pure target-state derivation. It may test through `(RUN_WAIT_V1_MIGRATION,)`, cannot edit the final registry, and owns no approval, Grant, authorization, idempotency replay, audit projection, or persistence-recovery schema.
 
 **Verification:**
 - Target: `python -m pytest -q tests/unit/storage/test_run_repository.py::test_same_wait_decision_can_win_only_once`
-- Domain: `python -m pytest -q tests/unit/storage/test_run_repository.py tests/unit/runs/test_lifecycle.py`
-- Expected GREEN: both commands exit `0`; the full transition table, binding, rollback, expiry, terminal, and one-winner cases pass.
+- Schema: `python -m pytest -q tests/unit/storage/test_run_wait_migration.py::test_run_wait_migration_has_exact_schema`
+- Domain: `python -m pytest -q tests/unit/storage/test_run_wait_migration.py tests/unit/storage/test_run_repository.py tests/unit/runs/test_lifecycle.py`
+- Expected GREEN: all commands exit `0`; the exact schema/prohibited-column contract plus full transition table, binding, rollback, expiry, terminal, and one-winner cases pass.
 
 **Completion evidence:** Not yet executed.
 
@@ -6288,10 +6396,12 @@ Expected RED: import failure because the Run repository and lifecycle rules do n
 **Dependencies:** Task 7.B.
 
 **Files:**
+- Create: `src/vespercode/storage/migrations/v0002_idempotency.py`
 - Create: `src/vespercode/storage/idempotency.py`
+- Test: `tests/unit/storage/test_idempotency_migration.py`
 - Test: `tests/unit/storage/test_idempotency.py`
 
-**Interfaces:** Produces `IdempotencyRepository.record_or_replay(tx: ControlTransactionV1, scope: str, event_id: str, request_digest: str, result_digest: str) -> IdempotencyResultV1`, where `IdempotencyResultV1` is the closed `NEW | REPLAY | EVENT_ID_REUSE_CONFLICT` union.
+**Interfaces:** Produces immutable `IDEMPOTENCY_V1_MIGRATION = MigrationV1(version=2, name="idempotency_v1", ...)` and `IdempotencyRepository.record_or_replay(tx: ControlTransactionV1, scope: str, event_id: str, request_digest: str, result_digest: str) -> IdempotencyResultV1`, where `IdempotencyResultV1` is the closed `NEW | REPLAY | EVENT_ID_REUSE_CONFLICT` union.
 
 **Intentionally failing test:**
 
@@ -6306,12 +6416,57 @@ def test_event_id_reuse_with_different_request_is_conflict(
 
 Expected RED: import failure because the idempotency repository does not exist.
 
-**Implementation boundary:** This child stores only scope/event/request/result identities inside a caller-owned Task 7.A transaction; it cannot reconstruct domain results, transition Runs, or mutate on replay/conflict.
+**Schema RED:** `tests/unit/storage/test_idempotency_migration.py::test_idempotency_migration_has_exact_schema` applies `(RUN_WAIT_V1_MIGRATION, IDEMPOTENCY_V1_MIGRATION)` and asserts the sole `idempotency_events` table, composite primary key `(scope, event_id)`, immutable request/result digests, and absence of domain-result/body/secret columns.
+
+**Implementation boundary:** This child owns one coupled idempotency storage behavior: immutable v0002 DDL and the transaction-bound repository. It stores only scope/event/request/result identities inside a caller-owned Task 7.A transaction, cannot edit the final registry, reconstruct domain results, transition Runs, or mutate on replay/conflict.
 
 **Verification:**
 - Target: `python -m pytest -q tests/unit/storage/test_idempotency.py::test_event_id_reuse_with_different_request_is_conflict`
-- Domain: `python -m pytest -q tests/unit/storage/test_idempotency.py`
-- Expected GREEN: both commands exit `0`; NEW, identical REPLAY, conflict, transaction rollback, and concurrency cases pass.
+- Schema: `python -m pytest -q tests/unit/storage/test_idempotency_migration.py::test_idempotency_migration_has_exact_schema`
+- Domain: `python -m pytest -q tests/unit/storage/test_idempotency_migration.py tests/unit/storage/test_idempotency.py`
+- Expected GREEN: all commands exit `0`; exact v0002 schema, NEW, identical REPLAY, conflict, transaction rollback, and concurrency cases pass.
+
+**Completion evidence:** Not yet executed.
+
+#### Task 7.D: Complete V1 Migration Registry Composition
+
+**Status:** Not started
+
+**Goal:** Compose the exact immutable domain migration constants into the sole complete v1 registry and fail closed when any required SQLite owner/migration is missing, duplicated, gapped, reordered, unexpected, or checksum-drifted.
+
+**SPEC references:** Milestone 7 final registry scope; SPEC §5.2, §5.6, and complete §7 storage classification.
+
+**Dependencies:** Tasks 7.B, 7.C, 14.B, 15.D, 15.E, 22.A, 23.A, 24.C, 25.B, 25.D, 26.A, and 26.C.
+
+**Blocks:** Task 38.F and every complete formal database consumer transitively composed through it.
+
+**Files:**
+- Create: `src/vespercode/storage/migrations/registry.py`
+- Test: `tests/unit/storage/test_migration_registry.py`
+
+**Interfaces:** Consumes exactly `RUN_WAIT_V1_MIGRATION`, `IDEMPOTENCY_V1_MIGRATION`, `DISCLOSURE_GRANTS_V1_MIGRATION`, `DISCLOSURE_AUTHORIZATIONS_V1_MIGRATION`, `MEMORY_V1_MIGRATION`, `AUDIT_V1_MIGRATION`, `AGENT_TURNS_V1_MIGRATION`, `FEEDBACK_V1_MIGRATION`, `ACTIONS_V1_MIGRATION`, `WRITEBACK_APPROVALS_V1_MIGRATION`, `PERSISTENCE_V1_MIGRATION`, and `RECOVERY_V1_MIGRATION`; produces `ALL_V1_MIGRATIONS: tuple[MigrationV1, ...]`.
+
+**Intentionally failing test:**
+
+```python
+def test_registry_rejects_missing_required_domain_migration() -> None:
+    incomplete = tuple(
+        migration
+        for migration in expected_v1_domain_migrations()
+        if migration.name != "feedback_v1"
+    )
+    with pytest.raises(MigrationRegistryError, match="MIGRATION_SET_INCOMPLETE"):
+        compose_v1_migrations(incomplete)
+```
+
+Expected RED: import failure because no final registry/composition contract exists.
+
+**Implementation boundary:** This child is composition-only. It owns no DDL, connection policy, migration execution, domain repository, fixture table, or product behavior and cannot modify any domain migration module. The declared direct predecessor set must equal the complete migration-producer set. It checks exact versions `1..12`, exact expected names/order, unique checksums, and descriptor checksums before exporting the tuple.
+
+**Verification:**
+- Target: `python -m pytest -q tests/unit/storage/test_migration_registry.py::test_registry_rejects_missing_required_domain_migration`
+- Domain: `python -m pytest -q tests/unit/storage/test_migration_registry.py tests/unit/storage/test_migration_engine.py`
+- Expected GREEN: both commands exit `0`; exact complete composition applies atomically, while missing/duplicate/gapped/reordered/unexpected/checksum-drifted inputs fail before domain DDL executes.
 
 **Completion evidence:** Not yet executed.
 
@@ -6945,13 +7100,15 @@ def test_subject_digest_changes_when_final_diff_changes() -> None:
 
 **Goal:** Apply APPROVE/REJECT/expiry/stale decisions atomically to the exact final-writeback wait with idempotent event replay.
 
-**Dependencies:** Tasks 4.C, 5.B, 7.B, 7.C, and 14.A.
+**Dependencies:** Tasks 4.C, 5.B, 7.B, 7.C, 14.A, and 25.D.
 
 **Files:**
+- Create: `src/vespercode/storage/migrations/v0010_writeback_approvals.py`
 - Create: `src/vespercode/governance/writeback_decision.py`
+- Test: `tests/unit/storage/test_writeback_approvals_migration.py`
 - Test: `tests/unit/governance/test_writeback_decision.py`
 
-**Interfaces:** Produces `DecideFinalWritebackV1`, closed `FinalWritebackDecisionResultV1`, and `FinalWritebackDecisionServiceV1.decide(command: DecideFinalWritebackV1) -> FinalWritebackDecisionResultV1`.
+**Interfaces:** Produces immutable `WRITEBACK_APPROVALS_V1_MIGRATION = MigrationV1(version=10, name="writeback_approvals_v1", ...)`, `DecideFinalWritebackV1`, closed `FinalWritebackDecisionResultV1`, and `FinalWritebackDecisionServiceV1.decide(command: DecideFinalWritebackV1) -> FinalWritebackDecisionResultV1`.
 
 **Intentionally failing test:**
 
@@ -6964,12 +7121,15 @@ def test_expired_wait_cannot_create_pending_approval(service: FinalWritebackDeci
 
 **Expected RED:** no clock-owned atomic decision lifecycle exists.
 
-**Implementation boundary:** Own wait locking, current-subject reload, APPROVE/REJECT/expiry/stale result, and idempotent event record. Do not consume an approval or persist candidate bytes.
+**Schema RED:** `tests/unit/storage/test_writeback_approvals_migration.py::test_writeback_approval_migration_has_exact_schema` applies the exact v0001–v0009 predecessors plus v0010 and asserts only `final_writeback_subjects` and `final_writeback_approvals`, their subject/wait/Run foreign keys, unique subject/decision constraints, one `PENDING → CONSUMED` winner fields, and absence of postimage/workspace/request/response/secret columns.
+
+**Implementation boundary:** Own one coupled final-writeback decision storage behavior: immutable v0010 DDL, wait locking, current-subject reload, APPROVE/REJECT/expiry/stale result, and idempotent event record. Task 14.C consumes the existing approval row but owns no schema. This task cannot edit the final registry, consume an approval, or persist candidate bytes.
 
 **Verification:**
 - Target: `python -m pytest -q tests/unit/governance/test_writeback_decision.py::test_expired_wait_cannot_create_pending_approval`
-- Domain: `python -m pytest -q tests/unit/governance/test_writeback_decision.py`
-- Expected GREEN: approve/reject/expire/stale/replay/conflict cases are atomic and only exact current APPROVE creates one PENDING approval.
+- Schema: `python -m pytest -q tests/unit/storage/test_writeback_approvals_migration.py::test_writeback_approval_migration_has_exact_schema`
+- Domain: `python -m pytest -q tests/unit/storage/test_writeback_approvals_migration.py tests/unit/governance/test_writeback_decision.py`
+- Expected GREEN: exact v0010 schema plus approve/reject/expire/stale/replay/conflict cases are atomic and only exact current APPROVE creates one PENDING approval.
 
 **Completion evidence:** Not yet executed.
 
@@ -7114,10 +7274,12 @@ def test_subject_uses_frozen_endpoint_not_request_url() -> None:
 **Dependencies:** Tasks 4.C, 5.B, 7.B, 7.C, and 15.C.
 
 **Files:**
+- Create: `src/vespercode/storage/migrations/v0003_disclosure_grants.py`
 - Create: `src/vespercode/governance/disclosure_decision.py`
+- Test: `tests/unit/storage/test_disclosure_grants_migration.py`
 - Test: `tests/unit/governance/test_disclosure_decision.py`
 
-**Interfaces:** Produces `DisclosureGrantV1`, `DecideDisclosureGrantV1`, `DisclosureDecisionResultV1`, and `DisclosureDecisionServiceV1.decide(command: DecideDisclosureGrantV1) -> DisclosureDecisionResultV1`.
+**Interfaces:** Produces immutable `DISCLOSURE_GRANTS_V1_MIGRATION = MigrationV1(version=3, name="disclosure_grants_v1", ...)`, `DisclosureGrantV1`, `DecideDisclosureGrantV1`, `DisclosureDecisionResultV1`, and `DisclosureDecisionServiceV1.decide(command: DecideDisclosureGrantV1) -> DisclosureDecisionResultV1`.
 
 **Intentionally failing test:**
 
@@ -7129,12 +7291,15 @@ def test_expired_disclosure_wait_creates_no_grant(service: DisclosureDecisionSer
 
 **Expected RED:** no transaction-bound Grant decision lifecycle exists.
 
-**Implementation boundary:** Own wait decision, active Grant creation, expiry/stale/replay handling, idempotency, and return-to-loop transition. Do not revoke Grants, validate request bodies, or authorize/charge a prepared request.
+**Schema RED:** `tests/unit/storage/test_disclosure_grants_migration.py::test_disclosure_grant_migration_has_exact_schema` applies v0001–v0003 and asserts only `disclosure_grant_subjects` and `disclosure_grants`, exact Run/wait/subject foreign keys, unique active decision/Grant identities, cumulative-byte/status bounds including `ACTIVE/REVOKED`, and absence of segment/request/response/credential bodies. Task 15.F records revocation by the exact active-to-revoked update on this table; SPEC defines no separate revocation entity/table.
+
+**Implementation boundary:** Own one coupled Grant-decision storage behavior: immutable v0003 DDL, wait decision, active Grant creation, expiry/stale/replay handling, idempotency, and return-to-loop transition. It cannot edit the final registry, perform Task 15.F revocation, validate request bodies, or authorize/charge a prepared request.
 
 **Verification:**
 - Target: `python -m pytest -q tests/unit/governance/test_disclosure_decision.py::test_expired_disclosure_wait_creates_no_grant`
-- Domain: `python -m pytest -q tests/unit/governance/test_disclosure_decision.py`
-- Expected GREEN: approve/reject/expire/stale/replay cases are atomic and never create duplicate/invalid Grants.
+- Schema: `python -m pytest -q tests/unit/storage/test_disclosure_grants_migration.py::test_disclosure_grant_migration_has_exact_schema`
+- Domain: `python -m pytest -q tests/unit/storage/test_disclosure_grants_migration.py tests/unit/governance/test_disclosure_decision.py`
+- Expected GREEN: exact v0003 schema plus approve/reject/expire/stale/replay cases are atomic and never create duplicate/invalid Grants.
 
 **Completion evidence:** Not yet executed.
 
@@ -7147,11 +7312,13 @@ def test_expired_disclosure_wait_creates_no_grant(service: DisclosureDecisionSer
 **Dependencies:** Tasks 7.A, 7.C, 15.A, 15.B, 15.C, 15.D, and 15.F.
 
 **Files:**
+- Create: `src/vespercode/storage/migrations/v0004_disclosure_authorizations.py`
 - Create: `src/vespercode/governance/disclosure_ledger.py`
+- Test: `tests/unit/storage/test_disclosure_authorizations_migration.py`
 - Test: `tests/unit/governance/test_disclosure_ledger.py`
 - Test: `tests/unit/governance/test_disclosure_budget_race.py`
 
-**Interfaces:** Produces `AuthorizePreparedRequestV1`, `DisclosureAuthorizationRecordV1`, `DisclosureAuthorizationOutcomeV1`, and `DisclosureLedger.authorize(command: AuthorizePreparedRequestV1) -> DisclosureAuthorizationOutcomeV1`.
+**Interfaces:** Produces immutable `DISCLOSURE_AUTHORIZATIONS_V1_MIGRATION = MigrationV1(version=4, name="disclosure_authorizations_v1", ...)`, `AuthorizePreparedRequestV1`, `DisclosureAuthorizationRecordV1`, `DisclosureAuthorizationOutcomeV1`, and `DisclosureLedger.authorize(command: AuthorizePreparedRequestV1) -> DisclosureAuthorizationOutcomeV1`.
 
 **Intentionally failing test:**
 
@@ -7163,12 +7330,15 @@ def test_two_requests_cannot_overdraw_one_grant(ledger: DisclosureLedger) -> Non
 
 **Expected RED:** no immediate-transaction authorization/byte-charge ledger exists.
 
-**Implementation boundary:** Own fresh Grant/subject/scope/category/request/budget revalidation and body-free authorization record. Do not decide/revoke Grants, serialize/call an LLM, or refund committed charges.
+**Schema RED:** `tests/unit/storage/test_disclosure_authorizations_migration.py::test_disclosure_authorization_migration_has_exact_schema` applies v0001–v0004 and asserts the sole `disclosure_authorizations` table, FK `grant_id → disclosure_grants`, unique request/charge identity, exact body-free actual-source projection/digests/byte counts, and absence of content, complete request/response, credential, or refund columns.
+
+**Implementation boundary:** Own one coupled authorization-ledger storage behavior: immutable v0004 DDL, fresh Grant/subject/scope/category/request/budget revalidation, and body-free authorization record. It cannot edit the final registry, decide/revoke Grants, serialize/call an LLM, or refund committed charges.
 
 **Verification:**
 - Target: `python -m pytest -q tests/unit/governance/test_disclosure_budget_race.py::test_two_requests_cannot_overdraw_one_grant`
-- Domain: `python -m pytest -q tests/unit/governance/test_disclosure_ledger.py tests/unit/governance/test_disclosure_budget_race.py`
-- Expected GREEN: only exact authorized requests commit one charge; scope/expiry/revocation/budget/race failures charge zero.
+- Schema: `python -m pytest -q tests/unit/storage/test_disclosure_authorizations_migration.py::test_disclosure_authorization_migration_has_exact_schema`
+- Domain: `python -m pytest -q tests/unit/storage/test_disclosure_authorizations_migration.py tests/unit/governance/test_disclosure_ledger.py tests/unit/governance/test_disclosure_budget_race.py`
+- Expected GREEN: exact v0004 schema; only exact authorized requests commit one charge; scope/expiry/revocation/budget/race failures charge zero.
 
 **Completion evidence:** Not yet executed.
 
@@ -7862,16 +8032,18 @@ def test_missing_teardown_evidence_cannot_verify_candidate() -> None:
 
 **Goal:** Create/confirm only authorized structured memory with exact workspace identity, creator/source, bounded content, and no authorization power.
 
-**Dependencies:** Tasks 7.A, 7.C, 10.C, and 19.C.
+**Dependencies:** Tasks 7.A, 7.C, 10.C, 15.E, and 19.C.
 
 **Files:**
+- Create: `src/vespercode/storage/migrations/v0005_memory.py`
 - Create: `src/vespercode/memory/entry.py`
 - Create: `src/vespercode/memory/repository.py`
+- Test: `tests/unit/storage/test_memory_migration.py`
 - Test: `tests/unit/memory/test_entry.py`
 - Test: `tests/unit/memory/test_repository.py`
 - Test: `tests/unit/memory/test_authorization.py`
 
-**Interfaces:** Produces `MemoryKindV1`, `MemoryCreatorV1`, `MemorySourceV1`, `MemoryEntryV1`, `MemoryRepository.create(command: CreateMemoryCommandV1) -> MemoryMutationResultV1`, and `MemoryRepository.confirm(command: ConfirmProjectConventionV1) -> MemoryMutationResultV1`.
+**Interfaces:** Produces immutable `MEMORY_V1_MIGRATION = MigrationV1(version=5, name="memory_v1", ...)`, `MemoryKindV1`, `MemoryCreatorV1`, `MemorySourceV1`, `MemoryEntryV1`, `MemoryRepository.create(command: CreateMemoryCommandV1) -> MemoryMutationResultV1`, and `MemoryRepository.confirm(command: ConfirmProjectConventionV1) -> MemoryMutationResultV1`.
 
 **Intentionally failing test:**
 
@@ -7883,12 +8055,15 @@ def test_model_originated_project_convention_is_rejected(repository: MemoryRepos
 
 **Expected RED:** no closed memory entry/repository authority boundary exists.
 
-**Implementation boundary:** Own authorized create/confirm storage only. Do not select context, clear entries, append audit, or allow memory to affect governance/config/validation.
+**Schema RED:** `tests/unit/storage/test_memory_migration.py::test_memory_migration_has_exact_schema` applies v0001–v0005 and asserts the sole `memory_entries` table, primary key/workspace indexes, bounded kind/creator/source/timestamps, clear tombstone fields required by Task 22.C, and absence of secret, permission, authorization, or complete-source-body columns.
+
+**Implementation boundary:** Own one coupled workspace-memory storage behavior: immutable v0005 DDL and authorized create/confirm repository operations. It cannot edit the final registry, select context, clear entries, append audit, or allow memory to affect governance/config/validation.
 
 **Verification:**
 - Target: `python -m pytest -q tests/unit/memory/test_authorization.py::test_model_originated_project_convention_is_rejected`
-- Domain: `python -m pytest -q tests/unit/memory/test_entry.py tests/unit/memory/test_repository.py tests/unit/memory/test_authorization.py`
-- Expected GREEN: only allowed creator/source/kind combinations persist in the exact workspace and forbidden/full/secret/over-limit content rejects.
+- Schema: `python -m pytest -q tests/unit/storage/test_memory_migration.py::test_memory_migration_has_exact_schema`
+- Domain: `python -m pytest -q tests/unit/storage/test_memory_migration.py tests/unit/memory/test_entry.py tests/unit/memory/test_repository.py tests/unit/memory/test_authorization.py`
+- Expected GREEN: exact v0005 schema; only allowed creator/source/kind combinations persist in the exact workspace and forbidden/full/secret/over-limit content rejects.
 
 **Completion evidence:** Not yet executed.
 
@@ -7967,16 +8142,18 @@ def test_successful_clear_is_immediately_ineligible_for_selection() -> None:
 
 **SPEC references:** Milestone 23 event/repository scope; SPEC §4.7, §5.3–§5.6, §7 AuditEvent, and AC-08/AC-13/AC-16.
 
-**Dependencies:** Task 7.C.
+**Dependencies:** Tasks 7.C and 22.A.
 
 **Files:**
+- Create: `src/vespercode/storage/migrations/v0006_audit.py`
 - Create: `src/vespercode/audit/event.py`
 - Create: `src/vespercode/audit/repository.py`
+- Test: `tests/unit/storage/test_audit_migration.py`
 - Test: `tests/unit/audit/test_event.py`
 - Test: `tests/unit/audit/test_repository.py`
 - Test: `tests/unit/audit/test_redaction.py`
 
-**Interfaces:** Produces `AuditEventV1(run_id: str, sequence: int, event_type: AuditEventTypeV1, redacted_payload: AuditPayloadV1, created_at: CanonicalTimestampV1)`, `AuditRepository.append(command: AppendAuditEventV1) -> AuditAppendResultV1`, `AuditRepository.list_run(run_id: str, page: AuditPageRequestV1) -> AuditPageV1`, and `AuditRepository.clear_ended_run(command: ClearEndedRunAuditV1) -> AuditClearResultV1`.
+**Interfaces:** Produces immutable `AUDIT_V1_MIGRATION = MigrationV1(version=6, name="audit_v1", ...)`, `AuditEventV1(run_id: str, sequence: int, event_type: AuditEventTypeV1, redacted_payload: AuditPayloadV1, created_at: CanonicalTimestampV1)`, `AuditRepository.append(command: AppendAuditEventV1) -> AuditAppendResultV1`, `AuditRepository.list_run(run_id: str, page: AuditPageRequestV1) -> AuditPageV1`, and `AuditRepository.clear_ended_run(command: ClearEndedRunAuditV1) -> AuditClearResultV1`.
 
 **Intentionally failing test:**
 
@@ -7991,12 +8168,15 @@ def test_audit_rejects_complete_request_body_and_secret_fields(
 
 Expected RED: import failure because the closed event union and repository do not exist.
 
-**Implementation boundary:** This child owns the allowlisted payload boundary, redaction/bounds, sequence transaction, pagination, ended-Run explicit clear, and replay/conflict handling. It does not map user-visible Run state or perform time-based retention.
+**Schema RED:** `tests/unit/storage/test_audit_migration.py::test_audit_migration_has_exact_schema` applies v0001–v0006 and asserts the sole `audit_events` table, FK `run_id → runs`, unique `(run_id, sequence)`, bounded allowlisted payload/evidence refs and timestamps, and absence of secret, complete request/response, file body, raw check output, or recovery backup columns.
+
+**Implementation boundary:** This child owns one coupled audit storage behavior: immutable v0006 DDL, allowlisted payload boundary, redaction/bounds, sequence transaction, pagination, ended-Run explicit clear, and replay/conflict handling. It cannot edit the final registry, map user-visible Run state, or perform time-based retention.
 
 **Verification:**
 - Target: `python -m pytest -q tests/unit/audit/test_redaction.py::test_audit_rejects_complete_request_body_and_secret_fields`
-- Domain: `python -m pytest -q tests/unit/audit/test_event.py tests/unit/audit/test_repository.py tests/unit/audit/test_redaction.py`
-- Expected GREEN: both commands exit `0`; forbidden content creates zero rows and ordering, replay/conflict, pagination, redaction, and ended-Run clear cases pass.
+- Schema: `python -m pytest -q tests/unit/storage/test_audit_migration.py::test_audit_migration_has_exact_schema`
+- Domain: `python -m pytest -q tests/unit/storage/test_audit_migration.py tests/unit/audit/test_event.py tests/unit/audit/test_repository.py tests/unit/audit/test_redaction.py`
+- Expected GREEN: all commands exit `0`; exact v0006 schema, forbidden-content zero-row behavior, ordering, replay/conflict, pagination, redaction, and ended-Run clear cases pass.
 
 **Completion evidence:** Not yet executed.
 
@@ -8030,7 +8210,7 @@ def test_recovery_required_is_never_projected_as_stopped(
 
 Expected RED: import failure because the visibility projector does not exist.
 
-**Implementation boundary:** This child is a pure projection over typed Task 7/23.A facts. It cannot query SQLite, append/clear events, expose internal rows/bodies, infer PASS, or change lifecycle state.
+**Implementation boundary:** This child is a pure projection over typed Tasks 7.B/23.A facts. It cannot query SQLite, append/clear events, expose internal rows/bodies, infer PASS, or change lifecycle state.
 
 **Verification:**
 - Target: `python -m pytest -q tests/unit/audit/test_projection.py::test_recovery_required_is_never_projected_as_stopped`
@@ -8153,13 +8333,15 @@ def test_trimming_never_removes_most_recent_failure_feedback() -> None:
 
 **Goal:** Bind selected feedback references to one new turn and consume them atomically so no record can be attached to multiple turns.
 
-**Dependencies:** Tasks 7.A, 7.C, 24.A, and 24.B.
+**Dependencies:** Tasks 7.A, 7.C, 24.A, 24.B, and 25.B.
 
 **Files:**
+- Create: `src/vespercode/storage/migrations/v0008_feedback.py`
 - Create: `src/vespercode/loop/feedback_consumption.py`
+- Test: `tests/unit/storage/test_feedback_migration.py`
 - Test: `tests/unit/loop/test_feedback_consumption.py`
 
-**Interfaces:** Produces `FeedbackReferenceSequenceV1`, an immutable ordered tuple of feedback ids, `FeedbackConsumptionResultV1`, and `consume_feedback(turn_id: str, refs: FeedbackReferenceSequenceV1, repository: FeedbackRepositoryV1) -> FeedbackConsumptionResultV1`.
+**Interfaces:** Produces immutable `FEEDBACK_V1_MIGRATION = MigrationV1(version=8, name="feedback_v1", ...)`, `FeedbackReferenceSequenceV1`, an immutable ordered tuple of feedback ids, `FeedbackRepositoryV1.append(records: FeedbackRecordSequenceV1) -> FeedbackAppendResultV1`, `FeedbackConsumptionResultV1`, and `consume_feedback(turn_id: str, refs: FeedbackReferenceSequenceV1, repository: FeedbackRepositoryV1) -> FeedbackConsumptionResultV1`.
 
 **Intentionally failing test:**
 
@@ -8171,12 +8353,15 @@ def test_two_turns_cannot_consume_one_feedback_record(repository: FeedbackReposi
 
 **Expected RED:** no transaction-bound feedback consumption service exists.
 
-**Implementation boundary:** Own turn/reference binding and consume-once transaction only. Do not build/select feedback, assemble messages, create adapter calls, or mutate candidate/workspace state.
+**Schema RED:** `tests/unit/storage/test_feedback_migration.py::test_feedback_migration_has_exact_schema` applies v0001–v0008 and asserts the sole `feedback_records` table, primary key, nullable FK `consumed_by_turn_id → agent_turns`, one-winner consume predicate, bounded payload/evidence refs, and absence of raw check output, complete request/response, file body, or credential columns.
+
+**Implementation boundary:** Own one coupled feedback-repository behavior: immutable v0008 DDL, append of Task 24.A's already validated bounded records, turn/reference binding, and consume-once transaction. It cannot edit the final registry, rebuild/select feedback, assemble messages, create adapter calls, or mutate candidate/workspace state.
 
 **Verification:**
 - Target: `python -m pytest -q tests/unit/loop/test_feedback_consumption.py::test_two_turns_cannot_consume_one_feedback_record`
-- Domain: `python -m pytest -q tests/unit/loop/test_feedback_consumption.py`
-- Expected GREEN: exactly one turn consumes each record; replay is stable and conflicts/missing refs change nothing.
+- Schema: `python -m pytest -q tests/unit/storage/test_feedback_migration.py::test_feedback_migration_has_exact_schema`
+- Domain: `python -m pytest -q tests/unit/storage/test_feedback_migration.py tests/unit/loop/test_feedback_consumption.py`
+- Expected GREEN: exact v0008 schema; exactly one turn consumes each record; replay is stable and conflicts/missing refs change nothing.
 
 **Completion evidence:** Not yet executed.
 
@@ -8230,7 +8415,7 @@ def test_repeated_semantic_action_stops_at_exact_limit() -> None:
 
 **SPEC references:** Milestone 25 counting and single-active-turn requirements.
 
-**Dependencies:** Tasks 7.C and 8.B.
+**Dependencies:** Tasks 7.C, 8.B, and 23.A.
 
 **Blocks:** Tasks 25.C and 25.G.
 
@@ -8239,10 +8424,12 @@ def test_repeated_semantic_action_stops_at_exact_limit() -> None:
 **Branch/worktree:** `codex/task-25b-turn-boundary`; `.worktrees/task-25b-turn-boundary`.
 
 **Files:**
+- Create: `src/vespercode/storage/migrations/v0007_agent_turns.py`
 - Create: `src/vespercode/loop/turn_boundary.py`
+- Test: `tests/unit/storage/test_agent_turns_migration.py`
 - Test: `tests/unit/loop/test_turn_counting.py`
 
-**Interfaces:** Produces `TurnBoundary.begin(run_id: str, expected_state: RunStateV1) -> BeginTurnResultV1`, `TurnBoundary.record_call_started(run_id: str, turn_id: str, expected_revision: int) -> RecordCallStartedResultV1`, and `TurnBoundary.close_turn(run_id: str, turn_id: str, outcome: TurnOutcomeV1, expected_revision: int) -> CloseTurnResultV1`, using Task 7.B compare-and-update operations.
+**Interfaces:** Produces immutable `AGENT_TURNS_V1_MIGRATION = MigrationV1(version=7, name="agent_turns_v1", ...)`, `TurnBoundary.begin(run_id: str, expected_state: RunStateV1) -> BeginTurnResultV1`, `TurnBoundary.record_call_started(run_id: str, turn_id: str, expected_revision: int) -> RecordCallStartedResultV1`, and `TurnBoundary.close_turn(run_id: str, turn_id: str, outcome: TurnOutcomeV1, expected_revision: int) -> CloseTurnResultV1`, using Task 7.B compare-and-update operations.
 
 **Intentionally failing test:**
 
@@ -8255,12 +8442,15 @@ def test_pre_call_failure_does_not_increment_turn_or_call(
     assert result.call_count == 0
 ```
 
-**Implementation boundary:** This task owns counter state changes only; it does not prepare, authorize, or invoke an LLM call.
+**Schema RED:** `tests/unit/storage/test_agent_turns_migration.py::test_agent_turn_migration_has_exact_schema` applies v0001–v0007 and asserts the sole `agent_turns` table, FK `run_id → runs`, unique/partial one-active-turn constraint, exact revision/turn/call/outcome fields, body-free request/result refs, and absence of complete request/response/credential columns.
+
+**Implementation boundary:** This task owns one coupled active-turn storage behavior: immutable v0007 DDL and exact counter/active-turn state changes. It cannot edit the final registry, prepare, authorize, or invoke an LLM call.
 
 **Verification:**
 - Target: `python -m pytest -q tests/unit/loop/test_turn_counting.py::test_pre_call_failure_does_not_increment_turn_or_call`
-- Domain: `python -m pytest -q tests/unit/loop/test_turn_counting.py`
-- Expected: every credential/Grant/readiness/transport boundary has an explicit exact count outcome and concurrent starts admit one active turn.
+- Schema: `python -m pytest -q tests/unit/storage/test_agent_turns_migration.py::test_agent_turn_migration_has_exact_schema`
+- Domain: `python -m pytest -q tests/unit/storage/test_agent_turns_migration.py tests/unit/loop/test_turn_counting.py`
+- Expected: exact v0007 schema; every credential/Grant/readiness/transport boundary has an explicit exact count outcome and concurrent starts admit one active turn.
 
 **Completion evidence:** Not yet executed.
 
@@ -8324,11 +8514,13 @@ def test_cleared_credential_stops_before_every_charge_or_count(
 **Branch/worktree:** `codex/task-25d-action-pipeline`; `.worktrees/task-25d-action-pipeline`.
 
 **Files:**
+- Create: `src/vespercode/storage/migrations/v0009_actions.py`
 - Create: `src/vespercode/loop/action_pipeline.py`
+- Test: `tests/unit/storage/test_actions_migration.py`
 - Test: `tests/unit/loop/test_action_pipeline.py`
 - Test: `tests/unit/loop/test_main_loop_failures.py` (action-step cases only)
 
-**Interfaces:** Produces `ActionPipeline.execute(response: ModelResponse, context: ActionPipelineContextV1) -> ActionStepResultV1` using the exact Tasks 17.A–17.C parser/binder/dispatcher, Task 13 policy, and Task 24.A feedback functions.
+**Interfaces:** Produces immutable `ACTIONS_V1_MIGRATION = MigrationV1(version=9, name="actions_v1", ...)` and `ActionPipeline.execute(response: ModelResponse, context: ActionPipelineContextV1) -> ActionStepResultV1` using the exact Tasks 17.A–17.C parser/binder/dispatcher, Task 13 policy, and Task 24.A/24.C feedback functions/repository.
 
 **Intentionally failing test:**
 
@@ -8343,12 +8535,15 @@ def test_policy_deny_skips_dispatch_and_returns_feedback(
     assert result.feedback.error_code == "PATCH_PATH_NOT_EDITABLE"
 ```
 
-**Implementation boundary:** This child performs one action step only. It does not own LLM invocation, counters, waits, restart, or the outer loop.
+**Schema RED:** `tests/unit/storage/test_actions_migration.py::test_action_migration_has_exact_schema` applies v0001–v0009 and asserts the sole `action_records` table, primary key/FK `turn_id → agent_turns`, unique per-turn action identity, exact instance/semantic digests, policy decision/result ref, and absence of action input/result body, raw output, file body, or credential columns.
+
+**Implementation boundary:** This child owns one coupled action-step storage behavior: immutable v0009 DDL and the single parse/policy/dispatch/feedback/action-record transaction. It cannot edit the final registry or own LLM invocation, counters, waits, restart, or the outer loop.
 
 **Verification:**
 - Target: `python -m pytest -q tests/unit/loop/test_action_pipeline.py::test_policy_deny_skips_dispatch_and_returns_feedback`
-- Domain: `python -m pytest -q tests/unit/loop/test_action_pipeline.py tests/unit/loop/test_main_loop_failures.py`
-- Expected: invalid, DENY, tool failure, check feedback, completion proposal, and consume-once traces pass without hidden dispatch.
+- Schema: `python -m pytest -q tests/unit/storage/test_actions_migration.py::test_action_migration_has_exact_schema`
+- Domain: `python -m pytest -q tests/unit/storage/test_actions_migration.py tests/unit/loop/test_action_pipeline.py tests/unit/loop/test_main_loop_failures.py`
+- Expected: exact v0009 schema; invalid, DENY, tool failure, check feedback, completion proposal, and consume-once traces pass without hidden dispatch.
 
 **Completion evidence:** Not yet executed.
 
@@ -8497,16 +8692,18 @@ def test_one_engine_step_calls_each_stage_once_in_order(
 **Branch/worktree:** `codex/task-26a-writeback`; `.worktrees/task-26a-writeback`.
 
 **Files:**
+- Create: `src/vespercode/storage/migrations/v0011_persistence.py`
 - Create: `src/vespercode/persistence/path_record.py`
 - Create: `src/vespercode/persistence/transaction.py`
 - Create: `src/vespercode/persistence/artifacts.py`
 - Create: `src/vespercode/persistence/writeback.py`
+- Test: `tests/unit/storage/test_persistence_migration.py`
 - Test: `tests/unit/persistence/test_path_record.py`
 - Test: `tests/unit/persistence/test_transaction.py`
 - Test: `tests/unit/persistence/test_writeback_preconditions.py`
 - Test: `tests/fault_injection/persistence/test_writeback_fault_matrix.py`
 
-**Interfaces:** Produces the Milestone 26 path/transaction/artifact contracts and `PersistenceCoordinator.persist(command) -> PersistenceResultV1`.
+**Interfaces:** Produces immutable `PERSISTENCE_V1_MIGRATION = MigrationV1(version=11, name="persistence_v1", ...)`, the Milestone 26 path/transaction/artifact contracts, and `PersistenceCoordinator.persist(command) -> PersistenceResultV1`.
 
 **Intentionally failing test:**
 
@@ -8520,12 +8717,15 @@ def test_missing_exact_approval_writes_no_workspace_bytes(
     assert workspace.write_count == 0
 ```
 
-**Implementation boundary:** It consumes Task 14 approval once immediately before the first authoritative write and never decides recovery disposition.
+**Schema RED:** `tests/unit/storage/test_persistence_migration.py::test_persistence_migration_has_exact_schema` applies v0001–v0011 and asserts only `persistence_transactions` and `persistence_path_records`, Run/approval/transaction foreign keys, unique active workspace transaction and `(transaction_id, canonical_path)` identities, composite ordered path key, closed states/digests/artifact refs, and absence of postimage/preimage/backup body or credential columns.
+
+**Implementation boundary:** This task owns one coupled durable writeback storage behavior: immutable v0011 DDL and the persistence transaction/path repository used by the approval-bound write protocol. It cannot edit the final registry, consumes Task 14 approval once immediately before the first authoritative write, and never decides recovery disposition.
 
 **Verification:**
 - Target: `python -m pytest -q tests/unit/persistence/test_writeback_preconditions.py::test_missing_exact_approval_writes_no_workspace_bytes`
-- Domain: `python -m pytest -q tests/unit/persistence/test_path_record.py tests/unit/persistence/test_transaction.py tests/unit/persistence/test_writeback_preconditions.py tests/fault_injection/persistence/test_writeback_fault_matrix.py`
-- Expected: exact bytes and identities are verified; any interruption leaves a durable non-terminal transaction rather than false success.
+- Schema: `python -m pytest -q tests/unit/storage/test_persistence_migration.py::test_persistence_migration_has_exact_schema`
+- Domain: `python -m pytest -q tests/unit/storage/test_persistence_migration.py tests/unit/persistence/test_path_record.py tests/unit/persistence/test_transaction.py tests/unit/persistence/test_writeback_preconditions.py tests/fault_injection/persistence/test_writeback_fault_matrix.py`
+- Expected: exact v0011 schema and byte/identity checks pass; any interruption leaves a durable non-terminal transaction rather than false success.
 
 **Completion evidence:** Not yet executed.
 
@@ -8589,13 +8789,15 @@ def test_recovery_preview_is_read_only(
 **Branch/worktree:** `codex/task-26c-recovery-apply`; `.worktrees/task-26c-recovery-apply`.
 
 **Files:**
+- Create: `src/vespercode/storage/migrations/v0012_recovery.py`
 - Create: `src/vespercode/persistence/recovery_apply.py`
 - Create: `src/vespercode/persistence/recovery.py`
+- Test: `tests/unit/storage/test_recovery_migration.py`
 - Test: `tests/fault_injection/persistence/test_deadline_faults.py`
 - Test: `tests/fault_injection/persistence/test_external_change_faults.py`
 - Test: `tests/integration/windows/test_persistence_acl_and_identity.py`
 
-**Interfaces:** Produces `RecoveryService.preview(workspace: WorkspaceIdentityV1) -> RecoveryPreviewV1` by delegating to Task 26.B and `RecoveryService.apply(command: ApplyRecoveryV1) -> RecoveryResultV1` using Task 26.A artifacts/records.
+**Interfaces:** Produces immutable `RECOVERY_V1_MIGRATION = MigrationV1(version=12, name="recovery_v1", ...)`, `RecoveryService.preview(workspace: WorkspaceIdentityV1) -> RecoveryPreviewV1` by delegating to Task 26.B, and `RecoveryService.apply(command: ApplyRecoveryV1) -> RecoveryResultV1` using Task 26.A artifacts/records.
 
 **Intentionally failing test:**
 
@@ -8609,13 +8811,16 @@ def test_stale_preview_cannot_apply_recovery(
     assert workspace.write_count == 0
 ```
 
-**Implementation boundary:** There is no force, ignore, skip-path, edit-record, or user-declared success path. Only service-proven terminal dispositions unblock admission.
+**Schema RED:** `tests/unit/storage/test_recovery_migration.py::test_recovery_migration_has_exact_schema` applies v0001–v0012 and asserts the sole `recovery_results` table, unique FK `transaction_id → persistence_transactions`, closed disposition/evidence digest/ref/timestamp fields, and absence of backup/preimage/postimage/raw-output/credential bodies.
+
+**Implementation boundary:** This task owns one coupled terminal-recovery storage behavior: immutable v0012 DDL and the exact apply transaction that records one service-proven terminal result. It cannot edit the final registry. There is no force, ignore, skip-path, edit-record, or user-declared success path; only service-proven terminal dispositions unblock admission.
 
 **Verification:**
 - Target: `python -m pytest -q tests/fault_injection/persistence/test_external_change_faults.py::test_stale_preview_cannot_apply_recovery`
-- Domain: `python -m pytest -q tests/fault_injection/persistence`
+- Schema: `python -m pytest -q tests/unit/storage/test_recovery_migration.py::test_recovery_migration_has_exact_schema`
+- Domain: `python -m pytest -q tests/unit/storage/test_recovery_migration.py tests/fault_injection/persistence`
 - Windows: `python -m pytest -q -o addopts='' -m windows_integration tests/integration/windows/test_persistence_acl_and_identity.py`
-- Expected: the complete production matrix produces only the three declared dispositions and never overwrites an unproven external change.
+- Expected: exact v0012 schema and the complete production matrix produce only the three declared dispositions and never overwrite an unproven external change.
 
 **Completion evidence:** Not yet executed.
 
@@ -9806,7 +10011,7 @@ def test_readme_fails_when_release_digest_verification_is_missing(
 
 **SPEC references:** Milestone 37 process/log evidence and course Superpowers-workflow requirements.
 
-**Dependencies:** Tasks 1.A, 1.B, 1.C, 1.D, 1.E, 2.A, 2.B, 2.C, 2.D, 2.E, 2.F, 2.G, 3.A, 3.B, 3.C, 3.D, 3.E, 3.F, 3.G, 4.A, 4.F, 4.B, 4.C, 4.D, 4.E, 5.A, 5.B, 5.C, 5.D, 5.E, 6.A, 6.B, 6.C, 6.D, 6.E, 7.A, 7.B, 7.C, 8.A, 8.B, 9.A, 9.B, 9.C, 9.D, 10.A, 10.B, 10.C, 11.A, 11.B, 12.A, 12.B, 12.C, 12.D, 13, 14.A, 14.B, 14.C, 15.A, 15.B, 15.C, 15.D, 15.E, 15.F, 16.A, 16.B, 17.A, 17.B, 17.C, 18.A, 18.B, 18.C, 18.D, 19.A, 19.B, 19.C, 20.A, 20.B, 21.A, 21.B, 21.C, 22.A, 22.B, 22.C, 23.A, 23.B, 23.C, 24.A, 24.B, 24.C, 25.A, 25.B, 25.C, 25.D, 25.E, 25.F, 25.G, 26.A, 26.B, 26.C, 27.A, 27.B, 28.A, 28.B, 29.A, 29.B, 29.C, 30.A, 30.B, 31.A, 31.B, 31.C, 32.A, 32.B, 32.C, 33.A, 33.B, 34.A, 34.B, 35.A, 35.B, 35.C, 36.A, 36.B, 36.C, 38.A, 38.B, 38.C, 38.D, 38.E, 38.F, and 38.G.
+**Dependencies:** Tasks 1.A, 1.B, 1.C, 1.D, 1.E, 2.A, 2.B, 2.C, 2.D, 2.E, 2.F, 2.G, 3.A, 3.B, 3.C, 3.D, 3.E, 3.F, 3.G, 4.A, 4.F, 4.B, 4.C, 4.D, 4.E, 5.A, 5.B, 5.C, 5.D, 5.E, 6.A, 6.B, 6.C, 6.D, 6.E, 7.A, 7.B, 7.C, 7.D, 8.A, 8.B, 9.A, 9.B, 9.C, 9.D, 10.A, 10.B, 10.C, 11.A, 11.B, 12.A, 12.B, 12.C, 12.D, 13, 14.A, 14.B, 14.C, 15.A, 15.B, 15.C, 15.D, 15.E, 15.F, 16.A, 16.B, 17.A, 17.B, 17.C, 18.A, 18.B, 18.C, 18.D, 19.A, 19.B, 19.C, 20.A, 20.B, 21.A, 21.B, 21.C, 22.A, 22.B, 22.C, 23.A, 23.B, 23.C, 24.A, 24.B, 24.C, 25.A, 25.B, 25.C, 25.D, 25.E, 25.F, 25.G, 26.A, 26.B, 26.C, 27.A, 27.B, 28.A, 28.B, 29.A, 29.B, 29.C, 30.A, 30.B, 31.A, 31.B, 31.C, 32.A, 32.B, 32.C, 33.A, 33.B, 34.A, 34.B, 35.A, 35.B, 35.C, 36.A, 36.B, 36.C, 38.A, 38.B, 38.C, 38.D, 38.E, 38.F, and 38.G.
 
 **Blocks:** Task 37.C.
 
@@ -9866,7 +10071,7 @@ def test_process_evidence_rejects_formal_python_identity_drift(
 
 **Status:** Not started
 
-**Goal:** Aggregate every local/external/process/documentation check and report ready only with all 134 executable Tasks plus a valid student-authored reflection.
+**Goal:** Aggregate every local/external/process/documentation check and report ready only with all 135 executable Tasks plus a valid student-authored reflection.
 
 **SPEC references:** Milestone 37 delivery gate and reflection constraints.
 
@@ -9906,7 +10111,7 @@ def test_delivery_rejects_incomplete_executable_child(
 - Domain: `python -m pytest -q tests/unit/process/test_readme_contract.py tests/unit/process/test_delivery_evidence.py tests/unit/process/test_reflection_contract.py`
 - Delivery: `python scripts/verify_delivery.py --root . --require-live`
 - Reflection: `python scripts/verify_reflection.py REFLECTION.md`
-- Expected: readiness passes only when all 134 executable Tasks, reviews, environments, artifacts, live evidence, documents, and student reflection are current and valid.
+- Expected: readiness passes only when all 135 executable Tasks, reviews, environments, artifacts, live evidence, documents, and student reflection are current and valid.
 
 **Completion evidence:** Not yet executed.
 
@@ -10141,7 +10346,7 @@ def test_recover_without_apply_never_writes(
 
 **SPEC references:** Milestone 38 composition and package-reachability requirements.
 
-**Dependencies:** Tasks 29.C, 38.A, 38.B, 38.C, 38.D, and 38.E.
+**Dependencies:** Tasks 7.D, 29.C, 38.A, 38.B, 38.C, 38.D, and 38.E.
 
 **Blocks:** Tasks 31.A, 33.A, and 38.G.
 
@@ -10154,7 +10359,7 @@ def test_recover_without_apply_never_writes(
 - Create: `src/vespercode/web/local_composition.py`
 - Test: `tests/web/test_local_composition.py`
 
-**Interfaces:** Produces `LocalOperationsWorkflowPortsV1(credentials: CredentialWorkflowPortsV1, memory: MemoryWorkflowPortsV1, audit: AuditWorkflowPortsV1, recovery: RecoveryWorkflowPortsV1)`, `LocalOperationsRouteInstallerV1(ports: LocalOperationsWorkflowPortsV1).install(app: FastAPI) -> None`, `ProductionLocalWorkflowPortsV1(shell: LocalShellPortsV1, governance: RunGovernanceWorkflowPortsV1, operations: LocalOperationsWorkflowPortsV1)`, `build_local_route_installers(ports: ProductionLocalWorkflowPortsV1) -> LocalRouteInstallerSequenceV1`, and `build_local_application(ports: ProductionLocalWorkflowPortsV1, security: LocalWebSecurityConfigV1) -> FastAPI`.
+**Interfaces:** Consumes Task 7.D `ALL_V1_MIGRATIONS` and Task 7.A `apply_migrations`; produces `initialize_production_control_database(path: Path) -> ControlDatabase`, `LocalOperationsWorkflowPortsV1(credentials: CredentialWorkflowPortsV1, memory: MemoryWorkflowPortsV1, audit: AuditWorkflowPortsV1, recovery: RecoveryWorkflowPortsV1)`, `LocalOperationsRouteInstallerV1(ports: LocalOperationsWorkflowPortsV1).install(app: FastAPI) -> None`, `ProductionLocalWorkflowPortsV1(shell: LocalShellPortsV1, governance: RunGovernanceWorkflowPortsV1, operations: LocalOperationsWorkflowPortsV1)`, `build_local_route_installers(ports: ProductionLocalWorkflowPortsV1) -> LocalRouteInstallerSequenceV1`, and `build_local_application(ports: ProductionLocalWorkflowPortsV1, security: LocalWebSecurityConfigV1) -> FastAPI`.
 
 **Intentionally failing test:**
 
@@ -10168,12 +10373,13 @@ def test_production_installer_tuple_has_exact_order(
     )
 ```
 
-**Implementation boundary:** No service locator, untyped registry, duplicate domain predicate, SQLite/internal adapter import, or alternate package-smoke composition is allowed.
+**Implementation boundary:** The only permitted storage composition is `apply_migrations(db, ALL_V1_MIGRATIONS)` before constructing typed repository ports. This task may import the Task 7.A engine and Task 7.D registry only; it contains no DDL, migration reordering, service locator, untyped registry, duplicate domain predicate, other SQLite internals, or alternate package-smoke composition.
 
 **Verification:**
 - Target: `python -m pytest -q tests/web/test_local_composition.py::test_production_installer_tuple_has_exact_order`
 - Domain: `python -m pytest -q tests/web/test_local_composition.py tests/web/test_credential_workflow.py tests/web/test_memory_workflow.py tests/web/test_audit_workflow.py tests/web/test_recovery_workflow.py tests/unit/test_recovery_cli.py`
-- Expected: exact order, all typed ports/routes reachable, and `vespercode serve` uses only this production composition.
+- Registry: `python -m pytest -q tests/unit/storage/test_migration_registry.py tests/web/test_local_composition.py`
+- Expected: the complete registry applies before port construction, exact route order and all typed ports/routes are reachable, and `vespercode serve` uses only this production composition.
 
 **Completion evidence:** Not yet executed.
 
@@ -10220,7 +10426,7 @@ def test_every_operations_form_has_label_focus_and_live_error_region(
 
 ## Task Dependency DAG
 
-Milestone ids remain stable traceability containers, but only retained integer Task 13 and the 133 dotted child Tasks are executable. The direct dependency table below is the sole machine-readable edge set.
+Milestone ids remain stable traceability containers, but only retained integer Task 13 and the 134 dotted child Tasks are executable. The direct dependency table below is the sole machine-readable edge set.
 
 The `Task predecessors` column contains only exact executable Task ids separated by commas; `—` means no task predecessor. Human approvals, GO outcomes, identity checks, reflection authorship, and real-platform results remain non-task gates in the executable Task block.
 
@@ -10262,8 +10468,9 @@ The `Task predecessors` column contains only exact executable Task ids separated
 | 6.D | 5.E, 6.C | Location contracts plus endpoint/profile schemas. |
 | 6.E | 6.A, 6.B, 6.C, 6.D | Complete validated built-in profile registry and immutable digests. |
 | 7.A | 5.D | Shared storage and transaction identities. |
-| 7.B | 7.A | Checksum-verified control database and migrations. |
-| 7.C | 7.B | Transactional Run/wait lifecycle contracts. |
+| 7.B | 7.A | Domain-independent migration engine plus transactional connection contract. |
+| 7.C | 7.B | Transactional Run/wait lifecycle plus immutable v0001 migration. |
+| 7.D | 7.B, 7.C, 14.B, 15.D, 15.E, 22.A, 23.A, 24.C, 25.B, 25.D, 26.A, 26.C | Exact twelve domain migration constants; sole complete `ALL_V1_MIGRATIONS` composition. |
 | 8.A | 6.E, 7.C | Frozen profiles and complete Run storage/lifecycle contracts. |
 | 8.B | 8.A | Frozen `RunRequestV1` and request/config digests. |
 | 9.A | 1.E, 5.D, 7.C, 8.B | Task 1 GO plus admitted Run/storage contracts. |
@@ -10281,7 +10488,7 @@ The `Task predecessors` column contains only exact executable Task ids separated
 | 12.D | 12.C | Atomic exact patch transaction contract. |
 | 13 | 5.D, 6.E, 12.D | Shared policy/action identities, frozen policy/profile, and candidate/path facts. |
 | 14.A | 7.C, 12.D, 13, 20.B, 21.C | Run state, exact candidate/policy, Manifest, and verified-candidate evidence. |
-| 14.B | 4.C, 5.B, 7.B, 7.C, 14.A | Canonical time, durable Run state, and exact approval subject. |
+| 14.B | 4.C, 5.B, 7.B, 7.C, 14.A, 25.D | Canonical time, durable Run state, exact approval subject, and actual v0001–v0009 migration predecessors. |
 | 14.C | 7.A, 7.C, 14.A, 14.B, 21.C | Transactional storage, one-time approval, and verified-candidate evidence. |
 | 15.A | 4.B, 5.D | Canonical digest and shared disclosure identities. |
 | 15.B | 4.D, 5.E, 15.A | Canonical time/location plus disclosure subject contract. |
@@ -10306,17 +10513,17 @@ The `Task predecessors` column contains only exact executable Task ids separated
 | 21.A | 12.D, 19.C, 20.B | Candidate, authoritative check evidence, Baseline, and Manifest. |
 | 21.B | 18.D, 21.A | Docker execution output plus formal validation predicate. |
 | 21.C | 12.D, 19.C, 20.B, 21.A, 21.B | Complete formal validation and immutable `VerifiedCandidate`. |
-| 22.A | 7.A, 7.C, 10.C, 19.C | Storage, workspace Snapshot content, and validation redaction contracts. |
+| 22.A | 7.A, 7.C, 10.C, 15.E, 19.C | Storage, workspace Snapshot content, actual v0001–v0004 migrations, and validation redaction contracts. |
 | 22.B | 10.C, 19.C, 22.A | Snapshot/check facts plus workspace-isolated memory repository. |
 | 22.C | 7.A, 7.C, 22.A, 22.B | Complete authorized repository-memory lifecycle. |
-| 23.A | 7.C | Durable Run/event ordering and lifecycle state. |
+| 23.A | 7.C, 22.A | Durable Run/event ordering plus actual v0001–v0005 migrations. |
 | 23.B | 23.A | Redacted monotonic audit event repository. |
 | 23.C | 23.B | Complete user-facing visibility projection. |
 | 24.A | 4.C, 5.D, 11.B, 19.C | Canonical time, shared/tool, and validation-result contracts. |
 | 24.B | 10.C, 15.E, 16.B, 22.B, 24.A | Snapshot, disclosure, adapter, memory, and context projection facts. |
-| 24.C | 7.A, 7.C, 24.A, 24.B | Complete structured feedback projection and durable context bindings. |
+| 24.C | 7.A, 7.C, 24.A, 24.B, 25.B | Complete structured feedback projection, durable context bindings, and actual v0007 turn schema. |
 | 25.A | 5.D, 7.C, 14.C, 24.C | Limits/lifecycle, final-approval state, and structured feedback/progress facts. |
-| 25.B | 7.C, 8.B | Active Run and admitted immutable limits/deadline. |
+| 25.B | 7.C, 8.B, 23.A | Active Run, admitted immutable limits/deadline, and actual v0001–v0006 migrations. |
 | 25.C | 15.E, 16.B, 25.B, 27.B | Grant/authorization, adapter, turn-boundary, and fresh credential contracts. |
 | 25.D | 11.B, 12.D, 13, 17.C, 19.C, 24.C | Tools, candidate, policy, parser/dispatcher, validation result, and feedback contracts. |
 | 25.E | 7.C, 14.C | Durable lifecycle and final approval/wait bindings. |
@@ -10351,14 +10558,14 @@ The `Task predecessors` column contains only exact executable Task ids separated
 | 36.B | 2.G, 33.A, 34.A, 35.C, 36.A | Task 2 frozen digest, wheel/image readiness, protected release rules, and closed evidence schema. |
 | 36.C | 34.B, 35.C, 36.A, 36.B | Demo image, protected CI closure, closed evidence, and released source identity. |
 | 37.A | 31.C, 32.C, 33.B, 34.A, 34.B, 35.C, 36.B, 36.C, 38.G | Stable verified commands, artifacts, URLs/digests, limitations, and browser evidence. |
-| 37.B | 1.A, 1.B, 1.C, 1.D, 1.E, 2.A, 2.B, 2.C, 2.D, 2.E, 2.F, 2.G, 3.A, 3.B, 3.C, 3.D, 3.E, 3.F, 3.G, 4.A, 4.F, 4.B, 4.C, 4.D, 4.E, 5.A, 5.B, 5.C, 5.D, 5.E, 6.A, 6.B, 6.C, 6.D, 6.E, 7.A, 7.B, 7.C, 8.A, 8.B, 9.A, 9.B, 9.C, 9.D, 10.A, 10.B, 10.C, 11.A, 11.B, 12.A, 12.B, 12.C, 12.D, 13, 14.A, 14.B, 14.C, 15.A, 15.B, 15.C, 15.D, 15.E, 15.F, 16.A, 16.B, 17.A, 17.B, 17.C, 18.A, 18.B, 18.C, 18.D, 19.A, 19.B, 19.C, 20.A, 20.B, 21.A, 21.B, 21.C, 22.A, 22.B, 22.C, 23.A, 23.B, 23.C, 24.A, 24.B, 24.C, 25.A, 25.B, 25.C, 25.D, 25.E, 25.F, 25.G, 26.A, 26.B, 26.C, 27.A, 27.B, 28.A, 28.B, 29.A, 29.B, 29.C, 30.A, 30.B, 31.A, 31.B, 31.C, 32.A, 32.B, 32.C, 33.A, 33.B, 34.A, 34.B, 35.A, 35.B, 35.C, 36.A, 36.B, 36.C, 38.A, 38.B, 38.C, 38.D, 38.E, 38.F, 38.G | Complete per-task process evidence through Task 36.C and all Task 38 children. |
+| 37.B | 1.A, 1.B, 1.C, 1.D, 1.E, 2.A, 2.B, 2.C, 2.D, 2.E, 2.F, 2.G, 3.A, 3.B, 3.C, 3.D, 3.E, 3.F, 3.G, 4.A, 4.F, 4.B, 4.C, 4.D, 4.E, 5.A, 5.B, 5.C, 5.D, 5.E, 6.A, 6.B, 6.C, 6.D, 6.E, 7.A, 7.B, 7.C, 7.D, 8.A, 8.B, 9.A, 9.B, 9.C, 9.D, 10.A, 10.B, 10.C, 11.A, 11.B, 12.A, 12.B, 12.C, 12.D, 13, 14.A, 14.B, 14.C, 15.A, 15.B, 15.C, 15.D, 15.E, 15.F, 16.A, 16.B, 17.A, 17.B, 17.C, 18.A, 18.B, 18.C, 18.D, 19.A, 19.B, 19.C, 20.A, 20.B, 21.A, 21.B, 21.C, 22.A, 22.B, 22.C, 23.A, 23.B, 23.C, 24.A, 24.B, 24.C, 25.A, 25.B, 25.C, 25.D, 25.E, 25.F, 25.G, 26.A, 26.B, 26.C, 27.A, 27.B, 28.A, 28.B, 29.A, 29.B, 29.C, 30.A, 30.B, 31.A, 31.B, 31.C, 32.A, 32.B, 32.C, 33.A, 33.B, 34.A, 34.B, 35.A, 35.B, 35.C, 36.A, 36.B, 36.C, 38.A, 38.B, 38.C, 38.D, 38.E, 38.F, 38.G | Complete per-task process evidence through Task 36.C, the v1 migration registry, and all Task 38 children. |
 | 37.C | 37.A, 37.B | Complete student-authored 1,500–2,500-word reflection and final human readiness decision. |
 | 38.A | 27.B, 28.B, 29.C | Credential service, safe shell, and governance route composition. |
 | 38.B | 22.C, 23.C, 28.B, 29.C | Memory/audit services, safe shell, and governance route composition. |
 | 38.C | 23.C, 28.B, 29.C | Audit projection, safe shell, and governance route composition. |
 | 38.D | 9.D, 23.C, 26.C, 28.B, 29.C | Workspace/audit/recovery service, safe shell, and governance route composition. |
 | 38.E | 9.D, 26.C, 28.B | Workspace/recovery service and existing CLI shell. |
-| 38.F | 29.C, 38.A, 38.B, 38.C, 38.D, 38.E | Exact local workflow routers and CLI operation contract. |
+| 38.F | 7.D, 29.C, 38.A, 38.B, 38.C, 38.D, 38.E | Exact complete v1 migration registry, local workflow routers, and CLI operation contract. |
 | 38.G | 38.F | Frozen production local composition; acceptance adds no production behavior. |
 
 ## Parallel Worktree Waves
@@ -10394,12 +10601,12 @@ M0, human approval, and cold-start are pre-wave gates, not executable Tasks. The
 | 25 | 6.A, 6.B, 6.C, 7.A, 10.B, 15.A | Profile, storage, content, and disclosure foundations own disjoint files. |
 | 26 | 6.D, 7.B, 15.B | Registry assembly, Run lifecycle, and disclosure subjects own disjoint files. |
 | 27 | 6.E, 7.C, 15.C | Profile validation, idempotency, and authorization rules own disjoint files. |
-| 28 | 8.A, 15.D, 18.A, 23.A, 27.A | Request, decision, Docker request, audit, and credential ports are disjoint. |
-| 29 | 8.B, 15.F, 23.B, 27.B | Admission, revocation, audit repository, and WinCred adapter are disjoint. |
-| 30 | 9.A, 15.E, 23.C, 25.B | Identity, authorization ledger, visibility, and turn boundary own disjoint files. |
-| 31 | 9.B, 16.A, 25.F, 28.A | Mutex, Mock adapter, restart, and Web security are independent. |
-| 32 | 9.C, 16.B, 28.B | Git preflight, OpenAI transport, and application shell own disjoint files. |
-| 33 | 9.D, 25.C, 29.B | Path authorization, authorized call, and disclosure UI own disjoint files. |
+| 28 | 8.A, 15.D, 18.A, 27.A | Request, Grant-decision/v0003, Docker-request, and credential-port files are disjoint. |
+| 29 | 8.B, 15.F, 27.B | Admission, Grant revocation, and WinCred adapter files are disjoint. |
+| 30 | 9.A, 15.E | Identity and authorization-ledger/v0004 files are disjoint. |
+| 31 | 9.B, 16.A | Mutex and Mock-adapter files are disjoint. |
+| 32 | 9.C, 16.B | Git preflight and OpenAI-transport files are disjoint. |
+| 33 | 9.D | Complete path authorization before later Snapshot/candidate consumers. |
 | 34 | 10.A | Implement Snapshot capture and content objects. |
 | 35 | 10.C | Seal SnapshotTree and content-object identities. |
 | 36 | 11.A, 12.A, 20.A | Read tools, diff parsing, and static support planning own disjoint files. |
@@ -10413,16 +10620,16 @@ M0, human approval, and cold-start are pre-wave gates, not executable Tasks. The
 | 44 | 19.B | Implement authoritative pytest event evidence. |
 | 45 | 19.C | Implement stable target failure fingerprints. |
 | 46 | 20.B, 22.A, 24.A | Baseline/Manifest, memory repository, and context facts own disjoint files. |
-| 47 | 21.A, 22.B | Formal predicate and memory authorization own disjoint files. |
-| 48 | 21.B, 22.C, 24.B | Validation execution, memory lifecycle, and context projection own disjoint files. |
-| 49 | 21.C, 24.C | VerifiedCandidate and structured feedback own disjoint files. |
-| 50 | 14.A, 25.D | Approval subject and action pipeline own disjoint files. |
-| 51 | 14.B | Implement one-time approval persistence and expiry. |
-| 52 | 14.C | Complete approval consumption and revocation. |
+| 47 | 21.A, 22.B, 23.A | Formal plan, memory selection, and audit/v0006 files are disjoint. |
+| 48 | 21.B, 22.C, 23.B, 24.B, 25.B | Validation execution, memory clear, audit projection, context projection, and turn/v0007 files are disjoint. |
+| 49 | 21.C, 23.C, 24.C, 25.C | VerifiedCandidate, audit retention, feedback/v0008, and call-orchestration files are disjoint. |
+| 50 | 14.A, 25.D, 25.F, 28.A | Approval subject, action/v0009, restart, and Web-security files are disjoint. |
+| 51 | 14.B, 28.B | Writeback-approval/v0010 and application-shell files are disjoint. |
+| 52 | 14.C, 29.B | Approval consumption and disclosure-UI files are disjoint. |
 | 53 | 25.A, 25.E, 26.A | Stop/progress, wait/cancel, and writeback own disjoint files. |
 | 54 | 25.G, 26.B, 30.A | Loop composition, recovery preview, and Demo core own disjoint files. |
 | 55 | 26.C, 29.A, 30.B, 32.A | Recovery, Run UI, Demo app, and governance trace own disjoint files. |
-| 56 | 29.C, 32.B, 38.E | Governance composition, feedback trace, and recovery CLI are independent. |
+| 56 | 7.D, 29.C, 32.B, 38.E | Final migration registry, governance composition, feedback trace, and recovery CLI own disjoint files. |
 | 57 | 32.C, 38.A, 38.B, 38.C, 38.D | Shared-core proof and four local-operation workflows own disjoint files. |
 | 58 | 34.B, 38.F | Demo OCI smoke and local route composition own disjoint files. |
 | 59 | 31.A, 38.G | Reference happy path and browser acceptance consume frozen composition. |
@@ -10481,9 +10688,10 @@ The mechanically checked core-file set is formed only from exact backticked repo
 | 6.C | `src/vespercode/profiles/llm.py`; `src/vespercode/profiles/builtin/{mock-deterministic-v1.json,openai-single-turn-v1.json}`; `tests/unit/profiles/test_llm.py` | None | Owns closed LLM profile schemas and built-ins. |
 | 6.D | `src/vespercode/profiles/endpoints.py`; `tests/unit/profiles/test_endpoints.py` | None | Owns endpoint policy only. |
 | 6.E | `src/vespercode/profiles/registry.py`; `tests/unit/profiles/test_registry.py` | None | Owns registry assembly and immutable profile-digest lookup. |
-| 7.A | `src/vespercode/storage/{connection.py,migrations.py}` | None | Creates all v1 tables; domain tasks do not modify `migrations.py`. |
-| 7.B | `src/vespercode/storage/run_repository.py`; `src/vespercode/runs/lifecycle.py` | None | Owns Run/wait transactions and transition rules. |
-| 7.C | `src/vespercode/storage/idempotency.py` | None | Owns only the transaction-bound event replay ledger. |
+| 7.A | `src/vespercode/storage/{connection.py,migration_engine.py}`; `src/vespercode/storage/migrations/__init__.py`; `tests/unit/storage/{test_connection.py,test_migration_engine.py}` | None | Owns only connection/transaction policy, `schema_migrations`, closed descriptors, and the injected migration runner; no domain DDL or registry import. |
+| 7.B | `src/vespercode/storage/migrations/v0001_run_wait.py`; `src/vespercode/storage/run_repository.py`; `src/vespercode/runs/lifecycle.py`; `tests/unit/storage/test_run_wait_migration.py` | None | Sole v0001 owner plus Run/config/wait transactions and transition rules; cannot edit the final registry. |
+| 7.C | `src/vespercode/storage/migrations/v0002_idempotency.py`; `src/vespercode/storage/idempotency.py`; `tests/unit/storage/test_idempotency_migration.py` | None | Sole v0002 owner plus transaction-bound event replay ledger; cannot edit the final registry. |
+| 7.D | `src/vespercode/storage/migrations/registry.py`; `tests/unit/storage/test_migration_registry.py` | None | Sole `ALL_V1_MIGRATIONS` composition owner; no DDL or repository behavior. |
 | 8.A | `src/vespercode/runs/request.py`; `tests/unit/runs/test_request.py` | None | Request/config freeze completes before admission. |
 | 8.B | `src/vespercode/runs/admission.py`; `tests/unit/runs/{test_admission.py,test_admission_order.py}` | None | Admission consumers use ports; no concrete adapter may move into these files. |
 | 9.A | `src/vespercode/workspace/{identity_win32.py,object_win32.py}` | None | Owns all handle-derived workspace/final-object facts. |
@@ -10501,13 +10709,13 @@ The mechanically checked core-file set is formed only from exact backticked repo
 | 12.D | `src/vespercode/candidate/{final_diff.py,identity.py}` | None | Owns FinalDiff reconstruction and three-root identity only. |
 | 13 | `src/vespercode/governance/policy.py` | None | Mechanism/UI tasks consume policy results only. |
 | 14.A | `src/vespercode/governance/writeback_subject.py`; `tests/unit/governance/test_writeback_subject.py` | None | Owns exact final-writeback subject identity only. |
-| 14.B | `src/vespercode/governance/writeback_decision.py`; `tests/unit/governance/test_writeback_decision.py` | None | Owns decision/expiry transition rules only. |
+| 14.B | `src/vespercode/storage/migrations/v0010_writeback_approvals.py`; `src/vespercode/governance/writeback_decision.py`; `tests/unit/storage/test_writeback_approvals_migration.py`; `tests/unit/governance/test_writeback_decision.py` | None | Sole v0010 owner plus decision/expiry transaction rules; Task 14.C consumes the schema without owning it. |
 | 14.C | `src/vespercode/governance/writeback_approval.py`; `tests/unit/governance/{test_writeback_approval.py,test_writeback_approval_race.py}` | None | Persistence and UI consume one-time approval interfaces and cannot duplicate consume logic. |
 | 15.A | `src/vespercode/governance/request_sources.py`; `tests/unit/governance/test_request_sources.py` | None | Owns closed request-source vocabulary only. |
 | 15.B | `src/vespercode/governance/disclosure_scope.py`; `tests/unit/governance/test_disclosure_scope.py` | None | Owns disclosure scope normalization only. |
 | 15.C | `src/vespercode/governance/disclosure_subject.py`; `tests/unit/governance/test_disclosure_subject.py` | None | Owns canonical disclosure subject binding only. |
-| 15.D | `src/vespercode/governance/disclosure_decision.py`; `tests/unit/governance/test_disclosure_decision.py` | None | Owns approval/rejection/expiry/stale/replay decision transitions only. |
-| 15.E | `src/vespercode/governance/disclosure_ledger.py`; `tests/unit/governance/{test_disclosure_ledger.py,test_disclosure_budget_race.py}` | None | LLM/UI tasks consume the transactional authorization ledger only through immutable interfaces. |
+| 15.D | `src/vespercode/storage/migrations/v0003_disclosure_grants.py`; `src/vespercode/governance/disclosure_decision.py`; `tests/unit/storage/test_disclosure_grants_migration.py`; `tests/unit/governance/test_disclosure_decision.py` | None | Sole v0003 subject/Grant schema owner plus decision transitions; Task 15.F mutates the existing Grant row without a second schema. |
+| 15.E | `src/vespercode/storage/migrations/v0004_disclosure_authorizations.py`; `src/vespercode/governance/disclosure_ledger.py`; `tests/unit/storage/test_disclosure_authorizations_migration.py`; `tests/unit/governance/{test_disclosure_ledger.py,test_disclosure_budget_race.py}` | None | Sole v0004 authorization schema owner; LLM/UI tasks consume the ledger through immutable interfaces. |
 | 15.F | `src/vespercode/governance/disclosure_revocation.py`; `tests/unit/governance/test_disclosure_revocation.py` | None | Owns exact active-Grant revocation and idempotent replay only. |
 | 16.A | `src/vespercode/llm/{base.py,prepared_request.py,mock_adapter.py,call_result.py}` | None | Mock owns no real-provider capability; exact supporting tests are frozen in Task 16.A. |
 | 16.B | `src/vespercode/llm/{openai_serializer.py,openai_adapter.py}` | None | Task 25.C composes the adapter through ports only; exact supporting tests are frozen in Task 16.B. |
@@ -10526,25 +10734,25 @@ The mechanically checked core-file set is formed only from exact backticked repo
 | 21.A | `src/vespercode/validation/formal_plan.py`; `tests/unit/validation/{test_formal_plan.py,test_formal_preflight.py}` | None | Owns the frozen formal validation plan and preflight only. |
 | 21.B | `src/vespercode/validation/formal_execution.py`; `tests/integration/docker/{test_reference_formal_validation.py,test_formal_execution_completeness.py}` | None | Owns complete formal-check execution evidence only. |
 | 21.C | `src/vespercode/validation/formal.py`; `tests/unit/validation/{test_formal_predicate.py,test_verified_candidate.py}` | None | Only this child may create `VerifiedCandidateV1`. |
-| 22.A | `src/vespercode/memory/{entry.py,repository.py}`; `tests/unit/memory/{test_entry.py,test_repository.py,test_authorization.py}` | None | Owns workspace-bound memory storage and creator authorization. |
+| 22.A | `src/vespercode/storage/migrations/v0005_memory.py`; `src/vespercode/memory/{entry.py,repository.py}`; `tests/unit/storage/test_memory_migration.py`; `tests/unit/memory/{test_entry.py,test_repository.py,test_authorization.py}` | None | Sole v0005 owner plus workspace-bound memory storage and creator authorization. |
 | 22.B | `src/vespercode/memory/selection.py`; `tests/unit/memory/{test_selection.py,test_workspace_isolation.py}` | None | Owns authorized memory selection only. |
 | 22.C | `src/vespercode/memory/clear.py`; `tests/unit/memory/test_clear.py` | None | Context/UI consume the complete memory lifecycle through public interfaces. |
-| 23.A | `src/vespercode/audit/{event.py,repository.py}` | None | Owns redacted event schemas, ordering, paging, and clear. |
+| 23.A | `src/vespercode/storage/migrations/v0006_audit.py`; `src/vespercode/audit/{event.py,repository.py}`; `tests/unit/storage/test_audit_migration.py` | None | Sole v0006 owner plus redacted event schemas, ordering, paging, and clear. |
 | 23.B | `src/vespercode/audit/projection.py` | None | Owns pure user-visible state projection. |
 | 23.C | `src/vespercode/audit/retention.py` | None | Owns retention and unresolved-recovery preservation. |
 | 24.A | `src/vespercode/loop/feedback.py`; `tests/unit/loop/test_feedback.py` | None | Owns structured feedback values and validation only. |
 | 24.B | `src/vespercode/loop/context_projection.py`; `tests/unit/loop/{test_context_projection.py,test_context_trimming.py,test_context_sources.py}` | None | Owns authorized context assembly and trimming only. |
-| 24.C | `src/vespercode/loop/feedback_consumption.py`; `tests/unit/loop/test_feedback_consumption.py` | None | Tasks 25.D and 25.G consume feedback but do not reimplement next-turn correction. |
+| 24.C | `src/vespercode/storage/migrations/v0008_feedback.py`; `src/vespercode/loop/feedback_consumption.py`; `tests/unit/storage/test_feedback_migration.py`; `tests/unit/loop/test_feedback_consumption.py` | None | Sole v0008 owner plus feedback append/consume-once transaction; Tasks 25.D and 25.G do not reimplement it. |
 | 25.A | `src/vespercode/loop/{stopping.py,progress.py}`; `tests/unit/loop/{test_stopping.py,test_progress.py}` | None | Pure stopping/progress rules only. |
-| 25.B | `src/vespercode/loop/turn_boundary.py`; `tests/unit/loop/test_turn_counting.py` | None | Owns all turn/call counter state changes. |
+| 25.B | `src/vespercode/storage/migrations/v0007_agent_turns.py`; `src/vespercode/loop/turn_boundary.py`; `tests/unit/storage/test_agent_turns_migration.py`; `tests/unit/loop/test_turn_counting.py` | None | Sole v0007 owner plus all turn/call counter state changes. |
 | 25.C | `src/vespercode/loop/call_orchestrator.py`; `tests/unit/loop/test_call_orchestrator.py` | None | Owns exactly-one-call ordering, no retry. |
-| 25.D | `src/vespercode/loop/action_pipeline.py`; `tests/unit/loop/test_action_pipeline.py` | None | Owns one parse/policy/dispatch/feedback step. |
+| 25.D | `src/vespercode/storage/migrations/v0009_actions.py`; `src/vespercode/loop/action_pipeline.py`; `tests/unit/storage/test_actions_migration.py`; `tests/unit/loop/test_action_pipeline.py` | None | Sole v0009 owner plus one parse/policy/dispatch/feedback/action-record step. |
 | 25.E | `src/vespercode/loop/{wait_control.py,cancellation.py}`; `tests/unit/loop/test_wait_lifecycle.py` | None | Owns wait/deadline/cancel safe points. |
 | 25.F | `src/vespercode/loop/restart.py`; `tests/unit/loop/test_restart_behavior.py` | None | Owns restart fail-close only. |
 | 25.G | `src/vespercode/loop/engine.py`; `tests/unit/loop/{test_main_loop.py,test_main_loop_failures.py}` | None | Thin composition only; no child rule duplication or external framework. |
-| 26.A | `src/vespercode/persistence/{path_record.py,transaction.py,artifacts.py,writeback.py}` | None | Owns approval-bound write transaction, not recovery classification; exact supporting tests are frozen in Task 26.A. |
+| 26.A | `src/vespercode/storage/migrations/v0011_persistence.py`; `src/vespercode/persistence/{path_record.py,transaction.py,artifacts.py,writeback.py}`; `tests/unit/storage/test_persistence_migration.py` | None | Sole v0011 owner plus approval-bound write transaction, not recovery classification. |
 | 26.B | `src/vespercode/persistence/recovery_preview.py` | None | Read-only preview/classification only; exact supporting tests are frozen in Task 26.B. |
-| 26.C | `src/vespercode/persistence/{recovery_apply.py,recovery.py}` | None | CLI/WebUI consume the same composed recovery service; exact supporting tests are frozen in Task 26.C. |
+| 26.C | `src/vespercode/storage/migrations/v0012_recovery.py`; `src/vespercode/persistence/{recovery_apply.py,recovery.py}`; `tests/unit/storage/test_recovery_migration.py` | None | Sole v0012 terminal-result owner; CLI/WebUI consume the same composed recovery service. |
 | 27.A | `src/vespercode/credentials/{port.py,service.py}` | None | Owns secret wrapper, store protocol, and pure lifecycle service. |
 | 27.B | `src/vespercode/credentials/wincred_store.py` | None | Owns the sole real WinCred implementation. |
 | 28.A | `src/vespercode/web/security.py`; `tests/web/test_security.py` | None | Every later Web child consumes this boundary before its first domain call. |
@@ -10589,21 +10797,21 @@ Every task list in the four coverage matrices below contains exact executable Ta
 
 | User story | FR contract | NFR contract | Explicit AC set | Implementation tasks | Independent validation/delivery tasks |
 |---|---|---|---|---|---|
-| US-01 Configure and safely start a run | FR-ADM, FR-LOOP | NFR-PERF, NFR-USE, NFR-SEC | AC-15, AC-16, AC-21, AC-26, AC-28, AC-30, AC-31 | 6.A, 6.B, 6.C, 6.D, 6.E, 7.A, 7.B, 7.C, 8.A, 8.B, 9.A, 9.B, 9.C, 9.D, 10.A, 10.B, 10.C, 20.A, 20.B, 23.A, 23.B, 23.C, 25.A, 25.B, 25.C, 25.D, 25.E, 25.F, 25.G, 28.A, 28.B, 29.A, 29.C | 31.A, 31.B, 31.C, 33.B, 35.A, 35.B, 35.C, 37.A, 37.B, 37.C, 38.G |
+| US-01 Configure and safely start a run | FR-ADM, FR-LOOP | NFR-PERF, NFR-USE, NFR-SEC | AC-15, AC-16, AC-21, AC-26, AC-28, AC-30, AC-31 | 6.A, 6.B, 6.C, 6.D, 6.E, 7.A, 7.B, 7.C, 7.D, 8.A, 8.B, 9.A, 9.B, 9.C, 9.D, 10.A, 10.B, 10.C, 20.A, 20.B, 23.A, 23.B, 23.C, 25.A, 25.B, 25.C, 25.D, 25.E, 25.F, 25.G, 28.A, 28.B, 29.A, 29.C | 31.A, 31.B, 31.C, 33.B, 35.A, 35.B, 35.C, 37.A, 37.B, 37.C, 38.G |
 | US-02 Safely manage a real LLM credential | FR-CRED, SPEC §8.1 | NFR-SEC, NFR-PRIV | AC-08 | 16.B, 25.C, 27.A, 27.B, 38.A, 38.F | 31.B, 32.C, 33.B, 35.B, 35.C, 37.C, 38.G |
 | US-03 Repair an existing stable failure | FR-LOOP, FR-WS, FR-VAL | NFR-PERF, NFR-REL | AC-04, AC-05, AC-06, AC-17, AC-18, AC-19, AC-20, AC-25, AC-26, AC-28, AC-31 | 10.A, 10.B, 10.C, 11.A, 11.B, 12.A, 12.B, 12.C, 12.D, 13, 17.A, 17.B, 17.C, 18.A, 18.B, 18.C, 18.D, 19.A, 19.B, 19.C, 20.A, 20.B, 21.A, 21.B, 21.C, 24.A, 24.B, 24.C, 25.A, 25.B, 25.C, 25.D, 25.E, 25.F, 25.G | 31.A, 31.B, 31.C, 32.A, 32.B, 32.C, 34.A, 35.A, 35.B, 37.C |
 | US-04 Control external data disclosure | FR-GOV | NFR-SEC, NFR-PRIV | AC-13, AC-26, AC-27 | 15.A, 15.B, 15.C, 15.D, 15.E, 15.F, 16.A, 16.B, 24.A, 24.B, 24.C, 25.B, 25.C, 25.G, 29.B, 29.C | 31.B, 32.C, 35.A, 35.B, 35.C, 37.B, 37.C, 38.G |
 | US-05 Rely on deterministic guardrails and one-time approval | FR-GOV | NFR-REL, NFR-SEC | AC-01, AC-02, AC-03, AC-26, AC-27, AC-31 | 9.A, 9.B, 9.C, 9.D, 12.A, 12.B, 12.C, 12.D, 13, 14.A, 14.B, 14.C, 15.A, 15.B, 15.C, 15.D, 15.E, 15.F, 17.A, 17.B, 17.C, 25.D, 25.E, 25.G | 31.B, 31.C, 32.A, 32.C, 35.A, 35.B, 37.C |
 | US-06 Review, persist, and recover a verified diff | FR-PERSIST | NFR-REL, NFR-SEC | AC-07, AC-21, AC-22, AC-26, AC-29, AC-31 | 3.A, 3.B, 3.C, 3.D, 3.E, 3.F, 3.G, 9.A, 9.B, 9.C, 9.D, 12.A, 12.B, 12.C, 12.D, 14.A, 14.B, 14.C, 21.A, 21.B, 21.C, 26.A, 26.B, 26.C, 29.C, 38.D, 38.E, 38.F | 31.C, 33.B, 35.A, 35.B, 37.C, 38.G |
 | US-07 Inspect and clear repository memory | FR-MEM | NFR-OBS, NFR-PRIV | AC-14, AC-23 | 22.A, 22.B, 22.C, 23.A, 23.B, 23.C, 24.A, 24.B, 24.C, 38.B, 38.F | 31.C, 35.A, 35.B, 37.C, 38.G |
-| US-08 Understand status and audit evidence | FR-LOOP, FR-MEM, FR-UI | NFR-USE, NFR-OBS | AC-06, AC-16, AC-27, AC-28 | 7.A, 7.B, 7.C, 23.A, 23.B, 23.C, 25.F, 25.G, 28.A, 28.B, 29.A, 29.C, 38.C, 38.F | 31.C, 33.B, 35.A, 35.B, 37.A, 37.C, 38.G |
+| US-08 Understand status and audit evidence | FR-LOOP, FR-MEM, FR-UI | NFR-USE, NFR-OBS | AC-06, AC-16, AC-27, AC-28 | 7.A, 7.B, 7.C, 7.D, 23.A, 23.B, 23.C, 25.F, 25.G, 28.A, 28.B, 29.A, 29.C, 38.C, 38.F | 31.C, 33.B, 35.A, 35.B, 37.A, 37.C, 38.G |
 | US-09 Run the public Mock Demo | FR-UI | NFR-PERF, NFR-REL, NFR-SEC | AC-09, AC-12 | 30.A, 30.B, 34.B | 32.A, 32.B, 32.C, 35.A, 35.B, 35.C, 36.A, 36.C, 37.A, 37.C |
 
 ## FR Coverage Matrix
 
 | Functional requirement | Implementation tasks | Independent verification tasks | Verification/evidence contract |
 |---|---|---|---|
-| FR-ADM — request validation, Run creation, and ordered preflight | 6.A, 6.B, 6.C, 6.D, 6.E, 7.A, 7.B, 7.C, 8.A, 8.B, 9.A, 9.B, 9.C, 9.D, 10.A, 10.B, 10.C, 20.A, 20.B | 31.A, 31.B | Child RED/GREEN suites prove zero-downstream admission failures; Windows checks prove workspace/Git/Snapshot; Task 31.A records the production call order and Task 31.B records denials. |
+| FR-ADM — request validation, Run creation, and ordered preflight | 6.A, 6.B, 6.C, 6.D, 6.E, 7.A, 7.B, 7.C, 7.D, 8.A, 8.B, 9.A, 9.B, 9.C, 9.D, 10.A, 10.B, 10.C, 20.A, 20.B | 31.A, 31.B | Child RED/GREEN suites prove the engine/domain/registry schema closure and zero-downstream admission failures; Windows checks prove workspace/Git/Snapshot; Task 31.A records the production call order and Task 31.B records denials. |
 | FR-LOOP — loop, action protocol, context, budgets, stopping, and lifecycle | 5.A, 5.B, 5.C, 5.D, 5.E, 7.B, 7.C, 11.A, 11.B, 15.A, 15.B, 15.C, 15.D, 15.E, 15.F, 16.A, 16.B, 17.A, 17.B, 17.C, 24.A, 24.B, 24.C, 25.A, 25.B, 25.C, 25.D, 25.E, 25.F, 25.G | 31.A, 31.B, 31.C, 32.A, 32.B, 32.C | Component suites prove action, context, feedback, count, progress, timeout, cancel and restart rules; reference and mechanism traces prove composition. |
 | FR-WS — Snapshot, path boundary, strict patches, and CandidateTree | 1.A, 1.B, 1.C, 1.D, 1.E, 4.B, 4.D, 6.A, 6.B, 6.C, 6.D, 6.E, 9.A, 9.B, 9.C, 9.D, 10.A, 10.B, 10.C, 11.A, 11.B, 12.A, 12.B, 12.C, 12.D | 31.A, 31.B, 32.A, 32.B | Task 1.E `GO` and Tasks 9.A–9.D Windows evidence prove object/path behavior; domain suites and later traces prove legal correction, cursor continuity, and denials. |
 | FR-GOV — policy, final approval, disclosure, and real LLM authorization | 13, 14.A, 14.B, 14.C, 15.A, 15.B, 15.C, 15.D, 15.E, 15.F, 16.A, 16.B, 25.B, 25.C, 25.D, 25.E, 25.G, 29.B, 29.C | 31.B, 31.C, 32.A, 32.C, 38.G | Pure governance tests plus reference/mechanism/browser traces prove no unauthorized dispatch, network, approval consumption, or write. |
@@ -10618,9 +10826,9 @@ Every task list in the four coverage matrices below contains exact executable Ta
 | Non-functional requirement | Implementation tasks | Independent verification tasks | Test environment / release evidence |
 |---|---|---|---|
 | NFR-PERF — hard budgets and bounded resources | 5.A, 5.B, 5.C, 5.D, 5.E, 8.A, 8.B, 11.A, 11.B, 15.A, 15.B, 15.C, 15.D, 15.E, 15.F, 16.A, 16.B, 18.A, 18.B, 18.C, 18.D, 24.A, 24.B, 24.C, 25.A, 25.B, 25.C, 25.D, 25.E, 25.G, 30.A, 30.B | 31.A, 31.B, 32.B, 34.A, 34.B | FakeClock and boundary tests prove pre-side-effect limits; Docker/Demo image smoke and reference traces prove real resource ceilings. |
-| NFR-REL — deterministic and fail-closed behavior | 1.A, 1.B, 1.C, 1.D, 1.E, 2.A, 2.B, 2.C, 2.D, 2.E, 2.F, 2.G, 3.A, 3.B, 3.C, 3.D, 3.E, 3.F, 3.G, 4.A, 4.F, 4.B, 4.C, 4.D, 4.E, 5.A, 5.B, 5.C, 5.D, 5.E, 6.A, 6.B, 6.C, 6.D, 6.E, 7.A, 7.B, 7.C, 8.A, 8.B, 9.A, 9.B, 9.C, 9.D, 10.A, 10.B, 10.C, 11.A, 11.B, 12.A, 12.B, 12.C, 12.D, 13, 14.A, 14.B, 14.C, 15.A, 15.B, 15.C, 15.D, 15.E, 15.F, 16.A, 16.B, 17.A, 17.B, 17.C, 18.A, 18.B, 18.C, 18.D, 19.A, 19.B, 19.C, 20.A, 20.B, 21.A, 21.B, 21.C, 22.A, 22.B, 22.C, 23.A, 23.B, 23.C, 24.A, 24.B, 24.C, 25.A, 25.B, 25.C, 25.D, 25.E, 25.F, 25.G, 26.A, 26.B, 26.C, 30.A | 30.B, 31.A, 31.B, 31.C, 32.A, 32.B, 32.C, 37.C | Gate identity, dependency closure, formal toolchain promotion, canonical vectors, immutable structures, closed schemas, transactions, repeated semantic traces, shared-core provenance, and final missing-evidence rejection prove determinism/fail-close. |
+| NFR-REL — deterministic and fail-closed behavior | 1.A, 1.B, 1.C, 1.D, 1.E, 2.A, 2.B, 2.C, 2.D, 2.E, 2.F, 2.G, 3.A, 3.B, 3.C, 3.D, 3.E, 3.F, 3.G, 4.A, 4.F, 4.B, 4.C, 4.D, 4.E, 5.A, 5.B, 5.C, 5.D, 5.E, 6.A, 6.B, 6.C, 6.D, 6.E, 7.A, 7.B, 7.C, 7.D, 8.A, 8.B, 9.A, 9.B, 9.C, 9.D, 10.A, 10.B, 10.C, 11.A, 11.B, 12.A, 12.B, 12.C, 12.D, 13, 14.A, 14.B, 14.C, 15.A, 15.B, 15.C, 15.D, 15.E, 15.F, 16.A, 16.B, 17.A, 17.B, 17.C, 18.A, 18.B, 18.C, 18.D, 19.A, 19.B, 19.C, 20.A, 20.B, 21.A, 21.B, 21.C, 22.A, 22.B, 22.C, 23.A, 23.B, 23.C, 24.A, 24.B, 24.C, 25.A, 25.B, 25.C, 25.D, 25.E, 25.F, 25.G, 26.A, 26.B, 26.C, 30.A | 30.B, 31.A, 31.B, 31.C, 32.A, 32.B, 32.C, 37.C | Gate identity, dependency closure, formal toolchain promotion, canonical vectors, immutable structures, checksum-verified domain/registry closure, transactions, repeated semantic traces, shared-core provenance, and final missing-evidence rejection prove determinism/fail-close. |
 | NFR-USE — understandable status, decisions, diff, and recovery | 23.A, 23.B, 23.C, 28.A, 28.B, 29.A, 29.B, 29.C, 37.A, 38.A, 38.B, 38.C, 38.D, 38.E, 38.F | 33.B, 38.G | Local WebUI/browser/accessibility tests, installed UI smoke, and README contract prove understandable non-color-only operation. |
-| NFR-OBS — ordered evidence and categorized CI/release records | 7.A, 7.B, 7.C, 23.A, 23.B, 23.C, 31.A, 31.B, 31.C, 32.A, 32.B, 32.C, 35.A, 35.B, 35.C, 36.A, 36.B, 36.C, 38.C, 38.F | 37.B, 37.C, 38.G | Audit concurrency, deterministic reports, real dual-platform records, release/deployment JSON, browser evidence, and evidence-age checks prove observability. |
+| NFR-OBS — ordered evidence and categorized CI/release records | 7.A, 7.B, 7.C, 7.D, 23.A, 23.B, 23.C, 31.A, 31.B, 31.C, 32.A, 32.B, 32.C, 35.A, 35.B, 35.C, 36.A, 36.B, 36.C, 38.C, 38.F | 37.B, 37.C, 38.G | Schema history/registry checks, audit concurrency, deterministic reports, real dual-platform records, release/deployment JSON, browser evidence, and evidence-age checks prove observability. |
 | NFR-SEC — declared threat-boundary mechanisms | 1.A, 1.B, 1.C, 1.D, 1.E, 2.A, 2.B, 2.C, 2.D, 2.E, 2.F, 2.G, 3.A, 3.B, 3.C, 3.D, 3.E, 3.F, 3.G, 6.A, 6.B, 6.C, 6.D, 6.E, 9.A, 9.B, 9.C, 9.D, 12.A, 12.B, 12.C, 12.D, 13, 14.A, 14.B, 14.C, 15.A, 15.B, 15.C, 15.D, 15.E, 15.F, 16.A, 16.B, 17.A, 17.B, 17.C, 18.A, 18.B, 18.C, 18.D, 21.A, 21.B, 21.C, 25.A, 25.B, 25.C, 25.D, 25.E, 25.F, 25.G, 26.A, 26.B, 26.C, 27.A, 27.B, 28.A, 28.B, 29.A, 29.B, 29.C, 30.A, 30.B, 35.A, 35.B, 35.C, 36.A, 36.B, 38.A, 38.B, 38.C, 38.D, 38.E, 38.F | 31.B, 31.C, 32.A, 32.C, 34.A, 34.B, 36.C, 37.C, 38.G | Windows/Docker/fault/Web/Demo/dual-CI/live checks plus every credential scan prove the declared boundary without overclaiming SPEC §5.5. |
 | NFR-PRIV — local retention and minimal disclosure/storage | 15.A, 15.B, 15.C, 15.D, 15.E, 15.F, 16.A, 16.B, 22.A, 22.B, 22.C, 23.A, 23.B, 23.C, 26.A, 26.B, 26.C, 27.A, 27.B, 30.A, 30.B, 36.A, 38.A, 38.B, 38.C, 38.D, 38.F | 31.B, 31.C, 32.C, 36.C, 38.G | Source/record rejection, ACL/retention, WinCred, no-disk Demo, non-secret evidence, and local response scans prove minimal disclosure/storage. |
 
@@ -10643,7 +10851,7 @@ Every task list in the four coverage matrices below contains exact executable Ta
 | AC-13 | 6.A, 6.B, 6.C, 6.D, 6.E, 15.A, 15.B, 15.C, 15.D, 15.E, 15.F, 16.A, 16.B, 24.A, 24.B, 24.C, 25.B, 25.C, 25.G, 27.A, 27.B, 29.B, 29.C | 31.B, 32.C | Source/scope/budget, fresh credential, counting, adapter, disclosure UI, and zero-side-effect reference/mechanism traces. |
 | AC-14 | 22.A, 22.B, 22.C, 24.A, 24.B, 24.C, 38.B, 38.F | 31.C, 38.G | Memory repository/authorization/context tests plus cross-workspace/clear and visible-operation evidence. |
 | AC-15 | 6.A, 6.B, 6.C, 6.D, 6.E, 8.A, 8.B, 9.A, 9.B, 9.C, 9.D, 10.A, 10.B, 10.C, 20.A, 20.B, 25.B, 25.G | 31.A | Admission-order/static tests, Windows identity/Snapshot checks, and exact PREFLIGHT/one-Snapshot E2E trace. |
-| AC-16 | 7.A, 7.B, 7.C, 23.A, 23.B, 23.C, 25.F, 25.G, 28.A, 28.B, 29.A, 38.C, 38.F | 31.C, 33.B, 38.G | Audit projection/status/run/audit Web tests plus state trace and installed browser captures. |
+| AC-16 | 7.A, 7.B, 7.C, 7.D, 23.A, 23.B, 23.C, 25.F, 25.G, 28.A, 28.B, 29.A, 38.C, 38.F | 31.C, 33.B, 38.G | Migration engine/registry, audit projection/status/run/audit Web tests plus state trace and installed browser captures. |
 | AC-17 | 5.A, 5.B, 5.C, 5.D, 5.E, 10.A, 10.B, 10.C, 11.A, 11.B, 17.A, 17.B, 17.C, 30.A | 31.B, 32.B, 32.C | Cursor round-trip/stale/invalid/excerpt, parser/binding, production Demo call sequence, and paged/unpaged traces. |
 | AC-18 | 10.A, 10.B, 10.C, 12.A, 12.B, 12.C, 12.D, 17.A, 17.B, 17.C, 20.A, 20.B, 21.A, 21.B, 21.C | 31.A, 31.C | FinalDiff/identity/patch/formal tests plus cumulative-patch, stale identity, and verified-candidate report. |
 | AC-19 | 2.A, 2.B, 2.C, 2.D, 2.E, 2.F, 2.G, 18.A, 18.B, 18.C, 18.D, 19.A, 19.B, 19.C, 20.B, 34.A | 31.A, 35.A, 35.B | Docker gate/isolation/reference baseline, frozen digest, image smoke, and real reference-image-build logs. |
@@ -10667,7 +10875,7 @@ Every `Owning tasks` cell below contains exact executable Task ids only. The fea
 | Layer | Exact environment and command | Owning tasks | Required proof | Saved evidence |
 |---|---|---|---|---|
 | Feasibility gate bootstrap | Windows 11 x64; `py -3.12 -m venv .venv-gate`; hash-only install from `requirements/gate.lock`; all checks via `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py {pytest|ruff-format|ruff-check|mypy} -- <explicit-targets>`; Task 2.C starts a digest-pinned registry on `127.0.0.1` with an OS-assigned port | 1.A, 1.B, 1.C, 1.D, 1.E, 2.A, 2.B, 2.C, 2.D, 2.E, 2.F, 2.G, 3.A, 3.B, 3.C, 3.D, 3.E, 3.F, 3.G | Exact dependency hashes/markers/config; no global/Task 4 project config; Task 2.D/2.E/2.F reporter, evidence, and stable failure inputs; fixed OCI parameters, local OCI → loopback RepoDigest → digest-pull equality, zero credentials/external push, no manifest self-reference, verified cleanup; unchanged Milestone 1 identities in Milestones 2 and 3 | Tool/file SHA-256, install log, registry image/config/bind/cleanup evidence, three equal digests, and Milestone 1, 2, and 3 `GO` reports |
-| Offline unit tests | Fresh Windows worktree; `py -3.12 scripts/bootstrap_formal_env.py`; exact Task 1 `python_version`; hash-only/no-dependency materialization from immutable `requirements/dev.lock`; no network/Docker/WinCred during tests; `.venv-formal\Scripts\python.exe -m pytest -q` | 4.A, 4.F, 4.B, 4.C, 4.D, 4.E, 5.A, 5.B, 5.C, 5.D, 5.E, 6.A, 6.B, 6.C, 6.D, 6.E, 7.A, 7.B, 7.C, 8.A, 8.B, 9.C, 9.D, 10.A, 10.B, 10.C, 11.A, 11.B, 12.A, 12.B, 12.C, 12.D, 13, 14.A, 14.B, 14.C, 15.A, 15.B, 15.C, 15.D, 15.E, 15.F, 16.A, 16.B, 17.A, 17.B, 17.C, 18.A, 18.B, 18.C, 18.D, 19.A, 19.B, 19.C, 20.A, 20.B, 21.A, 21.B, 21.C, 22.A, 22.B, 22.C, 23.A, 23.B, 23.C, 24.A, 24.B, 24.C, 25.A, 25.B, 25.C, 25.D, 25.E, 25.F, 25.G, 26.A, 26.B, 26.C, 27.A, 28.A, 28.B, 29.A, 29.B, 29.C, 30.A, 30.B, 32.A, 32.B, 32.C, 35.A, 35.B, 35.C, 37.A, 37.B, 37.C, 38.A, 38.B, 38.C, 38.D, 38.E, 38.F, 38.G | Bootstrap rejects non-exact Python before environment creation/use; dependency closure and both unique records match terminal gate evidence; formal toolchain promotion, canonical vectors, closed schemas/cursors, Mock/Stub core, policy, requests, per-call credential failure ordering, parsers, transactions, feedback, loop, memory, audit, WebUI client, Demo logic | Bootstrap identity/install result, both persistent Task 4 records, local output, plus GitHub Actions and GitLab CI `unit-test` report artifacts |
+| Offline unit tests | Fresh Windows worktree; `py -3.12 scripts/bootstrap_formal_env.py`; exact Task 1 `python_version`; hash-only/no-dependency materialization from immutable `requirements/dev.lock`; no network/Docker/WinCred during tests; `.venv-formal\Scripts\python.exe -m pytest -q` | 4.A, 4.F, 4.B, 4.C, 4.D, 4.E, 5.A, 5.B, 5.C, 5.D, 5.E, 6.A, 6.B, 6.C, 6.D, 6.E, 7.A, 7.B, 7.C, 7.D, 8.A, 8.B, 9.C, 9.D, 10.A, 10.B, 10.C, 11.A, 11.B, 12.A, 12.B, 12.C, 12.D, 13, 14.A, 14.B, 14.C, 15.A, 15.B, 15.C, 15.D, 15.E, 15.F, 16.A, 16.B, 17.A, 17.B, 17.C, 18.A, 18.B, 18.C, 18.D, 19.A, 19.B, 19.C, 20.A, 20.B, 21.A, 21.B, 21.C, 22.A, 22.B, 22.C, 23.A, 23.B, 23.C, 24.A, 24.B, 24.C, 25.A, 25.B, 25.C, 25.D, 25.E, 25.F, 25.G, 26.A, 26.B, 26.C, 27.A, 28.A, 28.B, 29.A, 29.B, 29.C, 30.A, 30.B, 32.A, 32.B, 32.C, 35.A, 35.B, 35.C, 37.A, 37.B, 37.C, 38.A, 38.B, 38.C, 38.D, 38.E, 38.F, 38.G | Bootstrap rejects non-exact Python before environment creation/use; dependency closure and both unique records match terminal gate evidence; formal toolchain promotion, canonical vectors, closed schemas/cursors, migration engine/domain/registry closure, Mock/Stub core, policy, requests, per-call credential failure ordering, parsers, transactions, feedback, loop, memory, audit, WebUI client, Demo logic | Bootstrap identity/install result, both persistent Task 4 records, local output, plus GitHub Actions and GitLab CI `unit-test` report artifacts |
 | Windows integration tests | Project-specific Windows 11 x64 runner; `python -m pytest -q -o addopts='' -m windows_integration tests/integration/windows tests/feasibility/windows` | 1.A, 1.B, 1.C, 1.D, 1.E, 9.A, 9.B, 9.C, 10.A, 10.B, 10.C, 26.A, 26.C, 27.B | NTFS/Win32 final identity, path collision, ADS, reparse/hard link, named mutex, Git bytes, Snapshot source, ACL, persistence, WinCred lifecycle and fresh per-call lookup | Runner OS/Python/Git versions, test report, cleared credential state |
 | Docker integration tests | Docker Desktop Linux mode; `python -m pytest -q -o addopts='' -m docker_integration tests/integration/docker tests/feasibility/docker` | 2.A, 2.B, 2.C, 2.D, 2.E, 2.F, 2.G, 18.A, 18.B, 18.C, 18.D, 19.B, 20.B, 21.A, 21.B, 21.C | Immutable image/profile mapping, loopback registry round-trip/no-self-reference/cleanup, check containers with no network/root/write/socket, tmpfs/resources, complete reports, Baseline, formal validation | Docker/builder/registry versions, three-way image digest, lifecycle inspection, report/test artifacts |
 | Reference fixture E2E | Windows + Docker + Mock profile; `python -m pytest -q -o addopts='' -m reference_e2e tests/e2e/reference` | 31.A, 31.B, 31.C | Complete production admission → Baseline → feedback correction → formal validation → wait → exact writeback/recovery-block flow | Canonical Task 31.A/31.B/31.C traces/reports, final tree digests, cleanup evidence |
@@ -10687,17 +10895,18 @@ This audit is mandatory after every non-tracking PLAN edit. It parses only the e
 
 | Invariant | Current measured result | Status |
 |---|---|---|
-| Executable registry | 134 unique executable Tasks: retained integer Task 13 plus 133 dotted child Tasks; 37 Milestones remain non-executable containers | PASS |
-| Dependency table | 134 unique rows, 559 exact predecessor edges, one root (`1.A`), zero missing/self/unknown edges | PASS |
-| DAG topology | 134/134 nodes topologically sorted; 134/134 reachable from root `1.A`; zero cycles, isolated nodes, or unreachable nodes | PASS |
-| Executable waves | 70 waves, 134/134 Tasks assigned exactly once, zero predecessor-in-same-or-later-wave violations | PASS |
-| Ownership | 134 unique Task rows, 297 expanded core paths, zero duplicate primary owners | PASS |
+| Executable registry | 135 unique executable Tasks: retained integer Task 13 plus 134 dotted child Tasks; 37 Milestones remain non-executable containers | PASS |
+| Dependency table | 135 unique rows, 578 exact predecessor edges, one root (`1.A`), zero missing/self/unknown edges | PASS |
+| DAG topology | 135/135 nodes topologically sorted; 135/135 reachable from root `1.A`; zero cycles, isolated nodes, or unreachable nodes | PASS |
+| Executable waves | 70 longest-path waves, 135/135 Tasks assigned exactly once, zero predecessor-in-same-or-later-wave violations | PASS |
+| Ownership | 135 unique Task rows, 326 expanded core paths, zero duplicate primary owners | PASS |
 | Parallel conflicts | Zero same-wave intersections across expanded core-file ownership sets | PASS |
-| Interface provenance | All 134 Task blocks declare exact `Interfaces` without placeholder signatures; all 559 edges target an existing executable producer or a documented ordering/evidence predecessor. | PASS |
+| Migration ownership | One framework owner; 12 ordered domain migration owners for exact v0001–v0012; one composition-only registry owner whose 12 direct predecessors equal all producers; all complete formal database consumers depend transitively on Task 7.D | PASS |
+| Interface provenance | All 135 Task blocks declare exact `Interfaces` without placeholder signatures; all 578 edges target an existing executable producer or a documented ordering/evidence predecessor. | PASS |
 | Requirement coverage | 9/9 US, 9/9 FR, 6/6 NFR, and 31/31 AC rows each have non-empty, valid, disjoint implementation and independent validation Task sets | PASS |
 | Test environments | 12/12 environment rows contain only existing exact executable Task ids | PASS |
 | Stale executable shorthand | Zero ranges, natural-language dependency sets, or aggregate Milestone ids in the canonical DAG, Wave, ownership target, coverage, Test Environment, or Release Gate structures | PASS |
-| Release count | Release Gate requires exactly the same 134 executable Tasks | PASS |
+| Release count | Release Gate requires exactly the same 135 executable Tasks | PASS |
 
 The audit fails closed if a later parser finds a count mismatch, unknown Task id, duplicate membership/owner, cycle, unreachable node, non-earlier dependency, parallel core-file collision, missing producer, uncovered requirement, aggregate Milestone target, range, or natural-language dependency. Stable Milestone headings and their retained non-executable domain contracts are intentional and are not stale executable references.
 
@@ -10705,8 +10914,9 @@ The audit fails closed if a later parser finds a count mismatch, unknown Task id
 
 Release readiness is `PASS` only when every condition below is true at the same source commit:
 
-- All **134 executable Tasks** are complete and each records a real implementation commit SHA, responsible subagent, human edits, exact tests, spec review, code-quality review, and PR URL. All 37 Milestones derive complete status from their exact children and have no aggregate implementation commit or PR.
-- The exact release registry is: 1.A, 1.B, 1.C, 1.D, 1.E, 2.A, 2.B, 2.C, 2.D, 2.E, 2.F, 2.G, 3.A, 3.B, 3.C, 3.D, 3.E, 3.F, 3.G, 4.A, 4.F, 4.B, 4.C, 4.D, 4.E, 5.A, 5.B, 5.C, 5.D, 5.E, 6.A, 6.B, 6.C, 6.D, 6.E, 7.A, 7.B, 7.C, 8.A, 8.B, 9.A, 9.B, 9.C, 9.D, 10.A, 10.B, 10.C, 11.A, 11.B, 12.A, 12.B, 12.C, 12.D, 13, 14.A, 14.B, 14.C, 15.A, 15.B, 15.C, 15.D, 15.E, 15.F, 16.A, 16.B, 17.A, 17.B, 17.C, 18.A, 18.B, 18.C, 18.D, 19.A, 19.B, 19.C, 20.A, 20.B, 21.A, 21.B, 21.C, 22.A, 22.B, 22.C, 23.A, 23.B, 23.C, 24.A, 24.B, 24.C, 25.A, 25.B, 25.C, 25.D, 25.E, 25.F, 25.G, 26.A, 26.B, 26.C, 27.A, 27.B, 28.A, 28.B, 29.A, 29.B, 29.C, 30.A, 30.B, 31.A, 31.B, 31.C, 32.A, 32.B, 32.C, 33.A, 33.B, 34.A, 34.B, 35.A, 35.B, 35.C, 36.A, 36.B, 36.C, 37.A, 37.B, 37.C, 38.A, 38.B, 38.C, 38.D, 38.E, 38.F, and 38.G.
+- All **135 executable Tasks** are complete and each records a real implementation commit SHA, responsible subagent, human edits, exact tests, spec review, code-quality review, and PR URL. All 37 Milestones derive complete status from their exact children and have no aggregate implementation commit or PR.
+- The exact release registry is: 1.A, 1.B, 1.C, 1.D, 1.E, 2.A, 2.B, 2.C, 2.D, 2.E, 2.F, 2.G, 3.A, 3.B, 3.C, 3.D, 3.E, 3.F, 3.G, 4.A, 4.F, 4.B, 4.C, 4.D, 4.E, 5.A, 5.B, 5.C, 5.D, 5.E, 6.A, 6.B, 6.C, 6.D, 6.E, 7.A, 7.B, 7.C, 7.D, 8.A, 8.B, 9.A, 9.B, 9.C, 9.D, 10.A, 10.B, 10.C, 11.A, 11.B, 12.A, 12.B, 12.C, 12.D, 13, 14.A, 14.B, 14.C, 15.A, 15.B, 15.C, 15.D, 15.E, 15.F, 16.A, 16.B, 17.A, 17.B, 17.C, 18.A, 18.B, 18.C, 18.D, 19.A, 19.B, 19.C, 20.A, 20.B, 21.A, 21.B, 21.C, 22.A, 22.B, 22.C, 23.A, 23.B, 23.C, 24.A, 24.B, 24.C, 25.A, 25.B, 25.C, 25.D, 25.E, 25.F, 25.G, 26.A, 26.B, 26.C, 27.A, 27.B, 28.A, 28.B, 29.A, 29.B, 29.C, 30.A, 30.B, 31.A, 31.B, 31.C, 32.A, 32.B, 32.C, 33.A, 33.B, 34.A, 34.B, 35.A, 35.B, 35.C, 36.A, 36.B, 36.C, 37.A, 37.B, 37.C, 38.A, 38.B, 38.C, 38.D, 38.E, 38.F, and 38.G.
+- Task 7.A's engine passes independent order/idempotency/atomicity/checksum tests; every v0001–v0012 domain owner passes its exact table/key/unique/FK/prohibited-column contract; Task 7.D's direct predecessors equal the twelve migration producers; `ALL_V1_MIGRATIONS` has exact versions/names/order/checksums with no missing/duplicate/gap/unexpected entry; and Task 38.F applies only that tuple before constructing production repository ports.
 - M0 records the human-approved current SPEC path/SHA-256/blob/baseline and confirms the gate-bootstrap contract; Tasks 1.E, 2.G, and 3.G have `GO` outcomes under a cold-start record covering the approved `PlanSemanticDigestV1`.
 - `requirements/gate.lock`, `gates/pytest.ini`, `gates/ruff.toml`, `gates/mypy.ini`, `scripts/run_gate_checks.py`, the Task 2.D/2.E/2.F reporter/evidence/fingerprint producers, the Task 1.E, 2.G, and 3.G `GO` reports, `config/dependency-closure-v1.json`, and `config/formal-toolchain-promotion-v1.json` remain present; Task 37.B recomputes their SHA-256/version matrix and proves both records' `python_version` values equal Task 1.E terminal `GO` `GateToolchainEvidenceV1.python_version` character-for-character before proving the remaining closure/promotion identities match without silent drift.
 - Task 2.G `GO` proves a digest-pinned loopback-only registry with no credentials/external pushes, verified cleanup, no final-manifest self-reference, and local OCI/registry/digest-pull equality with final `ReferenceProfileManifestV1.docker_image_digest`; Task 34.A reproduces that exact identity, and Task 36.B's GHCR RepoDigest equals it.
