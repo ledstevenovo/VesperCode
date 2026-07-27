@@ -2264,8 +2264,6 @@ def test_exact_writeback_approval_can_be_consumed_only_once(
   - `validate_segment_sources(messages: RequestMessageSequenceV1) -> SourceProjectionV1`
   - `scope_matches(scope: DisclosurePathScopeV1, path: CanonicalRelativePathV1) -> bool`
   - `DisclosureDecisionServiceV1.decide(command: DecideDisclosureGrantV1) -> DisclosureDecisionResultV1`
-  - `DisclosureSubjectRepository.load_for_update(tx: ControlTransactionV1, run_id: str, subject_digest: DigestV1) -> DisclosureGrantSubjectV1`
-  - `DisclosureLedger.activate(tx: ControlTransactionV1, wait: WaitContextV1, subject: DisclosureGrantSubjectV1, activated_at: CanonicalTimestampV1) -> DisclosureGrantV1`
   - `DisclosureLedger.authorize(command: AuthorizePreparedRequestV1) -> DisclosureAuthorizationOutcomeV1`
   - `DisclosureRevocationServiceV1.revoke(command: RevokeDisclosureGrantV1) -> GrantMutationResultV1`
 
@@ -2277,6 +2275,7 @@ def test_exact_writeback_approval_can_be_consumed_only_once(
 - Build Grant subject endpoint/model/serializer/redaction values only from the frozen profile and built-in endpoint. Mutable status and consumed bytes do not alter the subject.
 - Create the disclosure wait only from `AGENT_LOOP`; bind wait/run/kind/subject/expiry exactly.
 - `DisclosureDecisionServiceV1` reads `now` from its injected Task 4.C `ClockV1`, converts the specialized command to Task 5 `WaitDecisionV1`, locks the wait through Task 7.B, reloads the immutable subject/profile/endpoint, and applies Grant creation plus Task 7.B transition in one `ControlTransactionV1`. `DisclosureRevocationServiceV1` separately locks and revokes only the exact active Grant. User input cannot supply an activation, rejection, expiry, or revocation timestamp.
+- Subject reload and active-Grant insertion inside `DisclosureDecisionServiceV1.decide` are Task 15.D `_private/local` transaction helpers (for example `_load_disclosure_subject_for_update(...)` and `_activate_disclosure_grant(...)`), not exported repository/ledger callables; no downstream Task consumes them directly.
 - The decision event id is recorded/replayed through Task 7.C idempotency in the same transaction. Exact replay returns the original typed result; conflicting bytes return `EVENT_ID_REUSE_CONFLICT`; neither path creates or activates another Grant.
 - Exact `APPROVE` inserts one `DisclosureGrantV1(status="ACTIVE", consumed_bytes=0)` before atomically returning the Run to a new `AGENT_LOOP` entry. `REJECT` or an expired wait creates no Grant, stops through the closed wait lifecycle, and cannot call the real adapter.
 - Revocation binds grant/run/subject/event/time, changes only an active matching Grant to `REVOKED`, and never transitions a Run by itself. Task 25.G must create the newly required disclosure wait when positive wall-clock time remains.
@@ -2599,7 +2598,7 @@ def test_model_cannot_supply_action_id(action_parser: ActionParser) -> None:
   - `DockerExecutionProfileV1`
   - `ExecutionRequestV1(check_kind: CheckPlanIdV1, argv: ExecutionArgumentSequenceV1, environment: Mapping[str, str], candidate_tree_digest: str, timeout_seconds: int)`
   - `RawExecutionResultV1(exit_code: int | None, stdout_ref: ArtifactRefV1, stderr_ref: ArtifactRefV1, report_ref: ArtifactRefV1 | None, output_bytes: int, timed_out: bool, execution_identity_digest: str)`
-  - `DockerExecutor.verify_readiness(reference: ReferenceProfileManifestV1) -> ExecutionReadinessResultV1`
+  - `DockerReadinessService.verify(reference: ReferenceProfileManifestV1) -> ExecutionReadinessResultV1`
   - `DockerExecutor.execute(request: ExecutionRequestV1, candidate: MaterializedCandidateV1) -> RawExecutionResultV1`
   - `materialize_candidate(candidate: CandidateTreeV1, root: AuthorizedExecutionRootV1) -> MaterializedCandidateV1`
 
@@ -7493,7 +7492,7 @@ def test_revoke_rejects_mismatched_subject(
 - Test: `tests/unit/llm/test_mock_adapter.py`
 - Test: `tests/unit/llm/test_call_result.py`
 
-**Interfaces:** Produces protocol `LLMAdapter.generate(request: PreparedModelRequestV1) -> ModelResponse`, closed `PreparedModelRequestV1 = MockPreparedModelRequestV1 | OpenAIPreparedModelRequestV1`, `ModelResponse`, closed `LLMCallResultV1`, and `MockLLMAdapter.generate(request: MockPreparedModelRequestV1) -> ModelResponse`.
+**Interfaces:** Produces protocol `LLMAdapter.generate(request: PreparedModelRequestV1) -> ModelResponse`, closed `PreparedModelRequestV1 = MockPreparedModelRequestV1 | OpenAIPreparedModelRequestV1`, `ModelResponse`, closed `LLMCallResultV1`, `prepare_mock_request(profile: MockLLMProfileV1, messages: tuple[RequestMessageV1, ...]) -> MockPreparedModelRequestV1`, `prepare_openai_request(profile: OpenAILLMProfileV1, messages: tuple[RequestMessageV1, ...]) -> OpenAIPreparedModelRequestV1`, and `MockLLMAdapter.generate(request: MockPreparedModelRequestV1) -> ModelResponse`.
 
 **Intentionally failing test:**
 
@@ -8808,7 +8807,7 @@ def test_one_engine_step_calls_each_stage_once_in_order(
 - Test: `tests/unit/persistence/test_writeback_preconditions.py`
 - Test: `tests/fault_injection/persistence/test_writeback_fault_matrix.py`
 
-**Interfaces:** Produces immutable `PERSISTENCE_V1_MIGRATION = MigrationV1(version=11, name="persistence_v1", ...)`, the Milestone 26 path/transaction/artifact contracts, and `PersistenceCoordinator.persist(command: PersistVerifiedCandidateV1) -> PersistenceResultV1`.
+**Interfaces:** Produces immutable `PERSISTENCE_V1_MIGRATION = MigrationV1(version=11, name="persistence_v1", ...)`, the Milestone 26 path/transaction/artifact contracts, `PersistenceCommandFactoryV1.for_approved_run(run_id: str, approval_id: str, event_id: str) -> PersistVerifiedCandidateV1`, and `PersistenceCoordinator.persist(command: PersistVerifiedCandidateV1) -> PersistenceResultV1`.
 
 **Intentionally failing test:**
 
@@ -8902,7 +8901,7 @@ def test_recovery_preview_is_read_only(
 - Test: `tests/fault_injection/persistence/test_external_change_faults.py`
 - Test: `tests/integration/windows/test_persistence_acl_and_identity.py`
 
-**Interfaces:** Produces immutable `RECOVERY_V1_MIGRATION = MigrationV1(version=12, name="recovery_v1", ...)`, `RecoveryService.preview(workspace: WorkspaceIdentityV1) -> RecoveryPreviewV1` by selecting the workspace-bound transaction and delegating only to Task 26.B `preview_transaction(transaction_id: str)`, and `RecoveryService.apply(command: ApplyRecoveryV1) -> RecoveryResultV1` using Task 26.A artifacts/records.
+**Interfaces:** Produces immutable `RECOVERY_V1_MIGRATION = MigrationV1(version=12, name="recovery_v1", ...)`, `RecoveryService.preview(workspace: WorkspaceIdentityV1) -> RecoveryPreviewV1` by selecting the workspace-bound transaction and delegating only to Task 26.B `preview_transaction(transaction_id: str)`, `RecoveryService.apply(command: ApplyRecoveryV1) -> RecoveryResultV1` using Task 26.A artifacts/records, and read-only `has_unresolved_transaction(workspace_identity_digest: str) -> bool`.
 
 **Intentionally failing test:**
 
@@ -8918,7 +8917,7 @@ def test_stale_preview_cannot_apply_recovery(
 
 **Schema RED:** `tests/unit/storage/test_recovery_migration.py::test_recovery_migration_has_exact_schema` applies v0001–v0012 and asserts the sole `recovery_results` table, unique FK `transaction_id → persistence_transactions`, closed disposition/evidence digest/ref/timestamp fields, and absence of backup/preimage/postimage/raw-output/credential bodies.
 
-**Implementation boundary:** This task owns one coupled terminal-recovery storage behavior: immutable v0012 DDL and the exact apply transaction that records one service-proven terminal result. It cannot edit the final registry. There is no force, ignore, skip-path, edit-record, or user-declared success path; only service-proven terminal dispositions unblock admission.
+**Implementation boundary:** This task owns one coupled terminal-recovery storage behavior: immutable v0012 DDL and the exact apply transaction that records one service-proven terminal result. It cannot edit the final registry. Its admission predicate is read-only and returns false only after a service-proven terminal disposition; it cannot mutate or bypass recovery. There is no force, ignore, skip-path, edit-record, or user-declared success path; only service-proven terminal dispositions unblock admission.
 
 **Verification:**
 - Target: `python -m pytest -q tests/fault_injection/persistence/test_external_change_faults.py::test_stale_preview_cannot_apply_recovery`
@@ -10273,7 +10272,7 @@ def test_delivery_rejects_incomplete_executable_child(
 - Create: `src/vespercode/web/templates/credential_status.html`
 - Test: `tests/web/test_credential_workflow.py`
 
-**Interfaces:** Produces `CredentialWorkflowPortsV1` and `CredentialRouteInstallerV1`.
+**Interfaces:** Produces `CredentialWorkflowPortsV1` with exact methods `CredentialWorkflowPortsV1.set(provider: Literal["OPENAI"], secret: SecretCredentialV1, event_id: str) -> CredentialMutationResultV1`, `CredentialWorkflowPortsV1.status(provider: Literal["OPENAI"]) -> CredentialStatusV1`, `CredentialWorkflowPortsV1.update(provider: Literal["OPENAI"], secret: SecretCredentialV1, event_id: str) -> CredentialMutationResultV1`, and `CredentialWorkflowPortsV1.clear(provider: Literal["OPENAI"], event_id: str) -> CredentialMutationResultV1`, plus `CredentialRouteInstallerV1`.
 
 **Intentionally failing test:**
 
@@ -10318,7 +10317,7 @@ def test_credential_response_never_contains_secret_or_derivative(
 - Create: `src/vespercode/web/templates/memory.html`
 - Create: `tests/web/test_memory_workflow.py`
 
-**Interfaces:** Produces `MemoryWorkflowPortsV1` and `MemoryRouteInstallerV1`; route commands contain Run id and operation-visible fields but no client-selected workspace identity.
+**Interfaces:** Produces `MemoryWorkflowPortsV1` with exact methods `MemoryWorkflowPortsV1.list(run_id: str) -> tuple[MemoryEntryV1, ...]`, `MemoryWorkflowPortsV1.create(command: CreateMemoryForRunV1) -> MemoryMutationResultV1`, `MemoryWorkflowPortsV1.confirm(command: ConfirmMemoryForRunV1) -> MemoryMutationResultV1`, and `MemoryWorkflowPortsV1.clear(command: ClearMemoryForRunV1) -> MemoryMutationResultV1`, plus `MemoryRouteInstallerV1`; route commands contain Run id and operation-visible fields but no client-selected workspace identity.
 
 **Intentionally failing test:**
 
@@ -10365,7 +10364,7 @@ def test_memory_form_cannot_select_foreign_workspace(
 - Create: `src/vespercode/web/templates/audit.html`
 - Create: `tests/web/test_audit_workflow.py`
 
-**Interfaces:** Produces `AuditWorkflowPortsV1` and `AuditRouteInstallerV1` using Task 23.B closed page projection and Task 23.C clear command.
+**Interfaces:** Produces `AuditWorkflowPortsV1` with exact methods `AuditWorkflowPortsV1.list_run(run_id: str, page: AuditPageRequestV1) -> AuditPageV1` and `AuditWorkflowPortsV1.clear_ended_run(command: ClearEndedRunAuditV1) -> AuditClearResultV1`, plus `AuditRouteInstallerV1` using Task 23.B closed page projection and Task 23.C clear command.
 
 **Intentionally failing test:**
 
@@ -10408,7 +10407,7 @@ def test_audit_page_contains_only_redacted_projection(
 - Create: `src/vespercode/web/templates/recovery_preview.html`
 - Test: `tests/web/test_recovery_workflow.py`
 
-**Interfaces:** Produces `RecoveryWorkflowPortsV1` and `RecoveryRouteInstallerV1`; apply accepts only `run_id`, `transaction_id`, `preview_digest`, confirmation, and event id.
+**Interfaces:** Produces `RecoveryWorkflowPortsV1` with exact methods `RecoveryWorkflowPortsV1.preview(run_id: str) -> RecoveryPreviewV1` and `RecoveryWorkflowPortsV1.apply(command: ApplyRecoveryForRunV1) -> RecoveryResultV1`, `render_recovery_preview(preview: RecoveryPreviewV1) -> HTMLResponse`, and `RecoveryRouteInstallerV1`; apply accepts only `run_id`, `transaction_id`, `preview_digest`, confirmation, and event id.
 
 **Intentionally failing test:**
 
