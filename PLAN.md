@@ -372,15 +372,15 @@ This table is the complete storage-class decision for every SPEC §7 entity plus
 | VerifiedCandidate | local artifact/config owner | Task 21.C owns the immutable verification evidence artifact and digest; writeback subject/approval rows bind its identity/ref. |
 | PersistenceTransaction | SQLite migration owner | Task 26.A, `v0011_persistence.py`, table `persistence_transactions`; primary key `transaction_id`, FKs to Run/approval, unique active transaction per workspace, exact state/digests/artifact refs, and no backup bytes. |
 | PersistencePathRecord | SQLite migration owner | Task 26.A, `v0011_persistence.py`, table `persistence_path_records`; composite primary key `(transaction_id, sequence)`, FK to transaction, unique `(transaction_id, canonical_path)`, operation/preimage/postimage digests and progress evidence refs only. |
-| RecoveryResult | SQLite migration owner | Task 26.C, `v0012_recovery.py`, table `recovery_results`; primary key `recovery_result_id`, FK/unique terminal `transaction_id`, closed disposition and evidence digest/ref only. Recovery backup bytes stay in Task 26.A ACL artifacts. |
+| RecoveryResult | SQLite migration owner | Task 26.C, `v0012_recovery.py`, table `recovery_results`; primary key `recovery_result_id`, FK/unique terminal `transaction_id`, closed disposition and evidence digest/ref only. Recovery backup bytes stay in Task 26.D ACL artifacts. |
 | MemoryEntry | SQLite migration owner | Task 22.A, `v0005_memory.py`, table `memory_entries`; primary key `memory_id`, indexed workspace identity, closed kind/creator/source/bounds/timestamps and nullable clear tombstone; no secret, permission, or complete source body. |
 | AuditEvent | SQLite migration owner | Task 23.A, `v0006_audit.py`, table `audit_events`; composite uniqueness `(run_id, sequence)`, FK `run_id → runs`, allowlisted bounded redacted payload and evidence refs only. |
 | Idempotency event (PLAN repository record) | SQLite migration owner | Task 7.C, `v0002_idempotency.py`, table `idempotency_events`; composite primary key `(scope, event_id)`, immutable request/result digests, and no reconstructed domain body. |
 | Content object / complete file body (PLAN artifact record) | local artifact/config owner | Task 10.A owns digest-verified ACL-restricted bytes; control rows retain only content digests/refs. |
-| Persistence backup and raw recovery evidence (PLAN artifact record) | local artifact/config owner | Task 26.A owns ACL-restricted bytes and verified refs; Task 26.C never copies the bodies into `recovery_results`. |
+| Persistence backup and raw recovery evidence (PLAN artifact record) | local artifact/config owner | Task 26.D owns ACL-restricted bytes and verified refs; Task 26.C never copies the bodies into `recovery_results`. |
 | Credential record (PLAN external-store record) | local artifact/config owner | Task 27.B owns the Windows Credential Manager entry outside repository artifacts and SQLite; status/audit exposes no value or derivative. |
-| DemoSession | in-memory only | Task 30.A owns the bounded expiring Demo session store; it is capability-isolated from the formal control database. |
-| DemoDecision | in-memory only | Task 30.A owns the fixed-scenario decision in its Demo session; it cannot become a formal authorization. |
+| DemoSession | in-memory only | Task 30.D owns the bounded expiring Demo session store; it is capability-isolated from the formal control database. |
+| DemoDecision | in-memory only | Task 30.D owns the fixed-scenario decision in its Demo session using Task 30.A's immutable value contract; it cannot become a formal authorization. |
 
 The ordered migration sequence is exactly v0001 through v0012 with no duplicate, gap, or unexpected version. A domain migration test applies Task 7.A's engine to the tuple of the actual immutable predecessor constants plus the current constant; no domain task edits or imports `registry.py`. Task 7.D alone imports the twelve constants, verifies the declared `(version, name, checksum)` order, and exports `ALL_V1_MIGRATIONS`. Its test-only owner map applies every exact prefix to empty temporary SQLite, proves each version's newly visible `sqlite_schema` table delta matches the sole-owner rows above, handles Task 7.A's `schema_migrations` bootstrap separately at v0001, and proves the final set is exactly all 18 declared SQLite tables; production registry code neither contains nor imports that expected map. Complete file bodies, complete LLM requests/responses, raw check output, and recovery backup bytes remain current-user ACL-restricted artifacts; only the explicitly allowed digests/refs above may enter SQLite, and credentials never do.
 
@@ -399,7 +399,7 @@ This planning-only gate is not a formal implementation task and has no task numb
 
 Each pass emits its own `PlanReviewChecklistV1`. Its ordered fields are `gateVersion`, `reviewKind`, `inputIdentities`, `candidateGitHead`, `planCompleteFileSha256`, `specSha256`, `specGitBlob`, `planSemanticDigestV1`, `reviewerIdentity`, `reviewerType`, `auditEvidence`, `reviewSourceSha256`, `items`, and `checklistSha256`. `gateVersion` is exactly `IndependentPlanReviewGateV1`; `reviewKind` is exactly `PLAN_SPEC_COMPLIANCE` or `PLAN_EXECUTABILITY`, and no combined value exists. `inputIdentities` has ordered fields `plan`, `spec`, `courseGeneral`, `courseHarness`, `agents`, `verifierAResult`, and `verifierBResult`; each single-file entry is an ordered canonical-absolute-path/SHA-256 pair and `agents` is an ascending UTF-8-byte-sorted array of those pairs. `auditEvidence` contains ordered A then B entries, each with `auditContractVersion`, `verifierSourceSha256`, `resultSha256`, `planCompleteFileSha256`, `specSha256`, `planSemanticDigestV1`, and `verdict`.
 
-Every `items` entry is a `PlanReviewChecklistItemV1` with ordered fields `itemId`, `reviewKind`, `scopeKind`, `scopeId`, `criterion`, `requirementLocations`, `planLocations`, `evidence`, `outcome`, and `findingIds`. Locations are sorted exact document/section-or-task/line-range objects; finding ids are sorted. `outcome` is exactly `PASS`, `FAIL`, or `UNREVIEWED`; omission is invalid. Item ids are stable within the frozen review kind. The compliance checklist contains one item for every leaf mandatory contract plus each global consistency criterion below. The executability checklist contains every criterion below for each of all 135 executable tasks, plus the named cross-task/DAG/global checks; aggregate prose is context, never a substitute task result.
+Every `items` entry is a `PlanReviewChecklistItemV1` with ordered fields `itemId`, `reviewKind`, `scopeKind`, `scopeId`, `criterion`, `requirementLocations`, `planLocations`, `evidence`, `outcome`, and `findingIds`. Locations are sorted exact document/section-or-task/line-range objects; finding ids are sorted. `outcome` is exactly `PASS`, `FAIL`, or `UNREVIEWED`; omission is invalid. Item ids are stable within the frozen review kind. The compliance checklist contains one item for every leaf mandatory contract plus each global consistency criterion below. The executability checklist contains every criterion below for each of all 141 executable tasks, plus the named cross-task/DAG/global checks; aggregate prose is context, never a substitute task result.
 
 Each checklist is deterministic UTF-8 JSON with no BOM and exactly one final LF. Object fields use the declared order; input/location/item arrays use ascending UTF-8 byte order by their stable identity. `reviewSourceSha256` identifies the exact independent review procedure/source. `checklistSha256` is SHA-256 of the canonical checklist bytes with `checklistSha256` set to 64 lowercase zeroes. Neither checklist may contain a time, random value, host-dependent path alias, or unstated input.
 
@@ -417,7 +417,7 @@ The independent reviewer fails closed unless all of the following are exhaustive
 
 ### `PLAN_EXECUTABILITY` exhaustive checklist
 
-The independent reviewer evaluates every one of the 135 executable tasks and fails closed unless all of the following are exhaustively evidenced:
+The independent reviewer evaluates every one of the 141 executable tasks and fails closed unless all of the following are exhaustively evidenced:
 
 1. Each task is a real single-session unit or a bounded final composition/verification unit.
 2. Each child is self-contained when given Global Constraints, its four-field aggregate context, and its own block.
@@ -434,7 +434,7 @@ The independent reviewer evaluates every one of the 135 executable tasks and fai
 
 `PlanReviewFindingV1` has ordered fields `findingId`, `reviewKind`, `severity`, `locations`, `contract`, `evidence`, `impact`, `requiredRemediation`, and `status`. A location is an exact PLAN/SPEC/course/AGENTS document, section-or-task, and inclusive line range. `severity` is exactly `Critical`, `Important`, or `Minor`; `status` is exactly `OPEN` or `CLOSED`. Finding ids are stable and findings are sorted by UTF-8 bytes of `findingId`.
 
-Each separate pass emits `PlanReviewResultV1` with ordered fields `gateVersion`, `reviewKind`, `inputIdentities`, `candidateGitHead`, `planCompleteFileSha256`, `specSha256`, `specGitBlob`, `planSemanticDigestV1`, `reviewerIdentity`, `reviewerType`, `auditEvidence`, `reviewSourceSha256`, `checklistSha256`, `checklistMetrics`, `findings`, `resultSha256`, and `verdict`. `checklistMetrics` has ordered non-negative integer fields `itemsExpected`, `itemsRecorded`, `itemsPassed`, `itemsFailed`, `itemsUnreviewed`, `tasksExpected`, `tasksReviewed`, `openCritical`, `openImportant`, and `openMinor`; the executability result requires `tasksExpected = tasksReviewed = 135`.
+Each separate pass emits `PlanReviewResultV1` with ordered fields `gateVersion`, `reviewKind`, `inputIdentities`, `candidateGitHead`, `planCompleteFileSha256`, `specSha256`, `specGitBlob`, `planSemanticDigestV1`, `reviewerIdentity`, `reviewerType`, `auditEvidence`, `reviewSourceSha256`, `checklistSha256`, `checklistMetrics`, `findings`, `resultSha256`, and `verdict`. `checklistMetrics` has ordered non-negative integer fields `itemsExpected`, `itemsRecorded`, `itemsPassed`, `itemsFailed`, `itemsUnreviewed`, `tasksExpected`, `tasksReviewed`, `openCritical`, `openImportant`, and `openMinor`; the executability result requires `tasksExpected = tasksReviewed = 141`.
 
 Each result is deterministic UTF-8 JSON with no BOM and exactly one final LF, the declared field order, and sorted findings. `resultSha256` is SHA-256 of the canonical result bytes with `resultSha256` set to 64 lowercase zeroes. Thus each review exposes its own review-source, checklist, and result digest without self-reference.
 
@@ -486,7 +486,7 @@ This gate is not a formal implementation task and has no task number.
 
 - A heading named `Milestone N` contains exactly four ordered fields—`Goal`, `SPEC scope`, `Executable children`, and `Aggregate completion condition`—and nothing else. It is a non-executable traceability container and owns no files, APIs, dependencies, schedule, branch/worktree, status, implementation, tests, verification procedure, review procedure, or evidence; none of its text authorizes execution. Aggregate completion is derived externally only from truthful evidence of all exact executable children, and the aggregate has no implementation branch, worktree, commit, evidence commit, or PR of its own.
 - A heading named `Task N.X` is one formal executable task. Each child receives a fresh subagent, branch, worktree, implementation commit, two review gates, evidence commit, and PR.
-- The executable registry is closed: retained integer Task 13 plus 134 dotted child Tasks, for 135 executable Tasks total. The 37 `Milestone N` headings are non-executable containers and never appear as nodes in canonical DAG, wave, ownership, coverage, test-environment, or release structures.
+- The executable registry is closed: retained integer Task 13 plus 140 dotted child Tasks, for 141 executable Tasks total. The 37 `Milestone N` headings are non-executable containers and never appear as nodes in canonical DAG, wave, ownership, coverage, test-environment, or release structures.
 - An implementer may rely only on Global Constraints, the applicable Milestone contract, and their own child-task block. Child blocks therefore declare exact files, interfaces, dependencies, RED test, implementation boundary, and commands.
 - Every executable child follows this exact workflow:
   1. Add the displayed intentionally failing test without production implementation.
@@ -636,7 +636,7 @@ This gate is not a formal implementation task and has no task number.
 
 **Dependencies:** Tasks 5.D, 6.E, and 12.D.
 
-**Blocks:** Tasks 14.A, 17.C, 25.D, 30.A, 31.A, 31.B, 32.A, and 37.B.
+**Blocks:** Tasks 14.A, 17.C, 25.D, 30.C, 31.A, 31.B, 32.A, and 37.B.
 
 **Parallelization:** Parallelizable with Task 18.A; Task 13 and Task 18.A each start only after their exact executable Dependencies are satisfied, and they own disjoint files.
 
@@ -856,7 +856,7 @@ def test_user_approval_cannot_override_noneditable_path_deny(
 
 **SPEC scope:** SPEC §4.2.6–§4.2.7 persistence cancellation/lifecycle; §4.4.2 approval; §4.6 in full; §5.2; §5.5–§5.6; §7 persistence rows; §8.2 recovery CLI; §10.1 AC-03, AC-07, AC-21–AC-22, AC-26–AC-29, AC-31; §10.3 recovery fault injection.
 
-**Executable children:** 26.A, 26.B, 26.C
+**Executable children:** 26.A, 26.D, 26.E, 26.B, 26.C
 
 **Aggregate completion condition:** All listed children are completed according to the canonical DAG, and all child-owned verification and review gates have passed. This Milestone is descriptive/aggregate only and owns no files, APIs, dependencies, schedule, branch/worktree, status, implementation, tests, verification procedure, review procedure, or evidence.
 
@@ -876,7 +876,7 @@ def test_user_approval_cannot_override_noneditable_path_deny(
 
 **SPEC scope:** SPEC §4.9 local mode and tests; §5.3; §5.5 WebUI threat; §8.2 `vespercode serve`; §9 UI choice; §10.1 AC-08, AC-11, AC-13, AC-16, AC-24; course WebUI deliverable.
 
-**Executable children:** 28.A, 28.B
+**Executable children:** 28.A, 28.B, 28.C, 28.D
 
 **Aggregate completion condition:** All listed children are completed according to the canonical DAG, and all child-owned verification and review gates have passed. This Milestone is descriptive/aggregate only and owns no files, APIs, dependencies, schedule, branch/worktree, status, implementation, tests, verification procedure, review procedure, or evidence.
 
@@ -896,7 +896,7 @@ def test_user_approval_cannot_override_noneditable_path_deny(
 
 **SPEC scope:** SPEC §1.5 public demo goal; §2.9 US-09; §4.2.1 Demo states; §4.9 public Demo; §5.1–§5.2; §5.5–§5.6; §6.4; §7 Demo rows; §8.3; §10.1 AC-02, AC-05, AC-09, AC-12, AC-17, AC-24; §10.4 visual scenario.
 
-**Executable children:** 30.A, 30.B
+**Executable children:** 30.A, 30.C, 30.D, 30.B
 
 **Aggregate completion condition:** All listed children are completed according to the canonical DAG, and all child-owned verification and review gates have passed. This Milestone is descriptive/aggregate only and owns no files, APIs, dependencies, schedule, branch/worktree, status, implementation, tests, verification procedure, review procedure, or evidence.
 
@@ -4349,7 +4349,7 @@ def test_two_turns_cannot_consume_one_feedback_record(repository: FeedbackReposi
 
 **Dependencies:** Tasks 5.D, 7.C, 14.C, and 24.C.
 
-**Blocks:** Tasks 25.G, 30.A, 32.A, and 37.B.
+**Blocks:** Tasks 25.G, 30.D, 32.A, and 37.B.
 
 **Parallelization:** Parallel with Tasks 25.B, 25.C, 25.E, and 25.F after dependencies freeze their interfaces.
 
@@ -4487,7 +4487,7 @@ def test_cleared_credential_stops_before_every_charge_or_count(
 
 **Dependencies:** Tasks 11.B, 12.D, 13, 17.C, 19.C, and 24.C.
 
-**Blocks:** Tasks 7.D, 14.B, 25.G, 30.A, 32.A, and 37.B.
+**Blocks:** Tasks 7.D, 14.B, 25.G, 30.C, 32.A, and 37.B.
 
 **Parallelization:** Parallel with Tasks 25.A, 25.C, 25.E, and 25.F.
 
@@ -4656,37 +4656,126 @@ def test_one_engine_step_calls_each_stage_once_in_order(
 
 **Completion evidence:** Not yet executed.
 
-#### Task 26.A: Approval-bound Verified Writeback Transaction
+#### Task 26.A: Persistence Schema and Immutable Path/Transaction Records
 
 **Status:** Not started
 
-**Goal:** Persist one exact approved `FinalDiffV1` through durable preimages, backups, per-path progress, atomic replaces, verification, and `COMMITTED`.
+**Goal:** Define the immutable v0011 persistence schema and typed repositories for transaction and ordered per-path records without performing artifact I/O or workspace writeback.
 
-**SPEC references:** Milestone 26 writeback requirements.
+**SPEC references:** Milestone 26 durable persistence transaction/path record and body-free storage requirements.
 
 **Dependencies:** Tasks 3.G, 7.C, 9.D, 12.D, 14.C, 21.C, and 23.C.
 
 **Non-task entry gate:** The terminal Task 3.G outcome is `GO`.
 
-**Blocks:** Tasks 7.D, 26.B, 29.C, 31.A, and 37.B.
+**Blocks:** Tasks 7.D, 26.D, and 37.B.
 
-**Parallelization:** Parallelizable with Tasks 25.A, 25.B, 25.C, 25.D, 25.E, 25.F, and 25.G once each exact executable Dependencies field is satisfied.
+**Parallelization:** Parallelizable with Tasks 25.A, 25.B, 25.C, 25.D, 25.E, 25.F, and 25.G once each exact executable Dependencies field is satisfied; Task 26.D waits for this schema/record contract.
 
-**Branch/worktree:** `codex/task-26a-writeback`; `.worktrees/task-26a-writeback`.
+**Branch/worktree:** `codex/task-26a-persistence-records`; `.worktrees/task-26a-persistence-records`.
 
 **Files:**
 - Create: `src/vespercode/storage/migrations/v0011_persistence.py`
 - Create: `src/vespercode/persistence/path_record.py`
 - Create: `src/vespercode/persistence/transaction.py`
-- Create: `src/vespercode/persistence/artifacts.py`
-- Create: `src/vespercode/persistence/writeback.py`
 - Test: `tests/unit/storage/test_persistence_migration.py`
 - Test: `tests/unit/persistence/test_path_record.py`
 - Test: `tests/unit/persistence/test_transaction.py`
+
+**Interfaces:** Produces immutable `PERSISTENCE_V1_MIGRATION = MigrationV1(version=11, name="persistence_v1", ...)`, `PersistenceTransactionV1`, `PersistencePathRecordV1`, `PersistenceTransactionRepositoryV1`, and `PersistencePathRecordRepositoryV1`.
+
+**Intentionally failing test:**
+
+```python
+def test_path_records_are_unique_and_ordered_with_body_free_evidence(
+    transaction_repository: PersistenceTransactionRepositoryV1,
+    path_repository: PersistencePathRecordRepositoryV1,
+) -> None:
+    tx = transaction_repository.create(persistence_transaction("tx-1"))
+    path_repository.append(tx.transaction_id, path_record(sequence=1, path="src/a.py"))
+    with pytest.raises(DuplicatePersistencePath):
+        path_repository.append(tx.transaction_id, path_record(sequence=2, path="src/a.py"))
+    assert path_repository.list_ordered(tx.transaction_id)[0].sequence == 1
+```
+
+**Schema RED:** `tests/unit/storage/test_persistence_migration.py::test_persistence_migration_has_exact_schema` applies v0001–v0011 and asserts only `persistence_transactions` and `persistence_path_records`, Run/approval/transaction foreign keys, unique active workspace transaction and `(transaction_id, canonical_path)` identities, composite ordered path key, closed states/digests/artifact refs, and absence of postimage/preimage/backup body or credential columns.
+
+**Implementation boundary:** This task owns only immutable v0011 DDL plus transaction/path value and repository contracts. It cannot edit the final registry, read or write artifact/workspace bytes, consume approval, perform atomic replace, or decide recovery disposition.
+
+**Verification:**
+- Target: `python -m pytest -q tests/unit/persistence/test_path_record.py::test_path_records_are_unique_and_ordered_with_body_free_evidence`
+- Schema: `python -m pytest -q tests/unit/storage/test_persistence_migration.py::test_persistence_migration_has_exact_schema`
+- Domain: `python -m pytest -q tests/unit/storage/test_persistence_migration.py tests/unit/persistence/test_path_record.py tests/unit/persistence/test_transaction.py`
+- Expected: exact v0011 schema, keys, uniqueness, state vocabulary, ordered repository access, and body-free evidence refs pass without artifact or workspace I/O.
+
+**Completion evidence:** Not yet executed.
+
+#### Task 26.D: ACL-restricted Persistence Artifact and Backup Storage
+
+**Status:** Not started
+
+**Goal:** Store exact preimage, postimage, backup, and raw recovery evidence bytes as current-user ACL-restricted content-addressed artifacts with verified immutable refs.
+
+**SPEC references:** Milestone 26 backup, artifact integrity, local retention, ACL, and no-SQLite-body requirements.
+
+**Dependencies:** Task 26.A.
+
+**Blocks:** Tasks 26.E and 37.B.
+
+**Parallelization:** Sequential after Task 26.A; no workspace writeback or recovery classification is included.
+
+**Branch/worktree:** `codex/task-26d-persistence-artifacts`; `.worktrees/task-26d-persistence-artifacts`.
+
+**Files:**
+- Create: `src/vespercode/persistence/artifacts.py`
+- Test: `tests/unit/persistence/test_artifacts.py`
+
+**Interfaces:** Produces `PersistenceArtifactStoreV1.put(kind: PersistenceArtifactKindV1, body: bytes) -> PersistenceArtifactRefV1`, `PersistenceArtifactStoreV1.read_verified(ref: PersistenceArtifactRefV1) -> bytes`, and `PersistenceArtifactStoreV1.verify_acl(ref: PersistenceArtifactRefV1) -> ArtifactAclResultV1`.
+
+**Intentionally failing test:**
+
+```python
+def test_artifact_store_rejects_digest_mismatch_and_non_private_acl(
+    artifact_store: PersistenceArtifactStoreV1,
+) -> None:
+    ref = artifact_store.put("BACKUP", b"before")
+    corrupt_artifact_bytes(ref)
+    with pytest.raises(PersistenceArtifactIntegrityError):
+        artifact_store.read_verified(ref)
+    assert artifact_store.verify_acl(ref).current_user_only is True
+```
+
+**Implementation boundary:** This task owns only content-addressed artifact bytes, digest verification, and current-user ACL enforcement. It stores no body in SQLite, consumes no approval, changes no workspace byte, advances no transaction state, and classifies no recovery disposition.
+
+**Verification:**
+- Target: `python -m pytest -q tests/unit/persistence/test_artifacts.py::test_artifact_store_rejects_digest_mismatch_and_non_private_acl`
+- Domain: `python -m pytest -q tests/unit/persistence/test_artifacts.py`
+- Expected: deterministic refs, byte-for-byte verification, ACL rejection, atomic artifact publication, and absence of SQLite/workspace mutations pass.
+
+**Completion evidence:** Not yet executed.
+
+#### Task 26.E: Approval-bound Atomic Writeback Composition
+
+**Status:** Not started
+
+**Goal:** Thinly compose Task 26.A records and Task 26.D artifacts into the exact approval-bound 1–3-path atomic writeback protocol ending only in verified `COMMITTED` or a durable non-terminal transaction.
+
+**SPEC references:** Milestone 26 exact approved `FinalDiffV1`, approval consumption, per-path progress, atomic replace, verification, cancellation, and interruption requirements.
+
+**Dependencies:** Task 26.D.
+
+**Blocks:** Tasks 26.B, 29.C, 31.A, and 37.B.
+
+**Parallelization:** Sequential after Task 26.D; downstream recovery preview, local writeback workflow, and reference E2E wait for this composition.
+
+**Branch/worktree:** `codex/task-26e-writeback-composition`; `.worktrees/task-26e-writeback-composition`.
+
+**Files:**
+- Create: `src/vespercode/persistence/writeback.py`
 - Test: `tests/unit/persistence/test_writeback_preconditions.py`
 - Test: `tests/fault_injection/persistence/test_writeback_fault_matrix.py`
 
-**Interfaces:** Produces immutable `PERSISTENCE_V1_MIGRATION = MigrationV1(version=11, name="persistence_v1", ...)`, the Milestone 26 path/transaction/artifact contracts, `PersistenceCommandFactoryV1.for_approved_run(run_id: str, approval_id: str, event_id: str) -> PersistVerifiedCandidateV1`, and `PersistenceCoordinator.persist(command: PersistVerifiedCandidateV1) -> PersistenceResultV1`.
+**Interfaces:** Produces `PersistenceCommandFactoryV1.for_approved_run(run_id: str, approval_id: str, event_id: str) -> PersistVerifiedCandidateV1` and `PersistenceCoordinator.persist(command: PersistVerifiedCandidateV1) -> PersistenceResultV1` by injection of Task 26.A repositories and Task 26.D artifact storage.
 
 **Intentionally failing test:**
 
@@ -4700,15 +4789,12 @@ def test_missing_exact_approval_writes_no_workspace_bytes(
     assert workspace.write_count == 0
 ```
 
-**Schema RED:** `tests/unit/storage/test_persistence_migration.py::test_persistence_migration_has_exact_schema` applies v0001–v0011 and asserts only `persistence_transactions` and `persistence_path_records`, Run/approval/transaction foreign keys, unique active workspace transaction and `(transaction_id, canonical_path)` identities, composite ordered path key, closed states/digests/artifact refs, and absence of postimage/preimage/backup body or credential columns.
-
-**Implementation boundary:** This task owns one coupled durable writeback storage behavior: immutable v0011 DDL and the persistence transaction/path repository used by the approval-bound write protocol. It cannot edit the final registry, consumes Task 14 approval once immediately before the first authoritative write, and never decides recovery disposition.
+**Implementation boundary:** This is a thin protocol composition. It consumes Task 14 approval once immediately before the first authoritative write and sequences preimage/backup refs, per-path progress, atomic replaces, postimage verification, and final transaction state through injected Task 26.A/26.D ports. It owns no DDL, record schema, artifact backend, recovery classification, or alternate persistence predicate.
 
 **Verification:**
 - Target: `python -m pytest -q tests/unit/persistence/test_writeback_preconditions.py::test_missing_exact_approval_writes_no_workspace_bytes`
-- Schema: `python -m pytest -q tests/unit/storage/test_persistence_migration.py::test_persistence_migration_has_exact_schema`
-- Domain: `python -m pytest -q tests/unit/storage/test_persistence_migration.py tests/unit/persistence/test_path_record.py tests/unit/persistence/test_transaction.py tests/unit/persistence/test_writeback_preconditions.py tests/fault_injection/persistence/test_writeback_fault_matrix.py`
-- Expected: exact v0011 schema and byte/identity checks pass; any interruption leaves a durable non-terminal transaction rather than false success.
+- Domain: `python -m pytest -q tests/unit/persistence/test_writeback_preconditions.py tests/fault_injection/persistence/test_writeback_fault_matrix.py`
+- Expected: exact approval, byte/identity, 1–3-path ordering, backup-before-replace, verification, cancellation, and injected interruption cases pass; any interruption leaves a durable non-terminal transaction rather than false success.
 
 **Completion evidence:** Not yet executed.
 
@@ -4720,11 +4806,11 @@ def test_missing_exact_approval_writes_no_workspace_bytes(
 
 **SPEC references:** Milestone 26 recovery preview and disposition requirements.
 
-**Dependencies:** Task 26.A.
+**Dependencies:** Task 26.E.
 
 **Blocks:** Tasks 26.C and 37.B.
 
-**Parallelization:** Sequential after Task 26.A defines durable records.
+**Parallelization:** Sequential after Task 26.E defines the complete writeback protocol and interruption records.
 
 **Branch/worktree:** `codex/task-26b-recovery-preview`; `.worktrees/task-26b-recovery-preview`.
 
@@ -4780,7 +4866,7 @@ def test_recovery_preview_is_read_only(
 - Test: `tests/fault_injection/persistence/test_external_change_faults.py`
 - Test: `tests/integration/windows/test_persistence_acl_and_identity.py`
 
-**Interfaces:** Produces immutable `RECOVERY_V1_MIGRATION = MigrationV1(version=12, name="recovery_v1", ...)`, `RecoveryService.preview(workspace: WorkspaceIdentityV1) -> RecoveryPreviewV1` by selecting the workspace-bound transaction and delegating only to Task 26.B `preview_transaction(transaction_id: str)`, `RecoveryService.apply(command: ApplyRecoveryV1) -> RecoveryResultV1` using Task 26.A artifacts/records, and read-only `has_unresolved_transaction(workspace_identity_digest: str) -> bool`.
+**Interfaces:** Produces immutable `RECOVERY_V1_MIGRATION = MigrationV1(version=12, name="recovery_v1", ...)`, `RecoveryService.preview(workspace: WorkspaceIdentityV1) -> RecoveryPreviewV1` by selecting the workspace-bound transaction and delegating only to Task 26.B `preview_transaction(transaction_id: str)`, `RecoveryService.apply(command: ApplyRecoveryV1) -> RecoveryResultV1` using Task 26.A records and Task 26.D artifacts, and read-only `has_unresolved_transaction(workspace_identity_digest: str) -> bool`.
 
 **Intentionally failing test:**
 
@@ -4943,19 +5029,19 @@ def test_state_change_rejects_non_loopback_origin(
 
 **Completion evidence:** Not yet executed.
 
-#### Task 28.B: Safe Local Application Shell and Serve CLI
+#### Task 28.B: Local FastAPI Shell, Templates, and Status Semantics
 
 **Status:** Not started
 
-**Goal:** Compose the extensible local FastAPI shell, escaped/status-accessible templates, pinned HTMX asset, and loopback-only `vespercode serve` entry point.
+**Goal:** Define the extensible local FastAPI shell, typed route installers, escaped templates, and unambiguous accessible status semantics without owning packaged assets or CLI startup.
 
-**SPEC references:** Milestone 28 application-shell, rendering, status, startup, and usability requirements.
+**SPEC references:** Milestone 28 application-shell, template rendering, status, and usability requirements.
 
 **Dependencies:** Task 28.A.
 
-**Blocks:** Tasks 29.A, 29.B, 29.C, 31.A, 33.A, 37.B, 38.A, 38.B, 38.C, 38.D, and 38.E.
+**Blocks:** Tasks 28.C and 37.B.
 
-**Parallelization:** Sequential after Task 28.A.
+**Parallelization:** Sequential after Task 28.A; Task 28.C waits for the shell/template contract.
 
 **Branch/worktree:** `codex/task-28b-local-shell`; `.worktrees/task-28b-local-shell`.
 
@@ -4964,31 +5050,114 @@ def test_state_change_rejects_non_loopback_origin(
 - Create: `src/vespercode/web/templates/base.html`
 - Create: `src/vespercode/web/templates/home.html`
 - Create: `src/vespercode/web/templates/components/status_badge.html`
-- Create: `src/vespercode/web/static/htmx.min.js`
-- Create: `src/vespercode/cli.py`
-- Test: `tests/web/test_html_escaping.py`
 - Test: `tests/web/test_status_labels.py`
 - Test: `tests/web/test_app_composition.py`
-- Test: `tests/unit/test_cli.py`
 
-**Interfaces:** Produces protocol `LocalShellPortsV1.list_recent_runs() -> RunVisibilitySequenceV1`, `LocalShellPortsV1.credential_status() -> CredentialStatusV1`, protocol `LocalRouteInstallerV1.install(app: FastAPI) -> None`, `LocalRouteInstallerSequenceV1`, an immutable ordered tuple of route installers, `create_local_app(shell_ports: LocalShellPortsV1, security: LocalWebSecurityConfigV1, route_installers: LocalRouteInstallerSequenceV1) -> FastAPI`, `render_status_badge(visibility: RunVisibilityV1) -> Markup`, and CLI `vespercode serve --host 127.0.0.1 --port 8765`.
+**Interfaces:** Produces protocol `LocalShellPortsV1.list_recent_runs() -> RunVisibilitySequenceV1`, `LocalShellPortsV1.credential_status() -> CredentialStatusV1`, protocol `LocalRouteInstallerV1.install(app: FastAPI) -> None`, `LocalRouteInstallerSequenceV1`, an immutable ordered tuple of route installers, `create_local_app(shell_ports: LocalShellPortsV1, security: LocalWebSecurityConfigV1, route_installers: LocalRouteInstallerSequenceV1) -> FastAPI`, and `render_status_badge(visibility: RunVisibilityV1) -> Markup`.
 
 **Intentionally failing test:**
 
 ```python
-def test_untrusted_run_text_is_escaped(local_web_client: TestClient) -> None:
+def test_status_badge_has_text_and_accessible_name(
+    local_web_client: TestClient,
+) -> None:
+    response = local_web_client.get("/", headers=valid_local_security_headers())
+    assert_status_badge_contract(response.text, expected_status="WAITING_APPROVAL")
+```
+
+**Implementation boundary:** The shell installs only typed route installers and exposes no service locator. It owns template/status semantics but no static asset bytes, package-resource lookup, command parser, server launch, or domain workflow rule.
+
+**Verification:**
+- Target: `python -m pytest -q tests/web/test_status_labels.py::test_status_badge_has_text_and_accessible_name`
+- Domain: `python -m pytest -q tests/web/test_status_labels.py tests/web/test_app_composition.py`
+- Expected: exact status comprehension, escaped template defaults, accessible names, and deterministic typed installer order pass.
+
+**Completion evidence:** Not yet executed.
+
+#### Task 28.C: Packaged HTMX and Safe Render Asset Contract
+
+**Status:** Not started
+
+**Goal:** Serve the pinned packaged HTMX asset locally and prove escaped rendering, CSP compatibility, keyboard/live-error hooks, and zero CDN/network fallback.
+
+**SPEC references:** Milestone 28 escaped rendering, pinned local asset, CSP, accessibility-hook, and no-CDN requirements.
+
+**Dependencies:** Task 28.B.
+
+**Blocks:** Tasks 28.D, 29.A, 29.B, 29.C, 37.B, 38.A, 38.B, 38.C, and 38.D.
+
+**Parallelization:** Sequential after Task 28.B; later route children may proceed after this render/asset boundary while CLI startup continues in Task 28.D.
+
+**Branch/worktree:** `codex/task-28c-web-assets`; `.worktrees/task-28c-web-assets`.
+
+**Files:**
+- Create: `src/vespercode/web/static/htmx.min.js`
+- Test: `tests/web/test_html_escaping.py`
+- Test: `tests/web/test_packaged_assets.py`
+
+**Interfaces:** Produces `PackagedWebAssetV1`, `load_packaged_web_asset(name: Literal["htmx.min.js"]) -> PackagedWebAssetV1`, and `install_packaged_web_assets(app: FastAPI) -> None` for Task 28.B's shell.
+
+**Intentionally failing test:**
+
+```python
+def test_untrusted_run_text_is_escaped_and_htmx_is_local(
+    local_web_client: TestClient,
+) -> None:
     response = local_web_client.get("/", headers=valid_local_security_headers())
     assert "<script>alert(1)</script>" not in response.text
     assert "&lt;script&gt;alert(1)&lt;/script&gt;" in response.text
+    assert 'src="/static/htmx.min.js"' in response.text
+    assert "https://" not in extract_script_sources(response.text)
 ```
 
-**Implementation boundary:** The shell installs only typed route installers and exposes no service locator. Formal serve rejects non-loopback hosts and secret CLI parameters.
+**Implementation boundary:** This task owns only the immutable packaged asset and its safe render/resource contract. It cannot change route-domain behavior, add a CDN or runtime download, weaken Task 28.A security, parse CLI arguments, or start a server.
 
 **Verification:**
-- Target: `python -m pytest -q tests/web/test_html_escaping.py::test_untrusted_run_text_is_escaped`
-- Domain: `python -m pytest -q tests/web/test_html_escaping.py tests/web/test_status_labels.py tests/web/test_app_composition.py tests/unit/test_cli.py`
-- Browser: open the loopback shell and verify status labels, keyboard focus, live errors, CSP, and no CDN request.
-- Expected: safe rendering, exact status comprehension, installer order, packaged asset loading, and CLI argument closure pass.
+- Target: `python -m pytest -q tests/web/test_html_escaping.py::test_untrusted_run_text_is_escaped_and_htmx_is_local`
+- Domain: `python -m pytest -q tests/web/test_html_escaping.py tests/web/test_packaged_assets.py`
+- Browser: open the loopback shell and verify escaped text, keyboard focus, live errors, CSP, local HTMX loading, and no CDN request.
+- Expected: packaged asset identity/loading, autoescaping, CSP, accessibility hooks, and zero external asset request pass.
+
+**Completion evidence:** Not yet executed.
+
+#### Task 28.D: Loopback Serve CLI Composition
+
+**Status:** Not started
+
+**Goal:** Thinly bind the completed local shell/security/assets to the closed loopback-only `vespercode serve` CLI entry point.
+
+**SPEC references:** Milestone 28 startup and `vespercode serve` loopback-only requirements.
+
+**Dependencies:** Task 28.C.
+
+**Blocks:** Tasks 31.A, 33.A, 37.B, and 38.E.
+
+**Parallelization:** Sequential after Task 28.C; this final composition adds no shell, asset, security, or workflow behavior.
+
+**Branch/worktree:** `codex/task-28d-serve-cli`; `.worktrees/task-28d-serve-cli`.
+
+**Files:**
+- Create: `src/vespercode/cli.py`
+- Test: `tests/unit/test_cli.py`
+
+**Interfaces:** Produces CLI `vespercode serve --host 127.0.0.1 --port 8765` and `install_serve_command(app, shell_factory: LocalShellFactoryV1) -> None`.
+
+**Intentionally failing test:**
+
+```python
+def test_serve_rejects_non_loopback_host_and_secret_arguments(
+    cli_runner: CliRunner,
+) -> None:
+    assert cli_runner.invoke(cli, ["serve", "--host", "0.0.0.0"]).exit_code != 0
+    assert cli_runner.invoke(cli, ["serve", "--api-key", "secret"]).exit_code != 0
+```
+
+**Implementation boundary:** This is a thin entrypoint composition over Tasks 28.A–28.C. It owns only closed serve parsing and loopback launch; it cannot duplicate shell construction, asset lookup, request authorization, route behavior, or accept secret/provider/repository inputs.
+
+**Verification:**
+- Target: `python -m pytest -q tests/unit/test_cli.py::test_serve_rejects_non_loopback_host_and_secret_arguments`
+- Domain: `python -m pytest -q tests/unit/test_cli.py`
+- Expected: only `127.0.0.1`, validated port, no secret arguments, one Task 28.B shell factory, and Task 28.C packaged assets are reachable.
 
 **Completion evidence:** Not yet executed.
 
@@ -5000,7 +5169,7 @@ def test_untrusted_run_text_is_escaped(local_web_client: TestClient) -> None:
 
 **SPEC references:** Milestone 29 run creation/status/cancel requirements.
 
-**Dependencies:** Tasks 8.B, 23.C, 25.G, and 28.B.
+**Dependencies:** Tasks 8.B, 23.C, 25.G, and 28.C.
 
 **Blocks:** Tasks 29.C and 37.B.
 
@@ -5048,7 +5217,7 @@ def test_invalid_run_form_creates_no_run(
 
 **SPEC references:** Milestone 29 disclosure requirements.
 
-**Dependencies:** Tasks 15.E, 16.B, 23.C, and 28.B.
+**Dependencies:** Tasks 15.E, 16.B, 23.C, and 28.C.
 
 **Blocks:** Tasks 29.C and 37.B.
 
@@ -5097,7 +5266,7 @@ def test_disclosure_form_cannot_supply_scope_or_endpoint_override(
 
 **SPEC references:** Milestone 29 final writeback and local workflow composition requirements.
 
-**Dependencies:** Tasks 14.C, 21.C, 26.A, 28.B, 29.A, and 29.B.
+**Dependencies:** Tasks 14.C, 21.C, 26.E, 28.C, 29.A, and 29.B.
 
 **Blocks:** Tasks 31.A, 33.A, 37.B, 38.A, 38.B, 38.C, 38.D, and 38.F.
 
@@ -5131,7 +5300,7 @@ def test_stale_writeback_subject_never_calls_persistence(
     assert workflow_ports.persistence_call_count == 0
 ```
 
-**Implementation boundary:** Only `WritebackApprovedV1` may create a Task 26.A persistence command. Routes cannot accept candidate/diff/evidence/workspace/policy fields or duplicate approval/persistence predicates.
+**Implementation boundary:** Only `WritebackApprovedV1` may create a Task 26.E persistence command. Routes cannot accept candidate/diff/evidence/workspace/policy fields or duplicate approval/persistence predicates.
 
 **Verification:**
 - Target: `python -m pytest -q tests/web/test_writeback_workflow.py::test_stale_writeback_subject_never_calls_persistence`
@@ -5141,34 +5310,114 @@ def test_stale_writeback_subject_never_calls_persistence(
 
 **Completion evidence:** Not yet executed.
 
-#### Task 30.A: Headless Capability-isolated Demo Core
+#### Task 30.A: Demo Types and Fixed Scenario
 
 **Status:** Not started
 
-**Goal:** Implement Demo-only types, fixed scenario data, simulated tool ports, shared-core runner, and bounded in-memory sessions without formal capability adapters.
+**Goal:** Define Demo-only immutable types and the exact fixed scenario data without executor, shared-core orchestration, session storage, or Web behavior.
 
-**SPEC references:** Milestone 30 shared-core, fixed-scenario, type-isolation, and session-limit requirements.
+**SPEC references:** Milestone 30 fixed-scenario and formal/Demo type-isolation requirements.
 
-**Dependencies:** Tasks 4.E, 5.D, 13, 17.C, 24.C, 25.A, and 25.D.
+**Dependencies:** Tasks 4.E and 5.D.
 
-**Blocks:** Tasks 30.B, 32.A, and 37.B.
+**Blocks:** Tasks 30.C and 37.B.
 
-**Parallelization:** Parallelizable with Tasks 29.A, 29.B, and 29.C once each exact executable Dependencies field is satisfied.
+**Parallelization:** Parallelizable with later formal-Web tasks once its exact dependencies are satisfied; Task 30.C waits for these frozen Demo values.
 
-**Branch/worktree:** `codex/task-30a-demo-core`; `.worktrees/task-30a-demo-core`.
+**Branch/worktree:** `codex/task-30a-demo-types`; `.worktrees/task-30a-demo-types`.
 
 **Files:**
 - Create: `src/vespercode/demo/types.py`
 - Create: `src/vespercode/demo/scenario.py`
-- Create: `src/vespercode/demo/executor.py`
-- Create: `src/vespercode/demo/runner.py`
 - Test: `tests/demo/test_types.py`
 - Test: `tests/demo/test_scenario.py`
+
+**Interfaces:** Produces `DemoScenarioV1`, `DemoSessionV1`, `DemoDecisionV1`, `DemoStepResultV1`, `DemoRunStatus`, `DemoDecision`, and `DemoTraceV1`.
+
+**Intentionally failing test:**
+
+```python
+def test_fixed_scenario_rejects_formal_identity_types(
+    fixed_demo_scenario: DemoScenarioV1,
+) -> None:
+    assert fixed_demo_scenario.input_kinds == ("FIXED_SOURCE", "FIXED_FAILURE", "FIXED_PATCH")
+    with pytest.raises(DemoTypeIsolationError):
+        DemoSessionV1(run_id=RunIdV1("formal-run"))
+```
+
+**Implementation boundary:** The scenario stores only immutable fixed data. These modules import no formal Run/turn/repository identity, executor, adapter, session store, Web, disk, credential, Docker, recovery, or persistence capability.
+
+**Verification:**
+- Target: `python -m pytest -q tests/demo/test_types.py::test_fixed_scenario_rejects_formal_identity_types`
+- Domain: `python -m pytest -q tests/demo/test_types.py tests/demo/test_scenario.py`
+- Expected: exact fixed data, closed decisions/statuses, canonical trace values, and formal/Demo type separation pass.
+
+**Completion evidence:** Not yet executed.
+
+#### Task 30.C: Demo Executor and Tool-port Isolation
+
+**Status:** Not started
+
+**Goal:** Implement only the deterministic Demo executor and simulated tool ports while proving that no formal capability adapter can be constructed or called.
+
+**SPEC references:** Milestone 30 Demo-only simulated tool-port and capability-isolation requirements.
+
+**Dependencies:** Tasks 13, 17.C, 24.C, 25.D, and 30.A.
+
+**Blocks:** Tasks 30.D and 37.B.
+
+**Parallelization:** Sequential after Task 30.A and the exact shared parser/policy/dispatcher/action/feedback producers; runner/session composition waits for this isolated port.
+
+**Branch/worktree:** `codex/task-30c-demo-executor`; `.worktrees/task-30c-demo-executor`.
+
+**Files:**
+- Create: `src/vespercode/demo/executor.py`
+- Test: `tests/demo/test_executor_isolation.py`
+
+**Interfaces:** Produces `DemoExecutor.tool_ports() -> ToolPortsV1`, `DemoExecutor.execute(action: BoundActionV1) -> DemoToolResultV1`, and `PROHIBITED_DEMO_MODULE_PREFIXES_V1: frozenset[str]`.
+
+**Intentionally failing test:**
+
+```python
+def test_demo_executor_exposes_only_simulated_tool_ports(
+    demo_executor: DemoExecutor,
+) -> None:
+    assert demo_executor.tool_ports().capability_kinds == {"DEMO_READ", "DEMO_PATCH", "DEMO_CHECK"}
+    assert demo_executor.formal_capability_calls == 0
+```
+
+**Implementation boundary:** This task owns only deterministic simulated tool-port adaptation for Task 30.A data. It cannot import or construct formal loop, Run/turn repositories, local files, Docker, credentials, recovery, persistence, SQLite, WinCred, or provider adapters and does not own shared-core sequencing.
+
+**Verification:**
+- Target: `python -m pytest -q tests/demo/test_executor_isolation.py::test_demo_executor_exposes_only_simulated_tool_ports`
+- Domain: `python -m pytest -q tests/demo/test_executor_isolation.py`
+- Expected: fixed tool results, closed capabilities, prohibited-prefix scans, and zero formal-capability construction/calls pass.
+
+**Completion evidence:** Not yet executed.
+
+#### Task 30.D: Shared-core Demo Runner and Bounded Session Composition
+
+**Status:** Not started
+
+**Goal:** Thinly compose the real shared pure-core pipeline with Task 30.C ports and bounded in-memory Demo sessions to produce the deterministic fixed trace.
+
+**SPEC references:** Milestone 30 shared-core provenance, deterministic trace, five-minute/20-action/10-concurrent session limits, reset, expiry, and no-recovery requirements.
+
+**Dependencies:** Tasks 25.A and 30.C.
+
+**Blocks:** Tasks 30.B, 32.A, and 37.B.
+
+**Parallelization:** Sequential after Task 30.C; the public app and mechanism trace wait for this final headless composition.
+
+**Branch/worktree:** `codex/task-30d-demo-runner`; `.worktrees/task-30d-demo-runner`.
+
+**Files:**
+- Create: `src/vespercode/demo/runner.py`
 - Test: `tests/demo/test_trace_determinism.py`
 - Test: `tests/demo/test_shared_core_composition.py`
 - Test: `tests/demo/test_session_limits.py`
 
-**Interfaces:** Produces `DemoScenarioV1`, `DemoExecutor.tool_ports() -> ToolPortsV1`, `DemoScenarioRunner.advance(session: DemoSessionV1, decision: DemoDecisionV1 | None) -> DemoStepResultV1`, `DemoRunStatus`, `DemoDecision`, `DemoTraceV1`, and exact constant `DEMO_SHARED_CORE_MODULES_V1: frozenset[str] = frozenset({"vespercode.governance.policy", "vespercode.loop.agent_actions", "vespercode.loop.action_parser", "vespercode.loop.action_binding", "vespercode.loop.context_projection", "vespercode.loop.feedback", "vespercode.loop.stopping", "vespercode.loop.action_pipeline", "vespercode.tools.dispatcher"})`.
+**Interfaces:** Produces `DemoScenarioRunner.advance(session: DemoSessionV1, decision: DemoDecisionV1 | None) -> DemoStepResultV1` and exact constant `DEMO_SHARED_CORE_MODULES_V1: frozenset[str] = frozenset({"vespercode.governance.policy", "vespercode.loop.agent_actions", "vespercode.loop.action_parser", "vespercode.loop.action_binding", "vespercode.loop.context_projection", "vespercode.loop.feedback", "vespercode.loop.stopping", "vespercode.loop.action_pipeline", "vespercode.tools.dispatcher"})`.
 
 **Intentionally failing test:**
 
@@ -5194,12 +5443,12 @@ def test_demo_step_invokes_shared_core_and_only_demo_tool_ports(
     assert shared_core_spies.formal_capability_calls == 0
 ```
 
-**Implementation boundary:** The scenario stores only data. Composition constructs the production Task 25.D `ActionPipeline` from the exact Task 13/17.A–17.C/24.A/24.C components, injects that instance into `DemoScenarioRunner`, and wraps its real `ActionPipeline.execute` call in the runtime spy trace; Task 24.B context and Task 25.A stopping remain injected production pure functions. No Demo module copies their orchestration, and every prohibited formal-capability module prefix is absent. Sessions are in-memory, five-minute/20-action/10-concurrent bounded, and non-recoverable.
+**Implementation boundary:** Composition constructs the production Task 25.D `ActionPipeline` from the exact Task 13/17.A–17.C/24.A/24.C components, injects it with Task 30.C ports into `DemoScenarioRunner`, and records provenance beginning with the real `ActionPipeline.execute`; Task 24.B context and Task 25.A stopping remain injected production pure functions. It owns no copied rule, formal loop engine, Web route, external adapter, or persistent session. Sessions are in-memory, five-minute/20-action/10-concurrent bounded, and non-recoverable.
 
 **Verification:**
 - Target: `python -m pytest -q tests/demo/test_shared_core_composition.py::test_demo_step_invokes_shared_core_and_only_demo_tool_ports`
-- Domain: `python -m pytest -q tests/demo/test_types.py tests/demo/test_scenario.py tests/demo/test_trace_determinism.py tests/demo/test_shared_core_composition.py tests/demo/test_session_limits.py`
-- Expected: shared-call provenance, fixed trace, type isolation, limit/expiry/reset, and zero formal-capability calls pass.
+- Domain: `python -m pytest -q tests/demo/test_trace_determinism.py tests/demo/test_shared_core_composition.py tests/demo/test_session_limits.py`
+- Expected: shared-call provenance, fixed repeated trace, limit/expiry/reset, in-memory-only lifecycle, and zero formal-capability calls pass.
 
 **Completion evidence:** Not yet executed.
 
@@ -5211,11 +5460,11 @@ def test_demo_step_invokes_shared_core_and_only_demo_tool_ports(
 
 **SPEC references:** Milestone 30 public application, rendering, health, and deployment-boundary requirements.
 
-**Dependencies:** Task 30.A.
+**Dependencies:** Task 30.D.
 
 **Blocks:** Tasks 32.C, 34.B, and 37.B.
 
-**Parallelization:** Sequential after Task 30.A.
+**Parallelization:** Sequential after Task 30.D.
 
 **Branch/worktree:** `codex/task-30b-demo-app`; `.worktrees/task-30b-demo-app`.
 
@@ -5256,11 +5505,11 @@ def test_demo_app_registers_no_formal_capability_adapter(
 
 **SPEC references:** Milestone 31 complete production-workflow references; owns reusable E2E driver and success path up to final wait.
 
-**Dependencies:** Tasks 9.D, 10.C, 11.B, 12.D, 13, 14.C, 15.E, 16.B, 17.C, 18.D, 19.C, 20.B, 21.C, 22.C, 23.C, 24.C, 25.G, 26.A, 27.B, 28.B, 29.C, and 38.F.
+**Dependencies:** Tasks 9.D, 10.C, 11.B, 12.D, 13, 14.C, 15.E, 16.B, 17.C, 18.D, 19.C, 20.B, 21.C, 22.C, 23.C, 24.C, 25.G, 26.E, 27.B, 28.D, 29.C, and 38.F.
 
 **Blocks:** Tasks 31.B, 31.C, and 37.B.
 
-**Parallelization:** Sequential after Tasks 9.D, 10.C, 11.B, 12.D, 13, 14.C, 15.E, 16.B, 17.C, 18.D, 19.C, 20.B, 21.C, 22.C, 23.C, 24.C, 25.G, 26.A, 27.B, 28.B, 29.C, and 38.F.
+**Parallelization:** Sequential after Tasks 9.D, 10.C, 11.B, 12.D, 13, 14.C, 15.E, 16.B, 17.C, 18.D, 19.C, 20.B, 21.C, 22.C, 23.C, 24.C, 25.G, 26.E, 27.B, 28.D, 29.C, and 38.F.
 
 **Branch/worktree:** `codex/task-31a-reference-happy`; `.worktrees/task-31a-reference-happy`.
 
@@ -5385,7 +5634,7 @@ def test_uncertain_transaction_blocks_new_admission_until_proven_recovery(
 
 **SPEC references:** Milestone 32 governance and approval mechanism requirements.
 
-**Dependencies:** Tasks 12.D, 13, 17.C, 24.C, 25.A, 25.D, and 30.A.
+**Dependencies:** Tasks 12.D, 13, 17.C, 24.C, 25.A, 25.D, and 30.D.
 
 **Blocks:** Tasks 32.B, 32.C, and 37.B.
 
@@ -5533,7 +5782,7 @@ def test_formal_and_demo_execute_same_core_implementations(
 
 **SPEC references:** Milestone 33 wheel build/content/digest requirements.
 
-**Dependencies:** Tasks 26.C, 28.B, 29.C, 31.C, 32.C, and 38.F.
+**Dependencies:** Tasks 26.C, 28.D, 29.C, 31.C, 32.C, and 38.F.
 
 **Blocks:** Tasks 33.B, 36.B, and 37.B.
 
@@ -6026,11 +6275,11 @@ def test_readme_fails_when_release_digest_verification_is_missing(
 
 **SPEC references:** Milestone 37 process/log evidence and course Superpowers-workflow requirements.
 
-**Dependencies:** Tasks 1.A, 1.B, 1.C, 1.D, 1.E, 2.A, 2.B, 2.C, 2.D, 2.E, 2.F, 2.G, 3.A, 3.B, 3.C, 3.D, 3.E, 3.F, 3.G, 4.A, 4.F, 4.B, 4.C, 4.D, 4.E, 5.A, 5.B, 5.C, 5.D, 5.E, 6.A, 6.B, 6.C, 6.D, 6.E, 7.A, 7.B, 7.C, 7.D, 8.A, 8.B, 9.A, 9.B, 9.C, 9.D, 10.A, 10.B, 10.C, 11.A, 11.B, 12.A, 12.B, 12.C, 12.D, 13, 14.A, 14.B, 14.C, 15.A, 15.B, 15.C, 15.D, 15.E, 15.F, 16.A, 16.B, 17.A, 17.B, 17.C, 18.A, 18.B, 18.C, 18.D, 19.A, 19.B, 19.C, 20.A, 20.B, 21.A, 21.B, 21.C, 22.A, 22.B, 22.C, 23.A, 23.B, 23.C, 24.A, 24.B, 24.C, 25.A, 25.B, 25.C, 25.D, 25.E, 25.F, 25.G, 26.A, 26.B, 26.C, 27.A, 27.B, 28.A, 28.B, 29.A, 29.B, 29.C, 30.A, 30.B, 31.A, 31.B, 31.C, 32.A, 32.B, 32.C, 33.A, 33.B, 34.A, 34.B, 35.A, 35.B, 35.C, 36.A, 36.B, 36.C, 38.A, 38.B, 38.C, 38.D, 38.E, 38.F, and 38.G.
+**Dependencies:** Tasks 1.A, 1.B, 1.C, 1.D, 1.E, 2.A, 2.B, 2.C, 2.D, 2.E, 2.F, 2.G, 3.A, 3.B, 3.C, 3.D, 3.E, 3.F, 3.G, 4.A, 4.F, 4.B, 4.C, 4.D, 4.E, 5.A, 5.B, 5.C, 5.D, 5.E, 6.A, 6.B, 6.C, 6.D, 6.E, 7.A, 7.B, 7.C, 7.D, 8.A, 8.B, 9.A, 9.B, 9.C, 9.D, 10.A, 10.B, 10.C, 11.A, 11.B, 12.A, 12.B, 12.C, 12.D, 13, 14.A, 14.B, 14.C, 15.A, 15.B, 15.C, 15.D, 15.E, 15.F, 16.A, 16.B, 17.A, 17.B, 17.C, 18.A, 18.B, 18.C, 18.D, 19.A, 19.B, 19.C, 20.A, 20.B, 21.A, 21.B, 21.C, 22.A, 22.B, 22.C, 23.A, 23.B, 23.C, 24.A, 24.B, 24.C, 25.A, 25.B, 25.C, 25.D, 25.E, 25.F, 25.G, 26.A, 26.D, 26.E, 26.B, 26.C, 27.A, 27.B, 28.A, 28.B, 28.C, 28.D, 29.A, 29.B, 29.C, 30.A, 30.C, 30.D, 30.B, 31.A, 31.B, 31.C, 32.A, 32.B, 32.C, 33.A, 33.B, 34.A, 34.B, 35.A, 35.B, 35.C, 36.A, 36.B, 36.C, 38.A, 38.B, 38.C, 38.D, 38.E, 38.F, and 38.G.
 
 **Blocks:** Task 37.C.
 
-**Parallelization:** May run in parallel with Task 37.A only after Tasks 1.A, 1.B, 1.C, 1.D, 1.E, 2.A, 2.B, 2.C, 2.D, 2.E, 2.F, 2.G, 3.A, 3.B, 3.C, 3.D, 3.E, 3.F, 3.G, 4.A, 4.F, 4.B, 4.C, 4.D, 4.E, 5.A, 5.B, 5.C, 5.D, 5.E, 6.A, 6.B, 6.C, 6.D, 6.E, 7.A, 7.B, 7.C, 7.D, 8.A, 8.B, 9.A, 9.B, 9.C, 9.D, 10.A, 10.B, 10.C, 11.A, 11.B, 12.A, 12.B, 12.C, 12.D, 13, 14.A, 14.B, 14.C, 15.A, 15.B, 15.C, 15.D, 15.E, 15.F, 16.A, 16.B, 17.A, 17.B, 17.C, 18.A, 18.B, 18.C, 18.D, 19.A, 19.B, 19.C, 20.A, 20.B, 21.A, 21.B, 21.C, 22.A, 22.B, 22.C, 23.A, 23.B, 23.C, 24.A, 24.B, 24.C, 25.A, 25.B, 25.C, 25.D, 25.E, 25.F, 25.G, 26.A, 26.B, 26.C, 27.A, 27.B, 28.A, 28.B, 29.A, 29.B, 29.C, 30.A, 30.B, 31.A, 31.B, 31.C, 32.A, 32.B, 32.C, 33.A, 33.B, 34.A, 34.B, 35.A, 35.B, 35.C, 36.A, 36.B, 36.C, 38.A, 38.B, 38.C, 38.D, 38.E, 38.F, and 38.G have completed and no predecessor is still writing evidence.
+**Parallelization:** May run in parallel with Task 37.A only after Tasks 1.A, 1.B, 1.C, 1.D, 1.E, 2.A, 2.B, 2.C, 2.D, 2.E, 2.F, 2.G, 3.A, 3.B, 3.C, 3.D, 3.E, 3.F, 3.G, 4.A, 4.F, 4.B, 4.C, 4.D, 4.E, 5.A, 5.B, 5.C, 5.D, 5.E, 6.A, 6.B, 6.C, 6.D, 6.E, 7.A, 7.B, 7.C, 7.D, 8.A, 8.B, 9.A, 9.B, 9.C, 9.D, 10.A, 10.B, 10.C, 11.A, 11.B, 12.A, 12.B, 12.C, 12.D, 13, 14.A, 14.B, 14.C, 15.A, 15.B, 15.C, 15.D, 15.E, 15.F, 16.A, 16.B, 17.A, 17.B, 17.C, 18.A, 18.B, 18.C, 18.D, 19.A, 19.B, 19.C, 20.A, 20.B, 21.A, 21.B, 21.C, 22.A, 22.B, 22.C, 23.A, 23.B, 23.C, 24.A, 24.B, 24.C, 25.A, 25.B, 25.C, 25.D, 25.E, 25.F, 25.G, 26.A, 26.D, 26.E, 26.B, 26.C, 27.A, 27.B, 28.A, 28.B, 28.C, 28.D, 29.A, 29.B, 29.C, 30.A, 30.C, 30.D, 30.B, 31.A, 31.B, 31.C, 32.A, 32.B, 32.C, 33.A, 33.B, 34.A, 34.B, 35.A, 35.B, 35.C, 36.A, 36.B, 36.C, 38.A, 38.B, 38.C, 38.D, 38.E, 38.F, and 38.G have completed and no predecessor is still writing evidence.
 
 **Branch/worktree:** `codex/task-37b-process-evidence`; `.worktrees/task-37b-process-evidence`.
 
@@ -6086,7 +6335,7 @@ def test_process_evidence_rejects_formal_python_identity_drift(
 
 **Status:** Not started
 
-**Goal:** Aggregate every local/external/process/documentation check and report ready only with all 135 executable Tasks plus a valid student-authored reflection.
+**Goal:** Aggregate every local/external/process/documentation check and report ready only with all 141 executable Tasks plus a valid student-authored reflection.
 
 **SPEC references:** Milestone 37 delivery gate and reflection constraints.
 
@@ -6126,7 +6375,7 @@ def test_delivery_rejects_incomplete_executable_child(
 - Domain: `python -m pytest -q tests/unit/process/test_readme_contract.py tests/unit/process/test_delivery_evidence.py tests/unit/process/test_reflection_contract.py`
 - Delivery: `python scripts/verify_delivery.py --root . --require-live`
 - Reflection: `python scripts/verify_reflection.py REFLECTION.md`
-- Expected: readiness passes only when all 135 executable Tasks, reviews, environments, artifacts, live evidence, documents, and student reflection are current and valid.
+- Expected: readiness passes only when all 141 executable Tasks, reviews, environments, artifacts, live evidence, documents, and student reflection are current and valid.
 
 **Completion evidence:** Not yet executed.
 
@@ -6138,7 +6387,7 @@ def test_delivery_rejects_incomplete_executable_child(
 
 **SPEC references:** Milestone 38 credential WebUI requirements.
 
-**Dependencies:** Tasks 27.B, 28.B, and 29.C.
+**Dependencies:** Tasks 27.B, 28.C, and 29.C.
 
 **Blocks:** Tasks 37.B and 38.F.
 
@@ -6183,7 +6432,7 @@ def test_credential_response_never_contains_secret_or_derivative(
 
 **SPEC references:** Milestone 38 memory WebUI requirements.
 
-**Dependencies:** Tasks 22.C, 23.C, 28.B, and 29.C.
+**Dependencies:** Tasks 22.C, 23.C, 28.C, and 29.C.
 
 **Blocks:** Tasks 37.B and 38.F.
 
@@ -6230,7 +6479,7 @@ def test_memory_form_cannot_select_foreign_workspace(
 
 **SPEC references:** Milestone 38 audit WebUI requirements.
 
-**Dependencies:** Tasks 23.C, 28.B, and 29.C.
+**Dependencies:** Tasks 23.C, 28.C, and 29.C.
 
 **Blocks:** Tasks 37.B and 38.F.
 
@@ -6273,7 +6522,7 @@ def test_audit_page_contains_only_redacted_projection(
 
 **SPEC references:** Milestone 38 recovery WebUI requirements.
 
-**Dependencies:** Tasks 9.D, 23.C, 26.C, 28.B, and 29.C.
+**Dependencies:** Tasks 9.D, 23.C, 26.C, 28.C, and 29.C.
 
 **Blocks:** Tasks 37.B and 38.F.
 
@@ -6317,7 +6566,7 @@ def test_recovery_preview_is_read_only_and_has_no_force_control(
 
 **SPEC references:** Milestone 38 recovery CLI requirements.
 
-**Dependencies:** Tasks 9.D, 26.C, and 28.B.
+**Dependencies:** Tasks 9.D, 26.C, and 28.D.
 
 **Blocks:** Tasks 37.B and 38.F.
 
@@ -6373,7 +6622,7 @@ def test_recover_without_apply_never_writes(
 - Create: `src/vespercode/web/routes_operations.py`
 - Create: `src/vespercode/web/local_composition.py`
 - Create: `src/vespercode/cli_composition.py`
-- Modify: `src/vespercode/cli.py` (production recover-handler binding only, authorized by Task 28.B after Task 38.E freezes parsing)
+- Modify: `src/vespercode/cli.py` (production recover-handler binding only, authorized by Task 28.D after Task 38.E freezes parsing)
 - Test: `tests/web/test_local_composition.py`
 - Test: `tests/unit/test_cli_composition.py`
 
@@ -6470,7 +6719,7 @@ def test_every_operations_form_has_label_focus_and_live_error_region(
 
 ## Task Dependency DAG
 
-Milestone ids remain stable traceability containers, but only retained integer Task 13 and the 134 dotted child Tasks are executable. The direct dependency table below is the sole machine-readable edge set.
+Milestone ids remain stable traceability containers, but only retained integer Task 13 and the 140 dotted child Tasks are executable. The direct dependency table below is the sole machine-readable edge set.
 
 The `Task predecessors` column contains only exact executable Task ids separated by commas; `—` means no task predecessor. Human approvals, GO outcomes, identity checks, reflection authorship, and real-platform results remain non-task gates in the executable Task block.
 
@@ -6574,24 +6823,30 @@ The `Task predecessors` column contains only exact executable Task ids separated
 | 25.F | 7.C, 23.C | Durable active-run state and complete redacted audit services. |
 | 25.G | 8.B, 17.C, 21.C, 24.C, 25.A, 25.B, 25.C, 25.D, 25.E, 25.F | Complete child loop contracts plus formal-validation transition. |
 | 26.A | 3.G, 7.C, 9.D, 12.D, 14.C, 21.C, 23.C | Task 3 `GO`; lifecycle/lease/diff/approval/verified/audit contracts. |
-| 26.B | 26.A | Durable transaction/path/artifact records produced by Task 26.A. |
+| 26.D | 26.A | Immutable transaction/path records and body-free artifact refs. |
+| 26.E | 26.D | Durable records plus ACL-restricted artifact/backup storage. |
+| 26.B | 26.E | Complete writeback protocol and durable interruption records. |
 | 26.C | 7.C, 9.D, 23.C, 26.B | Lifecycle/lease/audit plus bound recovery preview/classification. |
 | 27.A | 4.E, 5.D, 6.E | Canonical/shared/endpoint contracts and locked dependency environment. |
 | 27.B | 27.A | Pure closed credential service/store-port contract. |
 | 28.A | 7.C, 8.B, 23.C, 27.B | Durable session/run facts, audit projection, and credential-service ports. |
 | 28.B | 28.A | Frozen loopback/Host/Origin/session/CSRF/header boundary. |
-| 29.A | 8.B, 23.C, 25.G, 28.B | Admission, visible audit state, complete loop service, and safe shell. |
-| 29.B | 15.E, 16.B, 23.C, 28.B | Disclosure ledger/adapter result, audit projection, and safe shell. |
-| 29.C | 14.C, 21.C, 26.A, 28.B, 29.A, 29.B | Approval/verification/writeback contracts and prior governance routes. |
-| 30.A | 4.E, 5.D, 13, 17.C, 24.C, 25.A, 25.D | Canonical/shared contracts and real shared policy/parser/feedback/stop components. |
-| 30.B | 30.A | Capability-isolated headless Demo core and Demo-only ports. |
-| 31.A | 9.D, 10.C, 11.B, 12.D, 13, 14.C, 15.E, 16.B, 17.C, 18.D, 19.C, 20.B, 21.C, 22.C, 23.C, 24.C, 25.G, 26.A, 27.B, 28.B, 29.C, 38.F | Complete formal happy-path composition and exact reference profile. |
+| 28.C | 28.B | Typed local shell/templates plus frozen request-security boundary. |
+| 28.D | 28.C | Complete safe shell and packaged local render/asset contract. |
+| 29.A | 8.B, 23.C, 25.G, 28.C | Admission, visible audit state, complete loop service, and safe rendered shell. |
+| 29.B | 15.E, 16.B, 23.C, 28.C | Disclosure ledger/adapter result, audit projection, and safe rendered shell. |
+| 29.C | 14.C, 21.C, 26.E, 28.C, 29.A, 29.B | Approval/verification/writeback contracts and prior governance routes. |
+| 30.A | 4.E, 5.D | Canonical shared identities plus fixed Demo-only types/scenario. |
+| 30.C | 13, 17.C, 24.C, 25.D, 30.A | Fixed Demo values plus real policy/parser/dispatcher/action/feedback contracts. |
+| 30.D | 25.A, 30.C | Isolated Demo ports plus real stopping/progress contract. |
+| 30.B | 30.D | Capability-isolated headless Demo runner and bounded sessions. |
+| 31.A | 9.D, 10.C, 11.B, 12.D, 13, 14.C, 15.E, 16.B, 17.C, 18.D, 19.C, 20.B, 21.C, 22.C, 23.C, 24.C, 25.G, 26.E, 27.B, 28.D, 29.C, 38.F | Complete formal happy-path composition and exact reference profile. |
 | 31.B | 11.B, 13, 14.C, 15.E, 16.B, 27.B, 31.A | Reusable E2E driver plus safety, authorization, and credential boundaries. |
 | 31.C | 26.C, 31.A, 31.B, 38.G | Recovery service, reusable E2E trace, complete negative E2E driver, and accepted local operations composition. |
-| 32.A | 12.D, 13, 17.C, 24.C, 25.A, 25.D, 30.A | Candidate/policy/action/feedback/stop contracts and shared-core Demo composition. |
+| 32.A | 12.D, 13, 17.C, 24.C, 25.A, 25.D, 30.D | Candidate/policy/action/feedback/stop contracts and shared-core Demo composition. |
 | 32.B | 11.B, 19.C, 24.C, 32.A | Continuation/check evidence/feedback contracts plus mechanism driver. |
 | 32.C | 15.E, 16.B, 27.B, 30.B, 32.A, 32.B | Disclosure/credential/call boundaries, public Demo, and complete mechanism traces. |
-| 33.A | 26.C, 28.B, 29.C, 31.C, 32.C, 38.F | Complete runtime, local composition, E2E/mechanism closure, and package metadata readiness. |
+| 33.A | 26.C, 28.D, 29.C, 31.C, 32.C, 38.F | Complete runtime, local composition, E2E/mechanism closure, and package metadata readiness. |
 | 33.B | 33.A, 38.G | Exact wheel/digest and browser-accepted installed workflows. |
 | 34.A | 2.G, 18.D, 20.B, 31.C, 32.C | Task 2 `GO`, frozen OCI recipe/digest, execution/baseline, and final evidence. |
 | 34.B | 30.B, 32.C | Public Demo app plus capability/reuse proof. |
@@ -6602,19 +6857,19 @@ The `Task predecessors` column contains only exact executable Task ids separated
 | 36.B | 2.G, 33.A, 34.A, 35.C, 36.A | Task 2 frozen digest, wheel/image readiness, protected release rules, and closed evidence schema. |
 | 36.C | 34.B, 35.C, 36.A, 36.B | Demo image, protected CI closure, closed evidence, and released source identity. |
 | 37.A | 31.C, 32.C, 33.B, 34.A, 34.B, 35.C, 36.B, 36.C, 38.G | Stable verified commands, artifacts, URLs/digests, limitations, and browser evidence. |
-| 37.B | 1.A, 1.B, 1.C, 1.D, 1.E, 2.A, 2.B, 2.C, 2.D, 2.E, 2.F, 2.G, 3.A, 3.B, 3.C, 3.D, 3.E, 3.F, 3.G, 4.A, 4.F, 4.B, 4.C, 4.D, 4.E, 5.A, 5.B, 5.C, 5.D, 5.E, 6.A, 6.B, 6.C, 6.D, 6.E, 7.A, 7.B, 7.C, 7.D, 8.A, 8.B, 9.A, 9.B, 9.C, 9.D, 10.A, 10.B, 10.C, 11.A, 11.B, 12.A, 12.B, 12.C, 12.D, 13, 14.A, 14.B, 14.C, 15.A, 15.B, 15.C, 15.D, 15.E, 15.F, 16.A, 16.B, 17.A, 17.B, 17.C, 18.A, 18.B, 18.C, 18.D, 19.A, 19.B, 19.C, 20.A, 20.B, 21.A, 21.B, 21.C, 22.A, 22.B, 22.C, 23.A, 23.B, 23.C, 24.A, 24.B, 24.C, 25.A, 25.B, 25.C, 25.D, 25.E, 25.F, 25.G, 26.A, 26.B, 26.C, 27.A, 27.B, 28.A, 28.B, 29.A, 29.B, 29.C, 30.A, 30.B, 31.A, 31.B, 31.C, 32.A, 32.B, 32.C, 33.A, 33.B, 34.A, 34.B, 35.A, 35.B, 35.C, 36.A, 36.B, 36.C, 38.A, 38.B, 38.C, 38.D, 38.E, 38.F, 38.G | Complete per-task process evidence through Task 36.C, the v1 migration registry, and all Task 38 children. |
+| 37.B | 1.A, 1.B, 1.C, 1.D, 1.E, 2.A, 2.B, 2.C, 2.D, 2.E, 2.F, 2.G, 3.A, 3.B, 3.C, 3.D, 3.E, 3.F, 3.G, 4.A, 4.F, 4.B, 4.C, 4.D, 4.E, 5.A, 5.B, 5.C, 5.D, 5.E, 6.A, 6.B, 6.C, 6.D, 6.E, 7.A, 7.B, 7.C, 7.D, 8.A, 8.B, 9.A, 9.B, 9.C, 9.D, 10.A, 10.B, 10.C, 11.A, 11.B, 12.A, 12.B, 12.C, 12.D, 13, 14.A, 14.B, 14.C, 15.A, 15.B, 15.C, 15.D, 15.E, 15.F, 16.A, 16.B, 17.A, 17.B, 17.C, 18.A, 18.B, 18.C, 18.D, 19.A, 19.B, 19.C, 20.A, 20.B, 21.A, 21.B, 21.C, 22.A, 22.B, 22.C, 23.A, 23.B, 23.C, 24.A, 24.B, 24.C, 25.A, 25.B, 25.C, 25.D, 25.E, 25.F, 25.G, 26.A, 26.D, 26.E, 26.B, 26.C, 27.A, 27.B, 28.A, 28.B, 28.C, 28.D, 29.A, 29.B, 29.C, 30.A, 30.C, 30.D, 30.B, 31.A, 31.B, 31.C, 32.A, 32.B, 32.C, 33.A, 33.B, 34.A, 34.B, 35.A, 35.B, 35.C, 36.A, 36.B, 36.C, 38.A, 38.B, 38.C, 38.D, 38.E, 38.F, 38.G | Complete per-task process evidence through Task 36.C, the v1 migration registry, and all Task 38 children. |
 | 37.C | 37.A, 37.B | Complete student-authored 1,500–2,500-word reflection and final human readiness decision. |
-| 38.A | 27.B, 28.B, 29.C | Credential service, safe shell, and governance route composition. |
-| 38.B | 22.C, 23.C, 28.B, 29.C | Memory/audit services, safe shell, and governance route composition. |
-| 38.C | 23.C, 28.B, 29.C | Audit projection, safe shell, and governance route composition. |
-| 38.D | 9.D, 23.C, 26.C, 28.B, 29.C | Workspace/audit/recovery service, safe shell, and governance route composition. |
-| 38.E | 9.D, 26.C, 28.B | Workspace/recovery service and existing CLI shell. |
+| 38.A | 27.B, 28.C, 29.C | Credential service, safe rendered shell, and governance route composition. |
+| 38.B | 22.C, 23.C, 28.C, 29.C | Memory/audit services, safe rendered shell, and governance route composition. |
+| 38.C | 23.C, 28.C, 29.C | Audit projection, safe rendered shell, and governance route composition. |
+| 38.D | 9.D, 23.C, 26.C, 28.C, 29.C | Workspace/audit/recovery service, safe rendered shell, and governance route composition. |
+| 38.E | 9.D, 26.C, 28.D | Workspace/recovery service and completed CLI shell. |
 | 38.F | 7.D, 29.C, 38.A, 38.B, 38.C, 38.D, 38.E | Exact complete v1 migration registry, local workflow routers, and CLI operation contract. |
 | 38.G | 38.F | Frozen production local composition; acceptance adds no production behavior. |
 
 ## Parallel Worktree Waves
 
-M0, human approval, and cold-start are pre-wave gates, not executable Tasks. There are **70 executable dependency waves** numbered 1–70. The `Executable tasks` column is the sole machine-readable membership set and contains exact Task ids only. Every predecessor must be in an earlier wave; tasks in one row may run in parallel only when their expanded owned core-file sets are disjoint. Evidence merges remain serialized by displayed Task order.
+M0, human approval, and cold-start are pre-wave gates, not executable Tasks. There are **71 executable dependency waves** numbered 1–71. The `Executable tasks` column is the sole machine-readable membership set and contains exact Task ids only. Every predecessor must be in an earlier wave; tasks in one row may run in parallel only when their expanded owned core-file sets are disjoint. Evidence merges remain serialized by displayed Task order.
 
 | Wave | Executable tasks | Execution and conflict rule |
 |---|---|---|
@@ -6642,7 +6897,7 @@ M0, human approval, and cold-start are pre-wave gates, not executable Tasks. The
 | 22 | 4.E, 5.C | Credential scan and shared action contracts own disjoint files. |
 | 23 | 5.E | Freeze repository-location and disclosure-scope contracts. |
 | 24 | 5.D | Complete the closed shared contract set. |
-| 25 | 6.A, 6.B, 6.C, 7.A, 10.B, 15.A | Profile, storage, content, and disclosure foundations own disjoint files. |
+| 25 | 6.A, 6.B, 6.C, 7.A, 10.B, 15.A, 30.A | Profile, storage, content, disclosure, and fixed Demo-value foundations own disjoint files. |
 | 26 | 6.D, 7.B, 15.B | Registry assembly, Run lifecycle, and disclosure subjects own disjoint files. |
 | 27 | 6.E, 7.C, 15.C | Profile validation, idempotency, and authorization rules own disjoint files. |
 | 28 | 8.A, 15.D, 18.A, 27.A | Request, Grant-decision/v0003, Docker-request, and credential-port files are disjoint. |
@@ -6658,36 +6913,37 @@ M0, human approval, and cold-start are pre-wave gates, not executable Tasks. The
 | 38 | 12.C, 17.A | Atomic patch application and action parser own disjoint files. |
 | 39 | 12.D, 17.B | FinalDiff identity and action binding own disjoint files. |
 | 40 | 13, 18.B | Pure policy and Docker isolation inputs own disjoint files. |
-| 41 | 17.C, 18.C | Dispatcher and container lifecycle own disjoint files. |
+| 41 | 18.C, 17.C | Container lifecycle and dispatcher own disjoint files. |
 | 42 | 18.D | Seal production Docker execution results. |
 | 43 | 19.A | Freeze closed static-tool result contracts. |
 | 44 | 19.B | Implement authoritative pytest event evidence. |
 | 45 | 19.C | Implement stable target failure fingerprints. |
-| 46 | 20.B, 22.A, 24.A | Baseline/Manifest, memory repository, and context facts own disjoint files. |
+| 46 | 20.B, 24.A, 22.A | Baseline/Manifest, context facts, and memory repository own disjoint files. |
 | 47 | 21.A, 22.B, 23.A | Formal plan, memory selection, and audit/v0006 files are disjoint. |
 | 48 | 21.B, 22.C, 23.B, 24.B, 25.B | Validation execution, memory clear, audit projection, context projection, and turn/v0007 files are disjoint. |
-| 49 | 21.C, 23.C, 24.C, 25.C | VerifiedCandidate, audit retention, feedback/v0008, and call-orchestration files are disjoint. |
-| 50 | 14.A, 25.D, 25.F, 28.A | Approval subject, action/v0009, restart, and Web-security files are disjoint. |
-| 51 | 14.B, 28.B | Writeback-approval/v0010 and application-shell files are disjoint. |
-| 52 | 14.C, 29.B | Approval consumption and disclosure-UI files are disjoint. |
-| 53 | 25.A, 25.E, 26.A | Stop/progress, wait/cancel, and writeback own disjoint files. |
-| 54 | 25.G, 26.B, 30.A | Loop composition, recovery preview, and Demo core own disjoint files. |
-| 55 | 26.C, 29.A, 30.B, 32.A | Recovery, Run UI, Demo app, and governance trace own disjoint files. |
-| 56 | 7.D, 29.C, 32.B, 38.E | Final migration registry, governance composition, feedback trace, and recovery CLI own disjoint files. |
-| 57 | 32.C, 38.A, 38.B, 38.C, 38.D | Shared-core proof and four local-operation workflows own disjoint files. |
-| 58 | 34.B, 38.F | Demo OCI smoke and local route composition own disjoint files. |
-| 59 | 31.A, 38.G | Reference happy path and browser acceptance consume frozen composition. |
-| 60 | 31.B | Add reference negative safety/call-gate cases. |
-| 61 | 31.C | Complete persistence/recovery/audit/determinism reference evidence. |
-| 62 | 33.A, 34.A | Wheel build and reference image smoke own disjoint artifacts. |
-| 63 | 33.B | Clean pipx smoke consumes the exact wheel. |
-| 64 | 35.A, 35.B | GitHub Actions and GitLab verification proceed independently. |
-| 65 | 35.C | Protected release rules and dual-platform evidence wait for both platforms. |
-| 66 | 36.A | Freeze closed delivery evidence and identity alignment. |
-| 67 | 36.B | Execute protected GitHub Release/GHCR publication. |
-| 68 | 36.C | Deploy and verify the exact public Demo source commit. |
-| 69 | 37.A, 37.B | README and final process/log evidence use stable producer facts and disjoint files. |
-| 70 | 37.C | Final delivery/reflection gate waits for all executable Tasks and the student-authored reflection. |
+| 49 | 21.C, 23.C, 25.C, 24.C | VerifiedCandidate, audit retention, call orchestration, and feedback/v0008 files are disjoint. |
+| 50 | 14.A, 25.F, 28.A, 25.D | Approval subject, restart, Web security, and action/v0009 files are disjoint. |
+| 51 | 28.B, 30.C, 14.B | Application shell, Demo executor, and writeback-approval/v0010 files are disjoint. |
+| 52 | 28.C, 14.C | Packaged Web assets and approval consumption own disjoint files. |
+| 53 | 28.D, 29.B, 25.A, 25.E, 26.A | Serve CLI, disclosure UI, stopping, wait/cancel, and persistence schema/records own disjoint files. |
+| 54 | 25.G, 26.D, 30.D | Loop composition, persistence artifacts, and Demo runner/session composition own disjoint files. |
+| 55 | 26.E, 29.A, 30.B, 32.A | Writeback composition, Run UI, Demo app, and governance trace own disjoint files. |
+| 56 | 26.B, 29.C, 32.B | Recovery preview, governance composition, and feedback trace own disjoint files. |
+| 57 | 26.C, 32.C, 38.A, 38.B, 38.C | Recovery apply, shared-core proof, and three local-operation workflows own disjoint files. |
+| 58 | 34.B, 38.D, 38.E, 7.D | Demo OCI smoke, recovery Web/CLI workflows, and final migration registry own disjoint files. |
+| 59 | 38.F | Compose final local Web and production recovery CLI. |
+| 60 | 38.G, 31.A | Browser acceptance and reference happy path consume frozen composition. |
+| 61 | 31.B | Add reference negative safety/call-gate cases. |
+| 62 | 31.C | Complete persistence/recovery/audit/determinism reference evidence. |
+| 63 | 33.A, 34.A | Wheel build and reference image smoke own disjoint artifacts. |
+| 64 | 33.B | Clean pipx smoke consumes the exact wheel. |
+| 65 | 35.A, 35.B | GitHub Actions and GitLab verification proceed independently. |
+| 66 | 35.C | Protected release rules and dual-platform evidence wait for both platforms. |
+| 67 | 36.A | Freeze closed delivery evidence and identity alignment. |
+| 68 | 36.B | Execute protected GitHub Release/GHCR publication. |
+| 69 | 36.C | Deploy and verify the exact public Demo source commit. |
+| 70 | 37.A, 37.B | README and final process/log evidence use stable producer facts and disjoint files. |
+| 71 | 37.C | Final delivery/reflection gate waits for all executable Tasks and the student-authored reflection. |
 
 Every executable task uses a fresh subagent, branch, worktree, and PR. Milestones use none. Parallel worktrees may not update shared execution evidence concurrently: implementation commits may proceed in parallel, but merges and append-only `PLAN.md`/`AGENT_LOG.md` evidence commits occur in displayed task order within the wave.
 
@@ -6794,17 +7050,23 @@ The mechanically checked core-file set is formed only from exact backticked repo
 | 25.E | `src/vespercode/loop/{wait_control.py,cancellation.py}`; `tests/unit/loop/test_wait_lifecycle.py` | None | Owns wait/deadline/cancel safe points. |
 | 25.F | `src/vespercode/loop/restart.py`; `tests/unit/loop/test_restart_behavior.py` | None | Owns restart fail-close only. |
 | 25.G | `src/vespercode/loop/engine.py`; `tests/unit/loop/{test_main_loop.py,test_main_loop_failures.py}` | None | Thin composition only; no child rule duplication or external framework. |
-| 26.A | `src/vespercode/storage/migrations/v0011_persistence.py`; `src/vespercode/persistence/{path_record.py,transaction.py,artifacts.py,writeback.py}`; `tests/unit/storage/test_persistence_migration.py` | None | Sole v0011 owner plus approval-bound write transaction, not recovery classification. |
+| 26.A | `src/vespercode/storage/migrations/v0011_persistence.py`; `src/vespercode/persistence/{path_record.py,transaction.py}`; `tests/unit/storage/test_persistence_migration.py` | None | Sole v0011 owner plus immutable transaction/path records; no artifact I/O or workspace writeback. |
+| 26.D | `src/vespercode/persistence/artifacts.py` | None | Sole ACL-restricted content-addressed artifact/backup storage owner. |
+| 26.E | `src/vespercode/persistence/writeback.py` | None | Thin approval-bound atomic writeback composition over Tasks 26.A and 26.D. |
 | 26.B | `src/vespercode/persistence/recovery_preview.py` | None | Read-only preview/classification only; exact supporting tests are frozen in Task 26.B. |
 | 26.C | `src/vespercode/storage/migrations/v0012_recovery.py`; `src/vespercode/persistence/{recovery_apply.py,recovery.py}`; `tests/unit/storage/test_recovery_migration.py` | None | Sole v0012 terminal-result owner; CLI/WebUI consume the same composed recovery service. |
 | 27.A | `src/vespercode/credentials/{port.py,service.py}` | None | Owns secret wrapper, store protocol, and pure lifecycle service. |
 | 27.B | `src/vespercode/credentials/wincred_store.py` | None | Owns the sole real WinCred implementation. |
 | 28.A | `src/vespercode/web/security.py`; `tests/web/test_security.py` | None | Every later Web child consumes this boundary before its first domain call. |
-| 28.B | `src/vespercode/web/app.py`; `src/vespercode/web/templates/{base.html,home.html}`; `src/vespercode/web/templates/components/status_badge.html`; `src/vespercode/web/static/htmx.min.js`; `src/vespercode/cli.py` | 38.E adds only recover parsing and typed delegation to `src/vespercode/cli.py`; 38.F adds only its production recover-handler binding; 33.B may later correct installed-resource lookup in that file | Route children install through ports and never modify `src/vespercode/web/app.py`; wave order is 38.E parser, 38.F production binding, then any 33.B installed-resource correction. |
+| 28.B | `src/vespercode/web/app.py`; `src/vespercode/web/templates/{base.html,home.html}`; `src/vespercode/web/templates/components/status_badge.html` | None | Typed shell/templates/status only; route children install through ports and never modify `src/vespercode/web/app.py`. |
+| 28.C | `src/vespercode/web/static/htmx.min.js` | None | Sole pinned packaged Web asset owner; no CDN/runtime download. |
+| 28.D | `src/vespercode/cli.py` | 38.E adds only recover parsing and typed delegation; 38.F adds only its production recover-handler binding; 33.B may later correct installed-resource lookup | Thin loopback serve entrypoint; wave order is 38.E parser, 38.F production binding, then any 33.B installed-resource correction. |
 | 29.A | `src/vespercode/web/{run_lifecycle_workflow.py,routes_runs.py}`; `src/vespercode/web/templates/{run_create.html,run_detail.html}` | None | Run create/status/cancel only. |
 | 29.B | `src/vespercode/web/{disclosure_workflow.py,routes_disclosure.py}`; `src/vespercode/web/templates/disclosure_wait.html` | None | Disclosure decision only. |
 | 29.C | `src/vespercode/web/{writeback_workflow.py,routes_writeback.py,run_workflows.py}` | None | Owns final writeback and Milestone 29 installer composition; exact supporting tests are frozen in Task 29.C. |
-| 30.A | `src/vespercode/demo/{types.py,scenario.py,executor.py,runner.py}`; headless Demo tests | None | Shared core plus Demo-only ports/sessions; no Web or formal adapter. |
+| 30.A | `src/vespercode/demo/{types.py,scenario.py}` | None | Demo-only immutable values and fixed scenario data. |
+| 30.C | `src/vespercode/demo/executor.py` | None | Demo-only simulated tool-port isolation; no shared-core sequencing. |
+| 30.D | `src/vespercode/demo/runner.py` | None | Thin shared-core runner plus bounded in-memory sessions; no Web or formal adapter. |
 | 30.B | `src/vespercode/demo/{app.py,healthcheck.py,templates/demo.html}`; capability/health/render tests | None | Task 34.B packages these files without formal capability adapters. |
 | 31.A | `scripts/run_reference_e2e.py` | None | Owns reusable driver/happy path; reference fixture remains immutable. |
 | 31.B | None (test/evidence-only) | None | Exact supporting files are `tests/e2e/reference/{test_reference_denials.py,test_reference_waits.py,test_reference_no_write.py,test_reference_call_gate.py}`; consumes Task 31.A hooks without modifying production core or fixture. |
@@ -6813,7 +7075,7 @@ The mechanically checked core-file set is formed only from exact backticked repo
 | 32.B | None (test/evidence-only) | None | Exact supporting files are `tests/e2e/mechanism/{test_feedback_recovery.py,test_continuation_gate.py,test_trace_determinism.py}`; consumes Task 32.A driver only. |
 | 32.C | None (test/evidence-only) | None | Exact supporting files are `tests/e2e/mechanism/{test_disclosure_gate.py,test_credential_recheck.py,test_shared_core_reuse.py}`; finalizes provenance and zero-side-effect evidence. |
 | 33.A | None (authorized metadata modification plus test/evidence) | Task 4.A authorizes Task 33.A to modify package-data/version/distribution-metadata/console-entry-point fields in `pyproject.toml` | Produces one exact wheel/digest without becoming a second owner of `pyproject.toml`; dependency/Python/source/lock/build-backend/tooling sections remain immutable. |
-| 33.B | `scripts/run_package_smoke.py` | Task 28.B authorizes an installed-resource-only correction in `src/vespercode/cli.py` | Consumes Task 33.A wheel; no source fallback. |
+| 33.B | `scripts/run_package_smoke.py` | Task 28.D authorizes an installed-resource-only correction in `src/vespercode/cli.py` | Consumes Task 33.A wheel; no source fallback. |
 | 34.A | `scripts/run_reference_image_smoke.py` | None | Milestone 2 recipe/manifest inputs are read-only; exact supporting tests are frozen in Task 34.A. |
 | 34.B | `containers/demo/Dockerfile`; `requirements/demo.lock`; `scripts/run_demo_image_smoke.py` | None | Curated Demo image only; exact supporting tests are frozen in Task 34.B. |
 | 35.A | `.github/workflows/ci.yml` | None | GitHub remains no-publish; exact supporting contract test is frozen in Task 35.A. |
@@ -6829,8 +7091,8 @@ The mechanically checked core-file set is formed only from exact backticked repo
 | 38.B | `src/vespercode/web/routes_memory.py`; `src/vespercode/web/templates/memory.html` | None | Memory workflow only. |
 | 38.C | `src/vespercode/web/routes_audit.py`; `src/vespercode/web/templates/audit.html` | None | Audit workflow only. |
 | 38.D | `src/vespercode/web/routes_recovery.py`; `src/vespercode/web/templates/recovery_preview.html` | None | Recovery Web workflow only. |
-| 38.E | None (authorized core-file modification plus test) | Task 28.B authorizes only recover parsing/typed delegation in `src/vespercode/cli.py`; Task 38.F alone owns the production handler/service composition | Preview by default; literal apply only; injectable Spy tests; no database initialization or production default; Task 38.E is not a second owner of `src/vespercode/cli.py`. |
-| 38.F | `src/vespercode/web/{routes_operations.py,local_composition.py}`; `src/vespercode/cli_composition.py`; `tests/unit/test_cli_composition.py`; local composition test | Task 28.B authorizes only the production recover-handler binding in `src/vespercode/cli.py` after Task 38.E freezes parsing | Sole Web installer and recovery-CLI production composition; complete registry precedes all repository/service construction; no parser or recovery behavior duplication. |
+| 38.E | None (authorized core-file modification plus test) | Task 28.D authorizes only recover parsing/typed delegation in `src/vespercode/cli.py`; Task 38.F alone owns the production handler/service composition | Preview by default; literal apply only; injectable Spy tests; no database initialization or production default; Task 38.E is not a second owner of `src/vespercode/cli.py`. |
+| 38.F | `src/vespercode/web/{routes_operations.py,local_composition.py}`; `src/vespercode/cli_composition.py`; `tests/unit/test_cli_composition.py`; local composition test | Task 28.D authorizes only the production recover-handler binding in `src/vespercode/cli.py` after Task 38.E freezes parsing | Sole Web installer and recovery-CLI production composition; complete registry precedes all repository/service construction; no parser or recovery behavior duplication. |
 | 38.G | `tests/web/test_operations_accessibility.py`; browser evidence | None | Cross-workflow acceptance adds no production behavior. |
 | Shared evidence | `PLAN.md`; `AGENT_LOG.md` | Every completed task, evidence-only | Merge and append in ascending task order within each wave; only SPEC §11.2 tracking fields preserve `PlanSemanticDigestV1`, while any other PLAN change triggers reapproval and cold-start. |
 | Process record | `SPEC_PROCESS.md` | Cold-start recorder plus Tasks 37.B and 37.C final evidence | Historical content is preserved; only truthful append/revision evidence is permitted. |
@@ -6841,15 +7103,15 @@ Every task list in the four coverage matrices below contains exact executable Ta
 
 | User story | FR contract | NFR contract | Explicit AC set | Implementation tasks | Independent validation/delivery tasks |
 |---|---|---|---|---|---|
-| US-01 Configure and safely start a run | FR-ADM, FR-LOOP | NFR-PERF, NFR-USE, NFR-SEC | AC-15, AC-16, AC-21, AC-26, AC-28, AC-30, AC-31 | 6.A, 6.B, 6.C, 6.D, 6.E, 7.A, 7.B, 7.C, 7.D, 8.A, 8.B, 9.A, 9.B, 9.C, 9.D, 10.A, 10.B, 10.C, 20.A, 20.B, 23.A, 23.B, 23.C, 25.A, 25.B, 25.C, 25.D, 25.E, 25.F, 25.G, 28.A, 28.B, 29.A, 29.C | 31.A, 31.B, 31.C, 33.B, 35.A, 35.B, 35.C, 37.A, 37.B, 37.C, 38.G |
+| US-01 Configure and safely start a run | FR-ADM, FR-LOOP | NFR-PERF, NFR-USE, NFR-SEC | AC-15, AC-16, AC-21, AC-26, AC-28, AC-30, AC-31 | 6.A, 6.B, 6.C, 6.D, 6.E, 7.A, 7.B, 7.C, 7.D, 8.A, 8.B, 9.A, 9.B, 9.C, 9.D, 10.A, 10.B, 10.C, 20.A, 20.B, 23.A, 23.B, 23.C, 25.A, 25.B, 25.C, 25.D, 25.E, 25.F, 25.G, 28.A, 28.B, 28.C, 28.D, 29.A, 29.C | 31.A, 31.B, 31.C, 33.B, 35.A, 35.B, 35.C, 37.A, 37.B, 37.C, 38.G |
 | US-02 Safely manage a real LLM credential | FR-CRED, SPEC §8.1 | NFR-SEC, NFR-PRIV | AC-08 | 16.B, 25.C, 27.A, 27.B, 38.A, 38.F | 31.B, 32.C, 33.B, 35.B, 35.C, 37.C, 38.G |
 | US-03 Repair an existing stable failure | FR-LOOP, FR-WS, FR-VAL | NFR-PERF, NFR-REL | AC-04, AC-05, AC-06, AC-17, AC-18, AC-19, AC-20, AC-25, AC-26, AC-28, AC-31 | 10.A, 10.B, 10.C, 11.A, 11.B, 12.A, 12.B, 12.C, 12.D, 13, 17.A, 17.B, 17.C, 18.A, 18.B, 18.C, 18.D, 19.A, 19.B, 19.C, 20.A, 20.B, 21.A, 21.B, 21.C, 24.A, 24.B, 24.C, 25.A, 25.B, 25.C, 25.D, 25.E, 25.F, 25.G | 31.A, 31.B, 31.C, 32.A, 32.B, 32.C, 34.A, 35.A, 35.B, 37.C |
 | US-04 Control external data disclosure | FR-GOV | NFR-SEC, NFR-PRIV | AC-13, AC-26, AC-27 | 15.A, 15.B, 15.C, 15.D, 15.E, 15.F, 16.A, 16.B, 24.A, 24.B, 24.C, 25.B, 25.C, 25.G, 29.B, 29.C | 31.B, 32.C, 35.A, 35.B, 35.C, 37.B, 37.C, 38.G |
 | US-05 Rely on deterministic guardrails and one-time approval | FR-GOV | NFR-REL, NFR-SEC | AC-01, AC-02, AC-03, AC-26, AC-27, AC-31 | 9.A, 9.B, 9.C, 9.D, 12.A, 12.B, 12.C, 12.D, 13, 14.A, 14.B, 14.C, 15.A, 15.B, 15.C, 15.D, 15.E, 15.F, 17.A, 17.B, 17.C, 25.D, 25.E, 25.G | 31.B, 31.C, 32.A, 32.C, 35.A, 35.B, 37.C |
-| US-06 Review, persist, and recover a verified diff | FR-PERSIST | NFR-REL, NFR-SEC | AC-07, AC-21, AC-22, AC-26, AC-29, AC-31 | 3.A, 3.B, 3.C, 3.D, 3.E, 3.F, 3.G, 9.A, 9.B, 9.C, 9.D, 12.A, 12.B, 12.C, 12.D, 14.A, 14.B, 14.C, 21.A, 21.B, 21.C, 26.A, 26.B, 26.C, 29.C, 38.D, 38.E, 38.F | 31.C, 33.B, 35.A, 35.B, 37.C, 38.G |
+| US-06 Review, persist, and recover a verified diff | FR-PERSIST | NFR-REL, NFR-SEC | AC-07, AC-21, AC-22, AC-26, AC-29, AC-31 | 3.A, 3.B, 3.C, 3.D, 3.E, 3.F, 3.G, 9.A, 9.B, 9.C, 9.D, 12.A, 12.B, 12.C, 12.D, 14.A, 14.B, 14.C, 21.A, 21.B, 21.C, 26.A, 26.D, 26.E, 26.B, 26.C, 29.C, 38.D, 38.E, 38.F | 31.C, 33.B, 35.A, 35.B, 37.C, 38.G |
 | US-07 Inspect and clear repository memory | FR-MEM | NFR-OBS, NFR-PRIV | AC-14, AC-23 | 22.A, 22.B, 22.C, 23.A, 23.B, 23.C, 24.A, 24.B, 24.C, 38.B, 38.F | 31.C, 35.A, 35.B, 37.C, 38.G |
-| US-08 Understand status and audit evidence | FR-LOOP, FR-MEM, FR-UI | NFR-USE, NFR-OBS | AC-06, AC-16, AC-27, AC-28 | 7.A, 7.B, 7.C, 7.D, 23.A, 23.B, 23.C, 25.F, 25.G, 28.A, 28.B, 29.A, 29.C, 38.C, 38.F | 31.C, 33.B, 35.A, 35.B, 37.A, 37.C, 38.G |
-| US-09 Run the public Mock Demo | FR-UI | NFR-PERF, NFR-REL, NFR-SEC | AC-09, AC-12 | 30.A, 30.B, 34.B | 32.A, 32.B, 32.C, 35.A, 35.B, 35.C, 36.A, 36.C, 37.A, 37.C |
+| US-08 Understand status and audit evidence | FR-LOOP, FR-MEM, FR-UI | NFR-USE, NFR-OBS | AC-06, AC-16, AC-27, AC-28 | 7.A, 7.B, 7.C, 7.D, 23.A, 23.B, 23.C, 25.F, 25.G, 28.A, 28.B, 28.C, 28.D, 29.A, 29.C, 38.C, 38.F | 31.C, 33.B, 35.A, 35.B, 37.A, 37.C, 38.G |
+| US-09 Run the public Mock Demo | FR-UI | NFR-PERF, NFR-REL, NFR-SEC | AC-09, AC-12 | 30.A, 30.C, 30.D, 30.B, 34.B | 32.A, 32.B, 32.C, 35.A, 35.B, 35.C, 36.A, 36.C, 37.A, 37.C |
 
 ## FR Coverage Matrix
 
@@ -6860,57 +7122,57 @@ Every task list in the four coverage matrices below contains exact executable Ta
 | FR-WS — Snapshot, path boundary, strict patches, and CandidateTree | 1.A, 1.B, 1.C, 1.D, 1.E, 4.B, 4.D, 6.A, 6.B, 6.C, 6.D, 6.E, 9.A, 9.B, 9.C, 9.D, 10.A, 10.B, 10.C, 11.A, 11.B, 12.A, 12.B, 12.C, 12.D | 31.A, 31.B, 32.A, 32.B | Task 1.E `GO` and Tasks 9.A–9.D Windows evidence prove object/path behavior; domain suites and later traces prove legal correction, cursor continuity, and denials. |
 | FR-GOV — policy, final approval, disclosure, and real LLM authorization | 13, 14.A, 14.B, 14.C, 15.A, 15.B, 15.C, 15.D, 15.E, 15.F, 16.A, 16.B, 25.B, 25.C, 25.D, 25.E, 25.G, 29.B, 29.C | 31.B, 31.C, 32.A, 32.C, 38.G | Pure governance tests plus reference/mechanism/browser traces prove no unauthorized dispatch, network, approval consumption, or write. |
 | FR-VAL — Python adapter, Baseline, checks, Manifest, feedback, and formal success | 18.A, 18.B, 18.C, 18.D, 19.A, 19.B, 19.C, 20.A, 20.B, 21.A, 21.B, 21.C, 24.A, 24.B, 24.C, 25.D, 25.G | 31.A, 31.C, 34.A | Docker commands prove isolation/report/Baseline/formal behavior; the reference flow and image smoke preserve the same Manifest and evidence. |
-| FR-PERSIST — final approval, controlled writeback, and recovery | 3.A, 3.B, 3.C, 3.D, 3.E, 3.F, 3.G, 9.A, 9.B, 9.C, 9.D, 12.A, 12.B, 12.C, 12.D, 14.A, 14.B, 14.C, 21.A, 21.B, 21.C, 26.A, 26.B, 26.C, 29.C, 38.D, 38.E, 38.F | 31.C, 33.B, 38.G | Task 3.G gate, production fault/Windows tests, recovery UI/CLI, reference terminal trace, and installed smoke prove exact writeback and three-value recovery. |
+| FR-PERSIST — final approval, controlled writeback, and recovery | 3.A, 3.B, 3.C, 3.D, 3.E, 3.F, 3.G, 9.A, 9.B, 9.C, 9.D, 12.A, 12.B, 12.C, 12.D, 14.A, 14.B, 14.C, 21.A, 21.B, 21.C, 26.A, 26.D, 26.E, 26.B, 26.C, 29.C, 38.D, 38.E, 38.F | 31.C, 33.B, 38.G | Task 3.G gate, production fault/Windows tests, recovery UI/CLI, reference terminal trace, and installed smoke prove exact writeback and three-value recovery. |
 | FR-MEM — memory and audit | 22.A, 22.B, 22.C, 23.A, 23.B, 23.C, 24.A, 24.B, 24.C, 38.B, 38.C, 38.F | 31.C, 38.G | Domain suites prove isolation/authority/order/retention; reference and browser evidence prove scoped visible operations. |
 | FR-CRED — credential lifecycle | 16.B, 25.C, 27.A, 27.B, 38.A, 38.F | 31.B, 32.C, 35.B, 35.C, 38.G | WinCred smoke, zero-side-effect call-gate traces, WebUI response scans, and Windows CI evidence prove lifecycle and per-call revalidation. |
-| FR-UI — formal local WebUI and public Demo | 28.A, 28.B, 29.A, 29.B, 29.C, 30.A, 30.B, 38.A, 38.B, 38.C, 38.D, 38.E, 38.F | 32.C, 33.B, 34.B, 36.C, 38.G | Local security/browser/installed tests plus shared-core proof, Demo image health, and live public smoke prove both isolated compositions. |
+| FR-UI — formal local WebUI and public Demo | 28.A, 28.B, 28.C, 28.D, 29.A, 29.B, 29.C, 30.A, 30.C, 30.D, 30.B, 38.A, 38.B, 38.C, 38.D, 38.E, 38.F | 32.C, 33.B, 34.B, 36.C, 38.G | Local security/browser/installed tests plus shared-core proof, Demo image health, and live public smoke prove both isolated compositions. |
 
 ## NFR Coverage Matrix
 
 | Non-functional requirement | Implementation tasks | Independent verification tasks | Test environment / release evidence |
 |---|---|---|---|
-| NFR-PERF — hard budgets and bounded resources | 5.A, 5.B, 5.C, 5.D, 5.E, 8.A, 8.B, 11.A, 11.B, 15.A, 15.B, 15.C, 15.D, 15.E, 15.F, 16.A, 16.B, 18.A, 18.B, 18.C, 18.D, 24.A, 24.B, 24.C, 25.A, 25.B, 25.C, 25.D, 25.E, 25.G, 30.A, 30.B | 31.A, 31.B, 32.B, 34.A, 34.B | FakeClock and boundary tests prove pre-side-effect limits; Docker/Demo image smoke and reference traces prove real resource ceilings. |
-| NFR-REL — deterministic and fail-closed behavior | 1.A, 1.B, 1.C, 1.D, 1.E, 2.A, 2.B, 2.C, 2.D, 2.E, 2.F, 2.G, 3.A, 3.B, 3.C, 3.D, 3.E, 3.F, 3.G, 4.A, 4.F, 4.B, 4.C, 4.D, 4.E, 5.A, 5.B, 5.C, 5.D, 5.E, 6.A, 6.B, 6.C, 6.D, 6.E, 7.A, 7.B, 7.C, 7.D, 8.A, 8.B, 9.A, 9.B, 9.C, 9.D, 10.A, 10.B, 10.C, 11.A, 11.B, 12.A, 12.B, 12.C, 12.D, 13, 14.A, 14.B, 14.C, 15.A, 15.B, 15.C, 15.D, 15.E, 15.F, 16.A, 16.B, 17.A, 17.B, 17.C, 18.A, 18.B, 18.C, 18.D, 19.A, 19.B, 19.C, 20.A, 20.B, 21.A, 21.B, 21.C, 22.A, 22.B, 22.C, 23.A, 23.B, 23.C, 24.A, 24.B, 24.C, 25.A, 25.B, 25.C, 25.D, 25.E, 25.F, 25.G, 26.A, 26.B, 26.C, 30.A | 30.B, 31.A, 31.B, 31.C, 32.A, 32.B, 32.C, 37.C | Gate identity, dependency closure, formal toolchain promotion, canonical vectors, immutable structures, checksum-verified domain/registry closure, transactions, repeated semantic traces, shared-core provenance, and final missing-evidence rejection prove determinism/fail-close. |
-| NFR-USE — understandable status, decisions, diff, and recovery | 23.A, 23.B, 23.C, 28.A, 28.B, 29.A, 29.B, 29.C, 37.A, 38.A, 38.B, 38.C, 38.D, 38.E, 38.F | 33.B, 38.G | Local WebUI/browser/accessibility tests, installed UI smoke, and README contract prove understandable non-color-only operation. |
+| NFR-PERF — hard budgets and bounded resources | 5.A, 5.B, 5.C, 5.D, 5.E, 8.A, 8.B, 11.A, 11.B, 15.A, 15.B, 15.C, 15.D, 15.E, 15.F, 16.A, 16.B, 18.A, 18.B, 18.C, 18.D, 24.A, 24.B, 24.C, 25.A, 25.B, 25.C, 25.D, 25.E, 25.G, 30.A, 30.C, 30.D, 30.B | 31.A, 31.B, 32.B, 34.A, 34.B | FakeClock and boundary tests prove pre-side-effect limits; Docker/Demo image smoke and reference traces prove real resource ceilings. |
+| NFR-REL — deterministic and fail-closed behavior | 1.A, 1.B, 1.C, 1.D, 1.E, 2.A, 2.B, 2.C, 2.D, 2.E, 2.F, 2.G, 3.A, 3.B, 3.C, 3.D, 3.E, 3.F, 3.G, 4.A, 4.F, 4.B, 4.C, 4.D, 4.E, 5.A, 5.B, 5.C, 5.D, 5.E, 6.A, 6.B, 6.C, 6.D, 6.E, 7.A, 7.B, 7.C, 7.D, 8.A, 8.B, 9.A, 9.B, 9.C, 9.D, 10.A, 10.B, 10.C, 11.A, 11.B, 12.A, 12.B, 12.C, 12.D, 13, 14.A, 14.B, 14.C, 15.A, 15.B, 15.C, 15.D, 15.E, 15.F, 16.A, 16.B, 17.A, 17.B, 17.C, 18.A, 18.B, 18.C, 18.D, 19.A, 19.B, 19.C, 20.A, 20.B, 21.A, 21.B, 21.C, 22.A, 22.B, 22.C, 23.A, 23.B, 23.C, 24.A, 24.B, 24.C, 25.A, 25.B, 25.C, 25.D, 25.E, 25.F, 25.G, 26.A, 26.D, 26.E, 26.B, 26.C, 30.A, 30.C, 30.D | 30.B, 31.A, 31.B, 31.C, 32.A, 32.B, 32.C, 37.C | Gate identity, dependency closure, formal toolchain promotion, canonical vectors, immutable structures, checksum-verified domain/registry closure, transactions, repeated semantic traces, shared-core provenance, and final missing-evidence rejection prove determinism/fail-close. |
+| NFR-USE — understandable status, decisions, diff, and recovery | 23.A, 23.B, 23.C, 28.A, 28.B, 28.C, 28.D, 29.A, 29.B, 29.C, 37.A, 38.A, 38.B, 38.C, 38.D, 38.E, 38.F | 33.B, 38.G | Local WebUI/browser/accessibility tests, installed UI smoke, and README contract prove understandable non-color-only operation. |
 | NFR-OBS — ordered evidence and categorized CI/release records | 7.A, 7.B, 7.C, 7.D, 23.A, 23.B, 23.C, 31.A, 31.B, 31.C, 32.A, 32.B, 32.C, 35.A, 35.B, 35.C, 36.A, 36.B, 36.C, 38.C, 38.F | 37.B, 37.C, 38.G | Schema history/registry checks, audit concurrency, deterministic reports, real dual-platform records, release/deployment JSON, browser evidence, and evidence-age checks prove observability. |
-| NFR-SEC — declared threat-boundary mechanisms | 1.A, 1.B, 1.C, 1.D, 1.E, 2.A, 2.B, 2.C, 2.D, 2.E, 2.F, 2.G, 3.A, 3.B, 3.C, 3.D, 3.E, 3.F, 3.G, 6.A, 6.B, 6.C, 6.D, 6.E, 9.A, 9.B, 9.C, 9.D, 12.A, 12.B, 12.C, 12.D, 13, 14.A, 14.B, 14.C, 15.A, 15.B, 15.C, 15.D, 15.E, 15.F, 16.A, 16.B, 17.A, 17.B, 17.C, 18.A, 18.B, 18.C, 18.D, 21.A, 21.B, 21.C, 25.A, 25.B, 25.C, 25.D, 25.E, 25.F, 25.G, 26.A, 26.B, 26.C, 27.A, 27.B, 28.A, 28.B, 29.A, 29.B, 29.C, 30.A, 30.B, 35.A, 35.B, 35.C, 36.A, 36.B, 38.A, 38.B, 38.C, 38.D, 38.E, 38.F | 31.B, 31.C, 32.A, 32.C, 34.A, 34.B, 36.C, 37.C, 38.G | Windows/Docker/fault/Web/Demo/dual-CI/live checks plus every credential scan prove the declared boundary without overclaiming SPEC §5.5. |
-| NFR-PRIV — local retention and minimal disclosure/storage | 15.A, 15.B, 15.C, 15.D, 15.E, 15.F, 16.A, 16.B, 22.A, 22.B, 22.C, 23.A, 23.B, 23.C, 26.A, 26.B, 26.C, 27.A, 27.B, 30.A, 30.B, 36.A, 38.A, 38.B, 38.C, 38.D, 38.F | 31.B, 31.C, 32.C, 36.C, 38.G | Source/record rejection, ACL/retention, WinCred, no-disk Demo, non-secret evidence, and local response scans prove minimal disclosure/storage. |
+| NFR-SEC — declared threat-boundary mechanisms | 1.A, 1.B, 1.C, 1.D, 1.E, 2.A, 2.B, 2.C, 2.D, 2.E, 2.F, 2.G, 3.A, 3.B, 3.C, 3.D, 3.E, 3.F, 3.G, 6.A, 6.B, 6.C, 6.D, 6.E, 9.A, 9.B, 9.C, 9.D, 12.A, 12.B, 12.C, 12.D, 13, 14.A, 14.B, 14.C, 15.A, 15.B, 15.C, 15.D, 15.E, 15.F, 16.A, 16.B, 17.A, 17.B, 17.C, 18.A, 18.B, 18.C, 18.D, 21.A, 21.B, 21.C, 25.A, 25.B, 25.C, 25.D, 25.E, 25.F, 25.G, 26.A, 26.D, 26.E, 26.B, 26.C, 27.A, 27.B, 28.A, 28.B, 28.C, 28.D, 29.A, 29.B, 29.C, 30.A, 30.C, 30.D, 30.B, 35.A, 35.B, 35.C, 36.A, 36.B, 38.A, 38.B, 38.C, 38.D, 38.E, 38.F | 31.B, 31.C, 32.A, 32.C, 34.A, 34.B, 36.C, 37.C, 38.G | Windows/Docker/fault/Web/Demo/dual-CI/live checks plus every credential scan prove the declared boundary without overclaiming SPEC §5.5. |
+| NFR-PRIV — local retention and minimal disclosure/storage | 15.A, 15.B, 15.C, 15.D, 15.E, 15.F, 16.A, 16.B, 22.A, 22.B, 22.C, 23.A, 23.B, 23.C, 26.A, 26.D, 26.E, 26.B, 26.C, 27.A, 27.B, 30.A, 30.C, 30.D, 30.B, 36.A, 38.A, 38.B, 38.C, 38.D, 38.F | 31.B, 31.C, 32.C, 36.C, 38.G | Source/record rejection, ACL/retention, WinCred, no-disk Demo, non-secret evidence, and local response scans prove minimal disclosure/storage. |
 
 ## AC Coverage Matrix
 
 | AC | Implementation tasks | Independent validation tasks | Concrete test / required delivery evidence |
 |---|---|---|---|
 | AC-01 | 1.A, 1.B, 1.C, 1.D, 1.E, 4.B, 4.D, 9.A, 9.B, 9.C, 9.D, 12.A, 12.B, 12.C, 12.D, 13 | 31.B, 32.A | Win32 gate/object tests, strict patch tests, Task 1.E `GO`, Windows job log, and denial traces. |
-| AC-02 | 13, 14.A, 14.B, 14.C, 15.A, 15.B, 15.C, 15.D, 15.E, 15.F, 17.A, 17.B, 17.C, 25.D, 30.A | 32.A, 32.C | Policy precedence, shared-core Demo composition, and mechanism hard-DENY report prove zero dispatch/publication. |
-| AC-03 | 7.B, 7.C, 12.C, 12.D, 13, 14.A, 14.B, 14.C, 20.B, 21.A, 21.B, 21.C, 26.A | 31.B, 31.C, 32.A | Subject/approval/race tests and stale/expiry/duplicate approval traces prove zero write. |
+| AC-02 | 13, 14.A, 14.B, 14.C, 15.A, 15.B, 15.C, 15.D, 15.E, 15.F, 17.A, 17.B, 17.C, 25.D, 30.A, 30.C, 30.D | 32.A, 32.C | Policy precedence, shared-core Demo composition, and mechanism hard-DENY report prove zero dispatch/publication. |
+| AC-03 | 7.B, 7.C, 12.C, 12.D, 13, 14.A, 14.B, 14.C, 20.B, 21.A, 21.B, 21.C, 26.A, 26.D, 26.E | 31.B, 31.C, 32.A | Subject/approval/race tests and stale/expiry/duplicate approval traces prove zero write. |
 | AC-04 | 12.A, 12.B, 12.C, 12.D, 13, 20.A, 20.B, 21.A, 21.B, 21.C | 31.B, 32.A | Patch/formal/protected-artifact tests and reference/mechanism zero-container evidence. |
-| AC-05 | 16.A, 19.A, 19.B, 19.C, 24.A, 24.B, 24.C, 25.D, 25.G, 30.A | 31.A, 32.B, 32.C | Main-loop, shared-core, and feedback-recovery traces prove the Task 24.C feedback consumption changes the next action once. |
+| AC-05 | 16.A, 19.A, 19.B, 19.C, 24.A, 24.B, 24.C, 25.D, 25.G, 30.A, 30.C, 30.D | 31.A, 32.B, 32.C | Main-loop, shared-core, and feedback-recovery traces prove the Task 24.C feedback consumption changes the next action once. |
 | AC-06 | 14.A, 14.B, 14.C, 17.A, 17.B, 17.C, 20.B, 21.A, 21.B, 21.C, 25.D, 25.G, 29.C | 31.A, 31.C, 38.G | Formal predicate, loop, writeback workflow, and completion → validation → final-wait/no-write evidence. |
-| AC-07 | 12.D, 14.A, 14.B, 14.C, 21.A, 21.B, 21.C, 26.A, 29.C | 31.C, 38.G | Writeback preconditions/fault matrix/Web workflow plus approved FinalDiff/postimage/untouched-file digest report. |
-| AC-08 | 27.A, 27.B, 28.A, 28.B, 38.A, 38.F | 31.B, 33.B, 35.B, 35.C, 38.G | Credential status/redaction/WinCred/Web tests, cleared state, Windows CI log, and installed smoke. |
-| AC-09 | 13, 17.A, 17.B, 17.C, 24.A, 24.B, 24.C, 25.A, 25.D, 30.A, 30.B | 32.A, 32.B, 32.C, 34.B, 36.C | Exact shared-pure-core call sequence, repeated Demo trace, forbidden-capability absence, Demo image, and public scenario smoke. |
+| AC-07 | 12.D, 14.A, 14.B, 14.C, 21.A, 21.B, 21.C, 26.A, 26.D, 26.E, 29.C | 31.C, 38.G | Writeback preconditions/fault matrix/Web workflow plus approved FinalDiff/postimage/untouched-file digest report. |
+| AC-08 | 27.A, 27.B, 28.A, 28.B, 28.C, 28.D, 38.A, 38.F | 31.B, 33.B, 35.B, 35.C, 38.G | Credential status/redaction/WinCred/Web tests, cleared state, Windows CI log, and installed smoke. |
+| AC-09 | 13, 17.A, 17.B, 17.C, 24.A, 24.B, 24.C, 25.A, 25.D, 30.A, 30.C, 30.D, 30.B | 32.A, 32.B, 32.C, 34.B, 36.C | Exact shared-pure-core call sequence, repeated Demo trace, forbidden-capability absence, Demo image, and public scenario smoke. |
 | AC-10 | 4.A, 4.F, 35.A, 35.B, 37.C | 35.C, 36.A, 37.B | Complete hash-locked dependency closure, `python -m pytest -q`, exact GitHub/GitLab contract tests, real unit-test jobs, and final process report. |
-| AC-11 | 28.A, 28.B, 29.A, 29.B, 29.C, 33.A, 33.B, 35.A, 35.B, 35.C, 36.A, 36.B, 37.A, 38.A, 38.B, 38.C, 38.D, 38.E, 38.F | 37.C, 38.G | Clean pipx/installed CLI/WebUI, real wheel job, GitHub Release wheel/SHA, and verified install/start instructions. |
-| AC-12 | 30.A, 30.B, 34.B, 35.A, 35.B, 35.C, 36.A, 36.C | 32.C, 37.C | Demo container health/capability smoke, real image-build log/digest, Render URL, and live `/healthz`. |
+| AC-11 | 28.A, 28.B, 28.C, 28.D, 29.A, 29.B, 29.C, 33.A, 33.B, 35.A, 35.B, 35.C, 36.A, 36.B, 37.A, 38.A, 38.B, 38.C, 38.D, 38.E, 38.F | 37.C, 38.G | Clean pipx/installed CLI/WebUI, real wheel job, GitHub Release wheel/SHA, and verified install/start instructions. |
+| AC-12 | 30.A, 30.C, 30.D, 30.B, 34.B, 35.A, 35.B, 35.C, 36.A, 36.C | 32.C, 37.C | Demo container health/capability smoke, real image-build log/digest, Render URL, and live `/healthz`. |
 | AC-13 | 6.A, 6.B, 6.C, 6.D, 6.E, 15.A, 15.B, 15.C, 15.D, 15.E, 15.F, 16.A, 16.B, 24.A, 24.B, 24.C, 25.B, 25.C, 25.G, 27.A, 27.B, 29.B, 29.C | 31.B, 32.C | Source/scope/budget, fresh credential, counting, adapter, disclosure UI, and zero-side-effect reference/mechanism traces. |
 | AC-14 | 22.A, 22.B, 22.C, 24.A, 24.B, 24.C, 38.B, 38.F | 31.C, 38.G | Memory repository/authorization/context tests plus cross-workspace/clear and visible-operation evidence. |
 | AC-15 | 6.A, 6.B, 6.C, 6.D, 6.E, 8.A, 8.B, 9.A, 9.B, 9.C, 9.D, 10.A, 10.B, 10.C, 20.A, 20.B, 25.B, 25.G | 31.A | Admission-order/static tests, Windows identity/Snapshot checks, and exact PREFLIGHT/one-Snapshot E2E trace. |
-| AC-16 | 7.A, 7.B, 7.C, 7.D, 23.A, 23.B, 23.C, 25.F, 25.G, 28.A, 28.B, 29.A, 38.C, 38.F | 31.C, 33.B, 38.G | Migration engine/registry, audit projection/status/run/audit Web tests plus state trace and installed browser captures. |
-| AC-17 | 5.A, 5.B, 5.C, 5.D, 5.E, 10.A, 10.B, 10.C, 11.A, 11.B, 17.A, 17.B, 17.C, 30.A | 31.B, 32.B, 32.C | Cursor round-trip/stale/invalid/excerpt, parser/binding, production Demo call sequence, and paged/unpaged traces. |
+| AC-16 | 7.A, 7.B, 7.C, 7.D, 23.A, 23.B, 23.C, 25.F, 25.G, 28.A, 28.B, 28.C, 28.D, 29.A, 38.C, 38.F | 31.C, 33.B, 38.G | Migration engine/registry, audit projection/status/run/audit Web tests plus state trace and installed browser captures. |
+| AC-17 | 5.A, 5.B, 5.C, 5.D, 5.E, 10.A, 10.B, 10.C, 11.A, 11.B, 17.A, 17.B, 17.C, 30.A, 30.C, 30.D | 31.B, 32.B, 32.C | Cursor round-trip/stale/invalid/excerpt, parser/binding, production Demo call sequence, and paged/unpaged traces. |
 | AC-18 | 10.A, 10.B, 10.C, 12.A, 12.B, 12.C, 12.D, 17.A, 17.B, 17.C, 20.A, 20.B, 21.A, 21.B, 21.C | 31.A, 31.C | FinalDiff/identity/patch/formal tests plus cumulative-patch, stale identity, and verified-candidate report. |
 | AC-19 | 2.A, 2.B, 2.C, 2.D, 2.E, 2.F, 2.G, 18.A, 18.B, 18.C, 18.D, 19.A, 19.B, 19.C, 20.B, 34.A | 31.A, 35.A, 35.B | Docker gate/isolation/reference baseline, frozen digest, image smoke, and real reference-image-build logs. |
 | AC-20 | 19.A, 19.B, 19.C, 20.A, 20.B, 21.A, 21.B, 21.C | 31.A, 31.C, 34.A | Formal predicate/reference Docker validation plus VerifiedCandidate digest and container smoke. |
-| AC-21 | 1.A, 1.B, 1.C, 1.D, 1.E, 7.A, 7.B, 9.B, 26.A, 26.C | 31.C | Named mutex/repository/fault tests, Task 1.E mutex `GO`, recovery-block trace, and Windows log. |
-| AC-22 | 3.A, 3.B, 3.C, 3.D, 3.E, 3.F, 3.G, 26.A, 26.B, 26.C | 31.C, 38.D, 38.E | Feasibility gate, deadline/external-change fault matrix, three-value report, and preview/apply evidence. |
+| AC-21 | 1.A, 1.B, 1.C, 1.D, 1.E, 7.A, 7.B, 9.B, 26.A, 26.D, 26.E, 26.C | 31.C | Named mutex/repository/fault tests, Task 1.E mutex `GO`, recovery-block trace, and Windows log. |
+| AC-22 | 3.A, 3.B, 3.C, 3.D, 3.E, 3.F, 3.G, 26.A, 26.D, 26.E, 26.B, 26.C | 31.C, 38.D, 38.E | Feasibility gate, deadline/external-change fault matrix, three-value report, and preview/apply evidence. |
 | AC-23 | 22.A, 22.B, 22.C, 38.B, 38.F | 31.C, 38.G | Memory authorization and Web workflow plus creator/source audit and scoped-form evidence. |
-| AC-24 | 1.A, 1.B, 1.C, 1.D, 1.E, 2.A, 2.B, 2.C, 2.D, 2.E, 2.F, 2.G, 3.A, 3.B, 3.C, 3.D, 3.E, 3.F, 3.G, 4.A, 4.B, 4.C, 4.D, 4.E, 18.A, 18.B, 18.C, 18.D, 19.A, 19.B, 19.C, 20.A, 20.B, 21.A, 21.B, 21.C, 26.A, 26.B, 26.C, 27.A, 27.B, 31.A, 31.B, 31.C, 33.A, 33.B, 34.A, 34.B, 35.A, 35.B, 35.C, 36.A, 36.B, 36.C, 37.B | 37.C | Gate identities, dedicated Windows/Docker/E2E/fault/package/OCI/CI/live commands, and categorized URLs/digests in closed evidence JSON. |
+| AC-24 | 1.A, 1.B, 1.C, 1.D, 1.E, 2.A, 2.B, 2.C, 2.D, 2.E, 2.F, 2.G, 3.A, 3.B, 3.C, 3.D, 3.E, 3.F, 3.G, 4.A, 4.B, 4.C, 4.D, 4.E, 18.A, 18.B, 18.C, 18.D, 19.A, 19.B, 19.C, 20.A, 20.B, 21.A, 21.B, 21.C, 26.A, 26.D, 26.E, 26.B, 26.C, 27.A, 27.B, 31.A, 31.B, 31.C, 33.A, 33.B, 34.A, 34.B, 35.A, 35.B, 35.C, 36.A, 36.B, 36.C, 37.B | 37.C | Gate identities, dedicated Windows/Docker/E2E/fault/package/OCI/CI/live commands, and categorized URLs/digests in closed evidence JSON. |
 | AC-25 | 2.A, 2.B, 2.C, 2.D, 2.E, 2.F, 2.G, 19.C, 20.B | 31.A, 31.C, 34.A | Gate-only normalized-input comparator, production fingerprint/Baseline tests, and stable full/target digests in reference/image reports. |
 | AC-26 | 4.B, 4.C, 4.D, 5.A, 5.B, 5.C, 5.D, 5.E, 6.A, 6.B, 6.C, 6.D, 6.E, 10.A, 10.B, 10.C, 12.D, 14.A, 14.B, 14.C, 15.A, 15.B, 15.C, 15.D, 15.E, 15.F, 16.A, 16.B, 17.A, 17.B, 17.C, 18.A, 18.B, 18.C, 18.D, 19.C, 20.A, 20.B, 21.A, 21.B, 21.C, 24.A, 24.B, 24.C, 25.A, 25.B, 25.C, 25.D, 25.E, 25.F, 25.G | 31.C, 37.B, 37.C | CTV vectors and candidate/profile/request/fingerprint/Manifest/subject digest suites plus cross-process trace and final digest audit. |
 | AC-27 | 7.B, 7.C, 14.A, 14.B, 14.C, 15.A, 15.B, 15.C, 15.D, 15.E, 15.F, 25.E, 25.G, 29.B, 29.C | 31.B, 31.C, 38.G | Repository/approval/ledger/wait tests plus restart/wait decisions and browser-bound decision evidence. |
 | AC-28 | 5.A, 5.B, 5.C, 5.D, 5.E, 7.B, 7.C, 8.A, 8.B, 15.A, 15.B, 15.C, 15.D, 15.E, 15.F, 16.A, 16.B, 17.A, 17.B, 17.C, 24.A, 24.B, 24.C, 25.A, 25.B, 25.C, 25.E, 25.G, 27.A, 27.B | 31.B, 32.C | Counting/stopping/wait/credential/ledger tests plus deadline/order and cleared/unsafe zero-count reports. |
-| AC-29 | 3.A, 3.B, 3.C, 3.D, 3.E, 3.F, 3.G, 26.A, 26.B, 26.C, 38.D, 38.E, 38.F | 31.C, 33.B, 38.G | External-change/recovery Web/CLI tests plus preview/apply/new-file and installed preview evidence. |
+| AC-29 | 3.A, 3.B, 3.C, 3.D, 3.E, 3.F, 3.G, 26.A, 26.D, 26.E, 26.B, 26.C, 38.D, 38.E, 38.F | 31.C, 33.B, 38.G | External-change/recovery Web/CLI tests plus preview/apply/new-file and installed preview evidence. |
 | AC-30 | 2.A, 2.B, 2.C, 2.D, 2.E, 2.F, 2.G, 6.A, 6.B, 6.C, 6.D, 6.E, 18.A, 18.B, 18.C, 18.D, 20.B, 34.A, 35.A, 35.B, 35.C, 36.A, 36.B | 37.C | Local OCI/loopback/digest-pull proof, exact reproduction, protected pipeline, released manifest, GHCR RepoDigest, and target pull equality. |
-| AC-31 | 6.A, 6.B, 6.C, 6.D, 6.E, 9.A, 9.B, 9.C, 9.D, 10.A, 10.B, 10.C, 11.A, 11.B, 12.A, 12.B, 12.C, 12.D, 13, 14.A, 14.B, 14.C, 18.A, 18.B, 18.C, 18.D, 20.A, 20.B, 21.A, 21.B, 21.C, 26.A | 31.A, 31.B, 31.C, 32.A, 32.C | Editable/candidate/policy/formal/persistence tamper and Windows alias tests plus legal/illegal mixed-patch and hard-DENY reports. |
+| AC-31 | 6.A, 6.B, 6.C, 6.D, 6.E, 9.A, 9.B, 9.C, 9.D, 10.A, 10.B, 10.C, 11.A, 11.B, 12.A, 12.B, 12.C, 12.D, 13, 14.A, 14.B, 14.C, 18.A, 18.B, 18.C, 18.D, 20.A, 20.B, 21.A, 21.B, 21.C, 26.A, 26.D, 26.E | 31.A, 31.B, 31.C, 32.A, 32.C | Editable/candidate/policy/formal/persistence tamper and Windows alias tests plus legal/illegal mixed-patch and hard-DENY reports. |
 
 ## Test Environment Matrix
 
@@ -6919,13 +7181,13 @@ Every `Owning tasks` cell below contains exact executable Task ids only. The fea
 | Layer | Exact environment and command | Owning tasks | Required proof | Saved evidence |
 |---|---|---|---|---|
 | Feasibility gate bootstrap | Windows 11 x64; `py -3.12 -m venv .venv-gate`; hash-only install from `requirements/gate.lock`; all checks via `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py {pytest|ruff-format|ruff-check|mypy} -- <explicit-targets>`; Task 2.C starts a digest-pinned registry on `127.0.0.1` with an OS-assigned port | 1.A, 1.B, 1.C, 1.D, 1.E, 2.A, 2.B, 2.C, 2.D, 2.E, 2.F, 2.G, 3.A, 3.B, 3.C, 3.D, 3.E, 3.F, 3.G | Exact dependency hashes/markers/config; no global/Task 4 project config; Task 2.D/2.E/2.F reporter, evidence, and stable failure inputs; fixed OCI parameters, local OCI → loopback RepoDigest → digest-pull equality, zero credentials/external push, no manifest self-reference, verified cleanup; unchanged Milestone 1 identities in Milestones 2 and 3 | Tool/file SHA-256, install log, registry image/config/bind/cleanup evidence, three equal digests, and Milestone 1, 2, and 3 `GO` reports |
-| Offline unit tests | Fresh Windows worktree; `py -3.12 scripts/bootstrap_formal_env.py`; exact Task 1 `python_version`; hash-only/no-dependency materialization from immutable `requirements/dev.lock`; no network/Docker/WinCred during tests; `.venv-formal\Scripts\python.exe -m pytest -q` | 4.A, 4.F, 4.B, 4.C, 4.D, 4.E, 5.A, 5.B, 5.C, 5.D, 5.E, 6.A, 6.B, 6.C, 6.D, 6.E, 7.A, 7.B, 7.C, 7.D, 8.A, 8.B, 9.C, 9.D, 10.A, 10.B, 10.C, 11.A, 11.B, 12.A, 12.B, 12.C, 12.D, 13, 14.A, 14.B, 14.C, 15.A, 15.B, 15.C, 15.D, 15.E, 15.F, 16.A, 16.B, 17.A, 17.B, 17.C, 18.A, 18.B, 18.C, 18.D, 19.A, 19.B, 19.C, 20.A, 20.B, 21.A, 21.B, 21.C, 22.A, 22.B, 22.C, 23.A, 23.B, 23.C, 24.A, 24.B, 24.C, 25.A, 25.B, 25.C, 25.D, 25.E, 25.F, 25.G, 26.A, 26.B, 26.C, 27.A, 28.A, 28.B, 29.A, 29.B, 29.C, 30.A, 30.B, 32.A, 32.B, 32.C, 35.A, 35.B, 35.C, 37.A, 37.B, 37.C, 38.A, 38.B, 38.C, 38.D, 38.E, 38.F, 38.G | Bootstrap rejects non-exact Python before environment creation/use; dependency closure and both unique records match terminal gate evidence; formal toolchain promotion, canonical vectors, closed schemas/cursors, migration engine/domain/registry closure, Mock/Stub core, policy, requests, per-call credential failure ordering, parsers, transactions, feedback, loop, memory, audit, WebUI client, Demo logic | Bootstrap identity/install result, both persistent Task 4 records, local output, plus GitHub Actions and GitLab CI `unit-test` report artifacts |
-| Windows integration tests | Project-specific Windows 11 x64 runner; `python -m pytest -q -o addopts='' -m windows_integration tests/integration/windows tests/feasibility/windows` | 1.A, 1.B, 1.C, 1.D, 1.E, 9.A, 9.B, 9.C, 10.A, 10.B, 10.C, 26.A, 26.C, 27.B | NTFS/Win32 final identity, path collision, ADS, reparse/hard link, named mutex, Git bytes, Snapshot source, ACL, persistence, WinCred lifecycle and fresh per-call lookup | Runner OS/Python/Git versions, test report, cleared credential state |
+| Offline unit tests | Fresh Windows worktree; `py -3.12 scripts/bootstrap_formal_env.py`; exact Task 1 `python_version`; hash-only/no-dependency materialization from immutable `requirements/dev.lock`; no network/Docker/WinCred during tests; `.venv-formal\Scripts\python.exe -m pytest -q` | 4.A, 4.F, 4.B, 4.C, 4.D, 4.E, 5.A, 5.B, 5.C, 5.D, 5.E, 6.A, 6.B, 6.C, 6.D, 6.E, 7.A, 7.B, 7.C, 7.D, 8.A, 8.B, 9.C, 9.D, 10.A, 10.B, 10.C, 11.A, 11.B, 12.A, 12.B, 12.C, 12.D, 13, 14.A, 14.B, 14.C, 15.A, 15.B, 15.C, 15.D, 15.E, 15.F, 16.A, 16.B, 17.A, 17.B, 17.C, 18.A, 18.B, 18.C, 18.D, 19.A, 19.B, 19.C, 20.A, 20.B, 21.A, 21.B, 21.C, 22.A, 22.B, 22.C, 23.A, 23.B, 23.C, 24.A, 24.B, 24.C, 25.A, 25.B, 25.C, 25.D, 25.E, 25.F, 25.G, 26.A, 26.D, 26.E, 26.B, 26.C, 27.A, 28.A, 28.B, 28.C, 28.D, 29.A, 29.B, 29.C, 30.A, 30.C, 30.D, 30.B, 32.A, 32.B, 32.C, 35.A, 35.B, 35.C, 37.A, 37.B, 37.C, 38.A, 38.B, 38.C, 38.D, 38.E, 38.F, 38.G | Bootstrap rejects non-exact Python before environment creation/use; dependency closure and both unique records match terminal gate evidence; formal toolchain promotion, canonical vectors, closed schemas/cursors, migration engine/domain/registry closure, Mock/Stub core, policy, requests, per-call credential failure ordering, parsers, transactions, feedback, loop, memory, audit, WebUI client, Demo logic | Bootstrap identity/install result, both persistent Task 4 records, local output, plus GitHub Actions and GitLab CI `unit-test` report artifacts |
+| Windows integration tests | Project-specific Windows 11 x64 runner; `python -m pytest -q -o addopts='' -m windows_integration tests/integration/windows tests/feasibility/windows` | 1.A, 1.B, 1.C, 1.D, 1.E, 9.A, 9.B, 9.C, 10.A, 10.B, 10.C, 26.A, 26.D, 26.E, 26.C, 27.B | NTFS/Win32 final identity, path collision, ADS, reparse/hard link, named mutex, Git bytes, Snapshot source, ACL, persistence, WinCred lifecycle and fresh per-call lookup | Runner OS/Python/Git versions, test report, cleared credential state |
 | Docker integration tests | Docker Desktop Linux mode; `python -m pytest -q -o addopts='' -m docker_integration tests/integration/docker tests/feasibility/docker` | 2.A, 2.B, 2.C, 2.D, 2.E, 2.F, 2.G, 18.A, 18.B, 18.C, 18.D, 19.B, 20.B, 21.A, 21.B, 21.C | Immutable image/profile mapping, loopback registry round-trip/no-self-reference/cleanup, check containers with no network/root/write/socket, tmpfs/resources, complete reports, Baseline, formal validation | Docker/builder/registry versions, three-way image digest, lifecycle inspection, report/test artifacts |
 | Reference fixture E2E | Windows + Docker + Mock profile; `python -m pytest -q -o addopts='' -m reference_e2e tests/e2e/reference` | 31.A, 31.B, 31.C | Complete production admission → Baseline → feedback correction → formal validation → wait → exact writeback/recovery-block flow | Canonical Task 31.A/31.B/31.C traces/reports, final tree digests, cleanup evidence |
-| Persistence fault injection | FakeClock/FaultPort offline: `python -m pytest -q tests/fault_injection/persistence`; real identity/ACL cases use the Windows command | 3.A, 3.B, 3.C, 3.D, 3.E, 3.F, 3.G, 26.A, 26.B, 26.C | Every named crash/deadline/state-lag/external-change point across 1–3 mixed files; preview zero write; three dispositions only | Gate and production fault matrices, transaction/evidence digests |
-| WebUI local tests | TestClient plus loopback browser; `python -m pytest -q tests/web` followed by the Tasks 29.A, 29.B, 29.C, 38.A, 38.B, 38.C, 38.D, 38.E, 38.F, and 38.G keyboard workflows | 28.A, 28.B, 29.A, 29.B, 29.C, 38.A, 38.B, 38.C, 38.D, 38.E, 38.F, 38.G | Host/Origin/CSRF/session/headers, escaping, state labels, all local workflows, accessibility, no domain bypass | Test report and browser screenshots/captures without secrets |
-| Public Mock Demo smoke | Offline `python -m pytest -q tests/demo`; real container/public checks run under `oci_smoke` and `deployment_smoke` | 30.A, 30.B, 32.A, 32.B, 32.C, 34.B, 36.C | Fixed deterministic trace; runtime reuse only of the exact Task 13, 17.A–17.C, 24.A–24.C, 25.A, and 25.D pure modules; Demo-only state/tool ports; complete prohibited-module absence; session/time/concurrency bounds; health | Exact shared-pure-core implementation provenance/call sequence, prohibited-capability absence/counters, repeated trace digests, Demo image digest, deployment id, public URL/health result |
+| Persistence fault injection | FakeClock/FaultPort offline: `python -m pytest -q tests/fault_injection/persistence`; real identity/ACL cases use the Windows command | 3.A, 3.B, 3.C, 3.D, 3.E, 3.F, 3.G, 26.A, 26.D, 26.E, 26.B, 26.C | Every named crash/deadline/state-lag/external-change point across 1–3 mixed files; preview zero write; three dispositions only | Gate and production fault matrices, transaction/evidence digests |
+| WebUI local tests | TestClient plus loopback browser; `python -m pytest -q tests/web` followed by the Tasks 29.A, 29.B, 29.C, 38.A, 38.B, 38.C, 38.D, 38.E, 38.F, and 38.G keyboard workflows | 28.A, 28.B, 28.C, 28.D, 29.A, 29.B, 29.C, 38.A, 38.B, 38.C, 38.D, 38.E, 38.F, 38.G | Host/Origin/CSRF/session/headers, escaping, state labels, all local workflows, accessibility, no domain bypass | Test report and browser screenshots/captures without secrets |
+| Public Mock Demo smoke | Offline `python -m pytest -q tests/demo`; real container/public checks run under `oci_smoke` and `deployment_smoke` | 30.A, 30.C, 30.D, 30.B, 32.A, 32.B, 32.C, 34.B, 36.C | Fixed deterministic trace; runtime reuse only of the exact Task 13, 17.A–17.C, 24.A–24.C, 25.A, and 25.D pure modules; Demo-only state/tool ports; complete prohibited-module absence; session/time/concurrency bounds; health | Exact shared-pure-core implementation provenance/call sequence, prohibited-capability absence/counters, repeated trace digests, Demo image digest, deployment id, public URL/health result |
 | Wheel/pipx smoke | Project Windows runner; `python -m pytest -q -o addopts='' -m package_smoke tests/smoke/package` | 33.A, 33.B, 35.A, 35.B, 35.C, 36.A, 36.B | One wheel, RECORD/resources, SHA-256, clean pipx install, installed CLI/WebUI, recovery preview, cleanup | Wheel filename/version/digest, pipx/Python versions, installed smoke log |
 | OCI image smoke | Docker runner; `python -m pytest -q -o addopts='' -m oci_smoke tests/smoke/images` | 34.A, 34.B, 35.A, 35.B, 35.C | Real reference/Demo builds, runtime contracts, tool/profile/fixture health, capability separation | Build logs, local image digests, inspections, container smoke report |
 | Dual CI contract and runs | GitHub Actions push/PR plus GitLab push/MR/main/tag; `python scripts/verify_ci_contract.py .github/workflows/ci.yml .gitlab-ci.yml` | 35.A, 35.B, 35.C, 36.A, 37.B, 37.C | Exact job/event matrices, real test/image builds, no-publish/no-secret GitHub boundary, GitLab Windows wheel and protected release boundary | Real GitHub workflow/job and GitLab pipeline/job URLs, reports, image digests, permission/secret checks |
@@ -6944,18 +7206,18 @@ This section defines `PlanAuditContractV1`. It is a reproducible audit contract,
 - Section discovery uses exact full-line heading equality. A heading mentioned inside prose or inline code is not a boundary; substring `indexOf` discovery is forbidden.
 - Markdown table rows are split only on `|` outside a balanced inline-code backtick span. A `|` inside one or more matching backticks remains part of the same cell.
 - Executable headings are exact full lines matching `#### Task <integer>.<uppercase-letter>: <non-empty title>`, plus the one retained exact full-line form `### Task 13: <non-empty title>`. Aggregate headings are exact full lines matching `### Milestone <integer>: <non-empty title>` and are never graph nodes.
-- Every aggregate has exactly these four ordered fields, once each: `Goal`, `SPEC scope`, `Executable children`, and `Aggregate completion condition`. Its children are exact dotted executable ids with the same integer prefix. The 37 aggregate child lists are unique and their union equals all 134 dotted executable headings; retained Task 13 is separate. Exact heading boundaries must keep Task 13 out of Milestone 12 and Milestone 14, and must end Milestone 38 immediately before the exact executable-child heading.
+- Every aggregate has exactly these four ordered fields, once each: `Goal`, `SPEC scope`, `Executable children`, and `Aggregate completion condition`. Its children are exact dotted executable ids with the same integer prefix. The 37 aggregate child lists are unique and their union equals all 140 dotted executable headings; retained Task 13 is separate. Exact heading boundaries must keep Task 13 out of Milestone 12 and Milestone 14, and must end Milestone 38 immediately before the exact executable-child heading.
 
 ### Canonical mechanical structures
 
 - Parse and cross-check executable headings, child fields, the canonical DAG, longest-path waves, planned file ownership, durable-storage/migration ownership, all four coverage matrices, the Test Environment Matrix, and the Release registry. Each canonical table header and row width is exact.
 - The DAG is the sole machine-readable edge set. Every child `Dependencies` set equals its DAG predecessors. Every present `Blocks` field equals its DAG successors. A semicolon may append a non-task gate only after the exact executable predecessor set; it cannot add or remove an edge.
 - DAG, wave, ownership target/modifier, coverage, environment-owner, and release cells admit exact executable ids only. Aggregate ids, unknown ids, ranges, expansion shorthand, duplicate ids within a cell, and natural-language executable sets are rejected. `—` is allowed only for the empty DAG-predecessor cell.
-- The verifier validates one root `1.A`, all 135 nodes reachable from that root, no self/unknown edge, acyclicity, 578 edges, and the exact longest-path wave of every node. Waves 1–70 contain every executable exactly once, and every predecessor is in an earlier wave.
+- The verifier validates one root `1.A`, all 141 nodes reachable from that root, no self/unknown edge, acyclicity, 590 edges, and the exact longest-path wave of every node. Waves 1–71 contain every executable exactly once, and every predecessor is in an earlier wave.
 - Ownership parses only exact backticked repository paths in `Owned core files`; one-level brace notation expands comma-separated filenames and no wildcard. It requires one primary row per executable, 328 unique expanded paths, no duplicate primary owner, valid authorized modifiers, and no intersection between expanded core paths of tasks in the same wave.
 - The storage audit cross-checks the framework-only `schema_migrations` owner, the exact v0001–v0012 producer constant/name/file/table maps, the 18-table final set, Task 7.D's exact 12-producer predecessor set and composition-only boundary, and transitive Task 7.D reachability for every full-database production consumer.
 - Every US, FR, NFR, and AC row has non-empty exact implementation and independent-validation sets, the two sets are disjoint, every id exists, and each validator is downstream of at least one implementation owner. Counts are exactly 9 US, 9 FR, 6 NFR, and 31 AC. The 12 Test Environment owner cells contain only exact executables. The Release registry equals the complete executable registry.
-- Aggregate completion is not counted from an aggregate field. Current tracking counts are computed only from executable bodies: 135 `Not started` and 135 `Not yet executed`; the document-level Draft status occurs once.
+- Aggregate completion is not counted from an aggregate field. Current tracking counts are computed only from executable bodies: 141 `Not started` and 141 `Not yet executed`; the document-level Draft status occurs once.
 
 ### Semantic consistency structures
 
@@ -6964,7 +7226,7 @@ This section defines `PlanAuditContractV1`. It is a reproducible audit contract,
 - Required Task 11, 16, 20, 25, and 26 families are checked both against their concrete child-owned signatures and the authoritative SPEC families: typed List/Read/Search over `(tree, action)`; one-request `LLMAdapter.generate` and the bound single-call OpenAI path; static detection, baseline-plan/formal-plan construction, one baseline, and immutable Manifest creation; pure stopping plus turn/count/call/action-pipeline/formal-loop composition; and approval-bound persistence with read-only preview, three-value classification, explicit recovery apply, and unresolved-workspace blocking. A SPEC-level conceptual signature may be refined into explicit immutable inputs only where the owning child declares that refinement; incompatible same-name arity is drift.
 - Dependency/toolchain ownership is closed: Task 4.A alone owns dependency tables, `requirements/dev.lock`, the exact-Python bootstrap, and the closure record; Task 4.F owns promotion and authorized tooling-only configuration; later metadata changes do not become dependency ownership. Critical ownership paths and their authorized modifiers are cross-checked against task files and DAG reachability.
 - Migration ownership is exact for v0001–v0012. Task 7.A contains no domain DDL; Task 7.D imports all and only the twelve producer constants and owns no DDL. Production Web/CLI recovery composition must call `apply_migrations(db, ALL_V1_MIGRATIONS)` before constructing any repository/service port, bind the Task 38.E parser to the Task 26.C service through Task 38.F, and expose no alternate database or recovery composition.
-- `DEMO_SHARED_CORE_MODULES_V1` is parsed as the exact nine-item `frozenset` owned by Tasks 13, 17.A–17.C, 24.A–24.C, 25.A, and 25.D. `PROHIBITED_DEMO_MODULE_PREFIXES_V1` is the exact sixteen-item `frozenset`. Every shared producer must reach Task 30.A in the DAG. Demo composition must construct and inject the real Task 25.D `ActionPipeline` and provenance must begin with the actual `ActionPipeline.execute`; `vespercode.loop.engine`, formal `AgentLoopEngine`, and Task 25.G reuse are prohibited in Demo runtime, allowlists, evidence, and smoke claims.
+- `DEMO_SHARED_CORE_MODULES_V1` is parsed as the exact nine-item `frozenset` owned by Tasks 13, 17.A–17.C, 24.A–24.C, 25.A, and 25.D. `PROHIBITED_DEMO_MODULE_PREFIXES_V1` is the exact sixteen-item `frozenset`. Every shared producer must reach Task 30.D in the DAG. Demo composition must construct and inject the real Task 25.D `ActionPipeline` and provenance must begin with the actual `ActionPipeline.execute`; `vespercode.loop.engine`, formal `AgentLoopEngine`, and Task 25.G reuse are prohibited in Demo runtime, allowlists, evidence, and smoke claims.
 - Outside this closed rejection-set declaration, these known stale findings are forbidden exact tokens: `probe_workspace_boundary`, `acquire_workspace_mutex`, `run_reference_boundary_gate`, `run_formal_validation`, `MemoryRepository.clear`, `DemoScenarioV1.load_builtin`, `baseline_runner.evaluate`, `AgentLoopEngine.request_cancel`, `stop_nonpersistent_restart`, `create_at_call_boundary`, `evaluate_and_persist`, `recovery.preview("tx-1")`, `Task 38 chain`, `run_next`, `LoopDecisionV1`, `LoopStepOutcomeV1`, and `25.G pure core`.
 
 ### `PlanSemanticDigestV1` projection and metamorphic tests
@@ -7034,8 +7296,8 @@ The following is a concise rendering of the pre-M0 Verifier A evidence retained 
 
 Release readiness is `PASS` only when every condition below is true at the same source commit:
 
-- All **135 executable Tasks** are complete and each records a real implementation commit SHA, responsible subagent, human edits, exact tests, spec review, code-quality review, and PR URL. All 37 Milestones derive complete status from their exact children and have no aggregate implementation commit or PR.
-- The exact release registry is: 1.A, 1.B, 1.C, 1.D, 1.E, 2.A, 2.B, 2.C, 2.D, 2.E, 2.F, 2.G, 3.A, 3.B, 3.C, 3.D, 3.E, 3.F, 3.G, 4.A, 4.F, 4.B, 4.C, 4.D, 4.E, 5.A, 5.B, 5.C, 5.D, 5.E, 6.A, 6.B, 6.C, 6.D, 6.E, 7.A, 7.B, 7.C, 7.D, 8.A, 8.B, 9.A, 9.B, 9.C, 9.D, 10.A, 10.B, 10.C, 11.A, 11.B, 12.A, 12.B, 12.C, 12.D, 13, 14.A, 14.B, 14.C, 15.A, 15.B, 15.C, 15.D, 15.E, 15.F, 16.A, 16.B, 17.A, 17.B, 17.C, 18.A, 18.B, 18.C, 18.D, 19.A, 19.B, 19.C, 20.A, 20.B, 21.A, 21.B, 21.C, 22.A, 22.B, 22.C, 23.A, 23.B, 23.C, 24.A, 24.B, 24.C, 25.A, 25.B, 25.C, 25.D, 25.E, 25.F, 25.G, 26.A, 26.B, 26.C, 27.A, 27.B, 28.A, 28.B, 29.A, 29.B, 29.C, 30.A, 30.B, 31.A, 31.B, 31.C, 32.A, 32.B, 32.C, 33.A, 33.B, 34.A, 34.B, 35.A, 35.B, 35.C, 36.A, 36.B, 36.C, 37.A, 37.B, 37.C, 38.A, 38.B, 38.C, 38.D, 38.E, 38.F, and 38.G.
+- All **141 executable Tasks** are complete and each records a real implementation commit SHA, responsible subagent, human edits, exact tests, spec review, code-quality review, and PR URL. All 37 Milestones derive complete status from their exact children and have no aggregate implementation commit or PR.
+- The exact release registry is: 1.A, 1.B, 1.C, 1.D, 1.E, 2.A, 2.B, 2.C, 2.D, 2.E, 2.F, 2.G, 3.A, 3.B, 3.C, 3.D, 3.E, 3.F, 3.G, 4.A, 4.F, 4.B, 4.C, 4.D, 4.E, 5.A, 5.B, 5.C, 5.D, 5.E, 6.A, 6.B, 6.C, 6.D, 6.E, 7.A, 7.B, 7.C, 7.D, 8.A, 8.B, 9.A, 9.B, 9.C, 9.D, 10.A, 10.B, 10.C, 11.A, 11.B, 12.A, 12.B, 12.C, 12.D, 13, 14.A, 14.B, 14.C, 15.A, 15.B, 15.C, 15.D, 15.E, 15.F, 16.A, 16.B, 17.A, 17.B, 17.C, 18.A, 18.B, 18.C, 18.D, 19.A, 19.B, 19.C, 20.A, 20.B, 21.A, 21.B, 21.C, 22.A, 22.B, 22.C, 23.A, 23.B, 23.C, 24.A, 24.B, 24.C, 25.A, 25.B, 25.C, 25.D, 25.E, 25.F, 25.G, 26.A, 26.D, 26.E, 26.B, 26.C, 27.A, 27.B, 28.A, 28.B, 28.C, 28.D, 29.A, 29.B, 29.C, 30.A, 30.C, 30.D, 30.B, 31.A, 31.B, 31.C, 32.A, 32.B, 32.C, 33.A, 33.B, 34.A, 34.B, 35.A, 35.B, 35.C, 36.A, 36.B, 36.C, 37.A, 37.B, 37.C, 38.A, 38.B, 38.C, 38.D, 38.E, 38.F, and 38.G.
 - Task 7.A's engine passes independent order/idempotency/atomicity/checksum tests; every v0001–v0012 domain owner passes its exact table/key/unique/FK/prohibited-column contract; Task 7.D's direct predecessors equal the twelve migration producers; `ALL_V1_MIGRATIONS` has exact versions/names/order/checksums with no missing/duplicate/gap/unexpected entry; its test-only prefix audit proves each migration's exact owner-map table delta plus the final 18-table set including framework `schema_migrations`; and Task 38.F applies only that tuple before constructing production Web ports or the installed recover CLI's Task 26 service/handler, while Task 38.E parser tests remain injectable and database-independent.
 - M0 records the human-approved current SPEC path/SHA-256/blob/baseline and confirms the gate-bootstrap contract; Tasks 1.E, 2.G, and 3.G have `GO` outcomes under a cold-start record covering the approved `PlanSemanticDigestV1`.
 - `requirements/gate.lock`, `gates/pytest.ini`, `gates/ruff.toml`, `gates/mypy.ini`, `scripts/run_gate_checks.py`, the Task 2.D/2.E/2.F reporter/evidence/fingerprint producers, the Task 1.E, 2.G, and 3.G `GO` reports, `config/dependency-closure-v1.json`, and `config/formal-toolchain-promotion-v1.json` remain present; Task 37.B recomputes their SHA-256/version matrix and proves both records' `python_version` values equal Task 1.E terminal `GO` `GateToolchainEvidenceV1.python_version` character-for-character before proving the remaining closure/promotion identities match without silent drift.
