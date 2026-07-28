@@ -992,6 +992,10 @@ The child tasks below are the only executable units for Milestones 1–12, 14–
 
 **Dependencies:** None; M0 approval and cold-start PASS are non-task entry gates.
 
+**Blocks:** Tasks 1.B, 1.C, 1.D, 1.E, 2.B, 2.C, 2.D, 2.E, 2.F, and 37.B.
+
+**Parallelization:** Has no direct task predecessors and starts only after the non-task entry gates in **Dependencies** have passed. No other executable task shares its canonical wave.
+
 **Files:**
 - Create: `requirements/gate.lock`
 - Create: `gates/pytest.ini`
@@ -1042,6 +1046,10 @@ class GateBootstrapContractTest(unittest.TestCase):
 
 **Dependencies:** Task 1.A.
 
+**Blocks:** Tasks 1.C, 1.D, 1.E, 3.D, and 37.B.
+
+**Parallelization:** Starts only after all direct predecessors listed in **Dependencies** have completed. No other executable task shares its canonical wave.
+
 **Files:**
 - Create: `spikes/win32_workspace_boundary/evaluator.py`
 - Test: `tests/feasibility/windows/test_workspace_boundary_evaluator.py`
@@ -1074,6 +1082,10 @@ def test_unprovable_final_identity_fails_closed() -> None:
 **Goal:** Produce real handle-derived identity, collision, reparse/hard-link, and ACL observations from a disposable NTFS workspace.
 
 **Dependencies:** Tasks 1.A and 1.B.
+
+**Blocks:** Tasks 1.E and 37.B.
+
+**Parallelization:** Starts only after all direct predecessors listed in **Dependencies** have completed. May run in parallel with Task 1.D in the same canonical wave.
 
 **Files:**
 - Create: `spikes/win32_workspace_boundary/object_probe.py`
@@ -1108,6 +1120,10 @@ def test_junction_target_identity_is_observed_from_handle(ntfs_fixture: Path) ->
 
 **Dependencies:** Tasks 1.A and 1.B.
 
+**Blocks:** Tasks 1.E, 3.F, and 37.B.
+
+**Parallelization:** Starts only after all direct predecessors listed in **Dependencies** have completed. May run in parallel with Task 1.C in the same canonical wave.
+
 **Files:**
 - Create: `spikes/win32_workspace_boundary/mutex_probe.py`
 - Test: `tests/feasibility/windows/test_workspace_mutex_probe.py`
@@ -1140,6 +1156,10 @@ def test_two_processes_never_hold_one_workspace_mutex_together() -> None:
 **Goal:** Assemble the exact Task 1 GO/NO-GO report only when bootstrap, object/ACL, and mutex evidence are complete and identity-consistent.
 
 **Dependencies:** Tasks 1.A, 1.B, 1.C, and 1.D.
+
+**Blocks:** Tasks 2.A, 2.G, 3.G, 4.A, 4.F, 9.A, and 37.B.
+
+**Parallelization:** Starts only after all direct predecessors listed in **Dependencies** have completed. No other executable task shares its canonical wave.
 
 **Files:**
 - Create: `spikes/win32_workspace_boundary/report.py`
@@ -1174,6 +1194,10 @@ def test_gate_refuses_go_when_mutex_evidence_is_missing() -> None:
 **Goal:** Freeze one reference fixture, dependency lock, tool versions, and non-self-referential build-input manifest.
 
 **Dependencies:** Task 1.E.
+
+**Blocks:** Tasks 2.B, 2.G, and 37.B.
+
+**Parallelization:** Starts only after all direct predecessors listed in **Dependencies** have completed. No other executable task shares its canonical wave.
 
 **Files:**
 - Create: `requirements/reference.lock`
@@ -1212,6 +1236,10 @@ def test_reference_lock_and_fixture_lock_must_be_byte_identical() -> None:
 
 **Dependencies:** Tasks 1.A and 2.A.
 
+**Blocks:** Tasks 2.C, 2.D, 2.G, and 37.B.
+
+**Parallelization:** Starts only after all direct predecessors listed in **Dependencies** have completed. No other executable task shares its canonical wave.
+
 **Files:**
 - Create: `containers/reference/Dockerfile`
 - Create: `spikes/docker_reference_boundary/image_builder.py`
@@ -1246,6 +1274,10 @@ def test_final_manifest_is_absent_from_image_members(build_fixture: BuildFixture
 
 **Dependencies:** Tasks 1.A and 2.B.
 
+**Blocks:** Tasks 2.G and 37.B.
+
+**Parallelization:** Starts only after all direct predecessors listed in **Dependencies** have completed. May run in parallel with Task 2.D in the same canonical wave.
+
 **Files:**
 - Create: `spikes/docker_reference_boundary/registry_probe.py`
 - Test: `tests/feasibility/docker/test_loopback_registry_probe.py`
@@ -1278,6 +1310,10 @@ def test_registry_digest_transformation_fails() -> None:
 **Goal:** Prove one fresh reference container enforces the frozen no-network, non-root, read-only, bounded execution boundary.
 
 **Dependencies:** Tasks 1.A and 2.B.
+
+**Blocks:** Tasks 2.E, 2.G, and 37.B.
+
+**Parallelization:** Starts only after all direct predecessors listed in **Dependencies** have completed. May run in parallel with Task 2.C in the same canonical wave.
 
 **Files:**
 - Create: `spikes/docker_reference_boundary/execution_probe.py`
@@ -1312,6 +1348,10 @@ def test_workspace_write_attempt_is_rejected(reference_container: ReferenceConta
 
 **Dependencies:** Tasks 1.A and 2.D.
 
+**Blocks:** Tasks 2.F, 2.G, and 37.B.
+
+**Parallelization:** Starts only after all direct predecessors listed in **Dependencies** have completed. No other executable task shares its canonical wave.
+
 **Files:**
 - Create: `spikes/docker_reference_boundary/pytest_reporter.py`
 - Test: `tests/feasibility/docker/test_gate_pytest_evidence.py`
@@ -1343,6 +1383,10 @@ def test_missing_teardown_event_invalidates_gate_report() -> None:
 **Goal:** Prove two independent target-failure runs produce byte-identical normalized gate fingerprint inputs without defining the production fingerprint.
 
 **Dependencies:** Tasks 1.A and 2.E.
+
+**Blocks:** Tasks 2.G and 37.B.
+
+**Parallelization:** Starts only after all direct predecessors listed in **Dependencies** have completed. No other executable task shares its canonical wave.
 
 **Files:**
 - Create: `spikes/docker_reference_boundary/failure_fingerprint_probe.py`
@@ -1376,6 +1420,10 @@ def test_independent_target_failures_have_identical_inputs() -> None:
 **Goal:** Freeze `ReferenceProfileManifestV1` and emit GO only when build, registry, isolation, pytest, and fingerprint evidence are complete and identity-consistent.
 
 **Dependencies:** Tasks 1.E, 2.A, 2.B, 2.C, 2.D, 2.E, and 2.F.
+
+**Blocks:** Tasks 3.A, 3.G, 4.A, 4.F, 6.B, 18.A, 18.C, 34.A, 36.B, and 37.B.
+
+**Parallelization:** Starts only after all direct predecessors listed in **Dependencies** have completed. No other executable task shares its canonical wave.
 
 **Files:**
 - Create: `reference/manifest/reference-profile-v1.json`
@@ -1411,6 +1459,10 @@ def test_gate_rejects_loopback_registry_digest_mismatch() -> None:
 
 **Dependencies:** Task 2.G.
 
+**Blocks:** Tasks 3.B, 3.C, 3.D, 3.G, and 37.B.
+
+**Parallelization:** Starts only after all direct predecessors listed in **Dependencies** have completed. No other executable task shares its canonical wave.
+
 **Files:**
 - Create: `spikes/persistence_recovery/protocol.py`
 - Test: `tests/feasibility/persistence/test_transaction_protocol.py`
@@ -1443,6 +1495,10 @@ def test_prepare_rejects_two_create_operations() -> None:
 
 **Dependencies:** Task 3.A.
 
+**Blocks:** Tasks 3.C, 3.D, 3.G, and 37.B.
+
+**Parallelization:** Starts only after all direct predecessors listed in **Dependencies** have completed. No other executable task shares its canonical wave.
+
 **Files:**
 - Create: `spikes/persistence_recovery/faults.py`
 - Test: `tests/feasibility/persistence/test_write_fault_matrix.py`
@@ -1474,6 +1530,10 @@ def test_interruption_after_each_replace_has_durable_observation() -> None:
 **Goal:** Stop before any write on pre-write expiry and stop all subsequent workspace writes after post-write expiry.
 
 **Dependencies:** Tasks 3.A and 3.B.
+
+**Blocks:** Tasks 3.E, 3.G, and 37.B.
+
+**Parallelization:** Starts only after all direct predecessors listed in **Dependencies** have completed. May run in parallel with Task 3.D in the same canonical wave.
 
 **Files:**
 - Create: `spikes/persistence_recovery/deadline.py`
@@ -1508,6 +1568,10 @@ def test_deadline_after_first_replace_forbids_next_write() -> None:
 
 **Dependencies:** Tasks 1.B, 3.A, and 3.B.
 
+**Blocks:** Tasks 3.E, 3.G, and 37.B.
+
+**Parallelization:** Starts only after all direct predecessors listed in **Dependencies** have completed. May run in parallel with Task 3.C in the same canonical wave.
+
 **Files:**
 - Create: `spikes/persistence_recovery/observation.py`
 - Test: `tests/feasibility/persistence/test_external_change_classifier.py`
@@ -1539,6 +1603,10 @@ def test_same_bytes_with_replaced_object_is_external_change() -> None:
 **Goal:** Produce a byte-for-byte read-only recovery preview with only COMMITTED, ROLLED_BACK, or UNRESOLVED.
 
 **Dependencies:** Tasks 3.C and 3.D.
+
+**Blocks:** Tasks 3.F, 3.G, and 37.B.
+
+**Parallelization:** Starts only after all direct predecessors listed in **Dependencies** have completed. No other executable task shares its canonical wave.
 
 **Files:**
 - Create: `spikes/persistence_recovery/recovery_preview.py`
@@ -1573,6 +1641,10 @@ def test_preview_is_byte_for_byte_read_only(preview_fixture: PreviewFixture) -> 
 
 **Dependencies:** Tasks 1.D and 3.E.
 
+**Blocks:** Tasks 3.G and 37.B.
+
+**Parallelization:** Starts only after all direct predecessors listed in **Dependencies** have completed. No other executable task shares its canonical wave.
+
 **Files:**
 - Create: `spikes/persistence_recovery/recovery_apply.py`
 - Test: `tests/feasibility/persistence/test_recovery_apply.py`
@@ -1605,6 +1677,10 @@ def test_apply_never_deletes_externally_replaced_create() -> None:
 **Goal:** Run the complete fault/deadline/external-change/preview/apply matrix on disposable NTFS objects and emit the Task 3 GO/NO-GO report.
 
 **Dependencies:** Tasks 1.E, 2.G, 3.A, 3.B, 3.C, 3.D, 3.E, and 3.F.
+
+**Blocks:** Tasks 4.A, 4.F, 26.A, and 37.B.
+
+**Parallelization:** Starts only after all direct predecessors listed in **Dependencies** have completed. No other executable task shares its canonical wave.
 
 **Files:**
 - Create: `spikes/persistence_recovery/report.py`
@@ -1639,6 +1715,10 @@ def test_missing_external_identity_case_forces_no_go(ntfs_workspace: Path) -> No
 **SPEC references:** Milestone 4 project/tooling scope; SPEC §9; course one-command test and locked-tool requirements.
 
 **Dependencies:** Tasks 1.E, 2.G, and 3.G.
+
+**Blocks:** Tasks 4.F and 37.B.
+
+**Parallelization:** Starts only after all direct predecessors listed in **Dependencies** have completed. No other executable task shares its canonical wave.
 
 **Files:**
 - Create: `pyproject.toml`
@@ -1691,6 +1771,10 @@ Expected RED: import/configuration failure because the project dependency tables
 
 **Dependencies:** Tasks 1.E, 2.G, 3.G, and 4.A.
 
+**Blocks:** Tasks 4.B, 5.A, and 37.B.
+
+**Parallelization:** Starts only after all direct predecessors listed in **Dependencies** have completed. No other executable task shares its canonical wave.
+
 **Files:**
 - Modify: `pyproject.toml` (build backend and pytest/Ruff/Mypy/tooling sections only)
 - Create: `src/vespercode/project/toolchain_promotion.py`
@@ -1736,6 +1820,10 @@ def test_formal_toolchain_matches_frozen_gate_identity(
 
 **Dependencies:** Task 4.F.
 
+**Blocks:** Tasks 4.C, 5.C, 5.D, 6.B, 6.C, 15.A, 17.B, and 37.B.
+
+**Parallelization:** Starts only after all direct predecessors listed in **Dependencies** have completed. May run in parallel with Task 5.A in the same canonical wave.
+
 **Files:**
 - Create: `src/vespercode/canonical/json_v1.py`
 - Create: `src/vespercode/canonical/digest.py`
@@ -1773,6 +1861,10 @@ Expected RED: import failure because `canonical_json_bytes` and `domain_digest` 
 **SPEC references:** Milestone 4 time scope; SPEC §0.1 canonical timestamp and clock rules.
 
 **Dependencies:** Task 4.B.
+
+**Blocks:** Tasks 4.D, 5.B, 14.B, 15.C, 15.D, 24.A, and 37.B.
+
+**Parallelization:** Starts only after all direct predecessors listed in **Dependencies** have completed. No other executable task shares its canonical wave.
 
 **Files:**
 - Create: `src/vespercode/canonical/timestamp_v1.py`
@@ -1812,6 +1904,10 @@ Expected RED: import failure because the timestamp and clock types do not exist.
 
 **Dependencies:** Task 4.C.
 
+**Blocks:** Tasks 4.E, 6.A, 15.B, and 37.B.
+
+**Parallelization:** Starts only after all direct predecessors listed in **Dependencies** have completed. May run in parallel with Task 5.B in the same canonical wave.
+
 **Files:**
 - Create: `src/vespercode/canonical/path_v1.py`
 - Test: `tests/unit/canonical/test_path_v1.py`
@@ -1847,6 +1943,10 @@ Expected RED: import failure because the canonical path validator does not exist
 **SPEC references:** Milestone 4 scanner scope; course credential rules; repository pre-commit scan requirement.
 
 **Dependencies:** Task 4.D.
+
+**Blocks:** Tasks 5.E, 18.B, 19.A, 27.A, 30.A, and 37.B.
+
+**Parallelization:** Starts only after all direct predecessors listed in **Dependencies** have completed. May run in parallel with Task 5.C in the same canonical wave.
 
 **Files:**
 - Create: `scripts/scan_credentials.py`
@@ -1885,6 +1985,10 @@ Expected RED: import failure because the changed-file scanner does not exist.
 
 **Dependencies:** Task 4.F.
 
+**Blocks:** Tasks 5.B, 5.C, 5.D, and 37.B.
+
+**Parallelization:** Starts only after all direct predecessors listed in **Dependencies** have completed. May run in parallel with Task 4.B in the same canonical wave.
+
 **Files:**
 - Create: `src/vespercode/contracts/optional.py`
 - Test: `tests/unit/contracts/test_optional.py`
@@ -1917,6 +2021,10 @@ def test_present_optional_requires_value() -> None:
 **Goal:** Define the closed Run state/phase/wait/limit vocabulary and exact specialized wait-decision envelope.
 
 **Dependencies:** Tasks 4.C and 5.A.
+
+**Blocks:** Tasks 5.C, 5.D, 14.B, 15.D, and 37.B.
+
+**Parallelization:** Starts only after all direct predecessors listed in **Dependencies** have completed. May run in parallel with Task 4.D in the same canonical wave.
 
 **Files:**
 - Create: `src/vespercode/contracts/run.py`
@@ -1951,6 +2059,10 @@ def test_running_state_requires_exact_phase() -> None:
 
 **Dependencies:** Tasks 4.B, 5.A, and 5.B.
 
+**Blocks:** Tasks 5.D, 17.A, 17.B, and 37.B.
+
+**Parallelization:** Starts only after all direct predecessors listed in **Dependencies** have completed. May run in parallel with Task 4.E in the same canonical wave.
+
 **Files:**
 - Create: `src/vespercode/contracts/action.py`
 - Test: `tests/unit/contracts/test_action.py`
@@ -1983,6 +2095,10 @@ def test_success_result_rejects_error_payload() -> None:
 **Goal:** Define the shared closed evidence/artifact/digest/location vocabulary consumed across tools, validation, audit, and delivery.
 
 **Dependencies:** Tasks 4.B, 5.A, 5.B, 5.C, and 5.E.
+
+**Blocks:** Tasks 6.A, 6.B, 6.C, 7.A, 9.A, 10.A, 10.B, 11.A, 13, 15.A, 18.A, 19.A, 20.A, 24.A, 25.A, 27.A, 30.A, and 37.B.
+
+**Parallelization:** Starts only after all direct predecessors listed in **Dependencies** have completed. No other executable task shares its canonical wave.
 
 **Files:**
 - Create: `src/vespercode/contracts/evidence.py`
@@ -2017,6 +2133,10 @@ def test_artifact_reference_rejects_unbound_digest() -> None:
 
 **Dependencies:** Task 4.E.
 
+**Blocks:** Tasks 5.D, 6.D, 15.B, and 37.B.
+
+**Parallelization:** Starts only after all direct predecessors listed in **Dependencies** have completed. No other executable task shares its canonical wave.
+
 **Files:**
 - Create: `src/vespercode/contracts/location.py`
 - Test: `tests/unit/contracts/test_location.py`
@@ -2050,6 +2170,10 @@ def test_repository_root_rejects_path_field() -> None:
 
 **Dependencies:** Tasks 4.D and 5.D.
 
+**Blocks:** Tasks 6.E and 37.B.
+
+**Parallelization:** Starts only after all direct predecessors listed in **Dependencies** have completed. May run in parallel with Tasks 6.B, 6.C, 7.A, 10.B, 15.A, and 30.A in the same canonical wave.
+
 **Files:**
 - Create: `src/vespercode/profiles/editable.py`
 - Test: `tests/unit/profiles/test_editable.py`
@@ -2081,6 +2205,10 @@ def test_src_prefix_without_segment_boundary_is_not_editable() -> None:
 **Goal:** Load and integrity-check the built-in reference manifest against Task 2.G image, lock, tool, execution, and check-plan evidence.
 
 **Dependencies:** Tasks 2.G, 4.B, and 5.D.
+
+**Blocks:** Tasks 6.E and 37.B.
+
+**Parallelization:** Starts only after all direct predecessors listed in **Dependencies** have completed. May run in parallel with Tasks 6.A, 6.C, 7.A, 10.B, 15.A, and 30.A in the same canonical wave.
 
 **Files:**
 - Create: `src/vespercode/profiles/reference.py`
@@ -2117,6 +2245,10 @@ def test_reference_profile_rejects_image_digest_drift() -> None:
 
 **Dependencies:** Tasks 4.B and 5.D.
 
+**Blocks:** Tasks 6.D, 6.E, 15.C, and 37.B.
+
+**Parallelization:** Starts only after all direct predecessors listed in **Dependencies** have completed. May run in parallel with Tasks 6.A, 6.B, 7.A, 10.B, 15.A, and 30.A in the same canonical wave.
+
 **Files:**
 - Create: `src/vespercode/profiles/llm.py`
 - Create: `src/vespercode/profiles/builtin/mock-deterministic-v1.json`
@@ -2152,6 +2284,10 @@ def test_mock_profile_rejects_openai_fields() -> None:
 
 **Dependencies:** Tasks 5.E and 6.C.
 
+**Blocks:** Tasks 6.E, 15.C, and 37.B.
+
+**Parallelization:** Starts only after all direct predecessors listed in **Dependencies** have completed. May run in parallel with Tasks 7.B and 15.B in the same canonical wave.
+
 **Files:**
 - Create: `src/vespercode/profiles/endpoints.py`
 - Test: `tests/unit/profiles/test_endpoints.py`
@@ -2184,6 +2320,10 @@ def test_endpoint_registry_rejects_user_url() -> None:
 **Goal:** Resolve exact built-in editable/reference/LLM/endpoint profiles and reject missing, duplicate, extra, or cross-profile data before Run creation.
 
 **Dependencies:** Tasks 6.A, 6.B, 6.C, and 6.D.
+
+**Blocks:** Tasks 8.A, 12.A, 13, 16.A, 18.A, 19.A, 20.A, 27.A, and 37.B.
+
+**Parallelization:** Starts only after all direct predecessors listed in **Dependencies** have completed. May run in parallel with Tasks 7.C and 15.C in the same canonical wave.
 
 **Files:**
 - Create: `src/vespercode/profiles/registry.py`
@@ -2219,6 +2359,10 @@ def test_registry_rejects_duplicate_profile_id() -> None:
 **SPEC references:** Milestone 7 migration-framework scope; SPEC §5.2 and §7 storage split.
 
 **Dependencies:** Task 5.D.
+
+**Blocks:** Tasks 7.B, 14.C, 15.E, 15.F, 22.A, 22.C, 24.C, and 37.B.
+
+**Parallelization:** Starts only after all direct predecessors listed in **Dependencies** have completed. May run in parallel with Tasks 6.A, 6.B, 6.C, 10.B, 15.A, and 30.A in the same canonical wave.
 
 **Files:**
 - Create: `src/vespercode/storage/connection.py`
@@ -2262,6 +2406,10 @@ Expected RED: import failure because the database, closed migration descriptor, 
 **SPEC references:** Milestone 7 lifecycle scope; SPEC §4.2.1, §4.2.7, §5.4, and Run/Wait rows in §7.
 
 **Dependencies:** Task 7.A.
+
+**Blocks:** Tasks 7.C, 7.D, 14.B, 15.D, and 37.B.
+
+**Parallelization:** Starts only after all direct predecessors listed in **Dependencies** have completed. May run in parallel with Tasks 6.D and 15.B in the same canonical wave.
 
 **Files:**
 - Create: `src/vespercode/storage/migrations/v0001_run_wait.py`
@@ -2307,6 +2455,10 @@ Expected RED: import failure because the Run repository and lifecycle rules do n
 
 **Dependencies:** Task 7.B.
 
+**Blocks:** Tasks 7.D, 8.A, 9.A, 14.A, 14.B, 14.C, 15.D, 15.E, 15.F, 22.A, 22.C, 23.A, 24.C, 25.A, 25.B, 25.E, 25.F, 26.A, 26.C, 28.A, and 37.B.
+
+**Parallelization:** Starts only after all direct predecessors listed in **Dependencies** have completed. May run in parallel with Tasks 6.E and 15.C in the same canonical wave.
+
 **Files:**
 - Create: `src/vespercode/storage/migrations/v0002_idempotency.py`
 - Create: `src/vespercode/storage/idempotency.py`
@@ -2351,6 +2503,8 @@ Expected RED: import failure because the idempotency repository does not exist.
 **Dependencies:** Tasks 7.B, 7.C, 14.B, 15.D, 15.E, 22.A, 23.A, 24.C, 25.B, 25.D, 26.A, and 26.C.
 
 **Blocks:** Tasks 37.B and 38.F.
+
+**Parallelization:** Starts only after all direct predecessors listed in **Dependencies** have completed. May run in parallel with Tasks 34.B, 38.D, and 38.E in the same canonical wave.
 
 **Files:**
 - Create: `src/vespercode/storage/migrations/registry.py`
@@ -2538,6 +2692,10 @@ def test_snapshot_precheck_failure_calls_no_later_admission_port(
 
 **Dependencies:** Tasks 1.E, 5.D, 7.C, and 8.B.
 
+**Blocks:** Tasks 9.B and 37.B.
+
+**Parallelization:** Starts only after all direct predecessors listed in **Dependencies** have completed. May run in parallel with Task 15.E in the same canonical wave.
+
 **Files:**
 - Create: `src/vespercode/workspace/identity_win32.py`
 - Create: `src/vespercode/workspace/object_win32.py`
@@ -2579,6 +2737,10 @@ Expected RED: import failure because the production Win32 identity/object adapte
 
 **Dependencies:** Task 9.A.
 
+**Blocks:** Tasks 9.C and 37.B.
+
+**Parallelization:** Starts only after all direct predecessors listed in **Dependencies** have completed. May run in parallel with Task 16.A in the same canonical wave.
+
 **Files:**
 - Create: `src/vespercode/workspace/mutex_win32.py`
 - Test: `tests/integration/windows/test_named_mutex.py`
@@ -2618,6 +2780,10 @@ Expected RED: import failure because the production named-mutex adapter does not
 **SPEC references:** Milestone 9 Git scope; SPEC §1.4.1, §4.1 behavior 6–10, AC-15, and AC-26.
 
 **Dependencies:** Task 9.B.
+
+**Blocks:** Tasks 9.D and 37.B.
+
+**Parallelization:** Starts only after all direct predecessors listed in **Dependencies** have completed. May run in parallel with Task 16.B in the same canonical wave.
 
 **Files:**
 - Create: `src/vespercode/workspace/git_preflight.py`
@@ -2660,6 +2826,10 @@ Expected RED: import failure because sealed Git preflight does not exist.
 
 **Dependencies:** Task 9.C.
 
+**Blocks:** Tasks 10.A, 10.C, 12.A, 17.C, 18.B, 26.A, 26.C, 31.A, 37.B, 38.D, and 38.E.
+
+**Parallelization:** Starts only after all direct predecessors listed in **Dependencies** have completed. No other executable task shares its canonical wave.
+
 **Files:**
 - Create: `src/vespercode/workspace/path_guard.py`
 - Test: `tests/unit/workspace/test_path_guard.py`
@@ -2693,6 +2863,10 @@ Expected RED: import failure because `PathGuard` does not exist.
 **Goal:** Store and retrieve exact immutable file bytes by verified raw SHA-256 content reference.
 
 **Dependencies:** Tasks 5.D and 9.D.
+
+**Blocks:** Tasks 10.C and 37.B.
+
+**Parallelization:** Starts only after all direct predecessors listed in **Dependencies** have completed. No other executable task shares its canonical wave.
 
 **Files:**
 - Create: `src/vespercode/trees/content_store.py`
@@ -2729,6 +2903,10 @@ def test_get_rejects_bytes_whose_digest_drifted(store: ContentObjectStore) -> No
 
 **Dependencies:** Task 5.D.
 
+**Blocks:** Tasks 10.C and 37.B.
+
+**Parallelization:** Starts only after all direct predecessors listed in **Dependencies** have completed. May run in parallel with Tasks 6.A, 6.B, 6.C, 7.A, 15.A, and 30.A in the same canonical wave.
+
 **Files:**
 - Create: `src/vespercode/trees/text_classifier.py`
 - Test: `tests/unit/trees/test_text_classifier.py`
@@ -2760,6 +2938,10 @@ def test_mixed_newlines_are_non_text() -> None:
 **Goal:** Construct the Run's sole immutable SnapshotTree from sealed Git-preflight bytes and verify all content, ordering, identity, and policy bindings.
 
 **Dependencies:** Tasks 9.D, 10.A, and 10.B.
+
+**Blocks:** Tasks 11.A, 12.A, 18.B, 18.D, 20.A, 22.A, 22.B, 24.B, 31.A, and 37.B.
+
+**Parallelization:** Starts only after all direct predecessors listed in **Dependencies** have completed. No other executable task shares its canonical wave.
 
 **Files:**
 - Create: `src/vespercode/trees/snapshot.py`
@@ -2886,6 +3068,10 @@ def test_paged_discovery_equals_unpaged_without_duplicates(
 
 **Dependencies:** Tasks 6.E, 9.D, and 10.C.
 
+**Blocks:** Tasks 12.B, 17.A, and 37.B.
+
+**Parallelization:** Starts only after all direct predecessors listed in **Dependencies** have completed. May run in parallel with Tasks 11.A and 20.A in the same canonical wave.
+
 **Files:**
 - Create: `src/vespercode/candidate/unified_diff.py`
 - Test: `tests/unit/candidate/test_unified_diff.py`
@@ -2922,6 +3108,10 @@ Expected RED: import failure because the strict parser does not exist.
 
 **Dependencies:** Task 12.A.
 
+**Blocks:** Tasks 12.C and 37.B.
+
+**Parallelization:** Starts only after all direct predecessors listed in **Dependencies** have completed. May run in parallel with Task 11.B in the same canonical wave.
+
 **Files:**
 - Create: `src/vespercode/trees/candidate.py`
 - Test: `tests/unit/trees/test_candidate.py`
@@ -2957,6 +3147,10 @@ Expected RED: import failure because immutable candidate revisions do not exist.
 **SPEC references:** Milestone 12 application scope; SPEC §4.2.2, §4.3 atomicity/error priority, and AC-04/AC-07/AC-31.
 
 **Dependencies:** Task 12.B.
+
+**Blocks:** Tasks 12.D and 37.B.
+
+**Parallelization:** Starts only after all direct predecessors listed in **Dependencies** have completed. May run in parallel with Task 17.A in the same canonical wave.
 
 **Files:**
 - Create: `src/vespercode/candidate/patch_engine.py`
@@ -2996,6 +3190,10 @@ Expected RED: import failure because the atomic patch engine does not exist.
 **SPEC references:** Milestone 12 FinalDiff/identity scope; SPEC §4.3, §4.4.1, §7 Candidate/FinalDiff rows, AC-18/AC-26.
 
 **Dependencies:** Task 12.C.
+
+**Blocks:** Tasks 13, 14.A, 17.C, 18.B, 18.D, 21.A, 21.C, 25.D, 26.A, 31.A, 32.A, and 37.B.
+
+**Parallelization:** Starts only after all direct predecessors listed in **Dependencies** have completed. May run in parallel with Task 17.B in the same canonical wave.
 
 **Files:**
 - Create: `src/vespercode/candidate/final_diff.py`
@@ -3038,6 +3236,10 @@ Expected RED: import failure because FinalDiff and candidate identity do not exi
 
 **Dependencies:** Tasks 7.C, 12.D, 13, 20.B, and 21.C.
 
+**Blocks:** Tasks 14.B, 14.C, and 37.B.
+
+**Parallelization:** Starts only after all direct predecessors listed in **Dependencies** have completed. May run in parallel with Tasks 25.F, 28.A, and 25.D in the same canonical wave.
+
 **Files:**
 - Create: `src/vespercode/governance/writeback_subject.py`
 - Test: `tests/unit/governance/test_writeback_subject.py`
@@ -3069,6 +3271,10 @@ def test_subject_digest_changes_when_final_diff_changes() -> None:
 **Goal:** Apply APPROVE/REJECT/expiry/stale decisions atomically to the exact final-writeback wait with idempotent event replay.
 
 **Dependencies:** Tasks 4.C, 5.B, 7.B, 7.C, 14.A, and 25.D.
+
+**Blocks:** Tasks 7.D, 14.C, and 37.B.
+
+**Parallelization:** Starts only after all direct predecessors listed in **Dependencies** have completed. May run in parallel with Tasks 28.B and 30.C in the same canonical wave.
 
 **Files:**
 - Create: `src/vespercode/storage/migrations/v0010_writeback_approvals.py`
@@ -3109,6 +3315,10 @@ def test_expired_wait_cannot_create_pending_approval(service: FinalWritebackDeci
 
 **Dependencies:** Tasks 7.A, 7.C, 14.A, 14.B, and 21.C.
 
+**Blocks:** Tasks 25.A, 25.E, 26.A, 29.C, 31.A, 31.B, and 37.B.
+
+**Parallelization:** Starts only after all direct predecessors listed in **Dependencies** have completed. May run in parallel with Task 28.C in the same canonical wave.
+
 **Files:**
 - Create: `src/vespercode/governance/writeback_approval.py`
 - Test: `tests/unit/governance/test_writeback_approval.py`
@@ -3143,6 +3353,10 @@ def test_concurrent_consumers_get_exactly_one_success(repository: WritebackAppro
 
 **Dependencies:** Tasks 4.B and 5.D.
 
+**Blocks:** Tasks 15.B, 15.C, 15.E, and 37.B.
+
+**Parallelization:** Starts only after all direct predecessors listed in **Dependencies** have completed. May run in parallel with Tasks 6.A, 6.B, 6.C, 7.A, 10.B, and 30.A in the same canonical wave.
+
 **Files:**
 - Create: `src/vespercode/governance/request_sources.py`
 - Test: `tests/unit/governance/test_request_sources.py`
@@ -3176,6 +3390,10 @@ def test_file_segment_requires_canonical_path() -> None:
 
 **Dependencies:** Tasks 4.D, 5.E, and 15.A.
 
+**Blocks:** Tasks 15.C, 15.E, and 37.B.
+
+**Parallelization:** Starts only after all direct predecessors listed in **Dependencies** have completed. May run in parallel with Tasks 6.D and 7.B in the same canonical wave.
+
 **Files:**
 - Create: `src/vespercode/governance/disclosure_scope.py`
 - Test: `tests/unit/governance/test_disclosure_scope.py`
@@ -3207,6 +3425,10 @@ def test_directory_scope_does_not_match_string_prefix_sibling() -> None:
 **Goal:** Build the immutable disclosure Grant subject from validated sources, canonical scopes/categories, frozen profile, endpoint, serializer, and expiry.
 
 **Dependencies:** Tasks 4.C, 6.C, 6.D, 15.A, and 15.B.
+
+**Blocks:** Tasks 15.D, 15.E, 15.F, and 37.B.
+
+**Parallelization:** Starts only after all direct predecessors listed in **Dependencies** have completed. May run in parallel with Tasks 6.E and 7.C in the same canonical wave.
 
 **Files:**
 - Create: `src/vespercode/governance/disclosure_subject.py`
@@ -3240,6 +3462,10 @@ def test_subject_uses_frozen_endpoint_not_request_url() -> None:
 **Goal:** Atomically approve/reject/expire/stale/replay the exact disclosure wait and create at most one matching active Grant.
 
 **Dependencies:** Tasks 4.C, 5.B, 7.B, 7.C, and 15.C.
+
+**Blocks:** Tasks 7.D, 15.E, 15.F, and 37.B.
+
+**Parallelization:** Starts only after all direct predecessors listed in **Dependencies** have completed. May run in parallel with Tasks 8.A, 18.A, and 27.A in the same canonical wave.
 
 **Files:**
 - Create: `src/vespercode/storage/migrations/v0003_disclosure_grants.py`
@@ -3279,6 +3505,10 @@ def test_expired_disclosure_wait_creates_no_grant(service: DisclosureDecisionSer
 
 **Dependencies:** Tasks 7.A, 7.C, 15.A, 15.B, 15.C, 15.D, and 15.F.
 
+**Blocks:** Tasks 7.D, 16.A, 16.B, 22.A, 24.B, 25.C, 29.B, 31.A, 31.B, 32.C, and 37.B.
+
+**Parallelization:** Starts only after all direct predecessors listed in **Dependencies** have completed. May run in parallel with Task 9.A in the same canonical wave.
+
 **Files:**
 - Create: `src/vespercode/storage/migrations/v0004_disclosure_authorizations.py`
 - Create: `src/vespercode/governance/disclosure_ledger.py`
@@ -3317,6 +3547,10 @@ def test_two_requests_cannot_overdraw_one_grant(ledger: DisclosureLedger) -> Non
 **Goal:** Atomically revoke only the exact matching active disclosure Grant, with idempotent replay and no mutation for stale or mismatched subjects.
 
 **Dependencies:** Tasks 7.A, 7.C, 15.C, and 15.D.
+
+**Blocks:** Tasks 15.E and 37.B.
+
+**Parallelization:** Starts only after all direct predecessors listed in **Dependencies** have completed. May run in parallel with Tasks 8.B and 27.B in the same canonical wave.
 
 **Files:**
 - Create: `src/vespercode/governance/disclosure_revocation.py`
@@ -3446,6 +3680,10 @@ def test_openai_adapter_never_retries_transport(
 
 **Dependencies:** Tasks 5.C, 11.B, 12.A, and 16.A.
 
+**Blocks:** Tasks 17.B and 37.B.
+
+**Parallelization:** Starts only after all direct predecessors listed in **Dependencies** have completed. May run in parallel with Task 12.C in the same canonical wave.
+
 **Files:**
 - Create: `src/vespercode/loop/agent_actions.py`
 - Create: `src/vespercode/loop/action_parser.py`
@@ -3479,6 +3717,10 @@ def test_model_supplied_action_id_is_rejected(parser: ActionParser) -> None:
 **Goal:** Bind one parsed action to a Harness-generated non-empty ID plus canonical semantic and instance digests.
 
 **Dependencies:** Tasks 4.B, 5.C, and 17.A.
+
+**Blocks:** Tasks 17.C and 37.B.
+
+**Parallelization:** Starts only after all direct predecessors listed in **Dependencies** have completed. May run in parallel with Task 12.D in the same canonical wave.
 
 **Files:**
 - Create: `src/vespercode/loop/action_binding.py`
@@ -3515,6 +3757,10 @@ def test_same_semantics_different_harness_ids_change_instance_digest() -> None:
 
 **Dependencies:** Tasks 9.D, 11.B, 12.D, 13, 16.B, and 17.B.
 
+**Blocks:** Tasks 25.D, 25.G, 30.C, 31.A, 32.A, and 37.B.
+
+**Parallelization:** Starts only after all direct predecessors listed in **Dependencies** have completed. May run in parallel with Task 18.C in the same canonical wave.
+
 **Files:**
 - Create: `src/vespercode/tools/dispatcher.py`
 - Test: `tests/unit/tools/test_dispatcher.py`
@@ -3550,6 +3796,10 @@ def test_hard_deny_never_invokes_tool_port(dispatcher: ToolDispatcher, ports: Sp
 
 **Dependencies:** Tasks 2.G, 5.D, and 6.E.
 
+**Blocks:** Tasks 18.B, 18.C, and 37.B.
+
+**Parallelization:** Starts only after all direct predecessors listed in **Dependencies** have completed. May run in parallel with Tasks 8.A, 15.D, and 27.A in the same canonical wave.
+
 **Files:**
 - Create: `src/vespercode/execution/docker_profile.py`
 - Test: `tests/unit/execution/test_docker_profile.py`
@@ -3584,6 +3834,10 @@ def test_execution_request_rejects_model_executable_field() -> None:
 
 **Dependencies:** Tasks 4.E, 9.D, 10.C, 12.D, and 18.A.
 
+**Blocks:** Tasks 18.C and 37.B.
+
+**Parallelization:** Starts only after all direct predecessors listed in **Dependencies** have completed. May run in parallel with Task 13 in the same canonical wave.
+
 **Files:**
 - Create: `src/vespercode/execution/materialization.py`
 - Test: `tests/unit/execution/test_materialization.py`
@@ -3617,6 +3871,10 @@ def test_materialization_rejects_content_object_digest_drift() -> None:
 **Goal:** Execute one closed request in one fresh locked container with no network/root/write/socket and bounded time/resources/output.
 
 **Dependencies:** Tasks 2.G, 18.A, and 18.B.
+
+**Blocks:** Tasks 18.D and 37.B.
+
+**Parallelization:** Starts only after all direct predecessors listed in **Dependencies** have completed. May run in parallel with Task 17.C in the same canonical wave.
 
 **Files:**
 - Create: `src/vespercode/execution/docker_executor.py`
@@ -3654,6 +3912,10 @@ def test_output_limit_kills_exact_container(executor: DockerExecutor) -> None:
 
 **Dependencies:** Tasks 10.C, 12.D, and 18.C.
 
+**Blocks:** Tasks 19.A, 20.B, 21.B, 31.A, 34.A, and 37.B.
+
+**Parallelization:** Starts only after all direct predecessors listed in **Dependencies** have completed. No other executable task shares its canonical wave.
+
 **Files:**
 - Create: `src/vespercode/execution/cleanup.py`
 - Test: `tests/integration/docker/test_execution_cleanup.py`
@@ -3689,6 +3951,10 @@ def test_post_execution_candidate_mutation_fails_closed() -> None:
 **SPEC references:** Milestone 19 check-result scope; SPEC §4.5 check execution/errors, §5.2, and AC-19/AC-20/AC-24.
 
 **Dependencies:** Tasks 4.E, 5.D, 6.E, and 18.D.
+
+**Blocks:** Tasks 19.B and 37.B.
+
+**Parallelization:** Starts only after all direct predecessors listed in **Dependencies** have completed. No other executable task shares its canonical wave.
 
 **Files:**
 - Create: `src/vespercode/validation/check_result.py`
@@ -3728,6 +3994,10 @@ Expected RED: import failure because the check-result schema and static-tool par
 **SPEC references:** Milestone 19 pytest-evidence scope; SPEC §4.5 `PytestEvidenceV1`, trust boundary, and AC-19/AC-25.
 
 **Dependencies:** Task 19.A.
+
+**Blocks:** Tasks 19.C and 37.B.
+
+**Parallelization:** Starts only after all direct predecessors listed in **Dependencies** have completed. No other executable task shares its canonical wave.
 
 **Files:**
 - Create: `src/vespercode/validation/pytest_evidence.py`
@@ -3772,6 +4042,10 @@ Expected RED: import failure because the production reporter/parser do not exist
 **SPEC references:** Milestone 19 fingerprint scope; SPEC §4.5 fingerprint normalization, AC-25, and AC-26.
 
 **Dependencies:** Task 19.B.
+
+**Blocks:** Tasks 20.B, 21.A, 21.C, 22.A, 22.B, 24.A, 25.D, 31.A, 32.B, and 37.B.
+
+**Parallelization:** Starts only after all direct predecessors listed in **Dependencies** have completed. No other executable task shares its canonical wave.
 
 **Files:**
 - Create: `src/vespercode/validation/failure_fingerprint.py`
@@ -3905,6 +4179,10 @@ def test_unstable_target_fingerprint_creates_no_manifest(
 
 **Dependencies:** Tasks 12.D, 19.C, and 20.B.
 
+**Blocks:** Tasks 21.B, 21.C, and 37.B.
+
+**Parallelization:** Starts only after all direct predecessors listed in **Dependencies** have completed. May run in parallel with Tasks 22.B and 23.A in the same canonical wave.
+
 **Files:**
 - Create: `src/vespercode/validation/formal_plan.py`
 - Test: `tests/unit/validation/test_formal_plan.py`
@@ -3940,6 +4218,10 @@ def test_stale_candidate_produces_zero_execution_requests() -> None:
 
 **Dependencies:** Tasks 18.D and 21.A.
 
+**Blocks:** Tasks 21.C and 37.B.
+
+**Parallelization:** Starts only after all direct predecessors listed in **Dependencies** have completed. May run in parallel with Tasks 22.C, 23.B, 24.B, and 25.B in the same canonical wave.
+
 **Files:**
 - Create: `src/vespercode/validation/formal_execution.py`
 - Test: `tests/integration/docker/test_reference_formal_validation.py`
@@ -3974,6 +4256,10 @@ def test_executor_must_run_every_frozen_request_once(executor: SpyDockerExecutio
 
 **Dependencies:** Tasks 12.D, 19.C, 20.B, 21.A, and 21.B.
 
+**Blocks:** Tasks 14.A, 14.C, 25.G, 26.A, 29.C, 31.A, and 37.B.
+
+**Parallelization:** Starts only after all direct predecessors listed in **Dependencies** have completed. May run in parallel with Tasks 23.C, 25.C, and 24.C in the same canonical wave.
+
 **Files:**
 - Create: `src/vespercode/validation/formal.py`
 - Test: `tests/unit/validation/test_formal_predicate.py`
@@ -4007,6 +4293,10 @@ def test_missing_teardown_evidence_cannot_verify_candidate() -> None:
 **Goal:** Create/confirm only authorized structured memory with exact workspace identity, creator/source, bounded content, and no authorization power.
 
 **Dependencies:** Tasks 7.A, 7.C, 10.C, 15.E, and 19.C.
+
+**Blocks:** Tasks 7.D, 22.B, 22.C, 23.A, and 37.B.
+
+**Parallelization:** Starts only after all direct predecessors listed in **Dependencies** have completed. May run in parallel with Tasks 20.B and 24.A in the same canonical wave.
 
 **Files:**
 - Create: `src/vespercode/storage/migrations/v0005_memory.py`
@@ -4049,6 +4339,10 @@ def test_model_originated_project_convention_is_rejected(repository: MemoryRepos
 
 **Dependencies:** Tasks 10.C, 19.C, and 22.A.
 
+**Blocks:** Tasks 22.C, 24.B, and 37.B.
+
+**Parallelization:** Starts only after all direct predecessors listed in **Dependencies** have completed. May run in parallel with Tasks 21.A and 23.A in the same canonical wave.
+
 **Files:**
 - Create: `src/vespercode/memory/selection.py`
 - Test: `tests/unit/memory/test_selection.py`
@@ -4081,6 +4375,10 @@ def test_selection_never_crosses_workspace_identity(repository: MemoryRepository
 **Goal:** Make an explicit authorized memory clear transaction immediately exclude the targeted workspace entries from every future selection.
 
 **Dependencies:** Tasks 7.A, 7.C, 22.A, and 22.B.
+
+**Blocks:** Tasks 31.A, 37.B, and 38.B.
+
+**Parallelization:** Starts only after all direct predecessors listed in **Dependencies** have completed. May run in parallel with Tasks 21.B, 23.B, 24.B, and 25.B in the same canonical wave.
 
 **Files:**
 - Create: `src/vespercode/memory/clear.py`
@@ -4117,6 +4415,10 @@ def test_successful_clear_is_immediately_ineligible_for_selection() -> None:
 **SPEC references:** Milestone 23 event/repository scope; SPEC §4.7, §5.3–§5.6, §7 AuditEvent, and AC-08/AC-13/AC-16.
 
 **Dependencies:** Tasks 7.C and 22.A.
+
+**Blocks:** Tasks 7.D, 23.B, 25.B, and 37.B.
+
+**Parallelization:** Starts only after all direct predecessors listed in **Dependencies** have completed. May run in parallel with Tasks 21.A and 22.B in the same canonical wave.
 
 **Files:**
 - Create: `src/vespercode/storage/migrations/v0006_audit.py`
@@ -4164,6 +4466,10 @@ Expected RED: import failure because the closed event union and repository do no
 
 **Dependencies:** Task 23.A.
 
+**Blocks:** Tasks 23.C and 37.B.
+
+**Parallelization:** Starts only after all direct predecessors listed in **Dependencies** have completed. May run in parallel with Tasks 21.B, 22.C, 24.B, and 25.B in the same canonical wave.
+
 **Files:**
 - Create: `src/vespercode/audit/projection.py`
 - Test: `tests/unit/audit/test_projection.py`
@@ -4203,6 +4509,10 @@ Expected RED: import failure because the visibility projector does not exist.
 
 **Dependencies:** Task 23.B.
 
+**Blocks:** Tasks 25.F, 26.A, 26.C, 28.A, 29.A, 29.B, 31.A, 37.B, 38.B, 38.C, and 38.D.
+
+**Parallelization:** Starts only after all direct predecessors listed in **Dependencies** have completed. May run in parallel with Tasks 21.C, 25.C, and 24.C in the same canonical wave.
+
 **Files:**
 - Create: `src/vespercode/audit/retention.py`
 - Test: `tests/unit/audit/test_retention.py`
@@ -4241,6 +4551,10 @@ Expected RED: import failure because the retention evaluator does not exist.
 
 **Dependencies:** Tasks 4.C, 5.D, 11.B, and 19.C.
 
+**Blocks:** Tasks 24.B, 24.C, and 37.B.
+
+**Parallelization:** Starts only after all direct predecessors listed in **Dependencies** have completed. May run in parallel with Tasks 20.B and 22.A in the same canonical wave.
+
 **Files:**
 - Create: `src/vespercode/loop/feedback.py`
 - Test: `tests/unit/loop/test_feedback.py`
@@ -4273,6 +4587,10 @@ def test_newest_failure_survives_feedback_limit() -> None:
 **Goal:** Assemble the exact source-attributed message projection and trim only allowed categories under the frozen context budget.
 
 **Dependencies:** Tasks 10.C, 15.E, 16.B, 22.B, and 24.A.
+
+**Blocks:** Tasks 24.C and 37.B.
+
+**Parallelization:** Starts only after all direct predecessors listed in **Dependencies** have completed. May run in parallel with Tasks 21.B, 22.C, 23.B, and 25.B in the same canonical wave.
 
 **Files:**
 - Create: `src/vespercode/loop/context_projection.py`
@@ -4308,6 +4626,10 @@ def test_trimming_never_removes_most_recent_failure_feedback() -> None:
 **Goal:** Bind selected feedback references to one new turn and consume them atomically so no record can be attached to multiple turns.
 
 **Dependencies:** Tasks 7.A, 7.C, 24.A, 24.B, and 25.B.
+
+**Blocks:** Tasks 7.D, 25.A, 25.D, 25.G, 30.C, 31.A, 32.A, 32.B, and 37.B.
+
+**Parallelization:** Starts only after all direct predecessors listed in **Dependencies** have completed. May run in parallel with Tasks 21.C, 23.C, and 25.C in the same canonical wave.
 
 **Files:**
 - Create: `src/vespercode/storage/migrations/v0008_feedback.py`
@@ -4903,6 +5225,10 @@ def test_stale_preview_cannot_apply_recovery(
 
 **Dependencies:** Tasks 4.E, 5.D, and 6.E.
 
+**Blocks:** Tasks 27.B and 37.B.
+
+**Parallelization:** Starts only after all direct predecessors listed in **Dependencies** have completed. May run in parallel with Tasks 8.A, 15.D, and 18.A in the same canonical wave.
+
 **Files:**
 - Create: `src/vespercode/credentials/port.py`
 - Create: `src/vespercode/credentials/service.py`
@@ -4948,6 +5274,10 @@ Expected RED: import failure because the credential port/service and secret wrap
 **SPEC references:** Milestone 27 adapter scope; SPEC §4.8 Windows backend requirements, §10.3 Windows integration, AC-15/AC-24/AC-28.
 
 **Dependencies:** Task 27.A.
+
+**Blocks:** Tasks 16.B, 25.C, 28.A, 31.A, 31.B, 32.C, 37.B, and 38.A.
+
+**Parallelization:** Starts only after all direct predecessors listed in **Dependencies** have completed. May run in parallel with Tasks 8.B and 15.F in the same canonical wave.
 
 **Files:**
 - Create: `src/vespercode/credentials/wincred_store.py`
@@ -6341,7 +6671,7 @@ def test_process_evidence_rejects_formal_python_identity_drift(
 
 **Dependencies:** Tasks 37.A and 37.B; a complete student-authored `REFLECTION.md` is a non-task entry gate.
 
-**Blocks:** Final course delivery only.
+**Blocks:** None.
 
 **Parallelization:** Sequential after Tasks 37.A and 37.B; this is the final executable task.
 
