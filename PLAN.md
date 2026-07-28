@@ -1006,6 +1006,12 @@ The child tasks below are the only executable units for Milestones 1–12, 14–
 
 **Interfaces:** Produces `GateCommandV1 = Literal["pytest","ruff-format","ruff-check","mypy"]`, `GateArgumentSequenceV1`, an immutable ordered tuple of zero or more strings, `GateToolchainEvidenceV1(python_version: str, pytest_version: str, ruff_version: str, mypy_version: str, gate_lock_sha256: str, pytest_config_sha256: str, ruff_config_sha256: str, mypy_config_sha256: str, runner_sha256: str)`, and `run_gate_checks(command: GateCommandV1, arguments: GateArgumentSequenceV1) -> int`.
 
+**Implementation points:**
+- Define the sole feasibility-gate producer: closed `GateCommandV1` values, immutable `GateArgumentSequenceV1`, exact `GateToolchainEvidenceV1`, and `run_gate_checks` dispatch; consumers cannot supply alternate argv or config.
+- Bind lock, config, runner, interpreter, and tool identities before execution; unknown commands, wrong interpreter/config, and digest drift fail closed.
+- Make the exact bootstrap RED probe GREEN by creating all five declared artifacts, then extend only through the Domain cases for hash-only installation and closed dispatch.
+- Own only gate lock/config/runner identity and closed argv construction; Win32, Docker, persistence, and feasibility-observation interpretation remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -1036,7 +1042,30 @@ class GateBootstrapContractTest(unittest.TestCase):
 - Domain: `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/gate/test_gate_bootstrap.py -q`
 - Expected GREEN: the Target assertion passes after all five artifacts exist; hash-only installation succeeds; the Domain command exits `0`; wrong interpreter/config/digest/command cases fail closed.
 
+**Review gate:**
+1. Spec compliance review checks Task 1.A's Goal, Milestone 1's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent bootstrap contract.
+2. Code quality review checks closed command exhaustiveness, immutable argument handling, identity/digest binding, deterministic exit propagation, and rejection before execution.
+3. Critical/Important findings block Tasks 1.B, 1.C, 1.D, 1.E, 2.B, 2.C, 2.D, 2.E, 2.F, and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 1.A's exact RED probe.** Add the complete declared `test_required_bootstrap_artifacts_are_declared` test case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 1.A RED.** Run `py -3.12 -m unittest -v tests.feasibility.gate.test_gate_bootstrap.GateBootstrapContractTest.test_required_bootstrap_artifacts_are_declared`. Expected: the entry-runnable stdlib test starts without `.venv-gate`, pytest, or `scripts/run_gate_checks.py` and fails its assertion with `MISSING_BOOTSTRAP_ARTIFACTS:` followed by the absent lock/config/runner paths; runner startup failure is not accepted. Record the failing assertion and exit code; a collection, runner, environment-startup, or unrelated failure does not count.
+- [ ] **Step 3: Define the closed gate contracts.** Apply IP-1: Define the closed gate command, argument, evidence, and runner contracts required by IP-1.
+- [ ] **Step 4: Enforce bootstrap identity rejection.** Apply IP-2: Add the pre-execution interpreter, config, digest, and unknown-command rejection required by IP-2.
+- [ ] **Step 5: Create the five bootstrap artifacts.** Apply IP-3: Create the five bootstrap artifacts named by the RED probe and satisfy only its first passing path for IP-3.
+- [ ] **Step 6: Seal the gate ownership boundary.** Apply IP-4: Separate runner identity/argv construction from every Win32, Docker, persistence, and observation concern named by IP-4.
+- [ ] **Step 7: Run Task 1.A Target GREEN.** Re-run `py -3.12 -m unittest -v tests.feasibility.gate.test_gate_bootstrap.GateBootstrapContractTest.test_required_bootstrap_artifacts_are_declared`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 1.A's boundary.** Improve names and local structure only in the declared Files and Implementation boundary; do not change behavior or absorb dependent-task work.
+- [ ] **Step 9: Run Task 1.A Domain verification.** Run or perform exactly: `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/gate/test_gate_bootstrap.py -q` Record the command and actual result.
+- [ ] **Step 10: Check Task 1.A's declared acceptance.** Verify the Target assertion passes after all five artifacts exist; hash-only installation succeeds; the Domain command exits `0`; wrong interpreter/config/digest/command cases fail closed. If any condition lacks terminal evidence, keep this task incomplete.
+- [ ] **Step 11: Run Task 1.A closure checks.** Invoke Task 1.A `run_gate_checks` through its closed `ruff-format`, `ruff-check`, and `mypy` choices with gate-owned config; perform the Global Constraints-required explicit filename-only PowerShell credential scan without inventing argv or printing matched values; then run `git diff --check`. Record exact commands and actual results, and keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 1.A spec compliance review.** Provide the Goal, Milestone 1 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 1.A spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 1.A code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 1.A quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 1.A after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 1.A completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 1.B: Pure Workspace Boundary Observation Evaluator
 
@@ -1056,6 +1085,12 @@ class GateBootstrapContractTest(unittest.TestCase):
 
 **Interfaces:** Produces `BoundaryObservationV1(code: str, lexical_path: str, final_path: str, expected_volume_serial: int, observed_volume_serial: int, expected_file_id_128: bytes, observed_file_id_128: bytes, object_kind: Literal["FILE","DIRECTORY"], link_count: int, reparse_tag: int, acl_observable: bool)`, `BoundaryObservationSequenceV1`, an immutable ordered tuple of one or more observations, `BoundaryEvaluationV1(passed: bool, failed_codes: StableCodeSequenceV1)`, and pure `evaluate_workspace_observations(observations: BoundaryObservationSequenceV1) -> BoundaryEvaluationV1`.
 
+**Implementation points:**
+- Implement `evaluate_workspace_observations` as the pure producer from an immutable ordered `BoundaryObservationSequenceV1` to one `BoundaryEvaluationV1`; it performs no observation I/O.
+- Map missing identity, mismatch, collision, reparse, link, and ACL facts to stable closed outcomes; incomplete or unprovable final identity never becomes GO-like evidence.
+- Make `test_unprovable_final_identity_fails_closed` GREEN with the smallest deterministic evaluation branch before adding the remaining Domain taxonomy cases.
+- Own deterministic observation evaluation only; path opening, ACL inspection, mutex acquisition, and GO report construction remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -1073,7 +1108,30 @@ def test_unprovable_final_identity_fails_closed() -> None:
 - Domain: `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/windows/test_workspace_boundary_evaluator.py -q`
 - Expected GREEN: every missing/mismatched/collision/reparse/link/ACL observation maps to one stable closed result and both commands exit `0`.
 
+**Review gate:**
+1. Spec compliance review checks Task 1.B's Goal, Milestone 1's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent observation-evaluation contract.
+2. Code quality review checks pure evaluation, exhaustive stable reason mapping, ordered immutable inputs, deterministic precedence, and fail-closed handling of missing facts.
+3. Critical/Important findings block Tasks 1.C, 1.D, 1.E, 3.D, and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 1.B's exact RED probe.** Add the complete declared `test_unprovable_final_identity_fails_closed` test case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 1.B RED.** Run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/windows/test_workspace_boundary_evaluator.py::test_unprovable_final_identity_fails_closed -q`. Expected: the closed evaluator and stable failure taxonomy do not exist. Record the failing assertion and exit code; a collection, runner, environment-startup, or unrelated failure does not count.
+- [ ] **Step 3: Define the pure observation evaluator.** Apply IP-1: Add the pure sequence-to-evaluation interface required by IP-1 without any filesystem calls.
+- [ ] **Step 4: Reject unprovable identity facts.** Apply IP-2: Implement the single unprovable-final-identity closed outcome required by IP-2.
+- [ ] **Step 5: Pass the unprovable-identity RED case.** Apply IP-3: Connect that outcome to the exact RED assertion for IP-3 without adding the full taxonomy.
+- [ ] **Step 6: Seal the evaluator I/O boundary.** Apply IP-4: Keep all path, ACL, mutex, and report I/O outside the evaluator as required by IP-4.
+- [ ] **Step 7: Run Task 1.B Target GREEN.** Re-run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/windows/test_workspace_boundary_evaluator.py::test_unprovable_final_identity_fails_closed -q`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 1.B's boundary.** Improve names and local structure only in the declared Files and Implementation boundary; do not change behavior or absorb dependent-task work.
+- [ ] **Step 9: Run Task 1.B Domain verification.** Run or perform exactly: `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/windows/test_workspace_boundary_evaluator.py -q` Record the command and actual result.
+- [ ] **Step 10: Check Task 1.B's declared acceptance.** Verify every missing/mismatched/collision/reparse/link/ACL observation maps to one stable closed result and both commands exit `0`. If any condition lacks terminal evidence, keep this task incomplete.
+- [ ] **Step 11: Run Task 1.B closure checks.** Invoke Task 1.A `run_gate_checks` through its closed `ruff-format`, `ruff-check`, and `mypy` choices with gate-owned config; perform the Global Constraints-required explicit filename-only PowerShell credential scan without inventing argv or printing matched values; then run `git diff --check`. Record exact commands and actual results, and keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 1.B spec compliance review.** Provide the Goal, Milestone 1 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 1.B spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 1.B code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 1.B quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 1.B after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 1.B completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 1.C: Real Win32 Object, Collision, and ACL Probe
 
@@ -1093,6 +1151,12 @@ def test_unprovable_final_identity_fails_closed() -> None:
 
 **Interfaces:** Produces `WorkspaceObjectIdentityV1(canonical_absolute_path: str, volume_serial_number: int, file_id_128: bytes, object_kind: Literal["FILE","DIRECTORY"], link_count: int, reparse_tag: int)`, `WorkspaceObjectProbeResultV1(observations: BoundaryObservationSequenceV1, cleanup_verified: bool)`, and `probe_workspace_objects(workspace: Path, case_manifest: BoundaryCaseManifestV1) -> WorkspaceObjectProbeResultV1`.
 
+**Implementation points:**
+- Produce `WorkspaceObjectIdentityV1` and `WorkspaceObjectProbeResultV1` from real handle-derived Win32 observations, with cleanup evidence included in the returned probe result.
+- Classify collision, device/UNC/ADS, reparse, hard-link, object-kind, and ACL facts as closed observations; an unproved identity or cleanup state cannot be treated as verified.
+- Make `test_junction_target_identity_is_observed_from_handle` GREEN by observing the junction target through its handle before expanding to the remaining Windows fixtures.
+- Own real object/path/ACL observation and cleanup only; workspace mutex acquisition and aggregate GO decisions remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -1110,7 +1174,30 @@ def test_junction_target_identity_is_observed_from_handle(ntfs_fixture: Path) ->
 - Domain: `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/windows/test_workspace_object_probe.py -q`
 - Expected GREEN: all collision, device/UNC/ADS, reparse, hard-link, file/directory, and ACL fixtures produce closed observations and verified cleanup.
 
+**Review gate:**
+1. Spec compliance review checks Task 1.C's Goal, Milestone 1's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent Win32 object-probe contract.
+2. Code quality review checks handle lifetime and cleanup, lexical-versus-final identity separation, stable closed observation types, Win32 error propagation, and no aggregate decision leakage.
+3. Critical/Important findings block Tasks 1.E and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 1.C's exact RED probe.** Add the complete declared `test_junction_target_identity_is_observed_from_handle` test case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 1.C RED.** Run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/windows/test_workspace_object_probe.py::test_junction_target_identity_is_observed_from_handle -q`. Expected: no handle-derived object probe exists; lexical normalization alone cannot satisfy the assertion. Record the failing assertion and exit code; a collection, runner, environment-startup, or unrelated failure does not count.
+- [ ] **Step 3: Define handle-derived object identity.** Apply IP-1: Define the handle-derived identity and probe-result production path required by IP-1.
+- [ ] **Step 4: Enforce closed identity and cleanup facts.** Apply IP-2: Add the closed unproved-identity and cleanup checks required by IP-2.
+- [ ] **Step 5: Observe the junction target by handle.** Apply IP-3: Implement only the junction-target handle observation exercised by the RED case for IP-3.
+- [ ] **Step 6: Seal the object-probe boundary.** Apply IP-4: Keep mutex and aggregate GO logic outside the object probe as required by IP-4.
+- [ ] **Step 7: Run Task 1.C Target GREEN.** Re-run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/windows/test_workspace_object_probe.py::test_junction_target_identity_is_observed_from_handle -q`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 1.C's boundary.** Improve names and local structure only in the declared Files and Implementation boundary; do not change behavior or absorb dependent-task work.
+- [ ] **Step 9: Run Task 1.C Domain verification.** Run or perform exactly: `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/windows/test_workspace_object_probe.py -q` Record the command and actual result.
+- [ ] **Step 10: Check Task 1.C's declared acceptance.** Verify all collision, device/UNC/ADS, reparse, hard-link, file/directory, and ACL fixtures produce closed observations and verified cleanup. If any condition lacks terminal evidence, keep this task incomplete.
+- [ ] **Step 11: Run Task 1.C closure checks.** Invoke Task 1.A `run_gate_checks` through its closed `ruff-format`, `ruff-check`, and `mypy` choices with gate-owned config; perform the Global Constraints-required explicit filename-only PowerShell credential scan without inventing argv or printing matched values; then run `git diff --check`. Record exact commands and actual results, and keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 1.C spec compliance review.** Provide the Goal, Milestone 1 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 1.C spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 1.C code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 1.C quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 1.C after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 1.C completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 1.D: Cross-process Workspace Mutex Probe
 
@@ -1130,6 +1217,12 @@ def test_junction_target_identity_is_observed_from_handle(ntfs_fixture: Path) ->
 
 **Interfaces:** Produces `WorkspaceMutexProbeResultV1(workspace_identity_digest: str, contender_count: int, maximum_concurrent_holders: int, timeout_count: int, cleanup_verified: bool)` and `probe_workspace_mutex(workspace_identity_digest: str, contender_count: int, timeout_ms: int) -> WorkspaceMutexProbeResultV1`.
 
+**Implementation points:**
+- Produce `WorkspaceMutexProbeResultV1` from one workspace-identity-bound cross-process mutex probe, including contender, concurrency, timeout, abandoned-owner, and cleanup evidence.
+- Never report successful exclusivity unless `maximum_concurrent_holders` and cleanup evidence prove it; timeout, abandonment, or incomplete contender evidence remains closed.
+- Make `test_two_processes_never_hold_one_workspace_mutex_together` GREEN with the smallest two-process acquisition/release path before adding other Domain cases.
+- Own mutex naming, acquisition timing, contender evidence, handle release, and cleanup only; workspace path inspection and observation aggregation remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -1147,7 +1240,30 @@ def test_two_processes_never_hold_one_workspace_mutex_together() -> None:
 - Domain: `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/windows/test_workspace_mutex_probe.py -q`
 - Expected GREEN: contention, timeout, abandoned-owner, distinct-workspace, and cleanup cases pass on Windows.
 
+**Review gate:**
+1. Spec compliance review checks Task 1.D's Goal, Milestone 1's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent workspace-mutex contract.
+2. Code quality review checks cross-process exclusivity, deterministic mutex naming, timeout/abandoned-owner handling, handle cleanup on every path, and bounded timing behavior.
+3. Critical/Important findings block Tasks 1.E, 3.F, and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 1.D's exact RED probe.** Add the complete declared `test_two_processes_never_hold_one_workspace_mutex_together` test case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 1.D RED.** Run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/windows/test_workspace_mutex_probe.py::test_two_processes_never_hold_one_workspace_mutex_together -q`. Expected: the cross-process mutex probe does not exist. Record the failing assertion and exit code; a collection, runner, environment-startup, or unrelated failure does not count.
+- [ ] **Step 3: Define the cross-process mutex probe.** Apply IP-1: Define the workspace-bound mutex probe result and two-process probe path required by IP-1.
+- [ ] **Step 4: Enforce exclusivity and cleanup proof.** Apply IP-2: Enforce the exclusivity and cleanup proof conditions required by IP-2.
+- [ ] **Step 5: Pass the two-contender RED case.** Apply IP-3: Implement only the two-contender RED scenario and its release path for IP-3.
+- [ ] **Step 6: Seal the mutex-probe boundary.** Apply IP-4: Keep path inspection and aggregate observation logic outside the mutex probe as required by IP-4.
+- [ ] **Step 7: Run Task 1.D Target GREEN.** Re-run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/windows/test_workspace_mutex_probe.py::test_two_processes_never_hold_one_workspace_mutex_together -q`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 1.D's boundary.** Improve names and local structure only in the declared Files and Implementation boundary; do not change behavior or absorb dependent-task work.
+- [ ] **Step 9: Run Task 1.D Domain verification.** Run or perform exactly: `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/windows/test_workspace_mutex_probe.py -q` Record the command and actual result.
+- [ ] **Step 10: Check Task 1.D's declared acceptance.** Verify contention, timeout, abandoned-owner, distinct-workspace, and cleanup cases pass on Windows. If any condition lacks terminal evidence, keep this task incomplete.
+- [ ] **Step 11: Run Task 1.D closure checks.** Invoke Task 1.A `run_gate_checks` through its closed `ruff-format`, `ruff-check`, and `mypy` choices with gate-owned config; perform the Global Constraints-required explicit filename-only PowerShell credential scan without inventing argv or printing matched values; then run `git diff --check`. Record exact commands and actual results, and keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 1.D spec compliance review.** Provide the Goal, Milestone 1 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 1.D spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 1.D code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 1.D quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 1.D after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 1.D completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 1.E: Workspace Boundary GO Report and Identity Continuity
 
@@ -1168,6 +1284,12 @@ def test_two_processes_never_hold_one_workspace_mutex_together() -> None:
 
 **Interfaces:** Produces `WorkspaceBoundaryGateReportV1(outcome: Literal["GO","NO_GO"], gate_toolchain: GateToolchainEvidenceV1, object_probe: WorkspaceObjectProbeResultV1, mutex_probe: WorkspaceMutexProbeResultV1, evaluation: BoundaryEvaluationV1, evidence_digest: str)` and `assemble_workspace_boundary_report(toolchain: GateToolchainEvidenceV1, object_probe: WorkspaceObjectProbeResultV1, mutex_probe: WorkspaceMutexProbeResultV1) -> WorkspaceBoundaryGateReportV1`.
 
+**Implementation points:**
+- Consume the frozen gate-toolchain, object-probe, mutex-probe, and boundary-evaluation evidence to produce one immutable `WorkspaceBoundaryGateReportV1` and report digest.
+- Emit `GO` only when every required evidence item is present, identity-matched, and internally consistent; missing, drifted, or unprovable evidence yields `NO_GO`.
+- Make `test_gate_refuses_go_when_mutex_evidence_is_missing` GREEN with the smallest completeness check before adding the remaining report-identity Domain cases.
+- Own final report completeness, digest, and GO/NO_GO decision only; do not re-probe Windows or mutate Task 1.A–1.D evidence.
+
 **Intentionally failing test:**
 
 ```python
@@ -1185,7 +1307,30 @@ def test_gate_refuses_go_when_mutex_evidence_is_missing() -> None:
 - Domain: `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/windows/test_workspace_boundary_gate.py -q`
 - Expected GREEN: only complete identity-matching evidence yields GO; all missing/drifted/unprovable evidence yields NO_GO.
 
+**Review gate:**
+1. Spec compliance review checks Task 1.E's Goal, Milestone 1's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent boundary-gate report contract.
+2. Code quality review checks complete evidence accounting, identity continuity, deterministic report digesting, GO/NO_GO exhaustiveness, and immutability of consumed evidence.
+3. Critical/Important findings block Tasks 2.A, 2.G, 3.G, 4.A, 4.F, 9.A, and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 1.E's exact RED probe.** Add the complete declared `test_gate_refuses_go_when_mutex_evidence_is_missing` test case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 1.E RED.** Run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/windows/test_workspace_boundary_gate.py::test_gate_refuses_go_when_mutex_evidence_is_missing -q`. Expected: no closed report assembler enforces completeness and identity continuity. Record the failing assertion and exit code; a collection, runner, environment-startup, or unrelated failure does not count.
+- [ ] **Step 3: Define immutable report assembly.** Apply IP-1: Define the immutable evidence-to-report assembly path required by IP-1.
+- [ ] **Step 4: Reject incomplete or drifted evidence.** Apply IP-2: Add the missing-or-drifted evidence rejection required by IP-2.
+- [ ] **Step 5: Pass the missing-mutex RED case.** Apply IP-3: Implement only the missing-mutex RED branch and exact `NO_GO` assertion for IP-3.
+- [ ] **Step 6: Seal the report-assembly boundary.** Apply IP-4: Keep all Windows probing and evidence mutation outside report assembly as required by IP-4.
+- [ ] **Step 7: Run Task 1.E Target GREEN.** Re-run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/windows/test_workspace_boundary_gate.py::test_gate_refuses_go_when_mutex_evidence_is_missing -q`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 1.E's boundary.** Improve names and local structure only in the declared Files and Implementation boundary; do not change behavior or absorb dependent-task work.
+- [ ] **Step 9: Run Task 1.E Domain verification.** Run or perform exactly: `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/windows/test_workspace_boundary_gate.py -q` Record the command and actual result.
+- [ ] **Step 10: Check Task 1.E's declared acceptance.** Verify only complete identity-matching evidence yields GO; all missing/drifted/unprovable evidence yields NO_GO. If any condition lacks terminal evidence, keep this task incomplete.
+- [ ] **Step 11: Run Task 1.E closure checks.** Invoke Task 1.A `run_gate_checks` through its closed `ruff-format`, `ruff-check`, and `mypy` choices with gate-owned config; perform the Global Constraints-required explicit filename-only PowerShell credential scan without inventing argv or printing matched values; then run `git diff --check`. Record exact commands and actual results, and keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 1.E spec compliance review.** Provide the Goal, Milestone 1 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 1.E spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 1.E code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 1.E quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 1.E after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 1.E completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 2.A: Locked Reference Fixture and Build Input Contract
 
@@ -1210,6 +1355,12 @@ def test_gate_refuses_go_when_mutex_evidence_is_missing() -> None:
 
 **Interfaces:** Produces `ReferenceBuildInputV1(base_image_digest: str, registry_image_digest: str, requirements_digest: str, fixture_tree_digest: str, tool_versions_digest: str, build_recipe_version: str)` and `freeze_reference_build_input(root: Path) -> ReferenceBuildInputV1`.
 
+**Implementation points:**
+- Freeze fixture-tree, dual-lock, tool-version, base/registry-image, and build-recipe identities into one immutable `ReferenceBuildInputV1` produced by `freeze_reference_build_input`.
+- Canonicalize every declared digest input deterministically and reject any lock, fixture, tool, or recipe drift; the two reference lock copies must be byte-identical.
+- Make `test_reference_lock_and_fixture_lock_must_be_byte_identical` GREEN with the smallest dual-lock equality check before completing the remaining input-freeze cases.
+- Own fixture and locked build-input identities only; image builds, registries, validation checks, and final reference-manifest writes remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -1226,7 +1377,30 @@ def test_reference_lock_and_fixture_lock_must_be_byte_identical() -> None:
 - Domain: `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/docker/test_reference_input_contract.py -q`
 - Expected GREEN: exact lock/fixture/tool/build parameters freeze deterministically and reject drift.
 
+**Review gate:**
+1. Spec compliance review checks Task 2.A's Goal, Milestone 2's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent frozen reference-input contract.
+2. Code quality review checks deterministic file/input ordering, exact digest binding, byte-level dual-lock comparison, immutable schema construction, and fail-closed drift handling.
+3. Critical/Important findings block Tasks 2.B, 2.G, and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 2.A's exact RED probe.** Add the complete declared `test_reference_lock_and_fixture_lock_must_be_byte_identical` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 2.A RED.** Run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/docker/test_reference_input_contract.py::test_reference_lock_and_fixture_lock_must_be_byte_identical -q`. Expected RED: the closed build-input contract and dual-lock equality check do not exist. Record the task-owned failing assertion and exit code; collection, runner, environment startup, Docker/registry availability, or unrelated failure does not count as RED.
+- [ ] **Step 3: Define the frozen build-input schema.** Apply IP-1: Add the immutable build-input producer and declared identity fields required by IP-1.
+- [ ] **Step 4: Enforce dual-lock and digest identity.** Apply IP-2: Add byte-exact dual-lock comparison and reject the first drift class required by IP-2.
+- [ ] **Step 5: Pass the dual-lock RED case.** Apply IP-3: Connect the equality result to the exact RED assertion for IP-3.
+- [ ] **Step 6: Seal the input-freeze boundary.** Apply IP-4: Keep all image, registry, check, and final-manifest behavior outside the input freezer as required by IP-4.
+- [ ] **Step 7: Run Task 2.A Target GREEN.** Re-run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/docker/test_reference_input_contract.py::test_reference_lock_and_fixture_lock_must_be_byte_identical -q`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 2.A's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 2.A Domain verification.** Run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/docker/test_reference_input_contract.py -q`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 2.A's declared acceptance.** Verify exact lock/fixture/tool/build parameters freeze deterministically and reject drift. Treat any fixture/toolchain observation as non-terminal until the declared Domain command records it. Keep the task incomplete while any required result is non-terminal.
+- [ ] **Step 11: Run Task 2.A closure checks.** Invoke Task 1.A `run_gate_checks` through its closed `ruff-format`, `ruff-check`, and `mypy` choices with gate-owned config. Perform the Global Constraints-required explicit filename-only PowerShell credential scan without inventing argv or printing matched values. Run `git diff --check`. Record exact commands and actual results; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 2.A spec compliance review.** Provide the Goal, Milestone 2 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 2.A spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 2.A code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 2.A quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 2.A after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 2.A completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 2.B: Reproducible OCI Build and No-self-reference Proof
 
@@ -1247,6 +1421,12 @@ def test_reference_lock_and_fixture_lock_must_be_byte_identical() -> None:
 
 **Interfaces:** Produces `ReferenceImageBuildEvidenceV1(local_oci_manifest_digest: str, image_config_digest: str, recipe_digest: str, platform: str, self_reference_scan_passed: bool)` and `build_reference_image(build_input: ReferenceBuildInputV1) -> ReferenceImageBuildEvidenceV1`.
 
+**Implementation points:**
+- Consume only `ReferenceBuildInputV1` to build the frozen single-platform reference image and return its OCI manifest, config, recipe, platform, and self-reference evidence.
+- Require repeated frozen builds to yield one identical OCI manifest digest, and scan layers, config, and annotations so final-manifest bytes or digest cannot self-reference.
+- Make `test_final_manifest_is_absent_from_image_members` GREEN with the smallest complete member scan before extending to repeated-build identity cases.
+- Own local OCI build/reproduction and self-reference inspection only; registry lifecycle and validation-check execution remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -1264,7 +1444,30 @@ def test_final_manifest_is_absent_from_image_members(build_fixture: BuildFixture
 - Domain: `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/docker/test_reference_image_reproducibility.py -q`
 - Expected GREEN: repeated frozen builds yield the same single-platform OCI digest and no final manifest member.
 
+**Review gate:**
+1. Spec compliance review checks Task 2.B's Goal, Milestone 2's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent reproducible OCI build contract.
+2. Code quality review checks hermetic input use, reproducible OCI identity, complete layer/config/annotation scanning, single-platform evidence, and fail-closed scan results.
+3. Critical/Important findings block Tasks 2.C, 2.D, 2.G, and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 2.B's exact RED probe.** Add the complete declared `test_final_manifest_is_absent_from_image_members` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 2.B RED.** Run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/docker/test_reference_image_reproducibility.py::test_final_manifest_is_absent_from_image_members -q`. Expected RED: no reproducible builder or layer/config/annotation self-reference scan exists. Record the task-owned failing assertion and exit code; collection, runner, environment startup, Docker/registry availability, or unrelated failure does not count as RED.
+- [ ] **Step 3: Build from the frozen input contract.** Apply IP-1: Add the frozen-input-to-build-evidence path required by IP-1.
+- [ ] **Step 4: Enforce reproducible non-self-reference.** Apply IP-2: Add one complete image-member self-reference rejection required by IP-2.
+- [ ] **Step 5: Pass the absent-manifest RED case.** Apply IP-3: Make the exact absent-final-manifest assertion pass for IP-3.
+- [ ] **Step 6: Seal the local-build boundary.** Apply IP-4: Keep registry and fixture-check execution outside the local builder as required by IP-4.
+- [ ] **Step 7: Run Task 2.B Target GREEN.** Re-run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/docker/test_reference_image_reproducibility.py::test_final_manifest_is_absent_from_image_members -q`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 2.B's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 2.B Domain verification.** Run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/docker/test_reference_image_reproducibility.py -q`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 2.B's declared acceptance.** Verify repeated frozen builds yield the same single-platform OCI digest and no final manifest member. Docker build evidence is non-terminal until the declared Target and Domain commands finish against the real engine. Keep the task incomplete while any required result is non-terminal.
+- [ ] **Step 11: Run Task 2.B closure checks.** Invoke Task 1.A `run_gate_checks` through its closed `ruff-format`, `ruff-check`, and `mypy` choices with gate-owned config. Perform the Global Constraints-required explicit filename-only PowerShell credential scan without inventing argv or printing matched values. Run `git diff --check`. Record exact commands and actual results; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 2.B spec compliance review.** Provide the Goal, Milestone 2 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 2.B spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 2.B code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 2.B quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 2.B after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 2.B completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 2.C: Loopback Registry Lifecycle and Three-way Digest
 
@@ -1284,6 +1487,12 @@ def test_final_manifest_is_absent_from_image_members(build_fixture: BuildFixture
 
 **Interfaces:** Produces `LoopbackRegistryEvidenceV1(registry_image_digest: str, bind_host: Literal["127.0.0.1"], assigned_port: int, credentials_used: Literal[False], external_push_count: Literal[0], local_oci_manifest_digest: str, registry_repo_digest: str, digest_pull_repo_digest: str, cleanup_verified: bool)` and `probe_loopback_registry(build: ReferenceImageBuildEvidenceV1) -> LoopbackRegistryEvidenceV1`.
 
+**Implementation points:**
+- Run one credential-free registry bound only to `127.0.0.1` on an assigned port, push the exact local OCI manifest, pull by digest, and return immutable lifecycle evidence.
+- Require local OCI, registry RepoDigest, and digest-pull RepoDigest equality, zero credential/external push use, and verified cleanup on success and injected failure.
+- Make `test_registry_digest_transformation_fails` GREEN by rejecting the first three-way digest mismatch before completing remaining bind/auth/cleanup cases.
+- Own loopback bind, push, pull, digest comparison, and cleanup evidence only; image building, fixture checks, and external publication remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -1301,7 +1510,30 @@ def test_registry_digest_transformation_fails() -> None:
 - Domain: `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/docker/test_loopback_registry_probe.py -q`
 - Expected GREEN: local/registry/pull digests match; credential, external bind/push, cleanup, and injected-failure cases close deterministically.
 
+**Review gate:**
+1. Spec compliance review checks Task 2.C's Goal, Milestone 2's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent loopback registry lifecycle contract.
+2. Code quality review checks loopback-only binding, credential absence, three-way digest identity, cleanup on every exit path, and deterministic failure evidence.
+3. Critical/Important findings block Tasks 2.G and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 2.C's exact RED probe.** Add the complete declared `test_registry_digest_transformation_fails` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 2.C RED.** Run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/docker/test_loopback_registry_probe.py::test_registry_digest_transformation_fails -q`. Expected RED: the loopback registry lifecycle and exact digest comparison do not exist. Record the task-owned failing assertion and exit code; collection, runner, environment startup, Docker/registry availability, or unrelated failure does not count as RED.
+- [ ] **Step 3: Define the loopback registry lifecycle.** Apply IP-1: Add the loopback registry evidence and lifecycle path required by IP-1.
+- [ ] **Step 4: Enforce three-way digest and cleanup.** Apply IP-2: Add the first three-way digest and cleanup invariant required by IP-2.
+- [ ] **Step 5: Pass the digest-transformation RED case.** Apply IP-3: Make the injected digest-transformation assertion fail closed for IP-3.
+- [ ] **Step 6: Seal the registry boundary.** Apply IP-4: Keep image building, fixture checks, and external publication outside the probe as required by IP-4.
+- [ ] **Step 7: Run Task 2.C Target GREEN.** Re-run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/docker/test_loopback_registry_probe.py::test_registry_digest_transformation_fails -q`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 2.C's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 2.C Domain verification.** Run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/docker/test_loopback_registry_probe.py -q`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 2.C's declared acceptance.** Verify local/registry/pull digests match; credential, external bind/push, cleanup, and injected-failure cases close deterministically. Registry/Docker evidence is non-terminal until the declared Target and Domain commands finish and cleanup is observed. Keep the task incomplete while any required result is non-terminal.
+- [ ] **Step 11: Run Task 2.C closure checks.** Invoke Task 1.A `run_gate_checks` through its closed `ruff-format`, `ruff-check`, and `mypy` choices with gate-owned config. Perform the Global Constraints-required explicit filename-only PowerShell credential scan without inventing argv or printing matched values. Run `git diff --check`. Record exact commands and actual results; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 2.C spec compliance review.** Provide the Goal, Milestone 2 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 2.C spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 2.C code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 2.C quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 2.C after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 2.C completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 2.D: Reference Container Isolation Probe
 
@@ -1321,6 +1553,12 @@ def test_registry_digest_transformation_fails() -> None:
 
 **Interfaces:** Produces `ContainerIsolationEvidenceV1(network_disabled: bool, non_root: bool, root_read_only: bool, capabilities_dropped: bool, docker_socket_absent: bool, workspace_read_only: bool, tmpfs_bounded: bool, cpu_limit: int, memory_limit_bytes: int, pid_limit: int, cleanup_verified: bool)` and `probe_reference_container(build: ReferenceImageBuildEvidenceV1, fixture: Path) -> ContainerIsolationEvidenceV1`.
 
+**Implementation points:**
+- Launch one fresh reference container from frozen build evidence and produce observed isolation controls for network, user, root filesystem, capabilities, socket, workspace, tmpfs, resources, and cleanup.
+- Treat any missing or false isolation observation as closed failure; a writable workspace, unbounded resource, present Docker socket, or unverified cleanup cannot satisfy evidence.
+- Make `test_workspace_write_attempt_is_rejected` GREEN with the smallest real read-only workspace probe before adding the remaining isolation controls.
+- Own container configuration, runtime-isolation observations, and cleanup only; pytest interpretation and failure-fingerprint computation remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -1338,7 +1576,30 @@ def test_workspace_write_attempt_is_rejected(reference_container: ReferenceConta
 - Domain: `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/docker/test_reference_container_isolation.py -q`
 - Expected GREEN: every required runtime control is observed from a real container and cleanup is verified.
 
+**Review gate:**
+1. Spec compliance review checks Task 2.D's Goal, Milestone 2's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent reference-container isolation contract.
+2. Code quality review checks fresh-container construction, complete observed-control accounting, bounded resources, cleanup on all paths, and fail-closed missing evidence.
+3. Critical/Important findings block Tasks 2.E, 2.G, and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 2.D's exact RED probe.** Add the complete declared `test_workspace_write_attempt_is_rejected` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 2.D RED.** Run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/docker/test_reference_container_isolation.py::test_workspace_write_attempt_is_rejected -q`. Expected RED: no real container configuration probe produces closed isolation evidence. Record the task-owned failing assertion and exit code; collection, runner, environment startup, Docker/registry availability, or unrelated failure does not count as RED.
+- [ ] **Step 3: Define the fresh-container evidence.** Apply IP-1: Add the fresh-container isolation evidence path required by IP-1.
+- [ ] **Step 4: Reject incomplete isolation controls.** Apply IP-2: Add the workspace read-only and cleanup proof conditions required by IP-2.
+- [ ] **Step 5: Pass the workspace-write RED case.** Apply IP-3: Run only the declared workspace-write rejection probe for IP-3.
+- [ ] **Step 6: Seal the isolation boundary.** Apply IP-4: Keep pytest interpretation and fingerprint logic outside the isolation probe as required by IP-4.
+- [ ] **Step 7: Run Task 2.D Target GREEN.** Re-run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/docker/test_reference_container_isolation.py::test_workspace_write_attempt_is_rejected -q`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 2.D's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 2.D Domain verification.** Run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/docker/test_reference_container_isolation.py -q`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 2.D's declared acceptance.** Verify every required runtime control is observed from a real container and cleanup is verified. Docker runtime evidence is non-terminal until the declared Target and Domain commands observe the real container and cleanup. Keep the task incomplete while any required result is non-terminal.
+- [ ] **Step 11: Run Task 2.D closure checks.** Invoke Task 1.A `run_gate_checks` through its closed `ruff-format`, `ruff-check`, and `mypy` choices with gate-owned config. Perform the Global Constraints-required explicit filename-only PowerShell credential scan without inventing argv or printing matched values. Run `git diff --check`. Record exact commands and actual results; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 2.D spec compliance review.** Provide the Goal, Milestone 2 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 2.D spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 2.D code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 2.D quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 2.D after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 2.D completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 2.E: Authoritative Gate Pytest Evidence
 
@@ -1358,6 +1619,12 @@ def test_workspace_write_attempt_is_rejected(reference_container: ReferenceConta
 
 **Interfaces:** Produces `GatePytestEventSequenceV1`, an immutable ordered tuple of `GatePytestEventV1` values, `GatePytestReportV1(planned_node_ids: TestIdSequenceV1, collected_node_ids: TestIdSequenceV1, events: GatePytestEventSequenceV1, normal_end: bool, exit_code: int, integrity_digest: str)`, and `validate_gate_pytest_report(report: GatePytestReportV1) -> GatePytestEvidenceResultV1`.
 
+**Implementation points:**
+- Capture an explicitly loaded immutable pytest event sequence and build `GatePytestReportV1` with planned/collected node ids, lifecycle events, normal-end, exit-code, and integrity identity.
+- Validate report completeness and ordering so missing, truncated, duplicate, implicit, or mismatched lifecycle evidence fails closed before it can become gate evidence.
+- Make `test_missing_teardown_event_invalidates_gate_report` GREEN with the smallest missing-event rejection before adding all report-completeness cases.
+- Own pytest event capture and completeness only; Docker isolation, image identity, failure stability, and aggregate GO remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -1374,7 +1641,30 @@ def test_missing_teardown_event_invalidates_gate_report() -> None:
 - Domain: `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/docker/test_gate_pytest_evidence.py -q`
 - Expected GREEN: missing/truncated/duplicate/implicit/mismatched evidence fails and complete explicit reports pass.
 
+**Review gate:**
+1. Spec compliance review checks Task 2.E's Goal, Milestone 2's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent gate pytest evidence contract.
+2. Code quality review checks explicit reporter loading, immutable event ordering, lifecycle completeness, integrity binding, stable rejection reasons, and truncated-report handling.
+3. Critical/Important findings block Tasks 2.F, 2.G, and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 2.E's exact RED probe.** Add the complete declared `test_missing_teardown_event_invalidates_gate_report` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 2.E RED.** Run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/docker/test_gate_pytest_evidence.py::test_missing_teardown_event_invalidates_gate_report -q`. Expected RED: the explicit reporter and complete-event validator do not exist. Record the task-owned failing assertion and exit code; collection, runner, environment startup, Docker/registry availability, or unrelated failure does not count as RED.
+- [ ] **Step 3: Define the explicit pytest report.** Apply IP-1: Add the explicit event-sequence and report construction required by IP-1.
+- [ ] **Step 4: Reject incomplete lifecycle evidence.** Apply IP-2: Add the missing-teardown completeness rejection required by IP-2.
+- [ ] **Step 5: Pass the missing-teardown RED case.** Apply IP-3: Connect that rejection to the exact RED assertion for IP-3.
+- [ ] **Step 6: Seal the pytest-evidence boundary.** Apply IP-4: Keep Docker, image, fingerprint, and aggregate decisions outside the reporter as required by IP-4.
+- [ ] **Step 7: Run Task 2.E Target GREEN.** Re-run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/docker/test_gate_pytest_evidence.py::test_missing_teardown_event_invalidates_gate_report -q`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 2.E's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 2.E Domain verification.** Run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/docker/test_gate_pytest_evidence.py -q`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 2.E's declared acceptance.** Verify missing/truncated/duplicate/implicit/mismatched evidence fails and complete explicit reports pass. Containerized pytest evidence is non-terminal until the declared Target and Domain commands complete with an explicit report. Keep the task incomplete while any required result is non-terminal.
+- [ ] **Step 11: Run Task 2.E closure checks.** Invoke Task 1.A `run_gate_checks` through its closed `ruff-format`, `ruff-check`, and `mypy` choices with gate-owned config. Perform the Global Constraints-required explicit filename-only PowerShell credential scan without inventing argv or printing matched values. Run `git diff --check`. Record exact commands and actual results; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 2.E spec compliance review.** Provide the Goal, Milestone 2 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 2.E spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 2.E code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 2.E quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 2.E after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 2.E completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 2.F: Gate Failure Input Stability Probe
 
@@ -1394,6 +1684,12 @@ def test_missing_teardown_event_invalidates_gate_report() -> None:
 
 **Interfaces:** Produces `GateFailureFingerprintInputV1(node_id: str, phase: Literal["CALL"], outcome: Literal["FAIL"], normalized_message: str, location: CanonicalGateLocationV1)`, `GateFingerprintComparisonV1(equal: bool, left_digest: str, right_digest: str)`, `normalize_call_fail_input(report: GatePytestReportV1, node_id: str) -> GateFailureFingerprintInputV1`, and `compare_failure_inputs(left: GateFailureFingerprintInputV1, right: GateFailureFingerprintInputV1) -> GateFingerprintComparisonV1`.
 
+**Implementation points:**
+- Normalize one explicit pytest `CALL`/`FAIL` event into `GateFailureFingerprintInputV1` and compare two immutable normalized inputs through `GateFingerprintComparisonV1`.
+- Bind node id, phase, outcome, normalized message, and canonical location so independent equal failures compare equal and any semantic input difference compares unequal.
+- Make `test_independent_target_failures_have_identical_inputs` GREEN with the smallest two-report normalization/comparison path before extending difference cases.
+- Own gate-only normalized input comparison; production `FailureFingerprintV1`, registry lifecycle, and aggregate GO remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -1411,7 +1707,30 @@ def test_independent_target_failures_have_identical_inputs() -> None:
 - Domain: `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/docker/test_gate_failure_input_stability.py -q`
 - Expected GREEN: stable independent inputs compare equal and every semantic input difference compares unequal.
 
+**Review gate:**
+1. Spec compliance review checks Task 2.F's Goal, Milestone 2's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent gate fingerprint-input stability contract.
+2. Code quality review checks deterministic normalization, canonical location handling, complete semantic-field binding, symmetric comparison, and separation from production fingerprints.
+3. Critical/Important findings block Tasks 2.G and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 2.F's exact RED probe.** Add the complete declared `test_independent_target_failures_have_identical_inputs` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 2.F RED.** Run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/docker/test_gate_failure_input_stability.py::test_independent_target_failures_have_identical_inputs -q`. Expected RED: no gate-only normalization/comparison implementation exists. Record the task-owned failing assertion and exit code; collection, runner, environment startup, Docker/registry availability, or unrelated failure does not count as RED.
+- [ ] **Step 3: Define gate-only failure normalization.** Apply IP-1: Add the report-to-normalized-input and comparison interfaces required by IP-1.
+- [ ] **Step 4: Bind every semantic comparison field.** Apply IP-2: Bind the declared semantic fields into the comparison identity for IP-2.
+- [ ] **Step 5: Pass the independent-failure RED case.** Apply IP-3: Make the two independent target-failure inputs compare equal for IP-3.
+- [ ] **Step 6: Seal the gate-fingerprint boundary.** Apply IP-4: Keep production fingerprint, registry, and GO behavior outside this comparator as required by IP-4.
+- [ ] **Step 7: Run Task 2.F Target GREEN.** Re-run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/docker/test_gate_failure_input_stability.py::test_independent_target_failures_have_identical_inputs -q`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 2.F's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 2.F Domain verification.** Run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/docker/test_gate_failure_input_stability.py -q`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 2.F's declared acceptance.** Verify stable independent inputs compare equal and every semantic input difference compares unequal. Failure-run evidence is non-terminal until both independent declared runs finish and their report inputs are available. Keep the task incomplete while any required result is non-terminal.
+- [ ] **Step 11: Run Task 2.F closure checks.** Invoke Task 1.A `run_gate_checks` through its closed `ruff-format`, `ruff-check`, and `mypy` choices with gate-owned config. Perform the Global Constraints-required explicit filename-only PowerShell credential scan without inventing argv or printing matched values. Run `git diff --check`. Record exact commands and actual results; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 2.F spec compliance review.** Provide the Goal, Milestone 2 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 2.F spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 2.F code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 2.F quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 2.F after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 2.F completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 2.G: Reference Profile Manifest and Docker Gate GO
 
@@ -1433,6 +1752,12 @@ def test_independent_target_failures_have_identical_inputs() -> None:
 
 **Interfaces:** Produces `ReferenceProfileManifestV1`, `DockerBoundaryGateReportV1(outcome: Literal["GO","NO_GO"], build_input: ReferenceBuildInputV1, build: ReferenceImageBuildEvidenceV1, registry: LoopbackRegistryEvidenceV1, isolation: ContainerIsolationEvidenceV1, pytest_evidence: GatePytestEvidenceResultV1, fingerprint: GateFingerprintComparisonV1, gate_toolchain: GateToolchainEvidenceV1, evidence_digest: str)`, and `assemble_reference_gate_report(command: AssembleReferenceGateReportV1) -> DockerBoundaryGateReportV1`.
 
+**Implementation points:**
+- Consume the frozen build-input, build, registry, isolation, pytest, fingerprint, and gate-toolchain evidence to produce exact `ReferenceProfileManifestV1` and `DockerBoundaryGateReportV1` bytes.
+- Emit `GO` only when every producer identity is present and mutually consistent; any missing, drifted, or transformed digest produces `NO_GO` without rewriting evidence.
+- Make `test_gate_rejects_loopback_registry_digest_mismatch` GREEN with the smallest registry-identity rejection before completing every upstream consistency case.
+- Own final manifest/report bytes and GO/NO_GO decision only; rebuilding, rerunning, rewriting, authenticating, or externally publishing upstream evidence remains out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -1449,7 +1774,30 @@ def test_gate_rejects_loopback_registry_digest_mismatch() -> None:
 - Domain: `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/docker/test_reference_boundary_gate.py -q`
 - Expected GREEN: complete matching evidence yields GO; every missing/drifted/transformed input yields NO_GO.
 
+**Review gate:**
+1. Spec compliance review checks Task 2.G's Goal, Milestone 2's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent Docker boundary GO report contract.
+2. Code quality review checks exhaustive producer accounting, cross-evidence identity continuity, deterministic manifest/report bytes, GO/NO_GO closure, and upstream immutability.
+3. Critical/Important findings block Tasks 3.A, 3.G, 4.A, 4.F, 6.B, 18.A, 18.C, 34.A, 36.B, and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 2.G's exact RED probe.** Add the complete declared `test_gate_rejects_loopback_registry_digest_mismatch` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 2.G RED.** Run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/docker/test_reference_boundary_gate.py::test_gate_rejects_loopback_registry_digest_mismatch -q`. Expected RED: no final manifest/report assembler checks every producer identity. Record the task-owned failing assertion and exit code; collection, runner, environment startup, Docker/registry availability, or unrelated failure does not count as RED.
+- [ ] **Step 3: Assemble the frozen reference report.** Apply IP-1: Add immutable assembly of all declared producer evidence required by IP-1.
+- [ ] **Step 4: Reject inconsistent producer identities.** Apply IP-2: Add the loopback registry identity consistency check required by IP-2.
+- [ ] **Step 5: Pass the registry-mismatch RED case.** Apply IP-3: Make the exact mismatch assertion return `NO_GO` for IP-3.
+- [ ] **Step 6: Seal the final-report boundary.** Apply IP-4: Keep every upstream rerun, rewrite, authentication, and publication action outside assembly as required by IP-4.
+- [ ] **Step 7: Run Task 2.G Target GREEN.** Re-run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/docker/test_reference_boundary_gate.py::test_gate_rejects_loopback_registry_digest_mismatch -q`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 2.G's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 2.G Domain verification.** Run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/docker/test_reference_boundary_gate.py -q`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 2.G's declared acceptance.** Verify complete matching evidence yields GO; every missing/drifted/transformed input yields NO_GO. Docker/registry/report evidence is non-terminal until the declared Target and Domain commands complete against exact upstream evidence. Keep the task incomplete while any required result is non-terminal.
+- [ ] **Step 11: Run Task 2.G closure checks.** Invoke Task 1.A `run_gate_checks` through its closed `ruff-format`, `ruff-check`, and `mypy` choices with gate-owned config. Perform the Global Constraints-required explicit filename-only PowerShell credential scan without inventing argv or printing matched values. Run `git diff --check`. Record exact commands and actual results; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 2.G spec compliance review.** Provide the Goal, Milestone 2 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 2.G spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 2.G code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 2.G quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 2.G after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 2.G completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 3.A: Durable Persistence Transaction Protocol
 
@@ -1469,6 +1817,12 @@ def test_gate_rejects_loopback_registry_digest_mismatch() -> None:
 
 **Interfaces:** Produces `GateWriteEntrySequenceV1`, an immutable ordered tuple of one to three `GateWriteEntryV1` values, `GateTransactionV1`, `GatePathRecordV1`, and `prepare_transaction(workspace: Path, entries: GateWriteEntrySequenceV1, deadline_ms: int, clock: ClockPort, faults: FaultPort) -> GateTransactionV1`.
 
+**Implementation points:**
+- Validate one-to-three sorted write entries and durably create immutable transaction/path records in the closed PREPARED/WRITING/terminal protocol before any workspace mutation.
+- Reject invalid cardinality, ordering, preimage, CREATE/REPLACE combination, or state transition before persistence; a partially specified transaction cannot become PREPARED.
+- Make `test_prepare_rejects_two_create_operations` GREEN with the smallest entry-validation rejection before adding durable valid-PREPARED cases.
+- Own durable transaction/path record creation and state invariants only; workspace replacement, deadline evaluation, recovery classification, and real-identity inspection remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -1485,7 +1839,30 @@ def test_prepare_rejects_two_create_operations() -> None:
 - Domain: `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/persistence/test_transaction_protocol.py -q`
 - Expected GREEN: invalid cardinality/order/preimage/state transitions fail before workspace mutation and valid PREPARED records persist.
 
+**Review gate:**
+1. Spec compliance review checks Task 3.A's Goal, Milestone 3's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent durable transaction protocol contract.
+2. Code quality review checks sorted-entry validation, atomic durable record creation, closed state transitions, pre-mutation rejection, and deterministic persistence errors.
+3. Critical/Important findings block Tasks 3.B, 3.C, 3.D, 3.G, and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 3.A's exact RED probe.** Add the complete declared `test_prepare_rejects_two_create_operations` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 3.A RED.** Run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/persistence/test_transaction_protocol.py::test_prepare_rejects_two_create_operations -q`. Expected RED: the closed transaction protocol and entry validation do not exist. Record the task-owned failing assertion and exit code; collection, runner, environment startup, Windows/NTFS availability, fault-harness startup, or unrelated failure does not count as RED.
+- [ ] **Step 3: Define the durable transaction records.** Apply IP-1: Add the immutable transaction/path records and PREPARED creation path required by IP-1.
+- [ ] **Step 4: Reject invalid entry/state combinations.** Apply IP-2: Add the two-CREATE and first invalid-transition rejection required by IP-2.
+- [ ] **Step 5: Pass the two-CREATE RED case.** Apply IP-3: Connect the two-CREATE rejection to the exact RED assertion for IP-3.
+- [ ] **Step 6: Seal the protocol boundary.** Apply IP-4: Keep workspace replacement, deadlines, recovery, and identity inspection outside preparation as required by IP-4.
+- [ ] **Step 7: Run Task 3.A Target GREEN.** Re-run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/persistence/test_transaction_protocol.py::test_prepare_rejects_two_create_operations -q`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 3.A's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 3.A Domain verification.** Run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/persistence/test_transaction_protocol.py -q`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 3.A's declared acceptance.** Verify invalid cardinality/order/preimage/state transitions fail before workspace mutation and valid PREPARED records persist. Transaction-protocol evidence is non-terminal until the declared Domain command records every required state case. Keep the task incomplete while any required result is non-terminal.
+- [ ] **Step 11: Run Task 3.A closure checks.** Invoke Task 1.A `run_gate_checks` through its closed `ruff-format`, `ruff-check`, and `mypy` choices with gate-owned config. Perform the Global Constraints-required explicit filename-only PowerShell credential scan without inventing argv or printing matched values. Run `git diff --check`. Record exact commands and actual results; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 3.A spec compliance review.** Provide the Goal, Milestone 3 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 3.A spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 3.A code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 3.A quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 3.A after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 3.A completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 3.B: Deterministic Write Fault Matrix
 
@@ -1505,6 +1882,12 @@ def test_prepare_rejects_two_create_operations() -> None:
 
 **Interfaces:** Produces `PersistenceFaultPointV1`, `PersistenceFaultSequenceV1`, an immutable ordered tuple of all required fault points, `GatePersistenceResultV1`, and `apply_transaction(transaction_id: str, fault_point: PersistenceFaultPointV1, clock: ClockPort) -> GatePersistenceResultV1`.
 
+**Implementation points:**
+- Apply sorted CREATE/REPLACE entries through temp, flush, replace, progress, and terminal durable writes while exposing the complete immutable `PersistenceFaultSequenceV1`.
+- Place deterministic interruption points before and after every required state write and replace so each interruption leaves one durable, classifiable observation.
+- Make `test_interruption_after_each_replace_has_durable_observation` GREEN with the smallest post-replace observation path before completing the fault vocabulary.
+- Own sorted write mechanics and injected interruption points only; deadline policy, external-change safety, and recovery disposition remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -1521,7 +1904,30 @@ def test_interruption_after_each_replace_has_durable_observation() -> None:
 - Domain: `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/persistence/test_write_fault_matrix.py -q`
 - Expected GREEN: every before/after PREPARED/WRITING/replace/progress/terminal fault point is observed deterministically.
 
+**Review gate:**
+1. Spec compliance review checks Task 3.B's Goal, Milestone 3's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent deterministic write fault matrix contract.
+2. Code quality review checks fault-point exhaustiveness, sorted operation order, flush/replace durability, deterministic interruption evidence, and no hidden recovery policy.
+3. Critical/Important findings block Tasks 3.C, 3.D, 3.G, and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 3.B's exact RED probe.** Add the complete declared `test_interruption_after_each_replace_has_durable_observation` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 3.B RED.** Run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/persistence/test_write_fault_matrix.py::test_interruption_after_each_replace_has_durable_observation -q`. Expected RED: no complete enumerated fault matrix or write implementation exists. Record the task-owned failing assertion and exit code; collection, runner, environment startup, Windows/NTFS availability, fault-harness startup, or unrelated failure does not count as RED.
+- [ ] **Step 3: Define sorted durable write mechanics.** Apply IP-1: Add the sorted temp/flush/replace/progress write path and fault vocabulary required by IP-1.
+- [ ] **Step 4: Enumerate durable interruption points.** Apply IP-2: Add one after-replace durable observation point required by IP-2.
+- [ ] **Step 5: Pass the post-replace RED case.** Apply IP-3: Make the exact interruption assertion observe durable state for IP-3.
+- [ ] **Step 6: Seal the write-fault boundary.** Apply IP-4: Keep deadline, external-change, and recovery decisions outside the writer as required by IP-4.
+- [ ] **Step 7: Run Task 3.B Target GREEN.** Re-run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/persistence/test_write_fault_matrix.py::test_interruption_after_each_replace_has_durable_observation -q`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 3.B's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 3.B Domain verification.** Run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/persistence/test_write_fault_matrix.py -q`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 3.B's declared acceptance.** Verify every before/after PREPARED/WRITING/replace/progress/terminal fault point is observed deterministically. Fault-injection evidence is non-terminal until the declared Domain command records every required interruption point. Keep the task incomplete while any required result is non-terminal.
+- [ ] **Step 11: Run Task 3.B closure checks.** Invoke Task 1.A `run_gate_checks` through its closed `ruff-format`, `ruff-check`, and `mypy` choices with gate-owned config. Perform the Global Constraints-required explicit filename-only PowerShell credential scan without inventing argv or printing matched values. Run `git diff --check`. Record exact commands and actual results; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 3.B spec compliance review.** Provide the Goal, Milestone 3 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 3.B spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 3.B code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 3.B quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 3.B after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 3.B completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 3.C: Persistence Deadline Stop Semantics
 
@@ -1541,6 +1947,12 @@ def test_interruption_after_each_replace_has_durable_observation() -> None:
 
 **Interfaces:** Produces `DeadlineDispositionV1 = Literal["STOPPED_ZERO_WRITE","RECOVERY_REQUIRED"]`, `DeadlineEvaluationV1(disposition: DeadlineDispositionV1, further_workspace_writes_allowed: bool)`, and `evaluate_persistence_deadline(transaction: GateTransactionV1, observed_write_count: int, now_ms: int) -> DeadlineEvaluationV1`.
 
+**Implementation points:**
+- Evaluate persistence deadlines as a pure function of immutable transaction facts, observed write count, and current time, returning one closed `DeadlineEvaluationV1`.
+- Return `STOPPED_ZERO_WRITE` before any write and `RECOVERY_REQUIRED` after a write; once expired, authorize zero or no further workspace writes exactly as declared.
+- Make `test_deadline_after_first_replace_forbids_next_write` GREEN with the smallest post-first-write branch before completing all deadline boundaries.
+- Own pure deadline disposition and write-stop authorization only; current object identity and rollback/recovery application remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -1558,7 +1970,30 @@ def test_deadline_after_first_replace_forbids_next_write() -> None:
 - Domain: `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/persistence/test_persistence_deadlines.py -q`
 - Expected GREEN: all deadline boundaries deterministically allow zero or no further writes as specified.
 
+**Review gate:**
+1. Spec compliance review checks Task 3.C's Goal, Milestone 3's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent persistence deadline disposition contract.
+2. Code quality review checks boundary-time determinism, write-count invariants, closed disposition exhaustiveness, side-effect freedom, and irreversible no-further-write authorization.
+3. Critical/Important findings block Tasks 3.E, 3.G, and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 3.C's exact RED probe.** Add the complete declared `test_deadline_after_first_replace_forbids_next_write` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 3.C RED.** Run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/persistence/test_persistence_deadlines.py::test_deadline_after_first_replace_forbids_next_write -q`. Expected RED: the explicit pre/post-first-write deadline evaluator does not exist. Record the task-owned failing assertion and exit code; collection, runner, environment startup, Windows/NTFS availability, fault-harness startup, or unrelated failure does not count as RED.
+- [ ] **Step 3: Define the pure deadline evaluator.** Apply IP-1: Add the immutable inputs and closed deadline result required by IP-1.
+- [ ] **Step 4: Enforce pre/post-write stop semantics.** Apply IP-2: Add the post-first-write no-further-write branch required by IP-2.
+- [ ] **Step 5: Pass the post-replace deadline RED case.** Apply IP-3: Connect that branch to the exact RED assertion for IP-3.
+- [ ] **Step 6: Seal the deadline boundary.** Apply IP-4: Keep object inspection and rollback/recovery outside the evaluator as required by IP-4.
+- [ ] **Step 7: Run Task 3.C Target GREEN.** Re-run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/persistence/test_persistence_deadlines.py::test_deadline_after_first_replace_forbids_next_write -q`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 3.C's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 3.C Domain verification.** Run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/persistence/test_persistence_deadlines.py -q`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 3.C's declared acceptance.** Verify all deadline boundaries deterministically allow zero or no further writes as specified. Deadline-boundary evidence is non-terminal until the declared Domain command records every exact boundary case. Keep the task incomplete while any required result is non-terminal.
+- [ ] **Step 11: Run Task 3.C closure checks.** Invoke Task 1.A `run_gate_checks` through its closed `ruff-format`, `ruff-check`, and `mypy` choices with gate-owned config. Perform the Global Constraints-required explicit filename-only PowerShell credential scan without inventing argv or printing matched values. Run `git diff --check`. Record exact commands and actual results; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 3.C spec compliance review.** Provide the Goal, Milestone 3 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 3.C spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 3.C code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 3.C quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 3.C after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 3.C completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 3.D: External-change and Object-identity Classifier
 
@@ -1578,6 +2013,12 @@ def test_deadline_after_first_replace_forbids_next_write() -> None:
 
 **Interfaces:** Produces `GatePathObservationV1(path: str, content_digest: str, volume_serial: int, file_id_128: bytes, object_kind: str, supported: bool)`, `GatePathClassificationV1 = Literal["PREIMAGE","POSTIMAGE","ABSENT","EXTERNAL_CHANGE","UNPROVABLE"]`, and pure `classify_gate_path(record: GatePathRecordV1, observation: GatePathObservationV1) -> GatePathClassificationV1`.
 
+**Implementation points:**
+- Classify one immutable `GatePathRecordV1` and `GatePathObservationV1` through pure byte-plus-object identity comparison into the closed five-value classification.
+- Treat same bytes with replaced identity as `EXTERNAL_CHANGE`, unsupported or incomplete identity as `UNPROVABLE`, and never infer safety from content digest alone.
+- Make `test_same_bytes_with_replaced_object_is_external_change` GREEN with the smallest identity-mismatch branch before completing the remaining classifications.
+- Own pure observation classification only; workspace reads, aggregate recovery decisions, and path writes/deletes remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -1594,7 +2035,30 @@ def test_same_bytes_with_replaced_object_is_external_change() -> None:
 - Domain: `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/persistence/test_external_change_classifier.py -q`
 - Expected GREEN: byte/object mismatches and unprovable identities always classify unsafe.
 
+**Review gate:**
+1. Spec compliance review checks Task 3.D's Goal, Milestone 3's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent path identity classifier contract.
+2. Code quality review checks byte/object comparison precedence, exhaustive five-value results, stable unsafe classification, immutable inputs, and side-effect-free evaluation.
+3. Critical/Important findings block Tasks 3.E, 3.G, and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 3.D's exact RED probe.** Add the complete declared `test_same_bytes_with_replaced_object_is_external_change` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 3.D RED.** Run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/persistence/test_external_change_classifier.py::test_same_bytes_with_replaced_object_is_external_change -q`. Expected RED: no byte-plus-object classifier exists. Record the task-owned failing assertion and exit code; collection, runner, environment startup, Windows/NTFS availability, fault-harness startup, or unrelated failure does not count as RED.
+- [ ] **Step 3: Define the pure path classifier.** Apply IP-1: Add the record/observation-to-classification interface required by IP-1.
+- [ ] **Step 4: Reject content-only identity matches.** Apply IP-2: Add the same-bytes/replaced-object unsafe branch required by IP-2.
+- [ ] **Step 5: Pass the replaced-object RED case.** Apply IP-3: Make the exact assertion return `EXTERNAL_CHANGE` for IP-3.
+- [ ] **Step 6: Seal the classifier boundary.** Apply IP-4: Keep workspace I/O and recovery aggregation outside the classifier as required by IP-4.
+- [ ] **Step 7: Run Task 3.D Target GREEN.** Re-run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/persistence/test_external_change_classifier.py::test_same_bytes_with_replaced_object_is_external_change -q`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 3.D's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 3.D Domain verification.** Run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/persistence/test_external_change_classifier.py -q`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 3.D's declared acceptance.** Verify byte/object mismatches and unprovable identities always classify unsafe. Identity-classification evidence is non-terminal until the declared Domain command records byte/object mismatch and unprovable cases. Keep the task incomplete while any required result is non-terminal.
+- [ ] **Step 11: Run Task 3.D closure checks.** Invoke Task 1.A `run_gate_checks` through its closed `ruff-format`, `ruff-check`, and `mypy` choices with gate-owned config. Perform the Global Constraints-required explicit filename-only PowerShell credential scan without inventing argv or printing matched values. Run `git diff --check`. Record exact commands and actual results; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 3.D spec compliance review.** Provide the Goal, Milestone 3 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 3.D spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 3.D code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 3.D quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 3.D after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 3.D completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 3.E: Read-only Recovery Preview and Three-value Classification
 
@@ -1614,6 +2078,12 @@ def test_same_bytes_with_replaced_object_is_external_change() -> None:
 
 **Interfaces:** Produces `GateRecoveryDispositionV1 = Literal["COMMITTED","ROLLED_BACK","UNRESOLVED"]`, `GateRecoveryPreviewV1(transaction_id: str, disposition: GateRecoveryDispositionV1, path_classifications: GatePathClassificationSequenceV1, workspace_write_count: Literal[0])`, and `preview_recovery(workspace: Path, transaction_id: str) -> GateRecoveryPreviewV1`.
 
+**Implementation points:**
+- Collect current path observations, reuse the closed classifier, and produce one immutable `GateRecoveryPreviewV1` with exactly `COMMITTED`, `ROLLED_BACK`, or `UNRESOLVED`.
+- Bind every path classification and transaction id into the preview while preserving `workspace_write_count == 0`; mixed or unsafe states cannot be coerced into a terminal safe disposition.
+- Make `test_preview_is_byte_for_byte_read_only` GREEN with the smallest before/after byte-identity proof before completing the mixed-path disposition matrix.
+- Own observation collection and three-value preview only; workspace bytes, transaction logs, and backups must never change.
+
 **Intentionally failing test:**
 
 ```python
@@ -1631,7 +2101,30 @@ def test_preview_is_byte_for_byte_read_only(preview_fixture: PreviewFixture) -> 
 - Domain: `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/persistence/test_recovery_preview.py -q`
 - Expected GREEN: every mixed-path state maps to one disposition with zero writes.
 
+**Review gate:**
+1. Spec compliance review checks Task 3.E's Goal, Milestone 3's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent read-only recovery preview contract.
+2. Code quality review checks byte-for-byte read-only behavior, complete path accounting, three-value disposition exhaustiveness, immutable preview binding, and unsafe mixed-state handling.
+3. Critical/Important findings block Tasks 3.F, 3.G, and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 3.E's exact RED probe.** Add the complete declared `test_preview_is_byte_for_byte_read_only` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 3.E RED.** Run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/persistence/test_recovery_preview.py::test_preview_is_byte_for_byte_read_only -q`. Expected RED: no read-only preview/classifier exists. Record the task-owned failing assertion and exit code; collection, runner, environment startup, Windows/NTFS availability, fault-harness startup, or unrelated failure does not count as RED.
+- [ ] **Step 3: Define the three-value preview.** Apply IP-1: Add observation collection and immutable three-value preview construction required by IP-1.
+- [ ] **Step 4: Enforce zero-write preview identity.** Apply IP-2: Add workspace-write-count and unsafe mixed-state checks required by IP-2.
+- [ ] **Step 5: Pass the byte-read-only RED case.** Apply IP-3: Make the exact before/after byte assertion pass for IP-3.
+- [ ] **Step 6: Seal the preview boundary.** Apply IP-4: Keep workspace, transaction-log, and backup mutation outside preview as required by IP-4.
+- [ ] **Step 7: Run Task 3.E Target GREEN.** Re-run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/persistence/test_recovery_preview.py::test_preview_is_byte_for_byte_read_only -q`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 3.E's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 3.E Domain verification.** Run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/persistence/test_recovery_preview.py -q`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 3.E's declared acceptance.** Verify every mixed-path state maps to one disposition with zero writes. Recovery-preview evidence is non-terminal until the declared Domain command confirms every disposition with zero writes. Keep the task incomplete while any required result is non-terminal.
+- [ ] **Step 11: Run Task 3.E closure checks.** Invoke Task 1.A `run_gate_checks` through its closed `ruff-format`, `ruff-check`, and `mypy` choices with gate-owned config. Perform the Global Constraints-required explicit filename-only PowerShell credential scan without inventing argv or printing matched values. Run `git diff --check`. Record exact commands and actual results; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 3.E spec compliance review.** Provide the Goal, Milestone 3 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 3.E spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 3.E code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 3.E quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 3.E after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 3.E completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 3.F: Explicit Recovery Application
 
@@ -1651,6 +2144,12 @@ def test_preview_is_byte_for_byte_read_only(preview_fixture: PreviewFixture) -> 
 
 **Interfaces:** Produces `GateRecoveryCommandV1(workspace: Path, transaction_id: str, preview_digest: str, explicit_apply: Literal[True])`, `GateRecoveryResultV1(disposition: GateRecoveryDispositionV1, changed_paths: CanonicalPathSequenceV1, evidence_digest: str)`, and `apply_recovery(command: GateRecoveryCommandV1) -> GateRecoveryResultV1`.
 
+**Implementation points:**
+- Accept only an explicit `GateRecoveryCommandV1` bound to workspace, transaction, preview digest, and `explicit_apply=True`, then apply recovery while holding the workspace mutex.
+- Change only exact safe preimage/postimage cases and preserve externally replaced, unknown, unprovable, or `UNRESOLVED` objects without deletion or overwrite.
+- Make `test_apply_never_deletes_externally_replaced_create` GREEN with the smallest protected-object branch before adding remaining safe-apply cases.
+- Own explicit safe recovery writes and terminal record update only; intent cannot be inferred without a bound preview, and unresolved paths remain immutable.
+
 **Intentionally failing test:**
 
 ```python
@@ -1668,7 +2167,30 @@ def test_apply_never_deletes_externally_replaced_create() -> None:
 - Domain: `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/persistence/test_recovery_apply.py -q`
 - Expected GREEN: only exact safe pre/postimage cases change and external/unprovable cases remain untouched.
 
+**Review gate:**
+1. Spec compliance review checks Task 3.F's Goal, Milestone 3's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent explicit recovery application contract.
+2. Code quality review checks preview-digest binding, mutex ownership, exact safe-case writes, external-object preservation, terminal record durability, and fail-closed explicit intent.
+3. Critical/Important findings block Tasks 3.G and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 3.F's exact RED probe.** Add the complete declared `test_apply_never_deletes_externally_replaced_create` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 3.F RED.** Run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/persistence/test_recovery_apply.py::test_apply_never_deletes_externally_replaced_create -q`. Expected RED: no explicit mutex-bound recovery application exists. Record the task-owned failing assertion and exit code; collection, runner, environment startup, Windows/NTFS availability, fault-harness startup, or unrelated failure does not count as RED.
+- [ ] **Step 3: Bind explicit recovery authorization.** Apply IP-1: Add the mutex-held preview-bound recovery command path required by IP-1.
+- [ ] **Step 4: Preserve external and unresolved objects.** Apply IP-2: Add the externally replaced CREATE preservation branch required by IP-2.
+- [ ] **Step 5: Pass the external-create RED case.** Apply IP-3: Make the exact no-delete assertion pass for IP-3.
+- [ ] **Step 6: Seal the recovery-apply boundary.** Apply IP-4: Keep inferred intent and unresolved-path mutation outside recovery as required by IP-4.
+- [ ] **Step 7: Run Task 3.F Target GREEN.** Re-run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/persistence/test_recovery_apply.py::test_apply_never_deletes_externally_replaced_create -q`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 3.F's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 3.F Domain verification.** Run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/persistence/test_recovery_apply.py -q`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 3.F's declared acceptance.** Verify only exact safe pre/postimage cases change and external/unprovable cases remain untouched. Recovery-write evidence is non-terminal until the declared Domain command records mutex-bound safe and unsafe cases. Keep the task incomplete while any required result is non-terminal.
+- [ ] **Step 11: Run Task 3.F closure checks.** Invoke Task 1.A `run_gate_checks` through its closed `ruff-format`, `ruff-check`, and `mypy` choices with gate-owned config. Perform the Global Constraints-required explicit filename-only PowerShell credential scan without inventing argv or printing matched values. Run `git diff --check`. Record exact commands and actual results; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 3.F spec compliance review.** Provide the Goal, Milestone 3 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 3.F spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 3.F code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 3.F quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 3.F after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 3.F completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 3.G: Real NTFS Recovery Proof and Gate Report
 
@@ -1688,6 +2210,12 @@ def test_apply_never_deletes_externally_replaced_create() -> None:
 
 **Interfaces:** Produces `FaultCaseResultSequenceV1`, an immutable ordered tuple of every required `FaultCaseResultV1`, `PersistenceRecoveryGateReportV1(outcome: Literal["GO","NO_GO"], cases: FaultCaseResultSequenceV1, gate_toolchain: GateToolchainEvidenceV1, workspace_probe_digest: str, evidence_digest: str)`, and `run_persistence_recovery_gate(workspace: Path) -> PersistenceRecoveryGateReportV1`.
 
+**Implementation points:**
+- Execute every named fault, deadline, external-change, preview, and apply case against disposable real NTFS objects and collect one ordered immutable result sequence.
+- Emit `GO` only when matrix coverage, gate-toolchain identity, workspace-probe identity, per-case evidence, and cleanup are complete; any omitted or drifted case yields `NO_GO`.
+- Make `test_missing_external_identity_case_forces_no_go` GREEN with the smallest coverage-completeness rejection before running the full real-environment matrix.
+- Own real NTFS case execution, coverage, cleanup, and final GO/NO_GO decision only; pure protocol/evaluators cannot be changed and the matrix cannot be reduced.
+
 **Intentionally failing test:**
 
 ```python
@@ -1704,7 +2232,30 @@ def test_missing_external_identity_case_forces_no_go(ntfs_workspace: Path) -> No
 - Domain: `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/persistence/test_recovery_gate.py -q`
 - Expected GREEN: every named fault/deadline/external-change/preview/apply case runs on NTFS, cleanup is verified, and only a complete matrix yields GO.
 
+**Review gate:**
+1. Spec compliance review checks Task 3.G's Goal, Milestone 3's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent NTFS persistence-recovery GO matrix contract.
+2. Code quality review checks exact matrix enumeration, real-object identity continuity, deterministic case ordering, cleanup on all paths, GO/NO_GO exhaustiveness, and no silent case reduction.
+3. Critical/Important findings block Tasks 4.A, 4.F, 26.A, and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 3.G's exact RED probe.** Add the complete declared `test_missing_external_identity_case_forces_no_go` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 3.G RED.** Run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/persistence/test_recovery_gate.py::test_missing_external_identity_case_forces_no_go -q`. Expected RED: no real-environment coverage/identity aggregator exists. Record the task-owned failing assertion and exit code; collection, runner, environment startup, Windows/NTFS availability, fault-harness startup, or unrelated failure does not count as RED.
+- [ ] **Step 3: Define the ordered NTFS case matrix.** Apply IP-1: Add ordered result collection and report construction required by IP-1.
+- [ ] **Step 4: Reject incomplete coverage or identity.** Apply IP-2: Add the missing external-identity coverage rejection required by IP-2.
+- [ ] **Step 5: Pass the missing-identity RED case.** Apply IP-3: Make the exact omission assertion return `NO_GO` for IP-3.
+- [ ] **Step 6: Seal the gate-matrix boundary.** Apply IP-4: Keep pure protocol/evaluator behavior unchanged and prevent matrix reduction as required by IP-4.
+- [ ] **Step 7: Run Task 3.G Target GREEN.** Re-run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/persistence/test_recovery_gate.py::test_missing_external_identity_case_forces_no_go -q`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 3.G's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 3.G Domain verification.** Run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/persistence/test_recovery_gate.py -q`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 3.G's declared acceptance.** Verify every named fault/deadline/external-change/preview/apply case runs on NTFS, cleanup is verified, and only a complete matrix yields GO. Windows/NTFS/fault evidence is non-terminal until every declared real-environment case and cleanup result is recorded. Keep the task incomplete while any required result is non-terminal.
+- [ ] **Step 11: Run Task 3.G closure checks.** Invoke Task 1.A `run_gate_checks` through its closed `ruff-format`, `ruff-check`, and `mypy` choices with gate-owned config. Perform the Global Constraints-required explicit filename-only PowerShell credential scan without inventing argv or printing matched values. Run `git diff --check`. Record exact commands and actual results; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 3.G spec compliance review.** Provide the Goal, Milestone 3 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 3.G spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 3.G code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 3.G quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 3.G after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 3.G completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 4.A: Complete v1 Dependency Closure
 
@@ -1730,6 +2281,12 @@ def test_missing_external_identity_case_forces_no_go(ntfs_workspace: Path) -> No
 - Test: `tests/unit/process/test_dependency_closure.py`
 
 **Interfaces:** Consumes the declared PLAN Tech Stack, public Python range `>=3.12,<3.13`, exact Task 1.E terminal `GO` `GateToolchainEvidenceV1.python_version`, and unchanged Task 2.G/3.G identity matrices. `src/vespercode/project/dependency_closure.py` produces `DeclaredDependencySetV1(runtime_direct_names: tuple[str, ...], build_direct_names: tuple[str, ...], development_direct_names: tuple[str, ...])`, `LockedDistributionV1(name: str, version: str, classification: Literal["RUNTIME","BUILD","DEVELOPMENT"], python_marker: str, hashes: tuple[str, ...])`, `DependencyClosureV1(python_range: Literal[">=3.12,<3.13"], python_version: str, runtime_direct_names: tuple[str, ...], build_direct_names: tuple[str, ...], development_direct_names: tuple[str, ...], locked_distributions: tuple[LockedDistributionV1, ...], source_policy_digest: str, closure_digest: str)`, `DependencyClosureValidationReportV1(missing_direct: tuple[str, ...], extra_or_misclassified_direct: tuple[str, ...], missing_transitive_or_hash: tuple[str, ...], marker_or_source_mismatches: tuple[str, ...], gate_tool_version_mismatches: tuple[str, ...], python_version_mismatches: tuple[str, ...])`, `load_dependency_closure(root: Path) -> DependencyClosureV1`, and `validate_dependency_closure(root: Path, reviewed_plan_stack: DeclaredDependencySetV1) -> DependencyClosureValidationReportV1`. `scripts/bootstrap_formal_env.py` produces `bootstrap_formal_environment(root: Path, gate_evidence: GateToolchainEvidenceV1) -> FormalEnvironmentBootstrapResultV1`, where `FormalEnvironmentBootstrapResultV1(python_version: str, lock_sha256: str, installed_distribution_names: tuple[str, ...])`.
+
+**Implementation points:**
+- Own the complete reviewed v1 dependency declaration: exact public Python range, direct runtime/build/development families, classifications, source policy, and minimal project identity.
+- Freeze every direct/transitive distribution, marker, and hash into `requirements/dev.lock` and the unique closure record while preserving exact Task 1 Python/pytest/Ruff/Mypy identities.
+- Bootstrap `.venv-formal` only after `py -3.12` proves exact Task 1.E Python equality, then perform only hash-locked `--no-deps` materialization through the declared interpreter.
+- Keep dependency ownership separate from build backend, formal pytest/Ruff/Mypy configuration, canonical primitives, scanners, application behavior, and all Task 1–3 or profile locks.
 
 **Intentionally failing test:**
 
@@ -1759,7 +2316,30 @@ Expected RED: import/configuration failure because the project dependency tables
 - Domain: `.venv-formal\Scripts\python.exe -m pytest -q tests/unit/process/test_dependency_closure.py`
 - Expected GREEN: all checks exit `0`; the bootstrap proves exact Task 1 Python equality before environment creation/use; every declared direct family is present and correctly classified; every transitive distribution has exact hashes and a consistent Python marker/source policy; the lock, dependency tables, and unique persisted record agree; `record.python_version == gate_evidence.python_version`; and overlapping pytest/Ruff/Mypy versions exactly match Task 1.
 
+**Review gate:**
+1. Spec compliance review checks Task 4.A's Goal, Milestone 4's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent dependency-closure/bootstrap contract.
+2. Code quality review checks dependency-family completeness, classification/source/marker consistency, total hash closure, exact gate identity equality, bootstrap fail-closed behavior, and unique record/lock agreement.
+3. Critical/Important findings block Tasks 4.F and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 4.A's exact RED probe.** Add the complete declared `test_declared_v1_dependency_closure_is_complete` case to the listed test file without changing production implementation.
+- [ ] **Step 2: Run Task 4.A entry-runnable RED.** Run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/unit/process/test_dependency_closure.py::test_declared_v1_dependency_closure_is_complete -q`. Expected RED: import/configuration failure because the project dependency tables, source policy, hash-complete environment lock, closure validator/loader, unique persisted closure record, and verified formal environment do not exist. Accept RED only after the Task 1.A closed runner starts and reaches this task-owned import/configuration failure; gate-runner startup, gate-environment failure, missing/uncollectable named test, unrelated import, or unrelated failure does not count as RED. Record the exact command, task-owned failure, and exit code.
+- [ ] **Step 3: Declare the complete dependency families.** Apply IP-1: Add the declared dependency set, closure schema, loader, and validator required by IP-1.
+- [ ] **Step 4: Freeze the hash-complete closure.** Apply IP-2: Add the reviewed lock/record agreement and exact gate-tool identity checks required by IP-2.
+- [ ] **Step 5: Gate formal-environment bootstrap.** Apply IP-3: Add exact-Python bootstrap and hash-only materialization required by IP-3.
+- [ ] **Step 6: Seal dependency ownership.** Apply IP-4: Keep tooling configuration, canonical utilities, scanners, application code, and separate locks outside Task 4.A as required by IP-4.
+- [ ] **Step 7: Materialize Task 4.A environment and run Target GREEN.** Run `py -3.12 scripts/bootstrap_formal_env.py`, require terminal exit `0`, then immediately run `.venv-formal\Scripts\python.exe -m pytest -q tests/unit/process/test_dependency_closure.py::test_declared_v1_dependency_closure_is_complete`. Require both commands to terminate with exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 4.A's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and ownership.
+- [ ] **Step 9: Run Task 4.A Domain verification.** Run `.venv-formal\Scripts\python.exe -m pytest -q tests/unit/process/test_dependency_closure.py`. Record the exact command and require every check to exit `0`.
+- [ ] **Step 10: Check Task 4.A dependency-closure acceptance.** Verify the bootstrap proved exact Task 1 Python equality before environment creation/use; every declared direct family is present and correctly classified; every transitive distribution has exact hashes and a consistent Python marker/source policy; the lock, dependency tables, and unique persisted record agree; `record.python_version == gate_evidence.python_version`; and overlapping pytest/Ruff/Mypy versions exactly match Task 1. Record the actual evaluated conditions and keep the task incomplete on any mismatch.
+- [ ] **Step 11: Run Task 4.A pre-promotion closure.** Perform the then-available explicit filename-only credential scan without inventing argv or printing matched values. Run `git diff --check`. Record exact commands and actual results; do not invoke Task 4.F formal Ruff/Mypy/build configuration or the not-yet-owned Task 4.E scanner.
+- [ ] **Step 12: Request Task 4.A spec compliance review.** Provide the Goal, Milestone 4 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 4.A spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 4.A code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 4.A quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 4.A after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 4.A completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 4.F: Formal Toolchain Promotion
 
@@ -1782,6 +2362,12 @@ Expected RED: import/configuration failure because the project dependency tables
 - Test: `tests/unit/process/test_toolchain_promotion.py`
 
 **Interfaces:** Consumes `DependencyClosureV1` from Task 4.A, exact `GateToolchainEvidenceV1` from Task 1.A, unchanged Task 1.E/2.G/3.G terminal GO identity matrices, and the verified `.venv-formal` interpreter materialized only by Task 4.A's bootstrap; produces `FormalToolchainPromotionV1(python_version: str, gate_lock_sha256: str, pytest_version: str, ruff_version: str, mypy_version: str, marker_digest: str, static_rule_digest: str)`, `load_formal_toolchain_promotion(root: Path) -> FormalToolchainPromotionV1`, and the logical exact commands `python -m pytest -q`, `python -m ruff format --check .`, `python -m ruff check .`, and `python -m mypy src tests`, each executed through `.venv-formal\Scripts\python.exe`.
+
+**Implementation points:**
+- Consume the immutable Task 4.A closure and verified `.venv-formal` interpreter to configure the locked build backend and the sole formal pytest/Ruff/Mypy sections without changing dependencies.
+- Persist one `FormalToolchainPromotionV1` whose Python and tool identities exactly match gate evidence, whose six real-environment markers are closed, and whose canonical commands are fixed.
+- Make `test_formal_toolchain_matches_frozen_gate_identity` GREEN by establishing the promotion loader, unique record, marker/static-rule configuration, and gate-to-formal comparison.
+- Never create or repair the environment, resolve/install packages, change dependency tables/range/locks/source policy, or absorb project metadata and application behavior.
 
 **Intentionally failing test:**
 
@@ -1808,7 +2394,30 @@ def test_formal_toolchain_matches_frozen_gate_identity(
 - Closure: `.venv-formal\Scripts\python.exe -m ruff format --check .`; `.venv-formal\Scripts\python.exe -m ruff check .`; `.venv-formal\Scripts\python.exe -m mypy src tests`
 - Expected GREEN: all commands exit `0`; `record.python_version == gate_evidence.python_version`; all recorded tool versions/hashes equal frozen gate and dependency evidence; the six real-environment markers are excluded from the default suite; dedicated commands are closed; and dependency tables/lock/source policy plus the Task 4.A closure record are byte-identical to Task 4.A output.
 
+**Review gate:**
+1. Spec compliance review checks Task 4.F's Goal, Milestone 4's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent formal toolchain promotion contract.
+2. Code quality review checks exact gate-to-formal identity comparison, marker/addopts closure, canonical command construction, tooling-section-only edits, immutable promotion records, and dependency-byte preservation.
+3. Critical/Important findings block Tasks 4.B, 5.A, and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 4.F's exact RED probe.** Add the complete declared `test_formal_toolchain_matches_frozen_gate_identity` case to the listed test file without changing production implementation.
+- [ ] **Step 2: Materialize Task 4.F prerequisite and run RED.** Run `py -3.12 scripts/bootstrap_formal_env.py`, require terminal exit `0`, then immediately run `.venv-formal\Scripts\python.exe -m pytest -q tests/unit/process/test_toolchain_promotion.py::test_formal_toolchain_matches_frozen_gate_identity`. Expected RED: import/configuration failure because the promotion loader, unique persisted promotion record, build backend, formal marker/static-rule configuration, and canonical commands do not exist. Accept RED only when bootstrap and runner startup succeed and the second command reaches this task-owned import/configuration failure; bootstrap, runner, formal-environment, missing/uncollectable named test, unrelated import, or unrelated failure does not count as RED. Record both terminal results and the RED exit code.
+- [ ] **Step 3: Configure the formal toolchain sections.** Apply IP-1: Add the build-system/tooling configuration and promotion schema required by IP-1.
+- [ ] **Step 4: Bind gate identities and marker rules.** Apply IP-2: Add exact Python/pytest/Ruff/Mypy identity and six-marker validation required by IP-2.
+- [ ] **Step 5: Pass the toolchain-promotion RED case.** Apply IP-3: Connect the loader/record/config comparison to the exact RED condition for IP-3.
+- [ ] **Step 6: Seal promotion ownership.** Apply IP-4: Keep environment creation and every dependency/project-metadata mutation outside promotion as required by IP-4.
+- [ ] **Step 7: Run Task 4.F Target GREEN.** Re-run `.venv-formal\Scripts\python.exe -m pytest -q tests/unit/process/test_toolchain_promotion.py::test_formal_toolchain_matches_frozen_gate_identity`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 4.F's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and ownership.
+- [ ] **Step 9: Run Task 4.F Domain verification.** Run `.venv-formal\Scripts\python.exe -m pytest -q tests/unit/process/test_dependency_closure.py tests/unit/process/test_toolchain_promotion.py`. Record the exact command and require all tests to exit `0`.
+- [ ] **Step 10: Check Task 4.F promotion acceptance.** Verify `record.python_version == gate_evidence.python_version`; all recorded tool versions/hashes equal frozen gate and dependency evidence; the six real-environment markers are excluded from the default suite; dedicated commands are closed; and dependency tables/lock/source policy plus the Task 4.A closure record are byte-identical to Task 4.A output. Record the actual evaluated conditions and keep the task incomplete on any mismatch.
+- [ ] **Step 11: Run Task 4.F promotion closure.** Run `.venv-formal\Scripts\python.exe -m ruff format --check .`. Run `.venv-formal\Scripts\python.exe -m ruff check .`. Run `.venv-formal\Scripts\python.exe -m mypy src tests`. Perform the then-available explicit filename-only credential scan without inventing argv or printing matched values. Run `git diff --check`. Record exact commands and actual results after Target GREEN; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 4.F spec compliance review.** Provide the Goal, Milestone 4 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 4.F spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 4.F code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 4.F quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 4.F after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 4.F completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 4.B: Canonical JSON Bytes and Domain-separated Digests
 
@@ -1832,6 +2441,12 @@ def test_formal_toolchain_matches_frozen_gate_identity(
 
 **Interfaces:** Produces recursive `CanonicalValueV1 = str | int | bool | CanonicalArrayV1 | Mapping[str, CanonicalValueV1]`, where `CanonicalArrayV1` is an immutable ordered tuple of zero or more `CanonicalValueV1` items; also produces `canonical_json_bytes(value: CanonicalValueV1) -> bytes` and `domain_digest(object_type: str, schema_version: int, value: Mapping[str, CanonicalValueV1]) -> str`.
 
+**Implementation points:**
+- Define the recursive closed `CanonicalValueV1` domain and encode every accepted value into one exact canonical JSON byte representation.
+- Compute the sole SHA-256 identity through `domain_digest` with explicit object type and schema version, and reject every forbidden scalar, Unicode, array, or mapping value deterministically.
+- Make `test_ctv_01_exact_bytes_and_digest` GREEN with the exact CTV-01 vector before completing CTV-02–CTV-07 and forbidden-value cases.
+- Own Unicode-scalar validation, canonical encoding, and digest prefixing only; time, paths, file scanning, and tool-version selection remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -1850,7 +2465,30 @@ Expected RED: import failure because `canonical_json_bytes` and `domain_digest` 
 - Domain: `python -m pytest -q tests/unit/canonical/test_json_v1.py tests/unit/canonical/test_digest_vectors.py`
 - Expected GREEN: both commands exit `0`; CTV-01–CTV-07 exact bytes/digests and all forbidden scalar/value cases pass.
 
+**Review gate:**
+1. Spec compliance review checks Task 4.B's Goal, Milestone 4's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent canonical JSON/digest contract.
+2. Code quality review checks recursive closed-value validation, deterministic byte identity, domain/version separation, Unicode rejection, immutable arrays, and vector stability.
+3. Critical/Important findings block Tasks 4.C, 5.C, 5.D, 6.B, 6.C, 15.A, 17.B, and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 4.B's exact RED probe.** Add the complete declared `test_ctv_01_exact_bytes_and_digest` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 4.B RED.** Run `python -m pytest -q tests/unit/canonical/test_digest_vectors.py::test_ctv_01_exact_bytes_and_digest`. Expected RED: import failure because `canonical_json_bytes` and `domain_digest` do not exist. Count RED only after the test runner starts and reports this task-owned missing-module/interface import/configuration failure; collection failure, runner startup, environment or external-state failure, unrelated import, or unrelated failure does not count as RED. Record the exact task-owned failure and exit code.
+- [ ] **Step 3: Define the canonical value encoder.** Apply IP-1: Add the recursive accepted-value validation and byte encoder required by IP-1.
+- [ ] **Step 4: Bind domain-separated digest identity.** Apply IP-2: Add object-type/schema-version digest separation and first forbidden-value rejection required by IP-2.
+- [ ] **Step 5: Pass the CTV-01 RED vector.** Apply IP-3: Make the exact CTV-01 bytes and digest assertion pass for IP-3.
+- [ ] **Step 6: Seal the canonical-bytes boundary.** Apply IP-4: Keep time, paths, scanners, and tool selection outside canonical encoding as required by IP-4.
+- [ ] **Step 7: Run Task 4.B Target GREEN.** Re-run `python -m pytest -q tests/unit/canonical/test_digest_vectors.py::test_ctv_01_exact_bytes_and_digest`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 4.B's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 4.B Domain verification.** Run `python -m pytest -q tests/unit/canonical/test_json_v1.py tests/unit/canonical/test_digest_vectors.py`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 4.B's declared acceptance.** Verify both commands exit `0`; CTV-01–CTV-07 exact bytes/digests and all forbidden scalar/value cases pass. Record the evaluated acceptance conditions and keep the task incomplete while any condition is non-terminal.
+- [ ] **Step 11: Run Task 4.B standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 4.B spec compliance review.** Provide the Goal, Milestone 4 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 4.B spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 4.B code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 4.B quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 4.B after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 4.B completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 4.C: Canonical Timestamp and Injectable Clock
 
@@ -1874,6 +2512,12 @@ Expected RED: import failure because `canonical_json_bytes` and `domain_digest` 
 
 **Interfaces:** Produces `CanonicalTimestampV1.parse(value: str) -> CanonicalTimestampV1`, `CanonicalTimestampV1.from_epoch_milliseconds(value: int) -> CanonicalTimestampV1`, protocol `ClockV1.now() -> CanonicalTimestampV1`, `SystemClockV1`, and `FakeClockV1.advance(milliseconds: int) -> None`.
 
+**Implementation points:**
+- Parse and render only the canonical UTC millisecond timestamp form, and convert exact epoch milliseconds through `CanonicalTimestampV1`.
+- Expose all current-time observation through `ClockV1`; `FakeClockV1` advances deterministically by the exact requested milliseconds while invalid dates and leap seconds reject.
+- Make `test_fake_clock_advances_exact_milliseconds` GREEN with the smallest injectable fake-clock path before completing timestamp vectors.
+- Own Gregorian parsing, epoch conversion, and clock injection only; expiry, lifecycle, decision, and filesystem policy remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -1892,7 +2536,30 @@ Expected RED: import failure because the timestamp and clock types do not exist.
 - Domain: `python -m pytest -q tests/unit/canonical/test_timestamp_v1.py tests/unit/canonical/test_clock.py`
 - Expected GREEN: both commands exit `0`; exact formatting, invalid-date/leap-second rejection, and deterministic advancement pass.
 
+**Review gate:**
+1. Spec compliance review checks Task 4.C's Goal, Milestone 4's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent canonical timestamp/clock contract.
+2. Code quality review checks UTC/millisecond exactness, Gregorian edge rejection, leap-second handling, deterministic fake-clock state, protocol substitutability, and absence of hidden wall-clock reads.
+3. Critical/Important findings block Tasks 4.D, 5.B, 14.B, 15.C, 15.D, 24.A, and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 4.C's exact RED probe.** Add the complete declared `test_fake_clock_advances_exact_milliseconds` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 4.C RED.** Run `python -m pytest -q tests/unit/canonical/test_clock.py::test_fake_clock_advances_exact_milliseconds`. Expected RED: import failure because the timestamp and clock types do not exist. Count RED only after the test runner starts and reports this task-owned missing-module/interface import/configuration failure; collection failure, runner startup, environment or external-state failure, unrelated import, or unrelated failure does not count as RED. Record the exact task-owned failure and exit code.
+- [ ] **Step 3: Define canonical timestamp conversion.** Apply IP-1: Add canonical string/epoch timestamp construction required by IP-1.
+- [ ] **Step 4: Make time observation injectable.** Apply IP-2: Add the clock protocol and exact fake-clock advancement required by IP-2.
+- [ ] **Step 5: Pass the exact-advance RED case.** Apply IP-3: Connect one millisecond-advance case to the exact RED assertion for IP-3.
+- [ ] **Step 6: Seal the clock boundary.** Apply IP-4: Keep expiry, lifecycle, decision, and filesystem rules outside the clock module as required by IP-4.
+- [ ] **Step 7: Run Task 4.C Target GREEN.** Re-run `python -m pytest -q tests/unit/canonical/test_clock.py::test_fake_clock_advances_exact_milliseconds`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 4.C's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 4.C Domain verification.** Run `python -m pytest -q tests/unit/canonical/test_timestamp_v1.py tests/unit/canonical/test_clock.py`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 4.C's declared acceptance.** Verify both commands exit `0`; exact formatting, invalid-date/leap-second rejection, and deterministic advancement pass. Record the evaluated acceptance conditions and keep the task incomplete while any condition is non-terminal.
+- [ ] **Step 11: Run Task 4.C standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 4.C spec compliance review.** Provide the Goal, Milestone 4 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 4.C spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 4.C code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 4.C quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 4.C after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 4.C completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 4.D: Lexical Canonical Relative Path
 
@@ -1914,6 +2581,12 @@ Expected RED: import failure because the timestamp and clock types do not exist.
 
 **Interfaces:** Produces `CanonicalRelativePathV1(value: str)` and `validate_canonical_relative_path(value: str) -> CanonicalRelativePathV1`.
 
+**Implementation points:**
+- Validate one lexical string into the sole `CanonicalRelativePathV1` representation before any filesystem access.
+- Reject root, absolute, device, ADS, parent/dot, trailing, reserved-name, and other unsupported lexical forms with deterministic closed errors.
+- Make `test_device_and_parent_paths_are_rejected` GREEN with the smallest device/parent rejection before completing the lexical sentinel matrix.
+- Own lexical validation only; final-object identity, ancestry, alias, reparse, ADS authorization, and link policy remain with Tasks 9.A and 9.D.
+
 **Intentionally failing test:**
 
 ```python
@@ -1932,7 +2605,30 @@ Expected RED: import failure because the canonical path validator does not exist
 - Domain: `python -m pytest -q tests/unit/canonical/test_path_v1.py`
 - Expected GREEN: both commands exit `0`; root/absolute/device/ADS/dot/trailing/reserved-name sentinels are rejected deterministically.
 
+**Review gate:**
+1. Spec compliance review checks Task 4.D's Goal, Milestone 4's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent canonical relative path contract.
+2. Code quality review checks normalization-free lexical decisions, complete sentinel rejection, segment handling, stable errors, side-effect freedom, and no leakage of filesystem authorization.
+3. Critical/Important findings block Tasks 4.E, 6.A, 15.B, and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 4.D's exact RED probe.** Add the complete declared `test_device_and_parent_paths_are_rejected` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 4.D RED.** Run `python -m pytest -q tests/unit/canonical/test_path_v1.py::test_device_and_parent_paths_are_rejected`. Expected RED: import failure because the canonical path validator does not exist. Count RED only after the test runner starts and reports this task-owned missing-module/interface import/configuration failure; collection failure, runner startup, environment or external-state failure, unrelated import, or unrelated failure does not count as RED. Record the exact task-owned failure and exit code.
+- [ ] **Step 3: Define the lexical path validator.** Apply IP-1: Add the string-to-canonical-relative-path validation path required by IP-1.
+- [ ] **Step 4: Reject unsupported path forms.** Apply IP-2: Add device and parent lexical rejection required by IP-2.
+- [ ] **Step 5: Pass the device/parent RED case.** Apply IP-3: Make the exact sentinel assertion pass for IP-3.
+- [ ] **Step 6: Seal the lexical-only boundary.** Apply IP-4: Keep object identity and authorization outside lexical validation as required by IP-4.
+- [ ] **Step 7: Run Task 4.D Target GREEN.** Re-run `python -m pytest -q tests/unit/canonical/test_path_v1.py::test_device_and_parent_paths_are_rejected`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 4.D's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 4.D Domain verification.** Run `python -m pytest -q tests/unit/canonical/test_path_v1.py`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 4.D's declared acceptance.** Verify both commands exit `0`; root/absolute/device/ADS/dot/trailing/reserved-name sentinels are rejected deterministically. Record the evaluated acceptance conditions and keep the task incomplete while any condition is non-terminal.
+- [ ] **Step 11: Run Task 4.D standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 4.D spec compliance review.** Provide the Goal, Milestone 4 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 4.D spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 4.D code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 4.D quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 4.D after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 4.D completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 4.E: Redacted Changed-file Credential Scanner
 
@@ -1953,6 +2649,12 @@ Expected RED: import failure because the canonical path validator does not exist
 - Test: `tests/unit/process/test_scan_credentials.py`
 
 **Interfaces:** Produces `CredentialScanFindingV1(path: str, rule_id: str)`, `CredentialScanFindingSequenceV1`, an immutable ordered tuple of zero or more findings, `CredentialScanReportV1(findings: CredentialScanFindingSequenceV1, scanned_file_count: int)`, `scan_changed_files(paths: Sequence[Path]) -> CredentialScanReportV1`, and CLI `python scripts/scan_credentials.py --changed --redact --fail-on-match`.
+
+**Implementation points:**
+- Scan only an explicit changed-file path sequence and return an immutable ordered report containing bounded path and rule-id findings plus the scanned-file count.
+- Fail on a match without emitting matched values, contents, offsets, derivatives, or network traffic; binary input remains non-text and path errors remain bounded.
+- Make `test_scanner_reports_rule_without_matched_value` GREEN with the smallest sentinel match that exposes only its rule id and path.
+- Own explicit-list scanning and redacted reporting only. File discovery, undeclared-path reads, and external requests remain out of scope.
 
 **Intentionally failing test:**
 
@@ -1975,7 +2677,30 @@ Expected RED: import failure because the changed-file scanner does not exist.
 - Domain: `python -m pytest -q tests/unit/process/test_scan_credentials.py`
 - Expected GREEN: both commands exit `0`; match/no-match/binary/path-error cases are bounded and no sentinel is printed.
 
+**Review gate:**
+1. Spec compliance review checks Task 4.E's Goal, Milestone 4's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent redacted credential scanner contract.
+2. Code quality review checks explicit path scoping, deterministic finding order, binary handling, stable path errors, redaction completeness, non-disclosure in exceptions/logs, and zero network use.
+3. Critical/Important findings block Tasks 5.E, 18.B, 19.A, 27.A, 30.A, and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 4.E's exact RED probe.** Add the complete declared `test_scanner_reports_rule_without_matched_value` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 4.E RED.** Run `python -m pytest -q tests/unit/process/test_scan_credentials.py::test_scanner_reports_rule_without_matched_value`. Expected RED: import failure because the changed-file scanner does not exist. Count RED only after the test runner starts and reports this task-owned missing-module/interface import/configuration failure; collection failure, runner startup, environment or external-state failure, unrelated import, or unrelated failure does not count as RED. Record the exact task-owned failure and exit code.
+- [ ] **Step 3: Define the bounded scan report.** Apply IP-1: Add explicit-path scanning and immutable report construction required by IP-1.
+- [ ] **Step 4: Enforce value-free findings.** Apply IP-2: Add match redaction, binary, and bounded-error handling required by IP-2.
+- [ ] **Step 5: Pass the redaction RED case.** Apply IP-3: Make the sentinel test expose only path/rule identity for IP-3.
+- [ ] **Step 6: Seal the scanner boundary.** Apply IP-4: Keep discovery, undeclared file reads, match derivatives, and network requests outside scanning as required by IP-4.
+- [ ] **Step 7: Run Task 4.E Target GREEN.** Re-run `python -m pytest -q tests/unit/process/test_scan_credentials.py::test_scanner_reports_rule_without_matched_value`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 4.E's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 4.E Domain verification.** Run `python -m pytest -q tests/unit/process/test_scan_credentials.py`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 4.E's declared acceptance.** Verify both commands exit `0`; match/no-match/binary/path-error cases are bounded and no sentinel is printed. Record the evaluated acceptance conditions and keep the task incomplete while any condition is non-terminal.
+- [ ] **Step 11: Run Task 4.E standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 4.E spec compliance review.** Provide the Goal, Milestone 4 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 4.E spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 4.E code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 4.E quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 4.E after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 4.E completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 5.A: Closed Optional-value Contracts
 
@@ -1995,6 +2720,12 @@ Expected RED: import failure because the changed-file scanner does not exist.
 
 **Interfaces:** Produces `AbsentV1`, `PresentV1[T]`, and every named closed optional union required by SPEC.
 
+**Implementation points:**
+- Define explicit discriminated `AbsentV1` and generic `PresentV1[T]` variants, then compose every named optional union without nullable ambiguity.
+- Require a value only for Present and reject missing, unknown, mixed, or contradictory variants deterministically during validation and round-trip.
+- Make `test_present_optional_requires_value` GREEN with the smallest missing-value rejection before completing all named optional unions.
+- Own optional-value schemas only; repository locations, disclosure scopes, Run state, actions, evidence, profiles, and persistence remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -2012,7 +2743,30 @@ def test_present_optional_requires_value() -> None:
 - Domain: `python -m pytest -q tests/unit/contracts/test_optional.py`
 - Expected GREEN: every named present/absent union round-trips, missing/unknown/mixed variants reject deterministically, and both commands exit `0`.
 
+**Review gate:**
+1. Spec compliance review checks Task 5.A's Goal, Milestone 5's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent closed optional values contract.
+2. Code quality review checks discriminant closure, generic value preservation, absent/present exclusivity, deterministic serialization/validation, and no nullable fallback.
+3. Critical/Important findings block Tasks 5.B, 5.C, 5.D, and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 5.A's exact RED probe.** Add the complete declared `test_present_optional_requires_value` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 5.A RED.** Run `python -m pytest -q tests/unit/contracts/test_optional.py::test_present_optional_requires_value`. Expected RED: the exact assertion fails because the task-owned closed optional values behavior does not exist. Record the task-owned failing assertion and exit code; collection, import, runner, environment startup, or unrelated failure does not count as RED.
+- [ ] **Step 3: Define explicit optional variants.** Apply IP-1: Add the Absent/Present discriminated generic variants required by IP-1.
+- [ ] **Step 4: Reject ambiguous optional states.** Apply IP-2: Add the missing/unknown/mixed variant rejection required by IP-2.
+- [ ] **Step 5: Pass the missing-present-value RED case.** Apply IP-3: Make the exact Present-without-value assertion fail closed for IP-3.
+- [ ] **Step 6: Seal optional-schema ownership.** Apply IP-4: Keep all domain-specific location, run, action, evidence, profile, and persistence schemas outside Task 5.A as required by IP-4.
+- [ ] **Step 7: Run Task 5.A Target GREEN.** Re-run `python -m pytest -q tests/unit/contracts/test_optional.py::test_present_optional_requires_value`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 5.A's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 5.A Domain verification.** Run `python -m pytest -q tests/unit/contracts/test_optional.py`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 5.A's declared acceptance.** Verify every named present/absent union round-trips, missing/unknown/mixed variants reject deterministically, and both commands exit `0`. Record the evaluated acceptance conditions and keep the task incomplete while any condition is non-terminal.
+- [ ] **Step 11: Run Task 5.A standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 5.A spec compliance review.** Provide the Goal, Milestone 5 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 5.A spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 5.A code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 5.A quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 5.A after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 5.A completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 5.B: Run, Phase, Wait, and Limit Contracts
 
@@ -2032,6 +2786,12 @@ def test_present_optional_requires_value() -> None:
 
 **Interfaces:** Produces `RunStatus`, `RunPhase`, `RunStateV1`, `WaitKind`, `RunLimitsV1`, `WaitContextV1`, `WaitDecisionChoiceV1 = Literal["APPROVE","REJECT"]`, and `WaitDecisionV1(wait_id: str, run_id: str, wait_kind: WaitKind, subject_digest: DigestV1, decision: WaitDecisionChoiceV1, event_id: str, decided_at: CanonicalTimestampV1)`.
 
+**Implementation points:**
+- Define the closed Run status, phase, state, wait kind, limit, context, and exact `WaitDecisionV1` value-object vocabulary.
+- Validate cross-field combinations so RUNNING requires its exact phase and every wait decision binds wait/run/kind/subject/event/time with a closed APPROVE/REJECT choice.
+- Make `test_running_state_requires_exact_phase` GREEN with the smallest state/phase rejection before completing legal wait/limit combinations.
+- Own value-object validation only; lifecycle transitions, repositories, decision services, and clock behavior remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -2049,7 +2809,30 @@ def test_running_state_requires_exact_phase() -> None:
 - Domain: `python -m pytest -q tests/unit/contracts/test_run.py`
 - Expected GREEN: every legal state/phase/wait/limit combination round-trips and every illegal combination rejects.
 
+**Review gate:**
+1. Spec compliance review checks Task 5.B's Goal, Milestone 5's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent Run/wait state contracts contract.
+2. Code quality review checks enum/union exhaustiveness, state-phase invariants, wait subject identity binding, timestamp typing, deterministic rejection, and absence of lifecycle side effects.
+3. Critical/Important findings block Tasks 5.C, 5.D, 14.B, 15.D, and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 5.B's exact RED probe.** Add the complete declared `test_running_state_requires_exact_phase` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 5.B RED.** Run `python -m pytest -q tests/unit/contracts/test_run.py::test_running_state_requires_exact_phase`. Expected RED: the exact assertion fails because the task-owned Run/wait state contracts behavior does not exist. Record the task-owned failing assertion and exit code; collection, import, runner, environment startup, or unrelated failure does not count as RED.
+- [ ] **Step 3: Define Run and wait vocabularies.** Apply IP-1: Add the closed Run/wait/limit types and decision envelope required by IP-1.
+- [ ] **Step 4: Enforce state/decision bindings.** Apply IP-2: Add the RUNNING/exact-phase cross-field validation required by IP-2.
+- [ ] **Step 5: Pass the running-phase RED case.** Apply IP-3: Make the exact invalid phase assertion reject for IP-3.
+- [ ] **Step 6: Seal value-object ownership.** Apply IP-4: Keep transition, repository, service, and clock behavior outside contracts as required by IP-4.
+- [ ] **Step 7: Run Task 5.B Target GREEN.** Re-run `python -m pytest -q tests/unit/contracts/test_run.py::test_running_state_requires_exact_phase`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 5.B's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 5.B Domain verification.** Run `python -m pytest -q tests/unit/contracts/test_run.py`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 5.B's declared acceptance.** Verify every legal state/phase/wait/limit combination round-trips and every illegal combination rejects. Record the evaluated acceptance conditions and keep the task incomplete while any condition is non-terminal.
+- [ ] **Step 11: Run Task 5.B standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 5.B spec compliance review.** Provide the Goal, Milestone 5 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 5.B spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 5.B code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 5.B quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 5.B after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 5.B completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 5.C: Action, Policy-decision, and Result Contracts
 
@@ -2069,6 +2852,12 @@ def test_running_state_requires_exact_phase() -> None:
 
 **Interfaces:** Produces `CheckPlanIdV1 = Literal["TARGET_TESTS","FULL_PYTEST","RUFF","MYPY"]`, `ActionStatusV1`, `PolicyDecisionV1`, `ActionErrorV1`, `ActionResultV1`, and `ActionInstanceV1(action_id: str, semantic_digest: str, instance_digest: str, action: SharedActionV1)`.
 
+**Implementation points:**
+- Define the shared closed action identity, check-plan vocabulary, status, policy decision, stable error, result, and `ActionInstanceV1` envelopes.
+- Bind semantic and instance identities to the action value and enforce status/payload consistency so success cannot carry error data and contradictory variants reject.
+- Make `test_success_result_rejects_error_payload` GREEN with the smallest success/error contradiction before completing all legal action/result variants.
+- Own schemas and cross-field validation only. Model JSON parsing, policy evaluation, dispatch, and check execution remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -2086,7 +2875,30 @@ def test_success_result_rejects_error_payload() -> None:
 - Domain: `python -m pytest -q tests/unit/contracts/test_action.py`
 - Expected GREEN: legal actions/results validate and unknown/mixed/contradictory envelopes reject.
 
+**Review gate:**
+1. Spec compliance review checks Task 5.C's Goal, Milestone 5's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent closed action/result contracts contract.
+2. Code quality review checks discriminant exhaustiveness, semantic/instance identity typing, status/payload invariants, stable error closure, deterministic rejection, and schema-only purity.
+3. Critical/Important findings block Tasks 5.D, 17.A, 17.B, and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 5.C's exact RED probe.** Add the complete declared `test_success_result_rejects_error_payload` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 5.C RED.** Run `python -m pytest -q tests/unit/contracts/test_action.py::test_success_result_rejects_error_payload`. Expected RED: the exact assertion fails because the task-owned closed action/result contracts behavior does not exist. Record the task-owned failing assertion and exit code; collection, import, runner, environment startup, or unrelated failure does not count as RED.
+- [ ] **Step 3: Define action and result envelopes.** Apply IP-1: Add the shared action/check/status/policy/error/result types required by IP-1.
+- [ ] **Step 4: Enforce identity and payload consistency.** Apply IP-2: Add success-versus-error payload consistency and identity binding required by IP-2.
+- [ ] **Step 5: Pass the success/error RED case.** Apply IP-3: Make the exact contradictory result assertion reject for IP-3.
+- [ ] **Step 6: Seal action-schema ownership.** Apply IP-4: Keep parsing, policy, dispatch, and execution outside Task 5.C as required by IP-4.
+- [ ] **Step 7: Run Task 5.C Target GREEN.** Re-run `python -m pytest -q tests/unit/contracts/test_action.py::test_success_result_rejects_error_payload`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 5.C's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 5.C Domain verification.** Run `python -m pytest -q tests/unit/contracts/test_action.py`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 5.C's declared acceptance.** Verify legal actions/results validate and unknown/mixed/contradictory envelopes reject. Record the evaluated acceptance conditions and keep the task incomplete while any condition is non-terminal.
+- [ ] **Step 11: Run Task 5.C standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 5.C spec compliance review.** Provide the Goal, Milestone 5 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 5.C spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 5.C code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 5.C quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 5.C after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 5.C completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 5.D: Evidence, Artifact, Digest, and Stable Error Contracts
 
@@ -2106,6 +2918,12 @@ def test_success_result_rejects_error_payload() -> None:
 
 **Interfaces:** Produces `ArtifactRefV1`, `DigestV1`, `StableControlErrorV1`, `EvidenceLocationV1`, `StableCodeSequenceV1`, an immutable ordered tuple of zero or more stable error codes, and common closed evidence-envelope validation.
 
+**Implementation points:**
+- Define immutable artifact references, digests, evidence locations, stable control errors, ordered stable-code sequences, and common closed evidence envelopes.
+- Require every artifact/evidence variant to bind its digest and location consistently, rejecting missing, unknown, mixed, or contradictory fields deterministically.
+- Make `test_artifact_reference_rejects_unbound_digest` GREEN with the smallest missing-digest rejection before completing all evidence variants.
+- Own shared evidence schemas only. Artifact creation, byte storage, audit append, and validation-outcome interpretation remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -2123,7 +2941,30 @@ def test_artifact_reference_rejects_unbound_digest() -> None:
 - Domain: `python -m pytest -q tests/unit/contracts/test_evidence.py`
 - Expected GREEN: every evidence variant is closed/digest-bound and invalid/unknown combinations reject.
 
+**Review gate:**
+1. Spec compliance review checks Task 5.D's Goal, Milestone 5's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent shared evidence contracts contract.
+2. Code quality review checks digest/location binding, closed variant exhaustiveness, immutable stable-code ordering, deterministic stable errors, and separation from artifact/audit side effects.
+3. Critical/Important findings block Tasks 6.A, 6.B, 6.C, 7.A, 9.A, 10.A, 10.B, 11.A, 13, 15.A, 18.A, 19.A, 20.A, 24.A, 25.A, 27.A, 30.A, and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 5.D's exact RED probe.** Add the complete declared `test_artifact_reference_rejects_unbound_digest` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 5.D RED.** Run `python -m pytest -q tests/unit/contracts/test_evidence.py::test_artifact_reference_rejects_unbound_digest`. Expected RED: the exact assertion fails because the task-owned shared evidence contracts behavior does not exist. Record the task-owned failing assertion and exit code; collection, import, runner, environment startup, or unrelated failure does not count as RED.
+- [ ] **Step 3: Define shared evidence vocabulary.** Apply IP-1: Add artifact/digest/location/error/evidence value objects required by IP-1.
+- [ ] **Step 4: Enforce digest and location binding.** Apply IP-2: Add the missing-digest and first contradictory-variant rejection required by IP-2.
+- [ ] **Step 5: Pass the unbound-artifact RED case.** Apply IP-3: Make the exact unbound-artifact assertion reject for IP-3.
+- [ ] **Step 6: Seal evidence-schema ownership.** Apply IP-4: Keep artifact storage, audit, and validation interpretation outside Task 5.D as required by IP-4.
+- [ ] **Step 7: Run Task 5.D Target GREEN.** Re-run `python -m pytest -q tests/unit/contracts/test_evidence.py::test_artifact_reference_rejects_unbound_digest`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 5.D's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 5.D Domain verification.** Run `python -m pytest -q tests/unit/contracts/test_evidence.py`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 5.D's declared acceptance.** Verify every evidence variant is closed/digest-bound and invalid/unknown combinations reject. Record the evaluated acceptance conditions and keep the task incomplete while any condition is non-terminal.
+- [ ] **Step 11: Run Task 5.D standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 5.D spec compliance review.** Provide the Goal, Milestone 5 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 5.D spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 5.D code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 5.D quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 5.D after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 5.D completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 5.E: Repository-location and Disclosure-scope Contracts
 
@@ -2143,6 +2984,12 @@ def test_artifact_reference_rejects_unbound_digest() -> None:
 
 **Interfaces:** Produces `RepositoryLocationV1 = RootLocationV1 | PathLocationV1` and `DisclosurePathScopeV1 = RootScopeV1 | FileScopeV1 | DirectoryScopeV1`.
 
+**Implementation points:**
+- Define closed discriminated repository locations for root versus path and disclosure scopes for root, file, or directory.
+- Keep root and path representations mutually exclusive so unknown, ambiguous, mixed, or mismatched location/scope variants reject deterministically.
+- Make `test_repository_root_rejects_path_field` GREEN with the smallest root/path contradiction before completing all disclosure-scope variants.
+- Own repository-location and disclosure-scope schemas only. Generic optionals, Run state, actions, evidence, profiles, and persistence remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -2160,7 +3007,30 @@ def test_repository_root_rejects_path_field() -> None:
 - Domain: `python -m pytest -q tests/unit/contracts/test_location.py`
 - Expected GREEN: all unknown/ambiguous/root/path/scope variants reject deterministically and both commands exit `0`.
 
+**Review gate:**
+1. Spec compliance review checks Task 5.E's Goal, Milestone 5's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent repository/disclosure location contracts contract.
+2. Code quality review checks discriminant closure, root/path exclusivity, file/directory scope separation, canonical field typing, deterministic rejection, and absence of domain behavior.
+3. Critical/Important findings block Tasks 5.D, 6.D, 15.B, and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 5.E's exact RED probe.** Add the complete declared `test_repository_root_rejects_path_field` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 5.E RED.** Run `python -m pytest -q tests/unit/contracts/test_location.py::test_repository_root_rejects_path_field`. Expected RED: the exact assertion fails because the task-owned repository/disclosure location contracts behavior does not exist. Record the task-owned failing assertion and exit code; collection, import, runner, environment startup, or unrelated failure does not count as RED.
+- [ ] **Step 3: Define location and scope unions.** Apply IP-1: Add the closed root/path location and root/file/directory scope variants required by IP-1.
+- [ ] **Step 4: Reject ambiguous root/path variants.** Apply IP-2: Add root/path mutual-exclusion validation required by IP-2.
+- [ ] **Step 5: Pass the root-with-path RED case.** Apply IP-3: Make the exact root-with-path assertion reject for IP-3.
+- [ ] **Step 6: Seal location-schema ownership.** Apply IP-4: Keep optional, run, action, evidence, profile, and persistence behavior outside Task 5.E as required by IP-4.
+- [ ] **Step 7: Run Task 5.E Target GREEN.** Re-run `python -m pytest -q tests/unit/contracts/test_location.py::test_repository_root_rejects_path_field`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 5.E's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 5.E Domain verification.** Run `python -m pytest -q tests/unit/contracts/test_location.py`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 5.E's declared acceptance.** Verify all unknown/ambiguous/root/path/scope variants reject deterministically and both commands exit `0`. Record the evaluated acceptance conditions and keep the task incomplete while any condition is non-terminal.
+- [ ] **Step 11: Run Task 5.E standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 5.E spec compliance review.** Provide the Goal, Milestone 5 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 5.E spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 5.E code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 5.E quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 5.E after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 5.E completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 6.A: Immutable Editable-path Policy
 
@@ -2180,6 +3050,12 @@ def test_repository_root_rejects_path_field() -> None:
 
 **Interfaces:** Produces `EditableOperationV1 = Literal["CREATE","REPLACE"]`, `EditablePathPolicyV1(policy_digest: str, roots: CanonicalPathSequenceV1, operations: EditableOperationSequenceV1)`, and `EditablePathPolicyV1.matches(path: CanonicalRelativePathV1, operation: EditableOperationV1) -> bool`.
 
+**Implementation points:**
+- Define the sole immutable built-in editable policy over canonical roots and the closed CREATE/REPLACE operation set, with one deterministic policy digest.
+- Match paths only at canonical segment boundaries so `src` descendants qualify while prefix aliases, noncanonical paths, unsupported operations, and mutable overrides reject.
+- Make `test_src_prefix_without_segment_boundary_is_not_editable` GREEN with the smallest false-prefix case before completing root/operation coverage.
+- Own built-in path/operation matching and digest only. Profile resolution, endpoints, requests, and mutable policy overrides remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -2196,7 +3072,30 @@ def test_src_prefix_without_segment_boundary_is_not_editable() -> None:
 - Domain: `python -m pytest -q tests/unit/profiles/test_editable.py`
 - Expected GREEN: only canonical `src` descendants and CREATE/REPLACE match; aliases and overrides reject.
 
+**Review gate:**
+1. Spec compliance review checks Task 6.A's Goal, Milestone 6's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent immutable editable-path policy contract.
+2. Code quality review checks segment-boundary correctness, canonical-path inputs, operation closure, immutable root ordering, deterministic digesting, and override rejection.
+3. Critical/Important findings block Tasks 6.E and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 6.A's exact RED probe.** Add the complete declared `test_src_prefix_without_segment_boundary_is_not_editable` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 6.A RED.** Run `python -m pytest -q tests/unit/profiles/test_editable.py::test_src_prefix_without_segment_boundary_is_not_editable`. Expected RED: the exact assertion fails because the task-owned immutable editable-path policy behavior does not exist. Record the task-owned failing assertion and exit code; collection, import, runner, environment startup, or unrelated failure does not count as RED.
+- [ ] **Step 3: Define the immutable editable policy.** Apply IP-1: Add the immutable roots/operations policy and digest required by IP-1.
+- [ ] **Step 4: Enforce segment-boundary matching.** Apply IP-2: Add canonical segment-boundary and unsupported-operation rejection required by IP-2.
+- [ ] **Step 5: Pass the false-prefix RED case.** Apply IP-3: Make the exact `src` false-prefix assertion return false for IP-3.
+- [ ] **Step 6: Seal editable-policy ownership.** Apply IP-4: Keep profile, endpoint, request, and override behavior outside Task 6.A as required by IP-4.
+- [ ] **Step 7: Run Task 6.A Target GREEN.** Re-run `python -m pytest -q tests/unit/profiles/test_editable.py::test_src_prefix_without_segment_boundary_is_not_editable`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 6.A's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 6.A Domain verification.** Run `python -m pytest -q tests/unit/profiles/test_editable.py`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 6.A's declared acceptance.** Verify only canonical `src` descendants and CREATE/REPLACE match; aliases and overrides reject. Record the evaluated acceptance conditions and keep the task incomplete while any condition is non-terminal.
+- [ ] **Step 11: Run Task 6.A standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 6.A spec compliance review.** Provide the Goal, Milestone 6 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 6.A spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 6.A code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 6.A quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 6.A after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 6.A completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 6.B: Reference Profile Manifest Contract
 
@@ -2218,6 +3117,12 @@ def test_src_prefix_without_segment_boundary_is_not_editable() -> None:
 
 **Interfaces:** Produces production `ReferenceProfileManifestV1` and `ReferenceProfileManifestV1.verify_integrity(gate_manifest: GateReferenceProfileManifestV1) -> None`.
 
+**Implementation points:**
+- Load the packaged production `ReferenceProfileManifestV1` and verify it against Task 2.G gate manifest identities for image, lock, tools, execution, and check plan.
+- Require exact field and digest equality; every missing, extra, malformed, or drifted identity rejects without mutating gate evidence or packaged bytes.
+- Make `test_reference_profile_rejects_image_digest_drift` GREEN with the smallest image-identity mismatch before completing the full integrity matrix.
+- Own manifest parsing, integrity checking, and package-data copy only. Image builds, editable policy, endpoints, and gate-evidence mutation remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -2235,7 +3140,30 @@ def test_reference_profile_rejects_image_digest_drift() -> None:
 - Domain: `python -m pytest -q tests/unit/profiles/test_reference.py`
 - Expected GREEN: exact Task 2.G identities load and every missing/extra/drifted field rejects.
 
+**Review gate:**
+1. Spec compliance review checks Task 6.B's Goal, Milestone 6's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent reference-profile manifest integrity contract.
+2. Code quality review checks exact gate/production field correspondence, digest identity, packaged-resource immutability, missing/extra rejection, and side-effect-free integrity validation.
+3. Critical/Important findings block Tasks 6.E and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 6.B's exact RED probe.** Add the complete declared `test_reference_profile_rejects_image_digest_drift` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 6.B RED.** Run `python -m pytest -q tests/unit/profiles/test_reference.py::test_reference_profile_rejects_image_digest_drift`. Expected RED: the exact assertion fails because the task-owned reference-profile manifest integrity behavior does not exist. Record the task-owned failing assertion and exit code; collection, import, runner, environment startup, or unrelated failure does not count as RED.
+- [ ] **Step 3: Load the packaged reference manifest.** Apply IP-1: Add packaged production manifest parsing and gate-manifest comparison required by IP-1.
+- [ ] **Step 4: Enforce exact gate-manifest identity.** Apply IP-2: Add image-digest and first missing/extra field rejection required by IP-2.
+- [ ] **Step 5: Pass the image-drift RED case.** Apply IP-3: Make the exact drift assertion reject for IP-3.
+- [ ] **Step 6: Seal manifest-integrity ownership.** Apply IP-4: Keep building, editable policy, endpoint, and gate mutation outside Task 6.B as required by IP-4.
+- [ ] **Step 7: Run Task 6.B Target GREEN.** Re-run `python -m pytest -q tests/unit/profiles/test_reference.py::test_reference_profile_rejects_image_digest_drift`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 6.B's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 6.B Domain verification.** Run `python -m pytest -q tests/unit/profiles/test_reference.py`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 6.B's declared acceptance.** Verify exact Task 2.G identities load and every missing/extra/drifted field rejects. Record the evaluated acceptance conditions and keep the task incomplete while any condition is non-terminal.
+- [ ] **Step 11: Run Task 6.B standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 6.B spec compliance review.** Provide the Goal, Milestone 6 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 6.B spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 6.B code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 6.B quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 6.B after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 6.B completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 6.C: Closed Mock and OpenAI LLM Profiles
 
@@ -2257,6 +3185,12 @@ def test_reference_profile_rejects_image_digest_drift() -> None:
 
 **Interfaces:** Produces `MockLLMProfileV1`, `OpenAILLMProfileV1`, `LLMProfileManifestV1 = MockLLMProfileV1 | OpenAILLMProfileV1`, and `load_llm_profile(raw: bytes) -> LLMProfileManifestV1`.
 
+**Implementation points:**
+- Define immutable mutually exclusive Mock and OpenAI profile variants and load packaged bytes into the closed `LLMProfileManifestV1` union.
+- Reject cross-mode, unknown, extra, or mutable fields so Mock data cannot carry OpenAI configuration and each built-in resource has one integrity identity.
+- Make `test_mock_profile_rejects_openai_fields` GREEN with the smallest cross-mode rejection before completing both profile variants.
+- Own profile schemas and packaged-resource integrity only. Endpoint resolution, request serialization, credential access, and adapter calls remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -2274,7 +3208,30 @@ def test_mock_profile_rejects_openai_fields() -> None:
 - Domain: `python -m pytest -q tests/unit/profiles/test_llm.py`
 - Expected GREEN: exact built-ins load and cross-mode/unknown/mutable fields reject.
 
+**Review gate:**
+1. Spec compliance review checks Task 6.C's Goal, Milestone 6's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent closed LLM profiles contract.
+2. Code quality review checks mode-discriminant closure, cross-field exclusivity, immutable resource identity, unknown-field rejection, deterministic loading, and zero credential/network behavior.
+3. Critical/Important findings block Tasks 6.D, 6.E, 15.C, and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 6.C's exact RED probe.** Add the complete declared `test_mock_profile_rejects_openai_fields` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 6.C RED.** Run `python -m pytest -q tests/unit/profiles/test_llm.py::test_mock_profile_rejects_openai_fields`. Expected RED: the exact assertion fails because the task-owned closed LLM profiles behavior does not exist. Record the task-owned failing assertion and exit code; collection, import, runner, environment startup, or unrelated failure does not count as RED.
+- [ ] **Step 3: Define mutually exclusive LLM profiles.** Apply IP-1: Add Mock/OpenAI immutable variants and the closed loader required by IP-1.
+- [ ] **Step 4: Reject cross-mode profile fields.** Apply IP-2: Add the Mock-with-OpenAI-field rejection required by IP-2.
+- [ ] **Step 5: Pass the Mock/OpenAI RED case.** Apply IP-3: Make the exact cross-mode assertion reject for IP-3.
+- [ ] **Step 6: Seal LLM-profile ownership.** Apply IP-4: Keep endpoint, request, credential, and adapter behavior outside Task 6.C as required by IP-4.
+- [ ] **Step 7: Run Task 6.C Target GREEN.** Re-run `python -m pytest -q tests/unit/profiles/test_llm.py::test_mock_profile_rejects_openai_fields`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 6.C's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 6.C Domain verification.** Run `python -m pytest -q tests/unit/profiles/test_llm.py`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 6.C's declared acceptance.** Verify exact built-ins load and cross-mode/unknown/mutable fields reject. Record the evaluated acceptance conditions and keep the task incomplete while any condition is non-terminal.
+- [ ] **Step 11: Run Task 6.C standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 6.C spec compliance review.** Provide the Goal, Milestone 6 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 6.C spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 6.C code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 6.C quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 6.C after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 6.C completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 6.D: Trusted OpenAI Endpoint Map
 
@@ -2294,6 +3251,12 @@ def test_mock_profile_rejects_openai_fields() -> None:
 
 **Interfaces:** Produces `OpenAIEndpointV1(endpoint_id: Literal["OPENAI_PUBLIC_API_V1"], base_url: Literal["https://api.openai.com/v1"])` and `OpenAIEndpointRegistry.resolve(endpoint_id: str) -> OpenAIEndpointV1`.
 
+**Implementation points:**
+- Define the immutable `OpenAIEndpointV1` record for the sole `OPENAI_PUBLIC_API_V1` identifier and exact public base URL.
+- Resolve only that built-in identifier; raw user URLs, config overrides, unknown ids, and alternate records reject without network access.
+- Make `test_endpoint_registry_rejects_user_url` GREEN with the smallest raw-URL rejection before completing sole-id resolution.
+- Own endpoint id-to-record resolution only. HTTP request preparation, URL overrides, credential management, and network calls remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -2311,7 +3274,30 @@ def test_endpoint_registry_rejects_user_url() -> None:
 - Domain: `python -m pytest -q tests/unit/profiles/test_endpoints.py`
 - Expected GREEN: the sole built-in ID resolves and every other ID/URL rejects without network access.
 
+**Review gate:**
+1. Spec compliance review checks Task 6.D's Goal, Milestone 6's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent trusted OpenAI endpoint registry contract.
+2. Code quality review checks exact literal identity, closed lookup behavior, raw-URL rejection, immutable returned records, deterministic errors, and network-free resolution.
+3. Critical/Important findings block Tasks 6.E, 15.C, and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 6.D's exact RED probe.** Add the complete declared `test_endpoint_registry_rejects_user_url` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 6.D RED.** Run `python -m pytest -q tests/unit/profiles/test_endpoints.py::test_endpoint_registry_rejects_user_url`. Expected RED: the exact assertion fails because the task-owned trusted OpenAI endpoint registry behavior does not exist. Record the task-owned failing assertion and exit code; collection, import, runner, environment startup, or unrelated failure does not count as RED.
+- [ ] **Step 3: Define the trusted endpoint record.** Apply IP-1: Add the sole endpoint literal record and registry interface required by IP-1.
+- [ ] **Step 4: Reject URLs and unknown endpoint ids.** Apply IP-2: Add raw-URL and unknown-id rejection required by IP-2.
+- [ ] **Step 5: Pass the user-URL RED case.** Apply IP-3: Make the exact user-URL assertion reject for IP-3.
+- [ ] **Step 6: Seal endpoint-registry ownership.** Apply IP-4: Keep request, override, credential, and network behavior outside Task 6.D as required by IP-4.
+- [ ] **Step 7: Run Task 6.D Target GREEN.** Re-run `python -m pytest -q tests/unit/profiles/test_endpoints.py::test_endpoint_registry_rejects_user_url`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 6.D's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 6.D Domain verification.** Run `python -m pytest -q tests/unit/profiles/test_endpoints.py`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 6.D's declared acceptance.** Verify the sole built-in ID resolves and every other ID/URL rejects without network access. Record the evaluated acceptance conditions and keep the task incomplete while any condition is non-terminal.
+- [ ] **Step 11: Run Task 6.D standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 6.D spec compliance review.** Provide the Goal, Milestone 6 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 6.D spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 6.D code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 6.D quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 6.D after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 6.D completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 6.E: Built-in Profile Registry Resolution
 
@@ -2331,6 +3317,12 @@ def test_endpoint_registry_rejects_user_url() -> None:
 
 **Interfaces:** Produces `ProfileRegistry.resolve_reference(profile_id: str) -> ReferenceProfileManifestV1`, `ProfileRegistry.resolve_llm(profile_id: str) -> LLMProfileManifestV1`, `ProfileRegistry.resolve_editable(policy_id: str) -> EditablePathPolicyV1`, and `ProfileRegistry.resolve_endpoint(endpoint_id: str) -> OpenAIEndpointV1`.
 
+**Implementation points:**
+- Enumerate the exact built-in editable, reference, LLM, and endpoint resources and expose their four typed resolution methods through `ProfileRegistry`.
+- Delegate each resource integrity check to its owner and reject missing, duplicate, extra, drifted, cross-profile, or unknown ids before Run creation.
+- Make `test_registry_rejects_duplicate_profile_id` GREEN with the smallest duplicate-id rejection before completing deterministic resolution cases.
+- Own built-in enumeration, integrity delegation, and exact id resolution only. Mutators, external discovery, run-request validation, and adapter behavior remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -2348,7 +3340,30 @@ def test_registry_rejects_duplicate_profile_id() -> None:
 - Domain: `python -m pytest -q tests/unit/profiles/test_registry.py`
 - Expected GREEN: exact built-ins resolve deterministically and every ambiguity/drift/unknown ID rejects before a Run exists.
 
+**Review gate:**
+1. Spec compliance review checks Task 6.E's Goal, Milestone 6's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent built-in profile registry contract.
+2. Code quality review checks deterministic enumeration, per-kind id uniqueness, integrity delegation, exact typed returns, ambiguity/drift rejection, and absence of mutable/external discovery.
+3. Critical/Important findings block Tasks 8.A, 12.A, 13, 16.A, 18.A, 19.A, 20.A, 27.A, and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 6.E's exact RED probe.** Add the complete declared `test_registry_rejects_duplicate_profile_id` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 6.E RED.** Run `python -m pytest -q tests/unit/profiles/test_registry.py::test_registry_rejects_duplicate_profile_id`. Expected RED: the exact assertion fails because the task-owned built-in profile registry behavior does not exist. Record the task-owned failing assertion and exit code; collection, import, runner, environment startup, or unrelated failure does not count as RED.
+- [ ] **Step 3: Compose the built-in profile registry.** Apply IP-1: Add exact built-in enumeration and four typed resolvers required by IP-1.
+- [ ] **Step 4: Reject duplicate and drifted resources.** Apply IP-2: Add duplicate-id and first cross-resource integrity rejection required by IP-2.
+- [ ] **Step 5: Pass the duplicate-id RED case.** Apply IP-3: Make the exact duplicate-profile assertion reject for IP-3.
+- [ ] **Step 6: Seal registry-composition ownership.** Apply IP-4: Keep mutation, external discovery, request validation, and adapters outside Task 6.E as required by IP-4.
+- [ ] **Step 7: Run Task 6.E Target GREEN.** Re-run `python -m pytest -q tests/unit/profiles/test_registry.py::test_registry_rejects_duplicate_profile_id`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 6.E's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 6.E Domain verification.** Run `python -m pytest -q tests/unit/profiles/test_registry.py`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 6.E's declared acceptance.** Verify exact built-ins resolve deterministically and every ambiguity/drift/unknown ID rejects before a Run exists. Record the evaluated acceptance conditions and keep the task incomplete while any condition is non-terminal.
+- [ ] **Step 11: Run Task 6.E standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 6.E spec compliance review.** Provide the Goal, Milestone 6 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 6.E spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 6.E code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 6.E quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 6.E after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 6.E completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 7.A: Domain-independent SQLite Migration Framework
 
@@ -2373,6 +3388,12 @@ def test_registry_rejects_duplicate_profile_id() -> None:
 
 **Interfaces:** Produces `open_control_database(path: Path) -> ControlDatabase`, `ControlDatabase.immediate_transaction() -> AbstractContextManager[ControlTransactionV1]`, closed `MigrationV1(version: int, name: str, checksum: DigestV1, apply: MigrationApplyV1)`, and `apply_migrations(db: ControlDatabase, migrations: tuple[MigrationV1, ...]) -> MigrationResultV1`.
 
+**Implementation points:**
+- Open SQLite with explicit control-database flags and expose one immediate transaction identity plus a closed injected `MigrationV1` runner.
+- Apply synthetic migrations in strict version order atomically and idempotently; duplicate/gap descriptors, whole-batch failure, or applied-checksum drift fail closed.
+- Make `test_changed_applied_migration_checksum_fails_closed` GREEN with the smallest history-checksum rejection before completing replay and rollback cases.
+- Own only connection policy, `schema_migrations`, descriptor/checksum validation, and injected execution. Application-domain DDL, migration constants, repositories, and final registry composition remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -2395,7 +3416,30 @@ Expected RED: import failure because the database, closed migration descriptor, 
 - Domain: `python -m pytest -q tests/unit/storage/test_connection.py tests/unit/storage/test_migration_engine.py`
 - Expected GREEN: both commands exit `0`; foreign keys, transaction identity, first apply, replay, strict order, duplicate/gap rejection, whole-batch rollback, and checksum-drift cases pass using synthetic migrations only.
 
+**Review gate:**
+1. Spec compliance review checks Task 7.A's Goal, Milestone 7's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent domain-independent migration engine contract.
+2. Code quality review checks transaction identity, foreign-key/connection flags, strict ordering, batch rollback, replay idempotency, checksum history, descriptor closure, and zero domain-schema knowledge.
+3. Critical/Important findings block Tasks 7.B, 14.C, 15.E, 15.F, 22.A, 22.C, 24.C, and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 7.A's exact RED probe.** Add the complete declared `test_changed_applied_migration_checksum_fails_closed` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 7.A RED.** Run `python -m pytest -q tests/unit/storage/test_migration_engine.py::test_changed_applied_migration_checksum_fails_closed`. Expected RED: import failure because the database, closed migration descriptor, checksum history, and injected runner do not exist. Count RED only after the test runner starts and reports this task-owned missing-module/interface import/configuration failure; collection failure, runner startup, environment or external-state failure, unrelated import, or unrelated failure does not count as RED. Record the exact task-owned failure and exit code.
+- [ ] **Step 3: Define the control-database transaction.** Apply IP-1: Add the connection, immediate transaction, descriptor, and injected runner interfaces required by IP-1.
+- [ ] **Step 4: Enforce ordered atomic migrations.** Apply IP-2: Add applied-history checksum comparison and strict-order validation required by IP-2.
+- [ ] **Step 5: Pass the checksum-drift RED case.** Apply IP-3: Make the exact changed-checksum assertion fail closed for IP-3.
+- [ ] **Step 6: Seal the framework-only boundary.** Apply IP-4: Keep all domain DDL, constants, repositories, and registry imports outside Task 7.A as required by IP-4.
+- [ ] **Step 7: Run Task 7.A Target GREEN.** Re-run `python -m pytest -q tests/unit/storage/test_migration_engine.py::test_changed_applied_migration_checksum_fails_closed`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 7.A's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 7.A Domain verification.** Run `python -m pytest -q tests/unit/storage/test_connection.py tests/unit/storage/test_migration_engine.py`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 7.A's declared acceptance.** Verify both commands exit `0`; foreign keys, transaction identity, first apply, replay, strict order, duplicate/gap rejection, whole-batch rollback, and checksum-drift cases pass using synthetic migrations only. Record the evaluated conditions; keep the task incomplete while any condition is non-terminal.
+- [ ] **Step 11: Run Task 7.A standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 7.A spec compliance review.** Provide the Goal, Milestone 7 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 7.A spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 7.A code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 7.A quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 7.A after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 7.A completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 7.B: Transactional Run and Wait Lifecycle
 
@@ -2421,6 +3465,12 @@ Expected RED: import failure because the database, closed migration descriptor, 
 
 **Interfaces:** Produces immutable `RUN_WAIT_V1_MIGRATION = MigrationV1(version=1, name="run_wait_v1", ...)`, `RunRepository.insert_created(run: RunRecordV1) -> None`, `RunRepository.compare_and_transition(command: TransitionCommandV1) -> TransitionResultV1`, `RunRepository.create_wait(context: WaitContextV1) -> None`, `RunRepository.lock_wait_for_decision(tx: ControlTransactionV1, decision: WaitDecisionV1) -> WaitDecisionLockResultV1`, `RunRepository.commit_wait_decision(tx: ControlTransactionV1, lock: LockedWaitDecisionV1, decision: WaitDecisionV1) -> WaitDecisionResultV1`, `RunRepository.expire_wait(tx: ControlTransactionV1, lock: LockedWaitDecisionV1, now: CanonicalTimestampV1) -> WaitDecisionResultV1`, and `LifecycleRules.evaluate(current: RunStateV1, event: LifecycleEventV1) -> RunStateV1`.
 
+**Implementation points:**
+- Own immutable v0001 Run/config/wait DDL, persistence repositories, and pure `LifecycleRules` target-state derivation without editing the final registry.
+- Lock and commit one exactly bound wait decision in a caller transaction so only one decision wins; rollback, expiry, terminal, and invalid transitions remain atomic and closed.
+- Make `test_same_wait_decision_can_win_only_once` GREEN with the smallest competing-decision transaction before completing the lifecycle matrix.
+- Keep approval, Grant, authorization, idempotency replay, audit projection, and persistence-recovery schema outside this coupled Run/wait owner.
+
 **Intentionally failing test:**
 
 ```python
@@ -2443,7 +3493,30 @@ Expected RED: import failure because the Run repository and lifecycle rules do n
 - Domain: `python -m pytest -q tests/unit/storage/test_run_wait_migration.py tests/unit/storage/test_run_repository.py tests/unit/runs/test_lifecycle.py`
 - Expected GREEN: all commands exit `0`; the exact schema/prohibited-column contract plus full transition table, binding, rollback, expiry, terminal, and one-winner cases pass.
 
+**Review gate:**
+1. Spec compliance review checks Task 7.B's Goal, Milestone 7's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent Run/wait transactional lifecycle contract.
+2. Code quality review checks exact v0001 schema, transaction-bound locking, one-winner concurrency, transition-table exhaustiveness, expiry/time binding, rollback, and prohibited-column absence.
+3. Critical/Important findings block Tasks 7.C, 7.D, 14.B, 15.D, and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 7.B's exact RED probe.** Add the complete declared `test_same_wait_decision_can_win_only_once` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 7.B RED.** Run `python -m pytest -q tests/unit/storage/test_run_repository.py::test_same_wait_decision_can_win_only_once`. Expected RED: import failure because the Run repository and lifecycle rules do not exist. Count RED only after the test runner starts and reports this task-owned missing-module/interface import/configuration failure; collection failure, runner startup, environment or external-state failure, unrelated import, or unrelated failure does not count as RED. Record the exact task-owned failure and exit code.
+- [ ] **Step 3: Define v0001 Run/wait storage.** Apply IP-1: Add the v0001 migration, Run/wait repositories, and lifecycle evaluator required by IP-1.
+- [ ] **Step 4: Enforce one-winner wait decisions.** Apply IP-2: Add transaction-bound wait lock/commit and first one-winner guard required by IP-2.
+- [ ] **Step 5: Pass the competing-decision RED case.** Apply IP-3: Make the exact second-decision assertion reject for IP-3.
+- [ ] **Step 6: Seal Run/wait ownership.** Apply IP-4: Keep approval, Grant, idempotency, audit, and recovery schema outside Task 7.B as required by IP-4.
+- [ ] **Step 7: Run Task 7.B Target GREEN.** Re-run `python -m pytest -q tests/unit/storage/test_run_repository.py::test_same_wait_decision_can_win_only_once`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 7.B's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 7.B Schema verification.** Run `python -m pytest -q tests/unit/storage/test_run_wait_migration.py::test_run_wait_migration_has_exact_schema`. Record the exact command and actual result.
+- [ ] **Step 10: Run Task 7.B Domain and acceptance verification.** Run `python -m pytest -q tests/unit/storage/test_run_wait_migration.py tests/unit/storage/test_run_repository.py tests/unit/runs/test_lifecycle.py`. Verify all commands exit `0`; the exact schema/prohibited-column contract plus full transition table, binding, rollback, expiry, terminal, and one-winner cases pass. Record the command, actual result, and evaluated acceptance conditions; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 11: Run Task 7.B standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 7.B spec compliance review.** Provide the Goal, Milestone 7 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 7.B spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 7.B code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 7.B quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 7.B after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 7.B completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 7.C: Transaction-bound Idempotency Ledger
 
@@ -2466,6 +3539,12 @@ Expected RED: import failure because the Run repository and lifecycle rules do n
 - Test: `tests/unit/storage/test_idempotency.py`
 
 **Interfaces:** Produces immutable `IDEMPOTENCY_V1_MIGRATION = MigrationV1(version=2, name="idempotency_v1", ...)` and `IdempotencyRepository.record_or_replay(tx: ControlTransactionV1, scope: str, event_id: str, request_digest: str, result_digest: str) -> IdempotencyResultV1`, where `IdempotencyResultV1` is the closed `NEW | REPLAY | EVENT_ID_REUSE_CONFLICT` union.
+
+**Implementation points:**
+- Own immutable v0002 idempotency DDL and a repository that records scope/event/request/result identities only inside the caller-owned Task 7.A transaction.
+- Return `NEW` for the first identity, identical `REPLAY` without domain mutation, and `EVENT_ID_REUSE_CONFLICT` for changed request bytes without mutation.
+- Make `test_event_id_reuse_with_different_request_is_conflict` GREEN with the smallest request-digest conflict before completing replay, rollback, and concurrency cases.
+- Keep final registry edits, domain-result reconstruction, Run transitions, and replay/conflict mutation outside the idempotency owner.
 
 **Intentionally failing test:**
 
@@ -2490,7 +3569,30 @@ Expected RED: import failure because the idempotency repository does not exist.
 - Domain: `python -m pytest -q tests/unit/storage/test_idempotency_migration.py tests/unit/storage/test_idempotency.py`
 - Expected GREEN: all commands exit `0`; exact v0002 schema, NEW, identical REPLAY, conflict, transaction rollback, and concurrency cases pass.
 
+**Review gate:**
+1. Spec compliance review checks Task 7.C's Goal, Milestone 7's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent transaction-bound idempotency ledger contract.
+2. Code quality review checks exact v0002 schema, transaction participation, request/result digest binding, replay purity, conflict non-mutation, rollback, and concurrency determinism.
+3. Critical/Important findings block Tasks 7.D, 8.A, 9.A, 14.A, 14.B, 14.C, 15.D, 15.E, 15.F, 22.A, 22.C, 23.A, 24.C, 25.A, 25.B, 25.E, 25.F, 26.A, 26.C, 28.A, and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 7.C's exact RED probe.** Add the complete declared `test_event_id_reuse_with_different_request_is_conflict` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 7.C RED.** Run `python -m pytest -q tests/unit/storage/test_idempotency.py::test_event_id_reuse_with_different_request_is_conflict`. Expected RED: import failure because the idempotency repository does not exist. Count RED only after the test runner starts and reports this task-owned missing-module/interface import/configuration failure; collection failure, runner startup, environment or external-state failure, unrelated import, or unrelated failure does not count as RED. Record the exact task-owned failure and exit code.
+- [ ] **Step 3: Define v0002 idempotency storage.** Apply IP-1: Add the v0002 migration and transaction-bound identity repository required by IP-1.
+- [ ] **Step 4: Enforce NEW/REPLAY/conflict semantics.** Apply IP-2: Add changed-request conflict detection with zero mutation required by IP-2.
+- [ ] **Step 5: Pass the event-reuse RED case.** Apply IP-3: Make the exact reused-event assertion return conflict for IP-3.
+- [ ] **Step 6: Seal idempotency ownership.** Apply IP-4: Keep registry, result reconstruction, and Run transitions outside Task 7.C as required by IP-4.
+- [ ] **Step 7: Run Task 7.C Target GREEN.** Re-run `python -m pytest -q tests/unit/storage/test_idempotency.py::test_event_id_reuse_with_different_request_is_conflict`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 7.C's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 7.C Schema verification.** Run `python -m pytest -q tests/unit/storage/test_idempotency_migration.py::test_idempotency_migration_has_exact_schema`. Record the exact command and actual result.
+- [ ] **Step 10: Run Task 7.C Domain and acceptance verification.** Run `python -m pytest -q tests/unit/storage/test_idempotency_migration.py tests/unit/storage/test_idempotency.py`. Verify all commands exit `0`; exact v0002 schema, NEW, identical REPLAY, conflict, transaction rollback, and concurrency cases pass. Record the command, actual result, and evaluated acceptance conditions; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 11: Run Task 7.C standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 7.C spec compliance review.** Provide the Goal, Milestone 7 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 7.C spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 7.C code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 7.C quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 7.C after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 7.C completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 7.D: Complete V1 Migration Registry Composition
 
@@ -2511,6 +3613,12 @@ Expected RED: import failure because the idempotency repository does not exist.
 - Test: `tests/unit/storage/test_migration_registry.py`
 
 **Interfaces:** Consumes exactly `RUN_WAIT_V1_MIGRATION`, `IDEMPOTENCY_V1_MIGRATION`, `DISCLOSURE_GRANTS_V1_MIGRATION`, `DISCLOSURE_AUTHORIZATIONS_V1_MIGRATION`, `MEMORY_V1_MIGRATION`, `AUDIT_V1_MIGRATION`, `AGENT_TURNS_V1_MIGRATION`, `FEEDBACK_V1_MIGRATION`, `ACTIONS_V1_MIGRATION`, `WRITEBACK_APPROVALS_V1_MIGRATION`, `PERSISTENCE_V1_MIGRATION`, and `RECOVERY_V1_MIGRATION`; produces `ALL_V1_MIGRATIONS: tuple[MigrationV1, ...]`.
+
+**Implementation points:**
+- Compose exactly the twelve declared domain migration constants into `ALL_V1_MIGRATIONS` with versions 1–12, expected names/order, and unique descriptor checksums.
+- Fail closed on missing, duplicate, gapped, reordered, early/late, wrong-owner, unexpected, or checksum-drifted composition; prefix schema ownership is verified through read-only test introspection.
+- Make both declared registry RED probes enforce missing-migration rejection and exact per-prefix/final table ownership before accepting the complete tuple.
+- Own composition only. Production registry code contains no DDL, repositories, product behavior, fixture tables, or imported/duplicated test-only owner map.
 
 **Intentionally failing test:**
 
@@ -2590,7 +3698,30 @@ def test_registry_prefixes_match_exact_schema_owner_map(
 - Domain: `python -m pytest -q tests/unit/storage/test_migration_registry.py tests/unit/storage/test_migration_engine.py`
 - Expected GREEN: all three commands exit `0`; exact complete composition applies atomically; every prefix adds only its owner-map delta; v0001 separately adds framework `schema_migrations`; the final set equals exactly 18 tables; and missing/duplicate/wrong-owner/early/late/gapped/reordered/unexpected/checksum-drifted inputs fail closed.
 
+**Review gate:**
+1. Spec compliance review checks Task 7.D's Goal, Milestone 7's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent complete v1 migration registry contract.
+2. Code quality review checks exact producer set, versions/names/order/checksums, composition immutability, test-only owner-map isolation, prefix introspection purity, and final 18-table agreement.
+3. Critical/Important findings block Tasks 37.B and 38.F until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 7.D's exact RED probe.** Add the complete declared `test_registry_rejects_missing_required_domain_migration` and `test_registry_prefixes_match_exact_schema_owner_map` cases to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 7.D RED.** Run `python -m pytest -q tests/unit/storage/test_migration_registry.py::test_registry_rejects_missing_required_domain_migration`. Expected RED: import failure because no final registry/composition contract exists. Count RED only after the test runner starts and reports this task-owned missing-module/interface import/configuration failure; collection failure, runner startup, environment or external-state failure, unrelated import, or unrelated failure does not count as RED. Record the exact task-owned failure and exit code.
+- [ ] **Step 3: Compose the twelve migration constants.** Apply IP-1: Add the exact twelve-constant tuple and version/name/checksum checks required by IP-1.
+- [ ] **Step 4: Enforce registry and schema ownership.** Apply IP-2: Add missing/duplicate/order rejection and test-only prefix owner-map verification required by IP-2.
+- [ ] **Step 5: Pass both registry RED probes.** Apply IP-3: Make both declared missing-migration and owner-map assertions pass for IP-3.
+- [ ] **Step 6: Seal composition-only ownership.** Apply IP-4: Keep DDL, repository behavior, fixture tables, and owner maps outside production registry code as required by IP-4.
+- [ ] **Step 7: Run Task 7.D Target GREEN.** Re-run `python -m pytest -q tests/unit/storage/test_migration_registry.py::test_registry_rejects_missing_required_domain_migration`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 7.D's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 7.D Schema owner verification.** Run `python -m pytest -q tests/unit/storage/test_migration_registry.py::test_registry_prefixes_match_exact_schema_owner_map`. Record the exact command and actual result.
+- [ ] **Step 10: Run Task 7.D Domain and acceptance verification.** Run `python -m pytest -q tests/unit/storage/test_migration_registry.py tests/unit/storage/test_migration_engine.py`. Verify all three commands exit `0`; exact complete composition applies atomically; every prefix adds only its owner-map delta; v0001 separately adds framework `schema_migrations`; the final set equals exactly 18 tables; and missing/duplicate/wrong-owner/early/late/gapped/reordered/unexpected/checksum-drifted inputs fail closed. Record the command, actual result, and evaluated acceptance conditions; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 11: Run Task 7.D standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 7.D spec compliance review.** Provide the Goal, Milestone 7 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 7.D spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 7.D code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 7.D quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 7.D after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 7.D completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 8.A: Strict Run Request and Frozen Configuration
 
@@ -2614,6 +3745,12 @@ def test_registry_prefixes_match_exact_schema_owner_map(
 
 **Interfaces:** Consumes Task 6.E `ProfileRegistry` and Task 7.B `RunRepository`; produces `ValidateRunRequestV1`, `ValidatedRunRequestV1`, `RunConfigSnapshotV1`, `validate_request(request: Mapping[str, object], profiles: ProfileRegistry) -> ValidatedRunRequestV1 | ConfigInvalidV1`, `freeze_run_config(request: ValidatedRunRequestV1) -> RunConfigSnapshotV1`, `create_run(request: ValidatedRunRequestV1, repository: RunRepository) -> RunCreatedV1`, and `RunRequestService.validate_and_create(raw_request: Mapping[str, object]) -> RunCreatedV1 | ConfigInvalidV1`.
 
+**Implementation points:**
+- Validate the closed raw request against the built-in `ProfileRegistry`, produce one `ValidatedRunRequestV1`, and freeze an immutable `RunConfigSnapshotV1`.
+- Reject invalid, unknown, ambiguous, or custom endpoint/profile fields with stable reasons before a run id exists and with zero repository inserts.
+- Make `test_custom_base_url_is_rejected_without_creating_a_run` GREEN with the smallest custom-URL rejection before completing valid permutation equivalence.
+- End ownership after one atomic `CREATED` insert. Workspace lease, Snapshot, readiness, and PREFLIGHT execution remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -2635,7 +3772,30 @@ def test_custom_base_url_is_rejected_without_creating_a_run(
 - Domain: `python -m pytest -q tests/unit/runs/test_request.py`
 - Expected: invalid requests produce stable reasons and zero inserts; valid permutations bind one identical frozen config and create exactly one Run.
 
+**Review gate:**
+1. Spec compliance review checks Task 8.A's Goal, Milestone 8's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent run-request admission/config freeze contract.
+2. Code quality review checks closed-field validation, profile identity binding, immutable config freezing, zero-side-effect rejection, one-insert atomicity, and stable invalid reasons.
+3. Critical/Important findings block Tasks 8.B and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 8.A's exact RED probe.** Add the complete declared `test_custom_base_url_is_rejected_without_creating_a_run` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 8.A RED.** Run `python -m pytest -q tests/unit/runs/test_request.py::test_custom_base_url_is_rejected_without_creating_a_run`. Expected RED: the exact assertion fails because the task-owned run-request admission/config freeze behavior does not exist. Record the task-owned failing assertion and exit code; collection, import, runner, environment startup, or unrelated failure does not count as RED.
+- [ ] **Step 3: Validate and freeze the run request.** Apply IP-1: Add closed request validation and immutable config snapshot construction required by IP-1.
+- [ ] **Step 4: Reject invalid input before Run creation.** Apply IP-2: Add custom endpoint/profile rejection with zero inserts required by IP-2.
+- [ ] **Step 5: Pass the custom-URL RED case.** Apply IP-3: Make the exact custom-base-url assertion return config invalid for IP-3.
+- [ ] **Step 6: Seal request-admission ownership.** Apply IP-4: Keep lease, Snapshot, readiness, and PREFLIGHT behavior outside Task 8.A as required by IP-4.
+- [ ] **Step 7: Run Task 8.A Target GREEN.** Re-run `python -m pytest -q tests/unit/runs/test_request.py::test_custom_base_url_is_rejected_without_creating_a_run`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 8.A's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 8.A Domain verification.** Run `python -m pytest -q tests/unit/runs/test_request.py`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 8.A's declared acceptance.** Verify invalid requests produce stable reasons and zero inserts; valid permutations bind one identical frozen config and create exactly one Run. Record the evaluated conditions; keep the task incomplete while any condition is non-terminal.
+- [ ] **Step 11: Run Task 8.A standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 8.A spec compliance review.** Provide the Goal, Milestone 8 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 8.A spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 8.A code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 8.A quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 8.A after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 8.A completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 8.B: Ordered Admission Coordinator
 
@@ -2660,6 +3820,12 @@ def test_custom_base_url_is_rejected_without_creating_a_run(
 
 **Interfaces:** Produces `AdmissionPortsV1(workspace: WorkspaceAdmissionPortV1, recovery: RecoveryAdmissionPortV1, snapshot: SnapshotAdmissionPortV1, static_profile: StaticProfileAdmissionPortV1, execution_readiness: ExecutionReadinessPortV1, credential_readiness: CredentialReadinessPortV1, baseline: BaselineAdmissionPortV1)` and `AdmissionCoordinator.start_run(run_id: str) -> AdmissionResultV1`; consumes Task 8.A's frozen Run and Task 7.B lifecycle repository.
 
+**Implementation points:**
+- Compose only the declared admission ports and lifecycle repository into `AdmissionCoordinator.start_run` for one existing CREATED Run.
+- Invoke ports in the exact frozen PREFLIGHT order; every failure returns after an exact prefix and prevents all later calls and forbidden side effects.
+- Make `test_snapshot_precheck_failure_calls_no_later_admission_port` GREEN with the smallest snapshot-failure trace before completing all failure prefixes.
+- Own coordination through interfaces only. Concrete Win32, Docker, credential, Snapshot, baseline, Agent, LLM, install, build, and workspace-write behavior remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -2680,7 +3846,30 @@ def test_snapshot_precheck_failure_calls_no_later_admission_port(
 - Domain: `python -m pytest -q tests/unit/runs/test_admission.py tests/unit/runs/test_admission_order.py`
 - Expected: every failure-point trace is an exact prefix of the required order; rejected PREFLIGHT performs no Agent action, LLM call, execution, install, image build, or workspace write.
 
+**Review gate:**
+1. Spec compliance review checks Task 8.B's Goal, Milestone 8's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent ordered PREFLIGHT coordinator contract.
+2. Code quality review checks exact port ordering, short-circuit traces, lifecycle atomicity, dependency injection, forbidden-effect absence, and no concrete adapter imports.
+3. Critical/Important findings block Tasks 9.A, 20.A, 25.B, 25.G, 28.A, 29.A, and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 8.B's exact RED probe.** Add the complete declared `test_snapshot_precheck_failure_calls_no_later_admission_port` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 8.B RED.** Run `python -m pytest -q tests/unit/runs/test_admission_order.py::test_snapshot_precheck_failure_calls_no_later_admission_port`. Expected RED: the exact assertion fails because the task-owned ordered PREFLIGHT coordinator behavior does not exist. Record the task-owned failing assertion and exit code; collection, import, runner, environment startup, or unrelated failure does not count as RED.
+- [ ] **Step 3: Compose the PREFLIGHT ports.** Apply IP-1: Add the typed port bundle and coordinator entrypoint required by IP-1.
+- [ ] **Step 4: Enforce prefix-only failure traces.** Apply IP-2: Add exact ordering and no-later-call short-circuit required by IP-2.
+- [ ] **Step 5: Pass the snapshot-failure RED case.** Apply IP-3: Make the declared snapshot-precheck trace stop at its failure for IP-3.
+- [ ] **Step 6: Seal coordinator-only ownership.** Apply IP-4: Keep all concrete adapters and forbidden side effects outside Task 8.B as required by IP-4.
+- [ ] **Step 7: Run Task 8.B Target GREEN.** Re-run `python -m pytest -q tests/unit/runs/test_admission_order.py::test_snapshot_precheck_failure_calls_no_later_admission_port`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 8.B's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 8.B Domain verification.** Run `python -m pytest -q tests/unit/runs/test_admission.py tests/unit/runs/test_admission_order.py`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 8.B's declared acceptance.** Verify every failure-point trace is an exact prefix of the required order; rejected PREFLIGHT performs no Agent action, LLM call, execution, install, image build, or workspace write. Record the evaluated conditions; keep the task incomplete while any condition is non-terminal.
+- [ ] **Step 11: Run Task 8.B standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 8.B spec compliance review.** Provide the Goal, Milestone 8 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 8.B spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 8.B code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 8.B quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 8.B after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 8.B completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 9.A: Win32 Workspace and Final-object Identity
 
@@ -2704,6 +3893,12 @@ def test_snapshot_precheck_failure_calls_no_later_admission_port(
 
 **Interfaces:** Produces `resolve_workspace_identity(locator: Path) -> WorkspaceIdentityV1` and `inspect_workspace_object(root: WorkspaceIdentityV1, path: CanonicalRelativePathV1) -> FinalObjectIdentityV1`.
 
+**Implementation points:**
+- Resolve workspace and child objects from Win32 handles, producing sealed root/final identities with ancestry, kind, reparse, ADS, link, and ACL facts.
+- Reject every unprovable, aliased, reparse, ADS, hard-link, wrong-kind, ACL, or root-escape object through stable closed errors; lexical identity alone never authorizes.
+- Make `test_reparse_final_object_is_rejected` GREEN with the smallest real handle-derived reparse rejection before completing Task 1 sentinel parity.
+- Own handle-derived identity and stable rejection only. Mutex acquisition, Git inspection, editable policy, and CREATE/REPLACE authorization remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -2725,7 +3920,30 @@ Expected RED: import failure because the production Win32 identity/object adapte
 - Domain: `python -m pytest -q -o addopts='' -m windows_integration tests/integration/windows/test_workspace_identity.py tests/integration/windows/test_workspace_objects.py`
 - Expected GREEN: both commands exit `0` on the Windows runner with no required skip; every Task 1 identity/object sentinel matches the production adapter.
 
+**Review gate:**
+1. Spec compliance review checks Task 9.A's Goal, Milestone 9's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent Win32 workspace object identity contract.
+2. Code quality review checks handle lifetime, final-versus-lexical identity, ancestry proof, object-kind/reparse/ADS/link/ACL coverage, stable Win32 error handling, and cleanup.
+3. Critical/Important findings block Tasks 9.B and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 9.A's exact RED probe.** Add the complete declared `test_reparse_final_object_is_rejected` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 9.A RED.** Run `python -m pytest -q -o addopts='' -m windows_integration tests/integration/windows/test_workspace_objects.py::test_reparse_final_object_is_rejected`. Expected RED: import failure because the production Win32 identity/object adapters do not exist. Count RED only after the test runner starts and reports this task-owned missing-module/interface import/configuration failure; collection failure, runner startup, environment or external-state failure, unrelated import, or unrelated failure does not count as RED. Record the exact task-owned failure and exit code.
+- [ ] **Step 3: Resolve handle-derived workspace identity.** Apply IP-1: Add handle-derived root/final identity production required by IP-1.
+- [ ] **Step 4: Reject unsafe final-object facts.** Apply IP-2: Add the real reparse-object closed rejection required by IP-2.
+- [ ] **Step 5: Pass the reparse-object RED case.** Apply IP-3: Make the exact Windows sentinel assertion reject for IP-3.
+- [ ] **Step 6: Seal identity-adapter ownership.** Apply IP-4: Keep mutex, Git, policy, and operation authorization outside Task 9.A as required by IP-4.
+- [ ] **Step 7: Run Task 9.A Target GREEN.** Re-run `python -m pytest -q -o addopts='' -m windows_integration tests/integration/windows/test_workspace_objects.py::test_reparse_final_object_is_rejected`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 9.A's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 9.A Domain verification.** Run `python -m pytest -q -o addopts='' -m windows_integration tests/integration/windows/test_workspace_identity.py tests/integration/windows/test_workspace_objects.py`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 9.A's declared acceptance.** Verify both commands exit `0` on the Windows runner with no required skip; every Task 1 identity/object sentinel matches the production adapter. Record the evaluated conditions; keep Windows/handle evidence and the task incomplete while any required result is non-terminal.
+- [ ] **Step 11: Run Task 9.A standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 9.A spec compliance review.** Provide the Goal, Milestone 9 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 9.A spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 9.A code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 9.A quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 9.A after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 9.A completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 9.B: Cross-process Workspace Mutex
 
@@ -2746,6 +3964,12 @@ Expected RED: import failure because the production Win32 identity/object adapte
 - Test: `tests/integration/windows/test_named_mutex.py`
 
 **Interfaces:** Produces `WorkspaceMutex.acquire(identity: WorkspaceIdentityV1, timeout_ms: int) -> WorkspaceLeaseV1` and `WorkspaceMutex.release(lease: WorkspaceLeaseV1) -> None`.
+
+**Implementation points:**
+- Derive one stable named mutex from `WorkspaceIdentityV1` and return an explicit lease that owns the acquired handle until release.
+- Guarantee same-workspace cross-process exclusion while preserving different-workspace independence, bounded timeout, explicit release, and crashed-child cleanup.
+- Make `test_second_process_cannot_acquire_same_workspace_mutex` GREEN with the smallest two-process contention path before completing timeout/recovery cases.
+- Own mutex naming, handle lifetime, timeout, lease, and release only. Git, object/path inspection, persistence, and workspace mutation remain out of scope.
 
 **Intentionally failing test:**
 
@@ -2769,7 +3993,30 @@ Expected RED: import failure because the production named-mutex adapter does not
 - Domain: `python -m pytest -q -o addopts='' -m windows_integration tests/integration/windows/test_named_mutex.py`
 - Expected GREEN: both commands exit `0` on the Windows runner; same-workspace exclusion, different-workspace independence, timeout, release, and crashed-child cleanup pass.
 
+**Review gate:**
+1. Spec compliance review checks Task 9.B's Goal, Milestone 9's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent Win32 workspace mutex lease contract.
+2. Code quality review checks deterministic mutex naming, cross-process exclusivity, timeout boundaries, lease identity, idempotent cleanup/release, abandoned-handle behavior, and error propagation.
+3. Critical/Important findings block Tasks 9.C and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 9.B's exact RED probe.** Add the complete declared `test_second_process_cannot_acquire_same_workspace_mutex` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 9.B RED.** Run `python -m pytest -q -o addopts='' -m windows_integration tests/integration/windows/test_named_mutex.py::test_second_process_cannot_acquire_same_workspace_mutex`. Expected RED: import failure because the production named-mutex adapter does not exist. Count RED only after the test runner starts and reports this task-owned missing-module/interface import/configuration failure; collection failure, runner startup, environment or external-state failure, unrelated import, or unrelated failure does not count as RED. Record the exact task-owned failure and exit code.
+- [ ] **Step 3: Define the identity-bound mutex lease.** Apply IP-1: Add identity-derived mutex acquire/release and lease interfaces required by IP-1.
+- [ ] **Step 4: Enforce cross-process exclusivity.** Apply IP-2: Add the same-workspace contention and cleanup guard required by IP-2.
+- [ ] **Step 5: Pass the second-process RED case.** Apply IP-3: Make the exact second-process assertion fail acquisition for IP-3.
+- [ ] **Step 6: Seal mutex-only ownership.** Apply IP-4: Keep Git, object/path, persistence, and workspace behavior outside Task 9.B as required by IP-4.
+- [ ] **Step 7: Run Task 9.B Target GREEN.** Re-run `python -m pytest -q -o addopts='' -m windows_integration tests/integration/windows/test_named_mutex.py::test_second_process_cannot_acquire_same_workspace_mutex`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 9.B's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 9.B Domain verification.** Run `python -m pytest -q -o addopts='' -m windows_integration tests/integration/windows/test_named_mutex.py`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 9.B's declared acceptance.** Verify both commands exit `0` on the Windows runner; same-workspace exclusion, different-workspace independence, timeout, release, and crashed-child cleanup pass. Record the evaluated conditions; keep Windows/handle evidence and the task incomplete while any required result is non-terminal.
+- [ ] **Step 11: Run Task 9.B standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 9.B spec compliance review.** Provide the Goal, Milestone 9 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 9.B spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 9.B code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 9.B quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 9.B after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 9.B completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 9.C: Sealed Git Snapshot Preflight
 
@@ -2791,6 +4038,12 @@ Expected RED: import failure because the production named-mutex adapter does not
 - Test: `tests/integration/windows/test_git_preflight.py`
 
 **Interfaces:** Produces `run_git_snapshot_prechecks(identity: WorkspaceIdentityV1, reference: ReferenceProfileManifestV1) -> GitPreflightResultV1`.
+
+**Implementation points:**
+- Invoke Git without a shell under closed configuration/environment and seal config, index, HEAD, worktree, ignore, attribute, and conversion observations before Snapshot creation.
+- Reject skip-worktree, alias, conversion, forbidden config/index/worktree, and identity drift states deterministically before any Snapshot or repository write.
+- Make `test_tracked_file_with_skip_worktree_is_rejected_before_snapshot` GREEN with the smallest index-flag rejection before completing Windows adapter parity.
+- Own sealed non-secret Git observations only. Snapshot construction, candidate inspection, lease acquisition, and repository-byte writes remain out of scope.
 
 **Intentionally failing test:**
 
@@ -2814,7 +4067,30 @@ Expected RED: import failure because sealed Git preflight does not exist.
 - Windows: `python -m pytest -q -o addopts='' -m windows_integration tests/integration/windows/test_git_preflight.py`
 - Expected GREEN: all commands exit `0`; every forbidden config/index/worktree/conversion/alias state rejects before Snapshot creation.
 
+**Review gate:**
+1. Spec compliance review checks Task 9.C's Goal, Milestone 9's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent sealed Git preflight contract.
+2. Code quality review checks shell-free argv, closed environment/config, complete Git state sealing, non-secret evidence, skip-worktree/conversion handling, stable errors, and zero writes.
+3. Critical/Important findings block Tasks 9.D and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 9.C's exact RED probe.** Add the complete declared `test_tracked_file_with_skip_worktree_is_rejected_before_snapshot` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 9.C RED.** Run `python -m pytest -q tests/unit/workspace/test_git_preflight.py::test_tracked_file_with_skip_worktree_is_rejected_before_snapshot`. Expected RED: import failure because sealed Git preflight does not exist. Count RED only after the test runner starts and reports this task-owned missing-module/interface import/configuration failure; collection failure, runner startup, environment or external-state failure, unrelated import, or unrelated failure does not count as RED. Record the exact task-owned failure and exit code.
+- [ ] **Step 3: Seal Git preflight observations.** Apply IP-1: Add closed shell-free Git observation collection required by IP-1.
+- [ ] **Step 4: Reject forbidden Git states.** Apply IP-2: Add skip-worktree rejection before Snapshot creation required by IP-2.
+- [ ] **Step 5: Pass the skip-worktree RED case.** Apply IP-3: Make the exact tracked-file assertion reject for IP-3.
+- [ ] **Step 6: Seal Git-preflight ownership.** Apply IP-4: Keep Snapshot, candidate, lease, and repository writes outside Task 9.C as required by IP-4.
+- [ ] **Step 7: Run Task 9.C Target GREEN.** Re-run `python -m pytest -q tests/unit/workspace/test_git_preflight.py::test_tracked_file_with_skip_worktree_is_rejected_before_snapshot`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 9.C's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 9.C Domain verification.** Run `python -m pytest -q tests/unit/workspace/test_git_preflight.py`. Record the exact command and actual result.
+- [ ] **Step 10: Run Task 9.C Windows and acceptance verification.** Run `python -m pytest -q -o addopts='' -m windows_integration tests/integration/windows/test_git_preflight.py`. Verify all commands exit `0`; every forbidden config/index/worktree/conversion/alias state rejects before Snapshot creation. Record the command, actual result, and evaluated acceptance conditions; keep the task incomplete while the external result is non-terminal.
+- [ ] **Step 11: Run Task 9.C standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 9.C spec compliance review.** Provide the Goal, Milestone 9 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 9.C spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 9.C code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 9.C quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 9.C after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 9.C completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 9.D: Handle-bound Existing/create Path Authorization
 
@@ -2836,6 +4112,12 @@ Expected RED: import failure because sealed Git preflight does not exist.
 
 **Interfaces:** Produces `PathGuard.authorize_existing(root: WorkspaceIdentityV1, path: CanonicalRelativePathV1, expected_kind: WorkspaceObjectKindV1) -> AuthorizedObjectHandleV1` and `PathGuard.authorize_create(root: WorkspaceIdentityV1, path: CanonicalRelativePathV1) -> AuthorizedParentHandleV1`.
 
+**Implementation points:**
+- Combine canonical lexical paths, handle-derived final-object/root ancestry, sealed Git/ignore facts, sensitive-path rules, and frozen editable policy into authorized existing/create handles.
+- Fail closed on alias, case collision, reparse, ADS, link, wrong kind, root escape, sensitive path, noneditable operation, or unproved create parent; never fall back to strings.
+- Make `test_create_rejects_case_alias_of_existing_path` GREEN with the smallest create-alias rejection before completing existing/create authorization cases.
+- Own authorization facts and handles only. Workspace mutation, patch parsing, policy widening, and string-only authorization remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -2854,7 +4136,30 @@ Expected RED: import failure because `PathGuard` does not exist.
 - Domain: `python -m pytest -q tests/unit/workspace/test_path_guard.py`
 - Expected GREEN: both commands exit `0`; existing/create ancestry, kind, alias, sensitive, reparse/ADS/link, and root-escape cases fail closed.
 
+**Review gate:**
+1. Spec compliance review checks Task 9.D's Goal, Milestone 9's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent handle-bound path authorization contract.
+2. Code quality review checks handle/root binding, ancestry and kind proof, case/alias collisions, sensitive/editable precedence, create-parent safety, stable failures, and no string fallback.
+3. Critical/Important findings block Tasks 10.A, 10.C, 12.A, 17.C, 18.B, 26.A, 26.C, 31.A, 37.B, 38.D, and 38.E until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 9.D's exact RED probe.** Add the complete declared `test_create_rejects_case_alias_of_existing_path` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 9.D RED.** Run `python -m pytest -q tests/unit/workspace/test_path_guard.py::test_create_rejects_case_alias_of_existing_path`. Expected RED: import failure because `PathGuard` does not exist. Count RED only after the test runner starts and reports this task-owned missing-module/interface import/configuration failure; collection failure, runner startup, environment or external-state failure, unrelated import, or unrelated failure does not count as RED. Record the exact task-owned failure and exit code.
+- [ ] **Step 3: Compose handle-bound path authorization.** Apply IP-1: Add existing/create authorization from declared lexical, handle, Git, and policy facts required by IP-1.
+- [ ] **Step 4: Reject aliases and unsafe ancestry.** Apply IP-2: Add case-alias/create-parent closed rejection required by IP-2.
+- [ ] **Step 5: Pass the create-alias RED case.** Apply IP-3: Make the exact create-alias assertion reject for IP-3.
+- [ ] **Step 6: Seal authorization-only ownership.** Apply IP-4: Keep mutation, patch parsing, policy widening, and string authorization outside Task 9.D as required by IP-4.
+- [ ] **Step 7: Run Task 9.D Target GREEN.** Re-run `python -m pytest -q tests/unit/workspace/test_path_guard.py::test_create_rejects_case_alias_of_existing_path`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 9.D's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 9.D Domain verification.** Run `python -m pytest -q tests/unit/workspace/test_path_guard.py`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 9.D's declared acceptance.** Verify both commands exit `0`; existing/create ancestry, kind, alias, sensitive, reparse/ADS/link, and root-escape cases fail closed. Record the evaluated conditions; keep the task incomplete while any condition is non-terminal.
+- [ ] **Step 11: Run Task 9.D standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 9.D spec compliance review.** Provide the Goal, Milestone 9 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 9.D spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 9.D code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 9.D quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 9.D after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 9.D completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 10.A: Immutable Content Object Store
 
@@ -2873,6 +4178,12 @@ Expected RED: import failure because `PathGuard` does not exist.
 - Test: `tests/unit/trees/test_content_store.py`
 
 **Interfaces:** Produces `ContentObjectRefV1(sha256: str, byte_count: int)`, `ContentObjectStore.put(raw_bytes: bytes) -> ContentObjectRefV1`, and `ContentObjectStore.get(ref: ContentObjectRefV1) -> bytes`.
+
+**Implementation points:**
+- Store exact raw bytes under verified SHA-256 identity and return immutable `ContentObjectRefV1` values with matching byte counts.
+- On every get, recheck digest and size before returning bytes; deduplicate identical content and fail closed on corruption, drift, or missing objects.
+- Make `test_get_rejects_bytes_whose_digest_drifted` GREEN with the smallest corrupted-object read before completing put/get/dedup cases.
+- Own content-addressed bytes only. Text classification, Snapshot construction, mutable workspace reads, and edit authorization remain out of scope.
 
 **Intentionally failing test:**
 
@@ -2893,7 +4204,30 @@ def test_get_rejects_bytes_whose_digest_drifted(store: ContentObjectStore) -> No
 - Domain: `python -m pytest -q tests/unit/trees/test_content_store.py`
 - Expected GREEN: put/get/dedup/integrity cases pass and corruption fails closed.
 
+**Review gate:**
+1. Spec compliance review checks Task 10.A's Goal, Milestone 10's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent immutable content-object store contract.
+2. Code quality review checks raw-byte preservation, digest/size verification, dedup identity, atomic object writes, corruption/missing-object errors, immutability, and no workspace-path reads.
+3. Critical/Important findings block Tasks 10.C and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 10.A's exact RED probe.** Add the complete declared `test_get_rejects_bytes_whose_digest_drifted` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 10.A RED.** Run `python -m pytest -q tests/unit/trees/test_content_store.py::test_get_rejects_bytes_whose_digest_drifted`. Expected RED: the exact assertion fails because the task-owned immutable content-object store behavior does not exist. Record the task-owned failing assertion and exit code; collection, import, runner, environment startup, or unrelated failure does not count as RED.
+- [ ] **Step 3: Define content-addressed byte storage.** Apply IP-1: Add raw-byte put/get and immutable reference construction required by IP-1.
+- [ ] **Step 4: Verify every retrieved object.** Apply IP-2: Add retrieval digest/size verification and first corruption rejection required by IP-2.
+- [ ] **Step 5: Pass the digest-drift RED case.** Apply IP-3: Make the exact drifted-bytes assertion fail closed for IP-3.
+- [ ] **Step 6: Seal content-store ownership.** Apply IP-4: Keep classification, Snapshot, workspace, and authorization outside Task 10.A as required by IP-4.
+- [ ] **Step 7: Run Task 10.A Target GREEN.** Re-run `python -m pytest -q tests/unit/trees/test_content_store.py::test_get_rejects_bytes_whose_digest_drifted`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 10.A's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 10.A Domain verification.** Run `python -m pytest -q tests/unit/trees/test_content_store.py`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 10.A's declared acceptance.** Verify put/get/dedup/integrity cases pass and corruption fails closed. Record the evaluated conditions; keep the task incomplete while any condition is non-terminal.
+- [ ] **Step 11: Run Task 10.A standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 10.A spec compliance review.** Provide the Goal, Milestone 10 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 10.A spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 10.A code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 10.A quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 10.A after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 10.A completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 10.B: Shared Supported-text Classifier
 
@@ -2913,6 +4247,12 @@ def test_get_rejects_bytes_whose_digest_drifted(store: ContentObjectStore) -> No
 
 **Interfaces:** Produces `TextMetadataV1(encoding: Literal["UTF8","UTF8_BOM"], newline: Literal["LF","CRLF"], final_newline: Literal[True])`, `TextFileClassificationV1 = SupportedTextFileV1 | NonTextFileV1`, and pure `classify_supported_text(raw_bytes: bytes) -> TextFileClassificationV1`.
 
+**Implementation points:**
+- Classify raw bytes through one pure shared UTF-8/UTF-8-BOM, LF/CRLF, and required-final-newline contract without changing bytes.
+- Return a valid non-text classification for invalid encoding, binary data, mixed newlines, missing final newline, or other unsupported combinations rather than normalizing them.
+- Make `test_mixed_newlines_are_non_text` GREEN with the smallest mixed-newline classification before completing the byte matrix.
+- Own pure byte classification only. Content storage, tree construction, normalization, and filesystem path reads remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -2929,7 +4269,30 @@ def test_mixed_newlines_are_non_text() -> None:
 - Domain: `python -m pytest -q tests/unit/trees/test_text_classifier.py`
 - Expected GREEN: UTF-8/BOM/LF/CRLF/final-newline cases classify exactly and invalid/binary/mixed cases remain valid non-text entries.
 
+**Review gate:**
+1. Spec compliance review checks Task 10.B's Goal, Milestone 10's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent supported-text classifier contract.
+2. Code quality review checks byte-level purity, BOM/encoding closure, newline exclusivity, final-newline enforcement, deterministic non-text outcomes, and zero normalization/I/O.
+3. Critical/Important findings block Tasks 10.C and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 10.B's exact RED probe.** Add the complete declared `test_mixed_newlines_are_non_text` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 10.B RED.** Run `python -m pytest -q tests/unit/trees/test_text_classifier.py::test_mixed_newlines_are_non_text`. Expected RED: the exact assertion fails because the task-owned supported-text classifier behavior does not exist. Record the task-owned failing assertion and exit code; collection, import, runner, environment startup, or unrelated failure does not count as RED.
+- [ ] **Step 3: Define the shared text classifier.** Apply IP-1: Add the pure supported-text/non-text result and metadata construction required by IP-1.
+- [ ] **Step 4: Reject unsupported byte/newline forms.** Apply IP-2: Add mixed-newline and first invalid-byte classification required by IP-2.
+- [ ] **Step 5: Pass the mixed-newline RED case.** Apply IP-3: Make the exact mixed-newline assertion return non-text for IP-3.
+- [ ] **Step 6: Seal classifier-only ownership.** Apply IP-4: Keep storage, trees, normalization, and filesystem reads outside Task 10.B as required by IP-4.
+- [ ] **Step 7: Run Task 10.B Target GREEN.** Re-run `python -m pytest -q tests/unit/trees/test_text_classifier.py::test_mixed_newlines_are_non_text`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 10.B's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 10.B Domain verification.** Run `python -m pytest -q tests/unit/trees/test_text_classifier.py`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 10.B's declared acceptance.** Verify UTF-8/BOM/LF/CRLF/final-newline cases classify exactly and invalid/binary/mixed cases remain valid non-text entries. Record the evaluated conditions; keep the task incomplete while any condition is non-terminal.
+- [ ] **Step 11: Run Task 10.B standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 10.B spec compliance review.** Provide the Goal, Milestone 10 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 10.B spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 10.B code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 10.B quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 10.B after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 10.B completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 10.C: Sole SnapshotTree Construction and Verification
 
@@ -2950,6 +4313,12 @@ def test_mixed_newlines_are_non_text() -> None:
 
 **Interfaces:** Produces `SnapshotTreeV1`, `SnapshotIntegrityResultV1`, `create_snapshot(preflight: AcceptedGitPreflightV1, store: ContentObjectStore, classifier: SupportedTextClassifierV1) -> SnapshotTreeV1`, and `verify_snapshot(snapshot: SnapshotTreeV1, store: ContentObjectStore) -> SnapshotIntegrityResultV1`.
 
+**Implementation points:**
+- Construct the Run’s sole `SnapshotTreeV1` only from accepted sealed Git-preflight bytes/object identities using the Task 10.A store and Task 10.B classifier.
+- Bind deterministic entry order, content refs, object identity, text metadata, policy facts, and root digest; every size/order/content/object/policy drift fails integrity verification.
+- Make `test_snapshot_rejects_preflight_object_identity_drift` GREEN with the smallest sealed-identity mismatch before completing Snapshot integrity cases.
+- Own Snapshot entry construction, root digest, and verification only. Mutable repository paths are never reread and content/classification rules are not redefined.
+
 **Intentionally failing test:**
 
 ```python
@@ -2967,7 +4336,30 @@ def test_snapshot_rejects_preflight_object_identity_drift() -> None:
 - Domain: `python -m pytest -q -o addopts='' -m windows_integration tests/integration/windows/test_snapshot_from_preflight.py`
 - Expected GREEN: exact sealed preflight builds one verified deterministic Snapshot and every size/order/content/object/policy drift rejects.
 
+**Review gate:**
+1. Spec compliance review checks Task 10.C's Goal, Milestone 10's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent sealed immutable Snapshot contract.
+2. Code quality review checks sealed-input provenance, deterministic entry ordering/root digest, object/content/policy identity binding, integrity fail-closed behavior, and zero mutable-workspace rereads.
+3. Critical/Important findings block Tasks 11.A, 12.A, 18.B, 18.D, 20.A, 22.A, 22.B, 24.B, 31.A, and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 10.C's exact RED probe.** Add the complete declared `test_snapshot_rejects_preflight_object_identity_drift` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 10.C RED.** Run `python -m pytest -q -o addopts='' -m windows_integration tests/integration/windows/test_snapshot_from_preflight.py::test_snapshot_rejects_preflight_object_identity_drift`. Expected RED: the exact assertion fails because the task-owned sealed immutable Snapshot behavior does not exist. Record the task-owned failing assertion and exit code; collection, import, runner, Windows/handle environment startup, or unrelated failure does not count as RED.
+- [ ] **Step 3: Construct Snapshot from sealed preflight.** Apply IP-1: Add sealed-preflight-to-Snapshot construction through the declared store/classifier required by IP-1.
+- [ ] **Step 4: Bind complete Snapshot identity.** Apply IP-2: Add object-identity/root-digest integrity verification required by IP-2.
+- [ ] **Step 5: Pass the object-drift RED case.** Apply IP-3: Make the exact preflight identity-drift assertion reject for IP-3.
+- [ ] **Step 6: Seal Snapshot-only ownership.** Apply IP-4: Keep mutable workspace reads and rule redefinition outside Task 10.C as required by IP-4.
+- [ ] **Step 7: Run Task 10.C Target GREEN.** Re-run `python -m pytest -q -o addopts='' -m windows_integration tests/integration/windows/test_snapshot_from_preflight.py::test_snapshot_rejects_preflight_object_identity_drift`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 10.C's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 10.C Domain verification.** Run `python -m pytest -q -o addopts='' -m windows_integration tests/integration/windows/test_snapshot_from_preflight.py`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 10.C's declared acceptance.** Verify exact sealed preflight builds one verified deterministic Snapshot and every size/order/content/object/policy drift rejects. Record the evaluated conditions; keep Windows/handle evidence and the task incomplete while any required result is non-terminal.
+- [ ] **Step 11: Run Task 10.C standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 10.C spec compliance review.** Provide the Goal, Milestone 10 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 10.C spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 10.C code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 10.C quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 10.C after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 10.C completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 11.A: Snapshot-bound Read Tool and Common File Contracts
 
@@ -2994,6 +4386,12 @@ def test_snapshot_rejects_preflight_object_identity_drift() -> None:
 
 **Interfaces:** Produces `FileToolActionV1 = ListFilesActionV1 | ReadFileActionV1 | SearchTextActionV1`, `FileToolResultV1 = ListFilesResultV1 | ReadFileResultV1 | SearchTextResultV1`, `ReadFileActionV1`, `ReadFileResultV1`, and `read_file(tree: SnapshotTreeV1 | CandidateTreeV1, action: ReadFileActionV1) -> ReadFileResultV1`.
 
+**Implementation points:**
+- Define the closed common file action/result unions and implement `read_file` over only the bound SnapshotTree or CandidateTree object.
+- Validate supported-text classification, line/byte bounds, BOM/newline metadata, and artifact truncation so mutable workspace state and arbitrary paths cannot affect results.
+- Make `test_read_uses_only_bound_snapshot_bytes` GREEN with the smallest workspace-drift scenario before completing read bounds and schema cases.
+- Own bounded immutable-tree reads and contracts only. Filesystem access, cursors, policy, shell, arbitrary path dispatch, and tool dispatch remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -3013,7 +4411,30 @@ def test_read_uses_only_bound_snapshot_bytes(
 - Domain: `python -m pytest -q tests/unit/tools/test_file_actions.py tests/unit/tools/test_read_file.py`
 - Expected: closed schemas reject unknown fields and Read never observes mutable workspace state.
 
+**Review gate:**
+1. Spec compliance review checks Task 11.A's Goal, Milestone 11's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent bounded immutable-tree read contract.
+2. Code quality review checks closed action/result schemas, tree binding, text metadata preservation, line/byte bounds, deterministic truncation, zero filesystem reads, and stable errors.
+3. Critical/Important findings block Tasks 11.B and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 11.A's exact RED probe.** Add the complete declared `test_read_uses_only_bound_snapshot_bytes` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 11.A RED.** Run `python -m pytest -q tests/unit/tools/test_read_file.py::test_read_uses_only_bound_snapshot_bytes`. Expected RED: the exact assertion fails because the task-owned bounded immutable-tree read behavior does not exist. Record the task-owned failing assertion and exit code; collection, import, runner, environment startup, or unrelated failure does not count as RED.
+- [ ] **Step 3: Define file-tool contracts and Read.** Apply IP-1: Add the closed file action/result union and typed Read interface required by IP-1.
+- [ ] **Step 4: Bind Read to immutable tree bytes.** Apply IP-2: Add bound-tree text/bounds/truncation validation required by IP-2.
+- [ ] **Step 5: Pass the snapshot-only RED case.** Apply IP-3: Make the exact mutable-workspace drift assertion still return Snapshot bytes for IP-3.
+- [ ] **Step 6: Seal bounded-read ownership.** Apply IP-4: Keep filesystem, cursor, policy, shell, arbitrary path, and dispatch behavior outside Task 11.A as required by IP-4.
+- [ ] **Step 7: Run Task 11.A Target GREEN.** Re-run `python -m pytest -q tests/unit/tools/test_read_file.py::test_read_uses_only_bound_snapshot_bytes`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 11.A's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 11.A Domain verification.** Run `python -m pytest -q tests/unit/tools/test_file_actions.py tests/unit/tools/test_read_file.py`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 11.A's declared acceptance.** Verify closed schemas reject unknown fields and Read never observes mutable workspace state. Record the evaluated conditions; keep the task incomplete while any condition is non-terminal.
+- [ ] **Step 11: Run Task 11.A standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 11.A spec compliance review.** Provide the Goal, Milestone 11 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 11.A spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 11.A code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 11.A quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 11.A after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 11.A completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 11.B: Canonically Paged List and Literal Search
 
@@ -3039,6 +4460,12 @@ def test_read_uses_only_bound_snapshot_bytes(
 
 **Interfaces:** Produces `list_files(tree: SnapshotTreeV1 | CandidateTreeV1, action: ListFilesActionV1) -> ListFilesResultV1` and `search_text(tree: SnapshotTreeV1 | CandidateTreeV1, action: SearchTextActionV1) -> SearchTextResultV1`; uses separate List/Search cursor types binding visible-tree digest, cursor-free query digest, next scan position, and cursor self-digest.
 
+**Implementation points:**
+- Implement pure immutable-tree List and Search with stable sorting and distinct canonical cursor types for the two query families.
+- Bind each cursor to visible-tree digest, cursor-free query digest, next scan position, and self-digest; invalid or stale continuations return zero rows and artifacts.
+- Make `test_paged_discovery_equals_unpaged_without_duplicates` GREEN with the smallest multi-page traversal before completing tamper/tree-drift cases.
+- Own stable discovery and continuation only. Filesystem access, arbitrary paths, shell execution, policy mutation, and cross-tool cursor reuse remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -3056,7 +4483,30 @@ def test_paged_discovery_equals_unpaged_without_duplicates(
 - Domain: `python -m pytest -q tests/unit/tools/test_list_files.py tests/unit/tools/test_search_text.py`
 - Expected: paged/unpaged equality, stable ordering, non-text accounting, and tampered/stale zero-payload failures all pass.
 
+**Review gate:**
+1. Spec compliance review checks Task 11.B's Goal, Milestone 11's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent stable paged List/Search contract.
+2. Code quality review checks stable ordering, paged/unpaged equivalence, distinct cursor schemas, tree/query/position/self binding, zero-payload failures, non-text accounting, and purity.
+3. Critical/Important findings block Tasks 17.A, 17.C, 24.A, 25.D, 31.A, 31.B, 32.B, and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 11.B's exact RED probe.** Add the complete declared `test_paged_discovery_equals_unpaged_without_duplicates` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 11.B RED.** Run `python -m pytest -q tests/unit/tools/test_list_files.py::test_paged_discovery_equals_unpaged_without_duplicates`. Expected RED: the exact assertion fails because the task-owned stable paged List/Search behavior does not exist. Record the task-owned failing assertion and exit code; collection, import, runner, environment startup, or unrelated failure does not count as RED.
+- [ ] **Step 3: Implement stable List and Search.** Apply IP-1: Add deterministic immutable-tree List/Search scans and distinct cursors required by IP-1.
+- [ ] **Step 4: Bind canonical continuation identity.** Apply IP-2: Add tree/query/position/self-digest validation with zero-payload failure required by IP-2.
+- [ ] **Step 5: Pass the paged-equality RED case.** Apply IP-3: Make the exact paged traversal equal the unpaged result for IP-3.
+- [ ] **Step 6: Seal discovery-only ownership.** Apply IP-4: Keep filesystem, arbitrary path, shell, policy mutation, and cursor crossover outside Task 11.B as required by IP-4.
+- [ ] **Step 7: Run Task 11.B Target GREEN.** Re-run `python -m pytest -q tests/unit/tools/test_list_files.py::test_paged_discovery_equals_unpaged_without_duplicates`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 11.B's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 11.B Domain verification.** Run `python -m pytest -q tests/unit/tools/test_list_files.py tests/unit/tools/test_search_text.py`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 11.B's declared acceptance.** Verify paged/unpaged equality, stable ordering, non-text accounting, and tampered/stale zero-payload failures all pass. Record the evaluated conditions; keep the task incomplete while any condition is non-terminal.
+- [ ] **Step 11: Run Task 11.B standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 11.B spec compliance review.** Provide the Goal, Milestone 11 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 11.B spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 11.B code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 11.B quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 11.B after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 11.B completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 12.A: Strict UNIFIED_DIFF_V1 Parser
 
@@ -3078,6 +4528,12 @@ def test_paged_discovery_equals_unpaged_without_duplicates(
 
 **Interfaces:** Produces `parse_unified_diff_v1(patch_text: str) -> ParsedPatchV1 | PatchParseFailureV1`.
 
+**Implementation points:**
+- Parse the complete no-BOM UTF-8/LF `UNIFIED_DIFF_V1` grammar into one closed parsed patch or one closed parse failure.
+- Validate complete headers, ranges, hunks, entry uniqueness, and full input consumption; delete, rename, mode, binary, timestamp, no-newline, malformed, or trailing forms reject.
+- Make `test_trailing_unparsed_patch_bytes_are_rejected` GREEN with the smallest trailing-byte rejection before completing CREATE/REPLACE grammar cases.
+- Own syntax validation only. Tree reads, old-byte matching, edit application, candidate limits, path authorization, and revision publication remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -3096,7 +4552,30 @@ Expected RED: import failure because the strict parser does not exist.
 - Domain: `python -m pytest -q tests/unit/candidate/test_unified_diff.py`
 - Expected GREEN: both commands exit `0`; valid CREATE/REPLACE parses and every delete/rename/mode/binary/timestamp/no-newline/malformed/trailing case rejects deterministically.
 
+**Review gate:**
+1. Spec compliance review checks Task 12.A's Goal, Milestone 12's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent strict unified-diff parser contract.
+2. Code quality review checks total-input consumption, grammar/range exhaustiveness, deterministic parse errors, prohibited-form closure, entry uniqueness, UTF-8/LF rules, and side-effect freedom.
+3. Critical/Important findings block Tasks 12.B, 17.A, and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 12.A's exact RED probe.** Add the complete declared `test_trailing_unparsed_patch_bytes_are_rejected` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 12.A RED.** Run `python -m pytest -q tests/unit/candidate/test_unified_diff.py::test_trailing_unparsed_patch_bytes_are_rejected`. Expected RED: import failure because the strict parser does not exist. Count RED only after the test runner starts and reports this task-owned missing-module/interface import/configuration failure; collection failure, runner startup, environment or external-state failure, unrelated import, or unrelated failure does not count as RED. Record the exact task-owned failure and exit code.
+- [ ] **Step 3: Parse the complete diff grammar.** Apply IP-1: Add the closed parsed-patch/failure result and complete grammar path required by IP-1.
+- [ ] **Step 4: Reject prohibited or trailing forms.** Apply IP-2: Add full-consumption and prohibited-form rejection required by IP-2.
+- [ ] **Step 5: Pass the trailing-bytes RED case.** Apply IP-3: Make the exact trailing-byte assertion return parse failure for IP-3.
+- [ ] **Step 6: Seal parser-only ownership.** Apply IP-4: Keep tree, matching, apply, limit, authorization, and publication behavior outside Task 12.A as required by IP-4.
+- [ ] **Step 7: Run Task 12.A Target GREEN.** Re-run `python -m pytest -q tests/unit/candidate/test_unified_diff.py::test_trailing_unparsed_patch_bytes_are_rejected`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 12.A's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 12.A Domain verification.** Run `python -m pytest -q tests/unit/candidate/test_unified_diff.py`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 12.A's declared acceptance.** Verify both commands exit `0`; valid CREATE/REPLACE parses and every delete/rename/mode/binary/timestamp/no-newline/malformed/trailing case rejects deterministically. Record the evaluated conditions; keep the task incomplete while any condition is non-terminal.
+- [ ] **Step 11: Run Task 12.A standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 12.A spec compliance review.** Provide the Goal, Milestone 12 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 12.A spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 12.A code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 12.A quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 12.A after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 12.A completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 12.B: Immutable CandidateTree Overlay
 
@@ -3118,6 +4597,12 @@ Expected RED: import failure because the strict parser does not exist.
 
 **Interfaces:** Produces `CandidatePostimageSequenceV1`, an immutable ordered tuple of zero or more `CandidatePostimageV1` items, plus `CandidateTreeV1`, `CandidateRevisionV1`, and `derive_candidate_revision(parent: CandidateRevisionV1, postimages: CandidatePostimageSequenceV1) -> CandidateRevisionV1`.
 
+**Implementation points:**
+- Derive a child `CandidateRevisionV1` from complete staged postimages using content-store references while leaving the parent revision and tree unchanged.
+- Provide immutable overlay lookup, deterministic path ordering/tree digest, parent independence, and fail-closed handling for missing or drifted content references.
+- Make `test_child_revision_does_not_mutate_parent` GREEN with the smallest replace overlay before completing CREATE/order/integrity cases.
+- Own overlay derivation and content-addressed tree identity only. Patch parsing, path authorization, transactional publication, FinalDiff, and policy decisions remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -3136,7 +4621,30 @@ Expected RED: import failure because immutable candidate revisions do not exist.
 - Domain: `python -m pytest -q tests/unit/trees/test_candidate.py`
 - Expected GREEN: both commands exit `0`; replace/create overlays, parent independence, deterministic order, missing content, and tree-integrity cases pass.
 
+**Review gate:**
+1. Spec compliance review checks Task 12.B's Goal, Milestone 12's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent immutable Candidate overlay contract.
+2. Code quality review checks structural immutability, parent independence, overlay lookup precedence, deterministic ordering/digest, content-ref integrity, and absence of publication side effects.
+3. Critical/Important findings block Tasks 12.C and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 12.B's exact RED probe.** Add the complete declared `test_child_revision_does_not_mutate_parent` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 12.B RED.** Run `python -m pytest -q tests/unit/trees/test_candidate.py::test_child_revision_does_not_mutate_parent`. Expected RED: import failure because immutable candidate revisions do not exist. Count RED only after the test runner starts and reports this task-owned missing-module/interface import/configuration failure; collection failure, runner startup, environment or external-state failure, unrelated import, or unrelated failure does not count as RED. Record the exact task-owned failure and exit code.
+- [ ] **Step 3: Derive immutable child overlays.** Apply IP-1: Add staged-postimage-to-child-revision derivation required by IP-1.
+- [ ] **Step 4: Bind deterministic Candidate identity.** Apply IP-2: Add deterministic overlay ordering/digest and missing-content rejection required by IP-2.
+- [ ] **Step 5: Pass the parent-independence RED case.** Apply IP-3: Make the exact child/parent independence assertion pass for IP-3.
+- [ ] **Step 6: Seal overlay-only ownership.** Apply IP-4: Keep parsing, authorization, publication, FinalDiff, and policy outside Task 12.B as required by IP-4.
+- [ ] **Step 7: Run Task 12.B Target GREEN.** Re-run `python -m pytest -q tests/unit/trees/test_candidate.py::test_child_revision_does_not_mutate_parent`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 12.B's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 12.B Domain verification.** Run `python -m pytest -q tests/unit/trees/test_candidate.py`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 12.B's declared acceptance.** Verify both commands exit `0`; replace/create overlays, parent independence, deterministic order, missing content, and tree-integrity cases pass. Record the evaluated conditions; keep the task incomplete while any condition is non-terminal.
+- [ ] **Step 11: Run Task 12.B standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 12.B spec compliance review.** Provide the Goal, Milestone 12 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 12.B spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 12.B code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 12.B quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 12.B after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 12.B completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 12.C: Atomic Exact Candidate Patch Transaction
 
@@ -3157,6 +4665,12 @@ Expected RED: import failure because immutable candidate revisions do not exist.
 - Test: `tests/unit/candidate/test_patch_engine.py`
 
 **Interfaces:** Produces `ApplyCandidatePatchAction` and `apply_candidate_patch(action: ApplyCandidatePatchAction, current: CandidateRevisionV1, context: CandidatePatchContextV1) -> CandidatePatchOutcomeV1`.
+
+**Implementation points:**
+- Consume the Task 12.A parse result, Task 12.B staging, Task 9.D authorization, frozen policy, and named base candidate to validate one complete patch.
+- Require exact base digest and hunk matches, editable paths, text preservation, limits, and collision checks before publishing; any mixed legal/illegal entry yields zero revision side effects.
+- Make `test_mixed_legal_and_noneditable_patch_has_no_candidate_side_effect` GREEN with the smallest all-or-nothing rejection before completing priority and limit cases.
+- Own whole-patch validation and one atomic candidate publication only. FinalDiff construction, candidate semantic identity, deletion, rename, mode, and binary support remain out of scope.
 
 **Intentionally failing test:**
 
@@ -3179,7 +4693,30 @@ Expected RED: import failure because the atomic patch engine does not exist.
 - Domain: `python -m pytest -q tests/unit/candidate/test_patch_engine.py`
 - Expected GREEN: both commands exit `0`; base-digest, exact-hunk, priority, text preservation, limits, collision, and zero-publication failure cases pass.
 
+**Review gate:**
+1. Spec compliance review checks Task 12.C's Goal, Milestone 12's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent atomic exact patch application contract.
+2. Code quality review checks all-or-nothing staging, exact-hunk/base binding, authorization precedence, text/limit/collision validation, zero-publication failures, and deterministic errors.
+3. Critical/Important findings block Tasks 12.D and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 12.C's exact RED probe.** Add the complete declared `test_mixed_legal_and_noneditable_patch_has_no_candidate_side_effect` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 12.C RED.** Run `python -m pytest -q tests/unit/candidate/test_patch_engine.py::test_mixed_legal_and_noneditable_patch_has_no_candidate_side_effect`. Expected RED: import failure because the atomic patch engine does not exist. Count RED only after the test runner starts and reports this task-owned missing-module/interface import/configuration failure; collection failure, runner startup, environment or external-state failure, unrelated import, or unrelated failure does not count as RED. Record the exact task-owned failure and exit code.
+- [ ] **Step 3: Compose exact patch validation.** Apply IP-1: Add parse/stage/authorize/base-candidate composition required by IP-1.
+- [ ] **Step 4: Enforce all-or-nothing publication.** Apply IP-2: Add mixed legal/noneditable whole-patch rejection with zero publication required by IP-2.
+- [ ] **Step 5: Pass the mixed-patch RED case.** Apply IP-3: Make the exact side-effect assertion preserve the current revision for IP-3.
+- [ ] **Step 6: Seal patch-engine ownership.** Apply IP-4: Keep FinalDiff/semantic identity and delete/rename/mode/binary behavior outside Task 12.C as required by IP-4.
+- [ ] **Step 7: Run Task 12.C Target GREEN.** Re-run `python -m pytest -q tests/unit/candidate/test_patch_engine.py::test_mixed_legal_and_noneditable_patch_has_no_candidate_side_effect`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 12.C's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 12.C Domain verification.** Run `python -m pytest -q tests/unit/candidate/test_patch_engine.py`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 12.C's declared acceptance.** Verify both commands exit `0`; base-digest, exact-hunk, priority, text preservation, limits, collision, and zero-publication failure cases pass. Record the evaluated conditions; keep the task incomplete while any condition is non-terminal.
+- [ ] **Step 11: Run Task 12.C standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 12.C spec compliance review.** Provide the Goal, Milestone 12 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 12.C spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 12.C code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 12.C quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 12.C after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 12.C completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 12.D: FinalDiffV1 and Candidate Identity
 
@@ -3202,6 +4739,12 @@ Expected RED: import failure because the atomic patch engine does not exist.
 - Test: `tests/unit/candidate/test_identity.py`
 
 **Interfaces:** Produces `FinalDiffPreimageV1`, `FinalDiffEntryV1`, `FinalDiffV1`, `recompute_final_diff(snapshot: SnapshotTreeV1, candidate: CandidateTreeV1, policy: EditablePathPolicyV1) -> FinalDiffV1`, and `build_candidate_identity(snapshot_tree_digest: str, candidate_tree_digest: str, final_diff_digest: str) -> CandidateIdentityV1`.
+
+**Implementation points:**
+- Recompute the complete Snapshot-to-Candidate structured CREATE/REPLACE diff, including exact preimages/postimages, byte counts, and deterministic path order.
+- Revalidate the sole editable policy and bind `CandidateIdentityV1` only to Snapshot tree digest, Candidate tree digest, and FinalDiff digest; revision metadata is excluded.
+- Make `test_candidate_identity_ignores_revision_metadata` GREEN with the smallest metadata-only variation before completing mismatch/restoration cases.
+- Own deterministic FinalDiff and three-root identity only. Patch application, revision publication, writeback approval, mutable workspace access, deletion, rename, and binary changes remain out of scope.
 
 **Intentionally failing test:**
 
@@ -3226,7 +4769,30 @@ Expected RED: import failure because FinalDiff and candidate identity do not exi
 - Domain: `python -m pytest -q tests/unit/candidate/test_final_diff.py tests/unit/candidate/test_identity.py`
 - Expected GREEN: both commands exit `0`; CREATE/REPLACE preimages, byte accounting, ordering, policy/tree mismatch, identity restoration, and metadata independence pass.
 
+**Review gate:**
+1. Spec compliance review checks Task 12.D's Goal, Milestone 12's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent FinalDiff and Candidate identity contract.
+2. Code quality review checks complete diff recomputation, preimage/postimage accuracy, byte accounting, stable ordering, policy/tree consistency, three-root digest binding, and metadata independence.
+3. Critical/Important findings block Tasks 13, 14.A, 17.C, 18.B, 18.D, 21.A, 21.C, 25.D, 26.A, 31.A, 32.A, and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 12.D's exact RED probe.** Add the complete declared `test_candidate_identity_ignores_revision_metadata` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 12.D RED.** Run `python -m pytest -q tests/unit/candidate/test_identity.py::test_candidate_identity_ignores_revision_metadata`. Expected RED: import failure because FinalDiff and candidate identity do not exist. Count RED only after the test runner starts and reports this task-owned missing-module/interface import/configuration failure; collection failure, runner startup, environment or external-state failure, unrelated import, or unrelated failure does not count as RED. Record the exact task-owned failure and exit code.
+- [ ] **Step 3: Recompute the complete FinalDiff.** Apply IP-1: Add Snapshot-to-Candidate diff entry/preimage construction required by IP-1.
+- [ ] **Step 4: Bind the three-root Candidate identity.** Apply IP-2: Add policy revalidation and three-root identity hashing required by IP-2.
+- [ ] **Step 5: Pass the metadata-independence RED case.** Apply IP-3: Make the exact revision-metadata variation preserve identity for IP-3.
+- [ ] **Step 6: Seal FinalDiff ownership.** Apply IP-4: Keep patch/publication/writeback/workspace and unsupported change forms outside Task 12.D as required by IP-4.
+- [ ] **Step 7: Run Task 12.D Target GREEN.** Re-run `python -m pytest -q tests/unit/candidate/test_identity.py::test_candidate_identity_ignores_revision_metadata`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 12.D's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 12.D Domain verification.** Run `python -m pytest -q tests/unit/candidate/test_final_diff.py tests/unit/candidate/test_identity.py`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 12.D's declared acceptance.** Verify both commands exit `0`; CREATE/REPLACE preimages, byte accounting, ordering, policy/tree mismatch, identity restoration, and metadata independence pass. Record the evaluated conditions; keep the task incomplete while any condition is non-terminal.
+- [ ] **Step 11: Run Task 12.D standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 12.D spec compliance review.** Provide the Goal, Milestone 12 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 12.D spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 12.D code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 12.D quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 12.D after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 12.D completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 14.A: Pure Final-writeback Subject and Binding
 
@@ -3246,6 +4812,12 @@ Expected RED: import failure because FinalDiff and candidate identity do not exi
 
 **Interfaces:** Produces `FinalWritebackBindingV1`, `FinalWritebackSubjectV1`, and pure `build_final_writeback_subject(binding: FinalWritebackBindingV1, expires_at: CanonicalTimestampV1) -> FinalWritebackSubjectV1`.
 
+**Implementation points:**
+- Build one immutable `FinalWritebackBindingV1` and subject from the exact current Run, Candidate identity/FinalDiff, policy, formal validation, and expiry facts.
+- Canonicalize every bound fact into subject bytes/digest so candidate, diff, policy, validation, Run, or expiry drift changes identity; user decision and mutable approval data cannot enter.
+- Make `test_subject_digest_changes_when_final_diff_changes` GREEN with the smallest FinalDiff identity variation before completing all bound-fact vectors.
+- Own pure subject/binding schema, bytes, and digest only. Wait creation, decision persistence, approval consumption, policy override, and workspace writes remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -3262,7 +4834,30 @@ def test_subject_digest_changes_when_final_diff_changes() -> None:
 - Domain: `python -m pytest -q tests/unit/governance/test_writeback_subject.py`
 - Expected GREEN: every bound fact affects the digest and mutable/user-supplied decision facts cannot enter the subject.
 
+**Review gate:**
+1. Spec compliance review checks Task 14.A's Goal, Milestone 14's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent exact final-writeback subject contract.
+2. Code quality review checks complete immutable fact binding, canonical digest determinism, FinalDiff/policy/validation identity sensitivity, expiry typing, mutable-decision exclusion, and side-effect freedom.
+3. Critical/Important findings block Tasks 14.B, 14.C, and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 14.A's exact RED probe.** Add the complete declared `test_subject_digest_changes_when_final_diff_changes` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 14.A RED.** Run `python -m pytest -q tests/unit/governance/test_writeback_subject.py::test_subject_digest_changes_when_final_diff_changes`. Expected RED: the closed subject/binding builder does not exist. Record the task-owned failing assertion and exit code; collection, import, runner, environment startup, or unrelated failure does not count as RED.
+- [ ] **Step 3: Build the exact writeback binding.** Apply IP-1: Add the immutable binding/subject builder required by IP-1.
+- [ ] **Step 4: Bind every authorization fact.** Apply IP-2: Add complete fact-to-digest binding and first drift rejection required by IP-2.
+- [ ] **Step 5: Pass the FinalDiff-drift RED case.** Apply IP-3: Make the exact FinalDiff variation change the subject digest for IP-3.
+- [ ] **Step 6: Seal subject-only ownership.** Apply IP-4: Keep waits, decisions, consumption, overrides, and writes outside Task 14.A as required by IP-4.
+- [ ] **Step 7: Run Task 14.A Target GREEN.** Re-run `python -m pytest -q tests/unit/governance/test_writeback_subject.py::test_subject_digest_changes_when_final_diff_changes`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 14.A's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 14.A Domain verification.** Run `python -m pytest -q tests/unit/governance/test_writeback_subject.py`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 14.A's declared acceptance.** Verify every bound fact affects the digest and mutable/user-supplied decision facts cannot enter the subject. Record the evaluated conditions and keep the task incomplete while any condition is non-terminal.
+- [ ] **Step 11: Run Task 14.A standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 14.A spec compliance review.** Provide the Goal, Milestone 14 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 14.A spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 14.A code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 14.A quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 14.A after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 14.A completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 14.B: Final-writeback Wait Decision Lifecycle
 
@@ -3283,6 +4878,12 @@ def test_subject_digest_changes_when_final_diff_changes() -> None:
 - Test: `tests/unit/governance/test_writeback_decision.py`
 
 **Interfaces:** Produces immutable `WRITEBACK_APPROVALS_V1_MIGRATION = MigrationV1(version=10, name="writeback_approvals_v1", ...)`, `DecideFinalWritebackV1`, closed `FinalWritebackDecisionResultV1`, and `FinalWritebackDecisionServiceV1.decide(command: DecideFinalWritebackV1) -> FinalWritebackDecisionResultV1`.
+
+**Implementation points:**
+- Own immutable v0010 approval DDL and atomically lock the exact final-writeback wait, reload its current subject, evaluate clock state, and record one closed decision result.
+- Create one PENDING approval only for an exact current unexpired APPROVE; REJECT, expiry, stale candidate/subject/policy identity, replay conflict, or prior DENY creates none.
+- Make `test_expired_wait_cannot_create_pending_approval` GREEN with the smallest expiry transaction before completing approve/reject/stale/replay cases.
+- Own decision storage and idempotent event record only. Final registry edits, approval consumption, candidate-byte persistence, and any DENY override remain out of scope.
 
 **Intentionally failing test:**
 
@@ -3305,7 +4906,30 @@ def test_expired_wait_cannot_create_pending_approval(service: FinalWritebackDeci
 - Domain: `python -m pytest -q tests/unit/storage/test_writeback_approvals_migration.py tests/unit/governance/test_writeback_decision.py`
 - Expected GREEN: exact v0010 schema plus approve/reject/expire/stale/replay/conflict cases are atomic and only exact current APPROVE creates one PENDING approval.
 
+**Review gate:**
+1. Spec compliance review checks Task 14.B's Goal, Milestone 14's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent atomic writeback decision lifecycle contract.
+2. Code quality review checks exact v0010 schema, wait locking, current-subject reload, clock ownership, approval uniqueness, replay/conflict atomicity, stale identity rejection, and no DENY override.
+3. Critical/Important findings block Tasks 7.D, 14.C, and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 14.B's exact RED probe.** Add the complete declared `test_expired_wait_cannot_create_pending_approval` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 14.B RED.** Run `python -m pytest -q tests/unit/governance/test_writeback_decision.py::test_expired_wait_cannot_create_pending_approval`. Expected RED: no clock-owned atomic decision lifecycle exists. Record the task-owned failing assertion and exit code; collection, import, runner, environment startup, or unrelated failure does not count as RED.
+- [ ] **Step 3: Define v0010 writeback decisions.** Apply IP-1: Add v0010 storage and the atomic wait-decision service required by IP-1.
+- [ ] **Step 4: Gate PENDING approval creation.** Apply IP-2: Add exact-current/unexpired APPROVE gating with stale/DENY rejection required by IP-2.
+- [ ] **Step 5: Pass the expired-wait RED case.** Apply IP-3: Make the exact expired-wait assertion create no approval for IP-3.
+- [ ] **Step 6: Seal decision-only ownership.** Apply IP-4: Keep registry, consumption, candidate persistence, and override behavior outside Task 14.B as required by IP-4.
+- [ ] **Step 7: Run Task 14.B Target GREEN.** Re-run `python -m pytest -q tests/unit/governance/test_writeback_decision.py::test_expired_wait_cannot_create_pending_approval`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 14.B's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 14.B Schema verification.** Run `python -m pytest -q tests/unit/storage/test_writeback_approvals_migration.py::test_writeback_approval_migration_has_exact_schema`. Record the exact command and actual result.
+- [ ] **Step 10: Run Task 14.B Domain and acceptance verification.** Run `python -m pytest -q tests/unit/storage/test_writeback_approvals_migration.py tests/unit/governance/test_writeback_decision.py`. Verify exact v0010 schema plus approve/reject/expire/stale/replay/conflict cases are atomic and only exact current APPROVE creates one PENDING approval. Record the command, actual result, and evaluated acceptance conditions; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 11: Run Task 14.B standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 14.B spec compliance review.** Provide the Goal, Milestone 14 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 14.B spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 14.B code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 14.B quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 14.B after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 14.B completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 14.C: One-time Concurrent Writeback Approval Consumption
 
@@ -3326,6 +4950,12 @@ def test_expired_wait_cannot_create_pending_approval(service: FinalWritebackDeci
 
 **Interfaces:** Produces `ConsumeWritebackApprovalV1`, `ApprovalConsumptionResultV1`, `WritebackApprovalRepository.consume(command: ConsumeWritebackApprovalV1) -> ApprovalConsumptionResultV1`, and `verify_consumable(approval: FinalWritebackApprovalV1, command: ConsumeWritebackApprovalV1) -> None`.
 
+**Implementation points:**
+- Reverify one PENDING approval against the exact current writeback subject, candidate/validation/policy binding, Run, and consumption command inside one immediate transaction.
+- Allow exactly one concurrent matching consumer to transition the approval; expired, stale, mismatched, replayed, or already-consumed attempts produce no second success.
+- Make `test_concurrent_consumers_get_exactly_one_success` GREEN with the smallest two-consumer race before completing stale/expiry/mismatch cases.
+- Own current-binding verification and one-time consumption only. Wait decisions, subject construction, DENY override, and workspace persistence remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -3343,7 +4973,30 @@ def test_concurrent_consumers_get_exactly_one_success(repository: WritebackAppro
 - Domain: `python -m pytest -q tests/unit/governance/test_writeback_approval.py tests/unit/governance/test_writeback_approval_race.py`
 - Expected GREEN: exactly one matching consumer succeeds and stale/expired/mismatched/replayed attempts create no second consumption.
 
+**Review gate:**
+1. Spec compliance review checks Task 14.C's Goal, Milestone 14's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent consume-once writeback approval contract.
+2. Code quality review checks transaction isolation, compare-and-consume atomicity, exact subject/candidate binding, expiry/replay handling, one-winner concurrency, and zero workspace side effects.
+3. Critical/Important findings block Tasks 25.A, 25.E, 26.A, 29.C, 31.A, 31.B, and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 14.C's exact RED probe.** Add the complete declared `test_concurrent_consumers_get_exactly_one_success` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 14.C RED.** Run `python -m pytest -q tests/unit/governance/test_writeback_approval_race.py::test_concurrent_consumers_get_exactly_one_success`. Expected RED: no transaction-bound consume-once repository exists. Record the task-owned failing assertion and exit code; collection, import, runner, environment startup, or unrelated failure does not count as RED.
+- [ ] **Step 3: Bind approval consumption to current facts.** Apply IP-1: Add the consumability verifier and transaction-bound repository path required by IP-1.
+- [ ] **Step 4: Enforce one-winner consumption.** Apply IP-2: Add compare-and-consume one-winner semantics and stale rejection required by IP-2.
+- [ ] **Step 5: Pass the concurrent-consumer RED case.** Apply IP-3: Make the exact two-consumer race yield one success for IP-3.
+- [ ] **Step 6: Seal consumption-only ownership.** Apply IP-4: Keep waits, subject building, policy override, and workspace writes outside Task 14.C as required by IP-4.
+- [ ] **Step 7: Run Task 14.C Target GREEN.** Re-run `python -m pytest -q tests/unit/governance/test_writeback_approval_race.py::test_concurrent_consumers_get_exactly_one_success`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 14.C's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 14.C Domain verification.** Run `python -m pytest -q tests/unit/governance/test_writeback_approval.py tests/unit/governance/test_writeback_approval_race.py`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 14.C's declared acceptance.** Verify exactly one matching consumer succeeds and stale/expired/mismatched/replayed attempts create no second consumption. Record the evaluated conditions and keep the task incomplete while any condition is non-terminal.
+- [ ] **Step 11: Run Task 14.C standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 14.C spec compliance review.** Provide the Goal, Milestone 14 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 14.C spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 14.C code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 14.C quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 14.C after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 14.C completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 15.A: Request-source and Segment Validation
 
@@ -3363,6 +5016,12 @@ def test_concurrent_consumers_get_exactly_one_success(repository: WritebackAppro
 
 **Interfaces:** Produces `RequestSourceCategoryV1`, `RequestContentSegmentV1`, `RequestMessageV1`, `RequestSourceV1`, `RequestMessageSequenceV1`, an immutable ordered tuple of one or more request messages, and `validate_segment_sources(messages: RequestMessageSequenceV1) -> SourceProjectionV1`.
 
+**Implementation points:**
+- Define closed request message, segment, source-category, and immutable message-sequence values with exact source path, digest, index, and byte-count identities.
+- Validate category-specific path rules and one-to-one segment/source projection; missing, duplicate, reordered, mismatched, or ambiguous content identities reject before mutation.
+- Make `test_file_segment_requires_canonical_path` GREEN with the smallest file-source path rejection before completing category/index/digest cases.
+- Own source/category/path/index/digest/byte validation only. Grant scope matching, subject construction, wait decisions, byte charging, and request-body persistence remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -3380,7 +5039,30 @@ def test_file_segment_requires_canonical_path() -> None:
 - Domain: `python -m pytest -q tests/unit/governance/test_request_sources.py`
 - Expected GREEN: exact source/path rules and content identities pass; missing/duplicate/mismatched segments reject before mutation.
 
+**Review gate:**
+1. Spec compliance review checks Task 15.A's Goal, Milestone 15's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent request source/segment validation contract.
+2. Code quality review checks category closure, canonical path requirements, segment indexing/order, digest/byte-count binding, duplicate detection, deterministic projection, and mutation-free rejection.
+3. Critical/Important findings block Tasks 15.B, 15.C, 15.E, and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 15.A's exact RED probe.** Add the complete declared `test_file_segment_requires_canonical_path` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 15.A RED.** Run `python -m pytest -q tests/unit/governance/test_request_sources.py::test_file_segment_requires_canonical_path`. Expected RED: the closed source/segment validator does not exist. Record the task-owned failing assertion and exit code; collection, import, runner, environment startup, or unrelated failure does not count as RED.
+- [ ] **Step 3: Define request source identities.** Apply IP-1: Add closed message/segment/source values and projection required by IP-1.
+- [ ] **Step 4: Validate exact segment projection.** Apply IP-2: Add file canonical-path and first duplicate/mismatch rejection required by IP-2.
+- [ ] **Step 5: Pass the file-path RED case.** Apply IP-3: Make the exact file-segment assertion reject for IP-3.
+- [ ] **Step 6: Seal source-validation ownership.** Apply IP-4: Keep Grant, subject, wait, charging, and body persistence outside Task 15.A as required by IP-4.
+- [ ] **Step 7: Run Task 15.A Target GREEN.** Re-run `python -m pytest -q tests/unit/governance/test_request_sources.py::test_file_segment_requires_canonical_path`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 15.A's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 15.A Domain verification.** Run `python -m pytest -q tests/unit/governance/test_request_sources.py`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 15.A's declared acceptance.** Verify exact source/path rules and content identities pass; missing/duplicate/mismatched segments reject before mutation. Record the evaluated conditions and keep the task incomplete while any condition is non-terminal.
+- [ ] **Step 11: Run Task 15.A standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 15.A spec compliance review.** Provide the Goal, Milestone 15 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 15.A spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 15.A code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 15.A quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 15.A after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 15.A completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 15.B: Pure Disclosure Scope Matching
 
@@ -3400,6 +5082,12 @@ def test_file_segment_requires_canonical_path() -> None:
 
 **Interfaces:** Produces `DisclosureScopeSequenceV1`, an immutable canonical ordered tuple of disclosure scopes, `canonicalize_disclosure_scopes(scopes: DisclosureScopeSequenceV1) -> DisclosureScopeSequenceV1`, and pure `scope_matches(scope: DisclosurePathScopeV1, path: CanonicalRelativePathV1) -> bool`.
 
+**Implementation points:**
+- Canonicalize immutable ROOT/FILE/DIRECTORY disclosure scopes into one deterministic ordered sequence and match only canonical relative paths.
+- Apply exact segment-boundary semantics so directory string-prefix siblings, aliases, duplicates, and empty or ambiguous scope sets fail closed.
+- Make `test_directory_scope_does_not_match_string_prefix_sibling` GREEN with the smallest sibling-prefix false match before completing all scope variants.
+- Own pure scope canonicalization and matching only. Message-body inspection, Grant construction, decision persistence, request authorization, and charging remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -3416,7 +5104,30 @@ def test_directory_scope_does_not_match_string_prefix_sibling() -> None:
 - Domain: `python -m pytest -q tests/unit/governance/test_disclosure_scope.py`
 - Expected GREEN: ROOT/FILE/DIRECTORY semantics, alias rejection, ordering, duplicate, and empty-scope cases pass exactly.
 
+**Review gate:**
+1. Spec compliance review checks Task 15.B's Goal, Milestone 15's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent canonical disclosure scope matching contract.
+2. Code quality review checks deterministic scope order, segment-boundary correctness, ROOT/FILE/DIRECTORY closure, alias/duplicate handling, empty-scope semantics, and pure evaluation.
+3. Critical/Important findings block Tasks 15.C, 15.E, and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 15.B's exact RED probe.** Add the complete declared `test_directory_scope_does_not_match_string_prefix_sibling` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 15.B RED.** Run `python -m pytest -q tests/unit/governance/test_disclosure_scope.py::test_directory_scope_does_not_match_string_prefix_sibling`. Expected RED: the canonical segment-boundary matcher does not exist. Record the task-owned failing assertion and exit code; collection, import, runner, environment startup, or unrelated failure does not count as RED.
+- [ ] **Step 3: Canonicalize disclosure scopes.** Apply IP-1: Add canonical scope ordering and pure match interface required by IP-1.
+- [ ] **Step 4: Enforce disclosure-scope boundaries.** Apply IP-2: Add directory sibling-prefix and alias rejection required by IP-2.
+- [ ] **Step 5: Pass the sibling-prefix RED case.** Apply IP-3: Make the exact false-prefix assertion return no match for IP-3.
+- [ ] **Step 6: Seal scope-matcher ownership.** Apply IP-4: Keep message, Grant, persistence, authorization, and charging outside Task 15.B as required by IP-4.
+- [ ] **Step 7: Run Task 15.B Target GREEN.** Re-run `python -m pytest -q tests/unit/governance/test_disclosure_scope.py::test_directory_scope_does_not_match_string_prefix_sibling`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 15.B's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 15.B Domain verification.** Run `python -m pytest -q tests/unit/governance/test_disclosure_scope.py`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 15.B's declared acceptance.** Verify ROOT/FILE/DIRECTORY semantics, alias rejection, ordering, duplicate, and empty-scope cases pass exactly. Record the evaluated conditions and keep the task incomplete while any condition is non-terminal.
+- [ ] **Step 11: Run Task 15.B standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 15.B spec compliance review.** Provide the Goal, Milestone 15 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 15.B spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 15.B code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 15.B quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 15.B after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 15.B completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 15.C: Pure Disclosure Grant Subject
 
@@ -3436,6 +5147,12 @@ def test_directory_scope_does_not_match_string_prefix_sibling() -> None:
 
 **Interfaces:** Produces `DisclosureGrantSubjectV1` and pure `build_disclosure_subject(request: DisclosureSubjectRequestV1, sources: SourceProjectionV1, scopes: DisclosureScopeSequenceV1, profile: OpenAILLMProfileV1, endpoint: OpenAIEndpointV1) -> DisclosureGrantSubjectV1`.
 
+**Implementation points:**
+- Build one pure `DisclosureGrantSubjectV1` from validated source projection, canonical scopes/categories, frozen OpenAI profile, trusted endpoint, serializer identity, and expiry.
+- Bind every immutable authorization fact into canonical subject bytes/digest and reject request-supplied endpoint/model/source/scope/expiry overrides.
+- Make `test_subject_uses_frozen_endpoint_not_request_url` GREEN with the smallest request-URL override rejection before completing all subject drift cases.
+- Own subject bytes and digest only. Wait/Grant creation, revocation, budget charging, authorization records, and adapter calls remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -3453,7 +5170,30 @@ def test_subject_uses_frozen_endpoint_not_request_url() -> None:
 - Domain: `python -m pytest -q tests/unit/governance/test_disclosure_subject.py`
 - Expected GREEN: every immutable authorization fact is bound and all endpoint/model/source/scope/expiry overrides reject.
 
+**Review gate:**
+1. Spec compliance review checks Task 15.C's Goal, Milestone 15's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent immutable disclosure Grant subject contract.
+2. Code quality review checks complete source/scope/profile/endpoint/serializer/expiry binding, trusted endpoint use, canonical digest determinism, override rejection, and side-effect freedom.
+3. Critical/Important findings block Tasks 15.D, 15.E, 15.F, and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 15.C's exact RED probe.** Add the complete declared `test_subject_uses_frozen_endpoint_not_request_url` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 15.C RED.** Run `python -m pytest -q tests/unit/governance/test_disclosure_subject.py::test_subject_uses_frozen_endpoint_not_request_url`. Expected RED: no immutable Grant subject builder binds the frozen sources/profile/endpoint. Record the task-owned failing assertion and exit code; collection, import, runner, environment startup, or unrelated failure does not count as RED.
+- [ ] **Step 3: Build the disclosure subject.** Apply IP-1: Add the pure disclosure subject builder over declared inputs required by IP-1.
+- [ ] **Step 4: Bind immutable authorization facts.** Apply IP-2: Add frozen endpoint/profile/source/scope digest binding required by IP-2.
+- [ ] **Step 5: Pass the request-URL RED case.** Apply IP-3: Make the exact request-URL override assertion still use the trusted endpoint for IP-3.
+- [ ] **Step 6: Seal subject-builder ownership.** Apply IP-4: Keep waits, Grants, revocation, charging, records, and calls outside Task 15.C as required by IP-4.
+- [ ] **Step 7: Run Task 15.C Target GREEN.** Re-run `python -m pytest -q tests/unit/governance/test_disclosure_subject.py::test_subject_uses_frozen_endpoint_not_request_url`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 15.C's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 15.C Domain verification.** Run `python -m pytest -q tests/unit/governance/test_disclosure_subject.py`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 15.C's declared acceptance.** Verify every immutable authorization fact is bound and all endpoint/model/source/scope/expiry overrides reject. Record the evaluated conditions and keep the task incomplete while any condition is non-terminal.
+- [ ] **Step 11: Run Task 15.C standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 15.C spec compliance review.** Provide the Goal, Milestone 15 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 15.C spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 15.C code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 15.C quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 15.C after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 15.C completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 15.D: Disclosure Grant Decision Lifecycle
 
@@ -3475,6 +5215,12 @@ def test_subject_uses_frozen_endpoint_not_request_url() -> None:
 
 **Interfaces:** Produces immutable `DISCLOSURE_GRANTS_V1_MIGRATION = MigrationV1(version=3, name="disclosure_grants_v1", ...)`, `DisclosureGrantV1`, `DecideDisclosureGrantV1`, `DisclosureDecisionResultV1`, and `DisclosureDecisionServiceV1.decide(command: DecideDisclosureGrantV1) -> DisclosureDecisionResultV1`.
 
+**Implementation points:**
+- Own immutable v0003 Grant DDL and atomically lock/decide the exact disclosure wait, create at most one matching active Grant, and transition back to the loop.
+- Create a Grant only for exact current unexpired APPROVE; REJECT, expiry, stale subject, replay/conflict, or duplicate decisions remain atomic and create none.
+- Make `test_expired_disclosure_wait_creates_no_grant` GREEN with the smallest expiry transaction before completing approve/reject/stale/replay cases.
+- Own Grant-decision storage only. Final registry edits, revocation, request-body validation, prepared-request authorization, and byte charging remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -3495,7 +5241,30 @@ def test_expired_disclosure_wait_creates_no_grant(service: DisclosureDecisionSer
 - Domain: `python -m pytest -q tests/unit/storage/test_disclosure_grants_migration.py tests/unit/governance/test_disclosure_decision.py`
 - Expected GREEN: exact v0003 schema plus approve/reject/expire/stale/replay cases are atomic and never create duplicate/invalid Grants.
 
+**Review gate:**
+1. Spec compliance review checks Task 15.D's Goal, Milestone 15's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent atomic disclosure Grant decision contract.
+2. Code quality review checks exact v0003 schema, wait/subject locking, active-Grant uniqueness, clock/expiry handling, idempotent replay/conflict, return transition, and zero invalid creation.
+3. Critical/Important findings block Tasks 7.D, 15.E, 15.F, and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 15.D's exact RED probe.** Add the complete declared `test_expired_disclosure_wait_creates_no_grant` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 15.D RED.** Run `python -m pytest -q tests/unit/governance/test_disclosure_decision.py::test_expired_disclosure_wait_creates_no_grant`. Expected RED: no transaction-bound Grant decision lifecycle exists. Record the task-owned failing assertion and exit code; collection, import, runner, environment startup, or unrelated failure does not count as RED.
+- [ ] **Step 3: Define v0003 Grant decisions.** Apply IP-1: Add v0003 storage and transaction-bound decision service required by IP-1.
+- [ ] **Step 4: Gate active Grant creation.** Apply IP-2: Add exact-current/unexpired APPROVE gating required by IP-2.
+- [ ] **Step 5: Pass the expired-disclosure RED case.** Apply IP-3: Make the exact expired-wait assertion create no Grant for IP-3.
+- [ ] **Step 6: Seal Grant-decision ownership.** Apply IP-4: Keep registry, revocation, body validation, authorization, and charging outside Task 15.D as required by IP-4.
+- [ ] **Step 7: Run Task 15.D Target GREEN.** Re-run `python -m pytest -q tests/unit/governance/test_disclosure_decision.py::test_expired_disclosure_wait_creates_no_grant`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 15.D's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 15.D Schema verification.** Run `python -m pytest -q tests/unit/storage/test_disclosure_grants_migration.py::test_disclosure_grant_migration_has_exact_schema`. Record the exact command and actual result.
+- [ ] **Step 10: Run Task 15.D Domain and acceptance verification.** Run `python -m pytest -q tests/unit/storage/test_disclosure_grants_migration.py tests/unit/governance/test_disclosure_decision.py`. Verify exact v0003 schema plus approve/reject/expire/stale/replay cases are atomic and never create duplicate/invalid Grants. Record the command, actual result, and evaluated acceptance conditions; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 11: Run Task 15.D standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 15.D spec compliance review.** Provide the Goal, Milestone 15 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 15.D spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 15.D code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 15.D quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 15.D after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 15.D completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 15.E: Transactional Disclosure Authorization Ledger
 
@@ -3518,6 +5287,12 @@ def test_expired_disclosure_wait_creates_no_grant(service: DisclosureDecisionSer
 
 **Interfaces:** Produces immutable `DISCLOSURE_AUTHORIZATIONS_V1_MIGRATION = MigrationV1(version=4, name="disclosure_authorizations_v1", ...)`, `AuthorizePreparedRequestV1`, `DisclosureAuthorizationRecordV1`, `DisclosureAuthorizationOutcomeV1`, and `DisclosureLedger.authorize(command: AuthorizePreparedRequestV1) -> DisclosureAuthorizationOutcomeV1`.
 
+**Implementation points:**
+- Own immutable v0004 authorization DDL and revalidate the prepared request, active Grant, subject, source categories/scopes, revocation/expiry, request identity, and cumulative budget in one immediate transaction.
+- Commit exactly one body-free authorization record and byte charge only for an exact authorized request; budget races, stale/revoked Grants, scope/category drift, or replay conflicts charge zero.
+- Make `test_two_requests_cannot_overdraw_one_grant` GREEN with the smallest two-request budget race before completing scope/expiry/revocation cases.
+- Own authorization and committed cumulative-byte accounting only. Final registry edits, Grant decisions/revocation, request serialization/calls, body storage, and refunds remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -3538,7 +5313,30 @@ def test_two_requests_cannot_overdraw_one_grant(ledger: DisclosureLedger) -> Non
 - Domain: `python -m pytest -q tests/unit/storage/test_disclosure_authorizations_migration.py tests/unit/governance/test_disclosure_ledger.py tests/unit/governance/test_disclosure_budget_race.py`
 - Expected GREEN: exact v0004 schema; only exact authorized requests commit one charge; scope/expiry/revocation/budget/race failures charge zero.
 
+**Review gate:**
+1. Spec compliance review checks Task 15.E's Goal, Milestone 15's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent transactional disclosure authorization ledger contract.
+2. Code quality review checks exact v0004 schema, immediate-transaction isolation, cumulative-byte arithmetic, one-winner budget races, fresh Grant/subject revalidation, body-free records, and zero-charge failures.
+3. Critical/Important findings block Tasks 7.D, 16.A, 16.B, 22.A, 24.B, 25.C, 29.B, 31.A, 31.B, 32.C, and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 15.E's exact RED probe.** Add the complete declared `test_two_requests_cannot_overdraw_one_grant` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 15.E RED.** Run `python -m pytest -q tests/unit/governance/test_disclosure_budget_race.py::test_two_requests_cannot_overdraw_one_grant`. Expected RED: no immediate-transaction authorization/byte-charge ledger exists. Record the task-owned failing assertion and exit code; collection, import, runner, environment startup, or unrelated failure does not count as RED.
+- [ ] **Step 3: Define v0004 authorization ledger.** Apply IP-1: Add v0004 storage and transactional authorization path required by IP-1.
+- [ ] **Step 4: Enforce exact cumulative-byte charging.** Apply IP-2: Add exact request revalidation and one-charge budget guard required by IP-2.
+- [ ] **Step 5: Pass the budget-race RED case.** Apply IP-3: Make the exact two-request race prevent overdraw for IP-3.
+- [ ] **Step 6: Seal ledger-only ownership.** Apply IP-4: Keep registry, Grant mutation, serialization/calls, bodies, and refunds outside Task 15.E as required by IP-4.
+- [ ] **Step 7: Run Task 15.E Target GREEN.** Re-run `python -m pytest -q tests/unit/governance/test_disclosure_budget_race.py::test_two_requests_cannot_overdraw_one_grant`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 15.E's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 15.E Schema verification.** Run `python -m pytest -q tests/unit/storage/test_disclosure_authorizations_migration.py::test_disclosure_authorization_migration_has_exact_schema`. Record the exact command and actual result.
+- [ ] **Step 10: Run Task 15.E Domain and acceptance verification.** Run `python -m pytest -q tests/unit/storage/test_disclosure_authorizations_migration.py tests/unit/governance/test_disclosure_ledger.py tests/unit/governance/test_disclosure_budget_race.py`. Verify exact v0004 schema; only exact authorized requests commit one charge; scope/expiry/revocation/budget/race failures charge zero. Record the command, actual result, and evaluated acceptance conditions; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 11: Run Task 15.E standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 15.E spec compliance review.** Provide the Goal, Milestone 15 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 15.E spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 15.E code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 15.E quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 15.E after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 15.E completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 15.F: Active Disclosure Grant Revocation
 
@@ -3557,6 +5355,12 @@ def test_two_requests_cannot_overdraw_one_grant(ledger: DisclosureLedger) -> Non
 - Test: `tests/unit/governance/test_disclosure_revocation.py`
 
 **Interfaces:** Produces `RevokeDisclosureGrantV1`, `GrantMutationResultV1`, and `DisclosureRevocationServiceV1.revoke(command: RevokeDisclosureGrantV1) -> GrantMutationResultV1`.
+
+**Implementation points:**
+- Atomically bind revocation to the exact active Grant, Run, subject, and idempotency event before transitioning active to revoked.
+- Revoke the matching active Grant once; stale, mismatched, already-revoked, or replayed commands are deterministic and mutate no unrelated Grant.
+- Make `test_revoke_rejects_mismatched_subject` GREEN with the smallest subject mismatch before completing exact/replay cases.
+- Own active-to-revoked mutation only. Wait decisions, Grant creation, request authorization, byte charging, body storage, and committed-charge refunds remain out of scope.
 
 **Intentionally failing test:**
 
@@ -3578,7 +5382,30 @@ def test_revoke_rejects_mismatched_subject(
 - Domain: `python -m pytest -q tests/unit/governance/test_disclosure_revocation.py`
 - Expected GREEN: only the exact active Grant revokes once; stale/mismatched/replayed commands are deterministic, mutate no unrelated Grant, and both commands exit `0`.
 
+**Review gate:**
+1. Spec compliance review checks Task 15.F's Goal, Milestone 15's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent exact disclosure Grant revocation contract.
+2. Code quality review checks transaction-bound subject/Run identity, active-state compare-and-set, idempotent replay, unrelated-Grant isolation, stable results, and no budget refund.
+3. Critical/Important findings block Tasks 15.E and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 15.F's exact RED probe.** Add the complete declared `test_revoke_rejects_mismatched_subject` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 15.F RED.** Run `python -m pytest -q tests/unit/governance/test_disclosure_revocation.py::test_revoke_rejects_mismatched_subject`. Expected RED: no separate transaction-bound disclosure revocation service exists. Record the task-owned failing assertion and exit code; collection, import, runner, environment startup, or unrelated failure does not count as RED.
+- [ ] **Step 3: Bind revocation to the exact Grant.** Apply IP-1: Add the transaction-bound revocation command/service required by IP-1.
+- [ ] **Step 4: Enforce idempotent active-to-revoked.** Apply IP-2: Add exact active-subject compare-and-revoke semantics required by IP-2.
+- [ ] **Step 5: Pass the subject-mismatch RED case.** Apply IP-3: Make the exact mismatched-subject assertion reject for IP-3.
+- [ ] **Step 6: Seal revocation-only ownership.** Apply IP-4: Keep decisions, creation, authorization, charging, bodies, and refunds outside Task 15.F as required by IP-4.
+- [ ] **Step 7: Run Task 15.F Target GREEN.** Re-run `python -m pytest -q tests/unit/governance/test_disclosure_revocation.py::test_revoke_rejects_mismatched_subject`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 15.F's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 15.F Domain verification.** Run `python -m pytest -q tests/unit/governance/test_disclosure_revocation.py`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 15.F's declared acceptance.** Verify only the exact active Grant revokes once; stale/mismatched/replayed commands are deterministic, mutate no unrelated Grant, and both commands exit `0`. Record the evaluated conditions and keep the task incomplete while any condition is non-terminal.
+- [ ] **Step 11: Run Task 15.F standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 15.F spec compliance review.** Provide the Goal, Milestone 15 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 15.F spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 15.F code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 15.F quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 15.F after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 15.F completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 16.A: Closed Prepared Requests and Deterministic Mock Adapter
 
@@ -3607,6 +5434,12 @@ def test_revoke_rejects_mismatched_subject(
 
 **Interfaces:** Produces protocol `LLMAdapter.generate(request: PreparedModelRequestV1) -> ModelResponse`, closed `PreparedModelRequestV1 = MockPreparedModelRequestV1 | OpenAIPreparedModelRequestV1`, `ModelResponse`, closed `LLMCallResultV1`, `prepare_mock_request(profile: MockLLMProfileV1, messages: tuple[RequestMessageV1, ...]) -> MockPreparedModelRequestV1`, `prepare_openai_request(profile: OpenAILLMProfileV1, messages: tuple[RequestMessageV1, ...]) -> OpenAIPreparedModelRequestV1`, and `MockLLMAdapter.generate(request: MockPreparedModelRequestV1) -> ModelResponse`.
 
+**Implementation points:**
+- Define mutually exclusive Mock/OpenAI prepared-request variants, one-call adapter protocol, closed model response, and closed call-result status combinations.
+- Prepare each mode from frozen profile/messages with deterministic request identity; Mock output is selected only by frozen script id and request digest and is byte-identical offline.
+- Make `test_mock_request_rejects_openai_transport_fields` GREEN with the smallest cross-mode field rejection before completing response/result combinations.
+- Own request contracts and deterministic Mock behavior only. Provider transport, credentials, Grant/authorization access, request charging, and network clients remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -3624,7 +5457,30 @@ def test_mock_request_rejects_openai_transport_fields() -> None:
 - Domain: `python -m pytest -q tests/unit/llm/test_prepared_request.py tests/unit/llm/test_mock_adapter.py tests/unit/llm/test_call_result.py`
 - Expected: closed mode/status combinations and byte-identical Mock responses pass offline with zero real-capability calls.
 
+**Review gate:**
+1. Spec compliance review checks Task 16.A's Goal, Milestone 16's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent closed prepared requests and Mock adapter contract.
+2. Code quality review checks mode-discriminant closure, prepared-request identity, status/result exhaustiveness, deterministic Mock selection, byte-stable responses, and zero real-capability imports/calls.
+3. Critical/Important findings block Tasks 16.B, 17.A, and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 16.A's exact RED probe.** Add the complete declared `test_mock_request_rejects_openai_transport_fields` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 16.A RED.** Run `python -m pytest -q tests/unit/llm/test_prepared_request.py::test_mock_request_rejects_openai_transport_fields`. Expected RED: the exact assertion fails because the task-owned closed prepared requests and Mock adapter behavior does not exist. Record the task-owned failing assertion and exit code; collection, import, runner, environment startup, or unrelated failure does not count as RED.
+- [ ] **Step 3: Define closed prepared-request modes.** Apply IP-1: Add prepared request/response/call-result unions and adapter protocol required by IP-1.
+- [ ] **Step 4: Bind deterministic Mock behavior.** Apply IP-2: Add mode-specific preparation and deterministic Mock script/digest selection required by IP-2.
+- [ ] **Step 5: Pass the cross-mode RED case.** Apply IP-3: Make the exact Mock-with-OpenAI-fields assertion reject for IP-3.
+- [ ] **Step 6: Seal Mock/request ownership.** Apply IP-4: Keep provider, credential, Grant, charging, and network behavior outside Task 16.A as required by IP-4.
+- [ ] **Step 7: Run Task 16.A Target GREEN.** Re-run `python -m pytest -q tests/unit/llm/test_prepared_request.py::test_mock_request_rejects_openai_transport_fields`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 16.A's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 16.A Domain verification.** Run `python -m pytest -q tests/unit/llm/test_prepared_request.py tests/unit/llm/test_mock_adapter.py tests/unit/llm/test_call_result.py`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 16.A's declared acceptance.** Verify closed mode/status combinations and byte-identical Mock responses pass offline with zero real-capability calls. Record the evaluated conditions and keep the task incomplete while any condition is non-terminal.
+- [ ] **Step 11: Run Task 16.A standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 16.A spec compliance review.** Provide the Goal, Milestone 16 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 16.A spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 16.A code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 16.A quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 16.A after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 16.A completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 16.B: Single-call OpenAI Serialization and Transport
 
@@ -3650,6 +5506,12 @@ def test_mock_request_rejects_openai_transport_fields() -> None:
 
 **Interfaces:** Produces `serialize_openai_request(request: OpenAIPreparedModelRequestV1) -> OpenAIRequestBodyV1`, `OpenAILLMAdapter.bind(authorization: DisclosureAuthorizationRecordV1, credential: SecretCredentialV1) -> BoundOpenAILLMAdapterV1`, and `BoundOpenAILLMAdapterV1.generate(request: OpenAIPreparedModelRequestV1) -> ModelResponse`; consumes only Task 15.E authorization and a Task 27.B fresh secret wrapper supplied for this call.
 
+**Implementation points:**
+- Serialize one authorized `OpenAIPreparedModelRequestV1` into the exact request body and bind the unbound adapter only with Task 15.E authorization plus a fresh Task 27.B secret wrapper.
+- Allow exactly one call to the sole trusted endpoint with no custom URL, environment credential, redirect replay, retry, or secret/body logging; responses and failures remain bounded/redacted.
+- Make `test_openai_adapter_never_retries_transport` GREEN with the smallest failing transport that records one attempt before completing endpoint/serialization cases.
+- Credential Manager re-probe and `get_for_call("OPENAI")` must occur upstream before the fresh wrapper is supplied, as owned by Task 25.C/27.B. This adapter cannot perform or bypass that ordering.
+
 **Intentionally failing test:**
 
 ```python
@@ -3670,7 +5532,30 @@ def test_openai_adapter_never_retries_transport(
 - Domain: `python -m pytest -q tests/unit/llm/test_openai_serializer.py tests/unit/llm/test_openai_adapter.py`
 - Expected: exact body vectors, one transport call, trusted endpoint enforcement, bounded responses, and redacted failures pass.
 
+**Review gate:**
+1. Spec compliance review checks Task 16.B's Goal, Milestone 16's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent single-call trusted OpenAI adapter contract.
+2. Code quality review checks exact serialization, authorization/secret binding, unbound-adapter refusal, trusted endpoint/redirect handling, single-attempt transport, bounded output, redacted errors, and no secret retention.
+3. Critical/Important findings block Tasks 17.C, 24.B, 25.C, 29.B, 31.A, 31.B, 32.C, and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 16.B's exact RED probe.** Add the complete declared `test_openai_adapter_never_retries_transport` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 16.B RED.** Run `python -m pytest -q tests/unit/llm/test_openai_adapter.py::test_openai_adapter_never_retries_transport`. Expected RED: the exact assertion fails because the task-owned single-call trusted OpenAI adapter behavior does not exist. Record the task-owned failing assertion and exit code; collection, import, runner, missing or unsafe credential, credential-provider startup, transport-fixture startup, or unrelated failure does not count as RED.
+- [ ] **Step 3: Serialize and bind the OpenAI adapter.** Apply IP-1: Add exact serializer and authorization/fresh-secret binding required by IP-1.
+- [ ] **Step 4: Enforce trusted single-call transport.** Apply IP-2: Add trusted endpoint and one-attempt/no-redirect-replay behavior required by IP-2.
+- [ ] **Step 5: Pass the zero-retry RED case.** Apply IP-3: Make the exact failing transport record one call for IP-3.
+- [ ] **Step 6: Preserve upstream credential ordering.** Apply IP-4: Reject any generate path lacking the upstream fresh credential wrapper required by IP-4 without adding credential lookup here.
+- [ ] **Step 7: Run Task 16.B Target GREEN.** Re-run `python -m pytest -q tests/unit/llm/test_openai_adapter.py::test_openai_adapter_never_retries_transport`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 16.B's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 16.B Domain verification.** Run `python -m pytest -q tests/unit/llm/test_openai_serializer.py tests/unit/llm/test_openai_adapter.py`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 16.B's declared acceptance.** Verify exact body vectors, one transport call, trusted endpoint enforcement, bounded responses, and redacted failures pass. Record the evaluated conditions and keep external evidence and the task incomplete while any result is non-terminal.
+- [ ] **Step 11: Run Task 16.B standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 16.B spec compliance review.** Provide the Goal, Milestone 16 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 16.B spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 16.B code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 16.B quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 16.B after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 16.B completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 17.A: Strict Single-action Model Response Parser
 
@@ -3692,6 +5577,12 @@ def test_openai_adapter_never_retries_transport(
 
 **Interfaces:** Produces closed `AgentAction`, `ModelResponse`, `ParseErrorV1`, and `ActionParser.parse(response: ModelResponse) -> AgentAction | ParseErrorV1`.
 
+**Implementation points:**
+- Parse exactly one complete model-response JSON object into the closed `AgentAction` union or one stable `ParseErrorV1`.
+- Reject surrounding text, multiple objects, defaults, omissions, unknown/extra keys, wrong types, and any model-supplied Harness action identity.
+- Make `test_model_supplied_action_id_is_rejected` GREEN with the smallest forbidden identity field before completing framing/action variants.
+- Own response framing and action schema only. Harness identity generation, candidate/phase/policy evaluation, dispatch, shell, and high-level agent runners remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -3708,7 +5599,30 @@ def test_model_supplied_action_id_is_rejected(parser: ActionParser) -> None:
 - Domain: `python -m pytest -q tests/unit/loop/test_agent_actions.py tests/unit/loop/test_action_parser.py`
 - Expected GREEN: exactly one valid action parses and every framing/field/type/omission/default/identity violation returns a stable parse error.
 
+**Review gate:**
+1. Spec compliance review checks Task 17.A's Goal, Milestone 17's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent strict closed action parser contract.
+2. Code quality review checks total-input JSON framing, closed action discriminants, unknown-key/default rejection, stable parse errors, model-identity exclusion, and parser side-effect freedom.
+3. Critical/Important findings block Tasks 17.B and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 17.A's exact RED probe.** Add the complete declared `test_model_supplied_action_id_is_rejected` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 17.A RED.** Run `python -m pytest -q tests/unit/loop/test_action_parser.py::test_model_supplied_action_id_is_rejected`. Expected RED: the strict parser/action union does not exist. Record the task-owned failing assertion and exit code; collection, import, runner, environment startup, or unrelated failure does not count as RED.
+- [ ] **Step 3: Parse one closed action object.** Apply IP-1: Add the one-object parser and closed action/error result required by IP-1.
+- [ ] **Step 4: Reject framing and identity violations.** Apply IP-2: Add model-supplied identity and extra-key rejection required by IP-2.
+- [ ] **Step 5: Pass the model-ID RED case.** Apply IP-3: Make the exact action-id assertion return a stable parse error for IP-3.
+- [ ] **Step 6: Seal action-parser ownership.** Apply IP-4: Keep binding, gates, dispatch, shell, and high-level runners outside Task 17.A as required by IP-4.
+- [ ] **Step 7: Run Task 17.A Target GREEN.** Re-run `python -m pytest -q tests/unit/loop/test_action_parser.py::test_model_supplied_action_id_is_rejected`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 17.A's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 17.A Domain verification.** Run `python -m pytest -q tests/unit/loop/test_agent_actions.py tests/unit/loop/test_action_parser.py`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 17.A's declared acceptance.** Verify exactly one valid action parses and every framing/field/type/omission/default/identity violation returns a stable parse error. Record the evaluated conditions and keep the task incomplete while any condition is non-terminal.
+- [ ] **Step 11: Run Task 17.A standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 17.A spec compliance review.** Provide the Goal, Milestone 17 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 17.A spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 17.A code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 17.A quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 17.A after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 17.A completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 17.B: Harness-owned Action Identity Binding
 
@@ -3727,6 +5641,12 @@ def test_model_supplied_action_id_is_rejected(parser: ActionParser) -> None:
 - Test: `tests/unit/loop/test_action_binding.py`
 
 **Interfaces:** Produces `ActionIdGeneratorV1.next_id() -> str`, `action_semantic_digest(action: AgentAction) -> str`, and `bind_action(action: AgentAction, id_generator: ActionIdGeneratorV1) -> ActionInstanceV1`.
+
+**Implementation points:**
+- Generate one non-empty Harness-owned action id and bind it with canonical action bytes into `ActionInstanceV1`.
+- Compute semantic digest from action semantics only and instance digest from the semantic identity plus Harness id; reject empty, duplicate, or malformed ids.
+- Make `test_same_semantics_different_harness_ids_change_instance_digest` GREEN with the smallest two-id comparison before completing invalid-id cases.
+- Own semantic/instance identity only. Response parsing, List/Search cursors, candidate/phase/policy evaluation, dispatch, and model-supplied identity remain out of scope.
 
 **Intentionally failing test:**
 
@@ -3747,7 +5667,30 @@ def test_same_semantics_different_harness_ids_change_instance_digest() -> None:
 - Domain: `python -m pytest -q tests/unit/loop/test_action_binding.py`
 - Expected GREEN: semantic and instance identities bind exact action bytes/ID and reject empty, duplicate, or malformed Harness IDs.
 
+**Review gate:**
+1. Spec compliance review checks Task 17.B's Goal, Milestone 17's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent Harness-owned action identity contract.
+2. Code quality review checks canonical action bytes, semantic-versus-instance separation, id-generator uniqueness, empty/duplicate/malformed rejection, deterministic digesting, and immutable binding.
+3. Critical/Important findings block Tasks 17.C and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 17.B's exact RED probe.** Add the complete declared `test_same_semantics_different_harness_ids_change_instance_digest` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 17.B RED.** Run `python -m pytest -q tests/unit/loop/test_action_binding.py::test_same_semantics_different_harness_ids_change_instance_digest`. Expected RED: no canonical action identity binder exists. Record the task-owned failing assertion and exit code; collection, import, runner, environment startup, or unrelated failure does not count as RED.
+- [ ] **Step 3: Generate and bind Harness identity.** Apply IP-1: Add id generation, semantic digest, and action binding required by IP-1.
+- [ ] **Step 4: Separate semantic and instance digests.** Apply IP-2: Add instance-digest/id validation required by IP-2.
+- [ ] **Step 5: Pass the two-ID RED case.** Apply IP-3: Make equal semantics with different ids produce different instance digests for IP-3.
+- [ ] **Step 6: Seal identity-binder ownership.** Apply IP-4: Keep parsing, cursors, gates, dispatch, and model identity outside Task 17.B as required by IP-4.
+- [ ] **Step 7: Run Task 17.B Target GREEN.** Re-run `python -m pytest -q tests/unit/loop/test_action_binding.py::test_same_semantics_different_harness_ids_change_instance_digest`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 17.B's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 17.B Domain verification.** Run `python -m pytest -q tests/unit/loop/test_action_binding.py`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 17.B's declared acceptance.** Verify semantic and instance identities bind exact action bytes/ID and reject empty, duplicate, or malformed Harness IDs. Record the evaluated conditions and keep the task incomplete while any condition is non-terminal.
+- [ ] **Step 11: Run Task 17.B standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 17.B spec compliance review.** Provide the Goal, Milestone 17 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 17.B spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 17.B code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 17.B quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 17.B after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 17.B completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 17.C: Ordered Guarded Tool Dispatcher
 
@@ -3768,6 +5711,12 @@ def test_same_semantics_different_harness_ids_change_instance_digest() -> None:
 
 **Interfaces:** Produces `DispatchContextV1`, `ArtifactStorePortV1.put(payload: FileToolResultV1) -> ArtifactRefV1`, `FileToolOutcomeV1`, `publish_file_tool_outcome(instance: ActionInstanceV1, result: FileToolResultV1, artifact_store: ArtifactStorePortV1) -> FileToolOutcomeV1`, `ToolPortsV1(list_files, read_file, search_text, apply_candidate_patch, run_check, propose_completion)` whose three file ports use the exact Task 11.A/11.B pure signatures, and `ToolDispatcher.dispatch(instance: ActionInstanceV1, context: DispatchContextV1) -> ActionResultV1`.
 
+**Implementation points:**
+- Validate current-candidate binding, path/object authorization, Run phase, and Task 13 policy in that exact order before selecting one registered typed tool port.
+- Return stable failures with zero port calls for stale candidate, unsafe path, forbidden phase, `DENY`, unknown capability, invalid result, or tool exception; approval cannot widen `DENY`.
+- Make `test_hard_deny_never_invokes_tool_port` GREEN with the smallest policy-DENY trace before completing ordering and exception cases.
+- Own guarded ordering, exact port selection, pure-result conversion, bounded artifact publication, and exception envelopes only. Parsing/binding, tool implementations, shell, waits, and high-level agent runners remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -3786,7 +5735,30 @@ def test_hard_deny_never_invokes_tool_port(dispatcher: ToolDispatcher, ports: Sp
 - Domain: `python -m pytest -q tests/unit/tools/test_dispatcher.py tests/unit/tools/test_dispatch_order.py`
 - Expected GREEN: stale/path/phase/policy failures call zero ports; only an exact allowed current action invokes one registered port.
 
+**Review gate:**
+1. Spec compliance review checks Task 17.C's Goal, Milestone 17's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent ordered guarded dispatcher contract.
+2. Code quality review checks gate precedence, zero-call failures, exact typed port registry, pure file-result conversion, artifact bounds, exception normalization, unknown-action closure, and no shell/runner delegation.
+3. Critical/Important findings block Tasks 25.D, 25.G, 30.C, 31.A, 32.A, and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 17.C's exact RED probe.** Add the complete declared `test_hard_deny_never_invokes_tool_port` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 17.C RED.** Run `python -m pytest -q tests/unit/tools/test_dispatch_order.py::test_hard_deny_never_invokes_tool_port`. Expected RED: no ordered guarded dispatcher exists. Record the task-owned failing assertion and exit code; collection, import, runner, environment startup, or unrelated failure does not count as RED.
+- [ ] **Step 3: Order every pre-dispatch gate.** Apply IP-1: Add the candidate/path/phase/policy gate sequence and typed port table required by IP-1.
+- [ ] **Step 4: Enforce zero-port fail-closed results.** Apply IP-2: Add zero-port DENY/stale/path/phase/unknown handling required by IP-2.
+- [ ] **Step 5: Pass the hard-DENY RED case.** Apply IP-3: Make the exact hard-DENY assertion record no port call for IP-3.
+- [ ] **Step 6: Seal dispatcher-only ownership.** Apply IP-4: Keep parsing, binding, tool bodies, shell, waits, and high-level runners outside Task 17.C as required by IP-4.
+- [ ] **Step 7: Run Task 17.C Target GREEN.** Re-run `python -m pytest -q tests/unit/tools/test_dispatch_order.py::test_hard_deny_never_invokes_tool_port`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 17.C's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 17.C Domain verification.** Run `python -m pytest -q tests/unit/tools/test_dispatcher.py tests/unit/tools/test_dispatch_order.py`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 17.C's declared acceptance.** Verify stale/path/phase/policy failures call zero ports; only an exact allowed current action invokes one registered port. Record the evaluated conditions and keep the task incomplete while any condition is non-terminal.
+- [ ] **Step 11: Run Task 17.C standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 17.C spec compliance review.** Provide the Goal, Milestone 17 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 17.C spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 17.C code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 17.C quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 17.C after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 17.C completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 18.A: Closed Docker Execution Request and Readiness
 
@@ -3807,6 +5779,12 @@ def test_hard_deny_never_invokes_tool_port(dispatcher: ToolDispatcher, ports: Sp
 
 **Interfaces:** Produces `ExecutionArgumentSequenceV1`, an immutable ordered tuple of command arguments, `DockerExecutionProfileV1`, `ExecutionRequestV1`, and `DockerReadinessService.verify(reference: ReferenceProfileManifestV1) -> ExecutionReadinessResultV1`.
 
+**Implementation points:**
+- Define immutable adapter-built argv, environment, resource, execution-profile, and `ExecutionRequestV1` contracts plus reference-image readiness verification.
+- Reject model-supplied executable/argv/environment, mutable resources, profile/image/daemon drift, and any request not bound to frozen built-ins before container creation.
+- Make `test_execution_request_rejects_model_executable_field` GREEN with the smallest forbidden executable field before completing profile/readiness cases.
+- Own schema, resource, profile, and readiness checks only. Tree materialization, container creation, output collection, result interpretation, image build, and installation remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -3824,7 +5802,30 @@ def test_execution_request_rejects_model_executable_field() -> None:
 - Domain: `python -m pytest -q tests/unit/execution/test_docker_profile.py tests/unit/execution/test_docker_request.py`
 - Expected GREEN: only adapter-built frozen argv/environment/resources validate and image/profile/daemon drift fails before container creation.
 
+**Review gate:**
+1. Spec compliance review checks Task 18.A's Goal, Milestone 18's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent closed Docker execution request/readiness contract.
+2. Code quality review checks closed argv/environment/resource schemas, adapter-only construction, profile/image digest binding, daemon readiness fail-closed behavior, and zero build/install side effects.
+3. Critical/Important findings block Tasks 18.B, 18.C, and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 18.A's exact RED probe.** Add the complete declared `test_execution_request_rejects_model_executable_field` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 18.A RED.** Run `python -m pytest -q tests/unit/execution/test_docker_request.py::test_execution_request_rejects_model_executable_field`. Expected RED: the closed request/profile/readiness contracts do not exist. Record the task-owned failing assertion and exit code; collection, import, runner, Docker daemon/image availability, environment startup, or unrelated failure does not count as RED.
+- [ ] **Step 3: Define the closed execution request.** Apply IP-1: Add immutable execution profile/request/readiness results required by IP-1.
+- [ ] **Step 4: Reject model-controlled execution fields.** Apply IP-2: Add model executable and first profile/image drift rejection required by IP-2.
+- [ ] **Step 5: Pass the executable-field RED case.** Apply IP-3: Make the exact model-executable assertion reject for IP-3.
+- [ ] **Step 6: Seal request/readiness ownership.** Apply IP-4: Keep materialization, containers, collectors, interpretation, build, and install outside Task 18.A as required by IP-4.
+- [ ] **Step 7: Run Task 18.A Target GREEN.** Re-run `python -m pytest -q tests/unit/execution/test_docker_request.py::test_execution_request_rejects_model_executable_field`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 18.A's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 18.A Domain verification.** Run `python -m pytest -q tests/unit/execution/test_docker_profile.py tests/unit/execution/test_docker_request.py`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 18.A's declared acceptance.** Verify only adapter-built frozen argv/environment/resources validate and image/profile/daemon drift fails before container creation. Record the evaluated conditions and keep external evidence and the task incomplete while any result is non-terminal.
+- [ ] **Step 11: Run Task 18.A standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 18.A spec compliance review.** Provide the Goal, Milestone 18 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 18.A spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 18.A code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 18.A quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 18.A after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 18.A completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 18.B: Fresh Candidate Materialization
 
@@ -3845,6 +5846,12 @@ def test_execution_request_rejects_model_executable_field() -> None:
 
 **Interfaces:** Produces `AuthorizedExecutionRootV1`, `MaterializedCandidateV1`, and `materialize_candidate(candidate: CandidateTreeV1, root: AuthorizedExecutionRootV1) -> MaterializedCandidateV1`.
 
+**Implementation points:**
+- Allocate one fresh identity-bound execution root and materialize every verified CandidateTree content object to its exact authorized path and bytes.
+- Reverify content digest, path/object identity, tree binding, and pre-execution root digest before Docker; every invocation uses a unique root and drift fails closed.
+- Make `test_materialization_rejects_content_object_digest_drift` GREEN with the smallest corrupted content object before completing path/object cases.
+- Own fresh-root allocation, exact writes, verification, and materialization identity only. Container creation, check interpretation, root reuse, and real-workspace persistence remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -3862,7 +5869,30 @@ def test_materialization_rejects_content_object_digest_drift() -> None:
 - Domain: `python -m pytest -q -o addopts='' -m docker_integration tests/integration/docker/test_fresh_candidate_materialization.py`
 - Expected GREEN: each invocation creates a unique verified root and every content/path/object drift fails before Docker.
 
+**Review gate:**
+1. Spec compliance review checks Task 18.B's Goal, Milestone 18's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent fresh Candidate materialization contract.
+2. Code quality review checks fresh-root uniqueness, handle/path authorization, exact-byte writes, digest/tree identity, cleanup-on-preflight-failure, link defense, and real-workspace isolation.
+3. Critical/Important findings block Tasks 18.C and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 18.B's exact RED probe.** Add the complete declared `test_materialization_rejects_content_object_digest_drift` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 18.B RED.** Run `python -m pytest -q -o addopts='' -m docker_integration tests/integration/docker/test_fresh_candidate_materialization.py::test_materialization_rejects_content_object_digest_drift`. Expected RED: no fresh identity-bound candidate materializer exists. Record the task-owned failing assertion and exit code; collection, import, runner, Docker/Windows filesystem environment startup, or unrelated failure does not count as RED.
+- [ ] **Step 3: Materialize into a fresh bound root.** Apply IP-1: Add fresh root allocation and exact Candidate content writes required by IP-1.
+- [ ] **Step 4: Verify exact Candidate bytes and identity.** Apply IP-2: Add digest/path/object/tree verification before Docker required by IP-2.
+- [ ] **Step 5: Pass the content-drift RED case.** Apply IP-3: Make the exact corrupted-object assertion fail before container creation for IP-3.
+- [ ] **Step 6: Seal materialization-only ownership.** Apply IP-4: Keep container, interpretation, reuse, and workspace persistence outside Task 18.B as required by IP-4.
+- [ ] **Step 7: Run Task 18.B Target GREEN.** Re-run `python -m pytest -q -o addopts='' -m docker_integration tests/integration/docker/test_fresh_candidate_materialization.py::test_materialization_rejects_content_object_digest_drift`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 18.B's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 18.B Domain verification.** Run `python -m pytest -q -o addopts='' -m docker_integration tests/integration/docker/test_fresh_candidate_materialization.py`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 18.B's declared acceptance.** Verify each invocation creates a unique verified root and every content/path/object drift fails before Docker. Record the evaluated conditions and keep external evidence and the task incomplete while any result is non-terminal.
+- [ ] **Step 11: Run Task 18.B standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 18.B spec compliance review.** Provide the Goal, Milestone 18 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 18.B spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 18.B code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 18.B quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 18.B after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 18.B completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 18.C: Isolated Docker Check Execution
 
@@ -3884,6 +5914,12 @@ def test_materialization_rejects_content_object_digest_drift() -> None:
 
 **Interfaces:** Produces `RawExecutionResultV1` and `DockerExecutor.execute(request: ExecutionRequestV1, candidate: MaterializedCandidateV1) -> RawExecutionResultV1`.
 
+**Implementation points:**
+- Execute one closed request against one materialized candidate in one fresh container and return only bounded `RawExecutionResultV1` evidence.
+- Enforce network-none, non-root, read-only root/workspace, capability drop, absent Docker socket, bounded tmpfs/CPU/memory/PIDs/time/output, and exact stop/kill cleanup.
+- Make `test_output_limit_kills_exact_container` GREEN with the smallest output-overflow kill path before completing isolation/deadline controls.
+- Own container creation, isolation, deadlines, bounded collectors, stop/kill, and raw evidence only. PASS/FAIL parsing and materialization-root deletion remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -3902,7 +5938,30 @@ def test_output_limit_kills_exact_container(executor: DockerExecutor) -> None:
 - Domain: `python -m pytest -q -o addopts='' -m docker_integration tests/integration/docker/test_execution_isolation.py tests/integration/docker/test_execution_output_limits.py`
 - Expected GREEN: exact isolation/resource/deadline/output controls hold and each execution returns bounded raw evidence.
 
+**Review gate:**
+1. Spec compliance review checks Task 18.C's Goal, Milestone 18's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent fresh isolated Docker execution contract.
+2. Code quality review checks fresh-container identity, all isolation flags, resource/deadline bounds, collector truncation, exact-container kill, cleanup on failures, and raw-evidence-only separation.
+3. Critical/Important findings block Tasks 18.D and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 18.C's exact RED probe.** Add the complete declared `test_output_limit_kills_exact_container` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 18.C RED.** Run `python -m pytest -q -o addopts='' -m docker_integration tests/integration/docker/test_execution_output_limits.py::test_output_limit_kills_exact_container`. Expected RED: no bounded real Docker executor exists. Record the task-owned failing assertion and exit code; collection, import, runner, Docker daemon/container startup, image availability, or unrelated failure does not count as RED.
+- [ ] **Step 3: Execute in one fresh container.** Apply IP-1: Add fresh-container execution and bounded raw result required by IP-1.
+- [ ] **Step 4: Enforce isolation and bounded output.** Apply IP-2: Add output limit and exact-container stop/kill controls required by IP-2.
+- [ ] **Step 5: Pass the output-limit RED case.** Apply IP-3: Make the exact overflow assertion kill only its container for IP-3.
+- [ ] **Step 6: Seal raw-executor ownership.** Apply IP-4: Keep outcome parsing and materialization-root deletion outside Task 18.C as required by IP-4.
+- [ ] **Step 7: Run Task 18.C Target GREEN.** Re-run `python -m pytest -q -o addopts='' -m docker_integration tests/integration/docker/test_execution_output_limits.py::test_output_limit_kills_exact_container`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 18.C's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 18.C Domain verification.** Run `python -m pytest -q -o addopts='' -m docker_integration tests/integration/docker/test_execution_isolation.py tests/integration/docker/test_execution_output_limits.py`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 18.C's declared acceptance.** Verify exact isolation/resource/deadline/output controls hold and each execution returns bounded raw evidence. Record the evaluated conditions and keep external evidence and the task incomplete while any result is non-terminal.
+- [ ] **Step 11: Run Task 18.C standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 18.C spec compliance review.** Provide the Goal, Milestone 18 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 18.C spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 18.C code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 18.C quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 18.C after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 18.C completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 18.D: Execution Post-integrity and Cleanup
 
@@ -3923,6 +5982,12 @@ def test_output_limit_kills_exact_container(executor: DockerExecutor) -> None:
 
 **Interfaces:** Produces `ExecutionCleanupResultV1(container_removed: bool, materialization_removed: bool, workspace_unchanged: bool, residual_artifact: ArtifactRefV1 | None)` and `finalize_execution(result: RawExecutionResultV1, candidate: CandidateTreeV1, materialized: MaterializedCandidateV1) -> ExecutionCleanupResultV1`.
 
+**Implementation points:**
+- Reverify Candidate and materialized bytes/object identities after execution, then remove only the exact container and fresh root without following links.
+- Report container/root removal, unchanged real workspace, and explicit residual artifact evidence; mutation, link, or cleanup failure cannot be hidden as success.
+- Make `test_post_execution_candidate_mutation_fails_closed` GREEN with the smallest post-run byte drift before completing cleanup/link cases.
+- Own post-run integrity and exact cleanup/residue evidence only. Check execution/outcome parsing, root reuse, and real-workspace mutation remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -3940,7 +6005,30 @@ def test_post_execution_candidate_mutation_fails_closed() -> None:
 - Domain: `python -m pytest -q -o addopts='' -m docker_integration tests/integration/docker/test_execution_cleanup.py tests/integration/docker/test_execution_workspace_integrity.py`
 - Expected GREEN: clean runs remove exact resources; mutation/link/cleanup failures return explicit non-success residue evidence.
 
+**Review gate:**
+1. Spec compliance review checks Task 18.D's Goal, Milestone 18's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent post-execution integrity and cleanup contract.
+2. Code quality review checks post-byte/object verification, exact resource identity, link-safe deletion, cleanup idempotency, residue visibility, workspace immutability, and fail-closed partial cleanup.
+3. Critical/Important findings block Tasks 19.A, 20.B, 21.B, 31.A, 34.A, and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 18.D's exact RED probe.** Add the complete declared `test_post_execution_candidate_mutation_fails_closed` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 18.D RED.** Run `python -m pytest -q -o addopts='' -m docker_integration tests/integration/docker/test_execution_workspace_integrity.py::test_post_execution_candidate_mutation_fails_closed`. Expected RED: no post-integrity/cleanup verifier exists. Record the task-owned failing assertion and exit code; collection, import, runner, Docker cleanup/environment startup, or unrelated failure does not count as RED.
+- [ ] **Step 3: Reverify post-run Candidate integrity.** Apply IP-1: Add post-run candidate/materialization verification required by IP-1.
+- [ ] **Step 4: Expose exact cleanup and residue.** Apply IP-2: Add exact container/root cleanup and explicit residue reporting required by IP-2.
+- [ ] **Step 5: Pass the post-mutation RED case.** Apply IP-3: Make the exact post-mutation assertion return non-success for IP-3.
+- [ ] **Step 6: Seal finalization-only ownership.** Apply IP-4: Keep execution, outcome parsing, reuse, and workspace mutation outside Task 18.D as required by IP-4.
+- [ ] **Step 7: Run Task 18.D Target GREEN.** Re-run `python -m pytest -q -o addopts='' -m docker_integration tests/integration/docker/test_execution_workspace_integrity.py::test_post_execution_candidate_mutation_fails_closed`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 18.D's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 18.D Domain verification.** Run `python -m pytest -q -o addopts='' -m docker_integration tests/integration/docker/test_execution_cleanup.py tests/integration/docker/test_execution_workspace_integrity.py`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 18.D's declared acceptance.** Verify clean runs remove exact resources; mutation/link/cleanup failures return explicit non-success residue evidence. Record the evaluated conditions and keep external evidence and the task incomplete while any result is non-terminal.
+- [ ] **Step 11: Run Task 18.D standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 18.D spec compliance review.** Provide the Goal, Milestone 18 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 18.D spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 18.D code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 18.D quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 18.D after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 18.D completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 19.A: Closed Check Results and Static-tool Parsing
 
@@ -3963,6 +6051,12 @@ def test_post_execution_candidate_mutation_fails_closed() -> None:
 
 **Interfaces:** Produces `CheckFindingSequenceV1`, an immutable ordered tuple of zero or more `CheckFindingV1` items, `CheckResultV1(status: Literal["PASS","FAIL","ERROR","TIMEOUT","NOT_RUN"], check_kind: CheckPlanIdV1, structured_findings: CheckFindingSequenceV1, raw_digest: str)`, `parse_ruff_result(raw: RawExecutionResultV1, profile: ReferenceProfileManifestV1) -> CheckResultV1`, and `parse_mypy_result(raw: RawExecutionResultV1, profile: ReferenceProfileManifestV1) -> CheckResultV1`.
 
+**Implementation points:**
+- Validate profile-frozen Ruff and Mypy versions, complete output shape, and bounded raw evidence before producing any closed `CheckResultV1`.
+- Map PASS, FAIL, ERROR, TIMEOUT, and NOT_RUN only to their permitted ordered finding combinations, with deterministic canonical raw digests and stable parser error codes.
+- Make `test_truncated_ruff_output_is_check_error` GREEN with the smallest fail-closed truncated-output path before completing malformed, version-drift, and status/finding matrices.
+- Own static-tool parsing and closed check-result invariants only. Pytest reporting, failure fingerprinting, execution, and Baseline decisions remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -3983,7 +6077,30 @@ Expected RED: import failure because the check-result schema and static-tool par
 - Domain: `python -m pytest -q tests/unit/validation/test_check_result.py tests/unit/validation/test_ruff_mypy_parsing.py`
 - Expected GREEN: both commands exit `0`; PASS/FAIL/error/version/malformed/truncated combinations map to the closed schema.
 
+**Review gate:**
+1. Spec compliance review checks Task 19.A's Goal, Milestone 19's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent closed static-check evidence contract.
+2. Code quality review checks complete-output detection, version binding, status/finding exhaustiveness, deterministic ordering/digests, bounded parsing, and fail-closed malformed or truncated evidence.
+3. Critical/Important findings block Tasks 19.B and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 19.A's exact RED probe.** Add the complete declared `test_truncated_ruff_output_is_check_error` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 19.A RED.** Run `python -m pytest -q tests/unit/validation/test_ruff_mypy_parsing.py::test_truncated_ruff_output_is_check_error`. Expected RED: import failure because the check-result schema and static-tool parsers do not exist. Record the task-owned failing assertion and exit code; collection, runner, unrelated import, or environment failure does not count as RED.
+- [ ] **Step 3: Validate frozen static-tool output.** Apply IP-1: Require the declared Ruff/Mypy version and complete bounded output before parsing.
+- [ ] **Step 4: Enforce closed check-result combinations.** Apply IP-2: Map each status to only its permitted ordered findings, digest, and stable error form.
+- [ ] **Step 5: Pass the truncated Ruff RED case.** Apply IP-3: Return `ERROR` with `CHECK_ERROR` for the exact declared truncated report.
+- [ ] **Step 6: Seal static-parser-only ownership.** Apply IP-4: Keep pytest, fingerprint, execution, and Baseline behavior outside Task 19.A.
+- [ ] **Step 7: Run Task 19.A Target GREEN.** Re-run `python -m pytest -q tests/unit/validation/test_ruff_mypy_parsing.py::test_truncated_ruff_output_is_check_error`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 19.A's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 19.A Domain verification.** Run `python -m pytest -q tests/unit/validation/test_check_result.py tests/unit/validation/test_ruff_mypy_parsing.py`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 19.A's declared acceptance.** Verify PASS/FAIL/error/version/malformed/truncated combinations map to the closed schema. Record the evaluated conditions and keep the task incomplete while any evidence is non-terminal.
+- [ ] **Step 11: Run Task 19.A standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 19.A spec compliance review.** Provide the Goal, Milestone 19 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 19.A spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 19.A code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 19.A quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 19.A after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 19.A completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 19.B: Authoritative Pytest Event Report
 
@@ -4008,6 +6125,12 @@ Expected RED: import failure because the check-result schema and static-tool par
 
 **Interfaces:** Produces `ErrorPhase`, `TestStatus`, `PytestEventV1`, `PytestEvidenceV1`, `StructuredExceptionV1`, and `parse_pytest_evidence(raw: bytes, expectation: PytestReportExpectationV1) -> PytestParseOutcomeV1`.
 
+**Implementation points:**
+- Emit one bounded ordered event stream with declared schema/plugin versions, collection identity, terminal session event, and integrity digest over canonical report bytes.
+- Parse the report channel independently of exit code and console text, rejecting missing, duplicate, reordered, truncated, over-limit, corrupt, or expectation-mismatched events with stable reporter errors.
+- Make `test_missing_session_end_is_reporter_invalid` GREEN with the smallest normal-end validation before completing the offline corruption matrix and real Docker channel.
+- Own pytest plugin emission and authoritative report validation only. Fingerprinting, Baseline orchestration, static-tool parsing, and PASS synthesis from other channels remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -4031,7 +6154,30 @@ Expected RED: import failure because the production reporter/parser do not exist
 - Docker: `python -m pytest -q -o addopts='' -m docker_integration tests/integration/docker/test_pytest_report_channel.py`
 - Expected GREEN: all commands exit `0`; corruption matrices pass offline and the real Docker report channel passes without a required skip.
 
+**Review gate:**
+1. Spec compliance review checks Task 19.B's Goal, Milestone 19's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent authoritative pytest-report contract.
+2. Code quality review checks event sequencing, canonical integrity, expectation/version/collection binding, report bounds, terminal completeness, stable error taxonomy, and independence from exit code or truncated text.
+3. Critical/Important findings block Tasks 19.C and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 19.B's exact RED probe.** Add the complete declared `test_missing_session_end_is_reporter_invalid` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 19.B RED.** Run `python -m pytest -q tests/unit/validation/test_pytest_evidence.py::test_missing_session_end_is_reporter_invalid`. Expected RED: import failure because the production reporter/parser do not exist. Record the task-owned failing assertion and exit code; collection, runner, unrelated import, or environment failure does not count as RED.
+- [ ] **Step 3: Emit the authoritative event report.** Apply IP-1: Add the bounded ordered pytest channel with version, collection, terminal, and digest facts.
+- [ ] **Step 4: Reject incomplete or corrupt evidence.** Apply IP-2: Validate every declared report invariant without trusting exit code or console text.
+- [ ] **Step 5: Pass the missing-session-end RED case.** Apply IP-3: Return `REPORTER_INVALID` and no evidence for the exact declared incomplete report.
+- [ ] **Step 6: Seal pytest-report-only ownership.** Apply IP-4: Keep fingerprinting, Baseline, static parsing, and alternate PASS inference outside Task 19.B.
+- [ ] **Step 7: Run Task 19.B Target GREEN.** Re-run `python -m pytest -q tests/unit/validation/test_pytest_evidence.py::test_missing_session_end_is_reporter_invalid`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 19.B's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 19.B Domain verification.** Run `python -m pytest -q tests/unit/validation/test_pytest_evidence.py tests/unit/validation/test_pytest_reporter.py`. Record the exact command and actual result.
+- [ ] **Step 10: Run Task 19.B Docker verification and check acceptance.** Run `python -m pytest -q -o addopts='' -m docker_integration tests/integration/docker/test_pytest_report_channel.py`, then verify corruption matrices pass offline and the real Docker report channel passes without a required skip. Record exact results and keep the task incomplete while Docker or any evidence is non-terminal.
+- [ ] **Step 11: Run Task 19.B standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 19.B spec compliance review.** Provide the Goal, Milestone 19 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 19.B spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 19.B code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 19.B quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 19.B after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 19.B completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 19.C: Stable Target Failure Fingerprint
 
@@ -4053,6 +6199,12 @@ Expected RED: import failure because the production reporter/parser do not exist
 
 **Interfaces:** Produces `FailureFingerprintV1`, `ProjectFrameSignatureV1`, and `build_failure_fingerprint(evidence: PytestEvidenceV1, node_id: str, normalization: FingerprintNormalizationContextV1) -> FingerprintOutcomeV1`.
 
+**Implementation points:**
+- Gate fingerprint construction on complete authoritative evidence for the exact target node in the CALL phase with FAIL status and a valid project-frame identity.
+- Normalize only the declared execution root, temporary root, run/container id, and reporter-marked object addresses while preserving user numbers, times, hexadecimal text, and assertion content.
+- Make `test_user_hexadecimal_value_is_not_normalized_away` GREEN with the smallest allowlist-preserving normalization before completing stability and TARGET_UNSTABLE cases.
+- Own deterministic target-failure normalization and fingerprint output only. Raw report parsing, check execution, Baseline comparison, and non-target classification remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -4073,7 +6225,30 @@ Expected RED: import failure because fingerprint normalization does not exist.
 - Domain: `python -m pytest -q tests/unit/validation/test_failure_fingerprint.py`
 - Expected GREEN: both commands exit `0`; CALL/FAIL gating, frame inclusion, assertion-diff absence, stable allowlist, and TARGET_UNSTABLE cases pass.
 
+**Review gate:**
+1. Spec compliance review checks Task 19.C's Goal, Milestone 19's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent stable target-fingerprint contract.
+2. Code quality review checks exact node/phase/status gating, project-frame inclusion, canonical normalization, allowlist narrowness, user-content preservation, missing assertion evidence, and deterministic unstable outcomes.
+3. Critical/Important findings block Tasks 20.B, 21.A, 21.C, 22.A, 22.B, 24.A, 25.D, 31.A, 32.B, and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 19.C's exact RED probe.** Add the complete declared `test_user_hexadecimal_value_is_not_normalized_away` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 19.C RED.** Run `python -m pytest -q tests/unit/validation/test_failure_fingerprint.py::test_user_hexadecimal_value_is_not_normalized_away`. Expected RED: import failure because fingerprint normalization does not exist. Record the task-owned failing assertion and exit code; collection, runner, unrelated import, or environment failure does not count as RED.
+- [ ] **Step 3: Gate exact target failures.** Apply IP-1: Require complete exact-node CALL/FAIL evidence and valid project frames.
+- [ ] **Step 4: Apply only allowed normalization.** Apply IP-2: Remove declared volatile execution markers while preserving user failure content.
+- [ ] **Step 5: Pass the hexadecimal-preservation RED case.** Apply IP-3: Keep `deadbeef` in the exact declared normalized exception text.
+- [ ] **Step 6: Seal fingerprint-only ownership.** Apply IP-4: Keep report parsing, execution, Baseline comparison, and non-target classification outside Task 19.C.
+- [ ] **Step 7: Run Task 19.C Target GREEN.** Re-run `python -m pytest -q tests/unit/validation/test_failure_fingerprint.py::test_user_hexadecimal_value_is_not_normalized_away`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 19.C's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 19.C Domain verification.** Run `python -m pytest -q tests/unit/validation/test_failure_fingerprint.py`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 19.C's declared acceptance.** Verify CALL/FAIL gating, frame inclusion, assertion-diff absence, stable allowlist, and TARGET_UNSTABLE cases pass. Record the evaluated conditions and keep the task incomplete while any evidence is non-terminal.
+- [ ] **Step 11: Run Task 19.C standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 19.C spec compliance review.** Provide the Goal, Milestone 19 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 19.C spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 19.C code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 19.C quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 19.C after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 19.C completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 20.A: Static Python Support Detection and Frozen Check Plan
 
@@ -4098,6 +6273,12 @@ Expected RED: import failure because fingerprint normalization does not exist.
 
 **Interfaces:** Produces `TargetTestIdSequenceV1`, an immutable ordered tuple of one or more target ids, `StaticProjectProfileResultV1 = SupportedProjectV1 | UnsupportedProjectV1`, `PythonProjectAdapterV1.detect_static(snapshot: SnapshotTreeV1, reference_manifest: ReferenceProfileManifestV1) -> StaticProjectProfileResultV1`, `PythonProjectAdapterV1.build_baseline_plan(static_profile: SupportedProjectV1, target_test_ids: TargetTestIdSequenceV1) -> BaselineCheckPlanV1`, and `PythonProjectAdapterV1.build_formal_plan(manifest: ValidationManifestV1, candidate: CandidateIdentityV1) -> FormalValidationCheckPlanV1`.
 
+**Implementation points:**
+- Detect supported Python project facts exclusively from the sealed `SnapshotTreeV1` and frozen reference manifest, with zero filesystem probes, imports, subprocesses, or executor calls.
+- Build immutable exact collect, full-suite, target-test, Ruff, and Mypy identities, argv vectors, ordering, and target bindings for Baseline and formal validation plans.
+- Make `test_static_unsupported_result_performs_no_execution` GREEN with the smallest Snapshot-only unsupported path before completing supported classifications and exact closed plans.
+- Own static support classification and frozen plan generation only. Runtime compatibility, execution, result parsing, and Manifest publication remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -4117,7 +6298,30 @@ def test_static_unsupported_result_performs_no_execution(
 - Domain: `python -m pytest -q tests/unit/validation/test_python_adapter_static.py tests/unit/validation/test_check_plan.py`
 - Expected: supported/unsupported classifications and exact closed argv/order vectors pass with zero static execution.
 
+**Review gate:**
+1. Spec compliance review checks Task 20.A's Goal, Milestone 20's four-field aggregate and SPEC scope, this Implementation boundary, exact RED probe, and Verification as one consistent Snapshot-only detection and frozen-plan contract.
+2. Code quality review checks sealed-Snapshot access, zero-execution detection, support exhaustiveness, collect/full/target identity, exact argv/order, immutable target bindings, and deterministic unsupported reasons.
+3. Critical/Important findings block Tasks 20.B and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 20.A's exact RED probe.** Add the complete declared `test_static_unsupported_result_performs_no_execution` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 20.A RED.** Run `python -m pytest -q tests/unit/validation/test_python_adapter_static.py::test_static_unsupported_result_performs_no_execution`. Record the task-owned failing assertion and exit code; collection, runner, unrelated import, or environment failure does not count as RED.
+- [ ] **Step 3: Detect from the sealed Snapshot only.** Apply IP-1: Classify support from Snapshot and reference-manifest facts with zero execution or ambient reads.
+- [ ] **Step 4: Freeze every declared check identity.** Apply IP-2: Build exact collect/full/target/Ruff/Mypy vectors, order, and bindings.
+- [ ] **Step 5: Pass the unsupported-project RED case.** Apply IP-3: Return `UNSUPPORTED` for the exact declared Snapshot without invoking the executor.
+- [ ] **Step 6: Seal static-adapter-only ownership.** Apply IP-4: Keep runtime checks, execution, parsing, and Manifest publication outside Task 20.A.
+- [ ] **Step 7: Run Task 20.A Target GREEN.** Re-run `python -m pytest -q tests/unit/validation/test_python_adapter_static.py::test_static_unsupported_result_performs_no_execution`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 20.A's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 20.A Domain verification.** Run `python -m pytest -q tests/unit/validation/test_python_adapter_static.py tests/unit/validation/test_check_plan.py`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 20.A's declared acceptance.** Verify supported/unsupported classifications and exact closed argv/order vectors pass with zero static execution. Record the evaluated conditions and keep the task incomplete while any evidence is non-terminal.
+- [ ] **Step 11: Run Task 20.A standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 20.A spec compliance review.** Provide the Goal, Milestone 20 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 20.A spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 20.A code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 20.A quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 20.A after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 20.A completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 20.B: Stable Baseline and ValidationManifestV1
 
@@ -4145,6 +6349,12 @@ def test_static_unsupported_result_performs_no_execution(
 
 **Interfaces:** Produces `BaselineResultV1 = PassingBaselineV1 | BaselineBlockedV1`, `run_baseline(plan: BaselineCheckPlanV1, snapshot: SnapshotTreeV1, executor: DockerExecutor) -> BaselineResultV1`, and `create_validation_manifest(baseline: PassingBaselineV1, bindings: ManifestBindingsV1) -> ValidationManifestV1`; consumes Task 20.A's exact plan, Task 18.D closed execution boundary, and Task 19.C authoritative check/fingerprint evidence.
 
+**Implementation points:**
+- Execute the frozen collect, full-suite, target, Ruff, and Mypy Baseline requests once each in declared order with fresh boundaries and complete authoritative evidence.
+- Require exact Snapshot, plan, target, reference-profile, environment, collection, and stable repeated fingerprint bindings before constructing one immutable `ValidationManifestV1`.
+- Make `test_unstable_target_fingerprint_creates_no_manifest` GREEN with the smallest baseline-blocked path before completing runtime incompatibility, forbidden state, drift, and publication matrices.
+- Own Baseline orchestration, complete success predicates, and Manifest publication only. Static plan construction, check parsing, formal validation, and candidate mutation remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -4169,7 +6379,30 @@ def test_unstable_target_fingerprint_creates_no_manifest(
 - Docker: `python -m pytest -q -o addopts='' -m docker_integration tests/integration/docker/test_reference_baseline.py`
 - Expected: only the exact stable reference failure publishes one immutable Manifest.
 
+**Review gate:**
+1. Spec compliance review checks Task 20.B's Goal, Milestone 20's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent stable-Baseline and Manifest contract.
+2. Code quality review checks frozen-plan execution, fresh boundaries, runtime compatibility, complete report gating, non-target/collection drift, repeated fingerprint equality, exact bindings, and zero Manifest on any incomplete predicate.
+3. Critical/Important findings block Tasks 14.A, 21.A, 21.C, 31.A, 34.A, and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 20.B's exact RED probe.** Add the complete declared `test_unstable_target_fingerprint_creates_no_manifest` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 20.B RED.** Run `python -m pytest -q tests/unit/validation/test_baseline.py::test_unstable_target_fingerprint_creates_no_manifest`. Record the task-owned failing assertion and exit code; collection, runner, unrelated import, Docker startup, or environment failure does not count as RED.
+- [ ] **Step 3: Execute the complete frozen Baseline.** Apply IP-1: Run every declared Baseline request in order with fresh boundaries and authoritative evidence.
+- [ ] **Step 4: Bind stable success before publication.** Apply IP-2: Require every declared identity and repeated fingerprint predicate before creating a Manifest.
+- [ ] **Step 5: Pass the unstable-fingerprint RED case.** Apply IP-3: Return `BaselineBlockedV1` with `BASELINE_UNSTABLE` and create no Manifest for the exact declared mismatch.
+- [ ] **Step 6: Seal Baseline-publication ownership.** Apply IP-4: Keep static planning, parser internals, formal validation, and candidate mutation outside Task 20.B.
+- [ ] **Step 7: Run Task 20.B Target GREEN.** Re-run `python -m pytest -q tests/unit/validation/test_baseline.py::test_unstable_target_fingerprint_creates_no_manifest`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 20.B's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 20.B Domain verification.** Run `python -m pytest -q tests/unit/validation/test_baseline.py tests/unit/validation/test_runtime_compatibility.py tests/unit/validation/test_manifest.py`. Record the exact command and actual result.
+- [ ] **Step 10: Run Task 20.B Docker verification and check acceptance.** Run `python -m pytest -q -o addopts='' -m docker_integration tests/integration/docker/test_reference_baseline.py`, then verify only the exact stable reference failure publishes one immutable Manifest. Record exact results and keep the task incomplete while Docker or any evidence is non-terminal.
+- [ ] **Step 11: Run Task 20.B standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 20.B spec compliance review.** Provide the Goal, Milestone 20 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 20.B spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 20.B code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 20.B quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 20.B after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 20.B completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 21.A: Formal Validation Plan and Pre-execution Integrity
 
@@ -4190,6 +6423,12 @@ def test_unstable_target_fingerprint_creates_no_manifest(
 
 **Interfaces:** Produces `FormalValidationPlanV1`, `FormalValidationRequestV1`, and `build_formal_validation_plan(manifest: ValidationManifestV1, candidate: CandidateRevisionV1, final_diff: FinalDiffV1) -> FormalValidationPlanV1`.
 
+**Implementation points:**
+- Recompute exact current candidate bytes, final-diff/protected-path state, policy identity, environment/reference profile, Manifest, target, and collection bindings before any execution request exists.
+- Freeze the complete ordered collect, full pytest, Ruff, and Mypy request plan with immutable request identities, candidate identity, bounds, argv, and expected evidence.
+- Make `test_stale_candidate_produces_zero_execution_requests` GREEN with the smallest stale-candidate rejection before completing drift, protected-input, and exact-plan matrices.
+- Own pure preflight binding validation and full formal-plan construction only. Docker calls, evidence interpretation, lifecycle mutation, and `VerifiedCandidateV1` creation remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -4208,7 +6447,30 @@ def test_stale_candidate_produces_zero_execution_requests() -> None:
 - Domain: `python -m pytest -q tests/unit/validation/test_formal_plan.py tests/unit/validation/test_formal_preflight.py`
 - Expected GREEN: exact current inputs create the complete frozen plan and every stale/drifted/protected input yields zero execution requests.
 
+**Review gate:**
+1. Spec compliance review checks Task 21.A's Goal, Milestone 21's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent formal preflight and frozen-plan contract.
+2. Code quality review checks candidate/policy/environment/Manifest binding completeness, protected-path revalidation, zero-request failure atomicity, exact check identities/order, immutable plan data, and deterministic drift errors.
+3. Critical/Important findings block Tasks 21.B, 21.C, and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 21.A's exact RED probe.** Add the complete declared `test_stale_candidate_produces_zero_execution_requests` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 21.A RED.** Run `python -m pytest -q tests/unit/validation/test_formal_preflight.py::test_stale_candidate_produces_zero_execution_requests`. Expected RED: no pre-execution integrity/plan builder exists. Record the task-owned failing assertion and exit code; collection, runner, unrelated import, or environment failure does not count as RED.
+- [ ] **Step 3: Recompute every formal binding.** Apply IP-1: Validate current candidate, diff, policy, environment, Manifest, target, and collection identities before requests.
+- [ ] **Step 4: Freeze the complete formal request plan.** Apply IP-2: Build exact immutable collect/full/Ruff/Mypy requests and expected evidence in order.
+- [ ] **Step 5: Pass the stale-candidate RED case.** Apply IP-3: Return `CANDIDATE_STALE` with zero requests for the exact declared input.
+- [ ] **Step 6: Seal formal-preflight-only ownership.** Apply IP-4: Keep Docker, result evaluation, lifecycle mutation, and candidate verification outside Task 21.A.
+- [ ] **Step 7: Run Task 21.A Target GREEN.** Re-run `python -m pytest -q tests/unit/validation/test_formal_preflight.py::test_stale_candidate_produces_zero_execution_requests`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 21.A's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 21.A Domain verification.** Run `python -m pytest -q tests/unit/validation/test_formal_plan.py tests/unit/validation/test_formal_preflight.py`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 21.A's declared acceptance.** Verify exact current inputs create the complete frozen plan and every stale/drifted/protected input yields zero execution requests. Record the evaluated conditions and keep the task incomplete while any evidence is non-terminal.
+- [ ] **Step 11: Run Task 21.A standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 21.A spec compliance review.** Provide the Goal, Milestone 21 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 21.A spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 21.A code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 21.A quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 21.A after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 21.A completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 21.B: Complete Formal Check Execution
 
@@ -4229,6 +6491,12 @@ def test_stale_candidate_produces_zero_execution_requests() -> None:
 
 **Interfaces:** Produces `FormalValidationEvidenceV1` and `execute_formal_plan(plan: FormalValidationPlanV1, executor: DockerExecutionPortV1) -> FormalValidationEvidenceV1`.
 
+**Implementation points:**
+- Invoke every frozen request exactly once in plan order through a fresh Task 18 execution boundary without skipping, inserting, replacing, or retrying requests implicitly.
+- Collect ordered request identities and complete raw/check, teardown, cleanup, timeout, and residual evidence so missing, duplicate, or partial execution remains explicit and non-success.
+- Make `test_executor_must_run_every_frozen_request_once` GREEN with the smallest exact-order coordinator before completing cleanup-failed and incomplete-evidence matrices.
+- Own formal request invocation and evidence collection only. Check selection, plan mutation, success evaluation, loop return, and approval creation remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -4246,7 +6514,30 @@ def test_executor_must_run_every_frozen_request_once(executor: SpyDockerExecutio
 - Domain: `python -m pytest -q -o addopts='' -m docker_integration tests/integration/docker/test_reference_formal_validation.py tests/integration/docker/test_formal_execution_completeness.py`
 - Expected GREEN: every frozen request runs once with fresh boundaries and missing/duplicate/cleanup-failed evidence remains explicit.
 
+**Review gate:**
+1. Spec compliance review checks Task 21.B's Goal, Milestone 21's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent complete formal-execution contract.
+2. Code quality review checks exact request identity/order/cardinality, fresh-boundary isolation, evidence completeness, cleanup/teardown visibility, timeout handling, no implicit retries, and deterministic partial-execution records.
+3. Critical/Important findings block Tasks 21.C and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 21.B's exact RED probe.** Add the complete declared `test_executor_must_run_every_frozen_request_once` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 21.B RED.** Run `python -m pytest -q -o addopts='' -m docker_integration tests/integration/docker/test_formal_execution_completeness.py::test_executor_must_run_every_frozen_request_once`. Expected RED: no formal execution coordinator exists. Record the task-owned failing assertion and exit code; collection, runner, unrelated import, Docker startup, or environment failure does not count as RED.
+- [ ] **Step 3: Invoke every frozen request exactly once.** Apply IP-1: Preserve plan order and request identity through one fresh boundary per request.
+- [ ] **Step 4: Preserve complete execution evidence.** Apply IP-2: Record raw/check, teardown, cleanup, timeout, duplicate, and missing facts explicitly.
+- [ ] **Step 5: Pass the request-completeness RED case.** Apply IP-3: Match `executed_request_ids` to the exact declared four-check plan.
+- [ ] **Step 6: Seal execution-coordinator-only ownership.** Apply IP-4: Keep planning, predicate evaluation, loop return, and approvals outside Task 21.B.
+- [ ] **Step 7: Run Task 21.B Target GREEN.** Re-run `python -m pytest -q -o addopts='' -m docker_integration tests/integration/docker/test_formal_execution_completeness.py::test_executor_must_run_every_frozen_request_once`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 21.B's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 21.B Domain verification.** Run `python -m pytest -q -o addopts='' -m docker_integration tests/integration/docker/test_reference_formal_validation.py tests/integration/docker/test_formal_execution_completeness.py`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 21.B's declared acceptance.** Verify every frozen request runs once with fresh boundaries and missing/duplicate/cleanup-failed evidence remains explicit. Record Docker-backed results and keep the task incomplete while Docker or any evidence is non-terminal.
+- [ ] **Step 11: Run Task 21.B standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 21.B spec compliance review.** Provide the Goal, Milestone 21 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 21.B spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 21.B code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 21.B quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 21.B after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 21.B completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 21.C: Pure Formal Success and VerifiedCandidate
 
@@ -4267,6 +6558,12 @@ def test_executor_must_run_every_frozen_request_once(executor: SpyDockerExecutio
 
 **Interfaces:** Produces `FormalValidationOutcomeV1`, `VerifiedCandidateV1`, and pure `evaluate_formal_success(manifest: ValidationManifestV1, candidate: CandidateRevisionV1, plan: FormalValidationPlanV1, evidence: FormalValidationEvidenceV1) -> VerifiedCandidateV1 | FormalValidationFailureV1`.
 
+**Implementation points:**
+- Revalidate exact Manifest, candidate revision and bytes, policy/environment, target fingerprint, plan digest, request identities, and evidence bindings without reading ambient state.
+- Require the complete formal plan to have one authoritative passing result and successful teardown/cleanup for every request; skip, error, timeout, missing, duplicate, drift, or mismatch fails closed.
+- Make `test_missing_teardown_evidence_cannot_verify_candidate` GREEN with the smallest typed failure before completing the success predicate and immutable verification digest.
+- Own pure formal predicate evaluation and `VerifiedCandidateV1` construction only. Planning, execution, lifecycle mutation, candidate writes, and approval decisions remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -4284,7 +6581,30 @@ def test_missing_teardown_evidence_cannot_verify_candidate() -> None:
 - Domain: `python -m pytest -q tests/unit/validation/test_formal_predicate.py tests/unit/validation/test_verified_candidate.py`
 - Expected GREEN: only complete passing current evidence verifies; every skip/error/timeout/missing/drift/fingerprint mismatch returns a typed failure.
 
+**Review gate:**
+1. Spec compliance review checks Task 21.C's Goal, Milestone 21's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent complete formal-success predicate.
+2. Code quality review checks exact candidate/policy/environment binding, plan/evidence cardinality, authoritative PASS gating, teardown/cleanup completeness, drift/fingerprint comparison, deterministic digesting, and typed fail-closed outcomes.
+3. Critical/Important findings block Tasks 14.A, 14.C, 25.G, 26.A, 29.C, 31.A, and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 21.C's exact RED probe.** Add the complete declared `test_missing_teardown_evidence_cannot_verify_candidate` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 21.C RED.** Run `python -m pytest -q tests/unit/validation/test_formal_predicate.py::test_missing_teardown_evidence_cannot_verify_candidate`. Expected RED: no pure closed formal predicate/VerifiedCandidate builder exists. Record the task-owned failing assertion and exit code; collection, runner, unrelated import, or environment failure does not count as RED.
+- [ ] **Step 3: Revalidate exact formal bindings.** Apply IP-1: Compare the current Manifest, candidate, policy/environment, fingerprint, plan, and evidence identities.
+- [ ] **Step 4: Require complete-plan success.** Apply IP-2: Accept only one authoritative PASS plus successful teardown and cleanup for every frozen request.
+- [ ] **Step 5: Reject incomplete formal teardown evidence.** Apply IP-3: Return a typed `FormalValidationFailureV1` for the exact declared incomplete evidence.
+- [ ] **Step 6: Seal pure-predicate-only ownership.** Apply IP-4: Keep planning, execution, lifecycle, writes, and approval behavior outside Task 21.C.
+- [ ] **Step 7: Run Task 21.C Target GREEN.** Re-run `python -m pytest -q tests/unit/validation/test_formal_predicate.py::test_missing_teardown_evidence_cannot_verify_candidate`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 21.C's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 21.C Domain verification.** Run `python -m pytest -q tests/unit/validation/test_formal_predicate.py tests/unit/validation/test_verified_candidate.py`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 21.C's declared acceptance.** Verify only complete passing current evidence verifies and every skip/error/timeout/missing/drift/fingerprint mismatch returns a typed failure. Record the evaluated conditions and keep the task incomplete while any evidence is non-terminal.
+- [ ] **Step 11: Run Task 21.C standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 21.C spec compliance review.** Provide the Goal, Milestone 21 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 21.C spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 21.C code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 21.C quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 21.C after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 21.C completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 22.A: Authorized Workspace Memory Creation and Repository
 
@@ -4309,6 +6629,12 @@ def test_missing_teardown_evidence_cannot_verify_candidate() -> None:
 
 **Interfaces:** Produces immutable `MEMORY_V1_MIGRATION = MigrationV1(version=5, name="memory_v1", ...)`, `MemoryKindV1`, `MemoryCreatorV1`, `MemorySourceV1`, `MemoryEntryV1`, `MemoryRepository.create(command: CreateMemoryCommandV1) -> MemoryMutationResultV1`, and `MemoryRepository.confirm(command: ConfirmProjectConventionV1) -> MemoryMutationResultV1`.
 
+**Implementation points:**
+- Define the exact immutable v0005 memory schema and bounded structured entry types with workspace identity, kind, creator, source, timestamps, and clear tombstone fields only.
+- Enforce authorized create/confirm combinations transactionally, reject model-created conventions, full source bodies, secrets, over-limit values, and cross-workspace writes with zero rows.
+- Make `test_model_originated_project_convention_is_rejected` GREEN with the smallest creator-authority rejection before completing schema, source, bounds, and persistence matrices.
+- Own authorized memory schema and create/confirm repository operations only. Registry edits, selection, clearing, audit, and governance/config/validation authority remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -4329,7 +6655,30 @@ def test_model_originated_project_convention_is_rejected(repository: MemoryRepos
 - Domain: `python -m pytest -q tests/unit/storage/test_memory_migration.py tests/unit/memory/test_entry.py tests/unit/memory/test_repository.py tests/unit/memory/test_authorization.py`
 - Expected GREEN: exact v0005 schema; only allowed creator/source/kind combinations persist in the exact workspace and forbidden/full/secret/over-limit content rejects.
 
+**Review gate:**
+1. Spec compliance review checks Task 22.A's Goal, Milestone 22's four-field aggregate and SPEC scope, this Implementation boundary, exact RED and Schema RED, and Verification as one consistent authorized workspace-memory repository contract.
+2. Code quality review checks v0005 schema exactness, workspace keys/indexes, closed kind/creator/source unions, transactional zero-row rejection, bounds, data minimization, tombstone compatibility, and absence of authorization power.
+3. Critical/Important findings block Tasks 7.D, 22.B, 22.C, 23.A, and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 22.A's exact RED probes.** Add the complete declared `test_model_originated_project_convention_is_rejected` and Schema RED `test_memory_migration_has_exact_schema` cases to the listed test files without changing production implementation.
+- [ ] **Step 2: Run Task 22.A RED.** Run `python -m pytest -q tests/unit/memory/test_authorization.py::test_model_originated_project_convention_is_rejected`. Expected RED: no closed memory entry/repository authority boundary exists. Record the task-owned failing assertion and exit code; collection, runner, unrelated import, or environment failure does not count as RED.
+- [ ] **Step 3: Define exact workspace-memory storage.** Apply IP-1: Add the immutable v0005 schema and bounded structured entry fields.
+- [ ] **Step 4: Enforce authorized memory mutations.** Apply IP-2: Make create/confirm atomic, workspace-bound, allowlisted, minimized, and fail closed.
+- [ ] **Step 5: Pass the forbidden-creator RED case.** Apply IP-3: Return `MEMORY_CREATOR_FORBIDDEN` for the exact declared model-originated convention.
+- [ ] **Step 6: Seal memory-creation-only ownership.** Apply IP-4: Keep registry, selection, clear, audit, and governance authority outside Task 22.A.
+- [ ] **Step 7: Run Task 22.A Target GREEN.** Re-run `python -m pytest -q tests/unit/memory/test_authorization.py::test_model_originated_project_convention_is_rejected`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 22.A's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 22.A Schema verification.** Run `python -m pytest -q tests/unit/storage/test_memory_migration.py::test_memory_migration_has_exact_schema`. Record the exact command and actual result.
+- [ ] **Step 10: Run Task 22.A Domain verification and check acceptance.** Run `python -m pytest -q tests/unit/storage/test_memory_migration.py tests/unit/memory/test_entry.py tests/unit/memory/test_repository.py tests/unit/memory/test_authorization.py`, then verify the exact v0005 schema and only allowed creator/source/kind combinations persist in the exact workspace while forbidden/full/secret/over-limit content rejects. Record exact results and keep the task incomplete while any evidence is non-terminal.
+- [ ] **Step 11: Run Task 22.A standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 22.A spec compliance review.** Provide the Goal, Milestone 22 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 22.A spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 22.A code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 22.A quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 22.A after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 22.A completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 22.B: Deterministic Workspace Memory Listing and Selection
 
@@ -4350,6 +6699,12 @@ def test_model_originated_project_convention_is_rejected(repository: MemoryRepos
 
 **Interfaces:** Produces `MemoryEntrySequenceV1`, an immutable ordered tuple of memory entries, `MemoryRepository.list(workspace_identity_digest: str) -> MemoryEntrySequenceV1`, and pure `select_memory(query: MemorySelectionQueryV1, entries: MemoryEntrySequenceV1) -> MemorySelectionV1`.
 
+**Implementation points:**
+- Query only non-cleared eligible entries whose exact workspace identity matches the request, with stable repository ordering and no fallback to paths, names, or neighboring workspaces.
+- Select deterministically by frozen kind priority, recency, stable tie-breakers, count limit, and canonical byte limit while retaining source attribution and excluding unauthorized data.
+- Make `test_selection_never_crosses_workspace_identity` GREEN with the smallest exact-workspace filter before completing ordering, eligibility, count, and byte-bound matrices.
+- Own workspace-bound listing and pure bounded selection only. Memory creation, confirmation, clearing, current Snapshot/check overrides, and governance decisions remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -4366,7 +6721,30 @@ def test_selection_never_crosses_workspace_identity(repository: MemoryRepository
 - Domain: `python -m pytest -q tests/unit/memory/test_selection.py tests/unit/memory/test_workspace_isolation.py`
 - Expected GREEN: exact workspace/count/byte/priority/recency ordering is deterministic and no other workspace or cleared entry appears.
 
+**Review gate:**
+1. Spec compliance review checks Task 22.B's Goal, Milestone 22's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent isolated deterministic memory-selection contract.
+2. Code quality review checks exact workspace matching, cleared-entry exclusion, frozen priority/recency/tie-break order, canonical byte accounting, count bounds, source retention, deterministic empty results, and no current-evidence override.
+3. Critical/Important findings block Tasks 22.C, 24.B, and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 22.B's exact RED probe.** Add the complete declared `test_selection_never_crosses_workspace_identity` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 22.B RED.** Run `python -m pytest -q tests/unit/memory/test_workspace_isolation.py::test_selection_never_crosses_workspace_identity`. Expected RED: no exact-workspace list/selection boundary exists. Record the task-owned failing assertion and exit code; collection, runner, unrelated import, or environment failure does not count as RED.
+- [ ] **Step 3: Isolate eligible workspace listing.** Apply IP-1: Return only non-cleared entries for the exact identity with stable repository order.
+- [ ] **Step 4: Apply frozen bounded memory selection.** Apply IP-2: Enforce priority, recency, tie-break, count, byte, and source rules deterministically.
+- [ ] **Step 5: Pass the cross-workspace RED case.** Apply IP-3: Return an empty tuple for the exact declared unrelated workspace.
+- [ ] **Step 6: Seal memory-selection-only ownership.** Apply IP-4: Keep mutation, clearing, evidence override, and governance behavior outside Task 22.B.
+- [ ] **Step 7: Run Task 22.B Target GREEN.** Re-run `python -m pytest -q tests/unit/memory/test_workspace_isolation.py::test_selection_never_crosses_workspace_identity`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 22.B's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 22.B Domain verification.** Run `python -m pytest -q tests/unit/memory/test_selection.py tests/unit/memory/test_workspace_isolation.py`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 22.B's declared acceptance.** Verify exact workspace/count/byte/priority/recency ordering is deterministic and no other workspace or cleared entry appears. Record the evaluated conditions and keep the task incomplete while any evidence is non-terminal.
+- [ ] **Step 11: Run Task 22.B standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 22.B spec compliance review.** Provide the Goal, Milestone 22 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 22.B spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 22.B code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 22.B quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 22.B after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 22.B completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 22.C: Transactional Memory Clear
 
@@ -4386,6 +6764,12 @@ def test_selection_never_crosses_workspace_identity(repository: MemoryRepository
 
 **Interfaces:** Produces `ClearMemoryCommandV1`, `MemoryClearResultV1`, and `MemoryClearService.clear(command: ClearMemoryCommandV1) -> MemoryClearResultV1`.
 
+**Implementation points:**
+- Validate explicit clear authority, exact workspace identity, command/replay identity, and target scope before entering one atomic tombstone/removal transaction.
+- Commit all targeted eligibility changes together so future selections exclude them immediately, while replay stays idempotent and forged, cross-workspace, or partial failures change nothing.
+- Make `test_successful_clear_is_immediately_ineligible_for_selection` GREEN with the smallest post-commit eligibility transition before completing replay and rollback matrices.
+- Own authorized clear transaction and future-selection exclusion only. Immutable audit/source facts, other workspaces, creation/selection policy, and retention remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -4404,7 +6788,30 @@ def test_successful_clear_is_immediately_ineligible_for_selection() -> None:
 - Domain: `python -m pytest -q tests/unit/memory/test_clear.py`
 - Expected GREEN: exact authorized clears take effect atomically; replay is idempotent and cross-workspace/forged/partial failures change nothing.
 
+**Review gate:**
+1. Spec compliance review checks Task 22.C's Goal, Milestone 22's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent transactional memory-clear contract.
+2. Code quality review checks explicit authority, exact workspace/target identity, transaction atomicity, immediate post-commit exclusion, replay idempotency, rollback on partial failure, and preservation of immutable audit/source facts.
+3. Critical/Important findings block Tasks 31.A, 37.B, and 38.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 22.C's exact RED probe.** Add the complete declared `test_successful_clear_is_immediately_ineligible_for_selection` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 22.C RED.** Run `python -m pytest -q tests/unit/memory/test_clear.py::test_successful_clear_is_immediately_ineligible_for_selection`. Expected RED: no transaction-bound clear service exists. Record the task-owned failing assertion and exit code; collection, runner, unrelated import, or environment failure does not count as RED.
+- [ ] **Step 3: Validate the exact clear transaction.** Apply IP-1: Bind authority, workspace, replay identity, and target scope before mutation.
+- [ ] **Step 4: Commit future-context exclusion atomically.** Apply IP-2: Exclude all targets after commit while preserving idempotency and zero-change failures.
+- [ ] **Step 5: Pass the immediate-exclusion RED case.** Apply IP-3: Make the exact declared selector return no entries after a successful clear.
+- [ ] **Step 6: Seal memory-clear-only ownership.** Apply IP-4: Keep audit/source erasure, other workspaces, selection policy, and retention outside Task 22.C.
+- [ ] **Step 7: Run Task 22.C Target GREEN.** Re-run `python -m pytest -q tests/unit/memory/test_clear.py::test_successful_clear_is_immediately_ineligible_for_selection`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 22.C's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 22.C Domain verification.** Run `python -m pytest -q tests/unit/memory/test_clear.py`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 22.C's declared acceptance.** Verify exact authorized clears take effect atomically, replay is idempotent, and cross-workspace/forged/partial failures change nothing. Record the evaluated conditions and keep the task incomplete while any evidence is non-terminal.
+- [ ] **Step 11: Run Task 22.C standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 22.C spec compliance review.** Provide the Goal, Milestone 22 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 22.C spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 22.C code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 22.C quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 22.C after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 22.C completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 23.A: Redacted Monotonic Audit Event Repository
 
@@ -4431,6 +6838,12 @@ def test_successful_clear_is_immediately_ineligible_for_selection() -> None:
 
 **Interfaces:** Produces immutable `AUDIT_V1_MIGRATION = MigrationV1(version=6, name="audit_v1", ...)`, `AuditEventV1(run_id: str, sequence: int, event_type: AuditEventTypeV1, redacted_payload: AuditPayloadV1, created_at: CanonicalTimestampV1)`, `AuditRepository.append(command: AppendAuditEventV1) -> AuditAppendResultV1`, `AuditRepository.list_run(run_id: str, page: AuditPageRequestV1) -> AuditPageV1`, and `AuditRepository.clear_ended_run(command: ClearEndedRunAuditV1) -> AuditClearResultV1`.
 
+**Implementation points:**
+- Define the exact immutable v0006 audit schema and closed bounded event/payload types with Run foreign key, unique increasing per-Run sequence, evidence references, and canonical timestamps.
+- Redact and minimize before one append transaction, rejecting forbidden bodies, secrets, raw outputs, overflow, replay conflicts, or invalid sequencing with zero rows while preserving stable pagination and ended-Run clear rules.
+- Make `test_audit_rejects_complete_request_body_and_secret_fields` GREEN with the smallest forbidden-payload rejection before completing schema, monotonicity, replay, pagination, and clear matrices.
+- Own audit schema, append/list, redaction, sequencing, pagination, and explicit ended-Run clear only. Final registry edits, user projection, external actions, and time-based retention remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -4454,7 +6867,30 @@ Expected RED: import failure because the closed event union and repository do no
 - Domain: `python -m pytest -q tests/unit/storage/test_audit_migration.py tests/unit/audit/test_event.py tests/unit/audit/test_repository.py tests/unit/audit/test_redaction.py`
 - Expected GREEN: all commands exit `0`; exact v0006 schema, forbidden-content zero-row behavior, ordering, replay/conflict, pagination, redaction, and ended-Run clear cases pass.
 
+**Review gate:**
+1. Spec compliance review checks Task 23.A's Goal, Milestone 23's four-field aggregate and SPEC scope, this Implementation boundary, exact RED and Schema RED, and Verification as one consistent redacted monotonic audit-repository contract.
+2. Code quality review checks v0006 schema exactness, per-Run sequence atomicity, redaction before persistence, payload bounds, zero-row forbidden data, replay/conflict handling, stable pagination, ended-Run authority, and no fabricated external outcome.
+3. Critical/Important findings block Tasks 7.D, 23.B, 25.B, and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 23.A's exact RED probes.** Add the complete declared `test_audit_rejects_complete_request_body_and_secret_fields` and Schema RED `test_audit_migration_has_exact_schema` cases to the listed test files without changing production implementation.
+- [ ] **Step 2: Run Task 23.A RED.** Run `python -m pytest -q tests/unit/audit/test_redaction.py::test_audit_rejects_complete_request_body_and_secret_fields`. Expected RED: import failure because the closed event union and repository do not exist. Record the task-owned failing assertion and exit code; collection, runner, unrelated import, or environment failure does not count as RED.
+- [ ] **Step 3: Define monotonic audit storage.** Apply IP-1: Add exact v0006 schema, closed event types, Run identity, sequence, references, and timestamps.
+- [ ] **Step 4: Minimize before transactional append.** Apply IP-2: Redact and bound payloads before persistence with atomic ordering, replay, pagination, and clear behavior.
+- [ ] **Step 5: Pass the forbidden-audit RED case.** Apply IP-3: Return `AUDIT_STORE_FAILED` with zero rows for the exact declared body and secret fields.
+- [ ] **Step 6: Seal audit-repository-only ownership.** Apply IP-4: Keep registry, projection, external actions, and retention outside Task 23.A.
+- [ ] **Step 7: Run Task 23.A Target GREEN.** Re-run `python -m pytest -q tests/unit/audit/test_redaction.py::test_audit_rejects_complete_request_body_and_secret_fields`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 23.A's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 23.A Schema verification.** Run `python -m pytest -q tests/unit/storage/test_audit_migration.py::test_audit_migration_has_exact_schema`. Record the exact command and actual result.
+- [ ] **Step 10: Run Task 23.A Domain verification and check acceptance.** Run `python -m pytest -q tests/unit/storage/test_audit_migration.py tests/unit/audit/test_event.py tests/unit/audit/test_repository.py tests/unit/audit/test_redaction.py`, then verify all commands exit `0` and the exact schema, zero-row forbidden-content behavior, ordering, replay/conflict, pagination, redaction, and ended-Run clear cases pass. Record exact results and keep the task incomplete while any evidence is non-terminal.
+- [ ] **Step 11: Run Task 23.A standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 23.A spec compliance review.** Provide the Goal, Milestone 23 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 23.A spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 23.A code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 23.A quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 23.A after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 23.A completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 23.B: User-facing Run Visibility Projection
 
@@ -4475,6 +6911,12 @@ Expected RED: import failure because the closed event union and repository do no
 - Test: `tests/unit/audit/test_projection.py`
 
 **Interfaces:** Produces `WaitContextSequenceV1` and `AuditEventSequenceV1`, immutable ordered tuples of their named item types, and `build_run_visibility(run: RunRecordV1, waits: WaitContextSequenceV1, events: AuditEventSequenceV1) -> RunVisibilityV1`.
+
+**Implementation points:**
+- Validate exact Run identity and monotonic typed event/wait inputs, then map each lifecycle phase, wait, recovery, and terminal fact through one closed precedence table.
+- Produce bounded stable state labels, reason codes, next actions, and safe evidence references without exposing internal rows or bodies or treating absent evidence as PASS/STOPPED.
+- Make `test_recovery_required_is_never_projected_as_stopped` GREEN with the smallest recovery-precedence mapping before completing every CREATED/RUNNING/wait/terminal projection.
+- Own pure user-visible projection over typed facts only. SQLite access, event mutation, lifecycle changes, internal payload exposure, and external-outcome claims remain out of scope.
 
 **Intentionally failing test:**
 
@@ -4497,7 +6939,30 @@ Expected RED: import failure because the visibility projector does not exist.
 - Domain: `python -m pytest -q tests/unit/audit/test_projection.py`
 - Expected GREEN: both commands exit `0`; every CREATED/RUNNING phase/wait/recovery/terminal mapping is distinct, bounded, stable, and redacted.
 
+**Review gate:**
+1. Spec compliance review checks Task 23.B's Goal, Milestone 23's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent user-facing Run visibility contract.
+2. Code quality review checks closed precedence, Run/event identity, monotonic input handling, distinct phase/wait/recovery/terminal mappings, bounded redacted output, missing-evidence fail-closed behavior, and absence of fabricated success or external outcomes.
+3. Critical/Important findings block Tasks 23.C and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 23.B's exact RED probe.** Add the complete declared `test_recovery_required_is_never_projected_as_stopped` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 23.B RED.** Run `python -m pytest -q tests/unit/audit/test_projection.py::test_recovery_required_is_never_projected_as_stopped`. Expected RED: import failure because the visibility projector does not exist. Record the task-owned failing assertion and exit code; collection, runner, unrelated import, or environment failure does not count as RED.
+- [ ] **Step 3: Map typed Run facts by precedence.** Apply IP-1: Validate identity and ordering before applying the closed lifecycle/wait/recovery/terminal table.
+- [ ] **Step 4: Emit bounded redacted visibility.** Apply IP-2: Produce stable labels, reasons, actions, and safe references without inferring missing outcomes.
+- [ ] **Step 5: Pass the recovery-projection RED case.** Apply IP-3: Return `RECOVERY_REQUIRED` and `REVIEW_RECOVERY` for the exact declared Run.
+- [ ] **Step 6: Seal visibility-projection-only ownership.** Apply IP-4: Keep storage, mutation, lifecycle, payload exposure, and external claims outside Task 23.B.
+- [ ] **Step 7: Run Task 23.B Target GREEN.** Re-run `python -m pytest -q tests/unit/audit/test_projection.py::test_recovery_required_is_never_projected_as_stopped`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 23.B's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 23.B Domain verification.** Run `python -m pytest -q tests/unit/audit/test_projection.py`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 23.B's declared acceptance.** Verify every CREATED/RUNNING phase/wait/recovery/terminal mapping is distinct, bounded, stable, and redacted. Record the evaluated conditions and keep the task incomplete while any evidence is non-terminal.
+- [ ] **Step 11: Run Task 23.B standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 23.B spec compliance review.** Provide the Goal, Milestone 23 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 23.B spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 23.B code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 23.B quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 23.B after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 23.B completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 23.C: Audit Retention with Recovery Preservation
 
@@ -4518,6 +6983,12 @@ Expected RED: import failure because the visibility projector does not exist.
 - Test: `tests/unit/audit/test_retention.py`
 
 **Interfaces:** Produces `apply_audit_retention(now: CanonicalTimestampV1, repository: AuditRepository) -> AuditRetentionResultV1`.
+
+**Implementation points:**
+- Compute the 30-day cutoff from the supplied canonical time and select only audit events belonging to explicitly ended Runs that are strictly eligible under the declared boundary.
+- Preserve every event referenced by unresolved recovery and every active, non-ended, ambiguous, or missing-terminal Run; delete eligible rows deterministically with bounded counts and idempotent reruns.
+- Make `test_retention_preserves_unresolved_recovery_evidence` GREEN with the smallest preservation predicate before completing cutoff, lifecycle, deletion, and repeat-run matrices.
+- Own time-based audit eligibility and recovery-preserving deletion only. Active-Run clear, transaction redesign, backup-body erasure, visibility projection, and terminal inference remain out of scope.
 
 **Intentionally failing test:**
 
@@ -4541,7 +7012,30 @@ Expected RED: import failure because the retention evaluator does not exist.
 - Domain: `python -m pytest -q tests/unit/audit/test_retention.py`
 - Expected GREEN: both commands exit `0`; cutoff boundaries, active/ended classification, explicit preservation, idempotent rerun, and bounded result counts pass.
 
+**Review gate:**
+1. Spec compliance review checks Task 23.C's Goal, Milestone 23's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent recovery-preserving audit-retention contract.
+2. Code quality review checks canonical cutoff edges, explicit ended-Run classification, unresolved-recovery reachability, fail-closed missing terminal evidence, deterministic deletion order/counts, idempotency, and preservation of active or ambiguous records.
+3. Critical/Important findings block Tasks 25.F, 26.A, 26.C, 28.A, 29.A, 29.B, 31.A, 37.B, 38.B, 38.C, and 38.D until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 23.C's exact RED probe.** Add the complete declared `test_retention_preserves_unresolved_recovery_evidence` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 23.C RED.** Run `python -m pytest -q tests/unit/audit/test_retention.py::test_retention_preserves_unresolved_recovery_evidence`. Expected RED: import failure because the retention evaluator does not exist. Record the task-owned failing assertion and exit code; collection, runner, unrelated import, or environment failure does not count as RED.
+- [ ] **Step 3: Compute exact retention eligibility.** Apply IP-1: Use canonical time and explicit ended-Run facts for the strict 30-day boundary.
+- [ ] **Step 4: Preserve recovery and non-terminal evidence.** Apply IP-2: Exclude unresolved, active, ambiguous, and missing-terminal records from deterministic deletion.
+- [ ] **Step 5: Pass the recovery-preservation RED case.** Apply IP-3: Delete zero events and retain the exact declared unresolved-recovery items.
+- [ ] **Step 6: Seal audit-retention-only ownership.** Apply IP-4: Keep active clear, transaction redesign, backup erasure, projection, and terminal inference outside Task 23.C.
+- [ ] **Step 7: Run Task 23.C Target GREEN.** Re-run `python -m pytest -q tests/unit/audit/test_retention.py::test_retention_preserves_unresolved_recovery_evidence`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 23.C's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 23.C Domain verification.** Run `python -m pytest -q tests/unit/audit/test_retention.py`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 23.C's declared acceptance.** Verify cutoff boundaries, active/ended classification, explicit preservation, idempotent rerun, and bounded result counts pass. Record the evaluated conditions and keep the task incomplete while any evidence is non-terminal.
+- [ ] **Step 11: Run Task 23.C standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 23.C spec compliance review.** Provide the Goal, Milestone 23 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 23.C spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 23.C code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 23.C quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 23.C after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 23.C completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 24.A: Structured Feedback Construction and Selection
 
@@ -4561,6 +7055,12 @@ Expected RED: import failure because the retention evaluator does not exist.
 
 **Interfaces:** Produces `FeedbackRecordV1`, `FeedbackRecordSequenceV1`, an immutable ordered tuple of feedback records, `FeedbackSelectionV1`, `build_feedback(source: CheckResultV1 | ActionResultV1 | StableControlErrorV1, clock: ClockV1) -> FeedbackRecordSequenceV1`, and `select_feedback(records: FeedbackRecordSequenceV1) -> FeedbackSelectionV1`.
 
+**Implementation points:**
+- Normalize only typed check, action, and stable control failures into bounded source-attributed records with stable ids, severity, canonical timestamps, summaries, and evidence references.
+- Select unconsumed feedback deterministically under exact count and canonical byte limits, preserving the newest required failure and stable severity/recency/tie-break ordering.
+- Make `test_newest_failure_survives_feedback_limit` GREEN with the smallest mandatory-retention selection before completing source, bounds, ordering, and determinism matrices.
+- Own pure feedback construction and selection only. Message assembly, record consumption, LLM calls, Run lifecycle mutation, raw bodies, and secrets remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -4578,7 +7078,30 @@ def test_newest_failure_survives_feedback_limit() -> None:
 - Domain: `python -m pytest -q tests/unit/loop/test_feedback.py`
 - Expected GREEN: stable inputs produce stable records/order and newest required failure survives exact count/byte limits.
 
+**Review gate:**
+1. Spec compliance review checks Task 24.A's Goal, Milestone 24's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent structured bounded feedback contract.
+2. Code quality review checks typed source coverage, source attribution, stable ids/timestamps, severity and tie-break order, canonical byte/count bounds, newest-failure retention, deterministic output, and exclusion of raw bodies or secrets.
+3. Critical/Important findings block Tasks 24.B, 24.C, and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 24.A's exact RED probe.** Add the complete declared `test_newest_failure_survives_feedback_limit` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 24.A RED.** Run `python -m pytest -q tests/unit/loop/test_feedback.py::test_newest_failure_survives_feedback_limit`. Expected RED: no structured feedback builder/selector exists. Record the task-owned failing assertion and exit code; collection, runner, unrelated import, or environment failure does not count as RED.
+- [ ] **Step 3: Normalize typed failure feedback.** Apply IP-1: Build bounded attributed records with stable identity, severity, time, summary, and evidence refs.
+- [ ] **Step 4: Select feedback within frozen limits.** Apply IP-2: Preserve the newest required failure under deterministic count, byte, priority, and tie-break rules.
+- [ ] **Step 5: Pass the newest-failure RED case.** Apply IP-3: Keep `newest-failure` as the last selected record for the exact declared over-limit input.
+- [ ] **Step 6: Seal feedback-selection-only ownership.** Apply IP-4: Keep messages, consumption, LLM, lifecycle, raw bodies, and secrets outside Task 24.A.
+- [ ] **Step 7: Run Task 24.A Target GREEN.** Re-run `python -m pytest -q tests/unit/loop/test_feedback.py::test_newest_failure_survives_feedback_limit`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 24.A's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 24.A Domain verification.** Run `python -m pytest -q tests/unit/loop/test_feedback.py`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 24.A's declared acceptance.** Verify stable inputs produce stable records/order and the newest required failure survives exact count/byte limits. Record the evaluated conditions and keep the task incomplete while any evidence is non-terminal.
+- [ ] **Step 11: Run Task 24.A standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 24.A spec compliance review.** Provide the Goal, Milestone 24 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 24.A spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 24.A code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 24.A quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 24.A after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 24.A completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 24.B: Deterministic Bounded Context Projection
 
@@ -4600,6 +7123,12 @@ def test_newest_failure_survives_feedback_limit() -> None:
 
 **Interfaces:** Produces `ContextProjectionV1(messages: RequestMessageSequenceV1, source_projection: SourceProjectionV1, canonical_byte_count: int, projection_digest: str)`, `ContextBudgetFailureV1`, and pure `build_context(inputs: ContextProjectionInputsV1) -> ContextProjectionV1 | ContextBudgetFailureV1`.
 
+**Implementation points:**
+- Assemble each allowed category from exact typed inputs into source-attributed messages with mandatory system, task, current Snapshot/candidate, policy, latest failure, and control facts in frozen order.
+- Trim only declared optional categories by stable priority and canonical byte accounting, preserve source paths and mandatory facts, and compute one canonical projection digest over the final messages and attribution.
+- Make `test_trimming_never_removes_most_recent_failure_feedback` GREEN with the smallest mandatory-feedback retention before completing trimming order, source, digest, and impossible-budget matrices.
+- Own pure context assembly, attribution, trimming, bytes, and digest only. Feedback consumption, turn creation, disclosure authorization, adapter calls, raw restricted content, and secret inclusion remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -4617,7 +7146,30 @@ def test_trimming_never_removes_most_recent_failure_feedback() -> None:
 - Domain: `python -m pytest -q tests/unit/loop/test_context_projection.py tests/unit/loop/test_context_trimming.py tests/unit/loop/test_context_sources.py`
 - Expected GREEN: mandatory facts remain, trim order/budgets/source paths are exact, and impossible mandatory content returns zero-side-effect budget failure.
 
+**Review gate:**
+1. Spec compliance review checks Task 24.B's Goal, Milestone 24's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent deterministic bounded context-projection contract.
+2. Code quality review checks mandatory fact retention, source attribution, frozen category order, optional-only trimming, canonical byte accounting, stable digesting, impossible-budget failure, deterministic inputs, and exclusion of restricted content.
+3. Critical/Important findings block Tasks 24.C and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 24.B's exact RED probe.** Add the complete declared `test_trimming_never_removes_most_recent_failure_feedback` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 24.B RED.** Run `python -m pytest -q tests/unit/loop/test_context_trimming.py::test_trimming_never_removes_most_recent_failure_feedback`. Expected RED: no deterministic source-preserving context projector exists. Record the task-owned failing assertion and exit code; collection, runner, unrelated import, or environment failure does not count as RED.
+- [ ] **Step 3: Assemble mandatory attributed context.** Apply IP-1: Project exact typed categories and mandatory facts in frozen order with source references.
+- [ ] **Step 4: Trim optional context deterministically.** Apply IP-2: Apply stable priority and canonical byte bounds, then digest the final messages and attribution.
+- [ ] **Step 5: Pass the latest-feedback RED case.** Apply IP-3: Preserve `most-recent-failure` for the exact declared oversized projection.
+- [ ] **Step 6: Seal context-projection-only ownership.** Apply IP-4: Keep consumption, turns, disclosure, adapters, restricted content, and secrets outside Task 24.B.
+- [ ] **Step 7: Run Task 24.B Target GREEN.** Re-run `python -m pytest -q tests/unit/loop/test_context_trimming.py::test_trimming_never_removes_most_recent_failure_feedback`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 24.B's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 24.B Domain verification.** Run `python -m pytest -q tests/unit/loop/test_context_projection.py tests/unit/loop/test_context_trimming.py tests/unit/loop/test_context_sources.py`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 24.B's declared acceptance.** Verify mandatory facts remain, trim order/budgets/source paths are exact, and impossible mandatory content returns zero-side-effect budget failure. Record the evaluated conditions and keep the task incomplete while any evidence is non-terminal.
+- [ ] **Step 11: Run Task 24.B standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 24.B spec compliance review.** Provide the Goal, Milestone 24 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 24.B spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 24.B code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 24.B quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 24.B after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 24.B completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 24.C: Atomic Feedback-to-turn Consumption
 
@@ -4639,6 +7191,12 @@ def test_trimming_never_removes_most_recent_failure_feedback() -> None:
 
 **Interfaces:** Produces immutable `FEEDBACK_V1_MIGRATION = MigrationV1(version=8, name="feedback_v1", ...)`, `FeedbackReferenceSequenceV1`, an immutable ordered tuple of feedback ids, `FeedbackRepositoryV1.append(records: FeedbackRecordSequenceV1) -> FeedbackAppendResultV1`, `FeedbackConsumptionResultV1`, and `consume_feedback(turn_id: str, refs: FeedbackReferenceSequenceV1, repository: FeedbackRepositoryV1) -> FeedbackConsumptionResultV1`.
 
+**Implementation points:**
+- Define the exact immutable v0008 feedback schema with bounded structured records, primary key, evidence refs, nullable turn foreign key, and one-winner unconsumed predicate only.
+- Validate turn and ordered reference identities before one atomic compare-and-consume transaction so exactly one turn wins, replay is stable, and missing, duplicate, forged, or conflicted refs change nothing.
+- Make `test_two_turns_cannot_consume_one_feedback_record` GREEN with the smallest one-winner transaction before completing schema, append, replay, and rollback matrices.
+- Own feedback repository append and atomic turn/reference consumption only. Feedback rebuilding/selection, context assembly, adapter calls, candidate/workspace mutation, raw bodies, and credentials remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -4659,7 +7217,30 @@ def test_two_turns_cannot_consume_one_feedback_record(repository: FeedbackReposi
 - Domain: `python -m pytest -q tests/unit/storage/test_feedback_migration.py tests/unit/loop/test_feedback_consumption.py`
 - Expected GREEN: exact v0008 schema; exactly one turn consumes each record; replay is stable and conflicts/missing refs change nothing.
 
+**Review gate:**
+1. Spec compliance review checks Task 24.C's Goal, Milestone 24's four-field aggregate and SPEC scope, this Implementation boundary, exact RED and Schema RED, and Verification as one consistent atomic feedback-to-turn consumption contract.
+2. Code quality review checks v0008 schema exactness, bounded append validation, turn/reference identity, compare-and-consume atomicity, one-winner concurrency, replay stability, rollback on mixed refs, and exclusion of raw bodies or credentials.
+3. Critical/Important findings block Tasks 7.D, 25.A, 25.D, 25.G, 30.C, 31.A, 32.A, 32.B, and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 24.C's exact RED probes.** Add the complete declared `test_two_turns_cannot_consume_one_feedback_record` and Schema RED `test_feedback_migration_has_exact_schema` cases to the listed test files without changing production implementation.
+- [ ] **Step 2: Run Task 24.C RED.** Run `python -m pytest -q tests/unit/loop/test_feedback_consumption.py::test_two_turns_cannot_consume_one_feedback_record`. Expected RED: no transaction-bound feedback consumption service exists. Record the task-owned failing assertion and exit code; collection, runner, unrelated import, or environment failure does not count as RED.
+- [ ] **Step 3: Define exact feedback persistence.** Apply IP-1: Add the immutable v0008 schema, bounded records, refs, turn FK, and unconsumed predicate.
+- [ ] **Step 4: Consume references with one winner.** Apply IP-2: Validate identities and atomically bind all refs to exactly one turn with stable replay and rollback.
+- [ ] **Step 5: Pass the two-turn RED case.** Apply IP-3: Produce exactly one `CONSUMED` and one `ALREADY_CONSUMED` result for the declared race.
+- [ ] **Step 6: Seal feedback-consumption-only ownership.** Apply IP-4: Keep selection, context, adapters, workspace mutation, raw bodies, and credentials outside Task 24.C.
+- [ ] **Step 7: Run Task 24.C Target GREEN.** Re-run `python -m pytest -q tests/unit/loop/test_feedback_consumption.py::test_two_turns_cannot_consume_one_feedback_record`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 24.C's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 24.C Schema verification.** Run `python -m pytest -q tests/unit/storage/test_feedback_migration.py::test_feedback_migration_has_exact_schema`. Record the exact command and actual result.
+- [ ] **Step 10: Run Task 24.C Domain verification and check acceptance.** Run `python -m pytest -q tests/unit/storage/test_feedback_migration.py tests/unit/loop/test_feedback_consumption.py`, then verify the exact v0008 schema, exactly one turn consumes each record, replay is stable, and conflicts/missing refs change nothing. Record exact results and keep the task incomplete while any evidence is non-terminal.
+- [ ] **Step 11: Run Task 24.C standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 24.C spec compliance review.** Provide the Goal, Milestone 24 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 24.C spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 24.C code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 24.C quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 24.C after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 24.C completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 25.A: Pure Stop and Progress Evaluation
 
@@ -4685,6 +7266,12 @@ def test_two_turns_cannot_consume_one_feedback_record(repository: FeedbackReposi
 
 **Interfaces:** Produces `ProgressWindowV1`, `ProgressEvaluator.evaluate(window: ProgressWindowV1, observation: ProgressObservationV1) -> ProgressDecisionV1`, and `StopEvaluator.evaluate(state: RunLoopStateV1, evidence: LoopEvidenceV1, progress: ProgressDecisionV1, now: CanonicalTimestampV1) -> StopDecisionV1`. Both are pure and clock values are explicit inputs.
 
+**Implementation points:**
+- Derive deterministic progress observations from immutable semantic action, candidate revision, feedback, check, and completion evidence under exact bounded windows.
+- Evaluate repeated action, no progress, turn/call budget, invalid output, cancellation, and the smaller applicable deadline through one closed precedence table with explicit time.
+- Make `test_repeated_semantic_action_stops_at_exact_limit` GREEN with the smallest exact repetition-boundary decision before completing every stop/progress boundary matrix.
+- Own pure progress and stop decisions only. Repository, context, LLM, parser, dispatcher, wait transition, audit, and outer-loop effects remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -4707,7 +7294,30 @@ def test_repeated_semantic_action_stops_at_exact_limit() -> None:
 - Domain: `python -m pytest -q tests/unit/loop/test_stopping.py tests/unit/loop/test_progress.py`
 - Expected: exact boundary tables are deterministic and side-effect free.
 
+**Review gate:**
+1. Spec compliance review checks Task 25.A's Goal, Milestone 25's four-field aggregate and SPEC scope, this Implementation boundary, exact RED probe, and Verification as one consistent pure stop/progress contract.
+2. Code quality review checks semantic progress identity, exact window edges, closed stop precedence, turn/call limits, smaller-deadline selection, cancellation/invalid-output handling, deterministic time, and zero side effects.
+3. Critical/Important findings block Tasks 25.G, 30.D, 32.A, and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 25.A's exact RED probe.** Add the complete declared `test_repeated_semantic_action_stops_at_exact_limit` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 25.A RED.** Run `python -m pytest -q tests/unit/loop/test_stopping.py::test_repeated_semantic_action_stops_at_exact_limit`. Record the task-owned failing assertion and exit code; collection, runner, unrelated import, or environment failure does not count as RED.
+- [ ] **Step 3: Derive bounded semantic progress.** Apply IP-1: Evaluate immutable action, revision, feedback, check, and completion observations within exact windows.
+- [ ] **Step 4: Apply the closed stop precedence.** Apply IP-2: Decide every declared limit, invalid, cancel, and deadline boundary with explicit time.
+- [ ] **Step 5: Pass the exact-repetition RED case.** Apply IP-3: Return `REPEATED_ACTION_LIMIT` at the exact declared count.
+- [ ] **Step 6: Seal pure stop-progress ownership.** Apply IP-4: Keep repositories and every loop side effect outside Task 25.A.
+- [ ] **Step 7: Run Task 25.A Target GREEN.** Re-run `python -m pytest -q tests/unit/loop/test_stopping.py::test_repeated_semantic_action_stops_at_exact_limit`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 25.A's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 25.A Domain verification.** Run `python -m pytest -q tests/unit/loop/test_stopping.py tests/unit/loop/test_progress.py`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 25.A's declared acceptance.** Verify exact boundary tables are deterministic and side-effect free. Record the evaluated conditions and keep the task incomplete while any evidence is non-terminal.
+- [ ] **Step 11: Run Task 25.A standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 25.A spec compliance review.** Provide the Goal, Milestone 25 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 25.A spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 25.A code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 25.A quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 25.A after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 25.A completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 25.B: Active Turn and Call Counting Boundary
 
@@ -4733,6 +7343,12 @@ def test_repeated_semantic_action_stops_at_exact_limit() -> None:
 
 **Interfaces:** Produces immutable `AGENT_TURNS_V1_MIGRATION = MigrationV1(version=7, name="agent_turns_v1", ...)`, `TurnBoundary.begin(run_id: str, expected_state: RunStateV1) -> BeginTurnResultV1`, `TurnBoundary.record_call_started(run_id: str, turn_id: str, expected_revision: int) -> RecordCallStartedResultV1`, and `TurnBoundary.close_turn(run_id: str, turn_id: str, outcome: TurnOutcomeV1, expected_revision: int) -> CloseTurnResultV1`, using Task 7.B compare-and-update operations.
 
+**Implementation points:**
+- Define the exact immutable v0007 active-turn schema with Run foreign key, one-active-turn constraint, revisions, closed outcomes, counters, and body-free request/result references.
+- Use compare-and-update transactions so one contender begins a turn, pre-call failures increment neither counter, and turn/call counts advance only at their declared successful boundaries.
+- Make `test_pre_call_failure_does_not_increment_turn_or_call` GREEN with the smallest zero-count abort path before completing concurrent begin, call-start, close, replay, and conflict matrices.
+- Own active-turn persistence and exact counter transitions only. Registry edits, request preparation, credential/Grant/authorization checks, transport, and outer-loop orchestration remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -4754,7 +7370,30 @@ def test_pre_call_failure_does_not_increment_turn_or_call(
 - Domain: `python -m pytest -q tests/unit/storage/test_agent_turns_migration.py tests/unit/loop/test_turn_counting.py`
 - Expected: exact v0007 schema; every credential/Grant/readiness/transport boundary has an explicit exact count outcome and concurrent starts admit one active turn.
 
+**Review gate:**
+1. Spec compliance review checks Task 25.B's Goal, Milestone 25's four-field aggregate and SPEC scope, this Implementation boundary, exact RED and Schema RED, and Verification as one consistent active-turn/counting contract.
+2. Code quality review checks v0007 schema exactness, partial uniqueness, compare-and-update revisions, one-winner concurrency, pre-call zero counts, precise turn/call increment points, close/replay conflicts, and body-free evidence.
+3. Critical/Important findings block Tasks 7.D, 24.C, 25.C, 25.G, and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 25.B's exact RED probes.** Add the complete declared `test_pre_call_failure_does_not_increment_turn_or_call` and Schema RED `test_agent_turn_migration_has_exact_schema` cases to the listed test files without changing production implementation.
+- [ ] **Step 2: Run Task 25.B RED.** Run `python -m pytest -q tests/unit/loop/test_turn_counting.py::test_pre_call_failure_does_not_increment_turn_or_call`. Record the task-owned failing assertion and exit code; collection, runner, unrelated import, or environment failure does not count as RED.
+- [ ] **Step 3: Define exact active-turn persistence.** Apply IP-1: Add v0007 Run, active-turn, revision, outcome, counter, and body-free reference fields.
+- [ ] **Step 4: Enforce one-winner counter transitions.** Apply IP-2: Apply compare-and-update begin, call-start, abort, and close boundaries atomically.
+- [ ] **Step 5: Pass the pre-call zero-count RED case.** Apply IP-3: Preserve turn and call counts at zero for the exact declared credential failure.
+- [ ] **Step 6: Seal turn-boundary-only ownership.** Apply IP-4: Keep registry, call preparation, authorization, transport, and loop composition outside Task 25.B.
+- [ ] **Step 7: Run Task 25.B Target GREEN.** Re-run `python -m pytest -q tests/unit/loop/test_turn_counting.py::test_pre_call_failure_does_not_increment_turn_or_call`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 25.B's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 25.B Schema verification.** Run `python -m pytest -q tests/unit/storage/test_agent_turns_migration.py::test_agent_turn_migration_has_exact_schema`. Record the exact command and actual result.
+- [ ] **Step 10: Run Task 25.B Domain verification and check acceptance.** Run `python -m pytest -q tests/unit/storage/test_agent_turns_migration.py tests/unit/loop/test_turn_counting.py`, then verify the exact v0007 schema, every credential/Grant/readiness/transport count outcome, and one active turn under concurrent starts. Record exact results and keep the task incomplete while any evidence is non-terminal.
+- [ ] **Step 11: Run Task 25.B standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 25.B spec compliance review.** Provide the Goal, Milestone 25 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 25.B spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 25.B code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 25.B quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 25.B after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 25.B completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 25.C: One Authorized LLM Call Orchestration
 
@@ -4778,6 +7417,12 @@ def test_pre_call_failure_does_not_increment_turn_or_call(
 
 **Interfaces:** Produces `build_call_result(request: PreparedModelRequestV1, authorization_ref: OptionalAuthorizationRecordRefV1, outcome: AdapterOutcomeV1) -> LLMCallResultV1` and `CallOrchestrator.call_once(command: CallOnceV1) -> LLMCallResultV1`; consumes Task 16.B's exact unbound/bound `generate` adapters, Task 15.E authorization ledger, Task 27.B `get_for_call`, and Task 25.B counting port.
 
+**Implementation points:**
+- Route Mock requests without real ports and re-probe/read the sole Windows credential store for every real call before Grant, authorization, turn/call counting, or transport.
+- Enforce the exact credential→Grant→authorization→count→transport sequence once, preserve DENY without expansion, and convert only the resulting response or bounded adapter failure into `LLMCallResultV1`.
+- Make `test_cleared_credential_stops_before_every_charge_or_count` GREEN with the smallest missing-credential short circuit before completing ordering, Mock, DENY, and uncertain-transport matrices.
+- Own preparation and exactly one authorized adapter call only. Retry, provider fallback, cached credentials, policy reinterpretation, action processing, and uncertain-response reconstruction remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -4797,7 +7442,30 @@ def test_cleared_credential_stops_before_every_charge_or_count(
 - Domain: `python -m pytest -q tests/unit/loop/test_call_orchestrator.py tests/unit/loop/test_turn_counting.py`
 - Expected: Mock calls never touch real ports; OpenAI calls follow the exact credential→Grant→authorization→count→transport order once.
 
+**Review gate:**
+1. Spec compliance review checks Task 25.C's Goal, Milestone 25's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent one-authorized-call contract.
+2. Code quality review checks Mock isolation, per-real-call backend re-probe/read, credential/Grant/authorization/count/transport ordering, DENY preservation, single invocation, bounded failure mapping, and no retry/cache/fallback.
+3. Critical/Important findings block Tasks 25.G and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 25.C's exact RED probe.** Add the complete declared `test_cleared_credential_stops_before_every_charge_or_count` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 25.C RED.** Run `python -m pytest -q tests/unit/loop/test_call_orchestrator.py::test_cleared_credential_stops_before_every_charge_or_count`. Record the task-owned failing assertion and exit code; collection, runner, unrelated import, or environment failure does not count as RED.
+- [ ] **Step 3: Separate Mock and fresh real-call preparation.** Apply IP-1: Keep Mock offline and re-probe/read WinCred before every real-call gate.
+- [ ] **Step 4: Enforce the single authorized call order.** Apply IP-2: Sequence credential, Grant, authorization, count, and transport once without widening DENY.
+- [ ] **Step 5: Pass the cleared-credential RED case.** Apply IP-3: Return `CREDENTIAL_MISSING` before every charge, count, authorization, and transport effect.
+- [ ] **Step 6: Seal one-call-orchestrator ownership.** Apply IP-4: Keep retry, fallback, cache, policy, actions, and uncertain reconstruction outside Task 25.C.
+- [ ] **Step 7: Run Task 25.C Target GREEN.** Re-run `python -m pytest -q tests/unit/loop/test_call_orchestrator.py::test_cleared_credential_stops_before_every_charge_or_count`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 25.C's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 25.C Domain verification.** Run `python -m pytest -q tests/unit/loop/test_call_orchestrator.py tests/unit/loop/test_turn_counting.py`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 25.C's declared acceptance.** Verify Mock calls never touch real ports and OpenAI calls follow credential→Grant→authorization→count→transport exactly once. Record the evaluated conditions and keep the task incomplete while any evidence is non-terminal.
+- [ ] **Step 11: Run Task 25.C standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 25.C spec compliance review.** Provide the Goal, Milestone 25 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 25.C spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 25.C code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 25.C quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 25.C after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 25.C completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 25.D: Parse, Policy, Dispatch, and Feedback Step
 
@@ -4824,6 +7492,12 @@ def test_cleared_credential_stops_before_every_charge_or_count(
 
 **Interfaces:** Produces immutable `ACTIONS_V1_MIGRATION = MigrationV1(version=9, name="actions_v1", ...)` and `ActionPipeline.execute(response: ModelResponse, context: ActionPipelineContextV1) -> ActionStepResultV1` using the exact Tasks 17.A–17.C parser/binder/dispatcher, Task 13 policy, and Task 24.A/24.C feedback functions/repository.
 
+**Implementation points:**
+- Define the exact immutable v0009 body-free action-record schema with turn identity, unique action identity, instance/semantic digests, policy decision, and result reference.
+- Sequence one response through exact parse, bind, policy, ALLOW-only dispatch, structured feedback append/consume, and action-record transaction without widening DENY or hiding failures.
+- Make `test_policy_deny_skips_dispatch_and_returns_feedback` GREEN with the smallest DENY feedback path before completing invalid, tool-failure, check, completion, and consume-once traces.
+- Own the coupled single action-step schema and transaction only. Registry edits, context, LLM invocation, counters, waits, restart, stopping, and outer-loop composition remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -4847,7 +7521,30 @@ def test_policy_deny_skips_dispatch_and_returns_feedback(
 - Domain: `python -m pytest -q tests/unit/storage/test_actions_migration.py tests/unit/loop/test_action_pipeline.py tests/unit/loop/test_main_loop_failures.py`
 - Expected: exact v0009 schema; invalid, DENY, tool failure, check feedback, completion proposal, and consume-once traces pass without hidden dispatch.
 
+**Review gate:**
+1. Spec compliance review checks Task 25.D's Goal, Milestone 25's four-field aggregate and SPEC scope, this Implementation boundary, exact RED and Schema RED, and Verification as one consistent parse/policy/dispatch/feedback contract.
+2. Code quality review checks v0009 schema exactness, parse/bind identity, policy-before-dispatch order, ALLOW-only invocation, DENY preservation, feedback append/consume atomicity, body minimization, and explicit failure records.
+3. Critical/Important findings block Tasks 7.D, 14.B, 25.G, 30.C, 32.A, and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 25.D's exact RED probes.** Add the complete declared `test_policy_deny_skips_dispatch_and_returns_feedback` and Schema RED `test_action_migration_has_exact_schema` cases to the listed test files without changing production implementation.
+- [ ] **Step 2: Run Task 25.D RED.** Run `python -m pytest -q tests/unit/loop/test_action_pipeline.py::test_policy_deny_skips_dispatch_and_returns_feedback`. Record the task-owned failing assertion and exit code; collection, runner, unrelated import, or environment failure does not count as RED.
+- [ ] **Step 3: Define exact body-free action records.** Apply IP-1: Add v0009 turn/action identities, digests, decision, and result reference only.
+- [ ] **Step 4: Sequence one governed action transaction.** Apply IP-2: Run parse, bind, policy, ALLOW-only dispatch, feedback, consume, and record in order.
+- [ ] **Step 5: Pass the policy-DENY RED case.** Apply IP-3: Skip dispatch and return `PATCH_PATH_NOT_EDITABLE` feedback for the exact declared response.
+- [ ] **Step 6: Seal action-pipeline-only ownership.** Apply IP-4: Keep registry, context, calls, counters, waits, restart, stop, and outer loop outside Task 25.D.
+- [ ] **Step 7: Run Task 25.D Target GREEN.** Re-run `python -m pytest -q tests/unit/loop/test_action_pipeline.py::test_policy_deny_skips_dispatch_and_returns_feedback`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 25.D's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 25.D Schema verification.** Run `python -m pytest -q tests/unit/storage/test_actions_migration.py::test_action_migration_has_exact_schema`. Record the exact command and actual result.
+- [ ] **Step 10: Run Task 25.D Domain verification and check acceptance.** Run `python -m pytest -q tests/unit/storage/test_actions_migration.py tests/unit/loop/test_action_pipeline.py tests/unit/loop/test_main_loop_failures.py`, then verify the exact v0009 schema and invalid, DENY, tool failure, check feedback, completion proposal, and consume-once traces without hidden dispatch. Record exact results and keep the task incomplete while any evidence is non-terminal.
+- [ ] **Step 11: Run Task 25.D standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 25.D spec compliance review.** Provide the Goal, Milestone 25 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 25.D spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 25.D code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 25.D quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 25.D after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 25.D completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 25.E: Wait, Deadline, and Cancellation Control
 
@@ -4872,6 +7569,12 @@ def test_policy_deny_skips_dispatch_and_returns_feedback(
 
 **Interfaces:** Produces `WaitController.enter(wait: WaitContextV1, now: CanonicalTimestampV1) -> WaitTransitionResultV1`, `WaitController.resume(wait: WaitContextV1, decision: WaitDecisionV1, now: CanonicalTimestampV1) -> WaitTransitionResultV1`, `WaitController.expire(wait: WaitContextV1, now: CanonicalTimestampV1) -> WaitTransitionResultV1`, and `CancellationController.evaluate_safe_point(run: RunRecordV1, cancellation_requested: bool) -> CancellationDecisionV1`.
 
+**Implementation points:**
+- Validate exact persisted Run/wait/decision identities and permit pause or resume only at declared wait states with one-winner decision handling.
+- Compare injected time against the smaller applicable Run or wait deadline and honor cancellation only at deterministic safe points, never resuming an expired or mismatched action.
+- Make `test_expired_wait_never_resumes_agent_action` GREEN with the smallest expiry-first transition before completing reject, duplicate, wrong-binding, deadline, and cancellation tables.
+- Own pure wait/deadline/cancellation transitions over persisted bindings only. LLM, dispatch, persistence writes, policy, progress, stopping, and outer-loop orchestration remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -4891,7 +7594,30 @@ def test_expired_wait_never_resumes_agent_action(
 - Domain: `python -m pytest -q tests/unit/loop/test_wait_lifecycle.py`
 - Expected: reject/expiry/wrong binding/duplicate decision/cancel safe-point tables all pass.
 
+**Review gate:**
+1. Spec compliance review checks Task 25.E's Goal, Milestone 25's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent wait/deadline/cancellation contract.
+2. Code quality review checks exact wait binding, one-winner decisions, smaller-deadline precedence, injected-time edges, expiry before resume, duplicate/reject handling, cancellation safe points, and zero forbidden effects.
+3. Critical/Important findings block Tasks 25.G and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 25.E's exact RED probe.** Add the complete declared `test_expired_wait_never_resumes_agent_action` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 25.E RED.** Run `python -m pytest -q tests/unit/loop/test_wait_lifecycle.py::test_expired_wait_never_resumes_agent_action`. Record the task-owned failing assertion and exit code; collection, runner, unrelated import, or environment failure does not count as RED.
+- [ ] **Step 3: Bind declared wait transitions exactly.** Apply IP-1: Validate persisted Run, wait, and decision identities with one-winner handling.
+- [ ] **Step 4: Enforce deadline and cancel safe points.** Apply IP-2: Use the smaller deadline and prevent expired or mismatched resume.
+- [ ] **Step 5: Prevent resume after Task 25.E wait expiry.** Apply IP-3: Return `WAIT_EXPIRED` with no resume action for the exact declared time.
+- [ ] **Step 6: Seal wait-control-only ownership.** Apply IP-4: Keep LLM, dispatch, writes, policy, progress, stop, and loop composition outside Task 25.E.
+- [ ] **Step 7: Run Task 25.E Target GREEN.** Re-run `python -m pytest -q tests/unit/loop/test_wait_lifecycle.py::test_expired_wait_never_resumes_agent_action`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 25.E's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 25.E Domain verification.** Run `python -m pytest -q tests/unit/loop/test_wait_lifecycle.py`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 25.E's declared acceptance.** Verify reject/expiry/wrong binding/duplicate decision/cancel safe-point tables all pass. Record the evaluated conditions and keep the task incomplete while any evidence is non-terminal.
+- [ ] **Step 11: Run Task 25.E standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 25.E spec compliance review.** Provide the Goal, Milestone 25 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 25.E spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 25.E code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 25.E quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 25.E after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 25.E completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 25.F: Non-persistent Restart Fail-close
 
@@ -4915,6 +7641,12 @@ def test_expired_wait_never_resumes_agent_action(
 
 **Interfaces:** Produces `RestartGuard.inspect(run) -> RestartDispositionV1`.
 
+**Implementation points:**
+- Inspect persisted Run, active-turn, phase, and terminal evidence to distinguish a clean boundary from any interrupted non-persistent turn after restart.
+- Return one typed fail-closed stop/audit command with resend forbidden for every interrupted phase, without reconstructing request/response bodies or advancing ordinary work.
+- Make `test_restart_during_active_turn_stops_without_resend` GREEN with the smallest unfinished-turn disposition before completing phase, terminal, and ambiguous-evidence matrices.
+- Own restart inspection and typed stop/audit intent only. Provider reconstruction, resend, wait consumption, tool invocation, recovery mutation, and outer-loop rules remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -4933,7 +7665,30 @@ def test_restart_during_active_turn_stops_without_resend(
 - Domain: `python -m pytest -q tests/unit/loop/test_restart_behavior.py`
 - Expected: every interrupted non-persistent phase fails closed with zero resend.
 
+**Review gate:**
+1. Spec compliance review checks Task 25.F's Goal, Milestone 25's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent restart fail-close contract.
+2. Code quality review checks persisted-phase interpretation, active-turn/terminal precedence, ambiguous-evidence failure, zero reconstruction/resend, typed stop/audit minimization, deterministic replay, and no ordinary-turn recovery.
+3. Critical/Important findings block Tasks 25.G and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 25.F's exact RED probe.** Add the complete declared `test_restart_during_active_turn_stops_without_resend` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 25.F RED.** Run `python -m pytest -q tests/unit/loop/test_restart_behavior.py::test_restart_during_active_turn_stops_without_resend`. Record the task-owned failing assertion and exit code; collection, runner, unrelated import, or environment failure does not count as RED.
+- [ ] **Step 3: Inspect persisted restart evidence.** Apply IP-1: Classify clean and interrupted boundaries from Run, turn, phase, and terminal facts.
+- [ ] **Step 4: Emit a zero-resend stop intent.** Apply IP-2: Fail closed with bounded audit intent and no reconstruction or work advancement.
+- [ ] **Step 5: Pass the active-turn restart RED case.** Apply IP-3: Return `PROCESS_RESTART_DURING_TURN` with resend forbidden for the exact declared Run.
+- [ ] **Step 6: Seal restart-guard-only ownership.** Apply IP-4: Keep reconstruction, resend, waits, tools, recovery mutation, and loop rules outside Task 25.F.
+- [ ] **Step 7: Run Task 25.F Target GREEN.** Re-run `python -m pytest -q tests/unit/loop/test_restart_behavior.py::test_restart_during_active_turn_stops_without_resend`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 25.F's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 25.F Domain verification.** Run `python -m pytest -q tests/unit/loop/test_restart_behavior.py`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 25.F's declared acceptance.** Verify every interrupted non-persistent phase fails closed with zero resend. Record the evaluated conditions and keep the task incomplete while any evidence is non-terminal.
+- [ ] **Step 11: Run Task 25.F standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 25.F spec compliance review.** Provide the Goal, Milestone 25 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 25.F spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 25.F code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 25.F quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 25.F after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 25.F completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 25.G: Thin Sequential Agent Loop Composition
 
@@ -4958,6 +7713,12 @@ def test_restart_during_active_turn_stops_without_resend(
 
 **Interfaces:** Produces `AgentLoopEngine.step(run_id: str) -> LoopStepResultV1` and `AgentLoopEngine.run_until_boundary(run_id: str) -> LoopBoundaryResultV1` by dependency injection of `StopEvaluator`, `TurnBoundary`, `CallOrchestrator`, `ActionPipeline`, `WaitController`, `CancellationController`, and `RestartGuard`.
 
+**Implementation points:**
+- Compose injected production children in the exact context→authorize/one-call→parse/policy/ALLOW-dispatch/feedback→progress/stop→close sequence, respecting restart, wait, deadline, and cancellation boundaries.
+- Preserve exactly one active turn and one eligible call per step, stop at the first typed wait/terminal/failure boundary, and expose ordered evidence without duplicating child decisions.
+- Make `test_one_engine_step_calls_each_stage_once_in_order` GREEN with the smallest thin stage sequence before completing Mock/OpenAI, correction, wait, cancel, stop, and completion compositions.
+- Own orchestration only. No copied policy, parser, feedback, count, progress, stop, wait, restart, retry, or high-level agent-runner mechanism is permitted in `engine.py`.
+
 **Intentionally failing test:**
 
 ```python
@@ -4976,7 +7737,30 @@ def test_one_engine_step_calls_each_stage_once_in_order(
 - Domain: `python -m pytest -q tests/unit/loop/test_main_loop.py tests/unit/loop/test_main_loop_failures.py`
 - Expected: Mock/OpenAI, correction, wait, cancel, stop, and completion compositions use the child implementations and preserve exactly one active turn/call.
 
+**Review gate:**
+1. Spec compliance review checks Task 25.G's Goal, Milestone 25's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent thin sequential main-loop contract.
+2. Code quality review checks exact stage order/cardinality, injected-child provenance, wait/restart/cancel boundaries, one active turn/call, first-boundary stopping, evidence ordering, no copied predicates, and no high-level agent runner.
+3. Critical/Important findings block Tasks 29.A, 31.A, and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 25.G's exact RED probe.** Add the complete declared `test_one_engine_step_calls_each_stage_once_in_order` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 25.G RED.** Run `python -m pytest -q tests/unit/loop/test_main_loop.py::test_one_engine_step_calls_each_stage_once_in_order`. Record the task-owned failing assertion and exit code; collection, runner, unrelated import, or environment failure does not count as RED.
+- [ ] **Step 3: Compose the exact production stage sequence.** Apply IP-1: Invoke context, one-call authorization, action processing, feedback, progress, stop, and close through injected children.
+- [ ] **Step 4: Preserve one-turn one-call boundaries.** Apply IP-2: Stop at the first wait, terminal, or failure result and retain ordered evidence.
+- [ ] **Step 5: Pass the once-in-order engine RED case.** Apply IP-3: Match the exact declared stage-call tuple without extra invocation.
+- [ ] **Step 6: Seal thin-engine-only ownership.** Apply IP-4: Keep every child rule, retry, and high-level agent runner outside Task 25.G.
+- [ ] **Step 7: Run Task 25.G Target GREEN.** Re-run `python -m pytest -q tests/unit/loop/test_main_loop.py::test_one_engine_step_calls_each_stage_once_in_order`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 25.G's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 25.G Domain verification.** Run `python -m pytest -q tests/unit/loop/test_main_loop.py tests/unit/loop/test_main_loop_failures.py`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 25.G's declared acceptance.** Verify Mock/OpenAI, correction, wait, cancel, stop, and completion compositions use child implementations and preserve exactly one active turn/call. Record the evaluated conditions and keep the task incomplete while any evidence is non-terminal.
+- [ ] **Step 11: Run Task 25.G standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 25.G spec compliance review.** Provide the Goal, Milestone 25 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 25.G spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 25.G code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 25.G quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 25.G after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 25.G completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 26.A: Persistence Schema and Immutable Path/Transaction Records
 
@@ -5006,6 +7790,12 @@ def test_one_engine_step_calls_each_stage_once_in_order(
 
 **Interfaces:** Produces immutable `PERSISTENCE_V1_MIGRATION = MigrationV1(version=11, name="persistence_v1", ...)`, `PersistenceTransactionV1`, `PersistencePathRecordV1`, `PersistenceTransactionRepositoryV1`, and `PersistencePathRecordRepositoryV1`.
 
+**Implementation points:**
+- Define the exact immutable v0011 transaction/path schema with Run, approval, transaction, workspace, ordered canonical-path, closed state, digest, and artifact-reference fields only.
+- Enforce repository creation, unique active workspace transaction, unique ordered path identity, immutable transitions, and body-free access without reading or writing artifact or workspace bytes.
+- Make `test_path_records_are_unique_and_ordered_with_body_free_evidence` GREEN with the smallest duplicate-path rejection and ordered listing before completing schema, state, replay, and concurrency matrices.
+- Own persistence record DDL, values, and repositories only. Registry edits, artifact I/O, approval consumption, atomic replace, workspace writeback, and recovery disposition remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -5030,7 +7820,30 @@ def test_path_records_are_unique_and_ordered_with_body_free_evidence(
 - Domain: `python -m pytest -q tests/unit/storage/test_persistence_migration.py tests/unit/persistence/test_path_record.py tests/unit/persistence/test_transaction.py`
 - Expected: exact v0011 schema, keys, uniqueness, state vocabulary, ordered repository access, and body-free evidence refs pass without artifact or workspace I/O.
 
+**Review gate:**
+1. Spec compliance review checks Task 26.A's Goal, Milestone 26's four-field aggregate and SPEC scope, this Implementation boundary, exact RED and Schema RED, and Verification as one consistent persistence-record contract.
+2. Code quality review checks v0011 schema exactness, foreign/ordered/unique keys, one active workspace transaction, closed states, immutable transitions, replay/concurrency handling, body-free refs, and zero artifact/workspace I/O.
+3. Critical/Important findings block Tasks 7.D, 26.D, and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 26.A's exact RED probes.** Add the complete declared `test_path_records_are_unique_and_ordered_with_body_free_evidence` and Schema RED `test_persistence_migration_has_exact_schema` cases to the listed test files without changing production implementation.
+- [ ] **Step 2: Run Task 26.A RED.** Run `python -m pytest -q tests/unit/persistence/test_path_record.py::test_path_records_are_unique_and_ordered_with_body_free_evidence`. Record the task-owned failing assertion and exit code; collection, runner, unrelated import, or environment failure does not count as RED.
+- [ ] **Step 3: Define exact transaction/path records.** Apply IP-1: Add v0011 identities, ordering, state, digest, and artifact-reference fields only.
+- [ ] **Step 4: Enforce immutable body-free repositories.** Apply IP-2: Apply active-transaction and path uniqueness, ordered access, transitions, replay, and concurrency without byte I/O.
+- [ ] **Step 5: Pass the duplicate-path RED case.** Apply IP-3: Reject the second exact canonical path and retain sequence-one ordering.
+- [ ] **Step 6: Seal persistence-record-only ownership.** Apply IP-4: Keep registry, artifacts, approval, replace, workspace, and recovery outside Task 26.A.
+- [ ] **Step 7: Run Task 26.A Target GREEN.** Re-run `python -m pytest -q tests/unit/persistence/test_path_record.py::test_path_records_are_unique_and_ordered_with_body_free_evidence`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 26.A's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 26.A Schema verification.** Run `python -m pytest -q tests/unit/storage/test_persistence_migration.py::test_persistence_migration_has_exact_schema`. Record the exact command and actual result.
+- [ ] **Step 10: Run Task 26.A Domain verification and check acceptance.** Run `python -m pytest -q tests/unit/storage/test_persistence_migration.py tests/unit/persistence/test_path_record.py tests/unit/persistence/test_transaction.py`, then verify the exact v0011 schema, keys, uniqueness, states, ordered repository access, and body-free refs without artifact/workspace I/O. Record exact results and keep the task incomplete while any evidence is non-terminal.
+- [ ] **Step 11: Run Task 26.A standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 26.A spec compliance review.** Provide the Goal, Milestone 26 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 26.A spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 26.A code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 26.A quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 26.A after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 26.A completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 26.D: ACL-restricted Persistence Artifact and Backup Storage
 
@@ -5054,6 +7867,12 @@ def test_path_records_are_unique_and_ordered_with_body_free_evidence(
 
 **Interfaces:** Produces `PersistenceArtifactStoreV1.put(kind: PersistenceArtifactKindV1, body: bytes) -> PersistenceArtifactRefV1`, `PersistenceArtifactStoreV1.read_verified(ref: PersistenceArtifactRefV1) -> bytes`, and `PersistenceArtifactStoreV1.verify_acl(ref: PersistenceArtifactRefV1) -> ArtifactAclResultV1`.
 
+**Implementation points:**
+- Publish exact preimage, postimage, backup, and raw recovery bytes atomically under content-addressed immutable references outside SQLite and verify kind, length, and digest on every read.
+- Create and re-probe current-user-only ACLs for every artifact, reject unsafe or unverifiable access, and leave workspace bytes and transaction state untouched on all paths.
+- Make `test_artifact_store_rejects_digest_mismatch_and_non_private_acl` GREEN with the smallest verified-read integrity failure before completing deterministic refs, publication, ACL, and cleanup matrices.
+- Own persistence artifact bytes, immutable references, digest verification, and ACL enforcement only. Approval, records/schema, workspace writes, transaction advancement, and recovery classification remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -5074,7 +7893,30 @@ def test_artifact_store_rejects_digest_mismatch_and_non_private_acl(
 - Domain: `python -m pytest -q tests/unit/persistence/test_artifacts.py`
 - Expected: deterministic refs, byte-for-byte verification, ACL rejection, atomic artifact publication, and absence of SQLite/workspace mutations pass.
 
+**Review gate:**
+1. Spec compliance review checks Task 26.D's Goal, Milestone 26's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent ACL-restricted artifact-store contract.
+2. Code quality review checks content-address identity, atomic publication, kind/length/digest verification, current-user ACL creation and re-probe, unsafe-access rejection, immutable refs, cleanup residue, and zero SQLite/workspace mutation.
+3. Critical/Important findings block Tasks 26.E and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 26.D's exact RED probe.** Add the complete declared `test_artifact_store_rejects_digest_mismatch_and_non_private_acl` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 26.D RED.** Run `python -m pytest -q tests/unit/persistence/test_artifacts.py::test_artifact_store_rejects_digest_mismatch_and_non_private_acl`. Record the task-owned failing assertion and exit code; collection, runner, unrelated import, or environment failure does not count as RED.
+- [ ] **Step 3: Publish verified content-addressed artifacts.** Apply IP-1: Store each declared byte kind atomically and verify immutable ref metadata on read.
+- [ ] **Step 4: Enforce current-user artifact ACLs.** Apply IP-2: Create, re-probe, and reject unsafe ACL states without workspace or transaction mutation.
+- [ ] **Step 5: Pass the corrupt-artifact RED case.** Apply IP-3: Raise `PersistenceArtifactIntegrityError` for the exact digest mismatch while preserving private ACL evidence.
+- [ ] **Step 6: Seal artifact-store-only ownership.** Apply IP-4: Keep approval, records, workspace writes, transaction state, and recovery classification outside Task 26.D.
+- [ ] **Step 7: Run Task 26.D Target GREEN.** Re-run `python -m pytest -q tests/unit/persistence/test_artifacts.py::test_artifact_store_rejects_digest_mismatch_and_non_private_acl`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 26.D's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 26.D Domain verification.** Run `python -m pytest -q tests/unit/persistence/test_artifacts.py`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 26.D's declared acceptance.** Verify deterministic refs, byte-for-byte checks, ACL rejection, atomic publication, and absence of SQLite/workspace mutations. Record the evaluated conditions and keep the task incomplete while any evidence is non-terminal.
+- [ ] **Step 11: Run Task 26.D standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 26.D spec compliance review.** Provide the Goal, Milestone 26 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 26.D spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 26.D code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 26.D quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 26.D after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 26.D completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 26.E: Approval-bound Atomic Writeback Composition
 
@@ -5099,6 +7941,12 @@ def test_artifact_store_rejects_digest_mismatch_and_non_private_acl(
 
 **Interfaces:** Produces `PersistenceCommandFactoryV1.for_approved_run(run_id: str, approval_id: str, event_id: str) -> PersistVerifiedCandidateV1` and `PersistenceCoordinator.persist(command: PersistVerifiedCandidateV1) -> PersistenceResultV1` by injection of Task 26.A repositories and Task 26.D artifact storage.
 
+**Implementation points:**
+- Bind the command to the exact current Run, verified candidate/final diff, workspace identity, event, unconsumed approval, and ordered 1–3 canonical paths before any authoritative write.
+- Through injected record/artifact ports, persist preimages and backups, consume approval once immediately before the first atomic replace, record per-path progress, verify postimages, and publish `COMMITTED` only after every predicate succeeds.
+- Make `test_missing_exact_approval_writes_no_workspace_bytes` GREEN with the smallest approval precondition before completing identity, ordering, cancellation, interruption, verification, and one-winner state matrices.
+- Own thin approved writeback sequencing only. DDL, repository rules, artifact backend, recovery preview/apply, alternate approval, force, partial-success, and policy expansion remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -5118,7 +7966,30 @@ def test_missing_exact_approval_writes_no_workspace_bytes(
 - Domain: `python -m pytest -q tests/unit/persistence/test_writeback_preconditions.py tests/fault_injection/persistence/test_writeback_fault_matrix.py`
 - Expected: exact approval, byte/identity, 1–3-path ordering, backup-before-replace, verification, cancellation, and injected interruption cases pass; any interruption leaves a durable non-terminal transaction rather than false success.
 
+**Review gate:**
+1. Spec compliance review checks Task 26.E's Goal, Milestone 26's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent thin approval-bound writeback contract.
+2. Code quality review checks current identity binding, exact approval without DENY expansion, 1–3-path order, backup-before-replace, consume-once timing, atomic replace, progress durability, postimage verification, cancellation/interruption, and no false terminal state.
+3. Critical/Important findings block Tasks 26.B, 29.C, 31.A, and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 26.E's exact RED probe.** Add the complete declared `test_missing_exact_approval_writes_no_workspace_bytes` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 26.E RED.** Run `python -m pytest -q tests/unit/persistence/test_writeback_preconditions.py::test_missing_exact_approval_writes_no_workspace_bytes`. Record the task-owned failing assertion and exit code; collection, runner, unrelated import, or environment failure does not count as RED.
+- [ ] **Step 3: Bind the exact approved write set.** Apply IP-1: Validate current Run, candidate/diff, workspace, event, approval, and ordered paths before writes.
+- [ ] **Step 4: Sequence atomic writeback through ports.** Apply IP-2: Store preimage/backup, consume once, replace, progress, verify, and close only on complete success.
+- [ ] **Step 5: Pass the missing-approval RED case.** Apply IP-3: Return `APPROVAL_REQUIRED` with zero workspace writes for the exact declared command.
+- [ ] **Step 6: Seal thin-writeback-only ownership.** Apply IP-4: Keep schemas, repository policy, artifact backend, recovery, alternate approval, force, and policy expansion outside Task 26.E.
+- [ ] **Step 7: Run Task 26.E Target GREEN.** Re-run `python -m pytest -q tests/unit/persistence/test_writeback_preconditions.py::test_missing_exact_approval_writes_no_workspace_bytes`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 26.E's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 26.E Domain verification.** Run `python -m pytest -q tests/unit/persistence/test_writeback_preconditions.py tests/fault_injection/persistence/test_writeback_fault_matrix.py`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 26.E's declared acceptance.** Verify exact approval, byte/identity, 1–3-path order, backup-before-replace, verification, cancellation, and injected interruption behavior, with durable non-terminal state rather than false success after interruption. Record the evaluated conditions and keep the task incomplete while any verification evidence is non-terminal.
+- [ ] **Step 11: Run Task 26.E standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 26.E spec compliance review.** Provide the Goal, Milestone 26 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 26.E spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 26.E code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 26.E quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 26.E after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 26.E completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 26.B: Read-only Recovery Preview and Three-value Classification
 
@@ -5142,6 +8013,12 @@ def test_missing_exact_approval_writes_no_workspace_bytes(
 
 **Interfaces:** Produces `PersistencePathRecordSequenceV1` and `RecoveryPathObservationSequenceV1`, immutable ordered tuples of their named item types, `RecoveryPreviewService.preview_transaction(transaction_id: str) -> RecoveryPreviewV1`, and pure `classify_recovery(records: PersistencePathRecordSequenceV1, observations: RecoveryPathObservationSequenceV1) -> RecoveryDispositionV1`.
 
+**Implementation points:**
+- Read the exact non-terminal transaction, ordered path records, verified artifact metadata, and current workspace object/byte identities into bounded source-attributed observations without mutation.
+- Classify only completely proven all-postimage as `COMMITTED`, all-preimage as `ROLLED_BACK`, and every mixed, missing, ambiguous, corrupt, or external-change state as `UNRESOLVED`.
+- Make `test_recovery_preview_is_read_only` GREEN with the smallest zero-write preview before completing three-value classification, identity, artifact, and ambiguity matrices.
+- Own read-only recovery observation and pure classification only. Workspace/artifact/record/audit mutation, approval consumption, terminal recording, and recovery apply remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -5161,7 +8038,30 @@ def test_recovery_preview_is_read_only(
 - Domain: `python -m pytest -q tests/unit/persistence/test_recovery_decision.py`
 - Expected: mixed/unknown/external-change states fail to `UNRESOLVED` with zero writes.
 
+**Review gate:**
+1. Spec compliance review checks Task 26.B's Goal, Milestone 26's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent read-only three-value recovery-preview contract.
+2. Code quality review checks transaction/path identity, ordered observations, safe artifact verification, object/byte identity, complete proof for terminal classifications, `UNRESOLVED` default, source attribution, and zero writes to every port.
+3. Critical/Important findings block Tasks 26.C and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 26.B's exact RED probe.** Add the complete declared `test_recovery_preview_is_read_only` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 26.B RED.** Run `python -m pytest -q tests/unit/persistence/test_recovery_decision.py::test_recovery_preview_is_read_only`. Record the task-owned failing assertion and exit code; collection, runner, unrelated import, or environment failure does not count as RED.
+- [ ] **Step 3: Observe recovery state without mutation.** Apply IP-1: Read exact records, verified metadata, and current object/byte identities into bounded observations.
+- [ ] **Step 4: Apply the closed three-value classifier.** Apply IP-2: Require complete preimage or postimage proof and map every other state to `UNRESOLVED`.
+- [ ] **Step 5: Pass the read-only preview RED case.** Apply IP-3: Return a declared disposition with zero workspace writes for the exact transaction.
+- [ ] **Step 6: Seal recovery-preview-only ownership.** Apply IP-4: Keep every mutation, approval, terminal record, and recovery apply outside Task 26.B.
+- [ ] **Step 7: Run Task 26.B Target GREEN.** Re-run `python -m pytest -q tests/unit/persistence/test_recovery_decision.py::test_recovery_preview_is_read_only`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 26.B's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 26.B Domain verification.** Run `python -m pytest -q tests/unit/persistence/test_recovery_decision.py`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 26.B's declared acceptance.** Verify mixed, unknown, and external-change states return `UNRESOLVED` with zero writes. Record the evaluated conditions and keep the task incomplete while any evidence is non-terminal.
+- [ ] **Step 11: Run Task 26.B standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 26.B spec compliance review.** Provide the Goal, Milestone 26 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 26.B spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 26.B code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 26.B quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 26.B after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 26.B completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 26.C: Explicit Recovery Apply and Production Fault Acceptance
 
@@ -5190,6 +8090,12 @@ def test_recovery_preview_is_read_only(
 
 **Interfaces:** Produces immutable `RECOVERY_V1_MIGRATION = MigrationV1(version=12, name="recovery_v1", ...)`, `RecoveryService.preview(workspace: WorkspaceIdentityV1) -> RecoveryPreviewV1` by selecting the workspace-bound transaction and delegating only to Task 26.B `preview_transaction(transaction_id: str)`, `RecoveryService.apply(command: ApplyRecoveryV1) -> RecoveryResultV1` using Task 26.A records and Task 26.D artifacts, and read-only `has_unresolved_transaction(workspace_identity_digest: str) -> bool`.
 
+**Implementation points:**
+- Define the exact immutable v0012 body-free terminal-result schema and bind apply admission to the current workspace transaction, lease, preview digest, records, artifacts, and requested proven disposition.
+- Execute only the bound recovery path under the lease, rechecking current identities before each authoritative change and recording one service-proven terminal result; stale, external-change, ACL, deadline, or partial evidence remains unresolved.
+- Make `test_stale_preview_cannot_apply_recovery` GREEN with the smallest stale-digest rejection before completing schema, lease, fault, identity, terminal, and admission matrices.
+- Own v0012 terminal-result storage and explicit recovery apply only. Registry edits, force/ignore/skip/edit overrides, user-declared success, alternate classification, and approval or policy expansion remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -5213,7 +8119,30 @@ def test_stale_preview_cannot_apply_recovery(
 - Windows: `python -m pytest -q -o addopts='' -m windows_integration tests/integration/windows/test_persistence_acl_and_identity.py`
 - Expected: exact v0012 schema and the complete production matrix produce only the three declared dispositions and never overwrite an unproven external change.
 
+**Review gate:**
+1. Spec compliance review checks Task 26.C's Goal, Milestone 26's four-field aggregate and SPEC scope, this Implementation boundary, exact RED and Schema RED, and Verification as one consistent explicit recovery-apply contract.
+2. Code quality review checks v0012 schema exactness, workspace/lease/preview binding, pre-change identity rechecks, service-proven terminal recording, stale/external/ACL/deadline faults, unresolved admission, no overwrite, and absence of force or declared-success paths.
+3. Critical/Important findings block Tasks 7.D, 31.C, 33.A, 37.B, 38.D, and 38.E until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 26.C's exact RED probes.** Add the complete declared `test_stale_preview_cannot_apply_recovery` and Schema RED `test_recovery_migration_has_exact_schema` cases to the listed test files without changing production implementation.
+- [ ] **Step 2: Run Task 26.C RED.** Run `python -m pytest -q tests/fault_injection/persistence/test_external_change_faults.py::test_stale_preview_cannot_apply_recovery`. Record the task-owned failing assertion and exit code; collection, runner, unrelated import, or environment failure does not count as RED.
+- [ ] **Step 3: Bind exact terminal recovery admission.** Apply IP-1: Add v0012 and validate workspace transaction, lease, preview, records, artifacts, and disposition.
+- [ ] **Step 4: Apply only service-proven recovery.** Apply IP-2: Recheck identities under lease, perform the bound path, and record a terminal result only after complete proof.
+- [ ] **Step 5: Pass the stale-preview RED case.** Apply IP-3: Return `RECOVERY_PREVIEW_STALE` with zero workspace writes for the exact declared digest.
+- [ ] **Step 6: Seal explicit-recovery-only ownership.** Apply IP-4: Keep registry, force/ignore/skip/edit, declared success, alternate classification, and policy expansion outside Task 26.C.
+- [ ] **Step 7: Run Task 26.C Target GREEN.** Re-run `python -m pytest -q tests/fault_injection/persistence/test_external_change_faults.py::test_stale_preview_cannot_apply_recovery`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 26.C's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 26.C Schema verification.** Run `python -m pytest -q tests/unit/storage/test_recovery_migration.py::test_recovery_migration_has_exact_schema`. Record the exact command and actual result.
+- [ ] **Step 10: Run Task 26.C Domain and Windows verification, then check acceptance.** Run `python -m pytest -q tests/unit/storage/test_recovery_migration.py tests/fault_injection/persistence`, then run `python -m pytest -q -o addopts='' -m windows_integration tests/integration/windows/test_persistence_acl_and_identity.py`, then verify the exact v0012 schema and production matrix yield only declared dispositions and never overwrite an unproven external change. Record exact results; a skip, unavailable Windows proof, pending result, or other non-terminal evidence keeps the task incomplete.
+- [ ] **Step 11: Run Task 26.C standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 26.C spec compliance review.** Provide the Goal, Milestone 26 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 26.C spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 26.C code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 26.C quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 26.C after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 26.C completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 27.A: Pure Non-revealing Credential Lifecycle
 
@@ -5240,6 +8169,12 @@ def test_stale_preview_cannot_apply_recovery(
 
 **Interfaces:** Produces `SecretCredentialV1`, `CredentialStorePortV1.set(provider: Literal["OPENAI"], secret: SecretCredentialV1) -> CredentialStoreMutationV1`, `CredentialStorePortV1.get_for_call(provider: Literal["OPENAI"]) -> SecretCredentialV1 | CredentialMissingV1`, `CredentialStorePortV1.status(provider: Literal["OPENAI"]) -> CredentialStatusV1`, `CredentialStorePortV1.clear(provider: Literal["OPENAI"]) -> CredentialStoreMutationV1`, `CredentialService.set(provider: Literal["OPENAI"], secret: SecretCredentialV1) -> CredentialMutationResultV1`, `CredentialService.status(provider: Literal["OPENAI"]) -> CredentialStatusV1`, `CredentialService.update(provider: Literal["OPENAI"], secret: SecretCredentialV1) -> CredentialMutationResultV1`, `CredentialService.clear(provider: Literal["OPENAI"]) -> CredentialMutationResultV1`, and `CredentialService.get_for_call(provider: Literal["OPENAI"]) -> SecretCredentialV1 | CredentialErrorV1`.
 
+**Implementation points:**
+- Close providers to `OPENAI` and wrap hidden input in a non-serializable, non-comparable, redacted secret object whose repr, exceptions, status, logs, and public results expose no value or derivative.
+- Probe the verified store before lifecycle operations, implement set/status/update/clear and fresh get-for-call semantics with typed failures, and reject unsafe backends without fallback, printing, or transport.
+- Make `test_credential_status_never_contains_secret_or_derivative` GREEN with the smallest redacted status result before completing backend, lifecycle, cleared-state, fresh-read, exception, repr, and log matrices.
+- Own pure credential lifecycle policy over injectable ports only. WinCred implementation, CLI/env/file input, Web forms, network calls, Grant/authorization, and call counting remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -5263,7 +8198,30 @@ Expected RED: import failure because the credential port/service and secret wrap
 - Domain: `python -m pytest -q tests/unit/credentials`
 - Expected GREEN: both commands exit `0`; safe/unsafe backend, set/status/update/clear failure, cleared-after-readiness, fresh call lookup, and redaction cases pass offline.
 
+**Review gate:**
+1. Spec compliance review checks Task 27.A's Goal, Milestone 27's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent pure non-revealing credential-lifecycle contract.
+2. Code quality review checks OPENAI closure, hidden-input wrapper properties, status/exception/repr/log redaction, derivative absence, probe ordering, update/clear atomicity, fresh call lookup, unsafe-backend failure, and no fallback/print/transport.
+3. Critical/Important findings block Tasks 27.B and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 27.A's exact RED probe.** Add the complete declared `test_credential_status_never_contains_secret_or_derivative` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 27.A RED.** Run `python -m pytest -q tests/unit/credentials/test_status.py::test_credential_status_never_contains_secret_or_derivative`. Expected RED: import failure because the credential port/service and secret wrapper do not exist. Record the task-owned failing assertion and exit code; collection, runner, unrelated import, or environment failure does not count as RED.
+- [ ] **Step 3: Close and redact credential values.** Apply IP-1: Enforce OPENAI-only hidden secret wrappers and non-revealing public surfaces.
+- [ ] **Step 4: Implement probed lifecycle semantics.** Apply IP-2: Provide typed set/status/update/clear/fresh-read behavior with unsafe-backend failure and no fallback.
+- [ ] **Step 5: Pass the non-revealing-status RED case.** Apply IP-3: Exclude the exact secret, length, and digest from the declared rendered status.
+- [ ] **Step 6: Seal pure-credential-service ownership.** Apply IP-4: Keep WinCred, CLI/env/file/Web input, network, authorization, and counters outside Task 27.A.
+- [ ] **Step 7: Run Task 27.A Target GREEN.** Re-run `python -m pytest -q tests/unit/credentials/test_status.py::test_credential_status_never_contains_secret_or_derivative`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 27.A's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 27.A Domain verification.** Run `python -m pytest -q tests/unit/credentials`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 27.A's declared acceptance.** Verify safe/unsafe backend, set/status/update/clear failure, cleared-after-readiness, fresh call lookup, and redaction cases pass offline. Record the evaluated conditions and keep the task incomplete while any evidence is non-terminal.
+- [ ] **Step 11: Run Task 27.A standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 27.A spec compliance review.** Provide the Goal, Milestone 27 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 27.A spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 27.A code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 27.A quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 27.A after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 27.A completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 27.B: Windows Credential Manager Adapter and Real Proof
 
@@ -5284,6 +8242,12 @@ Expected RED: import failure because the credential port/service and secret wrap
 - Test: `tests/integration/windows/test_wincred_smoke.py`
 
 **Interfaces:** Produces `WindowsCredentialManagerStore.probe_backend() -> CredentialBackendProbeV1` and a concrete `WindowsCredentialManagerStore` implementation of every `CredentialStorePortV1` method declared by Task 27.A.
+
+**Implementation points:**
+- Map the sole versioned OPENAI target to mandatory Windows Credential Manager operations and probe backend identity/capability before each mutation or fresh get-for-call read.
+- Implement set/status/overwrite/get-for-call/clear with redacted typed errors, current-user storage, generated-test cleanup in `finally`, and no cache, fallback, environment/file import, printing, or network call.
+- Make `test_wincred_smoke_clears_generated_test_entry` GREEN with the smallest real lifecycle and final cleanup before completing backend identity, overwrite/delete error, fresh-read, and cleared-state proofs.
+- Own the WinCred store adapter and real Windows proof only. Secret input UI, lifecycle policy, Grant/authorization, call counting, provider transport, and per-call network orchestration remain out of scope.
 
 **Intentionally failing test:**
 
@@ -5310,7 +8274,30 @@ Expected RED: import failure because the Windows Credential Manager adapter does
 - Domain: `python -m pytest -q -o addopts='' -m windows_integration tests/integration/windows/test_wincred_smoke.py`
 - Expected GREEN: both commands exit `0` on the Windows runner without skip; backend identity, overwrite/delete errors, fresh lookup, cleared state, and final cleanup pass without secret output.
 
+**Review gate:**
+1. Spec compliance review checks Task 27.B's Goal, Milestone 27's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent mandatory WinCred adapter contract.
+2. Code quality review checks versioned target identity, backend probe-before-operation order, current-user WinCred semantics, overwrite/delete/fresh-read behavior, redacted failures, `finally` cleanup, no fallback/cache/import/print, and no transport call.
+3. Critical/Important findings block Tasks 16.B, 25.C, 28.A, 31.A, 31.B, 32.C, 37.B, and 38.A until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 27.B's exact RED probe.** Add the complete declared `test_wincred_smoke_clears_generated_test_entry` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 27.B RED.** Run `python -m pytest -q -o addopts='' -m windows_integration tests/integration/windows/test_wincred_smoke.py::test_wincred_smoke_clears_generated_test_entry`. Expected RED: import failure because the Windows Credential Manager adapter does not exist. Record the task-owned failing assertion and exit code; collection, runner, unrelated import, Windows capability, or environment failure does not count as RED.
+- [ ] **Step 3: Bind the mandatory versioned WinCred target.** Apply IP-1: Probe backend identity and capability before every mutation or fresh read.
+- [ ] **Step 4: Implement the redacted real lifecycle.** Apply IP-2: Map set/status/overwrite/get/clear with current-user storage, typed failures, and final cleanup only.
+- [ ] **Step 5: Pass the WinCred lifecycle RED case.** Apply IP-3: Complete the exact set/status/get/clear proof and leave the generated entry cleared.
+- [ ] **Step 6: Seal WinCred-adapter-only ownership.** Apply IP-4: Keep input UI, lifecycle policy, authorization, counts, transport, and network orchestration outside Task 27.B.
+- [ ] **Step 7: Run Task 27.B Target GREEN.** Re-run `python -m pytest -q -o addopts='' -m windows_integration tests/integration/windows/test_wincred_smoke.py::test_wincred_smoke_clears_generated_test_entry`. Require exit `0`, no skip, final cleanup, and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 27.B's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 27.B Domain verification.** Run `python -m pytest -q -o addopts='' -m windows_integration tests/integration/windows/test_wincred_smoke.py`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 27.B's declared acceptance.** Verify both commands exit `0` without skip and backend identity, overwrite/delete errors, fresh lookup, cleared state, final cleanup, and absence of secret output. Record the evaluated conditions; unavailable Windows proof, skip, pending cleanup, or other non-terminal evidence keeps the task incomplete.
+- [ ] **Step 11: Run Task 27.B standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 27.B spec compliance review.** Provide the Goal, Milestone 27 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 27.B spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 27.B code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 27.B quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 27.B after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 27.B completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 28.A: Loopback Request Security Boundary
 
@@ -5333,6 +8320,12 @@ Expected RED: import failure because the Windows Credential Manager adapter does
 - Test: `tests/web/test_security.py`
 
 **Interfaces:** Produces `LocalWebSecurityConfigV1(host: Literal["127.0.0.1"], port: int, session_cookie_name: str, csrf_header_name: str)`, `LocalSessionManager.create() -> LocalSessionV1`, and `verify_local_request(request: Request, session: LocalSessionV1) -> LocalRequestAuthorizationV1`.
+
+**Implementation points:**
+- Close server binding and accepted Host values to loopback, create bounded local sessions, and validate session identity before any route-domain call.
+- Apply state-change Origin and CSRF checks in fixed order, emit stable failures, and attach the exact CSP and response security headers without weakening downstream DENY.
+- Make `test_state_change_rejects_non_loopback_origin` GREEN with the smallest pre-domain Origin rejection before completing binding, Host, session, CSRF, header, and ordering matrices.
+- Own loopback request authorization and response headers only. Domain repositories, credentials, Docker, recovery bodies, templates, assets, CLI parsing, and server launch remain out of scope.
 
 **Intentionally failing test:**
 
@@ -5357,7 +8350,30 @@ def test_state_change_rejects_non_loopback_origin(
 - Domain: `python -m pytest -q tests/web/test_security.py`
 - Expected: binding, session, Host/Origin/CSRF and headers fail before all spy domain calls.
 
+**Review gate:**
+1. Spec compliance review checks Task 28.A's Goal, Milestone 28's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent loopback request-security contract.
+2. Code quality and Open Design/`ui-ux-pro-max` review check loopback/Host/session/Origin/CSRF ordering, cookie/session bounds, CSP and security headers, stable non-leaking errors, keyboard-perceivable failure status where rendered, and zero domain calls after rejection.
+3. Critical/Important findings block Tasks 28.B and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 28.A's exact RED probe.** Add the complete declared `test_state_change_rejects_non_loopback_origin` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 28.A RED.** Run `python -m pytest -q tests/web/test_security.py::test_state_change_rejects_non_loopback_origin`. Record the task-owned failing assertion and exit code; collection, runner, unrelated import, or environment failure does not count as RED.
+- [ ] **Step 3: Close loopback session admission.** Apply IP-1: Enforce bind, Host, and bounded local-session identity before route-domain access.
+- [ ] **Step 4: Order CSRF and response protections.** Apply IP-2: Validate Origin/CSRF and attach exact CSP/security headers with stable rejection.
+- [ ] **Step 5: Pass the non-loopback-Origin RED case.** Apply IP-3: Return `ORIGIN_REJECTED` with status 403 before the exact declared domain call.
+- [ ] **Step 6: Seal request-security-only ownership.** Apply IP-4: Keep domain, credentials, Docker, recovery, templates, assets, CLI, and launch outside Task 28.A.
+- [ ] **Step 7: Run Task 28.A Target GREEN.** Re-run `python -m pytest -q tests/web/test_security.py::test_state_change_rejects_non_loopback_origin`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 28.A's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 28.A Domain verification.** Run `python -m pytest -q tests/web/test_security.py`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 28.A's declared acceptance.** Verify binding, session, Host/Origin/CSRF, CSP, and response headers fail before every spy domain call. Record the evaluated conditions and keep the task incomplete while any evidence is non-terminal.
+- [ ] **Step 11: Run Task 28.A standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 28.A spec compliance review.** Provide the Goal, Milestone 28 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 28.A spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 28.A code quality and Open Design review.** Provide the spec-reviewed implementation and evidence; require `ui-ux-pro-max` inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 28.A quality/design findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS and Open Design re-review PASS.
+- [ ] **Step 16: Commit Task 28.A after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 28.A completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 28.B: Local FastAPI Shell, Templates, and Status Semantics
 
@@ -5385,6 +8401,12 @@ def test_state_change_rejects_non_loopback_origin(
 
 **Interfaces:** Produces protocol `LocalShellPortsV1.list_recent_runs() -> RunVisibilitySequenceV1`, `LocalShellPortsV1.credential_status() -> CredentialStatusV1`, protocol `LocalRouteInstallerV1.install(app: FastAPI) -> None`, `LocalRouteInstallerSequenceV1`, an immutable ordered tuple of route installers, `create_local_app(shell_ports: LocalShellPortsV1, security: LocalWebSecurityConfigV1, route_installers: LocalRouteInstallerSequenceV1) -> FastAPI`, and `render_status_badge(visibility: RunVisibilityV1) -> Markup`.
 
+**Implementation points:**
+- Compose the local FastAPI shell from typed ports and a deterministic installer sequence with no service locator or hidden workflow lookup.
+- Render autoescaped templates and distinct text plus accessible-name status semantics with visible focus, keyboard reachability, live-error hooks, non-color cues, sufficient contrast, and reduced-motion-safe behavior.
+- Make `test_status_badge_has_text_and_accessible_name` GREEN with the smallest semantic status component before completing shell composition, escaping, state, focus, and installer-order matrices.
+- Own shell composition, templates, and status semantics only. Static asset bytes, package lookup, CLI parsing, server launch, and domain workflow rules remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -5402,7 +8424,30 @@ def test_status_badge_has_text_and_accessible_name(
 - Domain: `python -m pytest -q tests/web/test_status_labels.py tests/web/test_app_composition.py`
 - Expected: exact status comprehension, escaped template defaults, accessible names, and deterministic typed installer order pass.
 
+**Review gate:**
+1. Spec compliance review checks Task 28.B's Goal, Milestone 28's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent local shell/template/status contract.
+2. Code quality and Open Design/`ui-ux-pro-max` review check typed installer order, autoescaping, scanable hierarchy, text/non-color status, contrast, accessible names, keyboard/focus, live errors, reduced motion, stable layout, and Task 28.A security integration without asset or CLI leakage.
+3. Critical/Important findings block Tasks 28.C and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 28.B's exact RED probe.** Add the complete declared `test_status_badge_has_text_and_accessible_name` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 28.B RED.** Run `python -m pytest -q tests/web/test_status_labels.py::test_status_badge_has_text_and_accessible_name`. Record the task-owned failing assertion and exit code; collection, runner, unrelated import, or environment failure does not count as RED.
+- [ ] **Step 3: Compose typed local shell installers.** Apply IP-1: Build the shell from declared ports and immutable installer order without a locator.
+- [ ] **Step 4: Render accessible escaped status semantics.** Apply IP-2: Add autoescaping, text/non-color cues, names, focus, keyboard, live errors, contrast, and reduced-motion safety.
+- [ ] **Step 5: Pass the accessible-status RED case.** Apply IP-3: Render the exact `WAITING_APPROVAL` badge with text and accessible name.
+- [ ] **Step 6: Seal shell-template-only ownership.** Apply IP-4: Keep assets, package lookup, CLI, launch, and domain workflow rules outside Task 28.B.
+- [ ] **Step 7: Run Task 28.B Target GREEN.** Re-run `python -m pytest -q tests/web/test_status_labels.py::test_status_badge_has_text_and_accessible_name`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 28.B's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 28.B Domain verification.** Run `python -m pytest -q tests/web/test_status_labels.py tests/web/test_app_composition.py`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 28.B's declared acceptance.** Verify exact status comprehension, escaped defaults, accessible names, focus/error hooks, and deterministic typed installer order. Record the evaluated conditions and keep the task incomplete while any evidence is non-terminal.
+- [ ] **Step 11: Run Task 28.B standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 28.B spec compliance review.** Provide the Goal, Milestone 28 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 28.B spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 28.B code quality and Open Design review.** Provide the spec-reviewed implementation and evidence; require `ui-ux-pro-max` inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 28.B quality/design findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS and Open Design re-review PASS.
+- [ ] **Step 16: Commit Task 28.B after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 28.B completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 28.C: Packaged HTMX and Safe Render Asset Contract
 
@@ -5427,6 +8472,12 @@ def test_status_badge_has_text_and_accessible_name(
 
 **Interfaces:** Produces `PackagedWebAssetV1`, `load_packaged_web_asset(name: Literal["htmx.min.js"]) -> PackagedWebAssetV1`, and `install_packaged_web_assets(app: FastAPI) -> None` for Task 28.B's shell.
 
+**Implementation points:**
+- Load only the pinned packaged `htmx.min.js` through immutable package resources, verify its declared identity, and serve it from the sole local static path with no network or CDN fallback.
+- Preserve autoescaped untrusted text and CSP-compatible markup while exposing keyboard focus and live-error hooks without inline bypass, low-contrast status, layout-shifting interaction, or unsafe external source.
+- Make `test_untrusted_run_text_is_escaped_and_htmx_is_local` GREEN with the smallest local-asset and escaped-render contract before completing identity, packaging, CSP, hook, and no-request matrices.
+- Own immutable asset bytes and safe render/resource integration only. Route-domain behavior, security weakening, CLI arguments, runtime download, server launch, and workflow rules remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -5448,7 +8499,30 @@ def test_untrusted_run_text_is_escaped_and_htmx_is_local(
 - Browser: open the loopback shell and verify escaped text, keyboard focus, live errors, CSP, local HTMX loading, and no CDN request.
 - Expected: packaged asset identity/loading, autoescaping, CSP, accessibility hooks, and zero external asset request pass.
 
+**Review gate:**
+1. Spec compliance review checks Task 28.C's Goal, Milestone 28's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent packaged safe-render asset contract.
+2. Code quality and Open Design/`ui-ux-pro-max` review check pinned identity, local-only loading, no fallback, autoescaping, CSP compatibility, keyboard/focus/live errors, contrast and non-color cues, reduced motion, stable interaction layout, and zero external asset request.
+3. Critical/Important findings block Tasks 28.D, 29.A, 29.B, 29.C, 37.B, 38.A, 38.B, 38.C, and 38.D until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 28.C's exact RED probe.** Add the complete declared `test_untrusted_run_text_is_escaped_and_htmx_is_local` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 28.C RED.** Run `python -m pytest -q tests/web/test_html_escaping.py::test_untrusted_run_text_is_escaped_and_htmx_is_local`. Record the task-owned failing assertion and exit code; collection, runner, unrelated import, or environment failure does not count as RED.
+- [ ] **Step 3: Serve the pinned local HTMX asset.** Apply IP-1: Verify packaged identity and expose only the declared local resource path.
+- [ ] **Step 4: Preserve safe accessible rendering hooks.** Apply IP-2: Keep escaping, CSP, focus, keyboard, live errors, contrast, motion, and external-source constraints intact.
+- [ ] **Step 5: Pass the local-escaped-render RED case.** Apply IP-3: Escape the exact script text and reference only `/static/htmx.min.js`.
+- [ ] **Step 6: Seal asset-contract-only ownership.** Apply IP-4: Keep routes, security weakening, CLI, downloads, launch, and workflows outside Task 28.C.
+- [ ] **Step 7: Run Task 28.C Target GREEN.** Re-run `python -m pytest -q tests/web/test_html_escaping.py::test_untrusted_run_text_is_escaped_and_htmx_is_local`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 28.C's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 28.C Domain verification.** Run `python -m pytest -q tests/web/test_html_escaping.py tests/web/test_packaged_assets.py`. Record the exact command and actual result.
+- [ ] **Step 10: Run Task 28.C Browser verification and check acceptance.** Open the loopback shell and verify escaped text, keyboard focus, live errors, CSP, local HTMX loading, no CDN request, packaged identity, and accessibility hooks. Record observed evidence without prefilling a result; unavailable or non-terminal browser evidence keeps the task incomplete.
+- [ ] **Step 11: Run Task 28.C standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 28.C spec compliance review.** Provide the Goal, Milestone 28 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 28.C spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 28.C code quality and Open Design review.** Provide the spec-reviewed implementation and evidence; require `ui-ux-pro-max` inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 28.C quality/design findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS and Open Design re-review PASS.
+- [ ] **Step 16: Commit Task 28.C after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 28.C completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 28.D: Loopback Serve CLI Composition
 
@@ -5472,6 +8546,12 @@ def test_untrusted_run_text_is_escaped_and_htmx_is_local(
 
 **Interfaces:** Produces CLI `vespercode serve --host 127.0.0.1 --port 8765` and `install_serve_command(app, shell_factory: LocalShellFactoryV1) -> None`.
 
+**Implementation points:**
+- Parse only the closed `serve` command, literal loopback host, validated port, and declared shell factory while rejecting secret, provider, repository, or alternate-bind inputs.
+- Compose Tasks 28.A–28.C once and launch through the injected application/server boundary without duplicating shell, asset, request-security, or workflow behavior.
+- Make `test_serve_rejects_non_loopback_host_and_secret_arguments` GREEN with the smallest closed-parser rejection before completing port, factory, single-launch, and packaged-asset reachability matrices.
+- Own thin serve parsing and loopback launch only. Shell construction, package lookup, request authorization, route behavior, secrets, providers, and repositories remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -5489,7 +8569,30 @@ def test_serve_rejects_non_loopback_host_and_secret_arguments(
 - Domain: `python -m pytest -q tests/unit/test_cli.py`
 - Expected: only `127.0.0.1`, validated port, no secret arguments, one Task 28.B shell factory, and Task 28.C packaged assets are reachable.
 
+**Review gate:**
+1. Spec compliance review checks Task 28.D's Goal, Milestone 28's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent thin loopback-serve CLI contract.
+2. Code quality review checks closed parsing, literal loopback host, port bounds, clear keyboard-readable errors, secret/provider/repository rejection, one shell factory, one launch, packaged-asset reachability, and no duplicated security, UI, or workflow rule.
+3. Critical/Important findings block Tasks 31.A, 33.A, 37.B, and 38.E until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 28.D's exact RED probe.** Add the complete declared `test_serve_rejects_non_loopback_host_and_secret_arguments` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 28.D RED.** Run `python -m pytest -q tests/unit/test_cli.py::test_serve_rejects_non_loopback_host_and_secret_arguments`. Record the task-owned failing assertion and exit code; collection, runner, unrelated import, or environment failure does not count as RED.
+- [ ] **Step 3: Parse the closed loopback serve command.** Apply IP-1: Accept only literal loopback, valid port, and declared factory while rejecting forbidden inputs.
+- [ ] **Step 4: Compose shell security assets once.** Apply IP-2: Launch through injected boundaries without reimplementing Task 28.A–28.C behavior.
+- [ ] **Step 5: Pass the non-loopback-and-secret RED case.** Apply IP-3: Reject both exact declared argument vectors with nonzero exit.
+- [ ] **Step 6: Seal serve-entrypoint-only ownership.** Apply IP-4: Keep shell, assets, authorization, routes, secrets, providers, and repositories outside Task 28.D.
+- [ ] **Step 7: Run Task 28.D Target GREEN.** Re-run `python -m pytest -q tests/unit/test_cli.py::test_serve_rejects_non_loopback_host_and_secret_arguments`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 28.D's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 28.D Domain verification.** Run `python -m pytest -q tests/unit/test_cli.py`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 28.D's declared acceptance.** Verify only `127.0.0.1`, a validated port, no secret arguments, one Task 28.B shell factory, and Task 28.C packaged assets are reachable. Record the evaluated conditions and keep the task incomplete while any evidence is non-terminal.
+- [ ] **Step 11: Run Task 28.D standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 28.D spec compliance review.** Provide the Goal, Milestone 28 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 28.D spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 28.D code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 28.D quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 28.D after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 28.D completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 29.A: Run Lifecycle WebUI
 
@@ -5516,6 +8619,12 @@ def test_serve_rejects_non_loopback_host_and_secret_arguments(
 
 **Interfaces:** Produces `RunCreationWorkflowPortV1`, `RunVisibilityWorkflowPortV1`, `RunCancellationWorkflowPortV1`, their closed result unions, and `RunLifecycleRouteInstallerV1`.
 
+**Implementation points:**
+- Adapt closed create, visibility, and cancellation forms to typed workflow ports only after Task 28 request security, rejecting unknown/override fields before any domain call.
+- Render state-aware escaped Run pages with exact status/reason/next-action text, idempotent controls, accessible labels, visible focus, keyboard operation, live errors, non-color cues, and no domain-rule bypass.
+- Make `test_invalid_run_form_creates_no_run` GREEN with the smallest closed-form validation before completing create/detail/cancel state, replay, escaping, and accessibility matrices.
+- Own secure form/route adaptation and state-aware rendering only. Run creation rules, lifecycle transitions, status projection, loop behavior, repositories, and security middleware remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -5537,7 +8646,30 @@ def test_invalid_run_form_creates_no_run(
 - Domain: `python -m pytest -q tests/web/test_run_workflow.py`
 - Expected: create/status/cancel states render safely, idempotently, and without exposing forbidden override fields.
 
+**Review gate:**
+1. Spec compliance review checks Task 29.A's Goal, Milestone 29's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent typed Run-lifecycle WebUI contract.
+2. Code quality and Open Design/`ui-ux-pro-max` review check typed-port isolation, state-aware hierarchy, escaped untrusted text, accessible labels, keyboard/focus/live errors, non-color status, idempotent controls, reduced motion, and relevant CSRF/Host/Origin/CSP integration before domain calls.
+3. Critical/Important findings block Tasks 29.C and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 29.A's exact RED probe.** Add the complete declared `test_invalid_run_form_creates_no_run` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 29.A RED.** Run `python -m pytest -q tests/web/test_run_workflow.py::test_invalid_run_form_creates_no_run`. Record the task-owned failing assertion and exit code; collection, runner, unrelated import, or environment failure does not count as RED.
+- [ ] **Step 3: Adapt closed Run workflow forms.** Apply IP-1: Validate create, visibility, and cancellation inputs before invoking typed ports.
+- [ ] **Step 4: Render accessible state-aware Run pages.** Apply IP-2: Escape text and expose status, actions, focus, keyboard, errors, and non-color cues without bypass.
+- [ ] **Step 5: Pass the invalid-run-form RED case.** Apply IP-3: Return 422 and keep the create-port call count at zero for the exact override.
+- [ ] **Step 6: Seal Run-route-only ownership.** Apply IP-4: Keep domain rules, transitions, projection, loop, repositories, and security middleware outside Task 29.A.
+- [ ] **Step 7: Run Task 29.A Target GREEN.** Re-run `python -m pytest -q tests/web/test_run_workflow.py::test_invalid_run_form_creates_no_run`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 29.A's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 29.A Domain verification.** Run `python -m pytest -q tests/web/test_run_workflow.py`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 29.A's declared acceptance.** Verify create/status/cancel states render safely, accessibly, idempotently, and without forbidden override fields. Record the evaluated conditions without claiming browser completion and keep the task incomplete while any evidence is non-terminal.
+- [ ] **Step 11: Run Task 29.A standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 29.A spec compliance review.** Provide the Goal, Milestone 29 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 29.A spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 29.A code quality and Open Design review.** Provide the spec-reviewed implementation and evidence; require `ui-ux-pro-max` inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 29.A quality/design findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS and Open Design re-review PASS.
+- [ ] **Step 16: Commit Task 29.A after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 29.A completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 29.B: Disclosure Decision WebUI
 
@@ -5563,6 +8695,12 @@ def test_invalid_run_form_creates_no_run(
 
 **Interfaces:** Produces `DisclosureDecisionWorkflowPortV1.decide(command: DecideDisclosureGrantV1) -> DisclosureDecisionResultV1`, `AuthorizationSummaryV1`, `build_authorization_summary(subject: DisclosureGrantSubjectV1, endpoint: OpenAIEndpointV1) -> AuthorizationSummaryV1`, `render_authorization_summary(summary: AuthorizationSummaryV1) -> Markup`, and `DisclosureRouteInstallerV1.install(app: FastAPI) -> None`.
 
+**Implementation points:**
+- Build the summary only from the exact bound disclosure subject and endpoint, showing provider, endpoint, categories, source paths, byte budget, expiry, and no-content-redaction warning with escaped text.
+- Accept only one bound approve/reject decision after Task 28 security, reject scope/endpoint/budget/credential/clock overrides before the workflow port, and never construct, widen, or mutate a Grant.
+- Make `test_disclosure_form_cannot_supply_scope_or_endpoint_override` GREEN with the smallest override rejection before completing subject, label, expiry, decision, escaping, and accessibility matrices.
+- Own disclosure summary rendering and decision-form adaptation only. Grant construction, authorization policy, source scope, endpoint selection, credential handling, clocks, and domain state remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -5586,7 +8724,30 @@ def test_disclosure_form_cannot_supply_scope_or_endpoint_override(
 - Domain: `python -m pytest -q tests/web/test_disclosure_workflow.py`
 - Expected: exact human labels, no-content-redaction warning, expiry, budget, and closed decision binding pass.
 
+**Review gate:**
+1. Spec compliance review checks Task 29.B's Goal, Milestone 29's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent bound disclosure-decision WebUI contract.
+2. Code quality and Open Design/`ui-ux-pro-max` review check exact subject labels, escaped paths/text, scanable warning/budget/expiry, approve/reject clarity, keyboard/focus/live errors, non-color state, relevant CSRF/Host/Origin/CSP checks, and zero Grant/endpoint/scope override.
+3. Critical/Important findings block Tasks 29.C and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 29.B's exact RED probe.** Add the complete declared `test_disclosure_form_cannot_supply_scope_or_endpoint_override` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 29.B RED.** Run `python -m pytest -q tests/web/test_disclosure_workflow.py::test_disclosure_form_cannot_supply_scope_or_endpoint_override`. Record the task-owned failing assertion and exit code; collection, runner, unrelated import, or environment failure does not count as RED.
+- [ ] **Step 3: Render the exact disclosure subject.** Apply IP-1: Build escaped provider, endpoint, category, path, budget, expiry, and warning content from bound facts only.
+- [ ] **Step 4: Bind one closed disclosure decision.** Apply IP-2: Accept approve/reject only and reject every override before the typed port without changing Grant authority.
+- [ ] **Step 5: Pass the disclosure-override RED case.** Apply IP-3: Return 422 and keep decision-port calls at zero for the exact supplied base URL.
+- [ ] **Step 6: Seal disclosure-route-only ownership.** Apply IP-4: Keep Grant, authorization, scope, endpoint, credentials, clocks, and domain state outside Task 29.B.
+- [ ] **Step 7: Run Task 29.B Target GREEN.** Re-run `python -m pytest -q tests/web/test_disclosure_workflow.py::test_disclosure_form_cannot_supply_scope_or_endpoint_override`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 29.B's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 29.B Domain verification.** Run `python -m pytest -q tests/web/test_disclosure_workflow.py`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 29.B's declared acceptance.** Verify exact labels, warning, expiry, budget, escaping, accessibility, and closed decision binding. Record the evaluated conditions without claiming browser completion and keep the task incomplete while any evidence is non-terminal.
+- [ ] **Step 11: Run Task 29.B standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 29.B spec compliance review.** Provide the Goal, Milestone 29 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 29.B spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 29.B code quality and Open Design review.** Provide the spec-reviewed implementation and evidence; require `ui-ux-pro-max` inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 29.B quality/design findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS and Open Design re-review PASS.
+- [ ] **Step 16: Commit Task 29.B after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 29.B completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 29.C: Final Writeback WebUI and Governance Route Composition
 
@@ -5613,6 +8774,12 @@ def test_disclosure_form_cannot_supply_scope_or_endpoint_override(
 
 **Interfaces:** Produces `FinalWritebackWorkflowPortV1`, `ProductionFinalWritebackWorkflowV1`, `WritebackReviewV1`, `RunGovernanceWorkflowPortsV1`, and `RunGovernanceRouteInstallerV1`.
 
+**Implementation points:**
+- Build the review from the exact current FinalDiff, verification evidence, workspace/candidate/policy identities, and approval subject, rendering all untrusted paths and evidence text escaped.
+- Accept only one bound final approve/reject decision after Task 28 security, reject stale or override fields before domain calls, and let only `WritebackApprovedV1` invoke the typed Task 26.E persistence port.
+- Make `test_stale_writeback_subject_never_calls_persistence` GREEN with the smallest stale-subject rejection before completing decision, exact-subject, persistence, installer-order, escaping, and accessibility matrices.
+- Own final-review route adaptation and deterministic Milestone 29 installer composition only. Approval/persistence predicates, candidate/diff/evidence construction, workspace/policy fields, and domain state transitions remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -5638,7 +8805,30 @@ def test_stale_writeback_subject_never_calls_persistence(
 - Browser: exercise create → running → disclosure → formal review → stale approval by keyboard.
 - Expected: exact installer order, secure posts, no stale write, escaped evidence, focus/errors, and non-color status cues pass.
 
+**Review gate:**
+1. Spec compliance review checks Task 29.C's Goal, Milestone 29's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent final-writeback governance-route contract.
+2. Code quality and Open Design/`ui-ux-pro-max` review check exact subject/evidence hierarchy, escaped paths/text, state-aware approve/reject controls, keyboard/focus/live errors, non-color status, stale conflict clarity, and relevant CSRF/Host/Origin/CSP checks before typed domain calls.
+3. Critical/Important findings block Tasks 31.A, 33.A, 37.B, 38.A, 38.B, 38.C, 38.D, and 38.F until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 29.C's exact RED probe.** Add the complete declared `test_stale_writeback_subject_never_calls_persistence` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 29.C RED.** Run `python -m pytest -q tests/web/test_writeback_workflow.py::test_stale_writeback_subject_never_calls_persistence`. Record the task-owned failing assertion and exit code; collection, runner, unrelated import, or environment failure does not count as RED.
+- [ ] **Step 3: Render the exact final-review subject.** Apply IP-1: Bind current diff/evidence/workspace/candidate/policy identities and escape all untrusted display text.
+- [ ] **Step 4: Gate one approved persistence decision.** Apply IP-2: Reject stale/override input before ports and call persistence only for exact `WritebackApprovedV1`.
+- [ ] **Step 5: Pass the stale-writeback RED case.** Apply IP-3: Return 409 with zero persistence calls for the exact declared stale form.
+- [ ] **Step 6: Seal governance-route-only ownership.** Apply IP-4: Keep approval/persistence predicates, subject construction, domain fields, and state transitions outside Task 29.C.
+- [ ] **Step 7: Run Task 29.C Target GREEN.** Re-run `python -m pytest -q tests/web/test_writeback_workflow.py::test_stale_writeback_subject_never_calls_persistence`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 29.C's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 29.C Domain verification.** Run `python -m pytest -q tests/web/test_writeback_workflow.py tests/web/test_accessibility.py tests/web/test_run_workflow.py tests/web/test_disclosure_workflow.py`. Record the exact command and actual result.
+- [ ] **Step 10: Run Task 29.C Browser verification and check acceptance.** Exercise create → running → disclosure → formal review → stale approval by keyboard, then verify installer order, secure posts, no stale write, escaped evidence, focus/errors, and non-color status cues. Record observed evidence without prefilling a result; unavailable or non-terminal browser evidence keeps the task incomplete.
+- [ ] **Step 11: Run Task 29.C standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 29.C spec compliance review.** Provide the Goal, Milestone 29 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 29.C spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 29.C code quality and Open Design review.** Provide the spec-reviewed implementation and evidence; require `ui-ux-pro-max` inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 29.C quality/design findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS and Open Design re-review PASS.
+- [ ] **Step 16: Commit Task 29.C after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 29.C completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 30.A: Demo Types and Fixed Scenario
 
@@ -5664,6 +8854,12 @@ def test_stale_writeback_subject_never_calls_persistence(
 
 **Interfaces:** Produces `DemoScenarioV1`, `DemoSessionV1`, `DemoDecisionV1`, `DemoStepResultV1`, `DemoRunStatus`, `DemoDecision`, and `DemoTraceV1`.
 
+**Implementation points:**
+- Define immutable Demo-only scenario, session, decision, step, status, and trace values with closed fields and canonical serialization that cannot accept formal Run/turn/repository identities.
+- Freeze the sole Mock scenario's source, injected failure, expected patch, decisions, statuses, and trace data while rejecting prompts, URLs, uploads, provider, secret, filesystem, Docker, persistence, and recovery inputs.
+- Make `test_fixed_scenario_rejects_formal_identity_types` GREEN with the smallest formal-identity rejection before completing fixed-data, closed-union, serialization, and type-isolation matrices.
+- Own Demo-only types and fixed scenario data only. Executor, shared-core sequencing, session storage, Web behavior, local files, credentials, Docker, recovery, persistence, and real providers remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -5682,7 +8878,30 @@ def test_fixed_scenario_rejects_formal_identity_types(
 - Domain: `python -m pytest -q tests/demo/test_types.py tests/demo/test_scenario.py`
 - Expected: exact fixed data, closed decisions/statuses, canonical trace values, and formal/Demo type separation pass.
 
+**Review gate:**
+1. Spec compliance review checks Task 30.A's Goal, Milestone 30's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent fixed Demo-type/scenario contract.
+2. Code quality review checks immutable closed unions, canonical trace data, formal/Demo identity separation, exact Mock fixtures, forbidden input absence, deterministic serialization, and zero executor/session/Web or capability imports.
+3. Critical/Important findings block Tasks 30.C and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 30.A's exact RED probe.** Add the complete declared `test_fixed_scenario_rejects_formal_identity_types` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 30.A RED.** Run `python -m pytest -q tests/demo/test_types.py::test_fixed_scenario_rejects_formal_identity_types`. Record the task-owned failing assertion and exit code; collection, runner, unrelated import, or environment failure does not count as RED.
+- [ ] **Step 3: Define isolated immutable Demo values.** Apply IP-1: Add closed scenario/session/decision/step/status/trace types without formal identities.
+- [ ] **Step 4: Freeze the sole Mock scenario data.** Apply IP-2: Fix source, failure, patch, decisions, statuses, and trace while rejecting every forbidden input.
+- [ ] **Step 5: Pass the formal-type-isolation RED case.** Apply IP-3: Preserve the exact input kinds and reject `RunIdV1` in `DemoSessionV1`.
+- [ ] **Step 6: Seal Demo-data-only ownership.** Apply IP-4: Keep executor, runner, sessions, Web, files, credentials, Docker, recovery, persistence, and providers outside Task 30.A.
+- [ ] **Step 7: Run Task 30.A Target GREEN.** Re-run `python -m pytest -q tests/demo/test_types.py::test_fixed_scenario_rejects_formal_identity_types`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 30.A's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 30.A Domain verification.** Run `python -m pytest -q tests/demo/test_types.py tests/demo/test_scenario.py`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 30.A's declared acceptance.** Verify exact fixed Mock data, closed decisions/statuses, canonical trace values, formal/Demo type separation, and forbidden-input absence. Record the evaluated conditions and keep the task incomplete while any evidence is non-terminal.
+- [ ] **Step 11: Run Task 30.A standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 30.A spec compliance review.** Provide the Goal, Milestone 30 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 30.A spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 30.A code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 30.A quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 30.A after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 30.A completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 30.C: Demo Executor and Tool-port Isolation
 
@@ -5706,6 +8925,12 @@ def test_fixed_scenario_rejects_formal_identity_types(
 
 **Interfaces:** Produces `DemoExecutor.tool_ports() -> ToolPortsV1`, `DemoExecutor.execute(action: BoundActionV1) -> DemoToolResultV1`, and `PROHIBITED_DEMO_MODULE_PREFIXES_V1: frozenset[str]`.
 
+**Implementation points:**
+- Implement deterministic in-memory `DEMO_READ`, `DEMO_PATCH`, and `DEMO_CHECK` ports over Task 30.A fixed values with closed action/result mappings and no ambient input.
+- Enforce prohibited-module and capability construction checks so local files, formal Run/turn repositories, SQLite, Docker, credentials, WinCred, recovery, persistence, and real provider adapters are absent and uncallable.
+- Make `test_demo_executor_exposes_only_simulated_tool_ports` GREEN with the smallest closed capability set before completing deterministic result, import-scan, construction, and zero-formal-call matrices.
+- Own simulated Demo tool-port adaptation only. Shared-core sequencing, stopping, session limits, Web routes, disk, external services, and formal capability adapters remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -5723,7 +8948,30 @@ def test_demo_executor_exposes_only_simulated_tool_ports(
 - Domain: `python -m pytest -q tests/demo/test_executor_isolation.py`
 - Expected: fixed tool results, closed capabilities, prohibited-prefix scans, and zero formal-capability construction/calls pass.
 
+**Review gate:**
+1. Spec compliance review checks Task 30.C's Goal, Milestone 30's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent isolated Demo executor/tool-port contract.
+2. Code quality review checks closed simulated capabilities, deterministic action/result mapping, no ambient input, prohibited-prefix coverage, zero formal construction/calls, and absence of files, repositories, SQLite, Docker, credentials, recovery, persistence, or providers.
+3. Critical/Important findings block Tasks 30.D and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 30.C's exact RED probe.** Add the complete declared `test_demo_executor_exposes_only_simulated_tool_ports` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 30.C RED.** Run `python -m pytest -q tests/demo/test_executor_isolation.py::test_demo_executor_exposes_only_simulated_tool_ports`. Record the task-owned failing assertion and exit code; collection, runner, unrelated import, or environment failure does not count as RED.
+- [ ] **Step 3: Implement closed simulated tool ports.** Apply IP-1: Map fixed Demo actions to deterministic in-memory read, patch, and check results.
+- [ ] **Step 4: Enforce formal capability absence.** Apply IP-2: Reject prohibited imports, construction, and calls for every formal or ambient capability.
+- [ ] **Step 5: Pass the Demo-capability RED case.** Apply IP-3: Expose exactly the three declared capability kinds with zero formal calls.
+- [ ] **Step 6: Seal Demo-executor-only ownership.** Apply IP-4: Keep shared sequencing, stop, sessions, Web, disk, external services, and formal adapters outside Task 30.C.
+- [ ] **Step 7: Run Task 30.C Target GREEN.** Re-run `python -m pytest -q tests/demo/test_executor_isolation.py::test_demo_executor_exposes_only_simulated_tool_ports`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 30.C's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 30.C Domain verification.** Run `python -m pytest -q tests/demo/test_executor_isolation.py`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 30.C's declared acceptance.** Verify fixed tool results, closed capabilities, prohibited-prefix scans, and zero formal-capability construction/calls. Record the evaluated conditions and keep the task incomplete while any evidence is non-terminal.
+- [ ] **Step 11: Run Task 30.C standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 30.C spec compliance review.** Provide the Goal, Milestone 30 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 30.C spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 30.C code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 30.C quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 30.C after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 30.C completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 30.D: Shared-core Demo Runner and Bounded Session Composition
 
@@ -5748,6 +8996,12 @@ def test_demo_executor_exposes_only_simulated_tool_ports(
 - Test: `tests/demo/test_session_limits.py`
 
 **Interfaces:** Produces `DemoScenarioRunner.advance(session: DemoSessionV1, decision: DemoDecisionV1 | None) -> DemoStepResultV1` and exact constant `DEMO_SHARED_CORE_MODULES_V1: frozenset[str] = frozenset({"vespercode.governance.policy", "vespercode.loop.agent_actions", "vespercode.loop.action_parser", "vespercode.loop.action_binding", "vespercode.loop.context_projection", "vespercode.loop.feedback", "vespercode.loop.stopping", "vespercode.loop.action_pipeline", "vespercode.tools.dispatcher"})`.
+
+**Implementation points:**
+- Construct the real declared shared pure-core components once, inject only Task 30.C ports, and record exact provenance beginning with production `ActionPipeline.execute` without copying any child rule.
+- Advance only the fixed Mock scenario through deterministic trace steps while enforcing in-memory five-minute, 20-action, and 10-concurrent limits plus explicit reset/expiry and no recovery.
+- Make `test_demo_step_invokes_shared_core_and_only_demo_tool_ports` GREEN with the smallest exact provenance sequence before completing repeated-trace, decision, limit, expiry, reset, and isolation matrices.
+- Own headless shared-core Demo composition and bounded ephemeral sessions only. Formal loop engine, Web, local files, Docker, credentials, persistence, recovery, external adapters, and real providers remain out of scope.
 
 **Intentionally failing test:**
 
@@ -5780,7 +9034,30 @@ def test_demo_step_invokes_shared_core_and_only_demo_tool_ports(
 - Domain: `python -m pytest -q tests/demo/test_trace_determinism.py tests/demo/test_shared_core_composition.py tests/demo/test_session_limits.py`
 - Expected: shared-call provenance, fixed repeated trace, limit/expiry/reset, in-memory-only lifecycle, and zero formal-capability calls pass.
 
+**Review gate:**
+1. Spec compliance review checks Task 30.D's Goal, Milestone 30's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent shared-core bounded Demo-runner contract.
+2. Code quality review checks exact production provenance/order, injected Demo-only ports, fixed Mock trace determinism, five-minute/20-action/10-concurrent edges, reset/expiry/no-recovery, in-memory isolation, and no copied rule or formal/external capability.
+3. Critical/Important findings block Tasks 30.B, 32.A, and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 30.D's exact RED probe.** Add the complete declared `test_demo_step_invokes_shared_core_and_only_demo_tool_ports` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 30.D RED.** Run `python -m pytest -q tests/demo/test_shared_core_composition.py::test_demo_step_invokes_shared_core_and_only_demo_tool_ports`. Record the task-owned failing assertion and exit code; collection, runner, unrelated import, or environment failure does not count as RED.
+- [ ] **Step 3: Compose exact shared-core provenance.** Apply IP-1: Construct production pure-core children and inject only Demo ports without copied logic.
+- [ ] **Step 4: Bound fixed Mock Demo sessions.** Apply IP-2: Enforce deterministic trace, time/action/concurrency limits, reset, expiry, and no recovery in memory.
+- [ ] **Step 5: Pass the shared-core-provenance RED case.** Apply IP-3: Match the exact declared call tuple, Demo executor kind, and zero formal calls.
+- [ ] **Step 6: Seal Demo-runner-only ownership.** Apply IP-4: Keep formal engine, Web, files, Docker, credentials, persistence, recovery, adapters, and real providers outside Task 30.D.
+- [ ] **Step 7: Run Task 30.D Target GREEN.** Re-run `python -m pytest -q tests/demo/test_shared_core_composition.py::test_demo_step_invokes_shared_core_and_only_demo_tool_ports`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 30.D's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 30.D Domain verification.** Run `python -m pytest -q tests/demo/test_trace_determinism.py tests/demo/test_shared_core_composition.py tests/demo/test_session_limits.py`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 30.D's declared acceptance.** Verify shared-call provenance, fixed repeated Mock trace, limits/expiry/reset, in-memory-only lifecycle, and zero formal-capability calls. Record the evaluated conditions and keep the task incomplete while any evidence is non-terminal.
+- [ ] **Step 11: Run Task 30.D standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 30.D spec compliance review.** Provide the Goal, Milestone 30 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 30.D spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 30.D code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 30.D quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 30.D after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 30.D completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 30.B: Public Demo Web Application and Health Boundary
 
@@ -5808,6 +9085,12 @@ def test_demo_step_invokes_shared_core_and_only_demo_tool_ports(
 
 **Interfaces:** Produces `create_demo_app(config: DemoAppConfigV1) -> FastAPI`, `healthcheck.main() -> int`, `GET /healthz -> 200 {"status":"ok","mode":"simulation"}`, and closed fixed-scenario routes `POST /demo/sessions -> DemoSessionCreatedV1` and `POST /demo/sessions/{session_id}/advance -> DemoStepResultV1`.
 
+**Implementation points:**
+- Compose only Task 30.D's headless runner into the closed health, session-create, and advance routes with validated platform PORT and explicit fixed-simulation capability registry.
+- Render escaped, persistently simulation-labeled fixed-scenario pages with keyboard/focus/live-error support, non-color status, sufficient contrast, reduced motion, and no prompt, URL, repository, upload, provider, or secret input.
+- Make `test_demo_app_registers_no_formal_capability_adapter` GREEN with the smallest fixed capability registry before completing health, PORT, route, escaping, accessibility, and endpoint-absence matrices.
+- Own the thin public Demo app, rendering, and health boundary only. Local files/routes, Docker, credentials, persistence, recovery, SQLite, WinCred, OpenAI, formal Run repositories, and shared-core/session rules remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -5825,7 +9108,30 @@ def test_demo_app_registers_no_formal_capability_adapter(
 - Browser: execute the fixed scenario with keyboard and verify persistent simulation labeling and non-color status.
 - Expected: health validates assets/registry, PORT boundaries hold, and forbidden capabilities/endpoints remain absent.
 
+**Review gate:**
+1. Spec compliance review checks Task 30.B's Goal, Milestone 30's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent thin public Demo-app contract.
+2. Code quality and Open Design/`ui-ux-pro-max` review check persistent simulation labeling, escaped fixed text, keyboard/focus/live errors, non-color status, contrast, reduced motion, stable layout, health/PORT clarity, and absence of every formal, local, secret, provider, persistence, or Docker capability.
+3. Critical/Important findings block Tasks 32.C, 34.B, and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 30.B's exact RED probe.** Add the complete declared `test_demo_app_registers_no_formal_capability_adapter` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 30.B RED.** Run `python -m pytest -q tests/demo/test_capability_isolation.py::test_demo_app_registers_no_formal_capability_adapter`. Record the task-owned failing assertion and exit code; collection, runner, unrelated import, or environment failure does not count as RED.
+- [ ] **Step 3: Compose closed Demo routes and health.** Apply IP-1: Bind the headless runner to fixed routes, validated PORT, and simulation-only registry.
+- [ ] **Step 4: Render accessible simulation-only pages.** Apply IP-2: Escape fixed content, preserve visible simulation status, and reject every forbidden input or capability.
+- [ ] **Step 5: Pass the capability-registry RED case.** Apply IP-3: Register exactly `DEMO_EXECUTOR`, `DEMO_SESSION`, and `DEMO_RENDERER`.
+- [ ] **Step 6: Seal public-Demo-app-only ownership.** Apply IP-4: Keep local/formal capabilities, secrets, providers, persistence, Docker, and runner rules outside Task 30.B.
+- [ ] **Step 7: Run Task 30.B Target GREEN.** Re-run `python -m pytest -q tests/demo/test_capability_isolation.py::test_demo_app_registers_no_formal_capability_adapter`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 30.B's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 30.B Domain verification.** Run `python -m pytest -q tests/demo/test_capability_isolation.py tests/demo/test_health.py tests/demo/test_rendering.py`. Record the exact command and actual result.
+- [ ] **Step 10: Run Task 30.B Browser verification and check acceptance.** Execute only the fixed Mock scenario by keyboard and verify persistent simulation labeling, non-color status, health asset/registry checks, PORT bounds, and forbidden endpoint absence. Record observed evidence without prefilling public-service or browser outcomes; unavailable or non-terminal evidence keeps the task incomplete.
+- [ ] **Step 11: Run Task 30.B standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 30.B spec compliance review.** Provide the Goal, Milestone 30 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 30.B spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 30.B code quality and Open Design review.** Provide the spec-reviewed implementation and evidence; require `ui-ux-pro-max` inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 30.B quality/design findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS and Open Design re-review PASS.
+- [ ] **Step 16: Commit Task 30.B after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 30.B completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 31.A: Reference E2E Harness and Happy Path
 
@@ -5849,6 +9155,12 @@ def test_demo_app_registers_no_formal_capability_adapter(
 
 **Interfaces:** Produces `ReferenceE2EHarness.run(config: ReferenceE2EConfigV1) -> ReferenceE2EResultV1`, `run_reference_e2e(config: ReferenceE2EConfigV1) -> ReferenceE2EResultV1`, and content-addressed `ReferenceE2ETraceV1` stages consumed by Tasks 31.B and 31.C.
 
+**Implementation points:**
+- Bind the disposable driver to exact reference workspace, Snapshot, profile/container digest, Mock fixture, clock/id fixture, and production component identities before any stage runs.
+- Execute fresh Windows and Docker production composition through Baseline, corrective loop, formal validation, `VerifiedCandidateV1`, and final wait, emitting ordered content-addressed stage evidence with zero workspace writes.
+- Make `test_reference_happy_path_reaches_verified_candidate` GREEN with the smallest production happy-path driver before completing stage identity, cleanup, final-wait, and repeatability matrices.
+- Own the reusable E2E driver and happy path only. Scenario-specific alternate core logic, negative gates, persistence/recovery completion, fixture mutation, and result fabrication remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -5867,7 +9179,30 @@ def test_reference_happy_path_reaches_verified_candidate(
 - Domain: same as Target.
 - Expected: the real Windows + Docker + Mock happy path reaches a bound VerifiedCandidate and final wait without writing.
 
+**Review gate:**
+1. Spec compliance review checks Task 31.A's Goal, Milestone 31's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent reference happy-path contract.
+2. Code quality review checks production provenance, driver/config binding, fresh Windows/Docker/Mock identities, ordered content-addressed trace stages, zero-write final wait, deterministic fixtures, cleanup visibility, report access control, and evidence freshness.
+3. Critical/Important findings block Tasks 31.B, 31.C, and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 31.A's exact RED probe.** Add the complete declared `test_reference_happy_path_reaches_verified_candidate` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 31.A RED.** Run `python -m pytest -q -o addopts='' -m reference_e2e tests/e2e/reference/test_reference_success.py::test_reference_happy_path_reaches_verified_candidate`. Record the task-owned failing assertion and exit code; collection, runner, unrelated import, Windows/Docker startup, cleanup, or environment failure does not count as RED.
+- [ ] **Step 3: Bind the disposable production driver.** Apply IP-1: Freeze exact workspace, Snapshot, profile/container, Mock, clock/id, and component identities.
+- [ ] **Step 4: Record the ordered happy-path trace.** Apply IP-2: Run production stages to final wait with content-addressed evidence and zero workspace writes.
+- [ ] **Step 5: Pass the verified-candidate RED case.** Apply IP-3: Create the exact bound `VerifiedCandidateV1` and retain zero writes.
+- [ ] **Step 6: Seal reference-happy-path ownership.** Apply IP-4: Keep alternate core, negative scenarios, terminal persistence/recovery, mutation, and fabricated results outside Task 31.A.
+- [ ] **Step 7: Run Task 31.A Target GREEN.** Re-run `python -m pytest -q -o addopts='' -m reference_e2e tests/e2e/reference/test_reference_success.py::test_reference_happy_path_reaches_verified_candidate`. Require exit `0`, fresh real Windows/Docker/Mock evidence, and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 31.A's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 31.A Domain verification.** Run the same exact Target command as declared by Domain. Record the command, environment identities, evidence digest, access location, and actual result.
+- [ ] **Step 10: Check Task 31.A's declared acceptance.** Verify the real Windows + Docker + Mock path reaches the bound candidate and final wait without writing. Missing, stale, inaccessible, failed, or non-terminal environment/evidence state keeps the task incomplete.
+- [ ] **Step 11: Run Task 31.A standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 31.A spec compliance review.** Provide the Goal, Milestone 31 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 31.A spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 31.A code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 31.A quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 31.A after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 31.A completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 31.B: Reference Safety and Negative Gates
 
@@ -5893,6 +9228,12 @@ def test_reference_happy_path_reaches_verified_candidate(
 
 **Interfaces:** Consumes Task 31.A stage hooks only; produces denial/wait/call-gate trace assertions without changing production code or the reference fixture.
 
+**Implementation points:**
+- Drive canonical continuation, hard DENY, protected-artifact, final-wait, and cleared-credential cases only through Task 31.A hooks and exact immutable fixture identities.
+- Assert stable typed reasons and zero forbidden dispatch, candidate publication, artifact, workspace write, authorization, count, charge, transport, or network effects at each production gate.
+- Make `test_cleared_credential_has_zero_real_call_side_effects` GREEN with the smallest fresh credential fail-close scenario before completing denial, cursor, wait, protected-artifact, and no-write matrices.
+- Own reference negative trace assertions only. Production policy/parser/feedback replacement, fixture mutation, alternate ports, retry, and successful provider-call simulation remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -5911,7 +9252,30 @@ def test_cleared_credential_has_zero_real_call_side_effects(
 - Domain: `python -m pytest -q -o addopts='' -m reference_e2e tests/e2e/reference/test_reference_denials.py tests/e2e/reference/test_reference_waits.py tests/e2e/reference/test_reference_no_write.py tests/e2e/reference/test_reference_call_gate.py`
 - Expected: every denial/wait/cursor/credential branch produces the exact stable reason and zero forbidden side effects.
 
+**Review gate:**
+1. Spec compliance review checks Task 31.B's Goal, Milestone 31's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent production negative-gate contract.
+2. Code quality review checks hook/fixture binding, denial precedence, cursor/wait identity, protected-artifact defense, per-call credential recheck, exhaustive zero-side-effect counters, fresh content-addressed traces, access-controlled evidence, and no substituted core.
+3. Critical/Important findings block Tasks 31.C and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 31.B's exact RED probe.** Add the complete declared `test_cleared_credential_has_zero_real_call_side_effects` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 31.B RED.** Run `python -m pytest -q -o addopts='' -m reference_e2e tests/e2e/reference/test_reference_call_gate.py::test_cleared_credential_has_zero_real_call_side_effects`. Record the task-owned failing assertion and exit code; collection, runner, unrelated import, Windows/Docker startup, cleanup, or environment failure does not count as RED.
+- [ ] **Step 3: Drive exact production negative branches.** Apply IP-1: Use only bound Task 31.A hooks for continuation, DENY, artifact, wait, and credential scenarios.
+- [ ] **Step 4: Prove every forbidden effect remains zero.** Apply IP-2: Assert stable reasons and zero dispatch, publish, artifact, write, authorization, count, charge, transport, and network effects.
+- [ ] **Step 5: Prove zero real-call effects after credential clear.** Apply IP-3: Return `CREDENTIAL_MISSING` with the exact all-zero side-effect tuple.
+- [ ] **Step 6: Seal reference-negative-only ownership.** Apply IP-4: Keep production replacements, fixture mutation, alternate ports, retry, and provider success outside Task 31.B.
+- [ ] **Step 7: Run Task 31.B Target GREEN.** Re-run `python -m pytest -q -o addopts='' -m reference_e2e tests/e2e/reference/test_reference_call_gate.py::test_cleared_credential_has_zero_real_call_side_effects`. Require exit `0`, fresh environment evidence, and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 31.B's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 31.B Domain verification.** Run `python -m pytest -q -o addopts='' -m reference_e2e tests/e2e/reference/test_reference_denials.py tests/e2e/reference/test_reference_waits.py tests/e2e/reference/test_reference_no_write.py tests/e2e/reference/test_reference_call_gate.py`. Record exact environment identities, trace digests, access location, command, and result.
+- [ ] **Step 10: Check Task 31.B's declared acceptance.** Verify every denial/wait/cursor/credential branch yields its exact reason and zero forbidden effects. Missing, stale, inaccessible, failed, or non-terminal Windows/Docker/Mock evidence keeps the task incomplete.
+- [ ] **Step 11: Run Task 31.B standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 31.B spec compliance review.** Provide the Goal, Milestone 31 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 31.B spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 31.B code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 31.B quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 31.B after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 31.B completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 31.C: Reference Persistence, Recovery, Audit, and Determinism
 
@@ -5935,6 +9299,12 @@ def test_cleared_credential_has_zero_real_call_side_effects(
 
 **Interfaces:** Consumes Task 31.A's `ReferenceE2EHarness`/`ReferenceE2ETraceV1`, Task 31.B scenario hooks, production Task 26.C recovery, Tasks 22.A–22.C memory evidence, and Task 23.C audit visibility/retention evidence; produces the finalized `ReferenceE2EResultV1` and standalone canonical report consumed by Tasks 33.A, 34.A, 37.A, 37.B, and 37.C.
 
+**Implementation points:**
+- Bind exact approval, candidate/diff, workspace, transaction, recovery preview, memory, audit, profile/container, and driver identities into ordered production terminal stages.
+- Prove approved postimage commit, read-only uncertain preview, admission blocking until service-proven recovery, redacted monotonic audit, preserved unresolved evidence, cleanup, and two-run semantic equality under the declared volatility allowlist.
+- Make `test_uncertain_transaction_blocks_new_admission_until_proven_recovery` GREEN with the smallest read-only blocked-admission scenario before completing writeback, audit, memory, cleanup, report, and determinism matrices.
+- Own final reference terminal scenarios and canonical report only. Alternate approval/recovery paths, volatility expansion, unresolved-evidence deletion, driver replacement, and fabricated external outcomes remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -5954,7 +9324,30 @@ def test_uncertain_transaction_blocks_new_admission_until_proven_recovery(
 - Script: `python scripts/run_reference_e2e.py --workspace-root tests/.tmp/reference-e2e --report tests/.tmp/reference-e2e-report.json`
 - Expected: exact postimages commit, recovery remains three-valued, audit is redacted/monotonic, two semantic traces match, and cleanup is proven.
 
+**Review gate:**
+1. Spec compliance review checks Task 31.C's Goal, Milestone 31's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent terminal reference E2E/report contract.
+2. Code quality review checks approval/transaction/recovery binding, three-value proof, admission blocking, memory/audit minimization, monotonicity, unresolved-evidence preservation, two-run normalization, fresh content-addressed report identity, access control, and cleanup evidence.
+3. Critical/Important findings block Tasks 33.A, 34.A, 37.A, and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 31.C's exact RED probe.** Add the complete declared `test_uncertain_transaction_blocks_new_admission_until_proven_recovery` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 31.C RED.** Run `python -m pytest -q -o addopts='' -m reference_e2e tests/e2e/reference/test_reference_recovery_block.py::test_uncertain_transaction_blocks_new_admission_until_proven_recovery`. Record the task-owned failing assertion and exit code; collection, runner, unrelated import, Windows/Docker startup, cleanup, or environment failure does not count as RED.
+- [ ] **Step 3: Bind terminal reference identities.** Apply IP-1: Connect exact approval, candidate/diff, workspace, transaction, recovery, memory, audit, profile/container, and driver facts.
+- [ ] **Step 4: Prove recovery, audit, cleanup, and determinism.** Apply IP-2: Exercise production terminal stages and compare two semantic traces under only declared volatility.
+- [ ] **Step 5: Pass the uncertain-recovery RED case.** Apply IP-3: Keep preview writes at zero and reject second admission with `RECOVERY_REQUIRED`.
+- [ ] **Step 6: Seal reference-terminal-only ownership.** Apply IP-4: Keep alternate approval/recovery, volatility expansion, evidence deletion, driver replacement, and fabricated outcomes outside Task 31.C.
+- [ ] **Step 7: Run Task 31.C Target GREEN.** Re-run `python -m pytest -q -o addopts='' -m reference_e2e tests/e2e/reference/test_reference_recovery_block.py::test_uncertain_transaction_blocks_new_admission_until_proven_recovery`. Require exit `0`, fresh environment evidence, and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 31.C's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 31.C Domain verification.** Run `python -m pytest -q -o addopts='' -m reference_e2e tests/e2e/reference`. Record exact command, Windows/Docker/Mock identities, and actual result.
+- [ ] **Step 10: Run Task 31.C Script verification and check acceptance.** Run `python scripts/run_reference_e2e.py --workspace-root tests/.tmp/reference-e2e --report tests/.tmp/reference-e2e-report.json`, then verify commit/recovery/audit/determinism/cleanup predicates and independently bind the fresh report digest and access location. Missing, stale, inaccessible, failed, or non-terminal evidence keeps the task incomplete.
+- [ ] **Step 11: Run Task 31.C standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 31.C spec compliance review.** Provide the Goal, Milestone 31 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 31.C spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 31.C code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 31.C quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 31.C after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 31.C completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 32.A: Offline Governance Mechanism Trace
 
@@ -5980,6 +9373,12 @@ def test_uncertain_transaction_blocks_new_admission_until_proven_recovery(
 
 **Interfaces:** Produces `MechanismHarness.run(config: MechanismDemoConfigV1) -> MechanismDemoResultV1`, `run_mechanism_demo(config: MechanismDemoConfigV1) -> MechanismDemoResultV1`, `MechanismDemoTraceV1`, and bounded text/JSON report stages consumed by Tasks 32.B and 32.C.
 
+**Implementation points:**
+- Bind the offline driver to exact fixed Mock scenario, production parser/binder/policy/dispatcher/feedback/stop implementations, candidate/workspace identities, and bounded report schema.
+- Trace hard DENY, protected-artifact precedence, and final-approval no-write through production pure core, proving every guardrail fires before dispatch, publish, write, approval consumption, or real-provider access.
+- Make `test_outside_scope_patch_is_denied_before_dispatch_or_publish` GREEN with the smallest production DENY trace before completing protected-artifact, approval-gate, report-bound, and repeat matrices.
+- Own the offline governance mechanism driver and trace only. Alternate guardrail rules, preselected results, local/Docker capability, credential access, persistence, and real provider calls remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -5998,7 +9397,30 @@ def test_outside_scope_patch_is_denied_before_dispatch_or_publish(
 - Domain: `python -m pytest -q tests/e2e/mechanism/test_hard_deny.py tests/e2e/mechanism/test_protected_artifacts.py tests/e2e/mechanism/test_approval_gate.py`
 - Expected: all governance blocks occur before forbidden dispatch/publish/write.
 
+**Review gate:**
+1. Spec compliance review checks Task 32.A's Goal, Milestone 32's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent offline governance-trace contract.
+2. Code quality review checks production-core provenance, fixed Mock/input binding, guardrail precedence, protected artifacts, approval no-write, exhaustive zero-effect counters, deterministic bounded reports, fresh content-addressed trace identity, access minimization, and no substitute mechanism.
+3. Critical/Important findings block Tasks 32.B, 32.C, and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 32.A's exact RED probe.** Add the complete declared `test_outside_scope_patch_is_denied_before_dispatch_or_publish` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 32.A RED.** Run `python -m pytest -q tests/e2e/mechanism/test_hard_deny.py::test_outside_scope_patch_is_denied_before_dispatch_or_publish`. Record the task-owned failing assertion and exit code; collection, runner, unrelated import, or environment failure does not count as RED.
+- [ ] **Step 3: Bind the production offline mechanism driver.** Apply IP-1: Freeze Mock, pure-core, identity, and bounded report inputs.
+- [ ] **Step 4: Trace governance before forbidden effects.** Apply IP-2: Exercise DENY, protected artifacts, and approval gates through production core with zero downstream effects.
+- [ ] **Step 5: Pass the outside-scope RED case.** Apply IP-3: Return `PATCH_PATH_NOT_EDITABLE` with zero dispatch and publish counts.
+- [ ] **Step 6: Seal governance-trace-only ownership.** Apply IP-4: Keep alternate rules, preselected results, ambient capabilities, persistence, and providers outside Task 32.A.
+- [ ] **Step 7: Run Task 32.A Target GREEN.** Re-run `python -m pytest -q tests/e2e/mechanism/test_hard_deny.py::test_outside_scope_patch_is_denied_before_dispatch_or_publish`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 32.A's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 32.A Domain verification.** Run `python -m pytest -q tests/e2e/mechanism/test_hard_deny.py tests/e2e/mechanism/test_protected_artifacts.py tests/e2e/mechanism/test_approval_gate.py`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 32.A's declared acceptance.** Verify every governance block precedes forbidden dispatch, publish, write, approval consumption, and provider access; bind report identity and access location without prefilling results.
+- [ ] **Step 11: Run Task 32.A standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 32.A spec compliance review.** Provide the Goal, Milestone 32 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 32.A spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 32.A code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 32.A quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 32.A after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 32.A completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 32.B: Feedback Recovery and Continuation Determinism Trace
 
@@ -6023,6 +9445,12 @@ def test_outside_scope_patch_is_denied_before_dispatch_or_publish(
 
 **Interfaces:** Consumes only Task 32.A `MechanismHarness`/`MechanismDemoTraceV1` stages plus production Tasks 11.B, 19.C, and 24.C behavior; produces the feedback-recovery, continuation, and determinism stages appended to `MechanismDemoTraceV1` and consumed by Task 32.C.
 
+**Implementation points:**
+- Inject the declared failing check into the fixed Mock trace and route its structured production feedback into the next context/action exactly once without preselecting the correction.
+- Exercise production paged List/Search continuation with exact cursor identity, zero-payload tamper/stale failures, and two-run semantic comparison under only declared volatile fields.
+- Make `test_failed_check_feedback_changes_next_action_once` GREEN with the smallest feedback-consume correction before completing continuation, tamper, stale, repetition, and report stages.
+- Own feedback-recovery, continuation, and semantic-determinism trace assertions only. Alternate feedback/context/action logic, label-only comparison, local capabilities, real providers, and mechanism replacement remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -6041,7 +9469,30 @@ def test_failed_check_feedback_changes_next_action_once(
 - Domain: `python -m pytest -q tests/e2e/mechanism/test_feedback_recovery.py tests/e2e/mechanism/test_continuation_gate.py tests/e2e/mechanism/test_trace_determinism.py`
 - Expected: feedback is consumed once, cursor pages are exact, tamper/stale returns zero payload, and repeated semantic traces match.
 
+**Review gate:**
+1. Spec compliance review checks Task 32.B's Goal, Milestone 32's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent feedback-recovery/determinism trace.
+2. Code quality review checks injected-failure identity, production feedback/context provenance, consume-once correction, exact cursor binding, tamper/stale zero payload, semantic normalization, repeated trace equality, content-addressed stage freshness, and bounded access-controlled reports.
+3. Critical/Important findings block Tasks 32.C and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 32.B's exact RED probe.** Add the complete declared `test_failed_check_feedback_changes_next_action_once` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 32.B RED.** Run `python -m pytest -q tests/e2e/mechanism/test_feedback_recovery.py::test_failed_check_feedback_changes_next_action_once`. Record the task-owned failing assertion and exit code; collection, runner, unrelated import, or environment failure does not count as RED.
+- [ ] **Step 3: Feed the injected failure through production core.** Apply IP-1: Build and consume structured feedback once without preselecting the corrective action.
+- [ ] **Step 4: Prove continuation and semantic repeatability.** Apply IP-2: Bind cursor pages, reject tamper/stale payloads, and compare repeated traces under exact normalization.
+- [ ] **Step 5: Pass the feedback-correction RED case.** Apply IP-3: Produce a different corrective digest with consumption count one.
+- [ ] **Step 6: Seal recovery-trace-only ownership.** Apply IP-4: Keep alternate feedback/context/action logic, label-only comparison, ambient capabilities, and providers outside Task 32.B.
+- [ ] **Step 7: Run Task 32.B Target GREEN.** Re-run `python -m pytest -q tests/e2e/mechanism/test_feedback_recovery.py::test_failed_check_feedback_changes_next_action_once`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 32.B's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 32.B Domain verification.** Run `python -m pytest -q tests/e2e/mechanism/test_feedback_recovery.py tests/e2e/mechanism/test_continuation_gate.py tests/e2e/mechanism/test_trace_determinism.py`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 32.B's declared acceptance.** Verify consume-once feedback, exact cursor pages, zero tamper/stale payload, and repeated semantic trace equality; bind fresh stage digests and access locations without prefilling outcomes.
+- [ ] **Step 11: Run Task 32.B standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 32.B spec compliance review.** Provide the Goal, Milestone 32 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 32.B spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 32.B code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 32.B quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 32.B after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 32.B completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 32.C: Shared-core Provenance and Real-call Zero-side-effect Proof
 
@@ -6065,6 +9516,12 @@ def test_failed_check_feedback_changes_next_action_once(
 - Create: `tests/e2e/mechanism/test_shared_core_reuse.py`
 
 **Interfaces:** Consumes Task 32.A `MechanismHarness`/`MechanismDemoTraceV1`, Task 32.B evidence stages, Task 15.E/16.B disclosure/adapter contracts, Task 27.B credential port, and Task 30.B Demo composition; produces the finalized `MechanismDemoTraceV1` report with exact `DEMO_SHARED_CORE_MODULES_V1` implementation provenance, ordered pure-core calls, prohibited-capability absence, adapter counters, and separate formal/Demo presentation alignment.
+
+**Implementation points:**
+- Capture callable/module identity and ordered invocation evidence for the exact declared pure-core implementations in formal and Demo paths, with formal-loop execution recorded separately.
+- Exercise missing disclosure, unsafe/missing/cleared credential, and Demo capability-isolation gates, proving zero authorization, count, charge, transport, network, or formal-capability calls before finalizing the bounded report.
+- Make `test_formal_and_demo_execute_same_core_implementations` GREEN with the smallest identity-based provenance comparison before completing real-call gate, presentation, capability, report, and repeat matrices.
+- Own shared-core provenance and zero-unauthorized-call proof only. Label-only equivalence, alternate pure core, real provider success, secret material, Demo formal adapters, and production behavior changes remain out of scope.
 
 **Intentionally failing test:**
 
@@ -6102,7 +9559,30 @@ def test_formal_and_demo_execute_same_core_implementations(
 - Script: `python scripts/run_mechanism_demo.py --report tests/.tmp/mechanism-demo-report.json`
 - Expected: implementation provenance matches, Demo uses only simulated ports, and every real-call gate counter remains zero.
 
+**Review gate:**
+1. Spec compliance review checks Task 32.C's Goal, Milestone 32's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent shared-core/real-call proof contract.
+2. Code quality review checks callable identity not labels, exact call order, formal-loop separation, disclosure/credential gate precedence, exhaustive zero counters, Demo prohibited-capability absence, fresh content-addressed report identity, access minimization, and no secret/provider outcome.
+3. Critical/Important findings block Tasks 33.A, 34.A, 34.B, 37.A, and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 32.C's exact RED probe.** Add the complete declared `test_formal_and_demo_execute_same_core_implementations` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 32.C RED.** Run `python -m pytest -q tests/e2e/mechanism/test_shared_core_reuse.py::test_formal_and_demo_execute_same_core_implementations`. Record the task-owned failing assertion and exit code; collection, runner, unrelated import, or environment failure does not count as RED.
+- [ ] **Step 3: Capture exact shared-core implementation provenance.** Apply IP-1: Compare callable/module identities and ordered invocations while keeping formal loop separate.
+- [ ] **Step 4: Prove unauthorized real-call effects remain zero.** Apply IP-2: Exercise disclosure, credential, and Demo isolation gates with exhaustive counters.
+- [ ] **Step 5: Pass the shared-implementation RED case.** Apply IP-3: Match exact formal/Demo pure implementations and retain zero Demo formal calls.
+- [ ] **Step 6: Seal shared-core-proof-only ownership.** Apply IP-4: Keep label-only claims, alternate core, provider success, secrets, formal Demo adapters, and production changes outside Task 32.C.
+- [ ] **Step 7: Run Task 32.C Target GREEN.** Re-run `python -m pytest -q tests/e2e/mechanism/test_shared_core_reuse.py::test_formal_and_demo_execute_same_core_implementations`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 32.C's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 32.C Domain verification.** Run `python -m pytest -q tests/e2e/mechanism`. Record the exact command and actual result.
+- [ ] **Step 10: Run Task 32.C Script verification and check acceptance.** Run `python scripts/run_mechanism_demo.py --report tests/.tmp/mechanism-demo-report.json`, then verify implementation provenance, simulated-only Demo ports, and zero real-call counters; bind the fresh report digest and access location without prefilling outcomes.
+- [ ] **Step 11: Run Task 32.C standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 32.C spec compliance review.** Provide the Goal, Milestone 32 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 32.C spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 32.C code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 32.C quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 32.C after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 32.C completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 33.A: Versioned Wheel Contents and Digest
 
@@ -6127,6 +9607,12 @@ def test_formal_and_demo_execute_same_core_implementations(
 
 **Interfaces:** Produces exactly one `dist/vespercode-{project_version}-py3-none-any.whl` and adjacent lowercase SHA-256 evidence.
 
+**Implementation points:**
+- Freeze permitted distribution metadata, package data, version, and console entry point so one clean wheel contains every declared runtime module/template/static asset and excludes tests, source evidence, credentials, VCS data, and prohibited members.
+- Build from a clean source identity, inspect filename/version/RECORD and member bytes independently, and publish adjacent lowercase SHA-256 evidence computed from the exact wheel bytes.
+- Make `test_built_wheel_contains_all_runtime_resources` GREEN with the smallest declarative package-data correction before completing one-wheel, metadata, entrypoint, member, RECORD, and digest matrices.
+- Own declarative wheel metadata/content and installed-resource lookup corrections only. Dependency/tooling tables, Python range, lockfile, backend, indexes, source behavior, fabricated digests, and publication remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -6145,7 +9631,30 @@ def test_built_wheel_contains_all_runtime_resources(
 - Domain: `python -m pytest -q -o addopts='' -m package_smoke tests/smoke/package/test_wheel_contents.py tests/smoke/package/test_wheel_digest.py`
 - Expected: one wheel, correct filename/version/RECORD/resources, independent digest, and zero prohibited member.
 
+**Review gate:**
+1. Spec compliance review checks Task 33.A's Goal, Milestone 33's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent versioned wheel/content/digest contract.
+2. Code quality review checks clean source identity, allowed metadata-only changes, one artifact, filename/version/entrypoint, required packaged assets, prohibited exclusions, RECORD integrity, independently recomputed content digest, evidence freshness, and controlled artifact access.
+3. Critical/Important findings block Tasks 33.B, 36.B, and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 33.A's exact RED probe.** Add the complete declared `test_built_wheel_contains_all_runtime_resources` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 33.A RED.** Run `python -m pytest -q -o addopts='' -m package_smoke tests/smoke/package/test_wheel_contents.py::test_built_wheel_contains_all_runtime_resources`. Record the task-owned failing assertion and exit code; collection, runner, unrelated import, missing build frontend, absent wheel, or environment failure does not count as RED.
+- [ ] **Step 3: Freeze exact wheel metadata and members.** Apply IP-1: Include required runtime resources and entrypoint while excluding every prohibited member.
+- [ ] **Step 4: Build and independently bind wheel identity.** Apply IP-2: Verify clean source, one artifact, metadata/RECORD/member bytes, and adjacent lowercase digest.
+- [ ] **Step 5: Pass the wheel-content RED case.** Apply IP-3: Satisfy required and prohibited member assertions for the exact built archive.
+- [ ] **Step 6: Seal wheel-packaging-only ownership.** Apply IP-4: Keep dependencies, tooling, Python range, lock/backend/indexes, behavior, fake digests, and publication outside Task 33.A.
+- [ ] **Step 7: Run Task 33.A Target GREEN.** Re-run `python -m pytest -q -o addopts='' -m package_smoke tests/smoke/package/test_wheel_contents.py::test_built_wheel_contains_all_runtime_resources`. Require exit `0`, an actual current wheel, and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 33.A's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 33.A Build verification.** Run `python -m build --wheel`. Record the exact command, clean source identity, produced path, actual result, and wheel digest without prefilling values.
+- [ ] **Step 10: Run Task 33.A Domain verification and check acceptance.** Run `python -m pytest -q -o addopts='' -m package_smoke tests/smoke/package/test_wheel_contents.py tests/smoke/package/test_wheel_digest.py`, then verify one wheel, filename/version/RECORD/resources, independent digest, and zero prohibited members. Missing, stale, inaccessible, failed, or non-terminal build/artifact evidence keeps the task incomplete.
+- [ ] **Step 11: Run Task 33.A standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 33.A spec compliance review.** Provide the Goal, Milestone 33 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 33.A spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 33.A code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 33.A quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 33.A after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 33.A completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 33.B: Clean pipx Installed-package Smoke
 
@@ -6172,6 +9681,12 @@ def test_built_wheel_contains_all_runtime_resources(
 
 **Interfaces:** Produces `run_package_smoke(config: PackageSmokeConfigV1) -> PackageSmokeResultV1` with wheel/source/Python/pipx identities and redacted command outcomes.
 
+**Implementation points:**
+- Bind the driver to Task 33.A's exact wheel digest, clean source revision, Python identity, fresh project-specific pipx home/bin/app data, reserved loopback port, and production installer tuple.
+- Install and execute only packaged entrypoints/resources to prove help, loopback serve, formal pages, read-only recovery preview, and `finally` cleanup with zero source-checkout import or preview write.
+- Make `test_installed_cli_does_not_import_source_checkout` GREEN with the smallest clean installed-help smoke before completing WebUI, asset, preview, identity, port, and cleanup matrices.
+- Own isolated pipx installation and installed-package smoke only. Source fallback, `recover --apply`, shared pipx state, external publication, wheel mutation, fabricated outcomes, and production data changes remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -6191,7 +9706,30 @@ def test_installed_cli_does_not_import_source_checkout(
 - Driver: `python scripts/run_package_smoke.py --dist dist --require-one-wheel --report tests/.tmp/package-smoke-report.json`
 - Expected: clean install, help/serve/formal pages/recovery preview and cleanup pass on Windows with zero source fallback or preview write.
 
+**Review gate:**
+1. Spec compliance review checks Task 33.B's Goal, Milestone 33's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent clean installed-package smoke contract.
+2. Code quality review checks wheel/source/Python/pipx identity binding, isolated homes, packaged entrypoint/assets, reserved loopback port, source-import detection, preview zero-write, redacted results, `finally` cleanup, fresh content-addressed report, and controlled evidence access.
+3. Critical/Important findings block Tasks 35.A, 35.B, 37.A, and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 33.B's exact RED probe.** Add the complete declared `test_installed_cli_does_not_import_source_checkout` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 33.B RED.** Run `python -m pytest -q -o addopts='' -m package_smoke tests/smoke/package/test_installed_cli.py::test_installed_cli_does_not_import_source_checkout`. Record the task-owned failing assertion and exit code; collection, runner, unrelated import, pipx installation, Windows capability, cleanup, or environment failure does not count as RED.
+- [ ] **Step 3: Bind a fresh pipx installation identity.** Apply IP-1: Freeze exact wheel/source/Python/pipx homes, port, and installer tuple.
+- [ ] **Step 4: Exercise installed behavior without source fallback.** Apply IP-2: Run packaged help/WebUI/preview resources and prove zero preview writes plus final cleanup.
+- [ ] **Step 5: Pass the installed-help RED case.** Apply IP-3: Exit zero from the installed `vespercode --help` with source import count zero.
+- [ ] **Step 6: Seal installed-smoke-only ownership.** Apply IP-4: Keep source fallback, recovery apply, shared pipx state, publication, wheel mutation, fake outcomes, and production changes outside Task 33.B.
+- [ ] **Step 7: Run Task 33.B Target GREEN.** Re-run `python -m pytest -q -o addopts='' -m package_smoke tests/smoke/package/test_installed_cli.py::test_installed_cli_does_not_import_source_checkout`. Require exit `0`, fresh wheel/pipx identities, cleanup evidence, and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 33.B's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 33.B Domain verification.** Run `python -m pytest -q -o addopts='' -m package_smoke tests/smoke/package`. Record exact Windows, wheel, Python, pipx, port, command, cleanup, and actual results.
+- [ ] **Step 10: Run Task 33.B Driver verification and check acceptance.** Run `python scripts/run_package_smoke.py --dist dist --require-one-wheel --report tests/.tmp/package-smoke-report.json`, then verify clean install, help/serve/formal pages/preview/cleanup, zero source fallback, and zero preview write. Bind the fresh report digest/access location; missing, stale, inaccessible, failed, or non-terminal evidence keeps the task incomplete.
+- [ ] **Step 11: Run Task 33.B standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 33.B spec compliance review.** Provide the Goal, Milestone 33 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 33.B spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 33.B code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 33.B quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 33.B after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 33.B completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 34.A: Reference OCI Reproduction and Isolation Smoke
 
@@ -6218,6 +9756,12 @@ def test_installed_cli_does_not_import_source_checkout(
 
 **Interfaces:** Produces the verified reference image inspection and exact local OCI/loopback/digest-pull comparison against Task 2.G/Task 6.B.
 
+**Implementation points:**
+- Rebuild only from the immutable Task 2 recipe, lock, fixture, manifest, builder, output, and registry inputs, binding the clean source and packaged reference-manifest identities before inspection.
+- Compare rebuilt and loopback-pulled OCI manifest digests to the frozen Task 2 digest, then prove non-root, no-network, read-only, resource, report, fixture, no-self-reference, and cleanup behavior.
+- Make `test_rebuilt_reference_manifest_matches_frozen_task2_digest` GREEN with the smallest exact reproduction path before completing build, pull, isolation, fixture, smoke, and cleanup matrices.
+- Own reference OCI reproduction and smoke evidence only. Task 2 inputs, frozen manifest, production profile rules, registry source, and mismatch disposition remain read-only; any mismatch is NO-GO.
+
 **Intentionally failing test:**
 
 ```python
@@ -6237,7 +9781,30 @@ def test_rebuilt_reference_manifest_matches_frozen_task2_digest(
 - Driver: `python scripts/run_reference_image_smoke.py --reference vespercode-reference:local --report tests/.tmp/reference-image-smoke-report.json`
 - Expected: exact digest continuity, no self-reference, non-root/no-network/read-only/resource/report/fixture smoke, and registry cleanup pass.
 
+**Review gate:**
+1. Spec compliance review checks Task 34.A's Goal, Milestone 34's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent frozen reference-OCI reproduction contract.
+2. Code quality review checks Task 2/source/profile identity, no input mutation, build/pull digest continuity, no self-reference, non-root/network/read-only/resource isolation, fixture/report binding, fresh content-addressed evidence, registry cleanup, and controlled report access.
+3. Critical/Important findings block Tasks 35.A, 35.B, 36.B, 37.A, and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 34.A's exact RED probe.** Add the complete declared `test_rebuilt_reference_manifest_matches_frozen_task2_digest` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 34.A RED.** Run `python -m pytest -q -o addopts='' -m oci_smoke tests/smoke/images/test_reference_image_contract.py::test_rebuilt_reference_manifest_matches_frozen_task2_digest`. Record the task-owned failing assertion and exit code; collection, runner, unrelated import, Docker/build/registry startup, cleanup, or environment failure does not count as RED.
+- [ ] **Step 3: Bind immutable reference build inputs.** Apply IP-1: Rebuild from exact Task 2 and clean-source identities without mutation.
+- [ ] **Step 4: Prove digest continuity and isolation.** Apply IP-2: Compare build/pull manifests and exercise every declared isolation, fixture, report, and cleanup check.
+- [ ] **Step 5: Pass the frozen-manifest RED case.** Apply IP-3: Match both rebuilt and packaged manifest digests to the exact Task 2 GO digest.
+- [ ] **Step 6: Seal reference-image-smoke ownership.** Apply IP-4: Keep Task 2/profile/registry inputs and mismatch disposition read-only and fail closed.
+- [ ] **Step 7: Run Task 34.A Target GREEN.** Re-run `python -m pytest -q -o addopts='' -m oci_smoke tests/smoke/images/test_reference_image_contract.py::test_rebuilt_reference_manifest_matches_frozen_task2_digest`. Require exit `0`, an actual current build identity, and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 34.A's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 34.A Build verification.** Run `docker build --pull=false -f containers/reference/Dockerfile -t vespercode-reference:local .`. Record the exact command, source identity, actual image id/digest, and result without prefilling values.
+- [ ] **Step 10: Run Task 34.A Domain and Driver verification, then check acceptance.** Run `python -m pytest -q -o addopts='' -m oci_smoke tests/smoke/images/test_reference_image_contract.py tests/smoke/images/test_reference_fixture_smoke.py`, then run `python scripts/run_reference_image_smoke.py --reference vespercode-reference:local --report tests/.tmp/reference-image-smoke-report.json`, then verify digest continuity, isolation, fixture/report behavior, and cleanup. Bind fresh report/image digests and access locations; missing, stale, inaccessible, failed, or non-terminal evidence keeps the task incomplete.
+- [ ] **Step 11: Run Task 34.A standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 34.A spec compliance review.** Provide the Goal, Milestone 34 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 34.A spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 34.A code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 34.A quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 34.A after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 34.A completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 34.B: Curated Demo OCI Capability and Health Smoke
 
@@ -6265,6 +9832,12 @@ def test_rebuilt_reference_manifest_matches_frozen_task2_digest(
 
 **Interfaces:** Produces `run_image_smoke(config: ImageSmokeConfigV1) -> ImageSmokeResultV1`, Demo image digest, filesystem/import inspection, `/healthz`, fixed-trace report, and exact `PROHIBITED_DEMO_MODULE_PREFIXES_V1: frozenset[str] = frozenset({"vespercode.loop.engine", "vespercode.loop.turn_boundary", "vespercode.loop.call_orchestrator", "vespercode.storage", "vespercode.workspace", "vespercode.tools.list_files", "vespercode.tools.read_file", "vespercode.tools.search_text", "vespercode.execution", "vespercode.persistence", "vespercode.credentials", "vespercode.llm.openai_adapter", "vespercode.audit", "vespercode.memory", "vespercode.web", "vespercode.cli_composition"})`.
 
+**Implementation points:**
+- Build from the reviewed shared-core allowlist and hash-locked Demo requirements only, inspecting filesystem/import closure against the exact prohibited formal-capability prefixes.
+- Prove non-root platform PORT, `/healthz`, fixed Mock trace, ephemeral sessions, no persistence, no sockets/secrets/repositories, and zero formal adapter construction or calls.
+- Make `test_demo_image_contains_shared_core_but_no_formal_adapters` GREEN with the smallest allowlist/prohibited-prefix image contract before completing health, trace, filesystem, import, session, and cleanup matrices.
+- Own curated Demo image construction and smoke evidence only. Formal wheel/engine/repositories, local files, Docker control, credentials, persistence, recovery, provider adapters, and capability expansion remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -6288,7 +9861,30 @@ def test_demo_image_contains_shared_core_but_no_formal_adapters(
 - Driver: `python scripts/run_demo_image_smoke.py --demo vespercode-demo:local --report tests/.tmp/demo-image-smoke-report.json`
 - Expected: curated import closure, non-root PORT/health/fixed trace, no persistence, and capability absence pass.
 
+**Review gate:**
+1. Spec compliance review checks Task 34.B's Goal, Milestone 34's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent capability-isolated Demo OCI contract.
+2. Code quality review checks allowlist/lock identity, prohibited-prefix exhaustiveness, filesystem/import closure, non-root PORT/health/fixed trace, session ephemerality, no persistence/socket/secret/repository, zero formal adapters, fresh image/report digests, cleanup, and controlled evidence access.
+3. Critical/Important findings block Tasks 35.A, 35.B, 36.C, 37.A, and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 34.B's exact RED probe.** Add the complete declared `test_demo_image_contains_shared_core_but_no_formal_adapters` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 34.B RED.** Run `python -m pytest -q -o addopts='' -m oci_smoke tests/smoke/images/test_image_capability_separation.py::test_demo_image_contains_shared_core_but_no_formal_adapters`. Record the task-owned failing assertion and exit code; collection, runner, unrelated import, Docker/build startup, health startup, cleanup, or environment failure does not count as RED.
+- [ ] **Step 3: Build the curated Demo import closure.** Apply IP-1: Use only reviewed shared-core members and hash-locked Demo requirements.
+- [ ] **Step 4: Prove Demo health and capability isolation.** Apply IP-2: Exercise PORT/health/fixed trace/sessions and every forbidden capability absence.
+- [ ] **Step 5: Pass the image-capability RED case.** Apply IP-3: Include all exact shared-core modules and no prohibited prefix.
+- [ ] **Step 6: Seal Demo-image-smoke ownership.** Apply IP-4: Keep formal/local/Docker-control/credential/persistence/recovery/provider capabilities outside Task 34.B.
+- [ ] **Step 7: Run Task 34.B Target GREEN.** Re-run `python -m pytest -q -o addopts='' -m oci_smoke tests/smoke/images/test_image_capability_separation.py::test_demo_image_contains_shared_core_but_no_formal_adapters`. Require exit `0`, an actual current image identity, and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 34.B's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 34.B Build verification.** Run `docker build --pull=false -f containers/demo/Dockerfile -t vespercode-demo:local .`. Record exact source/lock identities, image id/digest, command, and actual result without prefilling values.
+- [ ] **Step 10: Run Task 34.B Domain and Driver verification, then check acceptance.** Run `python -m pytest -q -o addopts='' -m oci_smoke tests/smoke/images/test_demo_image_contract.py tests/smoke/images/test_demo_container_health.py tests/smoke/images/test_image_capability_separation.py`, then run `python scripts/run_demo_image_smoke.py --demo vespercode-demo:local --report tests/.tmp/demo-image-smoke-report.json`, then verify import closure, health/fixed trace, non-persistence, and capability absence. Bind fresh image/report digests and access locations; missing, stale, inaccessible, failed, or non-terminal evidence keeps the task incomplete.
+- [ ] **Step 11: Run Task 34.B standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 34.B spec compliance review.** Provide the Goal, Milestone 34 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 34.B spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 34.B code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 34.B quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 34.B after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 34.B completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 35.A: GitHub Actions Verification Workflow
 
@@ -6312,6 +9908,12 @@ def test_demo_image_contains_shared_core_but_no_formal_adapters(
 
 **Interfaces:** Produces the exact three GitHub jobs, push/PR event contract, read-only permissions, locked setup, artifacts, and no-external-publish boundary.
 
+**Implementation points:**
+- Define exact `unit-test`, `reference-image-build`, and `demo-image-build` jobs for every push and pull request with read-only permissions, locked setup, deterministic commands, and required reports/artifacts.
+- Keep fork/ordinary verification secretless and prohibit external registry login/push, Release, GHCR, Render, or other publish actions while capturing real source-commit-bound job URLs and artifact identities.
+- Make `test_github_runs_three_no_publish_jobs_on_push_and_pr` GREEN with the smallest static workflow contract before completing permission, lock, artifact, fork, trigger, and real-run evidence matrices.
+- Own GitHub verification workflow and evidence binding only. Publishing, release secrets, protected tags, GitLab rules, fabricated run ids/statuses, and external deployment remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -6331,7 +9933,30 @@ def test_github_runs_three_no_publish_jobs_on_push_and_pr(
 - Real: push the branch and open a GitHub PR; require all applicable jobs to pass and save real URLs/artifacts.
 - Expected: exact jobs/events/permissions/locks/real builds pass with no publish credential/action.
 
+**Review gate:**
+1. Spec compliance review checks Task 35.A's Goal, Milestone 35's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent GitHub verification-workflow contract.
+2. Code quality review checks exact jobs/events, every-push/PR coverage, read-only permissions, fork secretlessness, locked commands, artifact retention/digests/access, publish-action absence, source-commit/run binding, URL/artifact freshness, and no invented external status.
+3. Critical/Important findings block Tasks 35.C and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 35.A's exact RED probe.** Add the complete declared `test_github_runs_three_no_publish_jobs_on_push_and_pr` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 35.A RED.** Run `python -m pytest -q tests/unit/process/test_github_actions_contract.py::test_github_runs_three_no_publish_jobs_on_push_and_pr`. Record the task-owned failing assertion and exit code; collection, runner, unrelated import, unavailable GitHub access, absent human push/PR, or external service state does not count as RED.
+- [ ] **Step 3: Define the secretless three-job workflow.** Apply IP-1: Freeze exact triggers, permissions, setup, commands, reports, and artifacts.
+- [ ] **Step 4: Bind real no-publish GitHub evidence.** Apply IP-2: Prohibit publish actions and capture only confirmed source-commit job URLs/artifact identities.
+- [ ] **Step 5: Pass the GitHub-contract RED case.** Apply IP-3: Expose exactly three jobs on push/PR with no external publish action.
+- [ ] **Step 6: Seal GitHub-verification-only ownership.** Apply IP-4: Keep publishing, secrets, tags, GitLab, fake statuses, and deployment outside Task 35.A.
+- [ ] **Step 7: Run Task 35.A Target GREEN.** Re-run `python -m pytest -q tests/unit/process/test_github_actions_contract.py::test_github_runs_three_no_publish_jobs_on_push_and_pr`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 35.A's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 35.A Domain verification.** Run `python -m pytest -q tests/unit/process/test_github_actions_contract.py`. Record the exact command and actual result.
+- [ ] **Step 10: Collect Task 35.A Real evidence and check acceptance.** Perform the declared human push/PR action, then require confirmed applicable job success and record real source commit, run/job URLs, artifact ids/digests, timestamps, permissions, and access state. Absent, stale, inaccessible, failed, cancelled, skipped, or non-terminal GitHub evidence keeps the task incomplete.
+- [ ] **Step 11: Run Task 35.A standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 35.A spec compliance review.** Provide the Goal, Milestone 35 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 35.A spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 35.A code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 35.A quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 35.A after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 35.A completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 35.B: GitLab Verification Pipeline
 
@@ -6355,6 +9980,12 @@ def test_github_runs_three_no_publish_jobs_on_push_and_pr(
 
 **Interfaces:** Produces the four exact verification jobs, exclusive `rules`, project Windows runner binding, locked commands, and saved reports/artifacts.
 
+**Implementation points:**
+- Define exact `unit-test`, Windows `wheel-build-smoke`, `reference-image-build`, and `demo-image-build` jobs with exclusive rules for required push, merge request, main, and tag contexts.
+- Bind the project Windows runner, locked commands, reports/artifacts, and secretless ordinary pipeline boundary while capturing only confirmed source-commit job/pipeline URLs and artifact identities.
+- Make `test_gitlab_runs_all_four_verification_jobs_for_merge_request` GREEN with the smallest merge-request rule matrix before completing context exclusivity, runner, artifact, secret, and real-run evidence matrices.
+- Own GitLab verification pipeline and evidence binding only. Release/GHCR/Render secrets or pushes, GitHub workflow, protected release execution, fabricated ids/statuses, and deployment remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -6374,7 +10005,30 @@ def test_gitlab_runs_all_four_verification_jobs_for_merge_request(
 - Real: push/open a GitLab MR and require the applicable four jobs, then the main-push set, to pass.
 - Expected: exact contexts, runner, commands, artifacts and no-secret ordinary boundary pass.
 
+**Review gate:**
+1. Spec compliance review checks Task 35.B's Goal, Milestone 35's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent GitLab verification-pipeline contract.
+2. Code quality review checks four-job/context exclusivity, Windows runner binding, locked commands, ordinary secretlessness, report/artifact retention/digests/access, source-commit pipeline binding, URL/artifact freshness, missing-runner failure, and no invented external status.
+3. Critical/Important findings block Tasks 35.C and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 35.B's exact RED probe.** Add the complete declared `test_gitlab_runs_all_four_verification_jobs_for_merge_request` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 35.B RED.** Run `python -m pytest -q tests/unit/process/test_gitlab_ci_contract.py::test_gitlab_runs_all_four_verification_jobs_for_merge_request`. Record the task-owned failing assertion and exit code; collection, runner, unrelated import, unavailable GitLab access, absent human push/MR, missing external runner, or service state does not count as RED.
+- [ ] **Step 3: Define the exclusive four-job pipeline.** Apply IP-1: Freeze exact contexts, rules, Windows runner, commands, reports, and artifacts.
+- [ ] **Step 4: Bind real secretless GitLab evidence.** Apply IP-2: Enforce ordinary no-secret boundaries and capture only confirmed commit/job/pipeline/artifact identities.
+- [ ] **Step 5: Pass the merge-request RED case.** Apply IP-3: Select exactly the four declared verification jobs for the feature MR.
+- [ ] **Step 6: Seal GitLab-verification-only ownership.** Apply IP-4: Keep release secrets/pushes, GitHub, protected execution, fake statuses, and deployment outside Task 35.B.
+- [ ] **Step 7: Run Task 35.B Target GREEN.** Re-run `python -m pytest -q tests/unit/process/test_gitlab_ci_contract.py::test_gitlab_runs_all_four_verification_jobs_for_merge_request`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 35.B's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 35.B Domain verification.** Run `python -m pytest -q tests/unit/process/test_gitlab_ci_contract.py`. Record the exact command and actual result.
+- [ ] **Step 10: Collect Task 35.B Real evidence and check acceptance.** Perform the declared human push/MR and main-push actions, then require confirmed job success and record real source commits, pipeline/job URLs, runner identity, artifact ids/digests, timestamps, and access state. Absent, stale, inaccessible, failed, cancelled, skipped, or non-terminal GitLab evidence keeps the task incomplete.
+- [ ] **Step 11: Run Task 35.B standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 35.B spec compliance review.** Provide the Goal, Milestone 35 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 35.B spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 35.B code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 35.B quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 35.B after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 35.B completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 35.C: Protected Release Rules and Dual-platform Evidence
 
@@ -6400,6 +10054,12 @@ def test_gitlab_runs_all_four_verification_jobs_for_merge_request(
 
 **Interfaces:** Produces `verify_ci_contract(github_path: Path, gitlab_path: Path) -> DualCIContractResultV1`, the complete event matrix, protected credential boundary, three-way source-commit precondition, and categorized platform evidence for Task 36.A.
 
+**Implementation points:**
+- Extend only protected-tag rules so release admission requires protected context, exact source/tag/GitHub/GitLab commit equality, passing prerequisite job sets, and secrets unavailable before all prechecks pass.
+- Validate the complete static event/secret matrix and bind fresh real GitHub/GitLab main/source-commit URLs, ids, timestamps, outcomes, and artifact digests without executing a release.
+- Make `test_unprotected_tag_cannot_enter_release_stage` GREEN with the smallest fail-closed protected-tag rule before completing commit, secret-order, event, prerequisite, and dual-platform evidence matrices.
+- Own protected release rules, contract verifier, and confirmed CI evidence only. GitHub Release, GHCR push, Render deployment, tag creation, protected credentials, fabricated runs, and publication remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -6418,7 +10078,30 @@ def test_unprotected_tag_cannot_enter_release_stage(
 - Real: require passing GitHub and GitLab main/source-commit job sets and record their URLs/ids.
 - Expected: protected release ordering, three-way commit precheck, secret scoping, event matrix and real evidence pass.
 
+**Review gate:**
+1. Spec compliance review checks Task 35.C's Goal, Milestone 35's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent protected-release/dual-CI evidence contract.
+2. Code quality review checks protected-rule fail-close, three-way commit equality, prerequisite job completeness, secret-after-precheck ordering, event matrix, platform evidence freshness, content-addressed artifact alignment, URL/id access control, and rejection of invented/non-terminal runs.
+3. Critical/Important findings block Tasks 36.A, 36.B, 36.C, 37.A, and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 35.C's exact RED probe.** Add the complete declared `test_unprotected_tag_cannot_enter_release_stage` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 35.C RED.** Run `python -m pytest -q tests/unit/process/test_ci_release_rules.py::test_unprotected_tag_cannot_enter_release_stage`. Record the task-owned failing assertion and exit code; collection, runner, unrelated import, absent platform access, missing human action, or external service state does not count as RED.
+- [ ] **Step 3: Enforce protected release preconditions.** Apply IP-1: Require protection, commit equality, passing jobs, and secret-after-precheck order.
+- [ ] **Step 4: Bind confirmed dual-platform CI evidence.** Apply IP-2: Validate static contracts and record only fresh real GitHub/GitLab identities and artifact digests.
+- [ ] **Step 5: Pass the unprotected-tag RED case.** Apply IP-3: Keep the release stage unreachable for the exact unprotected version tag.
+- [ ] **Step 6: Seal release-contract-only ownership.** Apply IP-4: Keep Release/GHCR/Render execution, tags, credentials, fake runs, and publication outside Task 35.C.
+- [ ] **Step 7: Run Task 35.C Target GREEN.** Re-run `python -m pytest -q tests/unit/process/test_ci_release_rules.py::test_unprotected_tag_cannot_enter_release_stage`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 35.C's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 35.C Domain verification.** Run `python -m pytest -q tests/unit/process/test_github_actions_contract.py tests/unit/process/test_gitlab_ci_contract.py tests/unit/process/test_ci_release_rules.py tests/unit/process/test_ci_secret_boundaries.py`. Record the exact command and actual result.
+- [ ] **Step 10: Run Task 35.C Contract verification, collect Real evidence, and check acceptance.** Run `python scripts/verify_ci_contract.py .github/workflows/ci.yml .gitlab-ci.yml`, then require confirmed passing GitHub/GitLab main/source-commit sets and record real URLs/ids, commits, timestamps, outcomes, artifact digests, and access state. Absent, stale, inaccessible, failed, cancelled, skipped, or non-terminal platform evidence keeps the task incomplete.
+- [ ] **Step 11: Run Task 35.C standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 35.C spec compliance review.** Provide the Goal, Milestone 35 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 35.C spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 35.C code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 35.C quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 35.C after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 35.C completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 36.A: Closed Delivery Evidence and Commit/Digest Alignment
 
@@ -6446,6 +10129,12 @@ def test_unprotected_tag_cannot_enter_release_stage(
 
 **Interfaces:** Produces `CIReleaseEvidenceV1`, `ReleaseEvidenceV1`, `DeploymentEvidenceV1`, and `load_and_verify_release_evidence(root, require_live)`.
 
+**Implementation points:**
+- Define closed bounded non-secret CI, release, and deployment evidence unions containing only confirmed ids, URLs, commits, digests, timestamps, environment categories, outcomes, and access metadata.
+- Verify exact source/tag/platform commit, wheel/checksum, reference manifest/GHCR image, Demo image/deployment, freshness, terminal state, content-address, and cross-record alignment while rejecting unknown, planned, invented, missing, or inaccessible evidence.
+- Make `test_release_evidence_rejects_commit_misalignment` GREEN with the smallest closed commit-alignment rejection before completing schema, digest, freshness, access, terminal-state, and cross-file matrices.
+- Own delivery evidence schemas and read-only verifier only. CI execution, release/publication, deployment, credentials, external mutation, synthetic results, and outcome fabrication remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -6464,7 +10153,30 @@ def test_release_evidence_rejects_commit_misalignment(
 - Domain: `python -m pytest -q -o addopts='' -m deployment_smoke tests/smoke/release/test_evidence_schema.py tests/smoke/release/test_commit_alignment.py`
 - Expected: closed schemas and exact identity alignment reject every missing/mismatched/non-terminal case.
 
+**Review gate:**
+1. Spec compliance review checks Task 36.A's Goal, Milestone 36's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent closed delivery-evidence verifier.
+2. Code quality review checks closed non-secret fields, unknown/planned rejection, source/tag/platform commit equality, wheel/checksum/manifest/image alignment, freshness/terminal predicates, content-addressed identities, access metadata, cross-record consistency, and no external mutation.
+3. Critical/Important findings block Tasks 36.B, 36.C, and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 36.A's exact RED probe.** Add the complete declared `test_release_evidence_rejects_commit_misalignment` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 36.A RED.** Run `python -m pytest -q -o addopts='' -m deployment_smoke tests/smoke/release/test_commit_alignment.py::test_release_evidence_rejects_commit_misalignment`. Record the task-owned failing assertion and exit code; collection, runner, unrelated import, absent external evidence, or environment failure does not count as RED.
+- [ ] **Step 3: Define closed non-secret delivery evidence.** Apply IP-1: Add exact CI/release/deployment ids, URLs, identities, timestamps, outcomes, and access fields.
+- [ ] **Step 4: Verify cross-stage identity and freshness.** Apply IP-2: Reject every planned, missing, stale, non-terminal, inaccessible, or mismatched commit/digest record.
+- [ ] **Step 5: Pass the commit-misalignment RED case.** Apply IP-3: Reject the exact all-zero GitHub tag commit.
+- [ ] **Step 6: Seal evidence-verifier-only ownership.** Apply IP-4: Keep CI, publication, deployment, credentials, external mutation, synthetic values, and fabricated outcomes outside Task 36.A.
+- [ ] **Step 7: Run Task 36.A Target GREEN.** Re-run `python -m pytest -q -o addopts='' -m deployment_smoke tests/smoke/release/test_commit_alignment.py::test_release_evidence_rejects_commit_misalignment`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 36.A's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 36.A Domain verification.** Run `python -m pytest -q -o addopts='' -m deployment_smoke tests/smoke/release/test_evidence_schema.py tests/smoke/release/test_commit_alignment.py`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 36.A's declared acceptance.** Verify closed schemas and exact identity/freshness/access alignment reject every missing, mismatched, planned, inaccessible, or non-terminal case. Record actual local evidence only and keep the task incomplete while required real Task 35 evidence is absent or non-terminal.
+- [ ] **Step 11: Run Task 36.A standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 36.A spec compliance review.** Provide the Goal, Milestone 36 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 36.A spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 36.A code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 36.A quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 36.A after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 36.A completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 36.B: GitHub Release and GHCR Content-addressed Publication
 
@@ -6490,6 +10202,12 @@ def test_release_evidence_rejects_commit_misalignment(
 
 **Interfaces:** Produces a real GitHub Release URL, released wheel/checksum identities, `ghcr.io/ledstevenovo/vespercode-reference@sha256:{manifest_digest}`, digest re-pull/smoke evidence, and closed `ReleaseEvidenceV1`.
 
+**Implementation points:**
+- Require protected tag/source commit, passing Task 35 evidence, exact Task 33 wheel/checksum, Task 2/34 reference manifest, and least-privilege platform-secret availability before any external publication.
+- Publish once, then independently download and re-hash/clean-install the wheel, pull GHCR by RepoDigest, inspect/smoke the image, compare every manifest digest, and write evidence only from confirmed terminal results.
+- Make `test_release_rejects_ghcr_digest_different_from_frozen_manifest` GREEN with the smallest digest-continuity assertion before completing preflight, publication, download, install, pull, smoke, and evidence matrices.
+- Own the protected GitHub Release/GHCR operation and confirmed evidence only. Credential disclosure, manifest rewriting, retries after uncertain publication, unprotected execution, Render deployment, invented URLs/digests, and partial success remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -6508,7 +10226,30 @@ def test_release_rejects_ghcr_digest_different_from_frozen_manifest(
 - Evidence: `python scripts/verify_release_evidence.py delivery/evidence`
 - Expected: Task 2 loopback, Task 34 reproduction, built-in manifest, GHCR response, and pulled-image manifest digests are identical; released wheel hash/install pass.
 
+**Review gate:**
+1. Spec compliance review checks Task 36.B's Goal, Milestone 36's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent protected content-addressed publication contract.
+2. Code quality review checks protected/source/CI preflight, secret-store access, wheel/checksum identity, Task 2/34 manifest continuity, one-shot uncertain-state handling, re-download/re-hash/install, content-addressed RepoDigest pull/smoke, terminal evidence freshness, URL/artifact access control, and no invented result.
+3. Critical/Important findings block Tasks 36.C, 37.A, and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 36.B's exact RED probe.** Add the complete declared `test_release_rejects_ghcr_digest_different_from_frozen_manifest` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 36.B RED.** Run `python -m pytest -q -o addopts='' -m deployment_smoke tests/smoke/release/test_manifest_image_alignment.py::test_release_rejects_ghcr_digest_different_from_frozen_manifest`. Record the task-owned failing assertion and exit code; collection, runner, unrelated import, absent human authorization/credentials, unavailable GitHub/GHCR, missing release evidence, or external state does not count as RED.
+- [ ] **Step 3: Enforce protected publication preflight.** Apply IP-1: Require exact tag/source/CI/wheel/checksum/manifest identities and protected secret availability.
+- [ ] **Step 4: Publish and independently reverify artifacts.** Apply IP-2: Release once, re-download/hash/install, pull/smoke by RepoDigest, compare digests, and persist only confirmed evidence.
+- [ ] **Step 5: Pass the GHCR-digest RED case.** Apply IP-3: Require released RepoDigest equality with the exact frozen reference manifest.
+- [ ] **Step 6: Seal protected-publication-only ownership.** Apply IP-4: Keep secret exposure, manifest rewrite, uncertain retry, unprotected release, Render, invented results, and partial success outside Task 36.B.
+- [ ] **Step 7: Run Task 36.B Target GREEN.** Re-run `python -m pytest -q -o addopts='' -m deployment_smoke tests/smoke/release/test_manifest_image_alignment.py::test_release_rejects_ghcr_digest_different_from_frozen_manifest`. Require exit `0` and the exact RED assertion to pass against actual confirmed evidence before continuing.
+- [ ] **Step 8: Refactor within Task 36.B's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 36.B Domain verification.** Run `python -m pytest -q -o addopts='' -m deployment_smoke tests/smoke/release/test_manifest_image_alignment.py`. Record the exact command and actual result.
+- [ ] **Step 10: Perform Task 36.B External verification, run Evidence verification, and check acceptance.** After explicit protected human/platform authorization, run the tag pipeline, re-download/re-hash/clean-install the wheel, pull/smoke GHCR by RepoDigest, then run `python scripts/verify_release_evidence.py delivery/evidence`. Record only real URLs, ids, commits, digests, timestamps, outcomes, and access state; absent, stale, inaccessible, failed, uncertain, or non-terminal external state keeps the task incomplete and forbids fabricated evidence or retry.
+- [ ] **Step 11: Run Task 36.B standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 36.B spec compliance review.** Provide the Goal, Milestone 36 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 36.B spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 36.B code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 36.B quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 36.B after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 36.B completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 36.C: Render Deployment and Live Public Demo Evidence
 
@@ -6534,6 +10275,12 @@ def test_release_rejects_ghcr_digest_different_from_frozen_manifest(
 
 **Interfaces:** Produces a real Render public URL, deployment id/source commit/image digest, `/healthz`, fixed scenario, session isolation, capability-absence evidence, and closed `DeploymentEvidenceV1`.
 
+**Implementation points:**
+- Define a closed Render service contract for the exact Task 34.B Demo image/config, platform PORT, `/healthz`, no persistent disk, no secret/socket/repository credential, and no formal/local/recovery endpoint.
+- Deploy only the source-aligned image, then bind confirmed deployment id, commit, image digest, public URL, cold-start, health, fixed Mock trace, simulation label, session isolation, and capability-absence observations into terminal evidence.
+- Make `test_render_contract_has_no_disk_or_real_provider_secret` GREEN with the smallest no-disk/no-secret static contract before completing image/config, live health, scenario, isolation, cold-start, and evidence matrices.
+- Own Render Demo configuration, deployment, live smoke, and confirmed evidence only. Formal/local capabilities, real providers, secrets, disks, repository access, recovery, invented public state, and unrelated site behavior remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -6552,7 +10299,30 @@ def test_render_contract_has_no_disk_or_real_provider_secret(
 - Live: `python scripts/verify_release_evidence.py delivery/evidence --require-live`
 - Expected: real `/healthz`, fixed trace, simulation label, session isolation, cold-start facts, and capability absence pass.
 
+**Review gate:**
+1. Spec compliance review checks Task 36.C's Goal, Milestone 36's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent Render live-Demo evidence contract.
+2. Code quality review checks source/image/config identity, PORT/health contract, disk/secret/socket/repository absence, endpoint isolation, deployment/URL freshness, content-addressed image binding, cold-start/trace/session/capability observations, evidence access control, and no invented live outcome.
+3. Critical/Important findings block Tasks 37.A and 37.B until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 36.C's exact RED probe.** Add the complete declared `test_render_contract_has_no_disk_or_real_provider_secret` case to the listed test file(s) without changing production implementation.
+- [ ] **Step 2: Run Task 36.C RED.** Run `python -m pytest -q -o addopts='' -m deployment_smoke tests/smoke/release/test_render_contract.py::test_render_contract_has_no_disk_or_real_provider_secret`. Record the task-owned failing assertion and exit code; collection, runner, unrelated import, absent human authorization, unavailable Render, missing deployment evidence, or external state does not count as RED.
+- [ ] **Step 3: Define the isolated Render Demo contract.** Apply IP-1: Bind exact image/config, PORT/health, and every forbidden disk/secret/socket/repository/endpoint absence.
+- [ ] **Step 4: Deploy and bind confirmed live observations.** Apply IP-2: Record only real deployment identity, URL, cold start, health, fixed trace, label, session, and capability evidence.
+- [ ] **Step 5: Pass the no-disk-no-secret RED case.** Apply IP-3: Keep both persistent-disk and secret-name tuples empty.
+- [ ] **Step 6: Seal Render-Demo-only ownership.** Apply IP-4: Keep formal/local/provider/secret/disk/repository/recovery capabilities, invented state, and unrelated site behavior outside Task 36.C.
+- [ ] **Step 7: Run Task 36.C Target GREEN.** Re-run `python -m pytest -q -o addopts='' -m deployment_smoke tests/smoke/release/test_render_contract.py::test_render_contract_has_no_disk_or_real_provider_secret`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 36.C's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve behavior and keep dependent-task work out.
+- [ ] **Step 9: Run Task 36.C Domain verification.** Run `python -m pytest -q -o addopts='' -m deployment_smoke tests/smoke/release/test_render_contract.py tests/smoke/release/test_public_demo_smoke.py`. Record the exact command and actual result.
+- [ ] **Step 10: Run Task 36.C Live verification and check acceptance.** After explicit human/platform authorization and a confirmed deployment, run `python scripts/verify_release_evidence.py delivery/evidence --require-live`, then verify real health, fixed Mock trace, simulation label, session isolation, cold-start facts, capability absence, source commit, image digest, public URL, timestamp, and access state. Absent, stale, inaccessible, failed, uncertain, or non-terminal Render evidence keeps the task incomplete and cannot be replaced by planned values.
+- [ ] **Step 11: Run Task 36.C standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 36.C spec compliance review.** Provide the Goal, Milestone 36 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 36.C spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 36.C code quality review.** Provide the spec-reviewed implementation and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 36.C quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 36.C after both review stages PASS.** Commit only task-owned implementation, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 36.C completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 37.A: Verified README
 
@@ -6577,6 +10347,12 @@ def test_render_contract_has_no_disk_or_real_provider_secret(
 
 **Interfaces:** Produces `verify_readme_contract(path: Path) -> ReadmeContractResultV1` plus the exact documented commands/URLs/digests and section contract enumerated by Milestone 37.
 
+**Implementation points:**
+- Derive every README installation, usage, secure-key, recovery, distribution, CI/release, GHCR, Render, directory, limitation, and non-goal statement from the exact completed task evidence and current package interfaces.
+- Implement `verify_readme_contract` as a deterministic document check for the required sections, exact command forms, referenced artifact identities, security boundaries, and prohibited compatibility or capability overclaims.
+- Make `test_readme_fails_when_release_digest_verification_is_missing` GREEN by requiring actionable reference-image digest verification instructions tied to the real released content identity.
+- Own user-facing documentation and its static verifier only. New capability, result fabrication, process-history rewriting, reflection authorship, and substitution of planned values for missing external evidence remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -6595,7 +10371,30 @@ def test_readme_fails_when_release_digest_verification_is_missing(
 - Domain: `python -m pytest -q tests/unit/process/test_readme_contract.py`
 - Expected: all required sections, exact commands, real links/digests, threats/limitations/non-goals, and no overclaim pass.
 
+**Review gate:**
+1. Spec compliance review checks Task 37.A's Goal, Milestone 37's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent verified-README contract.
+2. Code quality review checks section completeness, exact executable commands, package/source/URL identity, content digests, evidence freshness and access control, credential/threat/recovery limitations, wording accuracy, and absence of invented outcomes or compatibility promises.
+3. Critical/Important findings block Task 37.C until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 37.A's exact RED probe.** Add the complete declared `test_readme_fails_when_release_digest_verification_is_missing` case to the listed test file without changing verifier implementation or README content.
+- [ ] **Step 2: Run Task 37.A RED.** Run `python -m pytest -q tests/unit/process/test_readme_contract.py::test_readme_fails_when_release_digest_verification_is_missing`. Record the task-owned missing-digest-instructions assertion and exit code; collection, runner, unrelated import, absent release/deployment evidence, or external service state does not count as RED.
+- [ ] **Step 3: Document only verified VesperCode operations.** Apply IP-1: Populate required README sections from exact completed task commands, interfaces, limitations, and evidence identities.
+- [ ] **Step 4: Enforce the README evidence contract.** Apply IP-2: Reject missing sections, altered commands, identity gaps, security-boundary omissions, and unsupported claims deterministically.
+- [ ] **Step 5: Require released-image digest verification guidance.** Apply IP-3: Require the exact pull-by-RepoDigest and comparison instructions backed by confirmed release evidence.
+- [ ] **Step 6: Seal verified-documentation-only ownership.** Apply IP-4: Keep new behavior, fabricated results, history rewrites, reflection authorship, and planned external values outside Task 37.A.
+- [ ] **Step 7: Run Task 37.A Target GREEN.** Re-run `python -m pytest -q tests/unit/process/test_readme_contract.py::test_readme_fails_when_release_digest_verification_is_missing`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 37.A's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve verified wording and keep dependent-task work out.
+- [ ] **Step 9: Run Task 37.A Domain verification.** Run `python -m pytest -q tests/unit/process/test_readme_contract.py`. Record the exact command and actual result.
+- [ ] **Step 10: Reconcile Task 37.A documentation evidence and acceptance.** Compare every documented command, URL, digest, platform fact, threat, limitation, and non-goal with the current completed-task records and accessible artifacts. Missing, stale, inaccessible, failed, uncertain, or non-terminal evidence keeps the task incomplete and forbids invented substitutions.
+- [ ] **Step 11: Run Task 37.A standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 37.A spec compliance review.** Provide the Goal, Milestone 37 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 37.A spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 37.A code quality review.** Provide the spec-reviewed documentation, verifier, and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 37.A quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 37.A after both review stages PASS.** Commit only task-owned documentation, verifier, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 37.A completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 37.B: Final Process and Agent Evidence Record
 
@@ -6622,6 +10421,12 @@ def test_readme_fails_when_release_digest_verification_is_missing(
 - Test: `tests/unit/process/test_delivery_evidence.py` (process-record cases)
 
 **Interfaces:** Consumes the Task 1.E terminal `GO` `GateToolchainEvidenceV1`, `load_dependency_closure(root: Path) -> DependencyClosureV1`, and `load_formal_toolchain_promotion(root: Path) -> FormalToolchainPromotionV1` as strict read-only record inputs; produces `verify_process_evidence(root: Path) -> ProcessEvidenceResultV1` with stable missing/mismatch codes and no execution of repository code.
+
+**Implementation points:**
+- Append only truthful M0, semantic-approval, cold-start, task, review, intervention, commit, PR, failure, and lesson records while preserving every prior `SPEC_PROCESS.md` and `AGENT_LOG.md` entry.
+- Implement `verify_process_evidence` as a read-only parser that reconciles all executable-task chronology and repository identities, then requires both unique dependency/toolchain records to equal the Task 1.E exact Python identity.
+- Make `test_process_evidence_rejects_formal_python_identity_drift` GREEN by emitting `FORMAL_PYTHON_IDENTITY_MISMATCH` whenever either persistent record differs character-for-character from terminal gate evidence.
+- Own final process-record append and verification only. Never fabricate absent facts, execute repository code, author reflection content, or add or repair `PlanReviewChecklistV1`, `PlanReviewResultV1`, or independent PLAN-review typed evidence.
 
 **Intentionally failing test:**
 
@@ -6659,7 +10464,30 @@ def test_process_evidence_rejects_formal_python_identity_drift(
 - Domain: `python -m pytest -q tests/unit/process/test_delivery_evidence.py`
 - Expected: M0/PLAN identities, child task chronology, reviews and real repository SHAs/PRs reconcile exactly; both persistent records exist and parse; both records' `python_version` values equal Task 1.E terminal `GO` evidence character-for-character; a range-only match fails with `FORMAL_PYTHON_IDENTITY_MISMATCH`.
 
+**Review gate:**
+1. Spec compliance review checks Task 37.B's Goal, Milestone 37's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent truthful process-evidence contract.
+2. Code quality review checks append preservation, complete executable-task chronology, exact M0/PLAN/toolchain/source identities, character-for-character Python comparison, evidence freshness/content digests/access control, stable fail-closed errors, and absence of fabricated or PSC-003-scoped typed review records.
+3. Critical/Important findings block Task 37.C until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 37.B's exact RED probe.** Add the complete declared `test_process_evidence_rejects_formal_python_identity_drift` case to the listed test file without changing verifier implementation or source records.
+- [ ] **Step 2: Run Task 37.B RED.** Run `python -m pytest -q tests/unit/process/test_delivery_evidence.py::test_process_evidence_rejects_formal_python_identity_drift`. Record the task-owned exact-identity assertion and exit code; collection, runner, unrelated import, absent task/external evidence, or record-access failure does not count as RED.
+- [ ] **Step 3: Append truthful final process chronology.** Apply IP-1: Preserve history and add only confirmed identities, events, reviews, interventions, failures, and lessons.
+- [ ] **Step 4: Reconcile closed process and toolchain records.** Apply IP-2: Parse data without execution, require complete child chronology, and compare both unique records with terminal gate evidence exactly.
+- [ ] **Step 5: Reject formal Python identity drift.** Apply IP-3: Emit the stable mismatch code for either unequal exact patch even when all values satisfy the public range.
+- [ ] **Step 6: Seal process-evidence-only ownership.** Apply IP-4: Keep fabrication, repository execution, reflection authorship, and PSC-003 typed PLAN-review evidence outside Task 37.B.
+- [ ] **Step 7: Run Task 37.B Target GREEN.** Re-run `python -m pytest -q tests/unit/process/test_delivery_evidence.py::test_process_evidence_rejects_formal_python_identity_drift`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 37.B's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve append-only history and keep dependent-task work out.
+- [ ] **Step 9: Run Task 37.B Domain verification.** Run `python -m pytest -q tests/unit/process/test_delivery_evidence.py`. Record the exact command and actual result.
+- [ ] **Step 10: Reconcile Task 37.B final process acceptance.** Verify every required M0, PLAN identity, cold-start, child-task, review, human edit, SHA, PR, failure, lesson, dependency-closure, promotion, and gate record against real accessible evidence. Missing, stale, mismatched, inaccessible, or non-terminal evidence keeps the task incomplete and cannot be inferred from prose.
+- [ ] **Step 11: Run Task 37.B standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 37.B spec compliance review.** Provide the Goal, Milestone 37 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 37.B spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 37.B code quality review.** Provide the spec-reviewed verifier and process evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 37.B quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 37.B after both review stages PASS.** Commit only task-owned verifier, process records, tests, and permitted evidence; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 37.B completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 37.C: Delivery and Reflection Readiness Gate
 
@@ -6687,6 +10515,12 @@ def test_process_evidence_rejects_formal_python_identity_drift(
 
 **Interfaces:** Produces `verify_delivery(root: Path, require_live: bool) -> DeliveryReadinessResultV1` and `verify_reflection(path: Path) -> ReflectionContractResultV1`.
 
+**Implementation points:**
+- Implement `verify_delivery` as a fail-closed aggregate over real task, review, environment, artifact, document, and live-evidence schemas, requiring all 141 executable Tasks to be terminal and identity-aligned.
+- Implement `verify_reflection` to check only the student-authored 1500–2500-word range, required disclosure, file structure, and parseability; substantive personal content is neither generated nor scored.
+- Make `test_delivery_rejects_incomplete_executable_child` GREEN by returning `EXECUTABLE_TASK_INCOMPLETE:38.G` before any readiness success when that child lacks terminal evidence.
+- Own readiness aggregation, reflection structure checks, truthful final PLAN status/evidence updates, and explicitly requested disclosed language polishing only. Human decisions, student authorship, external outcomes, and missing evidence remain outside automation.
+
 **Intentionally failing test:**
 
 ```python
@@ -6707,7 +10541,30 @@ def test_delivery_rejects_incomplete_executable_child(
 - Reflection: `python scripts/verify_reflection.py REFLECTION.md`
 - Expected: readiness passes only when all 141 executable Tasks, reviews, environments, artifacts, live evidence, documents, and student reflection are current and valid.
 
+**Review gate:**
+1. Spec compliance review checks Task 37.C's Goal, Milestone 37's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent final readiness contract.
+2. Code quality review checks complete 141-task aggregation, source/artifact identity, freshness/content digests/access control, fail-closed non-terminal handling, reflection word-count/disclosure/structure checks, student authorship protection, and absence of generated personal content or invented readiness.
+3. Blocks: None; therefore Task 37.C has no executable dependent task list, and this review item adds no DAG edge. Critical/Important findings still block Task 37.C completion and all final delivery claims until fixes are verified and re-review at the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 37.C's exact RED probe.** Add the complete declared `test_delivery_rejects_incomplete_executable_child` case to the listed test file without changing readiness implementation or task records.
+- [ ] **Step 2: Run Task 37.C RED.** Run `python -m pytest -q tests/unit/process/test_delivery_evidence.py::test_delivery_rejects_incomplete_executable_child`. Record the task-owned incomplete-child assertion and exit code; collection, runner, unrelated import, absent student reflection, missing human decision, or unavailable external evidence does not count as RED.
+- [ ] **Step 3: Aggregate terminal delivery evidence.** Apply IP-1: Parse exact schemas and require all task, review, environment, artifact, document, and live identities to be complete and aligned.
+- [ ] **Step 4: Validate reflection structure without authorship substitution.** Apply IP-2: Check word count, disclosure, structure, and parseability only for text independently written by the student.
+- [ ] **Step 5: Reject an incomplete executable child.** Apply IP-3: Return the exact `38.G` incomplete code before any readiness success.
+- [ ] **Step 6: Seal readiness-gate-only ownership.** Apply IP-4: Keep student substantive writing, unrequested polishing, human decisions, external actions, and fabricated evidence outside Task 37.C.
+- [ ] **Step 7: Run Task 37.C Target GREEN.** Re-run `python -m pytest -q tests/unit/process/test_delivery_evidence.py::test_delivery_rejects_incomplete_executable_child`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 37.C's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve fail-closed aggregation and keep substantive reflection content untouched.
+- [ ] **Step 9: Run Task 37.C Domain verification.** Run `python -m pytest -q tests/unit/process/test_readme_contract.py tests/unit/process/test_delivery_evidence.py tests/unit/process/test_reflection_contract.py`. Record the exact command and actual result.
+- [ ] **Step 10: Run Task 37.C delivery/reflection verification and check acceptance.** Run `python scripts/verify_delivery.py --root . --require-live` and `python scripts/verify_reflection.py REFLECTION.md`. Require a student-authored 1500–2500-word reflection plus current terminal human/external evidence; any missing, stale, inaccessible, failed, uncertain, or non-terminal input keeps readiness incomplete and forbids a success claim.
+- [ ] **Step 11: Run Task 37.C standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 37.C spec compliance review.** Provide the Goal, Milestone 37 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 37.C spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 37.C code quality review.** Provide the spec-reviewed readiness/reflection verifiers and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 37.C quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 37.C after both review stages PASS.** Commit only task-owned verifiers, tests, truthful status/evidence updates, and any explicitly requested disclosed language polish; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 37.C completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 38.A: Credential Lifecycle WebUI
 
@@ -6732,6 +10589,12 @@ def test_delivery_rejects_incomplete_executable_child(
 
 **Interfaces:** Produces `CredentialWorkflowPortsV1` with exact methods `CredentialWorkflowPortsV1.set(provider: Literal["OPENAI"], secret: SecretCredentialV1, event_id: str) -> CredentialMutationResultV1`, `CredentialWorkflowPortsV1.status(provider: Literal["OPENAI"]) -> CredentialStatusV1`, `CredentialWorkflowPortsV1.update(provider: Literal["OPENAI"], secret: SecretCredentialV1, event_id: str) -> CredentialMutationResultV1`, and `CredentialWorkflowPortsV1.clear(provider: Literal["OPENAI"], event_id: str) -> CredentialMutationResultV1`, plus `CredentialRouteInstallerV1`.
 
+**Implementation points:**
+- Add local-security-protected credential routes that accept only the closed provider/action fields, create server-controlled mutation events, and delegate set/status/update/clear to `CredentialWorkflowPortsV1`.
+- Render a clear, scanable credential status/form workflow with password-field lifetime only, explicit labels, keyboard focus, live error/status regions, contextual recovery guidance, and escaped service-projected text.
+- Make `test_credential_response_never_contains_secret_or_derivative` GREEN by ensuring the submitted sentinel, its length, digest, and every derivative are absent from success and failure responses.
+- Own HTTP/form projection and typed-port delegation only. Credential persistence, domain-rule duplication, secret logging/redisplay, request-security bypass, alternate provider, and false-success synthesis remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -6752,7 +10615,30 @@ def test_credential_response_never_contains_secret_or_derivative(
 - Domain: `python -m pytest -q tests/web/test_credential_workflow.py`
 - Expected: security/idempotency, secret lifetime, status fields, failure projection, escaping, labels/focus/errors, and sentinel absence pass.
 
+**Review gate:**
+1. Spec compliance review checks Task 38.A's Goal, Milestone 38's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent credential WebUI contract.
+2. Code quality and Open Design review uses `ui-ux-pro-max` for the local security-operations context and checks typed service delegation, request security/idempotency, zero secret derivatives, clear scanable hierarchy, keyboard focus, labels, live errors/status, escaping, safe recovery guidance, and accessible contrast.
+3. Critical/Important findings block Tasks 37.B and 38.F until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 38.A's exact RED probe.** Add the complete declared `test_credential_response_never_contains_secret_or_derivative` case to the listed test file without changing credential route implementation.
+- [ ] **Step 2: Run Task 38.A RED.** Run `python -m pytest -q tests/web/test_credential_workflow.py::test_credential_response_never_contains_secret_or_derivative`. Record the task-owned sentinel-leak assertion and exit code; collection, runner, unrelated import, or local Web startup failure does not count as RED.
+- [ ] **Step 3: Bind credential routes to typed domain ports.** Apply IP-1: Enforce closed local requests and delegate every lifecycle action without duplicating credential rules.
+- [ ] **Step 4: Render the secure credential interaction contract.** Apply IP-2: Provide scanable status/forms, labels, focus, live errors/status, escaping, and no secret redisplay.
+- [ ] **Step 5: Eliminate credential secret derivatives from responses.** Apply IP-3: Keep the sentinel, length, digest, and all derived material out of every rendered branch.
+- [ ] **Step 6: Seal credential-WebUI-only ownership.** Apply IP-4: Keep persistence, domain bypass, secret logging, alternate providers, and fabricated success outside Task 38.A.
+- [ ] **Step 7: Run Task 38.A Target GREEN.** Re-run `python -m pytest -q tests/web/test_credential_workflow.py::test_credential_response_never_contains_secret_or_derivative`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 38.A's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve secret lifetime and typed delegation.
+- [ ] **Step 9: Run Task 38.A Domain verification.** Run `python -m pytest -q tests/web/test_credential_workflow.py`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 38.A Web workflow acceptance.** Exercise set, status, update, clear, repeated event, invalid request, and service-failure branches through local security headers; require truthful state, keyboard/focus/live feedback, escaped output, and zero secret/derivative exposure.
+- [ ] **Step 11: Run Task 38.A standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 38.A spec compliance review.** Provide the Goal, Milestone 38 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 38.A spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 38.A code quality and Open Design review.** Provide the spec-reviewed routes/templates/tests and evidence; invoke `ui-ux-pro-max` and require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 38.A quality/design findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality/Open Design re-review PASS.
+- [ ] **Step 16: Commit Task 38.A after both review stages PASS.** Commit only task-owned routes, template, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 38.A completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 38.B: Workspace Memory WebUI
 
@@ -6777,6 +10663,12 @@ def test_credential_response_never_contains_secret_or_derivative(
 
 **Interfaces:** Produces `MemoryWorkflowPortsV1` with exact methods `MemoryWorkflowPortsV1.list(run_id: str) -> tuple[MemoryEntryV1, ...]`, `MemoryWorkflowPortsV1.create(command: CreateMemoryForRunV1) -> MemoryMutationResultV1`, `MemoryWorkflowPortsV1.confirm(command: ConfirmMemoryForRunV1) -> MemoryMutationResultV1`, and `MemoryWorkflowPortsV1.clear(command: ClearMemoryForRunV1) -> MemoryMutationResultV1`, plus `MemoryRouteInstallerV1`; route commands contain Run id and operation-visible fields but no client-selected workspace identity.
 
+**Implementation points:**
+- Add local-security-protected memory routes that derive workspace scope from the Run, reject client-selected workspace identity, and delegate list/create/confirm/clear only through `MemoryWorkflowPortsV1`.
+- Render creator/source/scope and create→confirm→clear state with scanable hierarchy, explicit labels, keyboard focus, live error/status regions, escaped content, and no control/policy fields.
+- Make `test_memory_form_cannot_select_foreign_workspace` GREEN by rejecting the foreign selector before command construction and keeping the create port call count at zero.
+- Own memory HTTP/form projection and typed-port delegation only. Cross-workspace selection, model-authored generic writes, policy/Manifest/approval/disclosure/config mutation, and domain-rule bypass remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -6799,7 +10691,30 @@ def test_memory_form_cannot_select_foreign_workspace(
 - Domain: `python -m pytest -q tests/web/test_memory_workflow.py`
 - Expected: server-derived scope, creator/source display, stale/foreign/duplicate no-mutation, clear binding, escaping and accessibility pass.
 
+**Review gate:**
+1. Spec compliance review checks Task 38.B's Goal, Milestone 38's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent workspace-memory WebUI contract.
+2. Code quality and Open Design review uses `ui-ux-pro-max` for the local security-operations context and checks server-derived scope, typed service delegation, request security, zero foreign/stale mutation, scanable state transitions, keyboard focus, labels, live errors/status, escaping, and accessible creator/source presentation.
+3. Critical/Important findings block Tasks 37.B and 38.F until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 38.B's exact RED probe.** Add the complete declared `test_memory_form_cannot_select_foreign_workspace` case to the listed test file without changing memory route implementation.
+- [ ] **Step 2: Run Task 38.B RED.** Run `python -m pytest -q tests/web/test_memory_workflow.py::test_memory_form_cannot_select_foreign_workspace`. Record the task-owned foreign-workspace rejection assertion and exit code; collection, runner, unrelated import, or local Web startup failure does not count as RED.
+- [ ] **Step 3: Derive memory scope through typed ports.** Apply IP-1: Resolve workspace from Run identity, accept only closed operation fields, and delegate without domain-rule copies.
+- [ ] **Step 4: Render visible memory lifecycle state.** Apply IP-2: Show safe creator/source/scope and create/confirm/clear feedback with labels, focus, live regions, and escaping.
+- [ ] **Step 5: Reject foreign workspace selection before mutation.** Apply IP-3: Return the closed invalid-request response with zero create calls.
+- [ ] **Step 6: Seal memory-WebUI-only ownership.** Apply IP-4: Keep cross-workspace selection, generic model writes, control-field mutation, and domain bypass outside Task 38.B.
+- [ ] **Step 7: Run Task 38.B Target GREEN.** Re-run `python -m pytest -q tests/web/test_memory_workflow.py::test_memory_form_cannot_select_foreign_workspace`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 38.B's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve server-derived scope and typed delegation.
+- [ ] **Step 9: Run Task 38.B Domain verification.** Run `python -m pytest -q tests/web/test_memory_workflow.py`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 38.B Web workflow acceptance.** Exercise list, create, confirm, clear, stale, foreign, duplicate, invalid-request, and service-failure branches; require truthful visible scope/state, keyboard/focus/live feedback, escaped content, and zero forbidden mutation.
+- [ ] **Step 11: Run Task 38.B standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 38.B spec compliance review.** Provide the Goal, Milestone 38 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 38.B spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 38.B code quality and Open Design review.** Provide the spec-reviewed routes/templates/tests and evidence; invoke `ui-ux-pro-max` and require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 38.B quality/design findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality/Open Design re-review PASS.
+- [ ] **Step 16: Commit Task 38.B after both review stages PASS.** Commit only task-owned routes, template, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 38.B completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 38.C: Redacted Audit WebUI
 
@@ -6824,6 +10739,12 @@ def test_memory_form_cannot_select_foreign_workspace(
 
 **Interfaces:** Produces `AuditWorkflowPortsV1` with exact methods `AuditWorkflowPortsV1.list_run(run_id: str, page: AuditPageRequestV1) -> AuditPageV1` and `AuditWorkflowPortsV1.clear_ended_run(command: ClearEndedRunAuditV1) -> AuditClearResultV1`, plus `AuditRouteInstallerV1` using Task 23.B closed page projection and Task 23.C clear command.
 
+**Implementation points:**
+- Add local-security-protected audit routes that consume only `AuditWorkflowPortsV1` redacted page projections, preserve monotonic cursor ordering, and delegate ended-Run clear through the closed command.
+- Render scanable redacted entries, bounded pagination, retention state, and explicit ended-Run clear confirmation with keyboard focus, labels, live errors/status, escaping, and unresolved-recovery warnings.
+- Make `test_audit_page_contains_only_redacted_projection` GREEN by excluding raw request and backup-body sentinels from every rendered page and error branch.
+- Own audit HTTP/form projection and typed-port delegation only. Internal DB columns, raw bodies, active/foreign/stale/unsafe deletion, recovery-evidence loss, and repository-rule bypass remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -6842,7 +10763,30 @@ def test_audit_page_contains_only_redacted_projection(
 - Domain: `python -m pytest -q tests/web/test_audit_workflow.py`
 - Expected: ordering/pagination/redaction, ended-run confirmation, recovery preservation, security and accessibility pass.
 
+**Review gate:**
+1. Spec compliance review checks Task 38.C's Goal, Milestone 38's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent redacted-audit WebUI contract.
+2. Code quality and Open Design review uses `ui-ux-pro-max` for the local security-operations context and checks closed redacted projections, cursor ordering, request/access control, zero raw-body exposure, safe clear predicates, scanable pagination, keyboard focus, labels, live errors/status, escaping, recovery warnings, and accessible contrast.
+3. Critical/Important findings block Tasks 37.B and 38.F until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 38.C's exact RED probe.** Add the complete declared `test_audit_page_contains_only_redacted_projection` case to the listed test file without changing audit route implementation.
+- [ ] **Step 2: Run Task 38.C RED.** Run `python -m pytest -q tests/web/test_audit_workflow.py::test_audit_page_contains_only_redacted_projection`. Record the task-owned raw-projection assertion and exit code; collection, runner, unrelated import, or local Web startup failure does not count as RED.
+- [ ] **Step 3: Bind audit routes to closed redacted ports.** Apply IP-1: Preserve page cursors and delegate only list/eligible-clear commands without direct storage access.
+- [ ] **Step 4: Render safe paged audit interaction state.** Apply IP-2: Present redacted entries, pagination, retention, confirmation, warnings, labels, focus, live regions, and escaping.
+- [ ] **Step 5: Eliminate raw audit and backup bodies from pages.** Apply IP-3: Keep both sentinels and every unredacted derivative out of successful and failed responses.
+- [ ] **Step 6: Seal audit-WebUI-only ownership.** Apply IP-4: Keep internal fields, raw bodies, unsafe deletion, recovery loss, and repository bypass outside Task 38.C.
+- [ ] **Step 7: Run Task 38.C Target GREEN.** Re-run `python -m pytest -q tests/web/test_audit_workflow.py::test_audit_page_contains_only_redacted_projection`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 38.C's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve redaction, cursor order, and typed delegation.
+- [ ] **Step 9: Run Task 38.C Domain verification.** Run `python -m pytest -q tests/web/test_audit_workflow.py`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 38.C Web workflow acceptance.** Exercise first/next pages, ended-Run clear confirmation, active/foreign/stale/unsafe attempts, unresolved recovery, invalid request, and service failure; require stable order, accessible feedback, escaped output, zero raw-body disclosure, and zero forbidden delete calls.
+- [ ] **Step 11: Run Task 38.C standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 38.C spec compliance review.** Provide the Goal, Milestone 38 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 38.C spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 38.C code quality and Open Design review.** Provide the spec-reviewed routes/templates/tests and evidence; invoke `ui-ux-pro-max` and require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 38.C quality/design findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality/Open Design re-review PASS.
+- [ ] **Step 16: Commit Task 38.C after both review stages PASS.** Commit only task-owned routes, template, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 38.C completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 38.D: Read-only-first Recovery WebUI
 
@@ -6867,6 +10811,12 @@ def test_audit_page_contains_only_redacted_projection(
 
 **Interfaces:** Produces `RecoveryWorkflowPortsV1` with exact methods `RecoveryWorkflowPortsV1.preview(run_id: str) -> RecoveryPreviewV1` and `RecoveryWorkflowPortsV1.apply(command: ApplyRecoveryForRunV1) -> RecoveryResultV1`, `render_recovery_preview(preview: RecoveryPreviewV1) -> HTMLResponse`, and `RecoveryRouteInstallerV1`; apply accepts only `run_id`, `transaction_id`, `preview_digest`, confirmation, and event id.
 
+**Implementation points:**
+- Add local-security-protected recovery routes that delegate preview and apply through `RecoveryWorkflowPortsV1`, accept only the frozen apply binding fields, and keep preview paths strictly read-only.
+- Render full path/status/consequence evidence and a distinct explicit confirmation step with scanable risk hierarchy, keyboard focus, labels, live errors/status, escaping, and no force/ignore/skip/edit/abandon control.
+- Make `test_recovery_preview_is_read_only_and_has_no_force_control` GREEN by rendering preview with zero apply/write calls and excluding both forbidden control names.
+- Own recovery HTTP/form projection and typed-port delegation only. Preview mutation, stale-digest apply, partial/exception success, domain predicate duplication, and any bypass control remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -6886,7 +10836,30 @@ def test_recovery_preview_is_read_only_and_has_no_force_control(
 - Domain: `python -m pytest -q tests/web/test_recovery_workflow.py`
 - Expected: full path/status/consequence preview, exact explicit apply, zero preview write, stable unresolved blocking, security and accessibility pass.
 
+**Review gate:**
+1. Spec compliance review checks Task 38.D's Goal, Milestone 38's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent read-only-first recovery WebUI contract.
+2. Code quality and Open Design review uses `ui-ux-pro-max` for the local security-operations context and checks typed service delegation, preview zero-write, exact apply binding/request security, stale/unresolved failure, scanable consequence hierarchy, keyboard focus, labels, live errors/status, escaping, bypass-control absence, and accessible contrast.
+3. Critical/Important findings block Tasks 37.B and 38.F until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 38.D's exact RED probe.** Add the complete declared `test_recovery_preview_is_read_only_and_has_no_force_control` case to the listed test file without changing recovery route implementation.
+- [ ] **Step 2: Run Task 38.D RED.** Run `python -m pytest -q tests/web/test_recovery_workflow.py::test_recovery_preview_is_read_only_and_has_no_force_control`. Record the task-owned preview-write/control assertion and exit code; collection, runner, unrelated import, or local Web startup failure does not count as RED.
+- [ ] **Step 3: Bind read-only preview and exact apply ports.** Apply IP-1: Delegate closed preview/apply commands through typed services and accept only frozen binding fields.
+- [ ] **Step 4: Render explicit recovery consequence and confirmation state.** Apply IP-2: Present paths/status/consequences, risk hierarchy, labels, focus, live regions, escaping, and no bypass control.
+- [ ] **Step 5: Prove preview zero-write and force-control absence.** Apply IP-3: Keep both apply/write counters at zero and exclude the forbidden form fields.
+- [ ] **Step 6: Seal recovery-WebUI-only ownership.** Apply IP-4: Keep preview mutation, stale apply, false terminal success, predicate copies, and bypasses outside Task 38.D.
+- [ ] **Step 7: Run Task 38.D Target GREEN.** Re-run `python -m pytest -q tests/web/test_recovery_workflow.py::test_recovery_preview_is_read_only_and_has_no_force_control`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 38.D's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve read-only preview, exact binding, and typed delegation.
+- [ ] **Step 9: Run Task 38.D Domain verification.** Run `python -m pytest -q tests/web/test_recovery_workflow.py`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 38.D Web workflow acceptance.** Exercise preview, separately confirmed apply, stale digest, invalid confirmation, exception, partial result, unresolved recovery, and repeated request; require truthful accessible state, escaped evidence, zero preview writes, and no bypass path.
+- [ ] **Step 11: Run Task 38.D standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 38.D spec compliance review.** Provide the Goal, Milestone 38 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 38.D spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 38.D code quality and Open Design review.** Provide the spec-reviewed routes/templates/tests and evidence; invoke `ui-ux-pro-max` and require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 38.D quality/design findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality/Open Design re-review PASS.
+- [ ] **Step 16: Commit Task 38.D after both review stages PASS.** Commit only task-owned routes, template, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 38.D completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 38.E: Recovery CLI
 
@@ -6910,6 +10883,12 @@ def test_recovery_preview_is_read_only_and_has_no_force_control(
 
 **Interfaces:** Produces exact preview/apply CLI parsing and `install_recover_command(app, recovery_handler: RecoveryCliHandlerV1) -> None`; unit tests inject `SpyRecoveryService`, while the handler delegates after Task 9.D identity/lease resolution to Task 26.C services.
 
+**Implementation points:**
+- Extend only the recover command parser with the required workspace path, closed argument surface, and injected `RecoveryCliHandlerV1`, defaulting every invocation without literal `--apply` to preview.
+- Delegate preview/apply after Task 9.D identity/lease resolution to Task 26.C service behavior, projecting bounded help, validation, unresolved, and terminal result text without opening production storage.
+- Make `test_recover_without_apply_never_writes` GREEN by invoking preview exactly once, applying zero times, and returning the successful read-only projection.
+- Own recover parsing, typed delegation, help/error projection, and the injection seam only. Database access, migration, production handler construction, recovery-rule copies, UI review criteria, and force/ignore/body/secret arguments remain out of scope.
+
 **Intentionally failing test:**
 
 ```python
@@ -6930,7 +10909,30 @@ def test_recover_without_apply_never_writes(
 - Domain: `python -m pytest -q tests/unit/test_recovery_cli.py tests/unit/test_cli.py`
 - Expected: default preview zero-write, literal apply requirement, safe errors, help text, closed argument surface, and injection through `SpyRecoveryService` pass without opening SQLite or importing Task 7.D.
 
+**Review gate:**
+1. Spec compliance review checks Task 38.E's Goal, Milestone 38's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent recovery-CLI parser/delegation contract.
+2. Code quality review checks exact command/argument grammar, Windows path handling, injected typed handler use, preview zero-write, literal apply gating, bounded help/errors, identity/lease delegation, storage/migration import absence, and closed force/ignore/body/credential surface without imposing WebUI design gates.
+3. Critical/Important findings block Tasks 37.B and 38.F until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 38.E's exact RED probe.** Add the complete declared `test_recover_without_apply_never_writes` case to the listed test file without changing recover parser implementation.
+- [ ] **Step 2: Run Task 38.E RED.** Run `python -m pytest -q tests/unit/test_recovery_cli.py::test_recover_without_apply_never_writes`. Record the task-owned preview/apply-count assertion and exit code; collection, runner, unrelated import, SQLite startup, or production composition failure does not count as RED.
+- [ ] **Step 3: Install the closed injectable recover parser.** Apply IP-1: Accept workspace plus literal apply only and delegate through the supplied typed handler.
+- [ ] **Step 4: Project safe recovery CLI outcomes.** Apply IP-2: Resolve identity/lease before service delegation and render bounded help, validation, unresolved, and terminal text.
+- [ ] **Step 5: Keep default recovery CLI execution read-only.** Apply IP-3: Call preview once, apply zero times, and return the successful preview result.
+- [ ] **Step 6: Seal recovery-CLI-only ownership.** Apply IP-4: Keep storage, migrations, production binding, domain-rule copies, UI gates, and forbidden arguments outside Task 38.E.
+- [ ] **Step 7: Run Task 38.E Target GREEN.** Re-run `python -m pytest -q tests/unit/test_recovery_cli.py::test_recover_without_apply_never_writes`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 38.E's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve parser syntax, injection, and zero-write default.
+- [ ] **Step 9: Run Task 38.E Domain verification.** Run `python -m pytest -q tests/unit/test_recovery_cli.py tests/unit/test_cli.py`. Record the exact command and actual result.
+- [ ] **Step 10: Check Task 38.E CLI workflow acceptance.** Exercise help, missing/invalid workspace, default preview, literal apply, unresolved state, service error, and forbidden extra arguments through `SpyRecoveryService`; require closed parsing, safe text, and zero database or migration access.
+- [ ] **Step 11: Run Task 38.E standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 38.E spec compliance review.** Provide the Goal, Milestone 38 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 38.E spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 38.E code quality review.** Provide the spec-reviewed parser/tests and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 38.E quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 38.E after both review stages PASS.** Commit only task-owned parser, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 38.E completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 38.F: Final Local Operations and Production Route Composition
 
@@ -6957,6 +10959,12 @@ def test_recover_without_apply_never_writes(
 - Test: `tests/unit/test_cli_composition.py`
 
 **Interfaces:** Consumes Task 7.D `ALL_V1_MIGRATIONS`, Task 7.A `apply_migrations`, Task 38.E `install_recover_command`, and the existing Task 26.C recovery-service contract through its Task 38.D/38.E dependency closure; produces `initialize_production_control_database(path: Path) -> ControlDatabase`, `build_production_recovery_cli_handler(db: ControlDatabase, workspace_service: WorkspaceServiceV1) -> RecoveryCliHandlerV1`, `bind_production_recover_command(app, database_path: Path, workspace_service: WorkspaceServiceV1) -> None`, `LocalOperationsWorkflowPortsV1(credentials: CredentialWorkflowPortsV1, memory: MemoryWorkflowPortsV1, audit: AuditWorkflowPortsV1, recovery: RecoveryWorkflowPortsV1)`, `LocalOperationsRouteInstallerV1(ports: LocalOperationsWorkflowPortsV1).install(app: FastAPI) -> None`, `ProductionLocalWorkflowPortsV1(shell: LocalShellPortsV1, governance: RunGovernanceWorkflowPortsV1, operations: LocalOperationsWorkflowPortsV1)`, `build_local_route_installers(ports: ProductionLocalWorkflowPortsV1) -> LocalRouteInstallerSequenceV1`, and `build_local_application(ports: ProductionLocalWorkflowPortsV1, security: LocalWebSecurityConfigV1) -> FastAPI`.
+
+**Implementation points:**
+- Initialize the production control database by applying `ALL_V1_MIGRATIONS` exactly once through Task 7.A before constructing any Web operation port, repository, recovery service, or CLI handler.
+- Compose Credential/Memory/Audit/Recovery routes behind the exact governance-then-operations installer tuple and bind Task 38.E's unchanged recover parser to the sole initialized production handler graph.
+- Make `test_production_installer_tuple_has_exact_order` GREEN by returning only `RunGovernanceRouteInstallerV1` followed by `LocalOperationsRouteInstallerV1`.
+- Own final Web/CLI composition and authorized production handler selection only. DDL, migration reordering, parser changes, recovery predicates, untyped registries, service locators, duplicate domain behavior, and alternate package composition remain out of scope.
 
 **Intentionally failing test:**
 
@@ -7004,7 +11012,30 @@ The installed CLI fixture resolves the configured `vespercode` console entry poi
 - Registry: `python -m pytest -q tests/unit/storage/test_migration_registry.py tests/web/test_local_composition.py tests/unit/test_cli_composition.py`
 - Expected: all four commands exit `0`; the complete registry applies before Web port or CLI recovery-service construction; exact route order and all typed ports/routes are reachable; installed recover preview/apply use the sole production handler; Task 38.E's Spy tests remain database-independent; and `vespercode serve`/`recover` use only the declared production compositions.
 
+**Review gate:**
+1. Spec compliance review checks Task 38.F's Goal, Milestone 38's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent final local production-composition contract.
+2. Code quality review checks complete migration-registry-before-service ordering, exact typed Web installer tuple, sole recovery CLI handler binding, installed entry-point reachability, parser/domain-rule non-duplication, storage ownership, package import boundaries, and absence of alternate composition paths.
+3. Critical/Important findings block Tasks 31.A, 33.A, 37.B, and 38.G until fixes are verified and the same review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 38.F's exact RED probe.** Add the complete declared `test_production_installer_tuple_has_exact_order` case to the listed test file without changing production composition.
+- [ ] **Step 2: Run Task 38.F RED.** Run `python -m pytest -q tests/web/test_local_composition.py::test_production_installer_tuple_has_exact_order`. Record the task-owned installer-order assertion and exit code; collection, runner, unrelated import, missing installed entry point, or database startup failure does not count as RED.
+- [ ] **Step 3: Initialize the complete production storage graph first.** Apply IP-1: Apply the exact v1 registry before constructing any repository, service, Web port, or CLI handler.
+- [ ] **Step 4: Bind sole Web and recovery CLI compositions.** Apply IP-2: Install governance then operations and connect the unchanged recover parser to the initialized typed handler.
+- [ ] **Step 5: Freeze the production route installer order.** Apply IP-3: Return exactly the two declared installers in the asserted sequence.
+- [ ] **Step 6: Seal final-composition-only ownership.** Apply IP-4: Keep DDL, reordering, parser/predicate copies, untyped lookup, service locators, and alternate composition outside Task 38.F.
+- [ ] **Step 7: Run Task 38.F Target GREEN.** Re-run `python -m pytest -q tests/web/test_local_composition.py::test_production_installer_tuple_has_exact_order`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 38.F's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve registry ordering and sole typed composition.
+- [ ] **Step 9: Run Task 38.F Domain verification.** Run `python -m pytest -q tests/web/test_local_composition.py tests/web/test_credential_workflow.py tests/web/test_memory_workflow.py tests/web/test_audit_workflow.py tests/web/test_recovery_workflow.py tests/unit/test_recovery_cli.py tests/unit/test_cli_composition.py`. Record the exact command and actual result.
+- [ ] **Step 10: Run Task 38.F installed CLI and registry verification.** Run `python -m pytest -q tests/unit/test_cli_composition.py::test_installed_recover_binds_complete_database_before_handler`, then run `python -m pytest -q tests/unit/storage/test_migration_registry.py tests/web/test_local_composition.py tests/unit/test_cli_composition.py`. Require both commands to exit `0` and prove complete-registry-before-handler ordering for installed preview/apply.
+- [ ] **Step 11: Run Task 38.F standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 38.F spec compliance review.** Provide the Goal, Milestone 38 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 38.F spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
+- [ ] **Step 14: Request Task 38.F code quality review.** Provide the spec-reviewed Web/CLI composition and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 38.F quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 16: Commit Task 38.F after both review stages PASS.** Commit only task-owned composition, authorized binding, tests, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 38.F completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 38.G: Cross-workflow Browser and Accessibility Acceptance
 
@@ -7027,6 +11058,12 @@ The installed CLI fixture resolves the configured `vespercode` console entry poi
 
 **Interfaces:** Produces browser captures and a bounded acceptance report for credential, memory, audit, and recovery flows through the production application; adds no production interface.
 
+**Implementation points:**
+- Exercise every credential, memory, audit, and recovery operation through Task 38.F's production application using keyboard-only navigation and the exact local request-security contract.
+- Capture bounded cross-workflow evidence that preserves secret/body redaction, server-derived scope, recovery no-bypass behavior, visible terminal status, and the sole production composition without inventing browser outcomes.
+- Make `test_every_operations_form_has_label_focus_and_live_error_region` GREEN by requiring every rendered operations form to satisfy the shared label, focus, and live-error contract.
+- Own merged browser/accessibility acceptance and bounded evidence only. Production interface expansion, broad-test concealment, direct child fixes without repair/re-review, and a new verifier-first sequence remain out of scope pending PEX-003.
+
 **Intentionally failing test:**
 
 ```python
@@ -7045,7 +11082,30 @@ def test_every_operations_form_has_label_focus_and_live_error_region(
 - Browser: exercise credential set/status/update/clear, memory create/confirm/view/clear, paged audit/ended-run clear, and recovery preview→explicit apply using production composition and keyboard only.
 - Expected: no secret/body leakage, cross-workspace access, recovery bypass, inaccessible focus/error/status, or alternate composition remains.
 
+**Review gate:**
+1. Spec compliance review checks Task 38.G's Goal, Milestone 38's four-field aggregate and SPEC scope, this Implementation boundary, exact existing RED, and Verification as one consistent cross-workflow browser/accessibility contract without changing its execution order.
+2. Code quality and Open Design review uses `ui-ux-pro-max` for the merged local security-operations product and checks production-composition coverage, keyboard navigation, focus order, labels, live errors/status, escaping, request/access control, readable hierarchy/contrast, secret/body redaction, server-derived scope, recovery no-bypass, and evidence truthfulness.
+3. Critical/Important findings block Tasks 31.C, 33.B, 37.A, and 37.B until fixes are verified through the owning child repair/re-review process and the same Task 38.G review stage returns PASS.
+
 **Completion evidence:** Not yet executed.
+
+- [ ] **Step 1: Write Task 38.G's exact existing RED probe.** Add the complete declared `test_every_operations_form_has_label_focus_and_live_error_region` case to the listed test file without changing production implementation or introducing a verifier-first path.
+- [ ] **Step 2: Run Task 38.G RED.** Run `python -m pytest -q tests/web/test_operations_accessibility.py::test_every_operations_form_has_label_focus_and_live_error_region`. Record the task-owned accessible-form assertion and exit code; collection, runner, unrelated import, unavailable browser, or production-app startup failure does not count as RED.
+- [ ] **Step 3: Exercise all merged operations with keyboard navigation.** Apply IP-1: Traverse the four workflows through production composition and exact local request security.
+- [ ] **Step 4: Capture bounded security and accessibility evidence.** Apply IP-2: Record only actual redaction, scope, recovery, status, and composition observations.
+- [ ] **Step 5: Enforce the shared operations-form contract.** Apply IP-3: Require labels, focus behavior, and live error regions on every rendered form.
+- [ ] **Step 6: Seal browser-acceptance-only ownership.** Apply IP-4: Keep interface expansion, concealed defects, direct unreviewed child repair, and PEX-003 verifier-first work outside Task 38.G.
+- [ ] **Step 7: Run Task 38.G Target GREEN.** Re-run `python -m pytest -q tests/web/test_operations_accessibility.py::test_every_operations_form_has_label_focus_and_live_error_region`. Require exit `0` and the exact RED assertion to pass before continuing.
+- [ ] **Step 8: Refactor within Task 38.G's boundary.** Improve test names and bounded acceptance helpers only in declared Files and the Implementation boundary; preserve the existing RED/Verification order and add no production interface.
+- [ ] **Step 9: Run Task 38.G Domain verification.** Run `python -m pytest -q tests/web`. Record the exact command and actual result.
+- [ ] **Step 10: Perform Task 38.G Browser verification and check acceptance.** Exercise credential set/status/update/clear, memory create/confirm/view/clear, paged audit/ended-Run clear, and recovery preview then explicit apply through production composition using keyboard only. Record real captures/report access and outcomes; unavailable, failed, inaccessible, uncertain, or non-terminal browser evidence keeps the task incomplete.
+- [ ] **Step 11: Run Task 38.G standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 12: Request Task 38.G spec compliance review.** Provide the Goal, Milestone 38 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
+- [ ] **Step 13: Close Task 38.G spec findings.** Route every Critical/Important production defect to its owning child repair/re-review process, rerun Steps 7 and 9–11, and obtain same-stage Task 38.G spec re-review PASS.
+- [ ] **Step 14: Request Task 38.G code quality and Open Design review.** Provide the spec-reviewed browser tests, captures, and bounded report; invoke `ui-ux-pro-max` and require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 15: Close Task 38.G quality/design findings.** Route every Critical/Important production defect to its owning child repair/re-review process, fix task-owned acceptance defects, rerun Steps 7 and 9–11, and obtain same-stage code-quality/Open Design re-review PASS.
+- [ ] **Step 16: Commit Task 38.G after both review stages PASS.** Commit only task-owned browser/accessibility tests, bounded evidence, and permitted records; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 17: Record Task 38.G completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 ## Task Dependency DAG
 
