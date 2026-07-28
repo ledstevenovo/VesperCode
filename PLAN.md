@@ -2,15 +2,15 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Status:** Draft — awaiting M0 approval, human PLAN approval, and cold-start validation
+**Status:** Draft — M0 is approved for the exact authoritative SPEC identity below; awaiting fresh post-M0 `PlanAuditContractV1` Verifier A/B audit, both independent design-document reviews, human approval of the exact current PLAN identity, and heterogeneous cold-start validation
 
-**Authoritative SPEC:** `SPEC.md`
+**Authoritative SPEC:** `D:\code\VesperCode\SPEC.md`
 
-**Authoritative SPEC SHA-256:** `80ccc86d9c06bdf7b4fed8673e2e6879942ca2cbc2b07c91bf1276b19a7447aa`
+**Authoritative SPEC SHA-256:** `0b6bb6416028bde530aa0028b028c4f440c6ed8be478ffb7abb246d5912380bd`
 
-**Authoritative SPEC Git blob (`git hash-object --no-filters`):** `2cc522eeb2eb61e75ce96b6500ebbfdf8db18499`
+**Authoritative SPEC Git blob (`git hash-object --no-filters`):** `f9a55eb647a373912a7c1919dad4577b150cf893`
 
-**Planning baseline Git commit:** `f6aa9897ca8e9f3cab86143b880a306d96a252e1`
+**Planning baseline Git commit:** `a9072ad4f259e6ef354bbabb26b67815e15edb4f`
 
 **Course requirements:** `AI4SE_Final_Project_通用要求.md`
 
@@ -20,7 +20,7 @@
 
 **Planning method:** The installed `superpowers:writing-plans` skill was loaded and used to produce this plan. The user-selected repository-root location overrides the skill's default dated-plan location.
 
-**Implementation prohibition:** Formal implementation, CI work, release work, and deployment are prohibited until `PlanAuditContractV1` Verifier A/B agree on `PASS` for the exact candidate, the Independent PLAN Review Gate separately passes both reviews, M0 and the human approve the exact SPEC identity, the PLAN complete-file SHA-256 and external `PlanSemanticDigestV1` are independently calculated and human-approved, and the heterogeneous-agent cold-start gate passes; only then may Task 1 begin.
+**Implementation prohibition:** Formal implementation, CI work, release work, and deployment remain prohibited. The only valid admission order is: M0 approval of the exact authoritative SPEC identity (completed) → fresh `PlanAuditContractV1` Verifier A/B audit `PASS` for the same current PLAN candidate and approved SPEC identity → independent `PLAN_SPEC_COMPLIANCE` and `PLAN_EXECUTABILITY` design-document reviews, each with zero open findings and `PASS` for that same candidate → human approval of the exact complete-file PLAN SHA-256 and external `PlanSemanticDigestV1` → heterogeneous no-history cold-start `PASS` → Task 1.
 
 **Cold-start isolation:** Cold-start trial code, branches, worktrees, and commits must be disposable, must not be merged, and must not be reused by formal implementation.
 
@@ -386,11 +386,11 @@ The ordered migration sequence is exactly v0001 through v0012 with no duplicate,
 
 ## Independent PLAN Review Gate
 
-This planning-only gate is not a formal implementation task and has no task number. It runs only after independent `PlanAuditContractV1` Verifier A and Verifier B records agree on `PASS` for the exact candidate, and it must pass before M0 or human approval may be used. Mechanical audit agreement proves neither full SPEC/course compliance nor task-by-task executability.
+This planning-only gate is not a formal implementation task and has no task number. It is strictly post-M0. It runs only after fresh, independent `PlanAuditContractV1` Verifier A and Verifier B records agree on `PASS` for the same current PLAN candidate and the M0-approved SPEC identity, and both reviews must pass before human PLAN identity approval or cold-start. Mechanical audit agreement proves neither full SPEC/course compliance nor task-by-task executability. Pre-M0 task-6/task-7 audit results and task-7 review results are historical only and cannot be reused as a current `PASS`.
 
 ### Exact inputs and reviewer independence
 
-- Each review receives the exact candidate `PLAN.md`; authoritative `SPEC.md`; `AI4SE_Final_Project_通用要求.md`; `AI4SE_Final_Project_A_Coding_Agent_Harness(1).md`; every applicable `AGENTS.md`; matching Verifier A/B `PlanAuditResultV1` records; and the fixed candidate Git HEAD, complete PLAN SHA-256, SPEC SHA-256/Git blob, and externally computed `PlanSemanticDigestV1`.
+- Each review receives the exact current candidate `PLAN.md`; authoritative `D:\code\VesperCode\SPEC.md` at SHA-256 `0b6bb6416028bde530aa0028b028c4f440c6ed8be478ffb7abb246d5912380bd` and Git blob `f9a55eb647a373912a7c1919dad4577b150cf893`; `AI4SE_Final_Project_通用要求.md`; `AI4SE_Final_Project_A_Coding_Agent_Harness(1).md`; every applicable `AGENTS.md`; fresh matching Verifier A/B `PlanAuditResultV1` records; and the fixed candidate Git HEAD, complete PLAN SHA-256, approved SPEC identity, and externally computed `PlanSemanticDigestV1`.
 - The input identity set records canonical absolute path plus SHA-256 for every file/result, the SPEC Git blob, candidate Git HEAD, and both verifier source/result identities. A path, byte, digest, HEAD, or audit-result mismatch is an input failure, not a reviewable exception.
 - The reviewer is independent from every PLAN author and fixer. The reviewer must not accept this PLAN's prose, an embedded PASS claim, Verifier A alone, or either review's other PASS as evidence.
 - `PLAN_SPEC_COMPLIANCE` and `PLAN_EXECUTABILITY` are separate, independently decidable passes. One PASS never implies the other. One independent reviewer instance may execute both only as two explicit fresh checklists, with separate evidence, findings, source/checklist digests, result objects, and result digests.
@@ -442,29 +442,33 @@ A review verdict is `PASS` only when all expected checklist items are recorded a
 
 Overall gate PASS requires both separate result objects to be `PASS` for the same candidate PLAN bytes, Git HEAD, SPEC SHA/blob, course/AGENTS inputs, A/B audit identities, and external `PlanSemanticDigestV1`. Any remediation that changes candidate bytes invalidates both checklists and results; matching Verifier A/B and both fresh reviews must repeat. This PLAN never embeds a current checklist/result digest and never claims this gate has passed.
 
-Before M0 or human approval, `SPEC_PROCESS.md` must register both checklist/result identities, both reviewer identity/type and independence evidence, matching A/B source/result identities, every finding and closure, exact candidate identities, and the final overall gate decision. Missing, stale, or incomplete registration blocks M0 use.
+After M0 and before human PLAN identity approval, `SPEC_PROCESS.md` must register both fresh checklist/result identities, both reviewer identity/type and independence evidence, matching post-M0 A/B source/result identities, every finding and closure, exact current candidate identities, and the final overall gate decision. Missing, stale, pre-M0, or incomplete registration blocks human PLAN identity approval and cold-start.
 
 ## M0 — SPEC Readiness Gate
 
-M0 is not a formal implementation task and has no task number. This PLAN revision remains a non-authoritative draft until every M0 check passes.
+M0 is not a formal implementation task and has no task number. M0 has passed for exactly the approved identity recorded below. This PLAN remains Draft because fresh post-M0 PLAN audits, both independent design-document reviews, human PLAN identity approval, and cold-start are still pending.
 
-The exact-candidate Independent PLAN Review Gate above must have overall PASS and complete `SPEC_PROCESS.md` registration before any M0 check or human approval may be used. Any candidate PLAN byte or required input identity change invalidates that evidence and blocks M0 until matching Verifier A/B and both independent reviews repeat.
+The approved M0 ran before this PLAN admission remediation, as required by authoritative SPEC §11.2. Its fresh technical checklist was 100/100 `PASS`, all 6/6 known blockers were `PASS`, and the independent design-document review was Approved. The approved identity is exact path `D:\code\VesperCode\SPEC.md`, raw SHA-256 `0b6bb6416028bde530aa0028b028c4f440c6ed8be478ffb7abb246d5912380bd`, Git blob `f9a55eb647a373912a7c1919dad4577b150cf893`, and baseline commit `a9072ad4f259e6ef354bbabb26b67815e15edb4f`. The M0 review record SHA-256 is `8e3ef1c2b4af341447b2eef0fc87aaa6a434367ca949ed7dee50f0acc00ca0b0`; the external human approval record is `.superpowers/sdd/PLAN/task-9-m0-human-approval.md`. This summary belongs only in PLAN metadata and external process evidence; it must never be written back into the SPEC it identifies.
 
 1. Resolve exactly one authoritative SPEC path from the user's designation, document status, and current Git/filesystem facts. Any unresolved competing SPEC candidate fails M0.
 2. Recompute, never copy, the authoritative SPEC identities with SHA-256 and `git hash-object --no-filters SPEC.md`, and record `git rev-parse HEAD`.
 3. Compare the exact SPEC against `AI4SE_Final_Project_通用要求.md`, `AI4SE_Final_Project_A_Coding_Agent_Harness(1).md`, and applicable `AGENTS.md`; any conflict or missing mandatory deliverable fails M0.
 4. Confirm all known blockers are closed in the exact SPEC: GitHub Actions plus GitLab CI; canonical List/Search cursors; per-real-call credential revalidation; `PlanSemanticDigestV1` execution-tracking exclusions; a Task 1-owned reproducible gate bootstrap that Tasks 2–3 consume without Task 4 or global pytest/Ruff/Mypy; and Task 2's no-credential loopback-registry digest round-trip/no-self-reference contract with real GHCR publication reserved for Task 36.
 5. Require the human to approve the exact authoritative SPEC path, SHA-256, Git blob, and baseline commit. Record the approval externally in `SPEC_PROCESS.md`; never write a digest into the file it identifies.
-6. For this draft, the recomputed candidate identity is `SPEC.md`, SHA-256 `80ccc86d9c06bdf7b4fed8673e2e6879942ca2cbc2b07c91bf1276b19a7447aa`, Git blob `2cc522eeb2eb61e75ce96b6500ebbfdf8db18499`, baseline commit `f6aa9897ca8e9f3cab86143b880a306d96a252e1`. These values are observations, not an approval.
-7. If any check or approval fails, return to SPEC revision/clarification. Do not freeze this PLAN, run cold-start work, or begin Task 1.
+6. The approved result is bound only to exact path `D:\code\VesperCode\SPEC.md`, SHA-256 `0b6bb6416028bde530aa0028b028c4f440c6ed8be478ffb7abb246d5912380bd`, Git blob `f9a55eb647a373912a7c1919dad4577b150cf893`, and baseline commit `a9072ad4f259e6ef354bbabb26b67815e15edb4f`.
+7. Any later SPEC byte or identity change invalidates this M0 approval and returns the process to SPEC revision/clarification. Do not freeze a changed PLAN, run cold-start work, or begin Task 1 until the applicable admission sequence repeats.
 
-After M0 passes, compute `PlanSemanticDigestV1` exactly as SPEC §11.2: normalize the no-BOM UTF-8 PLAN to LF; only inside `## Formal Tasks` through the byte before `## Task Dependency DAG`, normalize `**Status:** ...`, `[ ]`/`[x]`, and one-line `**Completion evidence:** ...` using the declared replacement tokens; leave every other byte intact; hash `b"VesperCode\0PLAN_SEMANTIC_CONTRACT_V1\0" + projected_plan_bytes` with SHA-256. Store that digest and the complete-file PLAN SHA-256 in the external approval record. Only those three enumerated tracking updates preserve semantic approval; every other PLAN change requires a new semantic digest, human approval, and cold-start.
+For each current post-M0 PLAN candidate, compute `PlanSemanticDigestV1` exactly as SPEC §11.2: normalize the no-BOM UTF-8 PLAN to LF; only inside `## Formal Tasks` through the byte before `## Task Dependency DAG`, normalize `**Status:** ...`, `[ ]`/`[x]`, and one-line `**Completion evidence:** ...` using the declared replacement tokens; leave every other byte intact; hash `b"VesperCode\0PLAN_SEMANTIC_CONTRACT_V1\0" + projected_plan_bytes` with SHA-256. Use that external digest and the complete-file PLAN SHA-256 as inputs to the fresh A/B audits and both independent reviews. Only those three enumerated tracking updates preserve a later semantic approval; every other PLAN change requires a new semantic digest, human approval, and cold-start.
+
+## Human PLAN Identity Approval Gate
+
+This planning-only gate is not a formal implementation task and has no task number. It occurs only after fresh post-M0 Verifier A/B audit `PASS` and separate zero-open `PASS` results for `PLAN_SPEC_COMPLIANCE` and `PLAN_EXECUTABILITY`, all bound to the same unchanged current PLAN candidate and the approved SPEC identity. The human must then approve the exact complete-file PLAN SHA-256 together with the external `PlanSemanticDigestV1`; the approval record must also bind the exact approved SPEC path, SHA-256, and Git blob. Pre-M0 task-6/task-7 evidence cannot satisfy this gate. Any candidate byte change before cold-start invalidates this approval and requires fresh matching audits, both reviews, and human PLAN identity approval.
 
 ## Pre-implementation Cold-start Gate
 
 This gate is not a formal implementation task and has no task number.
 
-1. The registered Independent PLAN Review Gate must still identify the exact unchanged candidate, M0 must have passed, and the user must approve the exact `SPEC.md` SHA-256/Git blob plus the independently computed complete `PLAN.md` SHA-256 and external `PlanSemanticDigestV1` as one semantic/full-identity contract.
+1. M0 must remain valid, the registered fresh A/B audit and both Independent PLAN Review results must still identify the exact unchanged candidate, and the external Human PLAN Identity Approval Gate record must already approve that candidate's complete `PLAN.md` SHA-256 and `PlanSemanticDigestV1` bound to the exact approved SPEC identity.
 2. The trial agent must be a different agent type from the primary development agent.
 3. The trial uses a new session with no prior conversation, memory, `AGENT_LOG.md`, `SPEC_PROCESS.md`, `TASK_HANDOFF.md`, or oral explanation.
 4. The trial agent receives only the approved SPEC and PLAN.
@@ -6931,12 +6935,12 @@ No parser-only test, Linux wheel install, manually copied log, tag-based image r
 
 ## Plan Mechanical and Semantic Closure Audit
 
-This section defines `PlanAuditContractV1`. It is a reproducible audit contract, not a hand-written proof. It is mandatory after every non-tracking PLAN edit. Current values below are derived evidence only; the authoritative result objects, hashes, commands, exit codes, and Git identity stay in the ignored Task 6 review package.
+This section defines `PlanAuditContractV1`. It is a reproducible audit contract, not a hand-written proof. It is mandatory after every non-tracking PLAN edit and is strictly post-M0 for PLAN admission. Fresh Verifier A and Verifier B results must target the same current PLAN candidate and the M0-approved SPEC identity. The pre-M0 task-6/task-7 results and the derived values retained below are historical only; they do not establish a current `PASS`.
 
 ### Exact inputs, decoding, and section discovery
 
 - The verifier has three explicit CLI inputs: the candidate `PLAN.md` path, the authoritative `D:/code/VesperCode/SPEC.md` path, and one ignored result path. Both input paths are resolved and normalized to absolute identities in the result.
-- Both inputs must decode as strict UTF-8. PLAN must have no UTF-8 BOM, no CR byte, and exactly one final LF. The authoritative SPEC SHA-256 must equal `80ccc86d9c06bdf7b4fed8673e2e6879942ca2cbc2b07c91bf1276b19a7447aa`.
+- Both inputs must decode as strict UTF-8. PLAN must have no UTF-8 BOM, no CR byte, and exactly one final LF. The authoritative SPEC SHA-256 must equal `0b6bb6416028bde530aa0028b028c4f440c6ed8be478ffb7abb246d5912380bd`.
 - Section discovery uses exact full-line heading equality. A heading mentioned inside prose or inline code is not a boundary; substring `indexOf` discovery is forbidden.
 - Markdown table rows are split only on `|` outside a balanced inline-code backtick span. A `|` inside one or more matching backticks remains part of the same cell.
 - Executable headings are exact full lines matching `#### Task <integer>.<uppercase-letter>: <non-empty title>`, plus the one retained exact full-line form `### Task 13: <non-empty title>`. Aggregate headings are exact full lines matching `### Milestone <integer>: <non-empty title>` and are never graph nodes.
@@ -6991,7 +6995,7 @@ Verifier-private parser, governance-negative, and result-schema self-tests run f
 
 `PASS` is permitted only when both issue lists are empty, every projection test passes, and the SPEC SHA-256 matches the authoritative identity. An exception, unreadable input, output failure, disagreement, unproved check, or parser ambiguity is `FAIL`; absence of an issue is never inferred from a hand-written table.
 
-Verifier A and Verifier B use independently written implementations and different parsing routes. They may share this prose contract and input bytes but may not import or copy one another. Before approval, both results must have the exact canonical shape and order above; every field and nested value must compare equal in order except `verifierSourceSha256`, for which both values must be valid and must differ. This equality includes canonical input identities, all three candidate/SPEC digests other than the independent source digest, all 29 metrics, both empty issue arrays, all 14 projection objects, and `verdict`. Any schema, order, type, value, or comparison disagreement is `FAIL`.
+Verifier A and Verifier B use independently written implementations and different parsing routes. They may share this prose contract and input bytes but may not import or copy one another. Before human PLAN identity approval, both fresh post-M0 results must have the exact canonical shape and order above; every field and nested value must compare equal in order except `verifierSourceSha256`, for which both values must be valid and must differ. This equality includes canonical input identities, all three candidate/SPEC digests other than the independent source digest, all 29 metrics, both empty issue arrays, all 14 projection objects, and `verdict`. Any schema, order, type, value, or comparison disagreement is `FAIL`.
 
 ### Exact planning-only commands and external evidence
 
@@ -7005,13 +7009,13 @@ node .superpowers/sdd/PLAN/task-6-verifier-a.mjs --plan PLAN.md --spec D:/code/V
 node .superpowers/sdd/PLAN/task-6-verifier-b.mjs --plan PLAN.md --spec D:/code/VesperCode/SPEC.md --out .superpowers/sdd/PLAN/task-6-result-b.json
 ```
 
-Each command reads PLAN/SPEC only and writes its one ignored JSON result. The ignored Task 6 report/review package records the exact command text, verifier source SHA-256, stdout/result SHA-256, exit code, and Git HEAD observed before and after the run. It also compares the two typed results field by field. These planning artifacts are not implementation dependencies, are not referenced by executable tasks, and are never committed.
+Each command reads PLAN/SPEC only and writes its one ignored JSON result. The ignored Task 6 report/review package records the exact command text, verifier source SHA-256, stdout/result SHA-256, exit code, and Git HEAD observed before and after the run. It also compares the two typed results field by field. These filenames are tooling locations only: every pre-M0 result is historical, and only newly executed post-M0 results for the exact current candidate may be used for admission. These planning artifacts are not implementation dependencies, are not referenced by executable tasks, and are never committed.
 
-### Current derived results under `PlanAuditContractV1`
+### Historical pre-M0 derived results under `PlanAuditContractV1`
 
-The following is a concise rendering of Verifier A's current derived evidence. It is not self-proving and does not substitute for its ignored JSON, the independent Verifier B result, or their required comparison.
+The following is a concise rendering of the pre-M0 Verifier A evidence retained for comparison only. It is not current candidate evidence, is not self-proving, and does not substitute for fresh post-M0 Verifier A/B results and their required comparison.
 
-| Derived invariant | Current measured result |
+| Derived invariant | Historical pre-M0 measured result |
 |---|---|
 | Aggregate registry | 37 exact four-field Milestones; 134 unique same-prefix child memberships; no aggregate execution authority |
 | Executable registry and tracking | 135 executables: retained Task 13 plus 134 dotted children; 135 `Not started`; 135 `Not yet executed`; document Draft once |
@@ -7024,7 +7028,7 @@ The following is a concise rendering of Verifier A's current derived evidence. I
 | Interfaces and examples | Required Task 11/16/20/25/26 families present; zero incompatible same-name arity, resolvable RED/example arity, SPEC-family, dependency/toolchain, recovery-composition, or stale-token issue |
 | Demo provenance | 9 shared modules; 16 prohibited prefixes; all producers reachable; real `ActionPipeline.execute` provenance present; formal engine absent from Demo reuse |
 | Projection tests | Status, checkbox, and long completion evidence preserve; Goal, dependency, interface, command/review, and matrix/gate mutations change; missing/duplicate boundaries, BOM, and bare CR reject |
-| Current issue sets | Zero mechanical issues; zero semantic issues |
+| Historical pre-M0 issue sets | Zero mechanical issues; zero semantic issues |
 
 ## Release Readiness Gate
 
