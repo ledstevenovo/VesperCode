@@ -11056,47 +11056,56 @@ The installed CLI fixture resolves the configured `vespercode` console entry poi
 **Files:**
 - Create: `tests/web/test_operations_accessibility.py`
 
-**Interfaces:** Produces browser captures and a bounded acceptance report for credential, memory, audit, and recovery flows through the production application; adds no production interface.
+**Interfaces:** Produces test-owned `OperationsAccessibilityAcceptanceResultV1(workflow_ids: tuple[str, ...], keyboard_only: bool, capture_count: int, failures: tuple[str, ...])` and `run_operations_accessibility_acceptance(rendered_operations_pages: tuple[str, ...], workflow_ids: tuple[str, ...], input_events: tuple[str, ...]) -> OperationsAccessibilityAcceptanceResultV1` inside `tests/web/test_operations_accessibility.py`, plus browser captures and a bounded acceptance report for credential, memory, audit, and recovery flows through the production application; adds no production interface.
 
 **Implementation points:**
-- Exercise every credential, memory, audit, and recovery operation through Task 38.F's production application using keyboard-only navigation and the exact local request-security contract.
-- Capture bounded cross-workflow evidence that preserves secret/body redaction, server-derived scope, recovery no-bypass behavior, visible terminal status, and the sole production composition without inventing browser outcomes.
-- Make `test_every_operations_form_has_label_focus_and_live_error_region` GREEN by requiring every rendered operations form to satisfy the shared label, focus, and live-error contract.
-- Own merged browser/accessibility acceptance and bounded evidence only. Production interface expansion, broad-test concealment, direct child fixes without repair/re-review, and a new verifier-first sequence remain out of scope pending PEX-003.
+- Define the test-owned result and acceptance runner in the declared test file with deterministic workflow ordering, bounded capture counts, and stable failure codes; production modules expose no new interface.
+- Exercise credential, memory, audit, and recovery pages through Task 38.F's production composition using only keyboard input events and the exact local request-security contract.
+- Fail closed when any required workflow, label, focus transition, live error/status region, redaction/scope invariant, or recovery no-bypass observation is absent; record only bounded in-memory acceptance evidence.
+- Own the verifier-first test runner, merged browser/accessibility acceptance, and bounded evidence only. Production defects must return to their owning child repair/re-review process; this task cannot conceal or directly patch them.
 
 **Intentionally failing test:**
 
 ```python
-def test_every_operations_form_has_label_focus_and_live_error_region(
+def test_operations_acceptance_runner_requires_all_workflows(
     rendered_operations_pages: tuple[str, ...],
 ) -> None:
-    for page in rendered_operations_pages:
-        assert_accessible_form_contract(page)
+    result = run_operations_accessibility_acceptance(
+        rendered_operations_pages=rendered_operations_pages,
+        workflow_ids=("CREDENTIAL", "MEMORY", "AUDIT", "RECOVERY"),
+        input_events=("TAB", "ENTER"),
+    )
+    assert result.workflow_ids == ("CREDENTIAL", "MEMORY", "AUDIT", "RECOVERY")
+    assert result.keyboard_only is True
+    assert result.capture_count == len(rendered_operations_pages)
+    assert result.failures == ()
 ```
 
-**Implementation boundary:** This child may fix only integration/accessibility defects in the owning child via that child's repair/re-review process; it cannot hide missing behavior in a broad browser test.
+**Expected RED:** the pytest runner and existing production-page fixture start successfully, then the test fails because the task-owned `run_operations_accessibility_acceptance` and `OperationsAccessibilityAcceptanceResultV1` do not exist. A missing test, collection/import failure unrelated to those exact task-owned symbols, unavailable browser, or production-application startup failure does not count as RED.
+
+**Implementation boundary:** This child owns only the test-local acceptance result/runner, browser captures, and bounded report. It adds no production interface and may not fix a production integration/accessibility defect directly; every such defect returns to the owning child and its repair/re-review process before Task 38.G can pass.
 
 **Verification:**
-- Target: `python -m pytest -q tests/web/test_operations_accessibility.py::test_every_operations_form_has_label_focus_and_live_error_region`
+- Target: `python -m pytest -q tests/web/test_operations_accessibility.py::test_operations_acceptance_runner_requires_all_workflows`
 - Domain: `python -m pytest -q tests/web`
 - Browser: exercise credential set/status/update/clear, memory create/confirm/view/clear, paged audit/ended-run clear, and recovery preview→explicit apply using production composition and keyboard only.
 - Expected: no secret/body leakage, cross-workspace access, recovery bypass, inaccessible focus/error/status, or alternate composition remains.
 
 **Review gate:**
-1. Spec compliance review checks Task 38.G's Goal, Milestone 38's four-field aggregate and SPEC scope, this Implementation boundary, exact existing RED, and Verification as one consistent cross-workflow browser/accessibility contract without changing its execution order.
-2. Code quality and Open Design review uses `ui-ux-pro-max` for the merged local security-operations product and checks production-composition coverage, keyboard navigation, focus order, labels, live errors/status, escaping, request/access control, readable hierarchy/contrast, secret/body redaction, server-derived scope, recovery no-bypass, and evidence truthfulness.
+1. Spec compliance review checks that the missing test-owned runner guarantees RED independently of Task 38.F's production state, and that Goal, Milestone 38 scope, Implementation boundary, GREEN acceptance, and Browser verification form one fail-closed cross-workflow contract.
+2. Code quality and Open Design review checks deterministic bounded runner output, exact four-workflow coverage, production-interface isolation, keyboard navigation, focus order, labels, live errors/status, escaping, request/access control, readable hierarchy/contrast, secret/body redaction, server-derived scope, recovery no-bypass, and evidence truthfulness.
 3. Critical/Important findings block Tasks 31.C, 33.B, 37.A, and 37.B until fixes are verified through the owning child repair/re-review process and the same Task 38.G review stage returns PASS.
 
 **Completion evidence:** Not yet executed.
 
-- [ ] **Step 1: Write Task 38.G's exact existing RED probe.** Add the complete declared `test_every_operations_form_has_label_focus_and_live_error_region` case to the listed test file without changing production implementation or introducing a verifier-first path.
-- [ ] **Step 2: Run Task 38.G RED.** Run `python -m pytest -q tests/web/test_operations_accessibility.py::test_every_operations_form_has_label_focus_and_live_error_region`. Record the task-owned accessible-form assertion and exit code; collection, runner, unrelated import, unavailable browser, or production-app startup failure does not count as RED.
-- [ ] **Step 3: Exercise all merged operations with keyboard navigation.** Apply IP-1: Traverse the four workflows through production composition and exact local request security.
-- [ ] **Step 4: Capture bounded security and accessibility evidence.** Apply IP-2: Record only actual redaction, scope, recovery, status, and composition observations.
-- [ ] **Step 5: Enforce the shared operations-form contract.** Apply IP-3: Require labels, focus behavior, and live error regions on every rendered form.
-- [ ] **Step 6: Seal browser-acceptance-only ownership.** Apply IP-4: Keep interface expansion, concealed defects, direct unreviewed child repair, and PEX-003 verifier-first work outside Task 38.G.
-- [ ] **Step 7: Run Task 38.G Target GREEN.** Re-run `python -m pytest -q tests/web/test_operations_accessibility.py::test_every_operations_form_has_label_focus_and_live_error_region`. Require exit `0` and the exact RED assertion to pass before continuing.
-- [ ] **Step 8: Refactor within Task 38.G's boundary.** Improve test names and bounded acceptance helpers only in declared Files and the Implementation boundary; preserve the existing RED/Verification order and add no production interface.
+- [ ] **Step 1: Write Task 38.G's verifier-first RED probe.** Add only the declared `test_operations_acceptance_runner_requires_all_workflows` case; deliberately leave the task-owned result and runner undefined and make no production change.
+- [ ] **Step 2: Run Task 38.G RED.** Run `python -m pytest -q tests/web/test_operations_accessibility.py::test_operations_acceptance_runner_requires_all_workflows`. Accept RED only when pytest and the existing production-page fixture start and execution reaches the exact missing task-owned result/runner symbols; other collection, import, browser, or application-startup failures do not count.
+- [ ] **Step 3: Define the test-owned acceptance result and runner.** Apply IP-1 in `tests/web/test_operations_accessibility.py` with deterministic workflow order, bounded captures, and stable failures.
+- [ ] **Step 4: Exercise all merged operations with keyboard navigation.** Apply IP-2 through Task 38.F's production composition and exact local request-security boundary.
+- [ ] **Step 5: Capture and evaluate bounded acceptance evidence.** Apply IP-3 for all required accessibility, redaction, scope, recovery, status, and composition observations.
+- [ ] **Step 6: Seal acceptance-only ownership.** Apply IP-4 by returning every production defect to its owning child repair/re-review process and adding no production interface.
+- [ ] **Step 7: Run Task 38.G Target GREEN.** Re-run `python -m pytest -q tests/web/test_operations_accessibility.py::test_operations_acceptance_runner_requires_all_workflows`. Require exit `0`, exact four-workflow coverage, keyboard-only evidence, bounded captures, and an empty stable failure set.
+- [ ] **Step 8: Refactor within Task 38.G's boundary.** Improve only the test-owned result/runner and bounded acceptance helpers in the declared test file; preserve behavior and add no production interface.
 - [ ] **Step 9: Run Task 38.G Domain verification.** Run `python -m pytest -q tests/web`. Record the exact command and actual result.
 - [ ] **Step 10: Perform Task 38.G Browser verification and check acceptance.** Exercise credential set/status/update/clear, memory create/confirm/view/clear, paged audit/ended-Run clear, and recovery preview then explicit apply through production composition using keyboard only. Record real captures/report access and outcomes; unavailable, failed, inaccessible, uncertain, or non-terminal browser evidence keeps the task incomplete.
 - [ ] **Step 11: Run Task 38.G standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
