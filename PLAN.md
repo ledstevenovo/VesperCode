@@ -305,7 +305,7 @@ The paths below lock file ownership before task decomposition. Files are small, 
 | `src/vespercode/cli_composition.py` | Task 38.F sole production recovery-CLI handler/service wiring after complete v1 database initialization |
 | `src/vespercode/delivery/evidence.py` | Closed non-secret CI, release, and deployment evidence schemas |
 | `src/vespercode/delivery/readme_verifier.py` | Read-only README section/command/link/digest contract verifier |
-| `src/vespercode/delivery/process_verifier.py` | Read-only M0/cold-start/task/review/commit/PR process-evidence verifier |
+| `src/vespercode/delivery/process_verifier.py` | Read-only M0/cold-start/typed independent-PLAN-review/task/review/commit/PR process-evidence verifier |
 
 ### Fixtures, images, and test environments
 
@@ -442,7 +442,7 @@ A review verdict is `PASS` only when all expected checklist items are recorded a
 
 Overall gate PASS requires both separate result objects to be `PASS` for the same candidate PLAN bytes, Git HEAD, SPEC SHA/blob, course/AGENTS inputs, A/B audit identities, and external `PlanSemanticDigestV1`. Any remediation that changes candidate bytes invalidates both checklists and results; matching Verifier A/B and both fresh reviews must repeat. This PLAN never embeds a current checklist/result digest and never claims this gate has passed.
 
-After M0 and before human PLAN identity approval, `SPEC_PROCESS.md` must register both fresh checklist/result identities, both reviewer identity/type and independence evidence, matching post-M0 A/B source/result identities, every finding and closure, exact current candidate identities, and the final overall gate decision. Missing, stale, pre-M0, or incomplete registration blocks human PLAN identity approval and cold-start.
+After M0 and before human PLAN identity approval, `SPEC_PROCESS.md` must register the canonical absolute path and SHA-256 of both fresh checklist/result files, both reviewer identity/type and independence evidence, matching post-M0 A/B source/result identities, every finding and closure, exact current candidate identities, and the final overall gate decision. Missing, stale, pre-M0, inaccessible, path-mismatched, digest-mismatched, or incomplete registration blocks human PLAN identity approval and cold-start.
 
 ## M0 — SPEC Readiness Gate
 
@@ -10400,7 +10400,7 @@ def test_readme_fails_when_release_digest_verification_is_missing(
 
 **Status:** Not started
 
-**Goal:** Complete truthful append-preserving `SPEC_PROCESS.md` and `AGENT_LOG.md` records for M0, semantic approval, cold-start, every executable task, review, intervention, commit, PR, failure, and lesson.
+**Goal:** Complete truthful append-preserving `SPEC_PROCESS.md` and `AGENT_LOG.md` records and fail-closed verification for M0, semantic approval, both typed Independent PLAN Review passes, cold-start, every executable task, review, intervention, commit, PR, failure, and lesson.
 
 **SPEC references:** Milestone 37 process/log evidence and course Superpowers-workflow requirements.
 
@@ -10416,21 +10416,37 @@ def test_readme_fails_when_release_digest_verification_is_missing(
 - Create: `src/vespercode/delivery/process_verifier.py`
 - Read: `config/dependency-closure-v1.json`
 - Read: `config/formal-toolchain-promotion-v1.json`
+- Read: the exact `PLAN_SPEC_COMPLIANCE` and `PLAN_EXECUTABILITY` `PlanReviewChecklistV1`/`PlanReviewResultV1` JSON paths registered in `SPEC_PROCESS.md`
 - Modify: `SPEC_PROCESS.md` (preserve history; add exact final evidence only)
 - Modify: `AGENT_LOG.md` (append-only final chronology)
 - Test: `tests/unit/process/test_delivery_evidence.py` (process-record cases)
 
-**Interfaces:** Consumes the Task 1.E terminal `GO` `GateToolchainEvidenceV1`, `load_dependency_closure(root: Path) -> DependencyClosureV1`, and `load_formal_toolchain_promotion(root: Path) -> FormalToolchainPromotionV1` as strict read-only record inputs; produces `verify_process_evidence(root: Path) -> ProcessEvidenceResultV1` with stable missing/mismatch codes and no execution of repository code.
+**Interfaces:** Consumes the Task 1.E terminal `GO` `GateToolchainEvidenceV1`, `load_dependency_closure(root: Path) -> DependencyClosureV1`, `load_formal_toolchain_promotion(root: Path) -> FormalToolchainPromotionV1`, and the exact registered `PlanReviewChecklistV1`/`PlanReviewResultV1` records as strict read-only inputs. Produces `verify_independent_plan_review_evidence(root: Path) -> IndependentPlanReviewEvidenceResultV1` and `verify_process_evidence(root: Path) -> ProcessEvidenceResultV1`. `IndependentPlanReviewEvidenceResultV1` has ordered fields `plan_complete_file_sha256`, `spec_sha256`, `plan_semantic_digest_v1`, `verifier_a_result_sha256`, `verifier_b_result_sha256`, `compliance_result_sha256`, `executability_result_sha256`, `overall_decision: Literal["PASS", "FAIL"]`, and `error_codes: tuple[str, ...]`; `ProcessEvidenceResultV1` exposes that result for disjoint Task 37.C aggregation. Both functions execute no repository code and use stable missing/schema/digest/candidate/audit/independence/finding/decision error codes.
 
 **Implementation points:**
-- Append only truthful M0, semantic-approval, cold-start, task, review, intervention, commit, PR, failure, and lesson records while preserving every prior `SPEC_PROCESS.md` and `AGENT_LOG.md` entry.
-- Implement `verify_process_evidence` as a read-only parser that reconciles all executable-task chronology and repository identities, then requires both unique dependency/toolchain records to equal the Task 1.E exact Python identity.
-- Make `test_process_evidence_rejects_formal_python_identity_drift` GREEN by emitting `FORMAL_PYTHON_IDENTITY_MISMATCH` whenever either persistent record differs character-for-character from terminal gate evidence.
-- Own final process-record append and verification only. Never fabricate absent facts, execute repository code, author reflection content, or add or repair `PlanReviewChecklistV1`, `PlanReviewResultV1`, or independent PLAN-review typed evidence.
+- Append only truthful M0, semantic-approval, typed Independent PLAN Review, cold-start, task, review, intervention, commit, PR, failure, and lesson records while preserving every prior `SPEC_PROCESS.md` and `AGENT_LOG.md` entry.
+- Implement `verify_independent_plan_review_evidence` as a read-only, fail-closed parser of both canonical checklist/result pairs and their process registration. Require exact schema/order/digests, distinct valid review kinds, reviewer independence from every recorded author/fixer, matching post-M0 A/B identities, candidate PLAN/SPEC/semantic identities, complete findings and closures, two `PASS` verdicts, and a matching overall `PASS` decision.
+- Implement `verify_process_evidence` to expose that typed result, reconcile all executable-task chronology and repository identities, require the final PLAN's recomputed `PlanSemanticDigestV1` to equal the reviewed/approved candidate digest despite permitted tracking-only byte changes, and require both unique dependency/toolchain records to equal the Task 1.E exact Python identity.
+- Own read-only validation and truthful final process-record append only. The pre-implementation reviews and their registration remain non-task process actions; this task may neither create, repair, reinterpret, or fabricate their evidence nor execute repository code or author reflection content.
 
 **Intentionally failing test:**
 
 ```python
+def test_process_evidence_rejects_stale_plan_executability_result(
+    repository_copy: Path,
+) -> None:
+    rewrite_registered_plan_review_candidate_identity(
+        repository_copy,
+        review_kind="PLAN_EXECUTABILITY",
+        plan_complete_file_sha256="0" * 64,
+    )
+    result = verify_process_evidence(repository_copy)
+    assert (
+        "PLAN_REVIEW_CANDIDATE_IDENTITY_MISMATCH:PLAN_EXECUTABILITY"
+        in result.error_codes
+    )
+
+
 def test_process_evidence_rejects_missing_child_task_review(
     repository_copy: Path,
 ) -> None:
@@ -10457,43 +10473,46 @@ def test_process_evidence_rejects_formal_python_identity_drift(
     assert "FORMAL_PYTHON_IDENTITY_MISMATCH" in result.error_codes
 ```
 
-**Implementation boundary:** Preserve historical failures/revisions; never fabricate approval, cold-start pass, subagent, review, commit, PR, human edit, or external outcome. Load the two unique JSON records as data without importing or executing repository code, require `dependency_closure.python_version == formal_toolchain_promotion.python_version == gate_evidence.python_version` by exact string comparison, and report stable missing/schema/identity errors. Validate the public compatibility range `>=3.12,<3.13` independently; range membership never replaces exact equality.
+**Expected RED:** `rewrite_registered_plan_review_candidate_identity` changes only the executability result's candidate PLAN SHA, recomputes that result's canonical self-digest and registered file SHA, and deliberately leaves the checklist, approval, A/B, and process candidate identities unchanged. The fixtures and existing process verifier load successfully, then the new test fails because no implementation detects that isolated candidate disagreement or emits `PLAN_REVIEW_CANDIDATE_IDENTITY_MISMATCH:PLAN_EXECUTABILITY`. A file/self-digest mismatch, missing fixture/record, collection/import failure, repository-code execution, or unrelated process/toolchain error does not count as RED.
+
+**Implementation boundary:** Preserve historical failures/revisions; never fabricate approval, cold-start pass, subagent, review, commit, PR, human edit, or external outcome. Resolve only the exact review-record paths and SHA-256 identities already registered by the non-task planning gate; parse canonical JSON as data without importing or executing repository code. Require both checklist/result pairs to match each other, the registered approved candidate identity, matching A/B results, reviewer-independence evidence, finding/closure records, and overall decision. Compare the final PLAN by recomputed `PlanSemanticDigestV1`; permitted Status/checkbox/one-line Completion-evidence updates may change the raw complete-file SHA but no other semantic drift is accepted. Load the two unique toolchain JSON records as data, require `dependency_closure.python_version == formal_toolchain_promotion.python_version == gate_evidence.python_version` by exact string comparison, and validate the public compatibility range `>=3.12,<3.13` independently; range membership never replaces exact equality.
 
 **Verification:**
-- Target: `python -m pytest -q tests/unit/process/test_delivery_evidence.py::test_process_evidence_rejects_formal_python_identity_drift`
+- Target: `python -m pytest -q tests/unit/process/test_delivery_evidence.py::test_process_evidence_rejects_stale_plan_executability_result`
 - Domain: `python -m pytest -q tests/unit/process/test_delivery_evidence.py`
-- Expected: M0/PLAN identities, child task chronology, reviews and real repository SHAs/PRs reconcile exactly; both persistent records exist and parse; both records' `python_version` values equal Task 1.E terminal `GO` evidence character-for-character; a range-only match fails with `FORMAL_PYTHON_IDENTITY_MISMATCH`.
+- Expected: M0/PLAN identities, child-task chronology, reviews and real repository SHAs/PRs reconcile exactly; both independent review checklist/result pairs are canonical, digest-valid, independent, A/B- and candidate-bound, findings/closures-complete, and jointly `PASS`; missing, stale, malformed, candidate-mismatched, dependent-reviewer, open-finding, or invalid-overall-decision evidence fails with a stable code. The final PLAN semantic digest equals the reviewed/approved candidate digest. Both persistent toolchain records exist and parse, and both `python_version` values equal Task 1.E terminal `GO` evidence character-for-character; a range-only match fails with `FORMAL_PYTHON_IDENTITY_MISMATCH`.
 
 **Review gate:**
-1. Spec compliance review checks Task 37.B's Goal, Milestone 37's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent truthful process-evidence contract.
-2. Code quality review checks append preservation, complete executable-task chronology, exact M0/PLAN/toolchain/source identities, character-for-character Python comparison, evidence freshness/content digests/access control, stable fail-closed errors, and absence of fabricated or PSC-003-scoped typed review records.
+1. Spec compliance review checks Task 37.B's Goal, Milestone 37 scope, Independent PLAN Review Gate registration contract, this Implementation boundary, exact RED, and Verification as one consistent truthful process-evidence contract with an executable typed-evidence owner.
+2. Code quality review checks append preservation, both complete canonical review pairs, exact candidate/semantic/SPEC/A/B/reviewer identities, reviewer independence, findings/closures and overall decision, complete executable-task chronology, exact M0/toolchain/source identities, character-for-character Python comparison, evidence freshness/content digests/access control, and stable fail-closed errors without fabricated or repaired planning evidence.
 3. Critical/Important findings block Task 37.C until fixes are verified and the same review stage returns PASS.
 
 **Completion evidence:** Not yet executed.
 
-- [ ] **Step 1: Write Task 37.B's exact RED probe.** Add the complete declared `test_process_evidence_rejects_formal_python_identity_drift` case to the listed test file without changing verifier implementation or source records.
-- [ ] **Step 2: Run Task 37.B RED.** Run `python -m pytest -q tests/unit/process/test_delivery_evidence.py::test_process_evidence_rejects_formal_python_identity_drift`. Record the task-owned exact-identity assertion and exit code; collection, runner, unrelated import, absent task/external evidence, or record-access failure does not count as RED.
-- [ ] **Step 3: Append truthful final process chronology.** Apply IP-1: Preserve history and add only confirmed identities, events, reviews, interventions, failures, and lessons.
-- [ ] **Step 4: Reconcile closed process and toolchain records.** Apply IP-2: Parse data without execution, require complete child chronology, and compare both unique records with terminal gate evidence exactly.
-- [ ] **Step 5: Reject formal Python identity drift.** Apply IP-3: Emit the stable mismatch code for either unequal exact patch even when all values satisfy the public range.
-- [ ] **Step 6: Seal process-evidence-only ownership.** Apply IP-4: Keep fabrication, repository execution, reflection authorship, and PSC-003 typed PLAN-review evidence outside Task 37.B.
-- [ ] **Step 7: Run Task 37.B Target GREEN.** Re-run `python -m pytest -q tests/unit/process/test_delivery_evidence.py::test_process_evidence_rejects_formal_python_identity_drift`. Require exit `0` and the exact RED assertion to pass before continuing.
-- [ ] **Step 8: Refactor within Task 37.B's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve append-only history and keep dependent-task work out.
-- [ ] **Step 9: Run Task 37.B Domain verification.** Run `python -m pytest -q tests/unit/process/test_delivery_evidence.py`. Record the exact command and actual result.
-- [ ] **Step 10: Reconcile Task 37.B final process acceptance.** Verify every required M0, PLAN identity, cold-start, child-task, review, human edit, SHA, PR, failure, lesson, dependency-closure, promotion, and gate record against real accessible evidence. Missing, stale, mismatched, inaccessible, or non-terminal evidence keeps the task incomplete and cannot be inferred from prose.
-- [ ] **Step 11: Run Task 37.B standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
-- [ ] **Step 12: Request Task 37.B spec compliance review.** Provide the Goal, Milestone 37 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
-- [ ] **Step 13: Close Task 37.B spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
-- [ ] **Step 14: Request Task 37.B code quality review.** Provide the spec-reviewed verifier and process evidence; require inspection of Review gate item 2 only after spec review PASS.
-- [ ] **Step 15: Close Task 37.B quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
-- [ ] **Step 16: Commit Task 37.B after both review stages PASS.** Commit only task-owned verifier, process records, tests, and permitted evidence; capture the real implementation commit SHA without prefilling a result.
-- [ ] **Step 17: Record Task 37.B completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
+- [ ] **Step 1: Write Task 37.B's typed-review RED probe.** Add only the complete declared `test_process_evidence_rejects_stale_plan_executability_result` case and a fixture helper that changes the result candidate SHA while recomputing its canonical self-digest and registered file SHA; leave checklist, approval, A/B, and process candidate identities unchanged, and do not change verifier implementation or source evidence.
+- [ ] **Step 2: Run Task 37.B RED.** Run `python -m pytest -q tests/unit/process/test_delivery_evidence.py::test_process_evidence_rejects_stale_plan_executability_result`. Accept RED only when the fixtures and existing verifier load and the exact candidate-identity code is absent; missing evidence, collection/import, repository execution, or unrelated process/toolchain failure does not count.
+- [ ] **Step 3: Append truthful final process chronology.** Apply IP-1: Preserve history and add only confirmed M0, review-registration, cold-start, task, intervention, failure, and lesson facts.
+- [ ] **Step 4: Validate both typed Independent PLAN Review pairs.** Apply IP-2: Resolve registered records, parse canonical schemas, recompute digests, and require matching candidate/SPEC/semantic/A/B identities, reviewer independence, complete findings/closures, two review PASS decisions, and overall PASS.
+- [ ] **Step 5: Reconcile closed process, semantic, and toolchain records.** Apply IP-3: Expose the typed result, reconcile complete child chronology and final semantic identity, and compare both unique Python records with terminal gate evidence exactly.
+- [ ] **Step 6: Emit stable fail-closed evidence errors.** Reject every missing, malformed, stale, digest/candidate/audit mismatch, dependent reviewer, open or unregistered finding, incomplete closure, invalid verdict/overall decision, semantic drift, or exact Python mismatch with the declared stable error family.
+- [ ] **Step 7: Seal process-evidence-only ownership.** Apply IP-4: Keep pre-implementation review production/repair, fabricated evidence, repository execution, and reflection authorship outside Task 37.B.
+- [ ] **Step 8: Run Task 37.B Target GREEN.** Re-run `python -m pytest -q tests/unit/process/test_delivery_evidence.py::test_process_evidence_rejects_stale_plan_executability_result`. Require exit `0` and the exact candidate-identity error before continuing.
+- [ ] **Step 9: Refactor within Task 37.B's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve canonical parsing, append-only history, stable errors, and read-only operation.
+- [ ] **Step 10: Run Task 37.B Domain verification.** Run `python -m pytest -q tests/unit/process/test_delivery_evidence.py`. Record the exact command and actual result, including the missing-child-review and exact-Python-identity cases.
+- [ ] **Step 11: Reconcile Task 37.B final process acceptance.** Verify every required M0, PLAN review/approval/cold-start identity, A/B and typed-review record, reviewer-independence fact, finding/closure, child-task review, human edit, SHA, PR, failure, lesson, dependency-closure, promotion, and gate record against real accessible evidence. Missing, stale, mismatched, inaccessible, or non-terminal evidence keeps the task incomplete and cannot be inferred from prose.
+- [ ] **Step 12: Run Task 37.B standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 13: Request Task 37.B spec compliance review.** Provide the Goal, Milestone 37 and Independent PLAN Review contracts, Implementation boundary, RED/GREEN evidence, and Steps 10–12 results; require an explicit stage verdict.
+- [ ] **Step 14: Close Task 37.B spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 8 and 10–12, and obtain same-stage spec re-review PASS.
+- [ ] **Step 15: Request Task 37.B code quality review.** Provide the spec-reviewed verifier and process evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 16: Close Task 37.B quality findings.** Fix every Critical/Important finding, rerun Steps 8 and 10–12, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 17: Commit Task 37.B after both review stages PASS.** Commit only task-owned verifier, process records, tests, and permitted evidence; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 18: Record Task 37.B completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 37.C: Delivery and Reflection Readiness Gate
 
 **Status:** Not started
 
-**Goal:** Aggregate every local/external/process/documentation check and report ready only with all 141 executable Tasks plus a valid student-authored reflection.
+**Goal:** Aggregate every local/external/process/documentation check, including an independently validated typed Independent PLAN Review evidence result, and report ready only with all 141 executable Tasks plus a valid student-authored reflection.
 
 **SPEC references:** Milestone 37 delivery gate and reflection constraints.
 
@@ -10513,17 +10532,29 @@ def test_process_evidence_rejects_formal_python_identity_drift(
 - Modify: `PLAN.md` (final truthful statuses/evidence only)
 - Modify: `REFLECTION.md` only after explicit language-polish request; student owns substantive text
 
-**Interfaces:** Produces `verify_delivery(root: Path, require_live: bool) -> DeliveryReadinessResultV1` and `verify_reflection(path: Path) -> ReflectionContractResultV1`.
+**Interfaces:** Consumes Task 37.B's `verify_process_evidence(root: Path) -> ProcessEvidenceResultV1` through `ProcessEvidenceLoader = Callable[[Path], ProcessEvidenceResultV1]`. Produces `verify_delivery(root: Path, require_live: bool, *, process_evidence_loader: ProcessEvidenceLoader = verify_process_evidence) -> DeliveryReadinessResultV1` and `verify_reflection(path: Path) -> ReflectionContractResultV1`. The injected loader exists only to test this aggregate gate independently of Task 37.B's parser.
 
 **Implementation points:**
-- Implement `verify_delivery` as a fail-closed aggregate over real task, review, environment, artifact, document, and live-evidence schemas, requiring all 141 executable Tasks to be terminal and identity-aligned.
+- Implement `verify_delivery` as a fail-closed aggregate over real task, Task 37.B process/typed-review result, environment, artifact, document, and live-evidence schemas, requiring an empty Task 37.B error set, `overall_decision == "PASS"`, exact current approved semantic/SPEC/A/B/review-result identities, and all 141 executable Tasks terminal and identity-aligned.
 - Implement `verify_reflection` to check only the student-authored 1500–2500-word range, required disclosure, file structure, and parseability; substantive personal content is neither generated nor scored.
-- Make `test_delivery_rejects_incomplete_executable_child` GREEN by returning `EXECUTABLE_TASK_INCOMPLETE:38.G` before any readiness success when that child lacks terminal evidence.
+- Make `test_delivery_rejects_failed_independent_plan_review_evidence` GREEN by returning `INDEPENDENT_PLAN_REVIEW_EVIDENCE_INVALID` before any readiness success when the injected Task 37.B result is failed, even if every executable child and other delivery input is valid.
 - Own readiness aggregation, reflection structure checks, truthful final PLAN status/evidence updates, and explicitly requested disclosed language polishing only. Human decisions, student authorship, external outcomes, and missing evidence remain outside automation.
 
 **Intentionally failing test:**
 
 ```python
+def test_delivery_rejects_failed_independent_plan_review_evidence(
+    repository_copy: Path,
+    process_evidence_with_failed_plan_review: ProcessEvidenceResultV1,
+) -> None:
+    result = verify_delivery(
+        repository_copy,
+        require_live=False,
+        process_evidence_loader=lambda _: process_evidence_with_failed_plan_review,
+    )
+    assert "INDEPENDENT_PLAN_REVIEW_EVIDENCE_INVALID" in result.error_codes
+
+
 def test_delivery_rejects_incomplete_executable_child(
     repository_copy: Path,
 ) -> None:
@@ -10532,39 +10563,42 @@ def test_delivery_rejects_incomplete_executable_child(
     assert "EXECUTABLE_TASK_INCOMPLETE:38.G" in result.error_codes
 ```
 
-**Implementation boundary:** Parse real schemas/history/task records rather than success words. Reflection checks word count, disclosure, and student-specific structure but never generates or scores substantive personal content.
+**Expected RED:** the readiness verifier and injected Task 37.B fixture load successfully, then the new test fails because `verify_delivery` does not inspect the typed-review sub-result or emit `INDEPENDENT_PLAN_REVIEW_EVIDENCE_INVALID`. A Task 37.B parsing failure, missing external record, incomplete child, absent reflection, collection/import failure, or unavailable live evidence does not count as RED.
+
+**Implementation boundary:** Aggregate the typed Task 37.B result as a disjoint dependency; do not duplicate or weaken its checklist/result schema, digest, reviewer-independence, finding/closure, or candidate validation. Rebind the accepted sub-result to the final approved semantic/SPEC/A/B/review-result identities and fail closed on every error, `FAIL`, or mismatch. Parse real schemas/history/task records rather than success words. Reflection checks word count, disclosure, and student-specific structure but never generates or scores substantive personal content.
 
 **Verification:**
-- Target: `python -m pytest -q tests/unit/process/test_delivery_evidence.py::test_delivery_rejects_incomplete_executable_child`
+- Target: `python -m pytest -q tests/unit/process/test_delivery_evidence.py::test_delivery_rejects_failed_independent_plan_review_evidence`
 - Domain: `python -m pytest -q tests/unit/process/test_readme_contract.py tests/unit/process/test_delivery_evidence.py tests/unit/process/test_reflection_contract.py`
 - Delivery: `python scripts/verify_delivery.py --root . --require-live`
 - Reflection: `python scripts/verify_reflection.py REFLECTION.md`
-- Expected: readiness passes only when all 141 executable Tasks, reviews, environments, artifacts, live evidence, documents, and student reflection are current and valid.
+- Expected: readiness passes only when Task 37.B's typed Independent PLAN Review result has no error, reports overall `PASS`, and matches the approved semantic/SPEC/A/B/review-result identities, and when all 141 executable Tasks, remaining reviews, environments, artifacts, live evidence, documents, and student reflection are current and valid. A failed typed-review sub-result returns `INDEPENDENT_PLAN_REVIEW_EVIDENCE_INVALID`; an incomplete Task 38.G still returns `EXECUTABLE_TASK_INCOMPLETE:38.G`.
 
 **Review gate:**
-1. Spec compliance review checks Task 37.C's Goal, Milestone 37's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent final readiness contract.
-2. Code quality review checks complete 141-task aggregation, source/artifact identity, freshness/content digests/access control, fail-closed non-terminal handling, reflection word-count/disclosure/structure checks, student authorship protection, and absence of generated personal content or invented readiness.
+1. Spec compliance review checks Task 37.C's Goal, Milestone 37 and Independent PLAN Review contracts, this Implementation boundary, exact RED, and Verification as one consistent final readiness contract with disjoint typed-evidence aggregation.
+2. Code quality review checks injected-loader isolation, Task 37.B error/decision/identity aggregation without duplicate parsing, complete 141-task aggregation, source/artifact identity, freshness/content digests/access control, fail-closed non-terminal handling, reflection word-count/disclosure/structure checks, student authorship protection, and absence of generated personal content or invented readiness.
 3. Blocks: None; therefore Task 37.C has no executable dependent task list, and this review item adds no DAG edge. Critical/Important findings still block Task 37.C completion and all final delivery claims until fixes are verified and re-review at the same review stage returns PASS.
 
 **Completion evidence:** Not yet executed.
 
-- [ ] **Step 1: Write Task 37.C's exact RED probe.** Add the complete declared `test_delivery_rejects_incomplete_executable_child` case to the listed test file without changing readiness implementation or task records.
-- [ ] **Step 2: Run Task 37.C RED.** Run `python -m pytest -q tests/unit/process/test_delivery_evidence.py::test_delivery_rejects_incomplete_executable_child`. Record the task-owned incomplete-child assertion and exit code; collection, runner, unrelated import, absent student reflection, missing human decision, or unavailable external evidence does not count as RED.
-- [ ] **Step 3: Aggregate terminal delivery evidence.** Apply IP-1: Parse exact schemas and require all task, review, environment, artifact, document, and live identities to be complete and aligned.
+- [ ] **Step 1: Write Task 37.C's disjoint typed-review RED probe.** Add only the complete declared `test_delivery_rejects_failed_independent_plan_review_evidence` case and injected failed Task 37.B fixture; do not change readiness implementation or external evidence.
+- [ ] **Step 2: Run Task 37.C RED.** Run `python -m pytest -q tests/unit/process/test_delivery_evidence.py::test_delivery_rejects_failed_independent_plan_review_evidence`. Accept RED only when the verifier and injected fixture load and the exact aggregate error is absent; Task 37.B parsing, missing external evidence, incomplete-child, reflection, collection/import, or live-evidence failure does not count.
+- [ ] **Step 3: Aggregate terminal delivery and typed-review evidence.** Apply IP-1 through the injected loader: require an empty Task 37.B error set, overall PASS, exact semantic/SPEC/A/B/review-result identity binding, and all other task, review, environment, artifact, document, and live inputs complete.
 - [ ] **Step 4: Validate reflection structure without authorship substitution.** Apply IP-2: Check word count, disclosure, structure, and parseability only for text independently written by the student.
-- [ ] **Step 5: Reject an incomplete executable child.** Apply IP-3: Return the exact `38.G` incomplete code before any readiness success.
-- [ ] **Step 6: Seal readiness-gate-only ownership.** Apply IP-4: Keep student substantive writing, unrequested polishing, human decisions, external actions, and fabricated evidence outside Task 37.C.
-- [ ] **Step 7: Run Task 37.C Target GREEN.** Re-run `python -m pytest -q tests/unit/process/test_delivery_evidence.py::test_delivery_rejects_incomplete_executable_child`. Require exit `0` and the exact RED assertion to pass before continuing.
-- [ ] **Step 8: Refactor within Task 37.C's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve fail-closed aggregation and keep substantive reflection content untouched.
-- [ ] **Step 9: Run Task 37.C Domain verification.** Run `python -m pytest -q tests/unit/process/test_readme_contract.py tests/unit/process/test_delivery_evidence.py tests/unit/process/test_reflection_contract.py`. Record the exact command and actual result.
-- [ ] **Step 10: Run Task 37.C delivery/reflection verification and check acceptance.** Run `python scripts/verify_delivery.py --root . --require-live` and `python scripts/verify_reflection.py REFLECTION.md`. Require a student-authored 1500–2500-word reflection plus current terminal human/external evidence; any missing, stale, inaccessible, failed, uncertain, or non-terminal input keeps readiness incomplete and forbids a success claim.
-- [ ] **Step 11: Run Task 37.C standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
-- [ ] **Step 12: Request Task 37.C spec compliance review.** Provide the Goal, Milestone 37 aggregate SPEC scope, Implementation boundary, RED/GREEN evidence, and Steps 9–11 results; require an explicit stage verdict.
-- [ ] **Step 13: Close Task 37.C spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 7 and 9–11, and obtain same-stage spec re-review PASS.
-- [ ] **Step 14: Request Task 37.C code quality review.** Provide the spec-reviewed readiness/reflection verifiers and evidence; require inspection of Review gate item 2 only after spec review PASS.
-- [ ] **Step 15: Close Task 37.C quality findings.** Fix every Critical/Important finding, rerun Steps 7 and 9–11, and obtain same-stage code-quality re-review PASS.
-- [ ] **Step 16: Commit Task 37.C after both review stages PASS.** Commit only task-owned verifiers, tests, truthful status/evidence updates, and any explicitly requested disclosed language polish; capture the real implementation commit SHA without prefilling a result.
-- [ ] **Step 17: Record Task 37.C completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
+- [ ] **Step 5: Reject failed typed-review evidence.** Apply IP-3: Return `INDEPENDENT_PLAN_REVIEW_EVIDENCE_INVALID` before any readiness success for an errored, failed, or identity-mismatched Task 37.B sub-result.
+- [ ] **Step 6: Preserve incomplete-child rejection.** Require the existing `test_delivery_rejects_incomplete_executable_child` to return `EXECUTABLE_TASK_INCOMPLETE:38.G` when typed-review and all other prerequisite evidence are valid.
+- [ ] **Step 7: Seal readiness-gate-only ownership.** Apply IP-4: Keep Task 37.B schema parsing, student substantive writing, unrequested polishing, human decisions, external actions, and fabricated evidence outside Task 37.C.
+- [ ] **Step 8: Run Task 37.C Target GREEN.** Re-run `python -m pytest -q tests/unit/process/test_delivery_evidence.py::test_delivery_rejects_failed_independent_plan_review_evidence`. Require exit `0` and the exact aggregate error before continuing.
+- [ ] **Step 9: Refactor within Task 37.C's boundary.** Improve names and local structure only in declared Files and the Implementation boundary; preserve injected-loader isolation, fail-closed aggregation, and untouched substantive reflection content.
+- [ ] **Step 10: Run Task 37.C Domain verification.** Run `python -m pytest -q tests/unit/process/test_readme_contract.py tests/unit/process/test_delivery_evidence.py tests/unit/process/test_reflection_contract.py`. Record the exact command and actual result, including both typed-review and incomplete-child cases.
+- [ ] **Step 11: Run Task 37.C delivery/reflection verification and check acceptance.** Run `python scripts/verify_delivery.py --root . --require-live` and `python scripts/verify_reflection.py REFLECTION.md`. Require valid typed-review aggregation, a student-authored 1500–2500-word reflection, and current terminal human/external evidence; any missing, stale, inaccessible, failed, uncertain, or non-terminal input keeps readiness incomplete and forbids a success claim.
+- [ ] **Step 12: Run Task 37.C standard closure.** Run `python -m ruff format --check .`. Run `python -m ruff check .`. Run `python -m mypy src tests`. Run `python scripts/scan_credentials.py --changed --redact --fail-on-match`. Run `git diff --check`. Record every exact command and actual result; keep the task incomplete while any result is non-terminal.
+- [ ] **Step 13: Request Task 37.C spec compliance review.** Provide the Goal, Milestone 37 and Independent PLAN Review contracts, Implementation boundary, RED/GREEN evidence, and Steps 10–12 results; require an explicit stage verdict.
+- [ ] **Step 14: Close Task 37.C spec findings.** Fix every Critical/Important finding within owned Files, rerun Steps 8 and 10–12, and obtain same-stage spec re-review PASS.
+- [ ] **Step 15: Request Task 37.C code quality review.** Provide the spec-reviewed readiness/reflection verifiers and evidence; require inspection of Review gate item 2 only after spec review PASS.
+- [ ] **Step 16: Close Task 37.C quality findings.** Fix every Critical/Important finding, rerun Steps 8 and 10–12, and obtain same-stage code-quality re-review PASS.
+- [ ] **Step 17: Commit Task 37.C after both review stages PASS.** Commit only task-owned verifiers, tests, truthful status/evidence updates, and any explicitly requested disclosed language polish; capture the real implementation commit SHA without prefilling a result.
+- [ ] **Step 18: Record Task 37.C completion evidence.** Update this task and `AGENT_LOG.md` with the real SHA, responsible subagent, human edits, exact commands/results, both review results, and PR URL; keep the task incomplete until every value exists.
 
 #### Task 38.A: Credential Lifecycle WebUI
 
@@ -11484,7 +11518,7 @@ The mechanically checked core-file set is formed only from exact backticked repo
 | 36.B | `delivery/evidence/release-v1.json` | None | File receives only real confirmed Release/GHCR values. |
 | 36.C | `render.yaml`; `delivery/evidence/deployment-v1.json` | None | Files receive only real confirmed Render values; exact supporting tests are frozen in Task 36.C. |
 | 37.A | `README.md`; `src/vespercode/delivery/readme_verifier.py` | None | Documentation contract only; no application behavior. |
-| 37.B | `src/vespercode/delivery/process_verifier.py` | Appends only to `SPEC_PROCESS.md` and `AGENT_LOG.md` under their existing ownership rules | Preserves history, reads both Task 4 records without modifying them, and verifies all executable child evidence plus exact Task 1 Python identity continuity. |
+| 37.B | `src/vespercode/delivery/process_verifier.py` | Appends only to `SPEC_PROCESS.md` and `AGENT_LOG.md` under their existing ownership rules | Preserves history; reads both Task 4 records and registered typed Independent PLAN Review evidence without modifying them; verifies candidate/semantic/SPEC/A/B/reviewer/finding/decision continuity, all executable child evidence, and exact Task 1 Python identity continuity. |
 | 37.C | `scripts/{verify_delivery.py,verify_reflection.py}` | Human owns substantive `REFLECTION.md` | Final gate only; no application or SPEC changes. |
 | 38.A | `src/vespercode/web/routes_credentials.py`; `src/vespercode/web/templates/credential_status.html` | None | Credential workflow only. |
 | 38.B | `src/vespercode/web/routes_memory.py`; `src/vespercode/web/templates/memory.html` | None | Memory workflow only. |
