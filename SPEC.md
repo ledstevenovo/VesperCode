@@ -177,7 +177,11 @@ v1 只支持 profile id 为 `python-src-py312-v1` 的参考画像：
       digest
     }
 
-`digest` 按 §0.1 对除自身外的全部字段计算，因此自动绑定完整 `EditablePathPolicyV1`。目标仓库的 `requirements.lock` 必须精确匹配该 manifest 的 `requirements_lock_digest`；仅提供相同 profile id 不构成匹配。预检、基线、正式验证和发布证据必须使用同一个 manifest digest、editable policy digest 和 Docker image digest。用户请求只选择 `reference_profile_id`；editable policy、镜像和 execution profile 不能被独立选择。正式镜像的构建、GHCR digest 分发和 wheel/manifest 一致性合同见 §8.2、§8.4 和 AC-30。
+`digest` 按 §0.1 对除自身外的全部字段计算，因此自动绑定完整 `EditablePathPolicyV1`。目标仓库的 `requirements.lock` 必须精确匹配该 manifest 的 `requirements_lock_digest`；仅提供相同 profile id 不构成匹配。预检、基线、正式验证和发布证据必须使用同一个 manifest digest、editable policy digest 和 Docker image digest。用户请求只选择 `reference_profile_id`；editable policy、镜像和 execution profile 不能被独立选择。
+
+`docker_image_digest` 唯一表示固定单平台 OCI manifest 原始字节的 `sha256:<64 lowercase hex>`，不得使用本地 image ID、image config digest、tag、manifest list/index digest或尚未由 registry 接受的显示值替代。Task 2 必须以固定 builder/output/media-type/压缩/attestation 参数导出该 manifest，把完全相同的 manifest 与 blobs 推送到仅监听 loopback、无凭据、任务结束即删除的临时 registry，证明本地 OCI manifest digest、registry 返回 RepoDigest 和按 digest 重拉后的 RepoDigest 三者完全一致，再生成绑定该 digest 的最终 `ReferenceProfileManifestV1`。
+
+为避免自引用，最终 `ReferenceProfileManifestV1` 及任何包含其 `digest`/`docker_image_digest` 的文件不得进入它所绑定镜像的 build context、层、config、annotation 或 attestation；镜像只携带不引用最终 manifest 的工具和 execution-profile 版本证据。正式镜像的 GHCR 分发发生在 §8.4 的受保护 release gate，必须推送 Task 2 已冻结的同一 OCI manifest bytes，并证明 GHCR RepoDigest 仍等于 `docker_image_digest`。Task 2 的 loopback registry round-trip 不是发布，不使用或放宽 GHCR 凭据边界。正式镜像的构建、GHCR digest 分发和 wheel/manifest 一致性合同见 §8.2、§8.4 和 AC-30。
 
 交付仓库必须提供一个与该 manifest 匹配、能走完基线、错误补丁反馈、修正、正式验证和写回流程的 reference fixture。该 fixture 是实现和端到端验收工件，不扩大正式输入范围。
 
@@ -656,11 +660,58 @@ Profile 正常形态只使用 `pyproject.toml` 和 `requirements.lock`；出现�
 
 封闭联合及字段：
 
+    ListFilesQueryV1 {
+      schema_version: 1
+      root: RepositoryLocationV1
+      recursive: bool
+      max_entries: 1..500
+      digest
+    }
+
+    SearchTextQueryV1 {
+      schema_version: 1
+      query: literal UTF-8 string, 1..256 bytes
+      roots[]: 1..8 unique RepositoryLocationV1
+      case_sensitive: bool
+      context_lines: 0..2
+      max_results: 1..100
+      digest
+    }
+
+    ListFilesCursorV1 {
+      schema_version: 1
+      cursor_type: "LIST_FILES_CURSOR_V1"
+      visible_tree_digest
+      query_digest
+      next_directory_rank: 0 | 1
+      next_canonical_path: CanonicalRelativePathV1
+      digest
+    }
+
+    SearchTextCursorV1 {
+      schema_version: 1
+      cursor_type: "SEARCH_TEXT_CURSOR_V1"
+      visible_tree_digest
+      query_digest
+      next_canonical_path: CanonicalRelativePathV1
+      next_match_index: non-negative integer
+      digest
+    }
+
+    OptionalListFilesCursorV1 =
+      ABSENT { kind: "ABSENT" }
+      | PRESENT { kind: "PRESENT", value: ListFilesCursorV1 }
+
+    OptionalSearchTextCursorV1 =
+      ABSENT { kind: "ABSENT" }
+      | PRESENT { kind: "PRESENT", value: SearchTextCursorV1 }
+
     ListFilesAction = ActionEnvelope & {
       action_type: "list_files"
       root: RepositoryLocationV1
       recursive: bool
       max_entries: 1..500
+      cursor: OptionalListFilesCursorV1
     }
 
     ReadFileAction = ActionEnvelope & {
@@ -678,6 +729,7 @@ Profile 正常形态只使用 `pyproject.toml` 和 `requirements.lock`；出现�
       case_sensitive: bool
       context_lines: 0..2
       max_results: 1..100
+      cursor: OptionalSearchTextCursorV1
     }
 
     ApplyCandidatePatchAction = ActionEnvelope & {
@@ -704,7 +756,7 @@ Profile 正常形态只使用 `pyproject.toml` 和 `requirements.lock`；出现�
 
 `RepositoryLocationV1.ROOT` 精确表示整个 `SnapshotTree`。`ListFilesAction.root=PATH` 时该路径必须指向现有目录；`SearchTextAction.roots[].PATH` 可以指向现有、对象类型受支持的普通文件或目录，普通文件是否属于可搜索文本由下文唯一的 `SupportedTextFileV1` 分类器决定。直接指向 `NON_TEXT_FILE` 的 search 成功返回零匹配并令本次 `skipped_non_text_count=1`，不得把同一文件改为动作 Schema 错误。`SearchTextAction.roots[]` 包含 `ROOT` 时，`ROOT` 必须是唯一元素；其他组合不得为空、重复或在 Windows/Unicode 折叠规则下形成别名。`ReadFileAction`、补丁中的文件路径和其他实际仓库对象路径继续使用 `CanonicalRelativePathV1`。
 
-文件工具结果的顺序分别冻结：`ListFilesResult.entries[]` 使用下文 `(directory_rank, canonical_path)`；`ReadFileResult` 正文保持原文件递增源码行顺序；`SearchTextResult.matches[]` 按 `(canonical_path, line, column)` 排序。Search v1 只支持字面量，不支持正则表达式。
+文件工具结果的顺序分别冻结：`ListFilesResult.entries[]` 使用下文 `(directory_rank, canonical_path)`；`ReadFileResult` 正文保持原文件递增源码行顺序；`SearchTextResult.matches[]` 按 `(canonical_path, line, column)` 排序。Search v1 只支持字面量，不支持正则表达式。Search 先把所有 roots 覆盖的普通文件按规范路径去重并排序，再逐文件按递增 `(line, column)` 扫描；因此重叠 roots 不会产生重复匹配或重复 `skipped_non_text_count`。
 
 模型不得提交 `action_id`。`ActionParser` 成功得到封闭 `AgentAction` 后，Harness 使用可注入 ID 生成器创建：
 
@@ -716,7 +768,7 @@ Profile 正常形态只使用 `pyproject.toml` 和 `requirements.lock`；出现�
       instance_digest
     }
 
-`semantic_digest` 使用 `ActionSemanticDigestV1` 域对精确 `AgentAction` 计算；`instance_digest` 使用 `ActionInstanceDigestV1` 域对 `{schema_version, action_id, semantic_digest}` 计算。ID 只负责审计和动作—结果关联，不能影响重复动作、策略缓存、无进展或语义重放判断。注入时钟和 ID 生成器时，相同脚本必须可重复产生相同实例序列。
+`semantic_digest` 使用 `ActionSemanticDigestV1` 域对包含 `cursor` 在内的精确 `AgentAction` 计算；`instance_digest` 使用 `ActionInstanceDigestV1` 域对 `{schema_version, action_id, semantic_digest}` 计算。`ListFilesQueryV1.digest` 和 `SearchTextQueryV1.digest` 分别只绑定动作中除 `cursor` 外的对应查询字段；查询摘要不能被 continuation 自身改变。ID 只负责审计和动作—结果关联，不能影响重复动作、策略缓存、无进展或语义重放判断。注入时钟和 ID 生成器时，相同脚本必须可重复产生相同实例序列。
 
     OptionalArtifactRefV1 =
       ABSENT { kind: "ABSENT" }
@@ -774,18 +826,18 @@ List、Read 和 Search 必须共享唯一的 `SupportedTextFileV1` 分类器，�
         text_profile: ABSENT
       }
 
-`ListFilesEntryV1` 的全部字段必填并拒绝未知字段；三种变体以外的字段组合在结果发布前以 `INTERNAL_ERROR` 失败关闭，不得返回部分结果。`size_bytes` 是当前动作可见树中该普通文件完整原始字节的长度。List 的稳定排序键为 `(directory_rank, canonical_path)`：目录的 `directory_rank=0`，两种普通文件均为 `1`，因此目录整体优先，全部普通文件不按文本类型分组而只按规范路径排序；截断和继续参数必须基于这一排序。
+`ListFilesEntryV1` 的全部字段必填并拒绝未知字段；三种变体以外的字段组合在结果发布前以 `INTERNAL_ERROR` 失败关闭，不得返回部分结果。`size_bytes` 是当前动作可见树中该普通文件完整原始字节的长度。List 的稳定排序键为 `(directory_rank, canonical_path)`：目录的 `directory_rank=0`，两种普通文件均为 `1`，因此目录整体优先，全部普通文件不按文本类型分组而只按规范路径排序。`ListFilesCursorV1` 指向下一条尚未返回的严格排序键；续接从该键开始，跨页不得重复或遗漏。
 
 各动作的规范结果为：
 
-- `ListFilesResult`：`entries: ListFilesEntryV1[]` 与 `truncated`；每个返回条目都使用上述封闭变体和稳定排序。
+- `ListFilesResult`：`entries: ListFilesEntryV1[]`、`truncated` 与 `next_cursor: OptionalListFilesCursorV1`；每个返回条目都使用上述封闭变体和稳定排序。
 - `ReadFileResult`：`path`、`file_digest`、实际 `start_line/end_line`、`eof` 和有界正文。Read 只接受分类为 `TEXT_FILE` 的普通文件；目标通过路径和对象安全检查但分类为 `NON_TEXT_FILE` 时返回 `FILE_NOT_TEXT`，`ActionResult.status=FAILED`、`payload_ref=ABSENT`、`error=PRESENT(ActionErrorV1.error_code=FILE_NOT_TEXT)`，且不得返回正文或部分 `ReadFileResult`。`FILE_NOT_TEXT` 优先于行范围检查；受支持文本的 `start_line` 超过文件末行返回 `READ_RANGE_OUT_OF_BOUNDS`，请求范围越过 EOF 时返回已有内容并令 `eof=true`。
-- `SearchTextResult`：`matches[{path, line, column, excerpt}]`、`truncated` 和 `skipped_non_text_count`；只搜索同一分类器判定的 `TEXT_FILE`。每个按稳定遍历顺序实际检查、并在本次结果继续点之前跳过的 `NON_TEXT_FILE` 使 `skipped_non_text_count` 增加一次；目录不计数。
+- `SearchTextResult`：`matches[{path, line, column, excerpt}]`、`truncated`、`next_cursor: OptionalSearchTextCursorV1` 和 `skipped_non_text_count`；只搜索同一分类器判定的 `TEXT_FILE`。每个 `excerpt` 是从匹配行及请求的 context 行确定性截取的至多 1024 个无 BOM UTF-8 字节，并只能在 Unicode scalar 边界截断。每个按稳定遍历顺序实际检查、并在本次结果继续点之前跳过的 `NON_TEXT_FILE` 使 `skipped_non_text_count` 增加一次；目录不计数。`SearchTextCursorV1` 绑定下一规范文件路径和该文件内下一零基 match index；对无匹配和非文本文件也必须推进文件位置，跨页不得重复或遗漏匹配或重复计数同一非文本文件。
 - `ApplyCandidatePatchResult`：新 `candidate_digest`、规范 `FinalDiffV1.digest`、累计文件数和累计字节数。
 - `RunCheckResult`：对应 `CheckResult` 引用；原始输出不直接内嵌进模型上下文。
 - `ProposeCompletionResult`：`VALIDATION_REQUESTED` 或结构化拒绝；它不是成功记录。
 
-面向模型的单个结果正文统一不超过 32 KiB。允许截断的 list/read/search 结果必须返回 `truncated=true`、实际范围和稳定继续参数；不允许截断的 patch、check 和 completion 结果超限时返回稳定错误，不能把部分结果伪装成完整结果。动作已成功执行但客观检查为 `FAIL` 时，`ActionResult.status=SUCCEEDED` 且 `CheckResult.status=FAIL`；只有动作未能按合同完成时才使用 `FAILED`。
+面向模型的单个结果正文统一不超过 32 KiB。List/Search 因条目、匹配或正文上限截断且仍有可扫描内容时，必须返回 `truncated=true` 与类型匹配的 `next_cursor=PRESENT`；完整结果必须返回 `truncated=false` 与 `next_cursor=ABSENT`，其他组合在发布前以 `INTERNAL_ERROR` 失败关闭。Read 通过实际 `start_line/end_line/eof` 继续，不使用 cursor。每个 cursor 都以自身具体类型名作为 §0.1 `object_type`，摘要排除自身并绑定 `schema_version`、`cursor_type`、当前动作可见的 `SnapshotTree` 或 `CandidateTree` 摘要、query digest 和下一扫描位置；List/Search cursor 不能互换。cursor 的 tree digest 与当前可见树不同时返回 `CONTINUATION_STALE`；类型、摘要、query digest、位置或规范编码非法时返回 `CONTINUATION_INVALID`。两类错误均为 `ActionResult.status=FAILED`、`payload_ref=ABSENT`，不得返回或持久化部分结果。不允许截断的 patch、check 和 completion 结果超限时返回稳定错误，不能把部分结果伪装成完整结果。动作已成功执行但客观检查为 `FAIL` 时，`ActionResult.status=SUCCEEDED` 且 `CheckResult.status=FAIL`；只有动作未能按合同完成时才使用 `FAILED`。
 
 ### 4.2.3 动作—phase 矩阵
 
@@ -883,6 +935,7 @@ List、Read 和 Search 必须共享唯一的 `SupportedTextFileV1` 分类器，�
 - 模型输出无效：`MODEL_OUTPUT_INVALID`；连续两次无效则 `MODEL_OUTPUT_INVALID_LIMIT` 停止。
 - 动作阶段不允许：`ACTION_NOT_ALLOWED_IN_PHASE`，形成反馈；硬 `DENY` 不进入审批。
 - Read 的目标通过路径和对象安全检查但不是 `SupportedTextFileV1` 时返回 `FILE_NOT_TEXT`，不得发布正文或部分 `ReadFileResult`。
+- List/Search continuation 的可见树变化返回 `CONTINUATION_STALE`；cursor 类型、摘要、查询或位置非法返回 `CONTINUATION_INVALID`；两者都不得发布部分 payload。
 - Harness 构造的动作结果违反封闭结果 Schema 时以 `INTERNAL_ERROR` 失败关闭，不得把非法组合或部分 payload 发布给下一 turn。
 - LLM 调用失败：`LLM_CALL_FAILED` 并停止；v1 不自动重试。
 - 准备请求与冻结 profile/adapter 不一致，或响应后控制面失败：`INTERNAL_ERROR` 并停止；前者必须发生在请求摘要、turn/call 计数和适配器调用前。
@@ -893,7 +946,7 @@ List、Read 和 Search 必须共享唯一的 `SupportedTextFileV1` 分类器，�
 
 脚本化 Mock LLM 依次返回读取、失败补丁、检查、修正补丁和 completion；每轮必须从冻结 Mock profile 构造不含任何 OpenAI 字段的 `MockPreparedModelRequestV1`，由控制面记录 `authorization_record_ref=ABSENT` 的 `LLMCallResultV1`，并断言凭据、Grant、authorization record 与网络调用次数均为零。相同 Mock profile、消息和来源产生相同 request digest 与 `canonical_byte_count`；script、消息或来源变化使 digest 变化。Mock 请求加入 endpoint/model/fixed parameters、OpenAI 请求加入 script 字段，或具体变体与 profile/adapter 不一致，均在请求摘要、turn/call 计数和适配器调用前拒绝；控制面尝试为 Mock 构造 `authorization_record_ref=PRESENT` 或 `DELIVERY_UNKNOWN` 的结果候选时，以 `INTERNAL_ERROR` 阻止结果发布，已消费的一次 turn/call 不回退且不得重试。另断言动作顺序、上下文摘要、反馈消费、无进展谓词和停止结果完全可重复；以模型提交 `action_id` 断言 Schema 拒绝，并让可注入 ID 生成器为同一语义动作产生不同实例 ID，断言 `semantic_digest` 不变、`instance_digest` 不同且第三次相同语义结果触发 `REPEATED_ACTION_LIMIT`。文件动作测试必须覆盖 list/search 使用 `ROOT`、使用 `PATH("src")`、list 的 `PATH` 指向非目录、search 的 `PATH` 指向文本文件、非文本普通文件或目录，以及空字符串、`.`、`./`、`/`、`src/` 和 `[ROOT, PATH(...)]` 在动作执行前被拒绝；直接搜索非文本普通文件必须成功返回零匹配和 `skipped_non_text_count=1`。使用 FakeClock/Executor 逐项命中 §4.2.6 的每个子超时和更短 `run_deadline`，并断言披露等待、授权不足、具体请求尚未冻结或请求/profile/adapter 尚未匹配时 turn/call 计数不变，越过原子计数点后的失败则精确增加一次。
 
-文件结果测试另使用同一 Fake Tree 构造目录、UTF-8 LF、UTF-8 BOM + CRLF、PNG/随机二进制、无效 UTF-8、U+0000、混合换行、无末尾换行和空文件。断言前三类分别形成 `DIRECTORY`、`TEXT_FILE`、`TEXT_FILE`，其余普通文件形成 `NON_TEXT_FILE`；所有普通文件的 `size_bytes` 等于完整原始字节长度。未知 `kind`、目录携带 `size_bytes`、`TEXT_FILE` 缺少 `text_profile`、`NON_TEXT_FILE` 携带 `text_profile` 或任一其他非法组合均以 `INTERNAL_ERROR` 阻止整个结果发布。对同一文件，List、Read 和 Search 必须得到相同分类；Read 非文本文件返回 `FILE_NOT_TEXT` 且无正文，Search 只对实际检查并跳过的非文本普通文件增加 `skipped_non_text_count`。相同树、边界和截断参数必须产生相同条目顺序、类型、计数与稳定继续参数。
+文件结果测试另使用同一 Fake Tree 构造目录、UTF-8 LF、UTF-8 BOM + CRLF、PNG/随机二进制、无效 UTF-8、U+0000、混合换行、无末尾换行和空文件。断言前三类分别形成 `DIRECTORY`、`TEXT_FILE`、`TEXT_FILE`，其余普通文件形成 `NON_TEXT_FILE`；所有普通文件的 `size_bytes` 等于完整原始字节长度。未知 `kind`、目录携带 `size_bytes`、`TEXT_FILE` 缺少 `text_profile`、`NON_TEXT_FILE` 携带 `text_profile` 或任一其他非法组合均以 `INTERNAL_ERROR` 阻止整个结果发布。对同一文件，List、Read 和 Search 必须得到相同分类；Read 非文本文件返回 `FILE_NOT_TEXT` 且无正文，Search 只对实际检查并跳过的非文本普通文件增加 `skipped_non_text_count`。相同树、query 和边界必须产生相同 cursor、条目、匹配、类型与计数；逐页收集结果必须与未分页结果完全相同且无重复/遗漏。另分别篡改 cursor 类型、自身摘要、query digest、位置和 visible tree digest，断言前四者返回 `CONTINUATION_INVALID`、树变化返回 `CONTINUATION_STALE`，全部零部分结果；Search 覆盖重叠 roots、无匹配文本、非文本文件、单条长行和 32 KiB 截断，证明扫描位置总能推进且 excerpt 不超过 1024 字节。
 
 ## 4.3 FR-WS：快照、路径、严格补丁和候选树
 
@@ -1245,14 +1298,15 @@ Candidate 操作入口是本次 Run 已封存的唯一 `SnapshotTree`，以及�
 1. 创建或复用真实 Grant 时，调用门只验证冻结 `OpenAILLMProfileV1`、待创建或活动的 `DisclosureGrantSubjectV1`、可信内建 `OpenAIEndpointV1` 映射与 OpenAI 适配器的有效目标一致；此阶段 `OpenAIPreparedModelRequestV1` 与 authorization record 尚未形成，不得引用或验证它们。适配器必须显式仅由内建映射构造客户端，不得读取、接受或继承 `OPENAI_BASE_URL` 或 SDK 的等价自定义 base URL 设置。
 2. 重新生成最终 `ContextProjection`，应用冻结的 `NO_CONTENT_REDACTION_V1` 并形成不可再扩张正文的 `OpenAIPreparedModelRequestV1`。在 Grant 消费事务前，只从该请求的 segments 派生完整但未持久化的 `DisclosureAuthorizationRecordV1` candidate 字段；candidate 不是 durable authorization record，不得落库、写入审计记录或作为已创建 authorization record 返回。
 3. 在消费事务开始前，验证冻结 profile、活动 Grant subject、`OpenAIPreparedModelRequestV1`、未持久化 candidate 字段的 `endpoint_id` 与预期内建 `OpenAIEndpointV1` 一致，并验证适配器有效目标一致；再按固定来源路径存在性合同和 scope 匹配算法验证全部 segments 及其精确派生投影、redaction profile 应用结果和字节数均落在活动 Grant 内，且 turn、LLM call 和剩余总墙钟仍允许到达 §4.2.5 的计数点。
-4. 令 `charge_bytes = OpenAIPreparedModelRequestV1.canonical_byte_count`。只有全部验证通过且 `consumed_bytes + charge_bytes <= cumulative_byte_budget` 时，才在同一控制面事务中原子执行 `consumed_bytes := consumed_bytes + charge_bytes`，等于预算上限时转为 `EXHAUSTED`，并只用已验证的 candidate 字段持久化 `DisclosureAuthorizationRecordV1`；否则零消费、零 durable record，并按 §4.2.7 处理预算不足。相同正文或请求再次获准发送仍重新按其完整 `charge_bytes` 扣减。
-5. 只有该事务成功后，按 §4.2.5 原子创建 turn/call 计数点，真实调用门才可把同一 `OpenAIPreparedModelRequestV1` 和已持久化 authorization record 引用交给真实适配器；适配器不得追加项目正文、工具结果或记忆。
+4. 紧接 Grant 消费事务之前，重新执行 Windows Credential Manager 安全后端探测并调用 `CredentialStorePortV1.get_for_call("OPENAI")`；启动/PREFLIGHT 的 credential readiness 不能替代本步骤。只有本次探测仍为受支持的 Windows Credential Manager 且本次读取返回非序列化 `SecretCredentialV1` 时才能继续。凭据已清除或缺失时以 `CREDENTIAL_MISSING` 停止当前 Run；后端不安全时以 `CREDENTIAL_BACKEND_UNSAFE` 停止当前 Run。两种失败均不自动重试，并且本次尝试的 Grant 消费、durable authorization record、turn/call 增量和网络调用全部为零。
+5. 令 `charge_bytes = OpenAIPreparedModelRequestV1.canonical_byte_count`。只有前述全部验证和逐调用凭据复验通过，且 `consumed_bytes + charge_bytes <= cumulative_byte_budget` 时，才在同一控制面事务中原子执行 `consumed_bytes := consumed_bytes + charge_bytes`，等于预算上限时转为 `EXHAUSTED`，并只用已验证的 candidate 字段持久化 `DisclosureAuthorizationRecordV1`；否则零消费、零 durable record，并按 §4.2.7 处理预算不足。相同正文或请求再次获准发送仍重新按其完整 `charge_bytes` 扣减。
+6. 只有该事务成功后，按 §4.2.5 原子创建 turn/call 计数点，真实调用门才可把同一 `OpenAIPreparedModelRequestV1`、已持久化 authorization record 引用和第 4 步刚取得的内存凭据交给真实适配器；适配器不得再次读取凭据，不得追加项目正文、工具结果或记忆。
 
 `DisclosureAuthorizationRecordV1` 证明该精确 OpenAI 请求在调用前获得授权，不证明适配器被调用或供应商收到请求。控制面记录的 OpenAI 调用结果必须是 `mode=OPENAI`、绑定同一 profile/request digest 且 `authorization_record_ref=PRESENT` 的 `LLMCallResultV1`。
 
 若请求摘要变化但仍在 Grant 范围和预算内，自动创建新的逐请求记录，不重新要求用户点击。来源本身符合类别/路径存在性合同、但其类别或路径超出活动 Grant 时，以 `DISCLOSURE_SCOPE_EXCEEDED` 拒绝复用旧 Grant，并严格按 §4.2.7 创建新的 `DISCLOSURE_GRANT` 等待；预算不足、Grant 过期或撤销同样遵循该生命周期。只有没有正的等待区间时才因总墙钟预算耗尽而停止。上述情况下真实适配器调用次数均为零。来源本身违反类别/路径存在性合同不能通过扩大 Grant 修复，必须直接失败关闭。
 
-静态 endpoint/有效目标不一致必须以稳定错误 `LLM_ENDPOINT_MISMATCH` 失败关闭，且必须发生在 Grant 预算消费、durable authorization record 创建、turn/call 计数和网络请求之前；candidate 字段也不得落库。这些计数、durable record 和网络调用次数均为零。初次请求仅可发送到内建允许 origin；若初次请求已发送到该 origin 后收到跨 origin redirect，适配器必须在重发前以 `LLM_ENDPOINT_MISMATCH` 失败，不得跟随 redirect 或第二次发送正文。初次发送已按既有规则消费的 Grant/turn/call 不退款。
+静态 endpoint/有效目标不一致或逐调用凭据复验失败必须以对应稳定错误失败关闭，且必须发生在 Grant 预算消费、durable authorization record 创建、turn/call 计数和网络请求之前；candidate 字段也不得落库。这些计数、durable record 和网络调用次数均为零。初次请求仅可发送到内建允许 origin；若初次请求已发送到该 origin 后收到跨 origin redirect，适配器必须在重发前以 `LLM_ENDPOINT_MISMATCH` 失败，不得跟随 redirect 或第二次发送正文。初次发送已按既有规则消费的 Grant/turn/call 不退款。
 
 预算消费表示一次真实发送尝试已经获准。事务提交后，即使进程在调用前崩溃、适配器返回错误或供应商是否收到请求无法证明，已消费字节也不退款；除上述禁止跨 origin redirect 重发外，v1 不自动重发。OpenAI `LLMCallResultV1` 可使用 `NOT_ATTEMPTED | SUCCEEDED | FAILED | DELIVERY_UNKNOWN`，但不得把授权记录显示为供应商已收到；Mock 结果只允许前三种状态。
 
@@ -1260,7 +1314,7 @@ Candidate 操作入口是本次 Run 已封存的唯一 `SnapshotTree`，以及�
 
 输出：`PolicyDecision`、`FinalWritebackSubjectV1`、`FinalWritebackApproval` 状态变化、`DisclosureGrantSubjectV1`、`DisclosureGrant`、`DisclosureAuthorizationRecordV1`、具体 `PreparedModelRequestV1`、`LLMCallResultV1` 或稳定拒绝。
 
-错误：`ACTION_SCHEMA_INVALID`、`ACTION_DENIED`、`PATCH_PATH_NOT_EDITABLE`、`TREE_INTEGRITY_FAILED`、`APPROVAL_REJECTED`、`APPROVAL_EXPIRED`、`APPROVAL_STALE`、`APPROVAL_ALREADY_CONSUMED`、`DISCLOSURE_GRANT_REQUIRED`、`DISCLOSURE_GRANT_REJECTED`、`DISCLOSURE_SCOPE_EXCEEDED`、`DISCLOSURE_BUDGET_EXCEEDED`、`DISCLOSURE_GRANT_EXPIRED`、`DISCLOSURE_GRANT_REVOKED`、`LLM_ENDPOINT_MISMATCH`、`INTERNAL_ERROR`。
+错误：`ACTION_SCHEMA_INVALID`、`ACTION_DENIED`、`PATCH_PATH_NOT_EDITABLE`、`TREE_INTEGRITY_FAILED`、`APPROVAL_REJECTED`、`APPROVAL_EXPIRED`、`APPROVAL_STALE`、`APPROVAL_ALREADY_CONSUMED`、`DISCLOSURE_GRANT_REQUIRED`、`DISCLOSURE_GRANT_REJECTED`、`DISCLOSURE_SCOPE_EXCEEDED`、`DISCLOSURE_BUDGET_EXCEEDED`、`DISCLOSURE_GRANT_EXPIRED`、`DISCLOSURE_GRANT_REVOKED`、`CREDENTIAL_MISSING`、`CREDENTIAL_BACKEND_UNSAFE`、`LLM_ENDPOINT_MISMATCH`、`INTERNAL_ERROR`。
 
 ### 确定性测试
 
@@ -1270,7 +1324,7 @@ Candidate 操作入口是本次 Run 已封存的唯一 `SnapshotTree`，以及�
 
 准备请求与结果 Schema 测试必须分别构造合法 Mock/OpenAI 变体，并拒绝缺少 `mode`、跨模式字段、profile/script/request digest 不一致以及非法 authorization record 引用。相同 Mock adapter payload 的字段插入顺序变化不得改变 `canonical_byte_count`，segment/message/script 变化必须改变 payload 字节或 request digest；两个具体 request 即使共享字段值相同也必须因不同 `object_type` 不可互换。Mock 成功、失败和计数后适配器调用前的可捕获控制面失败分别产生合法 `SUCCEEDED`、`FAILED`、`NOT_ATTEMPTED`，且 authorization record 始终为 `ABSENT`；真实进程崩溃只产生重启停止证据，不要求调用结果，Mock 的 `DELIVERY_UNKNOWN` 必须拒绝。
 
-离线可注入 HTTP transport 测试必须断言：设置恶意 `OPENAI_BASE_URL` 后，有效请求仍只指向 `https://api.openai.com/v1`；缺少 `endpoint_id`、未知 endpoint、`base_url` 或自定义 URL 在摘要或调用前以 `CONFIG_INVALID` 拒绝；profile、Grant subject、`OpenAIPreparedModelRequestV1`、未持久化 candidate 字段、适配器目标或已持久化 durable record 任一 endpoint 不一致时以 `LLM_ENDPOINT_MISMATCH` 拒绝。candidate 字段篡改与 durable record 不一致必须分别测试：candidate 篡改路径的 durable record 数为零，candidate 不得落库、进入审计或被当作已创建 record；durable record 不一致路径不创建新的 record。两类不一致尝试均断言本次尝试的网络调用、Grant 消费、durable record 创建与 turn/call 增量为零；合法 OpenAI 结果必须使用 `authorization_record_ref=PRESENT` 并绑定相同 request digest；跨 origin redirect 不被跟随、不重发正文，初次调用消费不退款；Grant UI 显示 endpoint ID 和 `api.openai.com`。
+离线可注入 HTTP transport 测试必须断言：设置恶意 `OPENAI_BASE_URL` 后，有效请求仍只指向 `https://api.openai.com/v1`；缺少 `endpoint_id`、未知 endpoint、`base_url` 或自定义 URL 在摘要或调用前以 `CONFIG_INVALID` 拒绝；profile、Grant subject、`OpenAIPreparedModelRequestV1`、未持久化 candidate 字段、适配器目标或已持久化 durable record 任一 endpoint 不一致时以 `LLM_ENDPOINT_MISMATCH` 拒绝。candidate 字段篡改与 durable record 不一致必须分别测试：candidate 篡改路径的 durable record 数为零，candidate 不得落库、进入审计或被当作已创建 record；durable record 不一致路径不创建新的 record。两类不一致尝试均断言本次尝试的网络调用、Grant 消费、durable record 创建与 turn/call 增量为零；合法 OpenAI 结果必须使用 `authorization_record_ref=PRESENT` 并绑定相同 request digest；跨 origin redirect 不被跟随、不重发正文，初次调用消费不退款；Grant UI 显示 endpoint ID 和 `api.openai.com`。每次调用都记录 credential backend probe 与 `get_for_call("OPENAI")` 的先后顺序；在 PREFLIGHT 成功后清除凭据或把后端切换为不安全，断言分别以 `CREDENTIAL_MISSING`、`CREDENTIAL_BACKEND_UNSAFE` 停止，且发生在 Grant 消费、record、turn/call 和 transport 之前，全部本次增量为零且没有自动重试。
 
 ## 4.5 FR-VAL：Python 适配器、基线、检查、Manifest 和反馈
 
@@ -1636,6 +1690,7 @@ CLI 必须提供：
 
     SetCredential(provider, secret) -> CredentialMutationResult
     GetCredentialStatus(provider) -> CredentialStatus
+    GetCredentialForCall(provider) -> SecretCredentialV1 | CredentialError
     ClearCredential(provider) -> CredentialMutationResult
 
 ### 行为
@@ -1645,6 +1700,8 @@ CLI 必须提供：
 3. 若 keyring 退化为明文文件、环境模拟或其他不受支持后端，返回 `CREDENTIAL_BACKEND_UNSAFE`，不得存储。
 4. `GetCredentialStatus` 只返回配置状态、provider 和更新时间，不返回 secret、secret 长度或可用于猜测的派生值。
 5. 更新以新秘密覆盖旧条目；清除失败必须明确返回失败，不能假装已删除。
+6. `GetCredentialForCall("OPENAI")` 每次都重新验证实际后端并从 Windows Credential Manager 读取本次调用所需的非序列化内存包装；不得复用启动/PREFLIGHT 的“已配置”状态、缓存 secret 或跳过后端探测。缺失/已清除返回 `CREDENTIAL_MISSING`，不安全后端返回 `CREDENTIAL_BACKEND_UNSAFE`。
+7. `GetCredentialForCall` 只允许由 §4.4.4 真实调用门在 Grant 消费、authorization record、turn/call 和网络之前调用；失败停止当前 Run 且不自动重试。Mock 模式不得调用该接口。
 
 ### 错误
 
@@ -1652,7 +1709,7 @@ CLI 必须提供：
 
 ### 确定性测试
 
-离线单测使用 `FakeCredentialStore` 验证录入、状态、覆盖、清除和日志脱敏；Windows 发布验证必须包含一次真实 Credential Manager smoke test，测试秘密在结束后清除。
+离线单测使用 `FakeCredentialStore` 验证录入、状态、覆盖、清除、逐调用安全后端复验、清除后的 `get_for_call` 失败和日志脱敏；Windows 发布验证必须包含一次真实 Credential Manager smoke test，测试秘密在结束后清除。调用门测试必须证明 PREFLIGHT 后清除凭据会使下一次真实调用以零 Grant/record/turn/call/网络副作用停止。
 
 ## 4.9 FR-UI：本地 WebUI 与公网 Demo
 
@@ -1715,7 +1772,7 @@ Host/Origin/CSRF 校验失败、无效会话、Demo 非法场景或能力请求�
 - 每个正式运行有唯一 `run_id` 和按顺序递增的审计序号；Demo 使用独立 `demo_session_id`。
 - 日志使用结构化事件，并对路径、输出和错误文本执行长度限制与脱敏。
 - 测试模式允许注入时钟、ID 生成器和故障点，以获得稳定快照。
-- `.gitlab-ci.yml` 必须包含 §8.4 的四个精确 job 名称并遵守各自 push、merge request、main 和 release 触发合同。
+- `.github/workflows/ci.yml` 必须在每次 push 和 pull request 运行 `unit-test`、`reference-image-build` 与 `demo-image-build`，且普通 workflow 不注入发布凭据、不推送镜像、不创建 Release；`.gitlab-ci.yml` 必须包含 §8.4 的四个精确 job 名称并遵守各自 push、merge request、main 和 release 触发合同。
 - 发布证据必须区分离线单测、Windows 集成、Docker 集成、端到端 fixture 和公网 smoke test。
 
 ## 5.5 NFR-SEC：威胁模型
@@ -1723,7 +1780,7 @@ Host/Origin/CSRF 校验失败、无效会话、Demo 非法场景或能力请求�
 | 资产/风险 | 攻击者或来源 | 对策 | 残余风险 |
 |---|---|---|---|
 | OpenAI API Key | 仓库文本、日志、命令历史、Demo 用户 | Windows Credential Manager；后端探测；隐藏录入；禁止 CLI 参数和明文配置；日志白名单 | 同一 Windows 用户或管理员仍可能访问凭据 |
-| Release/GHCR 凭据 | 恶意 MR、fork pipeline、日志或构建工件 | 独立最小权限 token；GitLab masked/protected variables；只注入受保护 tag job；普通流水线禁止推送/发布 | GitLab/GitHub 管理员和受保护 runner 管理员仍在平台信任边界内 |
+| Release/GHCR 凭据 | 恶意 PR/MR、fork pipeline、日志或构建工件 | 独立最小权限 token；GitLab masked/protected variables；只注入受保护 GitLab tag job；GitHub Actions、Task 2 loopback registry 与普通 GitLab 流水线均禁止注入 GHCR 凭据或推送外部 registry | GitLab/GitHub 管理员和受保护 runner 管理员仍在平台信任边界内 |
 | 用户源码 | 恶意模型、提示注入、错误披露范围 | 本地读取与外发分离；冻结 LLM profile；运行级 Grant；逐请求授权记录；敏感 tracked 路径准入拒绝；明确 `NO_CONTENT_REDACTION_V1` 不扫描正文 | 被授权源码按范围原样外发；不能识别源码正文中的所有秘密 |
 | 权威工作区 | 越界路径、reparse/hard link、陈旧批准、并发进程 | 句柄级身份检查、单链接画像、named mutex、前映像绑定、逐文件复核、写后核对 | 最后检查与替换间仍有短暂本机竞争窗口 |
 | 验收契约 | 模型修改测试/配置、缺陷项目代码或非预期副作用 | 不可变 Manifest、保护工件、只读候选挂载、全新容器、正式重验 | 同一解释器/容器用户信任域中的主动恶意候选仍可能 monkeypatch pytest/报告插件、篡改 tmpfs 报告、伪造事件或干预退出流程 |
@@ -1898,6 +1955,27 @@ Demo 不经过 Credential Store、真实 LLM、Docker、workspace lease、恢复
 
 控制存储使用 SQLite 事务保证本地状态比较与更新。大文件、执行副本、补丁正文、原始检查输出和恢复备份存为当前用户 ACL 受限的本地工件，只在数据库保存摘要与精确引用；凭据从不进入 SQLite。所有 digest 使用 §0.1。
 
+## 7.1 跨实现会话的稳定契约
+
+本节是多个实现会话和组件共同消费的稳定边界索引。规范性内容仍由表中引用章节的输入、输出、状态转换、不变量、错误优先级和验收条件定义；本索引不创建第二套数据模型。
+
+| 契约族 | 跨组件稳定语义 | 规范来源 |
+|---|---|---|
+| 规范字节与身份 | strict UTF-8、规范 JSON、时间、相对路径、domain-separated digest 和身份连续性；同一语义输入必须产生同一摘要，非法或不完整输入不得产生替代身份 | §0–§0.1 |
+| Profile、配置与准入 | 请求只能选择内建 profile；解析后的 manifest、editable policy、limits 和 RunConfigSnapshot 冻结；准入按规定顺序失败关闭且不得留下下游副作用 | §1.4、§4.1、§7 |
+| Run、phase、wait 与计数 | Run/phase/终态、单活动 turn、turn/call 计数点、deadline、wait subject 和 restart 语义由封闭状态机统一解释 | §4.2.1、§4.2.3、§4.2.5–§4.2.8、§7 |
+| Workspace、Snapshot 与 Candidate | Win32 最终对象身份、workspace lease、SnapshotTree、Content Object、CandidateTree、FinalDiffV1 与 CandidateIdentityV1 的不可变绑定跨读取、补丁、验证和写回保持一致 | §4.1、§4.3、§4.6、§7 |
+| Action、Policy 与 Dispatch | 动作 schema、instance/semantic digest、phase 矩阵、`ALLOW/ASK/DENY` 优先级和“先绑定身份与策略、后 dispatch”顺序是所有 loop、Demo 与工具适配器的共同边界 | §4.2.2–§4.2.3、§4.4.1 |
+| LLM 请求与披露授权 | segment 来源、PreparedModelRequest、profile/endpoint/model/serializer、Grant subject、授权预算、授权记录、调用结果和未知交付状态必须逐请求一致绑定；未经授权不得发送正文 | §4.4.3–§4.4.4、§6.3、§7 |
+| 验证与反馈 | 静态支持结果、Baseline、PytestEvidenceV1、FailureFingerprintV1、ValidationManifestV1、CheckResult、VerifiedCandidate 和 FeedbackRecord 共享同一 Snapshot/profile/policy/candidate 身份链 | §4.5、§7 |
+| 最终批准与写回 | FinalWritebackSubjectV1、一次性批准、VerifiedCandidate、FinalDiffV1、workspace identity 和 persistence transaction 必须在写回前重新一致；批准不能覆盖 `DENY` | §4.4.2、§4.6、§7 |
+| 持久化与恢复 | 事务、path record、pre/postimage、对象身份、deadline、外部变化和 `COMMITTED/ROLLED_BACK/UNRESOLVED` 三值分类在 fault port、生产适配器、CLI 和 WebUI 中含义相同 | §4.6、§5.2、§7 |
+| 记忆、审计与可见性 | workspace 隔离、创建/选择/清除权限、审计单调序号、redaction、retention 和用户可见投影必须由同一 durable facts 派生 | §4.7、§5.4、§5.6、§7 |
+| 凭据 | 状态只暴露非秘密元数据；获取、更新、删除和每次真实调用前重新读取的失败语义一致；秘密不得进入配置、SQLite、日志、证据或命令行 | §4.8、§5.5–§5.6、§8.1 |
+| UI、Demo 与交付证据 | 本地控制面只投影正式服务；公网 Demo 使用固定场景和共享纯核心但没有正式能力；CI、wheel、OCI、release 和 live evidence 必须绑定同一 source/digest 身份 | §4.9、§6.4、§8、§10 |
+
+跨会话消费者只能依赖上述可观察语义和被引用的规范字段，不得依赖某个 PLAN task 曾列出的 Python 类名、helper 名、参数顺序或模块内组织。只在单一实现会话内使用的私有函数、局部类和测试 fixture 不是 SPEC 契约，由实现者在不改变可观察行为、身份、不变量、错误和验收条件的前提下决定。若两个实现会话需要新增共享字段、序列化形式、状态转换、错误码或身份输入，必须先修改 SPEC 并重新执行 M0；不能只在 PLAN 或实现中约定。
+
 # 8. 凭据、分发与部署
 
 ## 8.1 凭据流程
@@ -1940,7 +2018,19 @@ Demo 不经过 Credential Store、真实 LLM、Docker、workspace lease、恢复
 
 ## 8.4 发布构建要求
 
-GitHub 仓库是源码、版本 tag、Release 和 GHCR package 的发布权威；GitLab 项目是运行 `.gitlab-ci.yml` 的 CI 镜像。README 必须记录两端项目 URL、镜像方向和最后验证的同步方式。普通 CI 不反向改写 GitHub；受保护 release pipeline 只有在 GitLab `CI_COMMIT_SHA`、GitHub 同名 tag commit 和待发布 wheel 源提交三者一致时才可发布，任一查询失败或摘要不一致均停止。
+GitHub 仓库是源码、版本 tag、Release 和 GHCR package 的发布权威，并由 `.github/workflows/ci.yml` 对每次 push 和 pull request 形成课程要求的 GitHub Actions 自动测试闭环；GitLab 项目运行 `.gitlab-ci.yml` 的完整 CI、Windows wheel 和受保护发布闭环。README 必须记录两端项目 URL、镜像方向和最后验证的同步方式。普通 CI 不反向改写 GitHub；受保护 release pipeline 只有在 GitLab `CI_COMMIT_SHA`、GitHub 同名 tag commit 和待发布 wheel 源提交三者一致时才可发布，任一查询失败或摘要不一致均停止。
+
+- README 必须分别为容器化 reference execution image 和 Demo image 提供可复制的本地 `docker build` 与 `docker run` 命令；每组命令必须明确 Dockerfile、build context、镜像 tag/digest、必要端口与 health check，以及适用的运行安全参数，且不得包含凭据。reference image 的本地 build/run 仅用于复现与诊断，不能替代 Task 2、CI 或受保护 release 的 immutable digest evidence；只有其 digest 身份满足 §8.2、§8.4 与 AC-24/AC-30 的既有一致性合同时，才可声称与正式 image 等价。Demo 命令必须继续满足 §8.3 的无真实能力、无 secret、无 Docker socket 边界。
+
+`.github/workflows/ci.yml` 必须包含以下三个精确 job 名称：
+
+| Job | 触发条件 | 必须执行 |
+|---|---|---|
+| `unit-test` | 每次 push 和每个 pull request | 在锁定 Python 3.12 依赖环境中运行离线 `python -m pytest -q` 并保存测试报告 |
+| `reference-image-build` | 每次 push 和每个 pull request | 从固定 recipe、基础镜像 digest 和 lock 构建 reference OCI image，记录 digest并运行 reference fixture smoke；允许复用 Task 2 的无凭据 loopback registry round-trip，但不得登录或推送任何外部 registry |
+| `demo-image-build` | 每次 push 和每个 pull request | 真实构建 Demo OCI image，记录摘要并运行容器 `/healthz` 与能力隔离 smoke，但不得推送 |
+
+GitHub Actions workflow 不接受、读取或注入 GitHub Release、GHCR、Render 或其他发布凭据，不运行发布命令，不创建 Release，不登录或推送任何外部 registry。Task 2/34 的无凭据 loopback registry 只用于同一 job 内的临时内容寻址验证，不构成发布，结束时必须删除。fork pull request 的权限必须为只读且三个 job 仍可在无 secret 条件下完成或明确失败关闭；不得用跳过 job 伪造闭环。
 
 `.gitlab-ci.yml` 必须包含以下四个精确 job 名称；不能仅由人工发布脚本替代：
 
@@ -1948,12 +2038,12 @@ GitHub 仓库是源码、版本 tag、Release 和 GHCR package 的发布权威�
 |---|---|---|
 | `unit-test` | 每次 push 和每个 merge request | 在锁定依赖环境中运行离线 `python -m pytest -q`，保存测试报告 |
 | `wheel-build-smoke` | 每次 push 和每个 merge request | 在项目专属 Windows 11 x64 GitLab Runner 上构建 wheel、生成并校验 SHA-256，在全新 venv/pipx 环境中从该 wheel 安装并运行 `vespercode --help` |
-| `reference-image-build` | 每次 push、每个 merge request 和受保护版本 tag | 从固定 recipe、基础镜像 digest 和 lock 构建 reference OCI image，记录 digest，核验内置工具/execution profile 并运行 reference fixture smoke；普通 push/MR 只构建验证，受保护 tag 才推送 GHCR |
+| `reference-image-build` | 每次 push、每个 merge request 和受保护版本 tag | 从固定 recipe、基础镜像 digest 和 lock 构建 reference OCI image，记录 digest，核验内置工具/execution profile并运行 reference fixture smoke；普通 push/MR 可执行无凭据 loopback registry round-trip但不得推送外部 registry，受保护 tag 才推送 GHCR |
 | `demo-image-build` | 每个 merge request 和 main 分支 push | 使用 Demo Dockerfile 真实构建 OCI 镜像，记录镜像摘要并运行容器级 `/healthz` smoke |
 
-版本 tag/release 流水线复用通过验证的构建步骤，重新生成并校验版本化 wheel 和 SHA-256，把 reference image 推送到 GHCR，按 registry 返回的不可变 digest 重拉并 smoke，校验 wheel 内置 manifest 的 `docker_image_digest` 与该 digest 一致，然后创建或更新对应 GitHub Release wheel 工件。保存版本、Release URL、wheel 摘要、GHCR RepoDigest、Demo 镜像摘要、测试与 smoke 证据。
+版本 tag/release 流水线复用通过验证的构建步骤，重新生成并校验版本化 wheel 和 SHA-256，重建或导入 Task 2 已冻结的完全相同 OCI manifest 与 blobs；本地重建摘要不等于 Task 2 `docker_image_digest` 时必须在任何发布前失败。随后把该 reference image 推送到 GHCR，按 registry 返回的不可变 digest 重拉并 smoke，校验 Task 2 loopback RepoDigest、wheel 内置 manifest 的 `docker_image_digest`、GHCR RepoDigest 和目标机实际拉取 RepoDigest 四者一致，然后创建或更新对应 GitHub Release wheel 工件。保存版本、Release URL、wheel 摘要、GHCR RepoDigest、Demo 镜像摘要、测试与 smoke 证据。
 
-GitHub Release 与 GHCR 使用彼此独立的最小权限发布凭据：前者只允许目标仓库 release/content 写入，后者只允许目标 package 写入。两者只能通过 GitLab masked、protected CI variable 注入受保护 tag job；不得提供给普通 push、merge request 或 fork pipeline，不得进入镜像层、日志、工件或 wheel。普通 push/MR 流水线不得推送 registry 或创建 Release。项目必须提供项目专属 Windows 11 x64 GitLab Runner；runner 不可用时 `wheel-build-smoke` 失败并阻断 merge/release，不得以 Linux smoke 或发布前人工日志替代。
+GitHub Release 与 GHCR 使用彼此独立的最小权限发布凭据：前者只允许目标仓库 release/content 写入，后者只允许目标 package 写入。两者只能通过 GitLab masked、protected CI variable 注入受保护 tag job；不得提供给 GitHub Actions、普通 GitLab push、merge request 或 fork pipeline，不得进入镜像层、日志、工件或 wheel。GitHub Actions 和普通 GitLab push/MR 流水线不得登录或推送外部 registry，也不得创建 Release；无凭据 loopback registry round-trip 仅是临时测试夹具。项目必须提供项目专属 Windows 11 x64 GitLab Runner；runner 不可用时 `wheel-build-smoke` 失败并阻断 merge/release，不得以 Linux smoke 或发布前人工日志替代。
 
 # 9. 技术选型
 
@@ -1969,7 +2059,7 @@ GitHub Release 与 GHCR 使用彼此独立的最小权限发布凭据：前者�
 | 执行 | Docker SDK for Python；固定 argv、无网络、只读根、候选只读挂载、tmpfs | 隔离项目代码并防止运行时临时篡改验收树 |
 | 检查 | pytest + 固定机器可读报告插件、Ruff、Mypy | 提供测试、lint、类型和结构化反馈 |
 | 测试 | pytest；单一离线命令 `python -m pytest -q` | 可注入、适合 TDD 与 Mock LLM |
-| CI | `.gitlab-ci.yml`，包含 `unit-test`、`wheel-build-smoke`、`reference-image-build`、`demo-image-build` | 冻结课程测试、Windows wheel smoke、正式执行镜像和 Demo 镜像构建的名称、触发与证据 |
+| CI | `.github/workflows/ci.yml`，包含 `unit-test`、`reference-image-build`、`demo-image-build`；`.gitlab-ci.yml`，包含 `unit-test`、`wheel-build-smoke`、`reference-image-build`、`demo-image-build` | 同时满足 GitHub Actions 每次 push/PR 自动测试与 GitLab 强制 job，冻结无凭据普通构建、Windows wheel smoke、正式执行镜像、Demo 镜像及受保护发布证据 |
 | 包分发 | wheel + pipx | 适合 Windows 本地 CLI/WebUI |
 | Demo | OCI 容器 | 与本地能力隔离，便于公网部署 |
 | 公网部署 | Render Web Service；Docker runtime、`/healthz`、无持久磁盘 | 冻结公开 WebUI 的端口、健康检查和无状态边界 |
@@ -1989,27 +2079,27 @@ GitHub Release 与 GHCR 使用彼此独立的最小权限发布凭据：前者�
 - **AC-07：** 写回内容精确等于已批准的结构化 `FinalDiffV1`；展示用 unified diff 不能改变批准身份，外部工作区变化阻止写入。
 - **AC-08：** 凭据录入、状态、更新、清除、后端探测和日志均不暴露测试秘密。
 - **AC-09：** 相同 Demo 输入产生相同关键状态和动作序列，且只进入 `DemoRunStatus`。
-- **AC-10：** `python -m pytest -q` 离线通过；`.gitlab-ci.yml` 的 `unit-test` 在每次 push 和 merge request 运行，最后一次记录通过。
+- **AC-10：** `python -m pytest -q` 离线通过；`.github/workflows/ci.yml` 的 `unit-test` 在每次 push 和 pull request 运行，`.gitlab-ci.yml` 的 `unit-test` 在每次 push 和 merge request 运行，两个平台最后一次适用运行均有可保存的通过记录。
 - **AC-11：** `wheel-build-smoke` 在每次 push 和 merge request 的项目专属 Windows 11 x64 runner 上构建 wheel、校验 SHA-256 并完成全新 pipx 安装/CLI smoke；runner 缺失或不可用时 job 失败，README 步骤可从发布产物启动 WebUI。
 - **AC-12：** `demo-image-build` 在每个 merge request 和 main push 真实构建镜像并通过容器 `/healthz` smoke；公网 Mock Demo URL 可访问且无法使用本地、恢复或真实能力。
-- **AC-13：** 真实请求的全部正文都来自带类别和路径的 `RequestContentSegmentV1`；authorization record 的 `actual_sources` 必须逐段精确派生，缺失、多余或错配时零消费、零 record、零计数、零网络。每个 segment 必须命中 Grant 类别与 `ROOT/FILE/DIRECTORY` scope，空 scope 不授权带路径正文；每次获准发送按 `canonical_byte_count` 原子扣减，重复发送重复扣减且并发不能超预算。profile、endpoint、request、record 和结果必须一致，恶意 base URL 或跨 origin redirect 不能改变或重发正文；未授权披露时真实适配器调用次数为零。
+- **AC-13：** 真实请求的全部正文都来自带类别和路径的 `RequestContentSegmentV1`；authorization record 的 `actual_sources` 必须逐段精确派生，缺失、多余或错配时零消费、零 record、零计数、零网络。每个 segment 必须命中 Grant 类别与 `ROOT/FILE/DIRECTORY` scope，空 scope 不授权带路径正文；每次获准发送按 `canonical_byte_count` 原子扣减，重复发送重复扣减且并发不能超预算。profile、endpoint、request、record 和结果必须一致，恶意 base URL 或跨 origin redirect 不能改变或重发正文；未授权披露时真实适配器调用次数为零。每次真实调用还必须在 Grant 消费前重新验证 Windows Credential Manager 后端并读取本次凭据；PREFLIGHT 后凭据被清除或后端变得不安全时分别以 `CREDENTIAL_MISSING`/`CREDENTIAL_BACKEND_UNSAFE` 停止，且本次消费、record、计数和网络增量均为零。
 - **AC-14：** 两个工作区的记忆相互隔离；模型不能直接写记忆；用户清除后后续 turn 不再选择该条目。
 - **AC-15：** 严格 `ValidateRunRequestV1` 拒绝重复/超量目标、未知 profile、缺失限制和放宽硬上限；有效请求先创建 `CREATED`，再严格按 workspace identity/lease → recovery gate → Snapshot 前置检查 → 创建并封存本次 Run 唯一 `SnapshotTree` → `detect_static` → reference image/execution profile readiness → OpenAI 模式 credential/endpoint readiness 的顺序完成 `PREFLIGHT`，最后才进入 `BASELINE`。任一阶段失败均不调用后续阶段；静态画像不运行项目代码、不重读权威工作区或创建第二份 Snapshot，动态兼容性只在 `BASELINE` 判定，Candidate 文件动作在完整 PREFLIGHT 与 BASELINE 通过前不可分发。
 - **AC-16：** 正式 Run 的六种状态和各 phase 显示正确；失败、超时、skip、xfail、xpass、deselect 和未运行不显示为通过。
-- **AC-17：** 六种动作及结果严格按封闭 Schema 解析；list/search 只能用 `RepositoryLocationV1.ROOT` 表示仓库根，空字符串、`.`、`./`、`/`、尾随 `/` 和 `[ROOT, PATH(...)]` 被拒绝。`ListFilesEntryV1` 只能使用 `DIRECTORY | TEXT_FILE | NON_TEXT_FILE` 及各自固定的 size/text profile 组合，List/Read/Search 对同一原始字节使用同一 `SupportedTextFileV1` 分类；非文本普通文件可列出，Read 以 `FILE_NOT_TEXT` 且零正文失败，Search 稳定计入 `skipped_non_text_count`。模型提交 `action_id`、`RunCheckAction` 携带 executable/argv/命令文本、多动作或自由文本响应均被拒绝；Harness 生成的实例 ID 只影响 `instance_digest`，不影响 `semantic_digest`。
+- **AC-17：** 六种动作及结果严格按封闭 Schema 解析；list/search 只能用 `RepositoryLocationV1.ROOT` 表示仓库根，空字符串、`.`、`./`、`/`、尾随 `/` 和 `[ROOT, PATH(...)]` 被拒绝。List/Search 使用各自不可互换、绑定 visible tree/query/下一扫描位置/自身摘要的 canonical cursor；逐页结果与未分页结果相同且无重复遗漏，`truncated` 与 `next_cursor` 组合严格，tree 变化返回 `CONTINUATION_STALE`，非法 cursor 返回 `CONTINUATION_INVALID`，二者均零部分结果。`ListFilesEntryV1` 只能使用 `DIRECTORY | TEXT_FILE | NON_TEXT_FILE` 及各自固定的 size/text profile 组合，List/Read/Search 对同一原始字节使用同一 `SupportedTextFileV1` 分类；非文本普通文件可列出，Read 以 `FILE_NOT_TEXT` 且零正文失败，Search 稳定计入 `skipped_non_text_count` 且 excerpt 不超过 1024 字节。模型提交 `action_id`、`RunCheckAction` 携带 executable/argv/命令文本、多动作或自由文本响应均被拒绝；Harness 生成的实例 ID 只影响 `instance_digest`，不影响 `semantic_digest`。
 - **AC-18：** 多次 patch action 不能绕过累计 3 文件/128 KiB 限制；`FinalDiffV1` 由 Harness 重算完整 postimage 字节。`candidate_digest` 只由 Snapshot、CandidateTree 和该 FinalDiff 的封闭 `CandidateIdentityV1` 产生；任一输入变化使旧补丁、completion、验证和批准陈旧，revision ID/父链不改变语义摘要。
 - **AC-19：** Docker 检查中候选树只读、缓存进入 tmpfs、无 Docker socket、无网络；`RuntimeCompatibilityCheckV1` 对收集漂移、项目树写入、报告不完整或检查环境错误返回结构化 `BASELINE_BLOCKED`。
 - **AC-20：** 正式 pytest 只有在 node 集合一致、全部实际执行并 PASS、无所有禁止状态、Ruff/Mypy PASS、保护工件和环境一致时才创建 `VerifiedCandidate`。
 - **AC-21：** 两个进程竞争同一工作区时最多一个获得 lease；未解决恢复事务阻止新的正式 Run。
 - **AC-22：** 1—3 文件混合 `CREATE/REPLACE` 的故障注入只产生 `COMMITTED`、`ROLLED_BACK` 或 `UNRESOLVED`；deadline 在首次写入前到期时零写入停止，任一路径可能已替换后到期时不再修改工作区并进入 `RECOVERY_REQUIRED`。状态滞后由字节证据纠正，`UNRESOLVED` 保持阻断。
 - **AC-23：** `PROJECT_CONVENTION`/`USER_DECISION` 与 `RUN_SUMMARY`/`KNOWN_FAILURE` 的创建权限严格按 §4.7 执行。
-- **AC-24：** Windows、Docker、端到端和 §8.4 四个强制 CI job 均形成可保存证据；不能用解析器单测、Linux wheel smoke 或人工发布脚本替代真实 Windows 边界测试和镜像构建。
+- **AC-24：** Task 1—3 使用同一 hash 锁定 gate toolchain，并保存 lock/config/runner/reporter/fingerprint-probe 摘要及三项 GO 证据；Task 2 还必须保存无凭据 loopback registry 的固定镜像身份、监听/清理证据、OCI manifest digest、registry 返回 RepoDigest、digest-pull RepoDigest 和 smoke，三种 digest 必须一致。Windows、Docker、端到端、GitHub Actions 三个强制 job 和 GitLab CI 四个强制 job 均形成可保存证据。不能用全局未锁定工具、Task 4 后补配置、本地 image ID、解析器单测、单一 CI 平台、Linux wheel smoke 或人工发布脚本替代可复现门禁、registry round-trip、真实 Windows 边界测试和镜像构建。
 - **AC-25：** 每个目标在全量基线和独立复跑中都稳定产生相同 `CALL/FAIL` 与 `FailureFingerprintV1.digest`；任一目标 PASS/ERROR、缺失、未运行、无法安全规范化、不稳定、运行时不兼容或 `PytestEvidenceV1` 不完整时不创建 Manifest。
 - **AC-26：** CTV-01—CTV-07 通过；相同 `CandidateIdentityV1`、profile、具体 Prepared request 和 target 集合跨进程产生相同 §0.1 摘要。Mock/OpenAI request 使用独立 `object_type`，segment 内容/来源进入具体请求绑定；未知字段、跨模式字段、非规范输入、路径别名或对象类型变化不能伪造身份。
 - **AC-27：** `DISCLOSURE_GRANT` 与 `FINAL_WRITEBACK` 等待的决定精确绑定 wait/run/kind 和对应不可变 subject digest；可变 Grant/Approval 状态不改变 subject，拒绝、过期、取消、绑定变化、总墙钟耗尽和重启严格按 §4.2.7 转换，旧决定不能复用。
-- **AC-28：** turn/call/墙钟和子超时都在下一副作用前执行；只有冻结具体请求、授权和 adapter 绑定完整且即将调用时才原子计数。计数后调用前的可捕获控制面失败产生 `NOT_ATTEMPTED`，真实进程崩溃只由重启停止证据表示；两者均保留已消费计数且不重试。等待不消费，进展排除实例 ID、时间和审计序号。
+- **AC-28：** turn/call/墙钟和子超时都在下一副作用前执行；只有冻结具体请求、授权和 adapter 绑定完整、逐调用凭据复验通过且即将调用时才原子计数。凭据复验发生在 Grant 消费、authorization record 和计数之前；失败零副作用并停止。计数后调用前的可捕获控制面失败产生 `NOT_ATTEMPTED`，真实进程崩溃只由重启停止证据表示；两者均保留已消费计数且不重试。等待不消费，进展排除实例 ID、时间和审计序号。
 - **AC-29：** 恢复默认 preview 且零写入，只有显式 `--apply` 修改工作区；新文件只有仍精确匹配本事务 postimage 时才能恢复为 `ABSENT`，外部改写或未知对象绝不删除并只能进入 `UNRESOLVED`。
-- **AC-30：** `reference-image-build` 在普通 push/MR 无发布凭据地构建并 smoke 正式执行镜像；受保护 tag 仅在 GitLab commit、GitHub tag 和 wheel 源提交一致时将其推送到 GHCR、按不可变 digest 重拉，且发布 wheel 内置 `ReferenceProfileManifestV1.docker_image_digest`、GHCR RepoDigest 和目标机实际拉取 digest 三者完全一致。
+- **AC-30：** Task 2 先以无凭据 loopback registry 冻结无自引用的单平台 OCI manifest digest并按 digest 重拉 smoke；`reference-image-build` 在普通 push/MR 无发布凭据地重建并 smoke 同一 digest。受保护 tag 仅在 GitLab commit、GitHub tag 和 wheel 源提交一致时将完全相同的 manifest/blobs 推送到 GHCR、按不可变 digest 重拉，且 Task 2 loopback RepoDigest、发布 wheel 内置 `ReferenceProfileManifestV1.docker_image_digest`、GHCR RepoDigest 和目标机实际拉取 digest 四者完全一致。
 - **AC-31：** 唯一内建 `EditablePathPolicyV1` 只允许 `CREATE`/`REPLACE` `src/**` 文件，已有文件与新文件使用同一目录段匹配规则；`src-old/**`、仓库根、文档、CI、Docker 和 scripts 路径均以 `PATCH_PATH_NOT_EDITABLE` 拒绝，保护工件仍优先使用 `PROTECTED_ARTIFACT_CHANGED`。合法/非法混合 patch 整体零候选副作用，多次 patch、篡改 Candidate/FinalDiff、检查、批准和持久化均不能绕过复验；manifest/repository/governance policy digest 必须绑定同一策略，变化使旧 Candidate、验证和批准失效。list/read/search 不受 editable policy 限制，用户或配置提交自定义策略时不创建 Run。
 
 ## 10.2 用户故事—合同—验收追踪
@@ -2030,11 +2120,15 @@ GitHub Release 与 GHCR 使用彼此独立的最小权限发布凭据：前者�
 
 | 层次 | 环境 | 主要 AC | 必须证明 | 证据 |
 |---|---|---|---|---|
+| 可行性 gate bootstrap | Windows 11 x64、Python 3.12、Task 1 创建的隔离 venv；只从 hash 锁定 gate dependency lock 安装，并由唯一 runner 显式选择 gate pytest/Ruff/Mypy 配置；Task 2 另启动固定 digest、仅 loopback、无凭据的临时 registry | AC-01、AC-19、AC-21、AC-22、AC-24、AC-25、AC-30 | Task 1 冻结 lock、marker/config、runner 和工具版本；Task 2/3 只消费同一摘要；Task 2 显式加载报告器、比较稳定 `CALL/FAIL` 输入，并证明 OCI export → loopback RepoDigest → digest pull 三方一致且无最终 manifest 自引用；Task 4 提升已验证配置且不静默漂移 | Python/tool 版本、lock/config/runner/reporter/probe SHA-256、临时 registry image/config/监听/清理证据、三方 digest、隔离环境安装记录及 Task 1—3 GO 报告 |
 | 离线核心单测 | 无网络；Fake FS/DB/Clock/LLM/Credential/HTTP transport | AC-02、AC-03、AC-05、AC-06、AC-10、AC-13—AC-18、AC-20—AC-23、AC-25—AC-29、AC-31 | 封闭 Schema/canonicalization 向量（包含未经 normalization 的 scalar/key 排序、surrogate 拒绝、普通 ASCII/U+007F 直接 UTF-8、非强制转义 scalar 禁止 `\uXXXX`/`\/` 替代、UTF-8 与控制字符转义、`/`/U+2028/U+2029 不转义，以及 `CanonicalTimestampV1` 格式、日期、小时 `00`—`23`、分钟/秒 `00`—`59`、UTC epoch 毫秒向下截断和摘要前拒绝）、Mock/OpenAI Prepared request 封闭联合、模式专属 byte count 与摘要域、`LLMCallResultV1` 的 ABSENT/PRESENT authorization record 和状态约束、PREFLIGHT 的 Snapshot 前置检查/唯一 Snapshot/静态画像/readiness 顺序及每个失败点的零下游调用、`EditablePathPolicyV1` 的 `src/**` 目录段匹配、错误优先级、摘要传播、混合 patch 原子拒绝、读取不受限和 Candidate/验证/批准/持久化复验、`RepositoryLocationV1` 根/路径联合与字符串哨兵拒绝、`ListFilesEntryV1` 三变体字段组合、共享 `SupportedTextFileV1` 分类、`FILE_NOT_TEXT` 零正文和稳定 `skipped_non_text_count`、`ROOT/FILE/DIRECTORY` scope 及带路径/无路径来源矩阵、完整 postimage 原始字节统计、profile/config（含缺少/未知 endpoint、`base_url`/自定义 URL 和 editable policy 覆盖拒绝）、四对象 endpoint 摘要绑定、恶意 `OPENAI_BASE_URL` 仍固定 `https://api.openai.com/v1`、endpoint 不一致零消费/零记录/零计数/零网络、跨 origin redirect 不跟随且初次消费不退款、Grant UI endpoint 显示、失败指纹、主循环、实例/语义动作摘要、策略、不可变 subject、批准、带 deadline 的两类等待、Grant、反馈、记忆、停止和逐路径持久化故障注入 | `unit-test` job 日志与测试报告 |
-| Windows 集成 | 项目专属 Windows 11 x64 GitLab Runner | AC-01、AC-07、AC-08、AC-11、AC-21、AC-22、AC-24、AC-26、AC-29—AC-31 | ADS、reparse、hard link、设备名、路径碰撞、`src` 与大小写/Unicode/`src-old` editable policy 边界、Git EOL/encoding/filter 拒绝、最终对象身份、ACL、Credential Manager、named mutex、新文件恢复和发布 wheel pipx smoke | Windows runner job 日志、安装日志和环境版本；测试秘密已清除 |
-| Docker 集成 | Docker Desktop Linux 模式 | AC-04、AC-19、AC-20、AC-24、AC-25、AC-30 | `ReferenceProfileManifestV1` 唯一映射、无网络、非 root、只读根、候选只读、tmpfs、资源限制、动态兼容性、`PytestEvidenceV1` 和真实 pytest/Ruff/Mypy | 固定执行镜像摘要和可重复 Docker 集成脚本/runner 报告 |
+| 离线 continuation 与真实调用门 | Fake Tree/Credential/HTTP transport | AC-13、AC-17、AC-28 | List/Search cursor 的 query/tree/位置/自身摘要绑定、逐页与未分页等价、stale/invalid 零部分结果、1024 字节 excerpt；PREFLIGHT 后清除凭据或切换不安全后端时，逐调用复验在 Grant/record/turn/call/网络前以零副作用停止 | 两个平台 `unit-test` 报告中的命名测试与调用顺序 trace |
+| Windows 集成 | 项目专属 Windows 11 x64 GitLab Runner | AC-01、AC-07、AC-08、AC-11、AC-13、AC-21、AC-22、AC-24、AC-26、AC-28—AC-31 | ADS、reparse、hard link、设备名、路径碰撞、`src` 与大小写/Unicode/`src-old` editable policy 边界、Git EOL/encoding/filter 拒绝、最终对象身份、ACL、Credential Manager 生命周期及逐调用读取、named mutex、新文件恢复和发布 wheel pipx smoke | Windows runner job 日志、安装日志和环境版本；测试秘密已清除 |
+| Docker 集成 | Docker Desktop Linux 模式 | AC-04、AC-19、AC-20、AC-24、AC-25、AC-30 | `ReferenceProfileManifestV1` 唯一映射、固定单平台 OCI digest、无自引用 build context、Task 2 loopback registry round-trip、检查容器无网络/非 root/只读根/候选只读/tmpfs/资源限制、动态兼容性、`PytestEvidenceV1` 和真实 pytest/Ruff/Mypy | 固定执行镜像摘要、loopback registry 三方 digest/清理证据和可重复 Docker 集成脚本/runner 报告 |
 | 端到端 reference fixture | Windows + Docker + Mock LLM | AC-05—AC-07、AC-13、AC-15—AC-18、AC-20—AC-23、AC-25—AC-29、AC-31 | 冻结 profiles/limits/editable policy → Snapshot 前置检查 → 创建并封存唯一 Snapshot → 静态画像 → readiness → 动态兼容 → 全目标稳定指纹 → 越界补丁硬拒绝 → `src/**` 错误补丁 → 反馈回灌 → 修正 → editable-policy 复验 → 正式验证 → 最终批准 → 写回前复验与精确写回，以及等待拒绝和未批准不写回 | 可重复 reference fixture 脚本、审计导出和最终摘要 |
 | 恢复故障注入 | Windows 本地临时仓库 | AC-07、AC-21、AC-22、AC-24、AC-29、AC-31 | 1—3 文件混合事务、policy/路径记录篡改零写入、状态落盘前崩溃、外部改写新文件、preview 零写入、显式 apply 和安全 `ABSENT` 回滚 | 故障点矩阵和恢复日志 |
+| GitHub Actions | GitHub-hosted Linux runner + Docker；每次 push/PR | AC-10、AC-12、AC-24、AC-30 | `unit-test`、`reference-image-build`、`demo-image-build` 三个精确 job；无发布凭据、无 registry push、无 Release，真实构建与 smoke | workflow run URL、三个 job 结果、测试报告、两类本地镜像摘要和 smoke 工件 |
+| GitLab CI | Linux Docker runner + 项目专属 Windows 11 x64 runner；push/MR/main/protected tag | AC-10—AC-12、AC-24、AC-30 | `unit-test`、`wheel-build-smoke`、`reference-image-build`、`demo-image-build` 四个精确 job及受保护发布边界 | pipeline/job URL、测试/安装/镜像/发布工件和凭据边界检查 |
 | 包与正式镜像发布 smoke | 项目专属 Windows 11 runner + Docker + GHCR | AC-10、AC-11、AC-24、AC-30 | `wheel-build-smoke`、`reference-image-build`、从 GitHub Release 下载 wheel并校验 SHA-256、从 GHCR 按 digest 拉取 reference image、核对 wheel manifest、通过 pipx 安装并启动 WebUI | job 日志、Release URL、GHCR RepoDigest、wheel/manifest 摘要、安装日志和环境版本 |
 | 公网 smoke | `demo-image-build` + 部署后的 Demo | AC-09、AC-12、AC-24 | main/MR 镜像构建、容器及公网 `/healthz`、固定场景、`DemoDecision`、无真实能力 | job 日志、镜像摘要、部署记录与可访问 URL |
 
@@ -2068,24 +2162,58 @@ GitHub Release 与 GHCR 使用彼此独立的最小权限发布凭据：前者�
 | SPEC 再次扩张 | 中/高 | 新增自然语言测试、多 Agent、通用恢复或大量兼容分支 | 所有新增先修改 §1.5/1.6 并经独立审查；PLAN 不得暗增 |
 | 公网 Demo 被误认为正式验证 | 低/中 | UI 或审计缺少模拟标识 | 独立状态、持续标识、独立能力注册表 |
 
-## 11.2 进入 PLAN 的关闭清单
+## 11.2 M0：SPEC Readiness Gate 与进入 PLAN 的关闭清单
 
-本版已冻结以下此前存在歧义的架构决定：
+M0 是 PLAN 生成、冻结和冷启动之前的人工准入门禁，不是实现 Task，也不产生实现 commit。执行者必须从用户本次指定、文件状态声明和当前 Git/文件系统事实中唯一解析正式 SPEC 路径；若存在内容不同且无法唯一判定的候选，M0 失败并返回 SPEC/文件身份澄清。
+
+M0 必须在运行时对唯一正式 SPEC 执行并记录：
+
+1. 以无 BOM UTF-8 原始文件计算 SHA-256；
+2. 执行 `git hash-object --no-filters <正式 SPEC 路径>` 计算 Git blob；
+3. 执行 `git rev-parse HEAD` 记录当前 Git commit；
+4. 对照 `AI4SE_Final_Project_通用要求.md`、`AI4SE_Final_Project_A_Coding_Agent_Harness(1).md` 和适用 `AGENTS.md`，逐项确认课程与 Harness 强制要求没有被 SPEC 降级或遗漏；
+5. 明确核对已知阻断项已经关闭：GitHub Actions 与 GitLab CI 双平台闭环；List/Search canonical cursor；每次真实调用前凭据复验；下述 `PlanSemanticDigestV1` 执行跟踪排除规则；前三项技术门禁可从仅有获准 SPEC/PLAN 的冷启动环境建立并复现同一锁定 gate toolchain；Task 2 以无凭据 loopback registry 证明 OCI digest round-trip 和无自引用流程，而 GHCR 凭据与真实发布仍只属于受保护 release gate；
+6. 由人类批准上述精确 SPEC 路径、SHA-256、Git blob 和基线 commit。
+
+M0 的摘要和批准记录必须写入外部批准记录及随后生成的 PLAN 元数据，不得把摘要写回被摘要的 `SPEC.md`。任何命令失败、内容冲突、阻断项未关闭或人类未批准都使 M0 失败：流程必须返回修改/澄清 SPEC，不得继续生成或冻结 PLAN，不得开始冷启动或 Task 1。
+
+本版供 M0 核对的关闭合同包括：
 
 - 准入、profiles、Snapshot 与生命周期：§4.1—§4.2，AC-15、AC-16、AC-21、AC-28、AC-30；
-- 动作、路径、Candidate identity 与 editable policy：§4.2—§4.3，AC-01、AC-17、AC-18、AC-26、AC-31；
-- 批准、披露、Prepared requests 与调用结果：§4.4，AC-02、AC-03、AC-13、AC-27、AC-28；
+- 动作、路径、List/Search cursor、Candidate identity 与 editable policy：§4.2—§4.3，AC-01、AC-17、AC-18、AC-26、AC-31；
+- 批准、披露、Prepared requests、逐调用凭据复验与调用结果：§4.4、§4.8，AC-02、AC-03、AC-08、AC-13、AC-27、AC-28；
 - 项目验证、证据与受控持久化恢复：§4.5—§4.6，AC-04、AC-07、AC-19—AC-22、AC-25、AC-29；
 - 凭据、记忆和 UI 权限边界：§4.7—§4.9，AC-08、AC-09、AC-14、AC-23；
-- 分发、CI 与验证矩阵：§8—§10，AC-10—AC-12、AC-24、AC-30。
+- GitHub Actions、GitLab CI、分发与验证矩阵：§8—§10，AC-10—AC-12、AC-24、AC-30。
+- 可行性门禁启动环境：Task 1 拥有精确版本、完整传递依赖和 hash 锁定的 gate dependency lock、独立 pytest marker/config、Ruff/Mypy config 与唯一 gate runner；Task 2/3 只能消费 Task 1 冻结的同一工具链，不得依赖全局 pytest/Ruff/Mypy 或 Task 4 文件。
 
 因此，PLAN 不得再让实现者自行选择上述语义。精确依赖 patch 版本、OpenAI model、镜像摘要和部署 URL 由发布 manifest、lock file、README 与流水线证据记录，并通过 digest 绑定到运行。
 
-PLAN 的最前部必须安排三项技术验证任务，并采用失败关闭而不是放宽设计：
+获准的 PLAN 使用 `PlanSemanticDigestV1` 区分语义合同与执行跟踪。该摘要不得写入 `PLAN.md` 自身，必须存入外部批准记录，并按以下唯一投影计算：
+
+1. 输入必须是无 BOM UTF-8；所有 CRLF 先规范为 LF，裸 CR 拒绝。
+2. 正式 Task 区域精确定义为从完整行 `## Formal Tasks` 起，到下一完整行 `## Task Dependency DAG` 之前。只在该区域执行三种替换：
+   - 每个完整行前缀为 `**Status:** ` 的行统一替换为 `**Status:** TRACKING_STATUS_EXCLUDED_V1`；
+   - 所有 checkbox token `[ ]` 与 `[x]` 统一为 `[ ]`，步骤正文仍参与摘要；
+   - 每个完整单行前缀为 `**Completion evidence:** ` 的行统一替换为 `**Completion evidence:** TRACKING_EVIDENCE_EXCLUDED_V1`。
+3. 除上述精确替换外，PLAN 的其他全部字节都参与摘要；不得排除 task 标题、Goal、依赖、文件、接口、实现点、测试、命令、review gate、矩阵、门禁或人工动作。
+4. 对投影后的无 BOM UTF-8 字节计算 `SHA-256(b"VesperCode\0PLAN_SEMANTIC_CONTRACT_V1\0" + projected_plan_bytes)`。
+5. 仅 task 状态、checkbox 勾选和单行 completion evidence 的变化不要求重新进行 PLAN 语义批准或冷启动；任何其他字节变化都必须生成新的 `PlanSemanticDigestV1`、重新人工批准并重新通过冷启动门禁。
+6. 完整 PLAN 文件 SHA-256 始终作为每次证据更新的审计身份记录，但不取代 `PlanSemanticDigestV1`，也不因合法执行跟踪更新使既有语义批准失效。
+
+通过 M0 和 PLAN 人工批准后，PLAN 的最前部仍必须安排三项技术验证任务，并采用失败关闭而不是放宽设计：
 
 1. Win32 最终对象身份、hard link/reparse/ADS 与 named mutex 集成验证；
-2. `ReferenceProfileManifestV1`/reference fixture 映射、`reference-image-build`/GHCR digest 交付、Docker 只读候选树、tmpfs、缓存、资源限制、完整报告和失败指纹集成验证；
+2. `ReferenceProfileManifestV1`/reference fixture 映射、固定单平台 OCI manifest 构建、无凭据 loopback registry push → RepoDigest → digest pull → smoke、无最终 manifest 自引用、Docker 只读候选树、tmpfs、缓存、资源限制、完整报告和失败指纹集成验证；真实 GHCR 交付保留给 §8.4 受保护 release gate；
 3. 1—3 文件持久化的逐故障点恢复验证。
+
+三项门禁必须共享同一可复现的最小启动合同。Task 1 在其首次 RED 前建立并审查 gate lock、独立 pytest marker/config、Ruff/Mypy config 和唯一 runner；lock 必须冻结所有直接/传递依赖的精确版本与分发 hash，GO 报告必须记录 Python、pytest、Ruff、Mypy、lock/config/runner 摘要。Task 2 和 Task 3 必须通过该 runner 显式选择 gate config 执行，禁止读取全局工具配置或等待 Task 4 创建 `pyproject.toml`、`requirements/dev.lock`、marker 和静态检查配置。
+
+Task 2 还必须拥有可通过显式 pytest `-p` 或等价封闭入口加载的 gate 专用机器报告器，以及只负责构造、规范化和比较稳定 `CALL/FAIL` 输入的 gate 指纹探针。Docker gate 报告必须把 reporter/probe 的版本与摘要、gate lock/config 摘要、固定 builder/output 参数、实际镜像身份和临时 registry 身份绑定为同一 GO 证据；缺失、截断、摘要不一致或隐式插件加载均为 NO-GO。该 reporter/probe 只证明 Task 2 可行性，不得提前声明或替代 Task 19 的正式 `PytestEvidenceV1`、`FailureFingerprintV1` 和生产验证模块。
+
+Task 2 的临时 registry 必须使用 digest-pinned registry image，只监听 `127.0.0.1` 的动态空闲端口，不接受凭据、不暴露到 LAN/公网、不复用 Docker Desktop 已登录状态，并在成功、失败、取消和异常路径删除容器与数据。推送前生成的本地 OCI manifest digest、registry 返回 RepoDigest 和按 digest 重拉后的 RepoDigest 必须完全一致；检查容器在重拉后仍以 `--network none` 执行。最终 `ReferenceProfileManifestV1` 只能在三方一致后生成，且不得作为其绑定镜像的构建输入。任何 digest 转换、自引用、临时 registry 残留或外部 registry 尝试均为 NO-GO；Task 34 只能复现该已证明流程，Task 36 才能使用受保护凭据执行真实 GHCR 交付。
+
+Task 4 必须把 Task 1—3 已验证的 Python/tool 版本、marker 和静态检查规则提升为正式 `pyproject.toml`、`requirements/dev.lock` 和统一开发命令，而不是首次建立测试环境。正式配置与冻结 gate 配置如有任何有意差异，必须明确记录、重新执行受影响的 Task 1—3 并取得新 GO；未解释或未复验的漂移失败关闭。gate lock、config、runner、报告器、指纹探针和三项 GO 摘要必须保留到最终交付，以便从门禁证据独立复现。
 
 若第三项无法证明 3 文件事务安全，必须停止后续实现和发布；不得在 PLAN 或代码中把正式范围隐式改为单文件。改变 3 文件/1 新文件范围前，必须正式修订本 SPEC、相关用户故事、AC、验证矩阵和 PLAN，并重新审查；不得删除恢复语义或把未知状态视为成功。
 

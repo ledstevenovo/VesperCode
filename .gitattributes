@@ -1,0 +1,6 @@
+.gitattributes text eol=lf
+PLAN.md text eol=lf
+SPEC.md text eol=lf
+SPEC_PROCESS.md text eol=lf
+AGENT_LOG.md text eol=lf
+*.json text eol=lf
