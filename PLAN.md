@@ -41,9 +41,9 @@
 - Task 4.A solely owns `scripts/bootstrap_formal_env.py`. In every fresh formal-task worktree, the candidate interpreter is located only with `py -3.12`; before creating, rebuilding, or using `.venv-formal`, the bootstrap reads the Task 1.E terminal `GO` toolchain identity and requires `platform.python_version() == gate_evidence.python_version`. A mismatch exits nonzero before the environment is created or used. The bootstrap then materializes only the immutable `requirements/dev.lock` closure with `.venv-formal\Scripts\python.exe -m pip install --disable-pip-version-check --require-hashes --no-deps -r requirements/dev.lock`; it never reads another worktree's `.venv-gate`, invokes an ambient bare `python`, resolves packages, upgrades, or rewrites the lock.
 - The canonical offline suite is logically `python -m pytest -q`, executed in formal worktrees as `.venv-formal\Scripts\python.exe -m pytest -q`. Task 4.A runs its dependency-closure RED and lock/config consistency checks through that exact interpreter without claiming the formal tool configuration exists; Task 4.F establishes the canonical offline and closure commands through the same interpreter. Every later task also runs the logical commands `python -m ruff format --check .`, `python -m ruff check .`, and `python -m mypy src tests` from the verified `.venv-formal` environment.
 - The five standard closure commands referenced by Tasks 5–38 are exactly `python -m ruff format --check .`, `python -m ruff check .`, `python -m mypy src tests`, `python scripts/scan_credentials.py --changed --redact --fail-on-match`, and `git diff --check`.
-- One session task uses one fresh implementation subagent and one implementation/evidence commit pair. One work package owns one isolated worktree, branch, draft PR, finishing pass, and merge. Use `superpowers:using-git-worktrees` for every package worktree and `superpowers:test-driven-development` for every behavior change.
+- One session task is one fresh-subagent execution/review/commit slice inside its work package and uses one fresh implementation subagent plus one implementation/evidence commit pair. It is not an independent PR task. One work package is the `AGENTS.md` independent feature / independent task and owns one isolated worktree, branch, draft PR, finishing pass, and merge. Use `superpowers:using-git-worktrees` for every package worktree and `superpowers:test-driven-development` for every behavior change.
 - A session task first receives a spec-compliance review and then a code-quality review, with `superpowers:requesting-code-review` used for both explicit stages. Critical or Important findings block dependents until the implementing or explicitly assigned repair subagent closes them and the same review stage passes.
-- After both review stages pass, the session task's implementation step creates the implementation commit. Its completion-evidence step then records that existing SHA and all required evidence/PR metadata in a separate narrow evidence commit before invoking `superpowers:finishing-a-development-branch`; no task branch is merged, deleted, or reused before its tests, both reviews, credential scan, implementation/evidence commits, evidence record, and PR metadata are complete.
+- After both review stages pass, the session task's implementation step creates the implementation commit. Its completion-evidence step then records that existing SHA and all required evidence/PR metadata in a separate narrow evidence commit before invoking `superpowers:finishing-a-development-branch`; no package branch is merged, deleted, or reused before its tests, both reviews, credential scan, implementation/evidence commits, evidence record, and PR metadata are complete.
 - Every session-task completion appends truthful evidence to `AGENT_LOG.md`, records the real implementation SHA in this PLAN, and identifies the responsible subagent, human edits, tests, review results, and PR URL. Milestone status is mechanically derived from child evidence.
 - PLAN semantic approval follows SPEC §11.2 exactly: normalize no-BOM UTF-8/LF, exclude only enumerated task tracking fields, prepend the declared domain, and hash with SHA-256. Any other PLAN byte change requires renewed semantic approval and cold-start validation.
 - Parallel tasks may implement in separate worktrees, but their PR merges and append-only edits to `PLAN.md` and `AGENT_LOG.md` are serialized in task-number order within a wave.
@@ -57,7 +57,27 @@
 
 **Document status:** Draft — design rewrite complete only after mechanical verification; admission reviews and cold-start remain pending.
 
-This PLAN is the self-contained implementation plan for the exact current SPEC and the sole canonical source for executable task steps. It does not change product scope, behavior, security boundaries, non-goals, or acceptance criteria. The 141 legacy child IDs remain immutable atomic TDD and migration-trace identifiers; only the 68 `TNN.X` session tasks are executable review/commit units, and only the 46 `WP...` work packages are branch/worktree/PR units.
+### 1.1 Authoritative Planning Inputs
+
+The following identities define the exact repository inputs used to author and mechanically audit this PLAN candidate. They establish candidate provenance only; they are not human approval, admission, or execution evidence. The complete PLAN SHA-256, the computed `PlanSemanticDigestV2` value, and the future commit containing this revision remain in the external review or approval record so this document does not identify itself recursively.
+
+| Field | Value |
+|---|---|
+| Authoritative SPEC path | `SPEC.md` |
+| Authoritative SPEC SHA-256 | `0810566b4a7b799e905c2f6e949335ce1343a594db20842fb81f93ac4ec2e2d8` |
+| Authoritative SPEC Git blob | `87a33526bcdc786d7ed4510769a4d7a53ebc9b66` |
+| Planning input baseline Git HEAD | `d29d68bca9783c7a5226034e65cf844a41fc6ebf` |
+| General course requirements path | `AI4SE_Final_Project_通用要求.md` |
+| General course requirements SHA-256 | `ee0c5770847ed34caf22c62fa183a6787318a3dcbbfe863a5b06de1f53704220` |
+| Harness requirements path | `AI4SE_Final_Project_A_Coding_Agent_Harness(1).md` |
+| Harness requirements SHA-256 | `6c225b996302bdbe0736c4327617b99ac7575198d0537c8a19b4bb7bc2620d81` |
+| Repository instructions path | `AGENTS.md` |
+| Repository instructions SHA-256 | `f4e68e302cfb9cc9f383704ef3be9eb8975277a0715e5357e65070cad2738656` |
+| Repository instructions provenance | Working-tree planning input; not contained in the planning baseline commit. |
+| Initial generation timestamp | `2026-07-26T17:17:01+08:00` |
+| Last semantic revision timestamp | `2026-07-30T19:26:44+08:00` |
+
+This PLAN is the self-contained implementation plan for the exact current SPEC and the sole canonical source for executable task steps. It does not change product scope, behavior, security boundaries, non-goals, or acceptance criteria. The 141 legacy child IDs remain immutable atomic TDD microcycles and migration-trace identifiers. The 68 `TNN.X` session tasks are fresh-subagent execution/review/commit slices, not independent PR tasks. The 46 `WP...` work packages are the `AGENTS.md` independent features / independent tasks and the sole branch/worktree/PR units.
 
 Implementation is forbidden until all gates below pass in order for the exact unchanged input identities:
 
@@ -70,6 +90,81 @@ Implementation is forbidden until all gates below pass in order for the exact un
 7. `APPROVED_DOCUMENT_BASELINE_V3`: commit the exact approved bytes and prove the implementation base is its clean direct descendant.
 
 All prior M0, PLAN audit, review, approval, cold-start, and baseline results are invalid after this non-tracking SPEC/PLAN rewrite. No embedded statement in this document is admission evidence.
+
+### 1.2 Admission Gate Execution Contract
+
+The seven gates above use the single contract in this section. The evidence root is `.worktrees/_review-packages/admission-v3/` joined with the lowercase complete-file SHA-256 of the candidate `PLAN.md`. Every artifact uses strict UTF-8 JSON with repository-relative input paths and exact candidate identities. `manifest.json` records each artifact's relative path, byte length, and complete-file SHA-256. An artifact may carry a `content_digest` computed over canonical JSON with that field omitted; no file embeds its own complete-file SHA-256.
+
+| Gate | Authority and exact inputs | Independence | PASS predicate | Evidence artifact |
+|---|---|---|---|---|
+| `SPEC_M0` | SPEC §11.2; authoritative SPEC bytes/path/blob, both course files, repository `AGENTS.md`, and planning HEAD | One fresh reviewer session whose id is absent from the recorded SPEC author/fixer ids; the human performs the identity approval required by SPEC §11.2 | Every §11.2 item passes, no unresolved identity or requirement conflict exists, and the human approves the exact SPEC path/SHA/blob/HEAD | `m0.json` |
+| `PLAN_AUDIT_V3_A` / `PLAN_AUDIT_V3_B` | PLAN §8; exact PLAN/SPEC/course/AGENTS bytes and Git HEAD | Independent source implementations and private negative self-tests | Both decisions are `PASS`, both issue lists are empty, and all result fields except verifier source SHA-256 agree | `plan-audit-a.json`, `plan-audit-b.json` |
+| `PLAN_SPEC_COMPLIANCE` | `PlanReviewChecklistV1` with `review_kind=PLAN_SPEC_COMPLIANCE`; exact candidate identities and both A/B result SHA-256 values | One fresh no-history reviewer session, not a recorded PLAN/SPEC author or fixer and distinct from the executability reviewer | All `PSC-01`—`PSC-06` checks pass, the result identities match the candidate and A/B, and no Critical or Important finding remains open | `plan-spec-compliance.checklist.json`, `plan-spec-compliance.result.json` |
+| `PLAN_EXECUTABILITY` | `PlanReviewChecklistV1` with `review_kind=PLAN_EXECUTABILITY`; exact candidate identities and both A/B result SHA-256 values | A second fresh no-history reviewer session, not a recorded PLAN/SPEC author or fixer, distinct from the compliance reviewer, and unable to read that review before issuing its own result | All `PEX-01`—`PEX-06` checks pass for all 68 session tasks, the result identities match the candidate and A/B, and no Critical or Important finding remains open | `plan-executability.checklist.json`, `plan-executability.result.json` |
+| Human PLAN identity approval | Exact SPEC SHA-256/blob, PLAN complete-file SHA-256, `PlanSemanticDigestV2`, both course-file SHA-256 values, AGENTS SHA-256, Git HEAD, A/B SHA-256 values, and both independent review-result SHA-256 values | Only the human may issue this decision; an agent may serialize but never infer or fabricate it | `approver_kind=human`, `decision=APPROVE`, every identity equals the preceding PASS evidence, and the approval timestamp follows both reviews | `human-approval.json` |
+| Heterogeneous no-history cold-start | Exact human-approved inputs plus the retrieval and disposable-execution contracts below | One fresh agent type different from the PLAN authoring agent type, with no conversation, memory, prior review, or generated-result context beyond the exact approved inputs and this contract | Both cold-start artifacts return `PASS`; every listed failure condition remains false | `cold-start-retrieval.json`, `cold-start-execution.json` |
+| `APPROVED_DOCUMENT_BASELINE_V3` | All preceding PASS artifacts, the approved identities, and Git committed-tree facts | Mechanical committed-tree and ancestry validation; no agent judgment may substitute for Git facts | The approved-document commit and its direct admission-evidence child satisfy the baseline relation below, the formal base is that clean child, and the candidate semantic/SPEC identities remain exact | `baseline.json` |
+
+`PlanReviewChecklistV1` has these ordered required fields:
+
+```text
+schema_version, review_kind, candidate_plan_complete_file_sha256, candidate_plan_semantic_digest_v2, candidate_spec_sha256, candidate_spec_git_blob, candidate_git_head, verifier_a_result_sha256, verifier_b_result_sha256, reviewer_id, reviewer_session_id, reviewer_agent_type, author_or_fixer_ids, independent_from, started_at, completed_at, checks, findings, content_digest
+```
+
+Each checklist `check` has ordered fields `check_id`, `status: PASS | FAIL`, and nonempty `evidence`. Each `finding` has ordered fields `finding_id`, `severity: Critical | Important | Minor`, `location`, `statement`, `evidence`, `required_change`, `status: OPEN | CLOSED`, `resolution`, and `closure_evidence`. A closed finding requires nonempty resolution and closure evidence; an open finding requires both to be empty. Finding ids are unique within one review and remain stable across repair/re-review.
+
+`PlanReviewResultV1` has these ordered required fields:
+
+```text
+schema_version, review_kind, candidate_plan_complete_file_sha256, candidate_plan_semantic_digest_v2, candidate_spec_sha256, candidate_spec_git_blob, candidate_git_head, verifier_a_result_sha256, verifier_b_result_sha256, checklist_sha256, reviewer_id, reviewer_session_id, reviewer_agent_type, open_critical_count, open_important_count, open_minor_count, decision: PASS | FAIL, content_digest
+```
+
+A `PlanReviewResultV1` is `PASS` only when its checklist has no missing/failed check, its identities and reviewer fields exactly match the checklist and candidate, reviewer independence is proven, and both `open_critical_count` and `open_important_count` are zero. Minor findings may remain open but must be preserved in the checklist and counted; they never erase or close themselves.
+
+The compliance checklist is exactly:
+
+- `PSC-01`: all SPEC requirements, user stories, FR/NFR and AC rows retain implementation and independent validation coverage.
+- `PSC-02`: product behavior, security boundaries, non-goals and acceptance conditions are not weakened or silently expanded.
+- `PSC-03`: PLAN interfaces and implementation points do not conflict with SPEC observable semantics.
+- `PSC-04`: no shared cross-session semantic contract exists only in PLAN when SPEC must own it.
+- `PSC-05`: ownership, dependencies, traceability and review/verification gates preserve SPEC constraints.
+- `PSC-06`: every finding is location-bound, evidenced, severity-classified and truthfully open or closed.
+
+The executability checklist is exactly:
+
+- `PEX-01`: all 68 session tasks contain every field and closure step required by §8.1.
+- `PEX-02`: every task's displayed interfaces, RED, minimum GREEN, Target, Domain, review and Done conditions are mutually executable.
+- `PEX-03`: a fresh agent needs no undisclosed cross-task design decision, file, command, credential or environment fact.
+- `PEX-04`: each session task fits one fresh-agent session; independently acceptable/rejectable implementation behavior is split into session-task execution slices without creating another independent PR task unless it also requires an independent work-package boundary.
+- `PEX-05`: work-package boundaries, file ownership, dependencies and parallelization produce no integration ambiguity or hidden long-lived branch dependency.
+- `PEX-06`: every command is complete, directly runnable in its declared environment and mapped to the displayed verification expectation.
+
+Cold-start uses exact fixed probes. Retrieval requires the fresh agent to locate `T01.1` and `T38.2` and, for each, restate Goal, SPEC contracts, Files, Depends, Interfaces, RED, minimum GREEN, Target, Domain, review focus, Done, work-package boundary, and applicable Global Constraints without an Important or Critical omission. Disposable execution starts `T01.1` from the exact approved candidate in an isolated throwaway worktree, performs every displayed legacy-step RED/minimum-GREEN microcycle and task Target/Domain verification, records location, RED preparation, implementation, verification, and projected review/evidence administration time, and creates no production merge or completion claim. The hard elapsed-time limit is two hours; reaching it stops the trial and returns `FAIL`. Any missing contract, hidden context dependency, incorrect RED, Critical/Important constraint omission, Target/Domain failure, or inability to complete `T01.1` within the limit also returns `FAIL`.
+
+The approved-document baseline relation is:
+
+```text
+approved_document_commit
+  -> direct admission_evidence_commit
+       == clean formal_base
+            -> T01.1 work-package branch/worktree
+```
+
+`approved_document_commit` contains the exact M0-approved SPEC raw SHA/blob and human-approved PLAN raw SHA/semantic digest. Its sole direct `admission_evidence_commit` preserves those bytes and changes only `SPEC_PROCESS.md` and `AGENT_LOG.md` to register the deterministic evidence root, all pre-baseline artifact paths/digests, the human decision, cold-start result, and the approved-document commit. After that child exists, `baseline.json` binds both commit SHAs and the same candidate identities. Task 1 starts only from a clean worktree whose HEAD equals `admission_evidence_commit`; a working-file match, descendant with intervening changes, dirty tree, sibling, or uncommitted copy fails the gate.
+
+Gate invalidation is closed:
+
+| Change | Required rerun |
+|---|---|
+| Only task Status, task checkbox state, or one-line Completion evidence changes under §8.3 | No admission gate; record the new complete-file PLAN SHA while preserving the semantic digest |
+| Any other PLAN byte changes | A/B, both independent PLAN reviews, human PLAN approval, both cold-start probes, and baseline |
+| SPEC path/bytes/blob, either course file, or applicable AGENTS bytes change | M0 and every subsequent gate |
+| Either verifier source or result changes | A/B and every subsequent gate |
+| Either review schema, checklist, result or reviewer-independence fact changes | Both independent PLAN reviews and every subsequent gate |
+| Any admission artifact is corrected, replaced, missing, inaccessible, or identity-mismatched | That gate and every subsequent gate |
+| Any semantic change after baseline materialization | Baseline is invalid immediately; no Task 1 work may start or continue |
+
+Absence of an artifact, schema/order mismatch, invalid digest, path escape, inaccessible evidence, reviewer-identity conflict, open Critical/Important finding, stale candidate identity, non-`PASS`/non-`APPROVE` decision, failed cold-start probe, or baseline ancestry/cleanliness mismatch fails closed. `SPEC_PROCESS.md` records each attempt and exact artifact path/digest; `AGENT_LOG.md` records the chronological action without converting a failed or pending gate into success.
 
 ## 2. Planned Repository Structure
 
@@ -414,12 +509,14 @@ The following task-owned paths refine the directory responsibilities above. They
 
 ### 3.1 Units and authority
 
-- A legacy step such as `25.C` is one atomic RED→GREEN contract and historical trace ID. It never owns a branch, PR, review, commit, or independent execution status.
-- A session task such as `T25.2` is the smallest executable unit. Exactly one fresh subagent implements all listed legacy steps in order, then receives one task-level SPEC review and one later task-level quality review.
-- A work package such as `WP25-CALL` is the integration unit. Exactly one branch, isolated worktree, draft PR, finishing pass, and merge belong to it.
+- A legacy step such as `25.C` is one atomic RED → minimum GREEN TDD microcycle and historical trace ID inside a session task. It is not a subagent, review, commit, branch, worktree, PR, or independent execution unit.
+- A session task such as `T25.2` is the smallest fresh-subagent execution/review/commit slice inside one work package. It is not an independent PR task and does not receive a separate branch, worktree, PR, finishing pass, or merge. Exactly one fresh subagent implements all listed legacy steps in order, then receives one task-level SPEC review and one later task-level quality review.
+- A work package such as `WP25-CALL` is the independent feature / independent task required by `AGENTS.md` and the integration boundary. It is the sole branch, isolated worktree, draft PR, finishing pass, and merge unit.
 - Task-card `Depends`, `Files`, `SPEC contracts`, and `Legacy steps` are the sole dependency, ownership, design-reference, and atomic-mapping facts. All waves and summaries are derived.
 
 ### 3.2 Work-package workflow
+
+In this workflow, “one PR per independent task” means one PR per work package. Multiple session-task execution slices may use that same package PR; no session task is independently branched or merged.
 
 1. Start only after every predecessor package has merged and every non-task gate named by the root task has passed.
 2. Use `superpowers:using-git-worktrees` to create the package branch/worktree from the common merged baseline and open one draft PR.
@@ -536,7 +633,7 @@ Profiles define repeated workflow commands once. Task cards retain only task-spe
 - Create: `spikes/win32_workspace_boundary/evaluator.py`
 - Test: `tests/feasibility/windows/test_workspace_boundary_evaluator.py`
 
-**Depends:** ADMISSION_BASELINE_V2
+**Depends:** APPROVED_DOCUMENT_BASELINE_V3
 **Parallelization:** Start only after every task/non-task gate in **Depends** has passed. Same-wave execution is allowed only when expanded writable paths are disjoint; the WP01 branch and PR remain the sole package integration boundary.
 
 **Interfaces:**
@@ -887,7 +984,7 @@ Owned files: - Create: requirements/reference.lock - Create: reference/fixture/p
 Interface: Produces `ReferenceBuildInputV1(base_image_digest: str, registry_image_digest: str, requirements_digest: str, fixture_tree_digest: str, tool_versions_digest: str, build_recipe_version: str)` and `freeze_reference_build_input(root: Path) -> ReferenceBuildInputV1`.
 GREEN-1: Freeze fixture-tree, dual-lock, tool-version, base/registry-image, and build-recipe identities into one immutable `ReferenceBuildInputV1` produced by `freeze_reference_build_input`.
 GREEN-2: Canonicalize every declared digest input deterministically and reject any lock, fixture, tool, or recipe drift; the two reference lock copies must be byte-identical.
-GREEN-3: Make `test_reference_lock_and_fixture_lock_must_be_byte_identical` GREEN with the smallest dual-lock equality check before completing the remaining input-freeze cases.
+GREEN-3: Make `test_reference_lock_and_fixture_lock_must_be_byte_identical` GREEN with the smallest dual-lock equality check; then make `test_reference_input_freeze_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own fixture and locked build-input identities only; image builds, registries, validation checks, and final reference-manifest writes remain out of scope.
 Boundary: Own fixture and locked input identities only. Do not build images, start registries, run checks, or write the final reference manifest.
 ```
@@ -904,6 +1001,7 @@ def test_reference_lock_and_fixture_lock_must_be_byte_identical() -> None:
 **Atomic verification:**
 - Target (2.A): `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/docker/test_reference_input_contract.py::test_reference_lock_and_fixture_lock_must_be_byte_identical -q`
 - Domain (2.A): `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/docker/test_reference_input_contract.py -q`
+- Matrix (2.A): `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/docker/test_reference_input_contract.py::test_reference_input_freeze_matrix -q`
 - Expected (2.A): exact lock/fixture/tool/build parameters freeze deterministically and reject drift.
 
 **Atomic review focus:**
@@ -914,7 +1012,7 @@ def test_reference_lock_and_fixture_lock_must_be_byte_identical() -> None:
 - [ ] **Step 2: Run 2.A RED.** Run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/docker/test_reference_input_contract.py::test_reference_lock_and_fixture_lock_must_be_byte_identical -q`. Expected: FAIL for “the closed build-input contract and dual-lock equality check do not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 3: Implement 2.A GREEN-1.** Freeze fixture-tree, dual-lock, tool-version, base/registry-image, and build-recipe identities into one immutable `ReferenceBuildInputV1` produced by `freeze_reference_build_input`.
 - [ ] **Step 4: Implement 2.A GREEN-2.** Canonicalize every declared digest input deterministically and reject any lock, fixture, tool, or recipe drift; the two reference lock copies must be byte-identical.
-- [ ] **Step 5: Implement 2.A GREEN-3.** Make `test_reference_lock_and_fixture_lock_must_be_byte_identical` GREEN with the smallest dual-lock equality check before completing the remaining input-freeze cases.
+- [ ] **Step 5: Implement 2.A GREEN-3.** Make `test_reference_lock_and_fixture_lock_must_be_byte_identical` GREEN with the smallest dual-lock equality check; then make `test_reference_input_freeze_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 6: Implement 2.A GREEN-4.** Own fixture and locked build-input identities only; image builds, registries, validation checks, and final reference-manifest writes remain out of scope.
 - [ ] **Step 7: Run 2.A Target GREEN.** Re-run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/docker/test_reference_input_contract.py::test_reference_lock_and_fixture_lock_must_be_byte_identical -q`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 8: Run 2.A Domain.** Run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/docker/test_reference_input_contract.py -q`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -1014,7 +1112,7 @@ Owned files: - Create: spikes/docker_reference_boundary/registry_probe.py - Test
 Interface: Produces `LoopbackRegistryEvidenceV1(registry_image_digest: str, bind_host: Literal["127.0.0.1"], assigned_port: int, credentials_used: Literal[False], external_push_count: Literal[0], local_oci_manifest_digest: str, registry_repo_digest: str, digest_pull_repo_digest: str, cleanup_verified: bool)` and `probe_loopback_registry(build: ReferenceImageBuildEvidenceV1) -> LoopbackRegistryEvidenceV1`.
 GREEN-1: Run one credential-free registry bound only to `127.0.0.1` on an assigned port, push the exact local OCI manifest, pull by digest, and return immutable lifecycle evidence.
 GREEN-2: Require local OCI, registry RepoDigest, and digest-pull RepoDigest equality, zero credential/external push use, and verified cleanup on success and injected failure.
-GREEN-3: Make `test_registry_digest_transformation_fails` GREEN by rejecting the first three-way digest mismatch before completing remaining bind/auth/cleanup cases.
+GREEN-3: Make `test_registry_digest_transformation_fails` GREEN by rejecting the first three-way digest mismatch; then make `test_loopback_registry_boundary_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own loopback bind, push, pull, digest comparison, and cleanup evidence only; image building, fixture checks, and external publication remain out of scope.
 Boundary: Own registry bind/push/pull/cleanup evidence only. Do not build the image, execute fixture checks, or publish externally.
 ```
@@ -1032,6 +1130,7 @@ def test_registry_digest_transformation_fails() -> None:
 **Atomic verification:**
 - Target (2.C): `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/docker/test_loopback_registry_probe.py::test_registry_digest_transformation_fails -q`
 - Domain (2.C): `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/docker/test_loopback_registry_probe.py -q`
+- Matrix (2.C): `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/docker/test_loopback_registry_probe.py::test_loopback_registry_boundary_matrix -q`
 - Expected (2.C): local/registry/pull digests match; credential, external bind/push, cleanup, and injected-failure cases close deterministically.
 
 **Atomic review focus:**
@@ -1042,7 +1141,7 @@ def test_registry_digest_transformation_fails() -> None:
 - [ ] **Step 2: Run 2.C RED.** Run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/docker/test_loopback_registry_probe.py::test_registry_digest_transformation_fails -q`. Expected: FAIL for “the loopback registry lifecycle and exact digest comparison do not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 3: Implement 2.C GREEN-1.** Run one credential-free registry bound only to `127.0.0.1` on an assigned port, push the exact local OCI manifest, pull by digest, and return immutable lifecycle evidence.
 - [ ] **Step 4: Implement 2.C GREEN-2.** Require local OCI, registry RepoDigest, and digest-pull RepoDigest equality, zero credential/external push use, and verified cleanup on success and injected failure.
-- [ ] **Step 5: Implement 2.C GREEN-3.** Make `test_registry_digest_transformation_fails` GREEN by rejecting the first three-way digest mismatch before completing remaining bind/auth/cleanup cases.
+- [ ] **Step 5: Implement 2.C GREEN-3.** Make `test_registry_digest_transformation_fails` GREEN by rejecting the first three-way digest mismatch; then make `test_loopback_registry_boundary_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 6: Implement 2.C GREEN-4.** Own loopback bind, push, pull, digest comparison, and cleanup evidence only; image building, fixture checks, and external publication remain out of scope.
 - [ ] **Step 7: Run 2.C Target GREEN.** Re-run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/docker/test_loopback_registry_probe.py::test_registry_digest_transformation_fails -q`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 8: Run 2.C Domain.** Run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/docker/test_loopback_registry_probe.py -q`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -1277,7 +1376,7 @@ Owned files: - Create: reference/manifest/reference-profile-v1.json - Create: sp
 Interface: Produces `ReferenceProfileManifestV1`, `DockerBoundaryGateReportV1(outcome: Literal["GO","NO_GO"], build_input: ReferenceBuildInputV1, build: ReferenceImageBuildEvidenceV1, registry: LoopbackRegistryEvidenceV1, isolation: ContainerIsolationEvidenceV1, pytest_evidence: GatePytestEvidenceResultV1, fingerprint: GateFingerprintComparisonV1, gate_toolchain: GateToolchainEvidenceV1, evidence_digest: str)`, and `assemble_reference_gate_report(command: AssembleReferenceGateReportV1) -> DockerBoundaryGateReportV1`.
 GREEN-1: Consume the frozen build-input, build, registry, isolation, pytest, fingerprint, and gate-toolchain evidence to produce exact `ReferenceProfileManifestV1` and `DockerBoundaryGateReportV1` bytes.
 GREEN-2: Emit `GO` only when every producer identity is present and mutually consistent; any missing, drifted, or transformed digest produces `NO_GO` without rewriting evidence.
-GREEN-3: Make `test_gate_rejects_loopback_registry_digest_mismatch` GREEN with the smallest registry-identity rejection before completing every upstream consistency case.
+GREEN-3: Make `test_gate_rejects_loopback_registry_digest_mismatch` GREEN with the smallest registry-identity rejection; then make `test_reference_gate_upstream_consistency_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own final manifest/report bytes and GO/NO_GO decision only; rebuilding, rerunning, rewriting, authenticating, or externally publishing upstream evidence remains out of scope.
 Boundary: Own final manifest/report bytes and GO decision only. Never rebuild, re-run, rewrite, authenticate to, or externally publish upstream evidence.
 ```
@@ -1294,6 +1393,7 @@ def test_gate_rejects_loopback_registry_digest_mismatch() -> None:
 **Atomic verification:**
 - Target (2.G): `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/docker/test_reference_boundary_gate.py::test_gate_rejects_loopback_registry_digest_mismatch -q`
 - Domain (2.G): `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/docker/test_reference_boundary_gate.py -q`
+- Matrix (2.G): `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/docker/test_reference_boundary_gate.py::test_reference_gate_upstream_consistency_matrix -q`
 - Expected (2.G): complete matching evidence yields GO; every missing/drifted/transformed input yields NO_GO.
 
 **Atomic review focus:**
@@ -1304,7 +1404,7 @@ def test_gate_rejects_loopback_registry_digest_mismatch() -> None:
 - [ ] **Step 18: Run 2.G RED.** Run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/docker/test_reference_boundary_gate.py::test_gate_rejects_loopback_registry_digest_mismatch -q`. Expected: FAIL for “no final manifest/report assembler checks every producer identity”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 19: Implement 2.G GREEN-1.** Consume the frozen build-input, build, registry, isolation, pytest, fingerprint, and gate-toolchain evidence to produce exact `ReferenceProfileManifestV1` and `DockerBoundaryGateReportV1` bytes.
 - [ ] **Step 20: Implement 2.G GREEN-2.** Emit `GO` only when every producer identity is present and mutually consistent; any missing, drifted, or transformed digest produces `NO_GO` without rewriting evidence.
-- [ ] **Step 21: Implement 2.G GREEN-3.** Make `test_gate_rejects_loopback_registry_digest_mismatch` GREEN with the smallest registry-identity rejection before completing every upstream consistency case.
+- [ ] **Step 21: Implement 2.G GREEN-3.** Make `test_gate_rejects_loopback_registry_digest_mismatch` GREEN with the smallest registry-identity rejection; then make `test_reference_gate_upstream_consistency_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 22: Implement 2.G GREEN-4.** Own final manifest/report bytes and GO/NO_GO decision only; rebuilding, rerunning, rewriting, authenticating, or externally publishing upstream evidence remains out of scope.
 - [ ] **Step 23: Run 2.G Target GREEN.** Re-run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/docker/test_reference_boundary_gate.py::test_gate_rejects_loopback_registry_digest_mismatch -q`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 24: Run 2.G Domain.** Run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/docker/test_reference_boundary_gate.py -q`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -1413,7 +1513,7 @@ Owned files: - Create: spikes/persistence_recovery/faults.py - Test: tests/feasi
 Interface: Produces `PersistenceFaultPointV1`, `PersistenceFaultSequenceV1`, an immutable ordered tuple of all required fault points, `GatePersistenceResultV1`, and `apply_transaction(transaction_id: str, fault_point: PersistenceFaultPointV1, clock: ClockPort) -> GatePersistenceResultV1`.
 GREEN-1: Apply sorted CREATE/REPLACE entries through temp, flush, replace, progress, and terminal durable writes while exposing the complete immutable `PersistenceFaultSequenceV1`.
 GREEN-2: Place deterministic interruption points before and after every required state write and replace so each interruption leaves one durable, classifiable observation.
-GREEN-3: Make `test_interruption_after_each_replace_has_durable_observation` GREEN with the smallest post-replace observation path before completing the fault vocabulary.
+GREEN-3: Make `test_interruption_after_each_replace_has_durable_observation` GREEN with the smallest post-replace observation path; then make `test_replace_fault_vocabulary_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own sorted write mechanics and injected interruption points only; deadline policy, external-change safety, and recovery disposition remain out of scope.
 Boundary: Own sorted temp/flush/replace/progress writes and injected interruption points. Do not decide deadline policy, external-change safety, or recovery disposition.
 ```
@@ -1430,6 +1530,7 @@ def test_interruption_after_each_replace_has_durable_observation() -> None:
 **Atomic verification:**
 - Target (3.B): `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/persistence/test_write_fault_matrix.py::test_interruption_after_each_replace_has_durable_observation -q`
 - Domain (3.B): `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/persistence/test_write_fault_matrix.py -q`
+- Matrix (3.B): `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/persistence/test_write_fault_matrix.py::test_replace_fault_vocabulary_matrix -q`
 - Expected (3.B): every before/after PREPARED/WRITING/replace/progress/terminal fault point is observed deterministically.
 
 **Atomic review focus:**
@@ -1440,7 +1541,7 @@ def test_interruption_after_each_replace_has_durable_observation() -> None:
 - [ ] **Step 10: Run 3.B RED.** Run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/persistence/test_write_fault_matrix.py::test_interruption_after_each_replace_has_durable_observation -q`. Expected: FAIL for “no complete enumerated fault matrix or write implementation exists”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 11: Implement 3.B GREEN-1.** Apply sorted CREATE/REPLACE entries through temp, flush, replace, progress, and terminal durable writes while exposing the complete immutable `PersistenceFaultSequenceV1`.
 - [ ] **Step 12: Implement 3.B GREEN-2.** Place deterministic interruption points before and after every required state write and replace so each interruption leaves one durable, classifiable observation.
-- [ ] **Step 13: Implement 3.B GREEN-3.** Make `test_interruption_after_each_replace_has_durable_observation` GREEN with the smallest post-replace observation path before completing the fault vocabulary.
+- [ ] **Step 13: Implement 3.B GREEN-3.** Make `test_interruption_after_each_replace_has_durable_observation` GREEN with the smallest post-replace observation path; then make `test_replace_fault_vocabulary_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 14: Implement 3.B GREEN-4.** Own sorted write mechanics and injected interruption points only; deadline policy, external-change safety, and recovery disposition remain out of scope.
 - [ ] **Step 15: Run 3.B Target GREEN.** Re-run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/persistence/test_write_fault_matrix.py::test_interruption_after_each_replace_has_durable_observation -q`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 16: Run 3.B Domain.** Run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/persistence/test_write_fault_matrix.py -q`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -1456,7 +1557,7 @@ Owned files: - Create: spikes/persistence_recovery/deadline.py - Test: tests/fea
 Interface: Produces `DeadlineDispositionV1 = Literal["STOPPED_ZERO_WRITE","RECOVERY_REQUIRED"]`, `DeadlineEvaluationV1(disposition: DeadlineDispositionV1, further_workspace_writes_allowed: bool)`, and `evaluate_persistence_deadline(transaction: GateTransactionV1, observed_write_count: int, now_ms: int) -> DeadlineEvaluationV1`.
 GREEN-1: Evaluate persistence deadlines as a pure function of immutable transaction facts, observed write count, and current time, returning one closed `DeadlineEvaluationV1`.
 GREEN-2: Return `STOPPED_ZERO_WRITE` before any write and `RECOVERY_REQUIRED` after a write; once expired, authorize zero or no further workspace writes exactly as declared.
-GREEN-3: Make `test_deadline_after_first_replace_forbids_next_write` GREEN with the smallest post-first-write branch before completing all deadline boundaries.
+GREEN-3: Make `test_deadline_after_first_replace_forbids_next_write` GREEN with the smallest post-first-write branch; then make `test_persistence_deadline_boundary_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own pure deadline disposition and write-stop authorization only; current object identity and rollback/recovery application remain out of scope.
 Boundary: Own pure deadline disposition and write-stop authorization. Do not inspect current file identity or apply rollback/recovery.
 ```
@@ -1474,6 +1575,7 @@ def test_deadline_after_first_replace_forbids_next_write() -> None:
 **Atomic verification:**
 - Target (3.C): `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/persistence/test_persistence_deadlines.py::test_deadline_after_first_replace_forbids_next_write -q`
 - Domain (3.C): `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/persistence/test_persistence_deadlines.py -q`
+- Matrix (3.C): `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/persistence/test_persistence_deadlines.py::test_persistence_deadline_boundary_matrix -q`
 - Expected (3.C): all deadline boundaries deterministically allow zero or no further writes as specified.
 
 **Atomic review focus:**
@@ -1484,7 +1586,7 @@ def test_deadline_after_first_replace_forbids_next_write() -> None:
 - [ ] **Step 18: Run 3.C RED.** Run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/persistence/test_persistence_deadlines.py::test_deadline_after_first_replace_forbids_next_write -q`. Expected: FAIL for “the explicit pre/post-first-write deadline evaluator does not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 19: Implement 3.C GREEN-1.** Evaluate persistence deadlines as a pure function of immutable transaction facts, observed write count, and current time, returning one closed `DeadlineEvaluationV1`.
 - [ ] **Step 20: Implement 3.C GREEN-2.** Return `STOPPED_ZERO_WRITE` before any write and `RECOVERY_REQUIRED` after a write; once expired, authorize zero or no further workspace writes exactly as declared.
-- [ ] **Step 21: Implement 3.C GREEN-3.** Make `test_deadline_after_first_replace_forbids_next_write` GREEN with the smallest post-first-write branch before completing all deadline boundaries.
+- [ ] **Step 21: Implement 3.C GREEN-3.** Make `test_deadline_after_first_replace_forbids_next_write` GREEN with the smallest post-first-write branch; then make `test_persistence_deadline_boundary_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 22: Implement 3.C GREEN-4.** Own pure deadline disposition and write-stop authorization only; current object identity and rollback/recovery application remain out of scope.
 - [ ] **Step 23: Run 3.C Target GREEN.** Re-run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/persistence/test_persistence_deadlines.py::test_deadline_after_first_replace_forbids_next_write -q`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 24: Run 3.C Domain.** Run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/persistence/test_persistence_deadlines.py -q`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -1500,7 +1602,7 @@ Owned files: - Create: spikes/persistence_recovery/observation.py - Test: tests/
 Interface: Produces `GatePathObservationV1(path: str, content_digest: str, volume_serial: int, file_id_128: bytes, object_kind: str, supported: bool)`, `GatePathClassificationV1 = Literal["PREIMAGE","POSTIMAGE","ABSENT","EXTERNAL_CHANGE","UNPROVABLE"]`, and pure `classify_gate_path(record: GatePathRecordV1, observation: GatePathObservationV1) -> GatePathClassificationV1`.
 GREEN-1: Classify one immutable `GatePathRecordV1` and `GatePathObservationV1` through pure byte-plus-object identity comparison into the closed five-value classification.
 GREEN-2: Treat same bytes with replaced identity as `EXTERNAL_CHANGE`, unsupported or incomplete identity as `UNPROVABLE`, and never infer safety from content digest alone.
-GREEN-3: Make `test_same_bytes_with_replaced_object_is_external_change` GREEN with the smallest identity-mismatch branch before completing the remaining classifications.
+GREEN-3: Make `test_same_bytes_with_replaced_object_is_external_change` GREEN with the smallest identity-mismatch branch; then make `test_external_change_classification_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own pure observation classification only; workspace reads, aggregate recovery decisions, and path writes/deletes remain out of scope.
 Boundary: Own pure observation classification. Do not read a workspace, decide aggregate recovery, or write/delete any path.
 ```
@@ -1517,6 +1619,7 @@ def test_same_bytes_with_replaced_object_is_external_change() -> None:
 **Atomic verification:**
 - Target (3.D): `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/persistence/test_external_change_classifier.py::test_same_bytes_with_replaced_object_is_external_change -q`
 - Domain (3.D): `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/persistence/test_external_change_classifier.py -q`
+- Matrix (3.D): `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/persistence/test_external_change_classifier.py::test_external_change_classification_matrix -q`
 - Expected (3.D): byte/object mismatches and unprovable identities always classify unsafe.
 
 **Atomic review focus:**
@@ -1527,7 +1630,7 @@ def test_same_bytes_with_replaced_object_is_external_change() -> None:
 - [ ] **Step 26: Run 3.D RED.** Run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/persistence/test_external_change_classifier.py::test_same_bytes_with_replaced_object_is_external_change -q`. Expected: FAIL for “no byte-plus-object classifier exists”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 27: Implement 3.D GREEN-1.** Classify one immutable `GatePathRecordV1` and `GatePathObservationV1` through pure byte-plus-object identity comparison into the closed five-value classification.
 - [ ] **Step 28: Implement 3.D GREEN-2.** Treat same bytes with replaced identity as `EXTERNAL_CHANGE`, unsupported or incomplete identity as `UNPROVABLE`, and never infer safety from content digest alone.
-- [ ] **Step 29: Implement 3.D GREEN-3.** Make `test_same_bytes_with_replaced_object_is_external_change` GREEN with the smallest identity-mismatch branch before completing the remaining classifications.
+- [ ] **Step 29: Implement 3.D GREEN-3.** Make `test_same_bytes_with_replaced_object_is_external_change` GREEN with the smallest identity-mismatch branch; then make `test_external_change_classification_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 30: Implement 3.D GREEN-4.** Own pure observation classification only; workspace reads, aggregate recovery decisions, and path writes/deletes remain out of scope.
 - [ ] **Step 31: Run 3.D Target GREEN.** Re-run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/persistence/test_external_change_classifier.py::test_same_bytes_with_replaced_object_is_external_change -q`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 32: Run 3.D Domain.** Run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/persistence/test_external_change_classifier.py -q`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -1590,7 +1693,7 @@ Owned files: - Create: spikes/persistence_recovery/recovery_preview.py - Test: t
 Interface: Produces `GateRecoveryDispositionV1 = Literal["COMMITTED","ROLLED_BACK","UNRESOLVED"]`, `GateRecoveryPreviewV1(transaction_id: str, disposition: GateRecoveryDispositionV1, path_classifications: GatePathClassificationSequenceV1, workspace_write_count: Literal[0])`, and `preview_recovery(workspace: Path, transaction_id: str) -> GateRecoveryPreviewV1`.
 GREEN-1: Collect current path observations, reuse the closed classifier, and produce one immutable `GateRecoveryPreviewV1` with exactly `COMMITTED`, `ROLLED_BACK`, or `UNRESOLVED`.
 GREEN-2: Bind every path classification and transaction id into the preview while preserving `workspace_write_count == 0`; mixed or unsafe states cannot be coerced into a terminal safe disposition.
-GREEN-3: Make `test_preview_is_byte_for_byte_read_only` GREEN with the smallest before/after byte-identity proof before completing the mixed-path disposition matrix.
+GREEN-3: Make `test_preview_is_byte_for_byte_read_only` GREEN with the smallest before/after byte-identity proof; then make `test_recovery_preview_disposition_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own observation collection and three-value preview only; workspace bytes, transaction logs, and backups must never change.
 Boundary: Own observation collection and three-value preview only. Never change workspace, transaction log, or backups.
 ```
@@ -1608,6 +1711,7 @@ def test_preview_is_byte_for_byte_read_only(preview_fixture: PreviewFixture) -> 
 **Atomic verification:**
 - Target (3.E): `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/persistence/test_recovery_preview.py::test_preview_is_byte_for_byte_read_only -q`
 - Domain (3.E): `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/persistence/test_recovery_preview.py -q`
+- Matrix (3.E): `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/persistence/test_recovery_preview.py::test_recovery_preview_disposition_matrix -q`
 - Expected (3.E): every mixed-path state maps to one disposition with zero writes.
 
 **Atomic review focus:**
@@ -1618,7 +1722,7 @@ def test_preview_is_byte_for_byte_read_only(preview_fixture: PreviewFixture) -> 
 - [ ] **Step 2: Run 3.E RED.** Run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/persistence/test_recovery_preview.py::test_preview_is_byte_for_byte_read_only -q`. Expected: FAIL for “no read-only preview/classifier exists”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 3: Implement 3.E GREEN-1.** Collect current path observations, reuse the closed classifier, and produce one immutable `GateRecoveryPreviewV1` with exactly `COMMITTED`, `ROLLED_BACK`, or `UNRESOLVED`.
 - [ ] **Step 4: Implement 3.E GREEN-2.** Bind every path classification and transaction id into the preview while preserving `workspace_write_count == 0`; mixed or unsafe states cannot be coerced into a terminal safe disposition.
-- [ ] **Step 5: Implement 3.E GREEN-3.** Make `test_preview_is_byte_for_byte_read_only` GREEN with the smallest before/after byte-identity proof before completing the mixed-path disposition matrix.
+- [ ] **Step 5: Implement 3.E GREEN-3.** Make `test_preview_is_byte_for_byte_read_only` GREEN with the smallest before/after byte-identity proof; then make `test_recovery_preview_disposition_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 6: Implement 3.E GREEN-4.** Own observation collection and three-value preview only; workspace bytes, transaction logs, and backups must never change.
 - [ ] **Step 7: Run 3.E Target GREEN.** Re-run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/persistence/test_recovery_preview.py::test_preview_is_byte_for_byte_read_only -q`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 8: Run 3.E Domain.** Run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/persistence/test_recovery_preview.py -q`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -1937,7 +2041,7 @@ Owned files: - Create: src/vespercode/canonical/json_v1.py - Create: src/vesperc
 Interface: Produces recursive `CanonicalValueV1 = str | int | bool | CanonicalArrayV1 | Mapping[str, CanonicalValueV1]`, where `CanonicalArrayV1` is an immutable ordered tuple of zero or more `CanonicalValueV1` items; also produces `canonical_json_bytes(value: CanonicalValueV1) -> bytes` and `domain_digest(object_type: str, schema_version: int, value: Mapping[str, CanonicalValueV1]) -> str`.
 GREEN-1: Define the recursive closed `CanonicalValueV1` domain and encode every accepted value into one exact canonical JSON byte representation.
 GREEN-2: Compute the sole SHA-256 identity through `domain_digest` with explicit object type and schema version, and reject every forbidden scalar, Unicode, array, or mapping value deterministically.
-GREEN-3: Make `test_ctv_01_exact_bytes_and_digest` GREEN with the exact CTV-01 vector before completing CTV-02–CTV-07 and forbidden-value cases.
+GREEN-3: Make `test_ctv_01_exact_bytes_and_digest` GREEN with the exact CTV-01 vector; then make `test_canonical_digest_vector_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own Unicode-scalar validation, canonical encoding, and digest prefixing only; time, paths, file scanning, and tool-version selection remain out of scope.
 Boundary: This child owns Unicode-scalar validation, canonical encoding, and digest prefixing only; it does not parse time, validate paths, scan files, or choose tool versions.
 ```
@@ -1956,6 +2060,7 @@ def test_ctv_01_exact_bytes_and_digest() -> None:
 **Atomic verification:**
 - Target (4.B): `python -m pytest -q tests/unit/canonical/test_digest_vectors.py::test_ctv_01_exact_bytes_and_digest`
 - Domain (4.B): `python -m pytest -q tests/unit/canonical/test_json_v1.py tests/unit/canonical/test_digest_vectors.py`
+- Matrix (4.B): `python -m pytest -q tests/unit/canonical/test_digest_vectors.py::test_canonical_digest_vector_matrix`
 - Expected (4.B): `0`
 
 **Atomic review focus:**
@@ -1966,7 +2071,7 @@ def test_ctv_01_exact_bytes_and_digest() -> None:
 - [ ] **Step 2: Run 4.B RED.** Run `python -m pytest -q tests/unit/canonical/test_digest_vectors.py::test_ctv_01_exact_bytes_and_digest`. Expected: FAIL for “import failure because `canonical_json_bytes` and `domain_digest` do not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 3: Implement 4.B GREEN-1.** Define the recursive closed `CanonicalValueV1` domain and encode every accepted value into one exact canonical JSON byte representation.
 - [ ] **Step 4: Implement 4.B GREEN-2.** Compute the sole SHA-256 identity through `domain_digest` with explicit object type and schema version, and reject every forbidden scalar, Unicode, array, or mapping value deterministically.
-- [ ] **Step 5: Implement 4.B GREEN-3.** Make `test_ctv_01_exact_bytes_and_digest` GREEN with the exact CTV-01 vector before completing CTV-02–CTV-07 and forbidden-value cases.
+- [ ] **Step 5: Implement 4.B GREEN-3.** Make `test_ctv_01_exact_bytes_and_digest` GREEN with the exact CTV-01 vector; then make `test_canonical_digest_vector_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 6: Implement 4.B GREEN-4.** Own Unicode-scalar validation, canonical encoding, and digest prefixing only; time, paths, file scanning, and tool-version selection remain out of scope.
 - [ ] **Step 7: Run 4.B Target GREEN.** Re-run `python -m pytest -q tests/unit/canonical/test_digest_vectors.py::test_ctv_01_exact_bytes_and_digest`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 8: Run 4.B Domain.** Run `python -m pytest -q tests/unit/canonical/test_json_v1.py tests/unit/canonical/test_digest_vectors.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -1982,7 +2087,7 @@ Owned files: - Create: src/vespercode/canonical/timestamp_v1.py - Create: src/ve
 Interface: Produces `CanonicalTimestampV1.parse(value: str) -> CanonicalTimestampV1`, `CanonicalTimestampV1.from_epoch_milliseconds(value: int) -> CanonicalTimestampV1`, protocol `ClockV1.now() -> CanonicalTimestampV1`, `SystemClockV1`, and `FakeClockV1.advance(milliseconds: int) -> None`.
 GREEN-1: Parse and render only the canonical UTC millisecond timestamp form, and convert exact epoch milliseconds through `CanonicalTimestampV1`.
 GREEN-2: Expose all current-time observation through `ClockV1`; `FakeClockV1` advances deterministically by the exact requested milliseconds while invalid dates and leap seconds reject.
-GREEN-3: Make `test_fake_clock_advances_exact_milliseconds` GREEN with the smallest injectable fake-clock path before completing timestamp vectors.
+GREEN-3: Make `test_fake_clock_advances_exact_milliseconds` GREEN with the smallest injectable fake-clock path; then make `test_canonical_timestamp_vector_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own Gregorian parsing, epoch conversion, and clock injection only; expiry, lifecycle, decision, and filesystem policy remain out of scope.
 Boundary: This child owns Gregorian parsing, epoch-millisecond conversion, and clock injection only; it adds no decision, expiry, lifecycle, or filesystem policy.
 ```
@@ -2001,6 +2106,7 @@ def test_fake_clock_advances_exact_milliseconds() -> None:
 **Atomic verification:**
 - Target (4.C): `python -m pytest -q tests/unit/canonical/test_clock.py::test_fake_clock_advances_exact_milliseconds`
 - Domain (4.C): `python -m pytest -q tests/unit/canonical/test_timestamp_v1.py tests/unit/canonical/test_clock.py`
+- Matrix (4.C): `python -m pytest -q tests/unit/canonical/test_clock.py::test_canonical_timestamp_vector_matrix`
 - Expected (4.C): `0`
 
 **Atomic review focus:**
@@ -2011,7 +2117,7 @@ def test_fake_clock_advances_exact_milliseconds() -> None:
 - [ ] **Step 10: Run 4.C RED.** Run `python -m pytest -q tests/unit/canonical/test_clock.py::test_fake_clock_advances_exact_milliseconds`. Expected: FAIL for “import failure because the timestamp and clock types do not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 11: Implement 4.C GREEN-1.** Parse and render only the canonical UTC millisecond timestamp form, and convert exact epoch milliseconds through `CanonicalTimestampV1`.
 - [ ] **Step 12: Implement 4.C GREEN-2.** Expose all current-time observation through `ClockV1`; `FakeClockV1` advances deterministically by the exact requested milliseconds while invalid dates and leap seconds reject.
-- [ ] **Step 13: Implement 4.C GREEN-3.** Make `test_fake_clock_advances_exact_milliseconds` GREEN with the smallest injectable fake-clock path before completing timestamp vectors.
+- [ ] **Step 13: Implement 4.C GREEN-3.** Make `test_fake_clock_advances_exact_milliseconds` GREEN with the smallest injectable fake-clock path; then make `test_canonical_timestamp_vector_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 14: Implement 4.C GREEN-4.** Own Gregorian parsing, epoch conversion, and clock injection only; expiry, lifecycle, decision, and filesystem policy remain out of scope.
 - [ ] **Step 15: Run 4.C Target GREEN.** Re-run `python -m pytest -q tests/unit/canonical/test_clock.py::test_fake_clock_advances_exact_milliseconds`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 16: Run 4.C Domain.** Run `python -m pytest -q tests/unit/canonical/test_timestamp_v1.py tests/unit/canonical/test_clock.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -2027,7 +2133,7 @@ Owned files: - Create: src/vespercode/canonical/path_v1.py - Test: tests/unit/ca
 Interface: Produces `CanonicalRelativePathV1(value: str)` and `validate_canonical_relative_path(value: str) -> CanonicalRelativePathV1`.
 GREEN-1: Validate one lexical string into the sole `CanonicalRelativePathV1` representation before any filesystem access.
 GREEN-2: Reject root, absolute, device, ADS, parent/dot, trailing, reserved-name, and other unsupported lexical forms with deterministic closed errors.
-GREEN-3: Make `test_device_and_parent_paths_are_rejected` GREEN with the smallest device/parent rejection before completing the lexical sentinel matrix.
+GREEN-3: Make `test_device_and_parent_paths_are_rejected` GREEN with the smallest device/parent rejection; then make `test_canonical_path_sentinel_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own lexical validation only; final-object identity, ancestry, alias, reparse, ADS authorization, and link policy remain with Tasks 9.A and 9.D.
 Boundary: This child performs lexical validation only. Final-object identity, ancestry, alias, reparse, ADS, and link authorization remain Tasks 9.A and 9.D.
 ```
@@ -2046,6 +2152,7 @@ def test_device_and_parent_paths_are_rejected() -> None:
 **Atomic verification:**
 - Target (4.D): `python -m pytest -q tests/unit/canonical/test_path_v1.py::test_device_and_parent_paths_are_rejected`
 - Domain (4.D): `python -m pytest -q tests/unit/canonical/test_path_v1.py`
+- Matrix (4.D): `python -m pytest -q tests/unit/canonical/test_path_v1.py::test_canonical_path_sentinel_matrix`
 - Expected (4.D): `0`
 
 **Atomic review focus:**
@@ -2056,7 +2163,7 @@ def test_device_and_parent_paths_are_rejected() -> None:
 - [ ] **Step 18: Run 4.D RED.** Run `python -m pytest -q tests/unit/canonical/test_path_v1.py::test_device_and_parent_paths_are_rejected`. Expected: FAIL for “import failure because the canonical path validator does not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 19: Implement 4.D GREEN-1.** Validate one lexical string into the sole `CanonicalRelativePathV1` representation before any filesystem access.
 - [ ] **Step 20: Implement 4.D GREEN-2.** Reject root, absolute, device, ADS, parent/dot, trailing, reserved-name, and other unsupported lexical forms with deterministic closed errors.
-- [ ] **Step 21: Implement 4.D GREEN-3.** Make `test_device_and_parent_paths_are_rejected` GREEN with the smallest device/parent rejection before completing the lexical sentinel matrix.
+- [ ] **Step 21: Implement 4.D GREEN-3.** Make `test_device_and_parent_paths_are_rejected` GREEN with the smallest device/parent rejection; then make `test_canonical_path_sentinel_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 22: Implement 4.D GREEN-4.** Own lexical validation only; final-object identity, ancestry, alias, reparse, ADS authorization, and link policy remain with Tasks 9.A and 9.D.
 - [ ] **Step 23: Run 4.D Target GREEN.** Re-run `python -m pytest -q tests/unit/canonical/test_path_v1.py::test_device_and_parent_paths_are_rejected`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 24: Run 4.D Domain.** Run `python -m pytest -q tests/unit/canonical/test_path_v1.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -2173,7 +2280,7 @@ Owned files: - Create: src/vespercode/contracts/optional.py - Test: tests/unit/c
 Interface: Produces `AbsentV1`, `PresentV1[T]`, and every named closed optional union required by SPEC.
 GREEN-1: Define explicit discriminated `AbsentV1` and generic `PresentV1[T]` variants, then compose every named optional union without nullable ambiguity.
 GREEN-2: Require a value only for Present and reject missing, unknown, mixed, or contradictory variants deterministically during validation and round-trip.
-GREEN-3: Make `test_present_optional_requires_value` GREEN with the smallest missing-value rejection before completing all named optional unions.
+GREEN-3: Make `test_present_optional_requires_value` GREEN with the smallest missing-value rejection; then make `test_named_optional_union_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own optional-value schemas only; repository locations, disclosure scopes, Run state, actions, evidence, profiles, and persistence remain out of scope.
 Boundary: Own optional-value schemas only. Do not define repository locations, disclosure scopes, Run state, actions, evidence, profile matching, or persistence behavior.
 ```
@@ -2191,6 +2298,7 @@ def test_present_optional_requires_value() -> None:
 **Atomic verification:**
 - Target (5.A): `python -m pytest -q tests/unit/contracts/test_optional.py::test_present_optional_requires_value`
 - Domain (5.A): `python -m pytest -q tests/unit/contracts/test_optional.py`
+- Matrix (5.A): `python -m pytest -q tests/unit/contracts/test_optional.py::test_named_optional_union_matrix`
 - Expected (5.A): `0`
 
 **Atomic review focus:**
@@ -2201,7 +2309,7 @@ def test_present_optional_requires_value() -> None:
 - [ ] **Step 2: Run 5.A RED.** Run `python -m pytest -q tests/unit/contracts/test_optional.py::test_present_optional_requires_value`. Expected: FAIL for “the closed generic present/absent optional union does not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 3: Implement 5.A GREEN-1.** Define explicit discriminated `AbsentV1` and generic `PresentV1[T]` variants, then compose every named optional union without nullable ambiguity.
 - [ ] **Step 4: Implement 5.A GREEN-2.** Require a value only for Present and reject missing, unknown, mixed, or contradictory variants deterministically during validation and round-trip.
-- [ ] **Step 5: Implement 5.A GREEN-3.** Make `test_present_optional_requires_value` GREEN with the smallest missing-value rejection before completing all named optional unions.
+- [ ] **Step 5: Implement 5.A GREEN-3.** Make `test_present_optional_requires_value` GREEN with the smallest missing-value rejection; then make `test_named_optional_union_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 6: Implement 5.A GREEN-4.** Own optional-value schemas only; repository locations, disclosure scopes, Run state, actions, evidence, profiles, and persistence remain out of scope.
 - [ ] **Step 7: Run 5.A Target GREEN.** Re-run `python -m pytest -q tests/unit/contracts/test_optional.py::test_present_optional_requires_value`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 8: Run 5.A Domain.** Run `python -m pytest -q tests/unit/contracts/test_optional.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -2217,7 +2325,7 @@ Owned files: - Create: src/vespercode/contracts/run.py - Test: tests/unit/contra
 Interface: Produces `RunStatus`, `RunPhase`, `RunStateV1`, `WaitKind`, `RunLimitsV1`, `WaitContextV1`, `WaitDecisionChoiceV1 = Literal["APPROVE","REJECT"]`, and `WaitDecisionV1(wait_id: str, run_id: str, wait_kind: WaitKind, subject_digest: DigestV1, decision: WaitDecisionChoiceV1, event_id: str, decided_at: CanonicalTimestampV1)`.
 GREEN-1: Define the closed Run status, phase, state, wait kind, limit, context, and exact `WaitDecisionV1` value-object vocabulary.
 GREEN-2: Validate cross-field combinations so RUNNING requires its exact phase and every wait decision binds wait/run/kind/subject/event/time with a closed APPROVE/REJECT choice.
-GREEN-3: Make `test_running_state_requires_exact_phase` GREEN with the smallest state/phase rejection before completing legal wait/limit combinations.
+GREEN-3: Make `test_running_state_requires_exact_phase` GREEN with the smallest state/phase rejection; then make `test_run_state_phase_limit_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own value-object validation only; lifecycle transitions, repositories, decision services, and clock behavior remain out of scope.
 Boundary: Own value-object validation only. Do not implement lifecycle transitions, repositories, decision services, or clocks.
 ```
@@ -2235,6 +2343,7 @@ def test_running_state_requires_exact_phase() -> None:
 **Atomic verification:**
 - Target (5.B): `python -m pytest -q tests/unit/contracts/test_run.py::test_running_state_requires_exact_phase`
 - Domain (5.B): `python -m pytest -q tests/unit/contracts/test_run.py`
+- Matrix (5.B): `python -m pytest -q tests/unit/contracts/test_run.py::test_run_state_phase_limit_matrix`
 - Expected (5.B): every legal state/phase/wait/limit combination round-trips and every illegal combination rejects.
 
 **Atomic review focus:**
@@ -2245,7 +2354,7 @@ def test_running_state_requires_exact_phase() -> None:
 - [ ] **Step 10: Run 5.B RED.** Run `python -m pytest -q tests/unit/contracts/test_run.py::test_running_state_requires_exact_phase`. Expected: FAIL for “the closed Run/wait state contracts do not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 11: Implement 5.B GREEN-1.** Define the closed Run status, phase, state, wait kind, limit, context, and exact `WaitDecisionV1` value-object vocabulary.
 - [ ] **Step 12: Implement 5.B GREEN-2.** Validate cross-field combinations so RUNNING requires its exact phase and every wait decision binds wait/run/kind/subject/event/time with a closed APPROVE/REJECT choice.
-- [ ] **Step 13: Implement 5.B GREEN-3.** Make `test_running_state_requires_exact_phase` GREEN with the smallest state/phase rejection before completing legal wait/limit combinations.
+- [ ] **Step 13: Implement 5.B GREEN-3.** Make `test_running_state_requires_exact_phase` GREEN with the smallest state/phase rejection; then make `test_run_state_phase_limit_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 14: Implement 5.B GREEN-4.** Own value-object validation only; lifecycle transitions, repositories, decision services, and clock behavior remain out of scope.
 - [ ] **Step 15: Run 5.B Target GREEN.** Re-run `python -m pytest -q tests/unit/contracts/test_run.py::test_running_state_requires_exact_phase`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 16: Run 5.B Domain.** Run `python -m pytest -q tests/unit/contracts/test_run.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -2261,7 +2370,7 @@ Owned files: - Create: src/vespercode/contracts/action.py - Test: tests/unit/con
 Interface: Produces `CheckPlanIdV1 = Literal["TARGET_TESTS","FULL_PYTEST","RUFF","MYPY"]`, `ActionStatusV1`, `PolicyDecisionV1`, `ActionErrorV1`, `ActionResultV1`, and `ActionInstanceV1(action_id: str, semantic_digest: str, instance_digest: str, action: SharedActionV1)`.
 GREEN-1: Define the shared closed action identity, check-plan vocabulary, status, policy decision, stable error, result, and `ActionInstanceV1` envelopes.
 GREEN-2: Bind semantic and instance identities to the action value and enforce status/payload consistency so success cannot carry error data and contradictory variants reject.
-GREEN-3: Make `test_success_result_rejects_error_payload` GREEN with the smallest success/error contradiction before completing all legal action/result variants.
+GREEN-3: Make `test_success_result_rejects_error_payload` GREEN with the smallest success/error contradiction; then make `test_action_result_union_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own schemas and cross-field validation only. Model JSON parsing, policy evaluation, dispatch, and check execution remain out of scope.
 Boundary: Own schemas and cross-field validation only. Do not parse model JSON, evaluate policy, dispatch, or execute checks.
 ```
@@ -2279,6 +2388,7 @@ def test_success_result_rejects_error_payload() -> None:
 **Atomic verification:**
 - Target (5.C): `python -m pytest -q tests/unit/contracts/test_action.py::test_success_result_rejects_error_payload`
 - Domain (5.C): `python -m pytest -q tests/unit/contracts/test_action.py`
+- Matrix (5.C): `python -m pytest -q tests/unit/contracts/test_action.py::test_action_result_union_matrix`
 - Expected (5.C): legal actions/results validate and unknown/mixed/contradictory envelopes reject.
 
 **Atomic review focus:**
@@ -2289,7 +2399,7 @@ def test_success_result_rejects_error_payload() -> None:
 - [ ] **Step 18: Run 5.C RED.** Run `python -m pytest -q tests/unit/contracts/test_action.py::test_success_result_rejects_error_payload`. Expected: FAIL for “no closed action/result union enforces payload/status consistency”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 19: Implement 5.C GREEN-1.** Define the shared closed action identity, check-plan vocabulary, status, policy decision, stable error, result, and `ActionInstanceV1` envelopes.
 - [ ] **Step 20: Implement 5.C GREEN-2.** Bind semantic and instance identities to the action value and enforce status/payload consistency so success cannot carry error data and contradictory variants reject.
-- [ ] **Step 21: Implement 5.C GREEN-3.** Make `test_success_result_rejects_error_payload` GREEN with the smallest success/error contradiction before completing all legal action/result variants.
+- [ ] **Step 21: Implement 5.C GREEN-3.** Make `test_success_result_rejects_error_payload` GREEN with the smallest success/error contradiction; then make `test_action_result_union_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 22: Implement 5.C GREEN-4.** Own schemas and cross-field validation only. Model JSON parsing, policy evaluation, dispatch, and check execution remain out of scope.
 - [ ] **Step 23: Run 5.C Target GREEN.** Re-run `python -m pytest -q tests/unit/contracts/test_action.py::test_success_result_rejects_error_payload`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 24: Run 5.C Domain.** Run `python -m pytest -q tests/unit/contracts/test_action.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -2305,7 +2415,7 @@ Owned files: - Create: src/vespercode/contracts/location.py - Test: tests/unit/c
 Interface: Produces `RepositoryLocationV1 = RootLocationV1 | PathLocationV1` and `DisclosurePathScopeV1 = RootScopeV1 | FileScopeV1 | DirectoryScopeV1`.
 GREEN-1: Define closed discriminated repository locations for root versus path and disclosure scopes for root, file, or directory.
 GREEN-2: Keep root and path representations mutually exclusive so unknown, ambiguous, mixed, or mismatched location/scope variants reject deterministically.
-GREEN-3: Make `test_repository_root_rejects_path_field` GREEN with the smallest root/path contradiction before completing all disclosure-scope variants.
+GREEN-3: Make `test_repository_root_rejects_path_field` GREEN with the smallest root/path contradiction; then make `test_location_scope_union_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own repository-location and disclosure-scope schemas only. Generic optionals, Run state, actions, evidence, profiles, and persistence remain out of scope.
 Boundary: Own repository-location and disclosure-scope schemas only. Do not define generic optional values, Run state, actions, evidence, profile matching, or persistence behavior.
 ```
@@ -2323,6 +2433,7 @@ def test_repository_root_rejects_path_field() -> None:
 **Atomic verification:**
 - Target (5.E): `python -m pytest -q tests/unit/contracts/test_location.py::test_repository_root_rejects_path_field`
 - Domain (5.E): `python -m pytest -q tests/unit/contracts/test_location.py`
+- Matrix (5.E): `python -m pytest -q tests/unit/contracts/test_location.py::test_location_scope_union_matrix`
 - Expected (5.E): `0`
 
 **Atomic review focus:**
@@ -2333,7 +2444,7 @@ def test_repository_root_rejects_path_field() -> None:
 - [ ] **Step 26: Run 5.E RED.** Run `python -m pytest -q tests/unit/contracts/test_location.py::test_repository_root_rejects_path_field`. Expected: FAIL for “the closed discriminated repository-location and disclosure-scope unions do not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 27: Implement 5.E GREEN-1.** Define closed discriminated repository locations for root versus path and disclosure scopes for root, file, or directory.
 - [ ] **Step 28: Implement 5.E GREEN-2.** Keep root and path representations mutually exclusive so unknown, ambiguous, mixed, or mismatched location/scope variants reject deterministically.
-- [ ] **Step 29: Implement 5.E GREEN-3.** Make `test_repository_root_rejects_path_field` GREEN with the smallest root/path contradiction before completing all disclosure-scope variants.
+- [ ] **Step 29: Implement 5.E GREEN-3.** Make `test_repository_root_rejects_path_field` GREEN with the smallest root/path contradiction; then make `test_location_scope_union_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 30: Implement 5.E GREEN-4.** Own repository-location and disclosure-scope schemas only. Generic optionals, Run state, actions, evidence, profiles, and persistence remain out of scope.
 - [ ] **Step 31: Run 5.E Target GREEN.** Re-run `python -m pytest -q tests/unit/contracts/test_location.py::test_repository_root_rejects_path_field`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 32: Run 5.E Domain.** Run `python -m pytest -q tests/unit/contracts/test_location.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -2349,7 +2460,7 @@ Owned files: - Create: src/vespercode/contracts/evidence.py - Test: tests/unit/c
 Interface: Produces `ArtifactRefV1`, `DigestV1`, `StableControlErrorV1`, `EvidenceLocationV1`, `StableCodeSequenceV1`, an immutable ordered tuple of zero or more stable error codes, and common closed evidence-envelope validation.
 GREEN-1: Define immutable artifact references, digests, evidence locations, stable control errors, ordered stable-code sequences, and common closed evidence envelopes.
 GREEN-2: Require every artifact/evidence variant to bind its digest and location consistently, rejecting missing, unknown, mixed, or contradictory fields deterministically.
-GREEN-3: Make `test_artifact_reference_rejects_unbound_digest` GREEN with the smallest missing-digest rejection before completing all evidence variants.
+GREEN-3: Make `test_artifact_reference_rejects_unbound_digest` GREEN with the smallest missing-digest rejection; then make `test_evidence_reference_union_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own shared evidence schemas only. Artifact creation, byte storage, audit append, and validation-outcome interpretation remain out of scope.
 Boundary: Own shared evidence schemas only. Do not create artifacts, store bytes, append audit events, or interpret validation outcomes.
 ```
@@ -2367,6 +2478,7 @@ def test_artifact_reference_rejects_unbound_digest() -> None:
 **Atomic verification:**
 - Target (5.D): `python -m pytest -q tests/unit/contracts/test_evidence.py::test_artifact_reference_rejects_unbound_digest`
 - Domain (5.D): `python -m pytest -q tests/unit/contracts/test_evidence.py`
+- Matrix (5.D): `python -m pytest -q tests/unit/contracts/test_evidence.py::test_evidence_reference_union_matrix`
 - Expected (5.D): every evidence variant is closed/digest-bound and invalid/unknown combinations reject.
 
 **Atomic review focus:**
@@ -2377,7 +2489,7 @@ def test_artifact_reference_rejects_unbound_digest() -> None:
 - [ ] **Step 34: Run 5.D RED.** Run `python -m pytest -q tests/unit/contracts/test_evidence.py::test_artifact_reference_rejects_unbound_digest`. Expected: FAIL for “the shared evidence/artifact contract does not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 35: Implement 5.D GREEN-1.** Define immutable artifact references, digests, evidence locations, stable control errors, ordered stable-code sequences, and common closed evidence envelopes.
 - [ ] **Step 36: Implement 5.D GREEN-2.** Require every artifact/evidence variant to bind its digest and location consistently, rejecting missing, unknown, mixed, or contradictory fields deterministically.
-- [ ] **Step 37: Implement 5.D GREEN-3.** Make `test_artifact_reference_rejects_unbound_digest` GREEN with the smallest missing-digest rejection before completing all evidence variants.
+- [ ] **Step 37: Implement 5.D GREEN-3.** Make `test_artifact_reference_rejects_unbound_digest` GREEN with the smallest missing-digest rejection; then make `test_evidence_reference_union_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 38: Implement 5.D GREEN-4.** Own shared evidence schemas only. Artifact creation, byte storage, audit append, and validation-outcome interpretation remain out of scope.
 - [ ] **Step 39: Run 5.D Target GREEN.** Re-run `python -m pytest -q tests/unit/contracts/test_evidence.py::test_artifact_reference_rejects_unbound_digest`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 40: Run 5.D Domain.** Run `python -m pytest -q tests/unit/contracts/test_evidence.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -2434,7 +2546,7 @@ Owned files: - Create: src/vespercode/profiles/editable.py - Test: tests/unit/pr
 Interface: Produces `EditableOperationV1 = Literal["CREATE","REPLACE"]`, `EditablePathPolicyV1(policy_digest: str, roots: CanonicalPathSequenceV1, operations: EditableOperationSequenceV1)`, and `EditablePathPolicyV1.matches(path: CanonicalRelativePathV1, operation: EditableOperationV1) -> bool`.
 GREEN-1: Define the sole immutable built-in editable policy over canonical roots and the closed CREATE/REPLACE operation set, with one deterministic policy digest.
 GREEN-2: Match paths only at canonical segment boundaries so `src` descendants qualify while prefix aliases, noncanonical paths, unsupported operations, and mutable overrides reject.
-GREEN-3: Make `test_src_prefix_without_segment_boundary_is_not_editable` GREEN with the smallest false-prefix case before completing root/operation coverage.
+GREEN-3: Make `test_src_prefix_without_segment_boundary_is_not_editable` GREEN with the smallest false-prefix case; then make `test_editable_policy_path_operation_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own built-in path/operation matching and digest only. Profile resolution, endpoints, requests, and mutable policy overrides remain out of scope.
 Boundary: Own only built-in editable path/operation matching and digest. Do not resolve profiles, endpoints, requests, or mutable overrides.
 ```
@@ -2451,6 +2563,7 @@ def test_src_prefix_without_segment_boundary_is_not_editable() -> None:
 **Atomic verification:**
 - Target (6.A): `python -m pytest -q tests/unit/profiles/test_editable.py::test_src_prefix_without_segment_boundary_is_not_editable`
 - Domain (6.A): `python -m pytest -q tests/unit/profiles/test_editable.py`
+- Matrix (6.A): `python -m pytest -q tests/unit/profiles/test_editable.py::test_editable_policy_path_operation_matrix`
 - Expected (6.A): `src`
 
 **Atomic review focus:**
@@ -2461,7 +2574,7 @@ def test_src_prefix_without_segment_boundary_is_not_editable() -> None:
 - [ ] **Step 2: Run 6.A RED.** Run `python -m pytest -q tests/unit/profiles/test_editable.py::test_src_prefix_without_segment_boundary_is_not_editable`. Expected: FAIL for “the immutable segment-boundary policy does not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 3: Implement 6.A GREEN-1.** Define the sole immutable built-in editable policy over canonical roots and the closed CREATE/REPLACE operation set, with one deterministic policy digest.
 - [ ] **Step 4: Implement 6.A GREEN-2.** Match paths only at canonical segment boundaries so `src` descendants qualify while prefix aliases, noncanonical paths, unsupported operations, and mutable overrides reject.
-- [ ] **Step 5: Implement 6.A GREEN-3.** Make `test_src_prefix_without_segment_boundary_is_not_editable` GREEN with the smallest false-prefix case before completing root/operation coverage.
+- [ ] **Step 5: Implement 6.A GREEN-3.** Make `test_src_prefix_without_segment_boundary_is_not_editable` GREEN with the smallest false-prefix case; then make `test_editable_policy_path_operation_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 6: Implement 6.A GREEN-4.** Own built-in path/operation matching and digest only. Profile resolution, endpoints, requests, and mutable policy overrides remain out of scope.
 - [ ] **Step 7: Run 6.A Target GREEN.** Re-run `python -m pytest -q tests/unit/profiles/test_editable.py::test_src_prefix_without_segment_boundary_is_not_editable`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 8: Run 6.A Domain.** Run `python -m pytest -q tests/unit/profiles/test_editable.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -2520,7 +2633,7 @@ Owned files: - Create: src/vespercode/profiles/reference.py - Create: src/vesper
 Interface: Produces production `ReferenceProfileManifestV1` and `ReferenceProfileManifestV1.verify_integrity(gate_manifest: GateReferenceProfileManifestV1) -> None`.
 GREEN-1: Load the packaged production `ReferenceProfileManifestV1` and verify it against Task 2.G gate manifest identities for image, lock, tools, execution, and check plan.
 GREEN-2: Require exact field and digest equality; every missing, extra, malformed, or drifted identity rejects without mutating gate evidence or packaged bytes.
-GREEN-3: Make `test_reference_profile_rejects_image_digest_drift` GREEN with the smallest image-identity mismatch before completing the full integrity matrix.
+GREEN-3: Make `test_reference_profile_rejects_image_digest_drift` GREEN with the smallest image-identity mismatch; then make `test_reference_profile_integrity_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own manifest parsing, integrity checking, and package-data copy only. Image builds, editable policy, endpoints, and gate-evidence mutation remain out of scope.
 Boundary: Own production manifest parsing/integrity and package-data copy. Do not build images, choose editable policy, resolve endpoints, or mutate gate evidence.
 ```
@@ -2538,6 +2651,7 @@ def test_reference_profile_rejects_image_digest_drift() -> None:
 **Atomic verification:**
 - Target (6.B): `python -m pytest -q tests/unit/profiles/test_reference.py::test_reference_profile_rejects_image_digest_drift`
 - Domain (6.B): `python -m pytest -q tests/unit/profiles/test_reference.py`
+- Matrix (6.B): `python -m pytest -q tests/unit/profiles/test_reference.py::test_reference_profile_integrity_matrix`
 - Expected (6.B): exact Task 2.G identities load and every missing/extra/drifted field rejects.
 
 **Atomic review focus:**
@@ -2548,7 +2662,7 @@ def test_reference_profile_rejects_image_digest_drift() -> None:
 - [ ] **Step 2: Run 6.B RED.** Run `python -m pytest -q tests/unit/profiles/test_reference.py::test_reference_profile_rejects_image_digest_drift`. Expected: FAIL for “the production manifest integrity contract and packaged resource do not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 3: Implement 6.B GREEN-1.** Load the packaged production `ReferenceProfileManifestV1` and verify it against Task 2.G gate manifest identities for image, lock, tools, execution, and check plan.
 - [ ] **Step 4: Implement 6.B GREEN-2.** Require exact field and digest equality; every missing, extra, malformed, or drifted identity rejects without mutating gate evidence or packaged bytes.
-- [ ] **Step 5: Implement 6.B GREEN-3.** Make `test_reference_profile_rejects_image_digest_drift` GREEN with the smallest image-identity mismatch before completing the full integrity matrix.
+- [ ] **Step 5: Implement 6.B GREEN-3.** Make `test_reference_profile_rejects_image_digest_drift` GREEN with the smallest image-identity mismatch; then make `test_reference_profile_integrity_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 6: Implement 6.B GREEN-4.** Own manifest parsing, integrity checking, and package-data copy only. Image builds, editable policy, endpoints, and gate-evidence mutation remain out of scope.
 - [ ] **Step 7: Run 6.B Target GREEN.** Re-run `python -m pytest -q tests/unit/profiles/test_reference.py::test_reference_profile_rejects_image_digest_drift`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 8: Run 6.B Domain.** Run `python -m pytest -q tests/unit/profiles/test_reference.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -2610,7 +2724,7 @@ Owned files: - Create: src/vespercode/profiles/llm.py - Create: src/vespercode/p
 Interface: Produces `MockLLMProfileV1`, `OpenAILLMProfileV1`, `LLMProfileManifestV1 = MockLLMProfileV1 | OpenAILLMProfileV1`, and `load_llm_profile(raw: bytes) -> LLMProfileManifestV1`.
 GREEN-1: Define immutable mutually exclusive Mock and OpenAI profile variants and load packaged bytes into the closed `LLMProfileManifestV1` union.
 GREEN-2: Reject cross-mode, unknown, extra, or mutable fields so Mock data cannot carry OpenAI configuration and each built-in resource has one integrity identity.
-GREEN-3: Make `test_mock_profile_rejects_openai_fields` GREEN with the smallest cross-mode rejection before completing both profile variants.
+GREEN-3: Make `test_mock_profile_rejects_openai_fields` GREEN with the smallest cross-mode rejection; then make `test_llm_profile_closed_union_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own profile schemas and packaged-resource integrity only. Endpoint resolution, request serialization, credential access, and adapter calls remain out of scope.
 Boundary: Own profile schemas/resource integrity only. Do not resolve endpoint URLs, serialize requests, read credentials, or call adapters.
 ```
@@ -2628,6 +2742,7 @@ def test_mock_profile_rejects_openai_fields() -> None:
 **Atomic verification:**
 - Target (6.C): `python -m pytest -q tests/unit/profiles/test_llm.py::test_mock_profile_rejects_openai_fields`
 - Domain (6.C): `python -m pytest -q tests/unit/profiles/test_llm.py`
+- Matrix (6.C): `python -m pytest -q tests/unit/profiles/test_llm.py::test_llm_profile_closed_union_matrix`
 - Expected (6.C): exact built-ins load and cross-mode/unknown/mutable fields reject.
 
 **Atomic review focus:**
@@ -2638,7 +2753,7 @@ def test_mock_profile_rejects_openai_fields() -> None:
 - [ ] **Step 2: Run 6.C RED.** Run `python -m pytest -q tests/unit/profiles/test_llm.py::test_mock_profile_rejects_openai_fields`. Expected: FAIL for “the mutually exclusive closed LLM profile union does not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 3: Implement 6.C GREEN-1.** Define immutable mutually exclusive Mock and OpenAI profile variants and load packaged bytes into the closed `LLMProfileManifestV1` union.
 - [ ] **Step 4: Implement 6.C GREEN-2.** Reject cross-mode, unknown, extra, or mutable fields so Mock data cannot carry OpenAI configuration and each built-in resource has one integrity identity.
-- [ ] **Step 5: Implement 6.C GREEN-3.** Make `test_mock_profile_rejects_openai_fields` GREEN with the smallest cross-mode rejection before completing both profile variants.
+- [ ] **Step 5: Implement 6.C GREEN-3.** Make `test_mock_profile_rejects_openai_fields` GREEN with the smallest cross-mode rejection; then make `test_llm_profile_closed_union_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 6: Implement 6.C GREEN-4.** Own profile schemas and packaged-resource integrity only. Endpoint resolution, request serialization, credential access, and adapter calls remain out of scope.
 - [ ] **Step 7: Run 6.C Target GREEN.** Re-run `python -m pytest -q tests/unit/profiles/test_llm.py::test_mock_profile_rejects_openai_fields`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 8: Run 6.C Domain.** Run `python -m pytest -q tests/unit/profiles/test_llm.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -2653,7 +2768,7 @@ Owned files: - Create: src/vespercode/profiles/endpoints.py - Test: tests/unit/p
 Interface: Produces `OpenAIEndpointV1(endpoint_id: Literal["OPENAI_PUBLIC_API_V1"], base_url: Literal["https://api.openai.com/v1"])` and `OpenAIEndpointRegistry.resolve(endpoint_id: str) -> OpenAIEndpointV1`.
 GREEN-1: Define the immutable `OpenAIEndpointV1` record for the sole `OPENAI_PUBLIC_API_V1` identifier and exact public base URL.
 GREEN-2: Resolve only that built-in identifier; raw user URLs, config overrides, unknown ids, and alternate records reject without network access.
-GREEN-3: Make `test_endpoint_registry_rejects_user_url` GREEN with the smallest raw-URL rejection before completing sole-id resolution.
+GREEN-3: Make `test_endpoint_registry_rejects_user_url` GREEN with the smallest raw-URL rejection; then make `test_endpoint_resolution_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own endpoint id-to-record resolution only. HTTP request preparation, URL overrides, credential management, and network calls remain out of scope.
 Boundary: Own endpoint ID-to-record resolution only. Do not accept URLs/config overrides, prepare HTTP requests, or manage credentials.
 ```
@@ -2671,6 +2786,7 @@ def test_endpoint_registry_rejects_user_url() -> None:
 **Atomic verification:**
 - Target (6.D): `python -m pytest -q tests/unit/profiles/test_endpoints.py::test_endpoint_registry_rejects_user_url`
 - Domain (6.D): `python -m pytest -q tests/unit/profiles/test_endpoints.py`
+- Matrix (6.D): `python -m pytest -q tests/unit/profiles/test_endpoints.py::test_endpoint_resolution_matrix`
 - Expected (6.D): the sole built-in ID resolves and every other ID/URL rejects without network access.
 
 **Atomic review focus:**
@@ -2681,7 +2797,7 @@ def test_endpoint_registry_rejects_user_url() -> None:
 - [ ] **Step 10: Run 6.D RED.** Run `python -m pytest -q tests/unit/profiles/test_endpoints.py::test_endpoint_registry_rejects_user_url`. Expected: FAIL for “the closed endpoint map does not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 11: Implement 6.D GREEN-1.** Define the immutable `OpenAIEndpointV1` record for the sole `OPENAI_PUBLIC_API_V1` identifier and exact public base URL.
 - [ ] **Step 12: Implement 6.D GREEN-2.** Resolve only that built-in identifier; raw user URLs, config overrides, unknown ids, and alternate records reject without network access.
-- [ ] **Step 13: Implement 6.D GREEN-3.** Make `test_endpoint_registry_rejects_user_url` GREEN with the smallest raw-URL rejection before completing sole-id resolution.
+- [ ] **Step 13: Implement 6.D GREEN-3.** Make `test_endpoint_registry_rejects_user_url` GREEN with the smallest raw-URL rejection; then make `test_endpoint_resolution_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 14: Implement 6.D GREEN-4.** Own endpoint id-to-record resolution only. HTTP request preparation, URL overrides, credential management, and network calls remain out of scope.
 - [ ] **Step 15: Run 6.D Target GREEN.** Re-run `python -m pytest -q tests/unit/profiles/test_endpoints.py::test_endpoint_registry_rejects_user_url`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 16: Run 6.D Domain.** Run `python -m pytest -q tests/unit/profiles/test_endpoints.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -2738,7 +2854,7 @@ Owned files: - Create: src/vespercode/profiles/registry.py - Test: tests/unit/pr
 Interface: Produces `ProfileRegistry.resolve_reference(profile_id: str) -> ReferenceProfileManifestV1`, `ProfileRegistry.resolve_llm(profile_id: str) -> LLMProfileManifestV1`, `ProfileRegistry.resolve_editable(policy_id: str) -> EditablePathPolicyV1`, and `ProfileRegistry.resolve_endpoint(endpoint_id: str) -> OpenAIEndpointV1`.
 GREEN-1: Enumerate the exact built-in editable, reference, LLM, and endpoint resources and expose their four typed resolution methods through `ProfileRegistry`.
 GREEN-2: Delegate each resource integrity check to its owner and reject missing, duplicate, extra, drifted, cross-profile, or unknown ids before Run creation.
-GREEN-3: Make `test_registry_rejects_duplicate_profile_id` GREEN with the smallest duplicate-id rejection before completing deterministic resolution cases.
+GREEN-3: Make `test_registry_rejects_duplicate_profile_id` GREEN with the smallest duplicate-id rejection; then make `test_profile_registry_resolution_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own built-in enumeration, integrity delegation, and exact id resolution only. Mutators, external discovery, run-request validation, and adapter behavior remain out of scope.
 Boundary: Own built-in resource enumeration, integrity delegation, and exact ID resolution. Do not add mutators, external discovery, request validation, or adapter behavior.
 ```
@@ -2756,6 +2872,7 @@ def test_registry_rejects_duplicate_profile_id() -> None:
 **Atomic verification:**
 - Target (6.E): `python -m pytest -q tests/unit/profiles/test_registry.py::test_registry_rejects_duplicate_profile_id`
 - Domain (6.E): `python -m pytest -q tests/unit/profiles/test_registry.py`
+- Matrix (6.E): `python -m pytest -q tests/unit/profiles/test_registry.py::test_profile_registry_resolution_matrix`
 - Expected (6.E): exact built-ins resolve deterministically and every ambiguity/drift/unknown ID rejects before a Run exists.
 
 **Atomic review focus:**
@@ -2766,7 +2883,7 @@ def test_registry_rejects_duplicate_profile_id() -> None:
 - [ ] **Step 2: Run 6.E RED.** Run `python -m pytest -q tests/unit/profiles/test_registry.py::test_registry_rejects_duplicate_profile_id`. Expected: FAIL for “the composition registry does not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 3: Implement 6.E GREEN-1.** Enumerate the exact built-in editable, reference, LLM, and endpoint resources and expose their four typed resolution methods through `ProfileRegistry`.
 - [ ] **Step 4: Implement 6.E GREEN-2.** Delegate each resource integrity check to its owner and reject missing, duplicate, extra, drifted, cross-profile, or unknown ids before Run creation.
-- [ ] **Step 5: Implement 6.E GREEN-3.** Make `test_registry_rejects_duplicate_profile_id` GREEN with the smallest duplicate-id rejection before completing deterministic resolution cases.
+- [ ] **Step 5: Implement 6.E GREEN-3.** Make `test_registry_rejects_duplicate_profile_id` GREEN with the smallest duplicate-id rejection; then make `test_profile_registry_resolution_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 6: Implement 6.E GREEN-4.** Own built-in enumeration, integrity delegation, and exact id resolution only. Mutators, external discovery, run-request validation, and adapter behavior remain out of scope.
 - [ ] **Step 7: Run 6.E Target GREEN.** Re-run `python -m pytest -q tests/unit/profiles/test_registry.py::test_registry_rejects_duplicate_profile_id`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 8: Run 6.E Domain.** Run `python -m pytest -q tests/unit/profiles/test_registry.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -2826,7 +2943,7 @@ Owned files: - Create: src/vespercode/storage/connection.py - Create: src/vesper
 Interface: Produces `open_control_database(path: Path) -> ControlDatabase`, `ControlDatabase.immediate_transaction() -> AbstractContextManager[ControlTransactionV1]`, closed `MigrationV1(version: int, name: str, checksum: DigestV1, apply: MigrationApplyV1)`, and `apply_migrations(db: ControlDatabase, migrations: tuple[MigrationV1, ...]) -> MigrationResultV1`.
 GREEN-1: Open SQLite with explicit control-database flags and expose one immediate transaction identity plus a closed injected `MigrationV1` runner.
 GREEN-2: Apply synthetic migrations in strict version order atomically and idempotently; duplicate/gap descriptors, whole-batch failure, or applied-checksum drift fail closed.
-GREEN-3: Make `test_changed_applied_migration_checksum_fails_closed` GREEN with the smallest history-checksum rejection before completing replay and rollback cases.
+GREEN-3: Make `test_changed_applied_migration_checksum_fails_closed` GREEN with the smallest history-checksum rejection; then make `test_migration_replay_rollback_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own only connection policy, `schema_migrations`, descriptor/checksum validation, and injected execution. Application-domain DDL, migration constants, repositories, and final registry composition remain out of scope.
 Boundary: This child owns connection flags, transaction identity, the `schema_migrations` bootstrap, closed descriptor validation, checksum calculation/history, and injected runner only. It contains no application-domain DDL, domain migration constant, repository behavior, transition, replay, projection, retention, or import of `migrations/registry.py`. Synthetic RED fixtures prove strict order, replay idempotency, whole-batch rollback/atomicity, duplicate/gap rejection, and checksum drift without importing any application domain.
 ```
@@ -2849,6 +2966,7 @@ def test_changed_applied_migration_checksum_fails_closed(
 **Atomic verification:**
 - Target (7.A): `python -m pytest -q tests/unit/storage/test_migration_engine.py::test_changed_applied_migration_checksum_fails_closed`
 - Domain (7.A): `python -m pytest -q tests/unit/storage/test_connection.py tests/unit/storage/test_migration_engine.py`
+- Matrix (7.A): `python -m pytest -q tests/unit/storage/test_migration_engine.py::test_migration_replay_rollback_matrix`
 - Expected (7.A): `0`
 
 **Atomic review focus:**
@@ -2859,7 +2977,7 @@ def test_changed_applied_migration_checksum_fails_closed(
 - [ ] **Step 2: Run 7.A RED.** Run `python -m pytest -q tests/unit/storage/test_migration_engine.py::test_changed_applied_migration_checksum_fails_closed`. Expected: FAIL for “import failure because the database, closed migration descriptor, checksum history, and injected runner do not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 3: Implement 7.A GREEN-1.** Open SQLite with explicit control-database flags and expose one immediate transaction identity plus a closed injected `MigrationV1` runner.
 - [ ] **Step 4: Implement 7.A GREEN-2.** Apply synthetic migrations in strict version order atomically and idempotently; duplicate/gap descriptors, whole-batch failure, or applied-checksum drift fail closed.
-- [ ] **Step 5: Implement 7.A GREEN-3.** Make `test_changed_applied_migration_checksum_fails_closed` GREEN with the smallest history-checksum rejection before completing replay and rollback cases.
+- [ ] **Step 5: Implement 7.A GREEN-3.** Make `test_changed_applied_migration_checksum_fails_closed` GREEN with the smallest history-checksum rejection; then make `test_migration_replay_rollback_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 6: Implement 7.A GREEN-4.** Own only connection policy, `schema_migrations`, descriptor/checksum validation, and injected execution. Application-domain DDL, migration constants, repositories, and final registry composition remain out of scope.
 - [ ] **Step 7: Run 7.A Target GREEN.** Re-run `python -m pytest -q tests/unit/storage/test_migration_engine.py::test_changed_applied_migration_checksum_fails_closed`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 8: Run 7.A Domain.** Run `python -m pytest -q tests/unit/storage/test_connection.py tests/unit/storage/test_migration_engine.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -2920,7 +3038,7 @@ Owned files: - Create: src/vespercode/storage/migrations/v0001_run_wait.py - Cre
 Interface: Produces immutable `RUN_WAIT_V1_MIGRATION = MigrationV1(version=1, name="run_wait_v1", ...)`, `RunRepository.insert_created(run: RunRecordV1) -> None`, `RunRepository.compare_and_transition(command: TransitionCommandV1) -> TransitionResultV1`, `RunRepository.create_wait(context: WaitContextV1) -> None`, `RunRepository.lock_wait_for_decision(tx: ControlTransactionV1, decision: WaitDecisionV1) -> WaitDecisionLockResultV1`, `RunRepository.commit_wait_decision(tx: ControlTransactionV1, lock: LockedWaitDecisionV1, decision: WaitDecisionV1) -> WaitDecisionResultV1`, `RunRepository.expire_wait(tx: ControlTransactionV1, lock: LockedWaitDecisionV1, now: CanonicalTimestampV1) -> WaitDecisionResultV1`, and `LifecycleRules.evaluate(current: RunStateV1, event: LifecycleEventV1) -> RunStateV1`.
 GREEN-1: Own immutable v0001 Run/config/wait DDL, persistence repositories, and pure `LifecycleRules` target-state derivation without editing the final registry.
 GREEN-2: Lock and commit one exactly bound wait decision in a caller transaction so only one decision wins; rollback, expiry, terminal, and invalid transitions remain atomic and closed.
-GREEN-3: Make `test_same_wait_decision_can_win_only_once` GREEN with the smallest competing-decision transaction before completing the lifecycle matrix.
+GREEN-3: Make `test_same_wait_decision_can_win_only_once` GREEN with the smallest competing-decision transaction; then make `test_run_wait_lifecycle_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Keep approval, Grant, authorization, idempotency replay, audit projection, and persistence-recovery schema outside this coupled Run/wait owner.
 Boundary: This child owns one coupled Run/config/wait storage behavior: immutable v0001 DDL, Run/wait persistence, and pure target-state derivation. It may test through `(RUN_WAIT_V1_MIGRATION,)`, cannot edit the final registry, and owns no approval, Grant, authorization, idempotency replay, audit projection, or persistence-recovery schema.
 ```
@@ -2941,6 +3059,7 @@ def test_same_wait_decision_can_win_only_once(run_repository: RunRepository, dec
 - Target (7.B): `python -m pytest -q tests/unit/storage/test_run_repository.py::test_same_wait_decision_can_win_only_once`
 - Schema (7.B): `python -m pytest -q tests/unit/storage/test_run_wait_migration.py::test_run_wait_migration_has_exact_schema`
 - Domain (7.B): `python -m pytest -q tests/unit/storage/test_run_wait_migration.py tests/unit/storage/test_run_repository.py tests/unit/runs/test_lifecycle.py`
+- Matrix (7.B): `python -m pytest -q tests/unit/storage/test_run_repository.py::test_run_wait_lifecycle_matrix`
 - Expected (7.B): `0`
 
 **Atomic review focus:**
@@ -2951,7 +3070,7 @@ def test_same_wait_decision_can_win_only_once(run_repository: RunRepository, dec
 - [ ] **Step 2: Run 7.B RED.** Run `python -m pytest -q tests/unit/storage/test_run_repository.py::test_same_wait_decision_can_win_only_once`. Expected: FAIL for “import failure because the Run repository and lifecycle rules do not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 3: Implement 7.B GREEN-1.** Own immutable v0001 Run/config/wait DDL, persistence repositories, and pure `LifecycleRules` target-state derivation without editing the final registry.
 - [ ] **Step 4: Implement 7.B GREEN-2.** Lock and commit one exactly bound wait decision in a caller transaction so only one decision wins; rollback, expiry, terminal, and invalid transitions remain atomic and closed.
-- [ ] **Step 5: Implement 7.B GREEN-3.** Make `test_same_wait_decision_can_win_only_once` GREEN with the smallest competing-decision transaction before completing the lifecycle matrix.
+- [ ] **Step 5: Implement 7.B GREEN-3.** Make `test_same_wait_decision_can_win_only_once` GREEN with the smallest competing-decision transaction; then make `test_run_wait_lifecycle_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 6: Implement 7.B GREEN-4.** Keep approval, Grant, authorization, idempotency replay, audit projection, and persistence-recovery schema outside this coupled Run/wait owner.
 - [ ] **Step 7: Run 7.B Target GREEN.** Re-run `python -m pytest -q tests/unit/storage/test_run_repository.py::test_same_wait_decision_can_win_only_once`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 8: Run 7.B Domain.** Run `python -m pytest -q tests/unit/storage/test_run_wait_migration.py tests/unit/storage/test_run_repository.py tests/unit/runs/test_lifecycle.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -3010,7 +3129,7 @@ Owned files: - Create: src/vespercode/storage/migrations/v0002_idempotency.py - 
 Interface: Produces immutable `IDEMPOTENCY_V1_MIGRATION = MigrationV1(version=2, name="idempotency_v1", ...)` and `IdempotencyRepository.record_or_replay(tx: ControlTransactionV1, scope: str, event_id: str, request_digest: str, result_digest: str) -> IdempotencyResultV1`, where `IdempotencyResultV1` is the closed `NEW | REPLAY | EVENT_ID_REUSE_CONFLICT` union.
 GREEN-1: Own immutable v0002 idempotency DDL and a repository that records scope/event/request/result identities only inside the caller-owned Task 7.A transaction.
 GREEN-2: Return `NEW` for the first identity, identical `REPLAY` without domain mutation, and `EVENT_ID_REUSE_CONFLICT` for changed request bytes without mutation.
-GREEN-3: Make `test_event_id_reuse_with_different_request_is_conflict` GREEN with the smallest request-digest conflict before completing replay, rollback, and concurrency cases.
+GREEN-3: Make `test_event_id_reuse_with_different_request_is_conflict` GREEN with the smallest request-digest conflict; then make `test_idempotency_replay_rollback_concurrency_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Keep final registry edits, domain-result reconstruction, Run transitions, and replay/conflict mutation outside the idempotency owner.
 Boundary: This child owns one coupled idempotency storage behavior: immutable v0002 DDL and the transaction-bound repository. It stores only scope/event/request/result identities inside a caller-owned Task 7.A transaction, cannot edit the final registry, reconstruct domain results, transition Runs, or mutate on replay/conflict.
 ```
@@ -3032,6 +3151,7 @@ def test_event_id_reuse_with_different_request_is_conflict(
 - Target (7.C): `python -m pytest -q tests/unit/storage/test_idempotency.py::test_event_id_reuse_with_different_request_is_conflict`
 - Schema (7.C): `python -m pytest -q tests/unit/storage/test_idempotency_migration.py::test_idempotency_migration_has_exact_schema`
 - Domain (7.C): `python -m pytest -q tests/unit/storage/test_idempotency_migration.py tests/unit/storage/test_idempotency.py`
+- Matrix (7.C): `python -m pytest -q tests/unit/storage/test_idempotency.py::test_idempotency_replay_rollback_concurrency_matrix`
 - Expected (7.C): `0`
 
 **Atomic review focus:**
@@ -3042,7 +3162,7 @@ def test_event_id_reuse_with_different_request_is_conflict(
 - [ ] **Step 2: Run 7.C RED.** Run `python -m pytest -q tests/unit/storage/test_idempotency.py::test_event_id_reuse_with_different_request_is_conflict`. Expected: FAIL for “import failure because the idempotency repository does not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 3: Implement 7.C GREEN-1.** Own immutable v0002 idempotency DDL and a repository that records scope/event/request/result identities only inside the caller-owned Task 7.A transaction.
 - [ ] **Step 4: Implement 7.C GREEN-2.** Return `NEW` for the first identity, identical `REPLAY` without domain mutation, and `EVENT_ID_REUSE_CONFLICT` for changed request bytes without mutation.
-- [ ] **Step 5: Implement 7.C GREEN-3.** Make `test_event_id_reuse_with_different_request_is_conflict` GREEN with the smallest request-digest conflict before completing replay, rollback, and concurrency cases.
+- [ ] **Step 5: Implement 7.C GREEN-3.** Make `test_event_id_reuse_with_different_request_is_conflict` GREEN with the smallest request-digest conflict; then make `test_idempotency_replay_rollback_concurrency_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 6: Implement 7.C GREEN-4.** Keep final registry edits, domain-result reconstruction, Run transitions, and replay/conflict mutation outside the idempotency owner.
 - [ ] **Step 7: Run 7.C Target GREEN.** Re-run `python -m pytest -q tests/unit/storage/test_idempotency.py::test_event_id_reuse_with_different_request_is_conflict`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 8: Run 7.C Domain.** Run `python -m pytest -q tests/unit/storage/test_idempotency_migration.py tests/unit/storage/test_idempotency.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -3250,7 +3370,7 @@ Owned files: - Create: src/vespercode/runs/request.py - Test: tests/unit/runs/te
 Interface: Consumes Task 6.E `ProfileRegistry` and Task 7.B `RunRepository`; produces `ValidateRunRequestV1`, `ValidatedRunRequestV1`, `RunConfigSnapshotV1`, `validate_request(request: Mapping[str, object], profiles: ProfileRegistry) -> ValidatedRunRequestV1 | ConfigInvalidV1`, `freeze_run_config(request: ValidatedRunRequestV1) -> RunConfigSnapshotV1`, `create_run(request: ValidatedRunRequestV1, repository: RunRepository) -> RunCreatedV1`, and `RunRequestService.validate_and_create(raw_request: Mapping[str, object]) -> RunCreatedV1 | ConfigInvalidV1`.
 GREEN-1: Validate the closed raw request against the built-in `ProfileRegistry`, produce one `ValidatedRunRequestV1`, and freeze an immutable `RunConfigSnapshotV1`.
 GREEN-2: Reject invalid, unknown, ambiguous, or custom endpoint/profile fields with stable reasons before a run id exists and with zero repository inserts.
-GREEN-3: Make `test_custom_base_url_is_rejected_without_creating_a_run` GREEN with the smallest custom-URL rejection before completing valid permutation equivalence.
+GREEN-3: Make `test_custom_base_url_is_rejected_without_creating_a_run` GREEN with the smallest custom-URL rejection; then make `test_request_permutation_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: End ownership after one atomic `CREATED` insert. Workspace lease, Snapshot, readiness, and PREFLIGHT execution remain out of scope.
 Boundary: Closed-field validation and config freezing end after the atomic `CREATED` insert. This task does not acquire a workspace lease, create a Snapshot, run readiness checks, or start PREFLIGHT.
 ```
@@ -3274,6 +3394,7 @@ def test_custom_base_url_is_rejected_without_creating_a_run(
 **Atomic verification:**
 - Target (8.A): `python -m pytest -q tests/unit/runs/test_request.py::test_custom_base_url_is_rejected_without_creating_a_run`
 - Domain (8.A): `python -m pytest -q tests/unit/runs/test_request.py`
+- Matrix (8.A): `python -m pytest -q tests/unit/runs/test_request.py::test_request_permutation_matrix`
 - Expected (8.A): invalid requests produce stable reasons and zero inserts; valid permutations bind one identical frozen config and create exactly one Run.
 
 **Atomic review focus:**
@@ -3284,7 +3405,7 @@ def test_custom_base_url_is_rejected_without_creating_a_run(
 - [ ] **Step 2: Run 8.A RED.** Run `python -m pytest -q tests/unit/runs/test_request.py::test_custom_base_url_is_rejected_without_creating_a_run`. Expected: FAIL for “the exact assertion fails because the task-owned run-request admission/config freeze behavior does not exist. Record the task-owned failing assertion and exit code; collection, import, runner, environment startup, or unrelated failure does not count as RED”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 3: Implement 8.A GREEN-1.** Validate the closed raw request against the built-in `ProfileRegistry`, produce one `ValidatedRunRequestV1`, and freeze an immutable `RunConfigSnapshotV1`.
 - [ ] **Step 4: Implement 8.A GREEN-2.** Reject invalid, unknown, ambiguous, or custom endpoint/profile fields with stable reasons before a run id exists and with zero repository inserts.
-- [ ] **Step 5: Implement 8.A GREEN-3.** Make `test_custom_base_url_is_rejected_without_creating_a_run` GREEN with the smallest custom-URL rejection before completing valid permutation equivalence.
+- [ ] **Step 5: Implement 8.A GREEN-3.** Make `test_custom_base_url_is_rejected_without_creating_a_run` GREEN with the smallest custom-URL rejection; then make `test_request_permutation_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 6: Implement 8.A GREEN-4.** End ownership after one atomic `CREATED` insert. Workspace lease, Snapshot, readiness, and PREFLIGHT execution remain out of scope.
 - [ ] **Step 7: Run 8.A Target GREEN.** Re-run `python -m pytest -q tests/unit/runs/test_request.py::test_custom_base_url_is_rejected_without_creating_a_run`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 8: Run 8.A Domain.** Run `python -m pytest -q tests/unit/runs/test_request.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -3300,7 +3421,7 @@ Owned files: - Create: src/vespercode/runs/admission.py - Test: tests/unit/runs/
 Interface: Produces `AdmissionPortsV1(workspace: WorkspaceAdmissionPortV1, recovery: RecoveryAdmissionPortV1, snapshot: SnapshotAdmissionPortV1, static_profile: StaticProfileAdmissionPortV1, execution_readiness: ExecutionReadinessPortV1, credential_readiness: CredentialReadinessPortV1, baseline: BaselineAdmissionPortV1)` and `AdmissionCoordinator.start_run(run_id: str) -> AdmissionResultV1`; consumes Task 8.A's frozen Run and Task 7.B lifecycle repository.
 GREEN-1: Compose only the declared admission ports and lifecycle repository into `AdmissionCoordinator.start_run` for one existing CREATED Run.
 GREEN-2: Invoke ports in the exact frozen PREFLIGHT order; every failure returns after an exact prefix and prevents all later calls and forbidden side effects.
-GREEN-3: Make `test_snapshot_precheck_failure_calls_no_later_admission_port` GREEN with the smallest snapshot-failure trace before completing all failure prefixes.
+GREEN-3: Make `test_snapshot_precheck_failure_calls_no_later_admission_port` GREEN with the smallest snapshot-failure trace; then make `test_admission_failure_prefix_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own coordination through interfaces only. Concrete Win32, Docker, credential, Snapshot, baseline, Agent, LLM, install, build, and workspace-write behavior remain out of scope.
 Boundary: The coordinator calls only declared ports and lifecycle operations. It cannot import concrete Win32, Docker, credential, Snapshot, or baseline implementations.
 ```
@@ -3323,6 +3444,7 @@ def test_snapshot_precheck_failure_calls_no_later_admission_port(
 **Atomic verification:**
 - Target (8.B): `python -m pytest -q tests/unit/runs/test_admission_order.py::test_snapshot_precheck_failure_calls_no_later_admission_port`
 - Domain (8.B): `python -m pytest -q tests/unit/runs/test_admission.py tests/unit/runs/test_admission_order.py`
+- Matrix (8.B): `python -m pytest -q tests/unit/runs/test_admission_order.py::test_admission_failure_prefix_matrix`
 - Expected (8.B): every failure-point trace is an exact prefix of the required order; rejected PREFLIGHT performs no Agent action, LLM call, execution, install, image build, or workspace write.
 
 **Atomic review focus:**
@@ -3333,7 +3455,7 @@ def test_snapshot_precheck_failure_calls_no_later_admission_port(
 - [ ] **Step 10: Run 8.B RED.** Run `python -m pytest -q tests/unit/runs/test_admission_order.py::test_snapshot_precheck_failure_calls_no_later_admission_port`. Expected: FAIL for “the exact assertion fails because the task-owned ordered PREFLIGHT coordinator behavior does not exist. Record the task-owned failing assertion and exit code; collection, import, runner, environment startup, or unrelated failure does not count as RED”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 11: Implement 8.B GREEN-1.** Compose only the declared admission ports and lifecycle repository into `AdmissionCoordinator.start_run` for one existing CREATED Run.
 - [ ] **Step 12: Implement 8.B GREEN-2.** Invoke ports in the exact frozen PREFLIGHT order; every failure returns after an exact prefix and prevents all later calls and forbidden side effects.
-- [ ] **Step 13: Implement 8.B GREEN-3.** Make `test_snapshot_precheck_failure_calls_no_later_admission_port` GREEN with the smallest snapshot-failure trace before completing all failure prefixes.
+- [ ] **Step 13: Implement 8.B GREEN-3.** Make `test_snapshot_precheck_failure_calls_no_later_admission_port` GREEN with the smallest snapshot-failure trace; then make `test_admission_failure_prefix_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 14: Implement 8.B GREEN-4.** Own coordination through interfaces only. Concrete Win32, Docker, credential, Snapshot, baseline, Agent, LLM, install, build, and workspace-write behavior remain out of scope.
 - [ ] **Step 15: Run 8.B Target GREEN.** Re-run `python -m pytest -q tests/unit/runs/test_admission_order.py::test_snapshot_precheck_failure_calls_no_later_admission_port`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 16: Run 8.B Domain.** Run `python -m pytest -q tests/unit/runs/test_admission.py tests/unit/runs/test_admission_order.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -3402,7 +3524,7 @@ Owned files: - Create: src/vespercode/workspace/identity_win32.py - Create: src/
 Interface: Produces `resolve_workspace_identity(locator: Path) -> WorkspaceIdentityV1` and `inspect_workspace_object(root: WorkspaceIdentityV1, path: CanonicalRelativePathV1) -> FinalObjectIdentityV1`.
 GREEN-1: Resolve workspace and child objects from Win32 handles, producing sealed root/final identities with ancestry, kind, reparse, ADS, link, and ACL facts.
 GREEN-2: Reject every unprovable, aliased, reparse, ADS, hard-link, wrong-kind, ACL, or root-escape object through stable closed errors; lexical identity alone never authorizes.
-GREEN-3: Make `test_reparse_final_object_is_rejected` GREEN with the smallest real handle-derived reparse rejection before completing Task 1 sentinel parity.
+GREEN-3: Make `test_reparse_final_object_is_rejected` GREEN with the smallest real handle-derived reparse rejection; then make `test_workspace_object_sentinel_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own handle-derived identity and stable rejection only. Mutex acquisition, Git inspection, editable policy, and CREATE/REPLACE authorization remain out of scope.
 Boundary: This child owns handle-derived identity, ancestry, object kind, reparse/ADS/link/ACL facts, and stable rejection only. It does not acquire the mutex, inspect Git, decide editable policy, or authorize create/replace.
 ```
@@ -3424,6 +3546,7 @@ def test_reparse_final_object_is_rejected(
 **Atomic verification:**
 - Target (9.A): `python -m pytest -q -o addopts='' -m windows_integration tests/integration/windows/test_workspace_objects.py::test_reparse_final_object_is_rejected`
 - Domain (9.A): `python -m pytest -q -o addopts='' -m windows_integration tests/integration/windows/test_workspace_identity.py tests/integration/windows/test_workspace_objects.py`
+- Matrix (9.A): `python -m pytest -q -o addopts='' -m windows_integration tests/integration/windows/test_workspace_objects.py::test_workspace_object_sentinel_matrix`
 - Expected (9.A): `0`
 
 **Atomic review focus:**
@@ -3434,7 +3557,7 @@ def test_reparse_final_object_is_rejected(
 - [ ] **Step 2: Run 9.A RED.** Run `python -m pytest -q -o addopts='' -m windows_integration tests/integration/windows/test_workspace_objects.py::test_reparse_final_object_is_rejected`. Expected: FAIL for “import failure because the production Win32 identity/object adapters do not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 3: Implement 9.A GREEN-1.** Resolve workspace and child objects from Win32 handles, producing sealed root/final identities with ancestry, kind, reparse, ADS, link, and ACL facts.
 - [ ] **Step 4: Implement 9.A GREEN-2.** Reject every unprovable, aliased, reparse, ADS, hard-link, wrong-kind, ACL, or root-escape object through stable closed errors; lexical identity alone never authorizes.
-- [ ] **Step 5: Implement 9.A GREEN-3.** Make `test_reparse_final_object_is_rejected` GREEN with the smallest real handle-derived reparse rejection before completing Task 1 sentinel parity.
+- [ ] **Step 5: Implement 9.A GREEN-3.** Make `test_reparse_final_object_is_rejected` GREEN with the smallest real handle-derived reparse rejection; then make `test_workspace_object_sentinel_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 6: Implement 9.A GREEN-4.** Own handle-derived identity and stable rejection only. Mutex acquisition, Git inspection, editable policy, and CREATE/REPLACE authorization remain out of scope.
 - [ ] **Step 7: Run 9.A Target GREEN.** Re-run `python -m pytest -q -o addopts='' -m windows_integration tests/integration/windows/test_workspace_objects.py::test_reparse_final_object_is_rejected`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 8: Run 9.A Domain.** Run `python -m pytest -q -o addopts='' -m windows_integration tests/integration/windows/test_workspace_identity.py tests/integration/windows/test_workspace_objects.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -3450,7 +3573,7 @@ Owned files: - Create: src/vespercode/workspace/mutex_win32.py - Test: tests/int
 Interface: Produces `WorkspaceMutex.acquire(identity: WorkspaceIdentityV1, timeout_ms: int) -> WorkspaceLeaseV1` and `WorkspaceMutex.release(lease: WorkspaceLeaseV1) -> None`.
 GREEN-1: Derive one stable named mutex from `WorkspaceIdentityV1` and return an explicit lease that owns the acquired handle until release.
 GREEN-2: Guarantee same-workspace cross-process exclusion while preserving different-workspace independence, bounded timeout, explicit release, and crashed-child cleanup.
-GREEN-3: Make `test_second_process_cannot_acquire_same_workspace_mutex` GREEN with the smallest two-process contention path before completing timeout/recovery cases.
+GREEN-3: Make `test_second_process_cannot_acquire_same_workspace_mutex` GREEN with the smallest two-process contention path; then make `test_named_mutex_timeout_recovery_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own mutex naming, handle lifetime, timeout, lease, and release only. Git, object/path inspection, persistence, and workspace mutation remain out of scope.
 Boundary: This child derives one stable mutex name from `WorkspaceIdentityV1`, owns handle lifetime, timeout, and release only; it performs no Git/object/path/persistence operation.
 ```
@@ -3473,6 +3596,7 @@ def test_second_process_cannot_acquire_same_workspace_mutex(
 **Atomic verification:**
 - Target (9.B): `python -m pytest -q -o addopts='' -m windows_integration tests/integration/windows/test_named_mutex.py::test_second_process_cannot_acquire_same_workspace_mutex`
 - Domain (9.B): `python -m pytest -q -o addopts='' -m windows_integration tests/integration/windows/test_named_mutex.py`
+- Matrix (9.B): `python -m pytest -q -o addopts='' -m windows_integration tests/integration/windows/test_named_mutex.py::test_named_mutex_timeout_recovery_matrix`
 - Expected (9.B): `0`
 
 **Atomic review focus:**
@@ -3483,7 +3607,7 @@ def test_second_process_cannot_acquire_same_workspace_mutex(
 - [ ] **Step 10: Run 9.B RED.** Run `python -m pytest -q -o addopts='' -m windows_integration tests/integration/windows/test_named_mutex.py::test_second_process_cannot_acquire_same_workspace_mutex`. Expected: FAIL for “import failure because the production named-mutex adapter does not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 11: Implement 9.B GREEN-1.** Derive one stable named mutex from `WorkspaceIdentityV1` and return an explicit lease that owns the acquired handle until release.
 - [ ] **Step 12: Implement 9.B GREEN-2.** Guarantee same-workspace cross-process exclusion while preserving different-workspace independence, bounded timeout, explicit release, and crashed-child cleanup.
-- [ ] **Step 13: Implement 9.B GREEN-3.** Make `test_second_process_cannot_acquire_same_workspace_mutex` GREEN with the smallest two-process contention path before completing timeout/recovery cases.
+- [ ] **Step 13: Implement 9.B GREEN-3.** Make `test_second_process_cannot_acquire_same_workspace_mutex` GREEN with the smallest two-process contention path; then make `test_named_mutex_timeout_recovery_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 14: Implement 9.B GREEN-4.** Own mutex naming, handle lifetime, timeout, lease, and release only. Git, object/path inspection, persistence, and workspace mutation remain out of scope.
 - [ ] **Step 15: Run 9.B Target GREEN.** Re-run `python -m pytest -q -o addopts='' -m windows_integration tests/integration/windows/test_named_mutex.py::test_second_process_cannot_acquire_same_workspace_mutex`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 16: Run 9.B Domain.** Run `python -m pytest -q -o addopts='' -m windows_integration tests/integration/windows/test_named_mutex.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -3499,7 +3623,7 @@ Owned files: - Create: src/vespercode/workspace/git_preflight.py - Test: tests/u
 Interface: Produces `run_git_snapshot_prechecks(identity: WorkspaceIdentityV1, reference: ReferenceProfileManifestV1) -> GitPreflightResultV1`.
 GREEN-1: Invoke Git without a shell under closed configuration/environment and seal config, index, HEAD, worktree, ignore, attribute, and conversion observations before Snapshot creation.
 GREEN-2: Reject skip-worktree, alias, conversion, forbidden config/index/worktree, and identity drift states deterministically before any Snapshot or repository write.
-GREEN-3: Make `test_tracked_file_with_skip_worktree_is_rejected_before_snapshot` GREEN with the smallest index-flag rejection before completing Windows adapter parity.
+GREEN-3: Make `test_tracked_file_with_skip_worktree_is_rejected_before_snapshot` GREEN with the smallest index-flag rejection; then make `test_git_preflight_windows_parity_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own sealed non-secret Git observations only. Snapshot construction, candidate inspection, lease acquisition, and repository-byte writes remain out of scope.
 Boundary: This child invokes Git without a shell under closed config/environment and returns sealed non-secret observations only. It does not create a Snapshot, inspect candidate paths, acquire a lease, or write repository bytes.
 ```
@@ -3521,6 +3645,7 @@ def test_tracked_file_with_skip_worktree_is_rejected_before_snapshot(
 **Atomic verification:**
 - Target (9.C): `python -m pytest -q tests/unit/workspace/test_git_preflight.py::test_tracked_file_with_skip_worktree_is_rejected_before_snapshot`
 - Domain (9.C): `python -m pytest -q tests/unit/workspace/test_git_preflight.py`
+- Matrix (9.C): `python -m pytest -q tests/unit/workspace/test_git_preflight.py::test_git_preflight_windows_parity_matrix`
 - Windows (9.C): `python -m pytest -q -o addopts='' -m windows_integration tests/integration/windows/test_git_preflight.py`
 - Expected (9.C): `0`
 
@@ -3532,7 +3657,7 @@ def test_tracked_file_with_skip_worktree_is_rejected_before_snapshot(
 - [ ] **Step 18: Run 9.C RED.** Run `python -m pytest -q tests/unit/workspace/test_git_preflight.py::test_tracked_file_with_skip_worktree_is_rejected_before_snapshot`. Expected: FAIL for “import failure because sealed Git preflight does not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 19: Implement 9.C GREEN-1.** Invoke Git without a shell under closed configuration/environment and seal config, index, HEAD, worktree, ignore, attribute, and conversion observations before Snapshot creation.
 - [ ] **Step 20: Implement 9.C GREEN-2.** Reject skip-worktree, alias, conversion, forbidden config/index/worktree, and identity drift states deterministically before any Snapshot or repository write.
-- [ ] **Step 21: Implement 9.C GREEN-3.** Make `test_tracked_file_with_skip_worktree_is_rejected_before_snapshot` GREEN with the smallest index-flag rejection before completing Windows adapter parity.
+- [ ] **Step 21: Implement 9.C GREEN-3.** Make `test_tracked_file_with_skip_worktree_is_rejected_before_snapshot` GREEN with the smallest index-flag rejection; then make `test_git_preflight_windows_parity_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 22: Implement 9.C GREEN-4.** Own sealed non-secret Git observations only. Snapshot construction, candidate inspection, lease acquisition, and repository-byte writes remain out of scope.
 - [ ] **Step 23: Run 9.C Target GREEN.** Re-run `python -m pytest -q tests/unit/workspace/test_git_preflight.py::test_tracked_file_with_skip_worktree_is_rejected_before_snapshot`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 24: Run 9.C Domain.** Run `python -m pytest -q tests/unit/workspace/test_git_preflight.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -3548,7 +3673,7 @@ Owned files: - Create: src/vespercode/workspace/path_guard.py - Test: tests/unit
 Interface: Produces `PathGuard.authorize_existing(root: WorkspaceIdentityV1, path: CanonicalRelativePathV1, expected_kind: WorkspaceObjectKindV1) -> AuthorizedObjectHandleV1` and `PathGuard.authorize_create(root: WorkspaceIdentityV1, path: CanonicalRelativePathV1) -> AuthorizedParentHandleV1`.
 GREEN-1: Combine canonical lexical paths, handle-derived final-object/root ancestry, sealed Git/ignore facts, sensitive-path rules, and frozen editable policy into authorized existing/create handles.
 GREEN-2: Fail closed on alias, case collision, reparse, ADS, link, wrong kind, root escape, sensitive path, noneditable operation, or unproved create parent; never fall back to strings.
-GREEN-3: Make `test_create_rejects_case_alias_of_existing_path` GREEN with the smallest create-alias rejection before completing existing/create authorization cases.
+GREEN-3: Make `test_create_rejects_case_alias_of_existing_path` GREEN with the smallest create-alias rejection; then make `test_path_authorization_existing_create_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own authorization facts and handles only. Workspace mutation, patch parsing, policy widening, and string-only authorization remain out of scope.
 Boundary: This child combines Task 4.D lexical paths with Task 9.A observations and frozen Git/ignore facts; it cannot fall back to string authorization, mutate the workspace, parse patches, or widen editable policy.
 ```
@@ -3567,6 +3692,7 @@ def test_create_rejects_case_alias_of_existing_path(path_guard: PathGuard) -> No
 **Atomic verification:**
 - Target (9.D): `python -m pytest -q tests/unit/workspace/test_path_guard.py::test_create_rejects_case_alias_of_existing_path`
 - Domain (9.D): `python -m pytest -q tests/unit/workspace/test_path_guard.py`
+- Matrix (9.D): `python -m pytest -q tests/unit/workspace/test_path_guard.py::test_path_authorization_existing_create_matrix`
 - Expected (9.D): `0`
 
 **Atomic review focus:**
@@ -3577,7 +3703,7 @@ def test_create_rejects_case_alias_of_existing_path(path_guard: PathGuard) -> No
 - [ ] **Step 26: Run 9.D RED.** Run `python -m pytest -q tests/unit/workspace/test_path_guard.py::test_create_rejects_case_alias_of_existing_path`. Expected: FAIL for “import failure because `PathGuard` does not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 27: Implement 9.D GREEN-1.** Combine canonical lexical paths, handle-derived final-object/root ancestry, sealed Git/ignore facts, sensitive-path rules, and frozen editable policy into authorized existing/create handles.
 - [ ] **Step 28: Implement 9.D GREEN-2.** Fail closed on alias, case collision, reparse, ADS, link, wrong kind, root escape, sensitive path, noneditable operation, or unproved create parent; never fall back to strings.
-- [ ] **Step 29: Implement 9.D GREEN-3.** Make `test_create_rejects_case_alias_of_existing_path` GREEN with the smallest create-alias rejection before completing existing/create authorization cases.
+- [ ] **Step 29: Implement 9.D GREEN-3.** Make `test_create_rejects_case_alias_of_existing_path` GREEN with the smallest create-alias rejection; then make `test_path_authorization_existing_create_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 30: Implement 9.D GREEN-4.** Own authorization facts and handles only. Workspace mutation, patch parsing, policy widening, and string-only authorization remain out of scope.
 - [ ] **Step 31: Run 9.D Target GREEN.** Re-run `python -m pytest -q tests/unit/workspace/test_path_guard.py::test_create_rejects_case_alias_of_existing_path`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 32: Run 9.D Domain.** Run `python -m pytest -q tests/unit/workspace/test_path_guard.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -3634,7 +3760,7 @@ Owned files: - Create: src/vespercode/trees/text_classifier.py - Test: tests/uni
 Interface: Produces `TextMetadataV1(encoding: Literal["UTF8","UTF8_BOM"], newline: Literal["LF","CRLF"], final_newline: Literal[True])`, `TextFileClassificationV1 = SupportedTextFileV1 | NonTextFileV1`, and pure `classify_supported_text(raw_bytes: bytes) -> TextFileClassificationV1`.
 GREEN-1: Classify raw bytes through one pure shared UTF-8/UTF-8-BOM, LF/CRLF, and required-final-newline contract without changing bytes.
 GREEN-2: Return a valid non-text classification for invalid encoding, binary data, mixed newlines, missing final newline, or other unsupported combinations rather than normalizing them.
-GREEN-3: Make `test_mixed_newlines_are_non_text` GREEN with the smallest mixed-newline classification before completing the byte matrix.
+GREEN-3: Make `test_mixed_newlines_are_non_text` GREEN with the smallest mixed-newline classification; then make `test_text_byte_classification_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own pure byte classification only. Content storage, tree construction, normalization, and filesystem path reads remain out of scope.
 Boundary: Own pure byte classification only. Do not store content, build trees, normalize bytes, or read filesystem paths.
 ```
@@ -3651,6 +3777,7 @@ def test_mixed_newlines_are_non_text() -> None:
 **Atomic verification:**
 - Target (10.B): `python -m pytest -q tests/unit/trees/test_text_classifier.py::test_mixed_newlines_are_non_text`
 - Domain (10.B): `python -m pytest -q tests/unit/trees/test_text_classifier.py`
+- Matrix (10.B): `python -m pytest -q tests/unit/trees/test_text_classifier.py::test_text_byte_classification_matrix`
 - Expected (10.B): UTF-8/BOM/LF/CRLF/final-newline cases classify exactly and invalid/binary/mixed cases remain valid non-text entries.
 
 **Atomic review focus:**
@@ -3661,7 +3788,7 @@ def test_mixed_newlines_are_non_text() -> None:
 - [ ] **Step 2: Run 10.B RED.** Run `python -m pytest -q tests/unit/trees/test_text_classifier.py::test_mixed_newlines_are_non_text`. Expected: FAIL for “the shared byte classifier does not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 3: Implement 10.B GREEN-1.** Classify raw bytes through one pure shared UTF-8/UTF-8-BOM, LF/CRLF, and required-final-newline contract without changing bytes.
 - [ ] **Step 4: Implement 10.B GREEN-2.** Return a valid non-text classification for invalid encoding, binary data, mixed newlines, missing final newline, or other unsupported combinations rather than normalizing them.
-- [ ] **Step 5: Implement 10.B GREEN-3.** Make `test_mixed_newlines_are_non_text` GREEN with the smallest mixed-newline classification before completing the byte matrix.
+- [ ] **Step 5: Implement 10.B GREEN-3.** Make `test_mixed_newlines_are_non_text` GREEN with the smallest mixed-newline classification; then make `test_text_byte_classification_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 6: Implement 10.B GREEN-4.** Own pure byte classification only. Content storage, tree construction, normalization, and filesystem path reads remain out of scope.
 - [ ] **Step 7: Run 10.B Target GREEN.** Re-run `python -m pytest -q tests/unit/trees/test_text_classifier.py::test_mixed_newlines_are_non_text`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 8: Run 10.B Domain.** Run `python -m pytest -q tests/unit/trees/test_text_classifier.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -3722,7 +3849,7 @@ Owned files: - Create: src/vespercode/trees/content_store.py - Test: tests/unit/
 Interface: Produces `ContentObjectRefV1(sha256: str, byte_count: int)`, `ContentObjectStore.put(raw_bytes: bytes) -> ContentObjectRefV1`, and `ContentObjectStore.get(ref: ContentObjectRefV1) -> bytes`.
 GREEN-1: Store exact raw bytes under verified SHA-256 identity and return immutable `ContentObjectRefV1` values with matching byte counts.
 GREEN-2: On every get, recheck digest and size before returning bytes; deduplicate identical content and fail closed on corruption, drift, or missing objects.
-GREEN-3: Make `test_get_rejects_bytes_whose_digest_drifted` GREEN with the smallest corrupted-object read before completing put/get/dedup cases.
+GREEN-3: Make `test_get_rejects_bytes_whose_digest_drifted` GREEN with the smallest corrupted-object read; then make `test_content_store_put_get_dedup_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own content-addressed bytes only. Text classification, Snapshot construction, mutable workspace reads, and edit authorization remain out of scope.
 Boundary: Own content-addressed bytes only. Do not classify text, construct Snapshots, read mutable workspace paths, or authorize edits.
 ```
@@ -3742,6 +3869,7 @@ def test_get_rejects_bytes_whose_digest_drifted(store: ContentObjectStore) -> No
 **Atomic verification:**
 - Target (10.A): `python -m pytest -q tests/unit/trees/test_content_store.py::test_get_rejects_bytes_whose_digest_drifted`
 - Domain (10.A): `python -m pytest -q tests/unit/trees/test_content_store.py`
+- Matrix (10.A): `python -m pytest -q tests/unit/trees/test_content_store.py::test_content_store_put_get_dedup_matrix`
 - Expected (10.A): put/get/dedup/integrity cases pass and corruption fails closed.
 
 **Atomic review focus:**
@@ -3752,7 +3880,7 @@ def test_get_rejects_bytes_whose_digest_drifted(store: ContentObjectStore) -> No
 - [ ] **Step 2: Run 10.A RED.** Run `python -m pytest -q tests/unit/trees/test_content_store.py::test_get_rejects_bytes_whose_digest_drifted`. Expected: FAIL for “the digest-verifying immutable content store does not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 3: Implement 10.A GREEN-1.** Store exact raw bytes under verified SHA-256 identity and return immutable `ContentObjectRefV1` values with matching byte counts.
 - [ ] **Step 4: Implement 10.A GREEN-2.** On every get, recheck digest and size before returning bytes; deduplicate identical content and fail closed on corruption, drift, or missing objects.
-- [ ] **Step 5: Implement 10.A GREEN-3.** Make `test_get_rejects_bytes_whose_digest_drifted` GREEN with the smallest corrupted-object read before completing put/get/dedup cases.
+- [ ] **Step 5: Implement 10.A GREEN-3.** Make `test_get_rejects_bytes_whose_digest_drifted` GREEN with the smallest corrupted-object read; then make `test_content_store_put_get_dedup_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 6: Implement 10.A GREEN-4.** Own content-addressed bytes only. Text classification, Snapshot construction, mutable workspace reads, and edit authorization remain out of scope.
 - [ ] **Step 7: Run 10.A Target GREEN.** Re-run `python -m pytest -q tests/unit/trees/test_content_store.py::test_get_rejects_bytes_whose_digest_drifted`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 8: Run 10.A Domain.** Run `python -m pytest -q tests/unit/trees/test_content_store.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -3768,7 +3896,7 @@ Owned files: - Create: src/vespercode/trees/snapshot.py - Test: tests/unit/trees
 Interface: Produces `SnapshotTreeV1`, `SnapshotIntegrityResultV1`, `create_snapshot(preflight: AcceptedGitPreflightV1, store: ContentObjectStore, classifier: SupportedTextClassifierV1) -> SnapshotTreeV1`, and `verify_snapshot(snapshot: SnapshotTreeV1, store: ContentObjectStore) -> SnapshotIntegrityResultV1`.
 GREEN-1: Construct the Run’s sole `SnapshotTreeV1` only from accepted sealed Git-preflight bytes/object identities using the Task 10.A store and Task 10.B classifier.
 GREEN-2: Bind deterministic entry order, content refs, object identity, text metadata, policy facts, and root digest; every size/order/content/object/policy drift fails integrity verification.
-GREEN-3: Make `test_snapshot_rejects_preflight_object_identity_drift` GREEN with the smallest sealed-identity mismatch before completing Snapshot integrity cases.
+GREEN-3: Make `test_snapshot_rejects_preflight_object_identity_drift` GREEN with the smallest sealed-identity mismatch; then make `test_snapshot_integrity_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own Snapshot entry construction, root digest, and verification only. Mutable repository paths are never reread and content/classification rules are not redefined.
 Boundary: Own Snapshot entry construction/root digest/verification only. Never reread mutable repository paths or redefine content/classification rules.
 ```
@@ -3786,6 +3914,7 @@ def test_snapshot_rejects_preflight_object_identity_drift() -> None:
 **Atomic verification:**
 - Target (10.C): `python -m pytest -q -o addopts='' -m windows_integration tests/integration/windows/test_snapshot_from_preflight.py::test_snapshot_rejects_preflight_object_identity_drift`
 - Domain (10.C): `python -m pytest -q -o addopts='' -m windows_integration tests/integration/windows/test_snapshot_from_preflight.py`
+- Matrix (10.C): `python -m pytest -q -o addopts='' -m windows_integration tests/integration/windows/test_snapshot_from_preflight.py::test_snapshot_integrity_matrix`
 - Expected (10.C): exact sealed preflight builds one verified deterministic Snapshot and every size/order/content/object/policy drift rejects.
 
 **Atomic review focus:**
@@ -3796,7 +3925,7 @@ def test_snapshot_rejects_preflight_object_identity_drift() -> None:
 - [ ] **Step 10: Run 10.C RED.** Run `python -m pytest -q -o addopts='' -m windows_integration tests/integration/windows/test_snapshot_from_preflight.py::test_snapshot_rejects_preflight_object_identity_drift`. Expected: FAIL for “no single-Snapshot constructor binds sealed bytes/object identities”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 11: Implement 10.C GREEN-1.** Construct the Run’s sole `SnapshotTreeV1` only from accepted sealed Git-preflight bytes/object identities using the Task 10.A store and Task 10.B classifier.
 - [ ] **Step 12: Implement 10.C GREEN-2.** Bind deterministic entry order, content refs, object identity, text metadata, policy facts, and root digest; every size/order/content/object/policy drift fails integrity verification.
-- [ ] **Step 13: Implement 10.C GREEN-3.** Make `test_snapshot_rejects_preflight_object_identity_drift` GREEN with the smallest sealed-identity mismatch before completing Snapshot integrity cases.
+- [ ] **Step 13: Implement 10.C GREEN-3.** Make `test_snapshot_rejects_preflight_object_identity_drift` GREEN with the smallest sealed-identity mismatch; then make `test_snapshot_integrity_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 14: Implement 10.C GREEN-4.** Own Snapshot entry construction, root digest, and verification only. Mutable repository paths are never reread and content/classification rules are not redefined.
 - [ ] **Step 15: Run 10.C Target GREEN.** Re-run `python -m pytest -q -o addopts='' -m windows_integration tests/integration/windows/test_snapshot_from_preflight.py::test_snapshot_rejects_preflight_object_identity_drift`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 16: Run 10.C Domain.** Run `python -m pytest -q -o addopts='' -m windows_integration tests/integration/windows/test_snapshot_from_preflight.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -3861,7 +3990,7 @@ Owned files: - Create: src/vespercode/tools/file_actions.py - Create: src/vesper
 Interface: Produces `FileToolActionV1 = ListFilesActionV1 | ReadFileActionV1 | SearchTextActionV1`, `FileToolResultV1 = ListFilesResultV1 | ReadFileResultV1 | SearchTextResultV1`, `ReadFileActionV1`, `ReadFileResultV1`, and `read_file(tree: SnapshotTreeV1 | CandidateTreeV1, action: ReadFileActionV1) -> ReadFileResultV1`.
 GREEN-1: Define the closed common file action/result unions and implement `read_file` over only the bound SnapshotTree or CandidateTree object.
 GREEN-2: Validate supported-text classification, line/byte bounds, BOM/newline metadata, and artifact truncation so mutable workspace state and arbitrary paths cannot affect results.
-GREEN-3: Make `test_read_uses_only_bound_snapshot_bytes` GREEN with the smallest workspace-drift scenario before completing read bounds and schema cases.
+GREEN-3: Make `test_read_uses_only_bound_snapshot_bytes` GREEN with the smallest workspace-drift scenario; then make `test_read_file_bounds_schema_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own bounded immutable-tree reads and contracts only. Filesystem access, cursors, policy, shell, arbitrary path dispatch, and tool dispatch remain out of scope.
 Boundary: Read validates the classified Snapshot object, line/byte bounds, BOM/newline metadata, and artifact truncation. It performs no filesystem, cursor, policy, or dispatch operation.
 ```
@@ -3883,6 +4012,7 @@ def test_read_uses_only_bound_snapshot_bytes(
 **Atomic verification:**
 - Target (11.A): `python -m pytest -q tests/unit/tools/test_read_file.py::test_read_uses_only_bound_snapshot_bytes`
 - Domain (11.A): `python -m pytest -q tests/unit/tools/test_file_actions.py tests/unit/tools/test_read_file.py`
+- Matrix (11.A): `python -m pytest -q tests/unit/tools/test_read_file.py::test_read_file_bounds_schema_matrix`
 - Expected (11.A): closed schemas reject unknown fields and Read never observes mutable workspace state.
 
 **Atomic review focus:**
@@ -3893,7 +4023,7 @@ def test_read_uses_only_bound_snapshot_bytes(
 - [ ] **Step 2: Run 11.A RED.** Run `python -m pytest -q tests/unit/tools/test_read_file.py::test_read_uses_only_bound_snapshot_bytes`. Expected: FAIL for “the exact assertion fails because the task-owned bounded immutable-tree read behavior does not exist. Record the task-owned failing assertion and exit code; collection, import, runner, environment startup, or unrelated failure does not count as RED”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 3: Implement 11.A GREEN-1.** Define the closed common file action/result unions and implement `read_file` over only the bound SnapshotTree or CandidateTree object.
 - [ ] **Step 4: Implement 11.A GREEN-2.** Validate supported-text classification, line/byte bounds, BOM/newline metadata, and artifact truncation so mutable workspace state and arbitrary paths cannot affect results.
-- [ ] **Step 5: Implement 11.A GREEN-3.** Make `test_read_uses_only_bound_snapshot_bytes` GREEN with the smallest workspace-drift scenario before completing read bounds and schema cases.
+- [ ] **Step 5: Implement 11.A GREEN-3.** Make `test_read_uses_only_bound_snapshot_bytes` GREEN with the smallest workspace-drift scenario; then make `test_read_file_bounds_schema_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 6: Implement 11.A GREEN-4.** Own bounded immutable-tree reads and contracts only. Filesystem access, cursors, policy, shell, arbitrary path dispatch, and tool dispatch remain out of scope.
 - [ ] **Step 7: Run 11.A Target GREEN.** Re-run `python -m pytest -q tests/unit/tools/test_read_file.py::test_read_uses_only_bound_snapshot_bytes`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 8: Run 11.A Domain.** Run `python -m pytest -q tests/unit/tools/test_file_actions.py tests/unit/tools/test_read_file.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -3909,7 +4039,7 @@ Owned files: - Create: src/vespercode/tools/list_files.py - Create: src/vesperco
 Interface: Produces `list_files(tree: SnapshotTreeV1 | CandidateTreeV1, action: ListFilesActionV1) -> ListFilesResultV1` and `search_text(tree: SnapshotTreeV1 | CandidateTreeV1, action: SearchTextActionV1) -> SearchTextResultV1`; uses separate List/Search cursor types binding visible-tree digest, cursor-free query digest, next scan position, and cursor self-digest.
 GREEN-1: Implement pure immutable-tree List and Search with stable sorting and distinct canonical cursor types for the two query families.
 GREEN-2: Bind each cursor to visible-tree digest, cursor-free query digest, next scan position, and self-digest; invalid or stale continuations return zero rows and artifacts.
-GREEN-3: Make `test_paged_discovery_equals_unpaged_without_duplicates` GREEN with the smallest multi-page traversal before completing tamper/tree-drift cases.
+GREEN-3: Make `test_paged_discovery_equals_unpaged_without_duplicates` GREEN with the smallest multi-page traversal; then make `test_list_search_cursor_integrity_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own stable discovery and continuation only. Filesystem access, arbitrary paths, shell execution, policy mutation, and cross-tool cursor reuse remain out of scope.
 Boundary: Stable sorting and continuation are pure immutable-tree operations. `CONTINUATION_INVALID` and `CONTINUATION_STALE` return zero partial rows or artifacts.
 ```
@@ -3929,6 +4059,7 @@ def test_paged_discovery_equals_unpaged_without_duplicates(
 **Atomic verification:**
 - Target (11.B): `python -m pytest -q tests/unit/tools/test_list_files.py::test_paged_discovery_equals_unpaged_without_duplicates`
 - Domain (11.B): `python -m pytest -q tests/unit/tools/test_list_files.py tests/unit/tools/test_search_text.py`
+- Matrix (11.B): `python -m pytest -q tests/unit/tools/test_list_files.py::test_list_search_cursor_integrity_matrix`
 - Expected (11.B): paged/unpaged equality, stable ordering, non-text accounting, and tampered/stale zero-payload failures all pass.
 
 **Atomic review focus:**
@@ -3939,7 +4070,7 @@ def test_paged_discovery_equals_unpaged_without_duplicates(
 - [ ] **Step 10: Run 11.B RED.** Run `python -m pytest -q tests/unit/tools/test_list_files.py::test_paged_discovery_equals_unpaged_without_duplicates`. Expected: FAIL for “the exact assertion fails because the task-owned stable paged List/Search behavior does not exist. Record the task-owned failing assertion and exit code; collection, import, runner, environment startup, or unrelated failure does not count as RED”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 11: Implement 11.B GREEN-1.** Implement pure immutable-tree List and Search with stable sorting and distinct canonical cursor types for the two query families.
 - [ ] **Step 12: Implement 11.B GREEN-2.** Bind each cursor to visible-tree digest, cursor-free query digest, next scan position, and self-digest; invalid or stale continuations return zero rows and artifacts.
-- [ ] **Step 13: Implement 11.B GREEN-3.** Make `test_paged_discovery_equals_unpaged_without_duplicates` GREEN with the smallest multi-page traversal before completing tamper/tree-drift cases.
+- [ ] **Step 13: Implement 11.B GREEN-3.** Make `test_paged_discovery_equals_unpaged_without_duplicates` GREEN with the smallest multi-page traversal; then make `test_list_search_cursor_integrity_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 14: Implement 11.B GREEN-4.** Own stable discovery and continuation only. Filesystem access, arbitrary paths, shell execution, policy mutation, and cross-tool cursor reuse remain out of scope.
 - [ ] **Step 15: Run 11.B Target GREEN.** Re-run `python -m pytest -q tests/unit/tools/test_list_files.py::test_paged_discovery_equals_unpaged_without_duplicates`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 16: Run 11.B Domain.** Run `python -m pytest -q tests/unit/tools/test_list_files.py tests/unit/tools/test_search_text.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -4007,7 +4138,7 @@ Owned files: - Create: src/vespercode/candidate/unified_diff.py - Test: tests/un
 Interface: Produces `parse_unified_diff_v1(patch_text: str) -> ParsedPatchV1 | PatchParseFailureV1`.
 GREEN-1: Parse the complete no-BOM UTF-8/LF `UNIFIED_DIFF_V1` grammar into one closed parsed patch or one closed parse failure.
 GREEN-2: Validate complete headers, ranges, hunks, entry uniqueness, and full input consumption; delete, rename, mode, binary, timestamp, no-newline, malformed, or trailing forms reject.
-GREEN-3: Make `test_trailing_unparsed_patch_bytes_are_rejected` GREEN with the smallest trailing-byte rejection before completing CREATE/REPLACE grammar cases.
+GREEN-3: Make `test_trailing_unparsed_patch_bytes_are_rejected` GREEN with the smallest trailing-byte rejection; then make `test_unified_diff_grammar_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own syntax validation only. Tree reads, old-byte matching, edit application, candidate limits, path authorization, and revision publication remain out of scope.
 Boundary: This child validates only complete headers, ranges, hunks, entry uniqueness, and prohibited diff forms. It does not read a tree, match old bytes, apply edits, enforce candidate limits, or publish a revision.
 ```
@@ -4026,6 +4157,7 @@ def test_trailing_unparsed_patch_bytes_are_rejected() -> None:
 **Atomic verification:**
 - Target (12.A): `python -m pytest -q tests/unit/candidate/test_unified_diff.py::test_trailing_unparsed_patch_bytes_are_rejected`
 - Domain (12.A): `python -m pytest -q tests/unit/candidate/test_unified_diff.py`
+- Matrix (12.A): `python -m pytest -q tests/unit/candidate/test_unified_diff.py::test_unified_diff_grammar_matrix`
 - Expected (12.A): `0`
 
 **Atomic review focus:**
@@ -4036,7 +4168,7 @@ def test_trailing_unparsed_patch_bytes_are_rejected() -> None:
 - [ ] **Step 2: Run 12.A RED.** Run `python -m pytest -q tests/unit/candidate/test_unified_diff.py::test_trailing_unparsed_patch_bytes_are_rejected`. Expected: FAIL for “import failure because the strict parser does not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 3: Implement 12.A GREEN-1.** Parse the complete no-BOM UTF-8/LF `UNIFIED_DIFF_V1` grammar into one closed parsed patch or one closed parse failure.
 - [ ] **Step 4: Implement 12.A GREEN-2.** Validate complete headers, ranges, hunks, entry uniqueness, and full input consumption; delete, rename, mode, binary, timestamp, no-newline, malformed, or trailing forms reject.
-- [ ] **Step 5: Implement 12.A GREEN-3.** Make `test_trailing_unparsed_patch_bytes_are_rejected` GREEN with the smallest trailing-byte rejection before completing CREATE/REPLACE grammar cases.
+- [ ] **Step 5: Implement 12.A GREEN-3.** Make `test_trailing_unparsed_patch_bytes_are_rejected` GREEN with the smallest trailing-byte rejection; then make `test_unified_diff_grammar_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 6: Implement 12.A GREEN-4.** Own syntax validation only. Tree reads, old-byte matching, edit application, candidate limits, path authorization, and revision publication remain out of scope.
 - [ ] **Step 7: Run 12.A Target GREEN.** Re-run `python -m pytest -q tests/unit/candidate/test_unified_diff.py::test_trailing_unparsed_patch_bytes_are_rejected`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 8: Run 12.A Domain.** Run `python -m pytest -q tests/unit/candidate/test_unified_diff.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -4052,7 +4184,7 @@ Owned files: - Create: src/vespercode/trees/candidate.py - Test: tests/unit/tree
 Interface: Produces `CandidatePostimageSequenceV1`, an immutable ordered tuple of zero or more `CandidatePostimageV1` items, plus `CandidateTreeV1`, `CandidateRevisionV1`, and `derive_candidate_revision(parent: CandidateRevisionV1, postimages: CandidatePostimageSequenceV1) -> CandidateRevisionV1`.
 GREEN-1: Derive a child `CandidateRevisionV1` from complete staged postimages using content-store references while leaving the parent revision and tree unchanged.
 GREEN-2: Provide immutable overlay lookup, deterministic path ordering/tree digest, parent independence, and fail-closed handling for missing or drifted content references.
-GREEN-3: Make `test_child_revision_does_not_mutate_parent` GREEN with the smallest replace overlay before completing CREATE/order/integrity cases.
+GREEN-3: Make `test_child_revision_does_not_mutate_parent` GREEN with the smallest replace overlay; then make `test_candidate_overlay_integrity_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own overlay derivation and content-addressed tree identity only. Patch parsing, path authorization, transactional publication, FinalDiff, and policy decisions remain out of scope.
 Boundary: This child owns immutable overlay lookup, sorted tree digest, parent independence, and content-store references only. It does not parse patches, authorize paths, publish through a transaction, compute FinalDiff, or decide policy.
 ```
@@ -4071,6 +4203,7 @@ def test_child_revision_does_not_mutate_parent(parent_revision: CandidateRevisio
 **Atomic verification:**
 - Target (12.B): `python -m pytest -q tests/unit/trees/test_candidate.py::test_child_revision_does_not_mutate_parent`
 - Domain (12.B): `python -m pytest -q tests/unit/trees/test_candidate.py`
+- Matrix (12.B): `python -m pytest -q tests/unit/trees/test_candidate.py::test_candidate_overlay_integrity_matrix`
 - Expected (12.B): `0`
 
 **Atomic review focus:**
@@ -4081,7 +4214,7 @@ def test_child_revision_does_not_mutate_parent(parent_revision: CandidateRevisio
 - [ ] **Step 10: Run 12.B RED.** Run `python -m pytest -q tests/unit/trees/test_candidate.py::test_child_revision_does_not_mutate_parent`. Expected: FAIL for “import failure because immutable candidate revisions do not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 11: Implement 12.B GREEN-1.** Derive a child `CandidateRevisionV1` from complete staged postimages using content-store references while leaving the parent revision and tree unchanged.
 - [ ] **Step 12: Implement 12.B GREEN-2.** Provide immutable overlay lookup, deterministic path ordering/tree digest, parent independence, and fail-closed handling for missing or drifted content references.
-- [ ] **Step 13: Implement 12.B GREEN-3.** Make `test_child_revision_does_not_mutate_parent` GREEN with the smallest replace overlay before completing CREATE/order/integrity cases.
+- [ ] **Step 13: Implement 12.B GREEN-3.** Make `test_child_revision_does_not_mutate_parent` GREEN with the smallest replace overlay; then make `test_candidate_overlay_integrity_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 14: Implement 12.B GREEN-4.** Own overlay derivation and content-addressed tree identity only. Patch parsing, path authorization, transactional publication, FinalDiff, and policy decisions remain out of scope.
 - [ ] **Step 15: Run 12.B Target GREEN.** Re-run `python -m pytest -q tests/unit/trees/test_candidate.py::test_child_revision_does_not_mutate_parent`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 16: Run 12.B Domain.** Run `python -m pytest -q tests/unit/trees/test_candidate.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -4097,7 +4230,7 @@ Owned files: - Create: src/vespercode/candidate/patch_engine.py - Test: tests/un
 Interface: Produces `ApplyCandidatePatchAction` and `apply_candidate_patch(action: ApplyCandidatePatchAction, current: CandidateRevisionV1, context: CandidatePatchContextV1) -> CandidatePatchOutcomeV1`.
 GREEN-1: Consume the Task 12.A parse result, Task 12.B staging, Task 9.D authorization, frozen policy, and named base candidate to validate one complete patch.
 GREEN-2: Require exact base digest and hunk matches, editable paths, text preservation, limits, and collision checks before publishing; any mixed legal/illegal entry yields zero revision side effects.
-GREEN-3: Make `test_mixed_legal_and_noneditable_patch_has_no_candidate_side_effect` GREEN with the smallest all-or-nothing rejection before completing priority and limit cases.
+GREEN-3: Make `test_mixed_legal_and_noneditable_patch_has_no_candidate_side_effect` GREEN with the smallest all-or-nothing rejection; then make `test_patch_atomicity_priority_limit_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own whole-patch validation and one atomic candidate publication only. FinalDiff construction, candidate semantic identity, deletion, rename, mode, and binary support remain out of scope.
 Boundary: This child consumes Task 12.A parsing, Task 12.B staging, Task 9.D authorization, and the frozen policy; it performs exact hunk matching and whole-patch validation only. FinalDiff construction and semantic identity belong to Task 12.D.
 ```
@@ -4119,6 +4252,7 @@ def test_mixed_legal_and_noneditable_patch_has_no_candidate_side_effect(
 **Atomic verification:**
 - Target (12.C): `python -m pytest -q tests/unit/candidate/test_patch_engine.py::test_mixed_legal_and_noneditable_patch_has_no_candidate_side_effect`
 - Domain (12.C): `python -m pytest -q tests/unit/candidate/test_patch_engine.py`
+- Matrix (12.C): `python -m pytest -q tests/unit/candidate/test_patch_engine.py::test_patch_atomicity_priority_limit_matrix`
 - Expected (12.C): `0`
 
 **Atomic review focus:**
@@ -4129,7 +4263,7 @@ def test_mixed_legal_and_noneditable_patch_has_no_candidate_side_effect(
 - [ ] **Step 18: Run 12.C RED.** Run `python -m pytest -q tests/unit/candidate/test_patch_engine.py::test_mixed_legal_and_noneditable_patch_has_no_candidate_side_effect`. Expected: FAIL for “import failure because the atomic patch engine does not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 19: Implement 12.C GREEN-1.** Consume the Task 12.A parse result, Task 12.B staging, Task 9.D authorization, frozen policy, and named base candidate to validate one complete patch.
 - [ ] **Step 20: Implement 12.C GREEN-2.** Require exact base digest and hunk matches, editable paths, text preservation, limits, and collision checks before publishing; any mixed legal/illegal entry yields zero revision side effects.
-- [ ] **Step 21: Implement 12.C GREEN-3.** Make `test_mixed_legal_and_noneditable_patch_has_no_candidate_side_effect` GREEN with the smallest all-or-nothing rejection before completing priority and limit cases.
+- [ ] **Step 21: Implement 12.C GREEN-3.** Make `test_mixed_legal_and_noneditable_patch_has_no_candidate_side_effect` GREEN with the smallest all-or-nothing rejection; then make `test_patch_atomicity_priority_limit_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 22: Implement 12.C GREEN-4.** Own whole-patch validation and one atomic candidate publication only. FinalDiff construction, candidate semantic identity, deletion, rename, mode, and binary support remain out of scope.
 - [ ] **Step 23: Run 12.C Target GREEN.** Re-run `python -m pytest -q tests/unit/candidate/test_patch_engine.py::test_mixed_legal_and_noneditable_patch_has_no_candidate_side_effect`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 24: Run 12.C Domain.** Run `python -m pytest -q tests/unit/candidate/test_patch_engine.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -4145,7 +4279,7 @@ Owned files: - Create: src/vespercode/candidate/final_diff.py - Create: src/vesp
 Interface: Produces `FinalDiffPreimageV1`, `FinalDiffEntryV1`, `FinalDiffV1`, `recompute_final_diff(snapshot: SnapshotTreeV1, candidate: CandidateTreeV1, policy: EditablePathPolicyV1) -> FinalDiffV1`, and `build_candidate_identity(snapshot_tree_digest: str, candidate_tree_digest: str, final_diff_digest: str) -> CandidateIdentityV1`.
 GREEN-1: Recompute the complete Snapshot-to-Candidate structured CREATE/REPLACE diff, including exact preimages/postimages, byte counts, and deterministic path order.
 GREEN-2: Revalidate the sole editable policy and bind `CandidateIdentityV1` only to Snapshot tree digest, Candidate tree digest, and FinalDiff digest; revision metadata is excluded.
-GREEN-3: Make `test_candidate_identity_ignores_revision_metadata` GREEN with the smallest metadata-only variation before completing mismatch/restoration cases.
+GREEN-3: Make `test_candidate_identity_ignores_revision_metadata` GREEN with the smallest metadata-only variation; then make `test_candidate_identity_restoration_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own deterministic FinalDiff and three-root identity only. Patch application, revision publication, writeback approval, mutable workspace access, deletion, rename, and binary changes remain out of scope.
 Boundary: This child deterministically sorts/counts complete postimages, revalidates the sole policy, and hashes only the three declared roots. It cannot apply a patch, publish a revision, approve a writeback, or access the mutable workspace.
 ```
@@ -4169,6 +4303,7 @@ def test_candidate_identity_ignores_revision_metadata(
 **Atomic verification:**
 - Target (12.D): `python -m pytest -q tests/unit/candidate/test_identity.py::test_candidate_identity_ignores_revision_metadata`
 - Domain (12.D): `python -m pytest -q tests/unit/candidate/test_final_diff.py tests/unit/candidate/test_identity.py`
+- Matrix (12.D): `python -m pytest -q tests/unit/candidate/test_identity.py::test_candidate_identity_restoration_matrix`
 - Expected (12.D): `0`
 
 **Atomic review focus:**
@@ -4179,7 +4314,7 @@ def test_candidate_identity_ignores_revision_metadata(
 - [ ] **Step 26: Run 12.D RED.** Run `python -m pytest -q tests/unit/candidate/test_identity.py::test_candidate_identity_ignores_revision_metadata`. Expected: FAIL for “import failure because FinalDiff and candidate identity do not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 27: Implement 12.D GREEN-1.** Recompute the complete Snapshot-to-Candidate structured CREATE/REPLACE diff, including exact preimages/postimages, byte counts, and deterministic path order.
 - [ ] **Step 28: Implement 12.D GREEN-2.** Revalidate the sole editable policy and bind `CandidateIdentityV1` only to Snapshot tree digest, Candidate tree digest, and FinalDiff digest; revision metadata is excluded.
-- [ ] **Step 29: Implement 12.D GREEN-3.** Make `test_candidate_identity_ignores_revision_metadata` GREEN with the smallest metadata-only variation before completing mismatch/restoration cases.
+- [ ] **Step 29: Implement 12.D GREEN-3.** Make `test_candidate_identity_ignores_revision_metadata` GREEN with the smallest metadata-only variation; then make `test_candidate_identity_restoration_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 30: Implement 12.D GREEN-4.** Own deterministic FinalDiff and three-root identity only. Patch application, revision publication, writeback approval, mutable workspace access, deletion, rename, and binary changes remain out of scope.
 - [ ] **Step 31: Run 12.D Target GREEN.** Re-run `python -m pytest -q tests/unit/candidate/test_identity.py::test_candidate_identity_ignores_revision_metadata`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 32: Run 12.D Domain.** Run `python -m pytest -q tests/unit/candidate/test_final_diff.py tests/unit/candidate/test_identity.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -4349,7 +4484,7 @@ Owned files: - Create: src/vespercode/governance/writeback_subject.py - Test: te
 Interface: Produces `FinalWritebackBindingV1`, `FinalWritebackSubjectV1`, and pure `build_final_writeback_subject(binding: FinalWritebackBindingV1, expires_at: CanonicalTimestampV1) -> FinalWritebackSubjectV1`.
 GREEN-1: Build one immutable `FinalWritebackBindingV1` and subject from the exact current Run, Candidate identity/FinalDiff, policy, formal validation, and expiry facts.
 GREEN-2: Canonicalize every bound fact into subject bytes/digest so candidate, diff, policy, validation, Run, or expiry drift changes identity; user decision and mutable approval data cannot enter.
-GREEN-3: Make `test_subject_digest_changes_when_final_diff_changes` GREEN with the smallest FinalDiff identity variation before completing all bound-fact vectors.
+GREEN-3: Make `test_subject_digest_changes_when_final_diff_changes` GREEN with the smallest FinalDiff identity variation; then make `test_writeback_subject_bound_fact_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own pure subject/binding schema, bytes, and digest only. Wait creation, decision persistence, approval consumption, policy override, and workspace writes remain out of scope.
 Boundary: Own pure subject/binding schema, canonical bytes, and digest only. Do not create waits, persist decisions, consume approvals, or write the workspace.
 ```
@@ -4366,6 +4501,7 @@ def test_subject_digest_changes_when_final_diff_changes() -> None:
 **Atomic verification:**
 - Target (14.A): `python -m pytest -q tests/unit/governance/test_writeback_subject.py::test_subject_digest_changes_when_final_diff_changes`
 - Domain (14.A): `python -m pytest -q tests/unit/governance/test_writeback_subject.py`
+- Matrix (14.A): `python -m pytest -q tests/unit/governance/test_writeback_subject.py::test_writeback_subject_bound_fact_matrix`
 - Expected (14.A): every bound fact affects the digest and mutable/user-supplied decision facts cannot enter the subject.
 
 **Atomic review focus:**
@@ -4376,7 +4512,7 @@ def test_subject_digest_changes_when_final_diff_changes() -> None:
 - [ ] **Step 2: Run 14.A RED.** Run `python -m pytest -q tests/unit/governance/test_writeback_subject.py::test_subject_digest_changes_when_final_diff_changes`. Expected: FAIL for “the closed subject/binding builder does not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 3: Implement 14.A GREEN-1.** Build one immutable `FinalWritebackBindingV1` and subject from the exact current Run, Candidate identity/FinalDiff, policy, formal validation, and expiry facts.
 - [ ] **Step 4: Implement 14.A GREEN-2.** Canonicalize every bound fact into subject bytes/digest so candidate, diff, policy, validation, Run, or expiry drift changes identity; user decision and mutable approval data cannot enter.
-- [ ] **Step 5: Implement 14.A GREEN-3.** Make `test_subject_digest_changes_when_final_diff_changes` GREEN with the smallest FinalDiff identity variation before completing all bound-fact vectors.
+- [ ] **Step 5: Implement 14.A GREEN-3.** Make `test_subject_digest_changes_when_final_diff_changes` GREEN with the smallest FinalDiff identity variation; then make `test_writeback_subject_bound_fact_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 6: Implement 14.A GREEN-4.** Own pure subject/binding schema, bytes, and digest only. Wait creation, decision persistence, approval consumption, policy override, and workspace writes remain out of scope.
 - [ ] **Step 7: Run 14.A Target GREEN.** Re-run `python -m pytest -q tests/unit/governance/test_writeback_subject.py::test_subject_digest_changes_when_final_diff_changes`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 8: Run 14.A Domain.** Run `python -m pytest -q tests/unit/governance/test_writeback_subject.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -4392,7 +4528,7 @@ Owned files: - Create: src/vespercode/storage/migrations/v0010_writeback_approva
 Interface: Produces immutable `WRITEBACK_APPROVALS_V1_MIGRATION = MigrationV1(version=10, name="writeback_approvals_v1", ...)`, `DecideFinalWritebackV1`, closed `FinalWritebackDecisionResultV1`, and `FinalWritebackDecisionServiceV1.decide(command: DecideFinalWritebackV1) -> FinalWritebackDecisionResultV1`.
 GREEN-1: Own immutable v0010 approval DDL and atomically lock the exact final-writeback wait, reload its current subject, evaluate clock state, and record one closed decision result.
 GREEN-2: Create one PENDING approval only for an exact current unexpired APPROVE; REJECT, expiry, stale candidate/subject/policy identity, replay conflict, or prior DENY creates none.
-GREEN-3: Make `test_expired_wait_cannot_create_pending_approval` GREEN with the smallest expiry transaction before completing approve/reject/stale/replay cases.
+GREEN-3: Make `test_expired_wait_cannot_create_pending_approval` GREEN with the smallest expiry transaction; then make `test_writeback_decision_state_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own decision storage and idempotent event record only. Final registry edits, approval consumption, candidate-byte persistence, and any DENY override remain out of scope.
 Boundary: Own one coupled final-writeback decision storage behavior: immutable v0010 DDL, wait locking, current-subject reload, APPROVE/REJECT/expiry/stale result, and idempotent event record. Task 14.C consumes the existing approval row but owns no schema. This task cannot edit the final registry, consume an approval, or persist candidate bytes.
 ```
@@ -4412,6 +4548,7 @@ def test_expired_wait_cannot_create_pending_approval(service: FinalWritebackDeci
 - Target (14.B): `python -m pytest -q tests/unit/governance/test_writeback_decision.py::test_expired_wait_cannot_create_pending_approval`
 - Schema (14.B): `python -m pytest -q tests/unit/storage/test_writeback_approvals_migration.py::test_writeback_approval_migration_has_exact_schema`
 - Domain (14.B): `python -m pytest -q tests/unit/storage/test_writeback_approvals_migration.py tests/unit/governance/test_writeback_decision.py`
+- Matrix (14.B): `python -m pytest -q tests/unit/governance/test_writeback_decision.py::test_writeback_decision_state_matrix`
 - Expected (14.B): exact v0010 schema plus approve/reject/expire/stale/replay/conflict cases are atomic and only exact current APPROVE creates one PENDING approval.
 
 **Atomic review focus:**
@@ -4422,7 +4559,7 @@ def test_expired_wait_cannot_create_pending_approval(service: FinalWritebackDeci
 - [ ] **Step 10: Run 14.B RED.** Run `python -m pytest -q tests/unit/governance/test_writeback_decision.py::test_expired_wait_cannot_create_pending_approval`. Expected: FAIL for “no clock-owned atomic decision lifecycle exists”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 11: Implement 14.B GREEN-1.** Own immutable v0010 approval DDL and atomically lock the exact final-writeback wait, reload its current subject, evaluate clock state, and record one closed decision result.
 - [ ] **Step 12: Implement 14.B GREEN-2.** Create one PENDING approval only for an exact current unexpired APPROVE; REJECT, expiry, stale candidate/subject/policy identity, replay conflict, or prior DENY creates none.
-- [ ] **Step 13: Implement 14.B GREEN-3.** Make `test_expired_wait_cannot_create_pending_approval` GREEN with the smallest expiry transaction before completing approve/reject/stale/replay cases.
+- [ ] **Step 13: Implement 14.B GREEN-3.** Make `test_expired_wait_cannot_create_pending_approval` GREEN with the smallest expiry transaction; then make `test_writeback_decision_state_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 14: Implement 14.B GREEN-4.** Own decision storage and idempotent event record only. Final registry edits, approval consumption, candidate-byte persistence, and any DENY override remain out of scope.
 - [ ] **Step 15: Run 14.B Target GREEN.** Re-run `python -m pytest -q tests/unit/governance/test_writeback_decision.py::test_expired_wait_cannot_create_pending_approval`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 16: Run 14.B Domain.** Run `python -m pytest -q tests/unit/storage/test_writeback_approvals_migration.py tests/unit/governance/test_writeback_decision.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -4438,7 +4575,7 @@ Owned files: - Create: src/vespercode/governance/writeback_approval.py - Test: t
 Interface: Produces `ConsumeWritebackApprovalV1`, `ApprovalConsumptionResultV1`, `WritebackApprovalRepository.consume(command: ConsumeWritebackApprovalV1) -> ApprovalConsumptionResultV1`, and `verify_consumable(approval: FinalWritebackApprovalV1, command: ConsumeWritebackApprovalV1) -> None`.
 GREEN-1: Reverify one PENDING approval against the exact current writeback subject, candidate/validation/policy binding, Run, and consumption command inside one immediate transaction.
 GREEN-2: Allow exactly one concurrent matching consumer to transition the approval; expired, stale, mismatched, replayed, or already-consumed attempts produce no second success.
-GREEN-3: Make `test_concurrent_consumers_get_exactly_one_success` GREEN with the smallest two-consumer race before completing stale/expiry/mismatch cases.
+GREEN-3: Make `test_concurrent_consumers_get_exactly_one_success` GREEN with the smallest two-consumer race; then make `test_writeback_approval_consumption_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own current-binding verification and one-time consumption only. Wait decisions, subject construction, DENY override, and workspace persistence remain out of scope.
 Boundary: Own current-binding verification and one-time consumption transaction only. Do not create/decide waits, construct subjects, or write the workspace.
 ```
@@ -4456,6 +4593,7 @@ def test_concurrent_consumers_get_exactly_one_success(repository: WritebackAppro
 **Atomic verification:**
 - Target (14.C): `python -m pytest -q tests/unit/governance/test_writeback_approval_race.py::test_concurrent_consumers_get_exactly_one_success`
 - Domain (14.C): `python -m pytest -q tests/unit/governance/test_writeback_approval.py tests/unit/governance/test_writeback_approval_race.py`
+- Matrix (14.C): `python -m pytest -q tests/unit/governance/test_writeback_approval_race.py::test_writeback_approval_consumption_matrix`
 - Expected (14.C): exactly one matching consumer succeeds and stale/expired/mismatched/replayed attempts create no second consumption.
 
 **Atomic review focus:**
@@ -4466,7 +4604,7 @@ def test_concurrent_consumers_get_exactly_one_success(repository: WritebackAppro
 - [ ] **Step 18: Run 14.C RED.** Run `python -m pytest -q tests/unit/governance/test_writeback_approval_race.py::test_concurrent_consumers_get_exactly_one_success`. Expected: FAIL for “no transaction-bound consume-once repository exists”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 19: Implement 14.C GREEN-1.** Reverify one PENDING approval against the exact current writeback subject, candidate/validation/policy binding, Run, and consumption command inside one immediate transaction.
 - [ ] **Step 20: Implement 14.C GREEN-2.** Allow exactly one concurrent matching consumer to transition the approval; expired, stale, mismatched, replayed, or already-consumed attempts produce no second success.
-- [ ] **Step 21: Implement 14.C GREEN-3.** Make `test_concurrent_consumers_get_exactly_one_success` GREEN with the smallest two-consumer race before completing stale/expiry/mismatch cases.
+- [ ] **Step 21: Implement 14.C GREEN-3.** Make `test_concurrent_consumers_get_exactly_one_success` GREEN with the smallest two-consumer race; then make `test_writeback_approval_consumption_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 22: Implement 14.C GREEN-4.** Own current-binding verification and one-time consumption only. Wait decisions, subject construction, DENY override, and workspace persistence remain out of scope.
 - [ ] **Step 23: Run 14.C Target GREEN.** Re-run `python -m pytest -q tests/unit/governance/test_writeback_approval_race.py::test_concurrent_consumers_get_exactly_one_success`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 24: Run 14.C Domain.** Run `python -m pytest -q tests/unit/governance/test_writeback_approval.py tests/unit/governance/test_writeback_approval_race.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -4529,7 +4667,7 @@ Owned files: - Create: src/vespercode/governance/request_sources.py - Test: test
 Interface: Produces `RequestSourceCategoryV1`, `RequestContentSegmentV1`, `RequestMessageV1`, `RequestSourceV1`, `RequestMessageSequenceV1`, an immutable ordered tuple of one or more request messages, and `validate_segment_sources(messages: RequestMessageSequenceV1) -> SourceProjectionV1`.
 GREEN-1: Define closed request message, segment, source-category, and immutable message-sequence values with exact source path, digest, index, and byte-count identities.
 GREEN-2: Validate category-specific path rules and one-to-one segment/source projection; missing, duplicate, reordered, mismatched, or ambiguous content identities reject before mutation.
-GREEN-3: Make `test_file_segment_requires_canonical_path` GREEN with the smallest file-source path rejection before completing category/index/digest cases.
+GREEN-3: Make `test_file_segment_requires_canonical_path` GREEN with the smallest file-source path rejection; then make `test_disclosure_source_segment_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own source/category/path/index/digest/byte validation only. Grant scope matching, subject construction, wait decisions, byte charging, and request-body persistence remain out of scope.
 Boundary: Own source category/path/index/digest/byte validation only. Do not match Grant scope, build subjects, decide waits, or charge bytes.
 ```
@@ -4547,6 +4685,7 @@ def test_file_segment_requires_canonical_path() -> None:
 **Atomic verification:**
 - Target (15.A): `python -m pytest -q tests/unit/governance/test_request_sources.py::test_file_segment_requires_canonical_path`
 - Domain (15.A): `python -m pytest -q tests/unit/governance/test_request_sources.py`
+- Matrix (15.A): `python -m pytest -q tests/unit/governance/test_request_sources.py::test_disclosure_source_segment_matrix`
 - Expected (15.A): exact source/path rules and content identities pass; missing/duplicate/mismatched segments reject before mutation.
 
 **Atomic review focus:**
@@ -4557,7 +4696,7 @@ def test_file_segment_requires_canonical_path() -> None:
 - [ ] **Step 2: Run 15.A RED.** Run `python -m pytest -q tests/unit/governance/test_request_sources.py::test_file_segment_requires_canonical_path`. Expected: FAIL for “the closed source/segment validator does not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 3: Implement 15.A GREEN-1.** Define closed request message, segment, source-category, and immutable message-sequence values with exact source path, digest, index, and byte-count identities.
 - [ ] **Step 4: Implement 15.A GREEN-2.** Validate category-specific path rules and one-to-one segment/source projection; missing, duplicate, reordered, mismatched, or ambiguous content identities reject before mutation.
-- [ ] **Step 5: Implement 15.A GREEN-3.** Make `test_file_segment_requires_canonical_path` GREEN with the smallest file-source path rejection before completing category/index/digest cases.
+- [ ] **Step 5: Implement 15.A GREEN-3.** Make `test_file_segment_requires_canonical_path` GREEN with the smallest file-source path rejection; then make `test_disclosure_source_segment_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 6: Implement 15.A GREEN-4.** Own source/category/path/index/digest/byte validation only. Grant scope matching, subject construction, wait decisions, byte charging, and request-body persistence remain out of scope.
 - [ ] **Step 7: Run 15.A Target GREEN.** Re-run `python -m pytest -q tests/unit/governance/test_request_sources.py::test_file_segment_requires_canonical_path`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 8: Run 15.A Domain.** Run `python -m pytest -q tests/unit/governance/test_request_sources.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -4573,7 +4712,7 @@ Owned files: - Create: src/vespercode/governance/disclosure_scope.py - Test: tes
 Interface: Produces `DisclosureScopeSequenceV1`, an immutable canonical ordered tuple of disclosure scopes, `canonicalize_disclosure_scopes(scopes: DisclosureScopeSequenceV1) -> DisclosureScopeSequenceV1`, and pure `scope_matches(scope: DisclosurePathScopeV1, path: CanonicalRelativePathV1) -> bool`.
 GREEN-1: Canonicalize immutable ROOT/FILE/DIRECTORY disclosure scopes into one deterministic ordered sequence and match only canonical relative paths.
 GREEN-2: Apply exact segment-boundary semantics so directory string-prefix siblings, aliases, duplicates, and empty or ambiguous scope sets fail closed.
-GREEN-3: Make `test_directory_scope_does_not_match_string_prefix_sibling` GREEN with the smallest sibling-prefix false match before completing all scope variants.
+GREEN-3: Make `test_directory_scope_does_not_match_string_prefix_sibling` GREEN with the smallest sibling-prefix false match; then make `test_disclosure_scope_match_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own pure scope canonicalization and matching only. Message-body inspection, Grant construction, decision persistence, request authorization, and charging remain out of scope.
 Boundary: Own pure scope canonicalization/matching only. Do not inspect message bodies, build Grants, persist decisions, or authorize requests.
 ```
@@ -4590,6 +4729,7 @@ def test_directory_scope_does_not_match_string_prefix_sibling() -> None:
 **Atomic verification:**
 - Target (15.B): `python -m pytest -q tests/unit/governance/test_disclosure_scope.py::test_directory_scope_does_not_match_string_prefix_sibling`
 - Domain (15.B): `python -m pytest -q tests/unit/governance/test_disclosure_scope.py`
+- Matrix (15.B): `python -m pytest -q tests/unit/governance/test_disclosure_scope.py::test_disclosure_scope_match_matrix`
 - Expected (15.B): ROOT/FILE/DIRECTORY semantics, alias rejection, ordering, duplicate, and empty-scope cases pass exactly.
 
 **Atomic review focus:**
@@ -4600,7 +4740,7 @@ def test_directory_scope_does_not_match_string_prefix_sibling() -> None:
 - [ ] **Step 10: Run 15.B RED.** Run `python -m pytest -q tests/unit/governance/test_disclosure_scope.py::test_directory_scope_does_not_match_string_prefix_sibling`. Expected: FAIL for “the canonical segment-boundary matcher does not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 11: Implement 15.B GREEN-1.** Canonicalize immutable ROOT/FILE/DIRECTORY disclosure scopes into one deterministic ordered sequence and match only canonical relative paths.
 - [ ] **Step 12: Implement 15.B GREEN-2.** Apply exact segment-boundary semantics so directory string-prefix siblings, aliases, duplicates, and empty or ambiguous scope sets fail closed.
-- [ ] **Step 13: Implement 15.B GREEN-3.** Make `test_directory_scope_does_not_match_string_prefix_sibling` GREEN with the smallest sibling-prefix false match before completing all scope variants.
+- [ ] **Step 13: Implement 15.B GREEN-3.** Make `test_directory_scope_does_not_match_string_prefix_sibling` GREEN with the smallest sibling-prefix false match; then make `test_disclosure_scope_match_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 14: Implement 15.B GREEN-4.** Own pure scope canonicalization and matching only. Message-body inspection, Grant construction, decision persistence, request authorization, and charging remain out of scope.
 - [ ] **Step 15: Run 15.B Target GREEN.** Re-run `python -m pytest -q tests/unit/governance/test_disclosure_scope.py::test_directory_scope_does_not_match_string_prefix_sibling`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 16: Run 15.B Domain.** Run `python -m pytest -q tests/unit/governance/test_disclosure_scope.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -4616,7 +4756,7 @@ Owned files: - Create: src/vespercode/governance/disclosure_subject.py - Test: t
 Interface: Produces `DisclosureGrantSubjectV1` and pure `build_disclosure_subject(request: DisclosureSubjectRequestV1, sources: SourceProjectionV1, scopes: DisclosureScopeSequenceV1, profile: OpenAILLMProfileV1, endpoint: OpenAIEndpointV1) -> DisclosureGrantSubjectV1`.
 GREEN-1: Build one pure `DisclosureGrantSubjectV1` from validated source projection, canonical scopes/categories, frozen OpenAI profile, trusted endpoint, serializer identity, and expiry.
 GREEN-2: Bind every immutable authorization fact into canonical subject bytes/digest and reject request-supplied endpoint/model/source/scope/expiry overrides.
-GREEN-3: Make `test_subject_uses_frozen_endpoint_not_request_url` GREEN with the smallest request-URL override rejection before completing all subject drift cases.
+GREEN-3: Make `test_subject_uses_frozen_endpoint_not_request_url` GREEN with the smallest request-URL override rejection; then make `test_disclosure_subject_drift_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own subject bytes and digest only. Wait/Grant creation, revocation, budget charging, authorization records, and adapter calls remain out of scope.
 Boundary: Own pure subject bytes/digest only. Do not create a wait/Grant, revoke, charge bytes, or call an adapter.
 ```
@@ -4634,6 +4774,7 @@ def test_subject_uses_frozen_endpoint_not_request_url() -> None:
 **Atomic verification:**
 - Target (15.C): `python -m pytest -q tests/unit/governance/test_disclosure_subject.py::test_subject_uses_frozen_endpoint_not_request_url`
 - Domain (15.C): `python -m pytest -q tests/unit/governance/test_disclosure_subject.py`
+- Matrix (15.C): `python -m pytest -q tests/unit/governance/test_disclosure_subject.py::test_disclosure_subject_drift_matrix`
 - Expected (15.C): every immutable authorization fact is bound and all endpoint/model/source/scope/expiry overrides reject.
 
 **Atomic review focus:**
@@ -4644,7 +4785,7 @@ def test_subject_uses_frozen_endpoint_not_request_url() -> None:
 - [ ] **Step 18: Run 15.C RED.** Run `python -m pytest -q tests/unit/governance/test_disclosure_subject.py::test_subject_uses_frozen_endpoint_not_request_url`. Expected: FAIL for “no immutable Grant subject builder binds the frozen sources/profile/endpoint”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 19: Implement 15.C GREEN-1.** Build one pure `DisclosureGrantSubjectV1` from validated source projection, canonical scopes/categories, frozen OpenAI profile, trusted endpoint, serializer identity, and expiry.
 - [ ] **Step 20: Implement 15.C GREEN-2.** Bind every immutable authorization fact into canonical subject bytes/digest and reject request-supplied endpoint/model/source/scope/expiry overrides.
-- [ ] **Step 21: Implement 15.C GREEN-3.** Make `test_subject_uses_frozen_endpoint_not_request_url` GREEN with the smallest request-URL override rejection before completing all subject drift cases.
+- [ ] **Step 21: Implement 15.C GREEN-3.** Make `test_subject_uses_frozen_endpoint_not_request_url` GREEN with the smallest request-URL override rejection; then make `test_disclosure_subject_drift_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 22: Implement 15.C GREEN-4.** Own subject bytes and digest only. Wait/Grant creation, revocation, budget charging, authorization records, and adapter calls remain out of scope.
 - [ ] **Step 23: Run 15.C Target GREEN.** Re-run `python -m pytest -q tests/unit/governance/test_disclosure_subject.py::test_subject_uses_frozen_endpoint_not_request_url`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 24: Run 15.C Domain.** Run `python -m pytest -q tests/unit/governance/test_disclosure_subject.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -4707,7 +4848,7 @@ Owned files: - Create: src/vespercode/storage/migrations/v0003_disclosure_grants
 Interface: Produces immutable `DISCLOSURE_GRANTS_V1_MIGRATION = MigrationV1(version=3, name="disclosure_grants_v1", ...)`, `DisclosureGrantV1`, `DecideDisclosureGrantV1`, `DisclosureDecisionResultV1`, and `DisclosureDecisionServiceV1.decide(command: DecideDisclosureGrantV1) -> DisclosureDecisionResultV1`.
 GREEN-1: Own immutable v0003 Grant DDL and atomically lock/decide the exact disclosure wait, create at most one matching active Grant, and transition back to the loop.
 GREEN-2: Create a Grant only for exact current unexpired APPROVE; REJECT, expiry, stale subject, replay/conflict, or duplicate decisions remain atomic and create none.
-GREEN-3: Make `test_expired_disclosure_wait_creates_no_grant` GREEN with the smallest expiry transaction before completing approve/reject/stale/replay cases.
+GREEN-3: Make `test_expired_disclosure_wait_creates_no_grant` GREEN with the smallest expiry transaction; then make `test_disclosure_decision_state_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own Grant-decision storage only. Final registry edits, revocation, request-body validation, prepared-request authorization, and byte charging remain out of scope.
 Boundary: Own one coupled Grant-decision storage behavior: immutable v0003 DDL, wait decision, active Grant creation, expiry/stale/replay handling, idempotency, and return-to-loop transition. It cannot edit the final registry, perform Task 15.F revocation, validate request bodies, or authorize/charge a prepared request.
 ```
@@ -4726,6 +4867,7 @@ def test_expired_disclosure_wait_creates_no_grant(service: DisclosureDecisionSer
 - Target (15.D): `python -m pytest -q tests/unit/governance/test_disclosure_decision.py::test_expired_disclosure_wait_creates_no_grant`
 - Schema (15.D): `python -m pytest -q tests/unit/storage/test_disclosure_grants_migration.py::test_disclosure_grant_migration_has_exact_schema`
 - Domain (15.D): `python -m pytest -q tests/unit/storage/test_disclosure_grants_migration.py tests/unit/governance/test_disclosure_decision.py`
+- Matrix (15.D): `python -m pytest -q tests/unit/governance/test_disclosure_decision.py::test_disclosure_decision_state_matrix`
 - Expected (15.D): exact v0003 schema plus approve/reject/expire/stale/replay cases are atomic and never create duplicate/invalid Grants.
 
 **Atomic review focus:**
@@ -4736,7 +4878,7 @@ def test_expired_disclosure_wait_creates_no_grant(service: DisclosureDecisionSer
 - [ ] **Step 2: Run 15.D RED.** Run `python -m pytest -q tests/unit/governance/test_disclosure_decision.py::test_expired_disclosure_wait_creates_no_grant`. Expected: FAIL for “no transaction-bound Grant decision lifecycle exists”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 3: Implement 15.D GREEN-1.** Own immutable v0003 Grant DDL and atomically lock/decide the exact disclosure wait, create at most one matching active Grant, and transition back to the loop.
 - [ ] **Step 4: Implement 15.D GREEN-2.** Create a Grant only for exact current unexpired APPROVE; REJECT, expiry, stale subject, replay/conflict, or duplicate decisions remain atomic and create none.
-- [ ] **Step 5: Implement 15.D GREEN-3.** Make `test_expired_disclosure_wait_creates_no_grant` GREEN with the smallest expiry transaction before completing approve/reject/stale/replay cases.
+- [ ] **Step 5: Implement 15.D GREEN-3.** Make `test_expired_disclosure_wait_creates_no_grant` GREEN with the smallest expiry transaction; then make `test_disclosure_decision_state_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 6: Implement 15.D GREEN-4.** Own Grant-decision storage only. Final registry edits, revocation, request-body validation, prepared-request authorization, and byte charging remain out of scope.
 - [ ] **Step 7: Run 15.D Target GREEN.** Re-run `python -m pytest -q tests/unit/governance/test_disclosure_decision.py::test_expired_disclosure_wait_creates_no_grant`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 8: Run 15.D Domain.** Run `python -m pytest -q tests/unit/storage/test_disclosure_grants_migration.py tests/unit/governance/test_disclosure_decision.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -4752,7 +4894,7 @@ Owned files: - Create: src/vespercode/governance/disclosure_revocation.py - Test
 Interface: Produces `RevokeDisclosureGrantV1`, `GrantMutationResultV1`, and `DisclosureRevocationServiceV1.revoke(command: RevokeDisclosureGrantV1) -> GrantMutationResultV1`.
 GREEN-1: Atomically bind revocation to the exact active Grant, Run, subject, and idempotency event before transitioning active to revoked.
 GREEN-2: Revoke the matching active Grant once; stale, mismatched, already-revoked, or replayed commands are deterministic and mutate no unrelated Grant.
-GREEN-3: Make `test_revoke_rejects_mismatched_subject` GREEN with the smallest subject mismatch before completing exact/replay cases.
+GREEN-3: Make `test_revoke_rejects_mismatched_subject` GREEN with the smallest subject mismatch; then make `test_disclosure_revocation_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own active-to-revoked mutation only. Wait decisions, Grant creation, request authorization, byte charging, body storage, and committed-charge refunds remain out of scope.
 Boundary: Own active-to-revoked mutation, subject/run binding, and idempotent revocation replay only. Do not approve/reject/expire waits, create Grants, authorize prepared requests, charge budgets, or refund committed charges.
 ```
@@ -4773,6 +4915,7 @@ def test_revoke_rejects_mismatched_subject(
 **Atomic verification:**
 - Target (15.F): `python -m pytest -q tests/unit/governance/test_disclosure_revocation.py::test_revoke_rejects_mismatched_subject`
 - Domain (15.F): `python -m pytest -q tests/unit/governance/test_disclosure_revocation.py`
+- Matrix (15.F): `python -m pytest -q tests/unit/governance/test_disclosure_revocation.py::test_disclosure_revocation_matrix`
 - Expected (15.F): `0`
 
 **Atomic review focus:**
@@ -4783,7 +4926,7 @@ def test_revoke_rejects_mismatched_subject(
 - [ ] **Step 10: Run 15.F RED.** Run `python -m pytest -q tests/unit/governance/test_disclosure_revocation.py::test_revoke_rejects_mismatched_subject`. Expected: FAIL for “no separate transaction-bound disclosure revocation service exists”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 11: Implement 15.F GREEN-1.** Atomically bind revocation to the exact active Grant, Run, subject, and idempotency event before transitioning active to revoked.
 - [ ] **Step 12: Implement 15.F GREEN-2.** Revoke the matching active Grant once; stale, mismatched, already-revoked, or replayed commands are deterministic and mutate no unrelated Grant.
-- [ ] **Step 13: Implement 15.F GREEN-3.** Make `test_revoke_rejects_mismatched_subject` GREEN with the smallest subject mismatch before completing exact/replay cases.
+- [ ] **Step 13: Implement 15.F GREEN-3.** Make `test_revoke_rejects_mismatched_subject` GREEN with the smallest subject mismatch; then make `test_disclosure_revocation_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 14: Implement 15.F GREEN-4.** Own active-to-revoked mutation only. Wait decisions, Grant creation, request authorization, byte charging, body storage, and committed-charge refunds remain out of scope.
 - [ ] **Step 15: Run 15.F Target GREEN.** Re-run `python -m pytest -q tests/unit/governance/test_disclosure_revocation.py::test_revoke_rejects_mismatched_subject`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 16: Run 15.F Domain.** Run `python -m pytest -q tests/unit/governance/test_disclosure_revocation.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -4799,7 +4942,7 @@ Owned files: - Create: src/vespercode/storage/migrations/v0004_disclosure_author
 Interface: Produces immutable `DISCLOSURE_AUTHORIZATIONS_V1_MIGRATION = MigrationV1(version=4, name="disclosure_authorizations_v1", ...)`, `AuthorizePreparedRequestV1`, `DisclosureAuthorizationRecordV1`, `DisclosureAuthorizationOutcomeV1`, and `DisclosureLedger.authorize(command: AuthorizePreparedRequestV1) -> DisclosureAuthorizationOutcomeV1`.
 GREEN-1: Own immutable v0004 authorization DDL and revalidate the prepared request, active Grant, subject, source categories/scopes, revocation/expiry, request identity, and cumulative budget in one immediate transaction.
 GREEN-2: Commit exactly one body-free authorization record and byte charge only for an exact authorized request; budget races, stale/revoked Grants, scope/category drift, or replay conflicts charge zero.
-GREEN-3: Make `test_two_requests_cannot_overdraw_one_grant` GREEN with the smallest two-request budget race before completing scope/expiry/revocation cases.
+GREEN-3: Make `test_two_requests_cannot_overdraw_one_grant` GREEN with the smallest two-request budget race; then make `test_disclosure_budget_state_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own authorization and committed cumulative-byte accounting only. Final registry edits, Grant decisions/revocation, request serialization/calls, body storage, and refunds remain out of scope.
 Boundary: Own one coupled authorization-ledger storage behavior: immutable v0004 DDL, fresh Grant/subject/scope/category/request/budget revalidation, and body-free authorization record. It cannot edit the final registry, decide/revoke Grants, serialize/call an LLM, or refund committed charges.
 ```
@@ -4818,6 +4961,7 @@ def test_two_requests_cannot_overdraw_one_grant(ledger: DisclosureLedger) -> Non
 - Target (15.E): `python -m pytest -q tests/unit/governance/test_disclosure_budget_race.py::test_two_requests_cannot_overdraw_one_grant`
 - Schema (15.E): `python -m pytest -q tests/unit/storage/test_disclosure_authorizations_migration.py::test_disclosure_authorization_migration_has_exact_schema`
 - Domain (15.E): `python -m pytest -q tests/unit/storage/test_disclosure_authorizations_migration.py tests/unit/governance/test_disclosure_ledger.py tests/unit/governance/test_disclosure_budget_race.py`
+- Matrix (15.E): `python -m pytest -q tests/unit/governance/test_disclosure_budget_race.py::test_disclosure_budget_state_matrix`
 - Expected (15.E): exact v0004 schema; only exact authorized requests commit one charge; scope/expiry/revocation/budget/race failures charge zero.
 
 **Atomic review focus:**
@@ -4828,7 +4972,7 @@ def test_two_requests_cannot_overdraw_one_grant(ledger: DisclosureLedger) -> Non
 - [ ] **Step 18: Run 15.E RED.** Run `python -m pytest -q tests/unit/governance/test_disclosure_budget_race.py::test_two_requests_cannot_overdraw_one_grant`. Expected: FAIL for “no immediate-transaction authorization/byte-charge ledger exists”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 19: Implement 15.E GREEN-1.** Own immutable v0004 authorization DDL and revalidate the prepared request, active Grant, subject, source categories/scopes, revocation/expiry, request identity, and cumulative budget in one immediate transaction.
 - [ ] **Step 20: Implement 15.E GREEN-2.** Commit exactly one body-free authorization record and byte charge only for an exact authorized request; budget races, stale/revoked Grants, scope/category drift, or replay conflicts charge zero.
-- [ ] **Step 21: Implement 15.E GREEN-3.** Make `test_two_requests_cannot_overdraw_one_grant` GREEN with the smallest two-request budget race before completing scope/expiry/revocation cases.
+- [ ] **Step 21: Implement 15.E GREEN-3.** Make `test_two_requests_cannot_overdraw_one_grant` GREEN with the smallest two-request budget race; then make `test_disclosure_budget_state_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 22: Implement 15.E GREEN-4.** Own authorization and committed cumulative-byte accounting only. Final registry edits, Grant decisions/revocation, request serialization/calls, body storage, and refunds remain out of scope.
 - [ ] **Step 23: Run 15.E Target GREEN.** Re-run `python -m pytest -q tests/unit/governance/test_disclosure_budget_race.py::test_two_requests_cannot_overdraw_one_grant`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 24: Run 15.E Domain.** Run `python -m pytest -q tests/unit/storage/test_disclosure_authorizations_migration.py tests/unit/governance/test_disclosure_ledger.py tests/unit/governance/test_disclosure_budget_race.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -4891,7 +5035,7 @@ Owned files: - Create: src/vespercode/llm/base.py - Create: src/vespercode/llm/p
 Interface: Produces protocol `LLMAdapter.generate(request: PreparedModelRequestV1) -> ModelResponse`, closed `PreparedModelRequestV1 = MockPreparedModelRequestV1 | OpenAIPreparedModelRequestV1`, `ModelResponse`, closed `LLMCallResultV1`, `prepare_mock_request(profile: MockLLMProfileV1, messages: tuple[RequestMessageV1, ...]) -> MockPreparedModelRequestV1`, `prepare_openai_request(profile: OpenAILLMProfileV1, messages: tuple[RequestMessageV1, ...]) -> OpenAIPreparedModelRequestV1`, and `MockLLMAdapter.generate(request: MockPreparedModelRequestV1) -> ModelResponse`.
 GREEN-1: Define mutually exclusive Mock/OpenAI prepared-request variants, one-call adapter protocol, closed model response, and closed call-result status combinations.
 GREEN-2: Prepare each mode from frozen profile/messages with deterministic request identity; Mock output is selected only by frozen script id and request digest and is byte-identical offline.
-GREEN-3: Make `test_mock_request_rejects_openai_transport_fields` GREEN with the smallest cross-mode field rejection before completing response/result combinations.
+GREEN-3: Make `test_mock_request_rejects_openai_transport_fields` GREEN with the smallest cross-mode field rejection; then make `test_prepared_request_profile_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own request contracts and deterministic Mock behavior only. Provider transport, credentials, Grant/authorization access, request charging, and network clients remain out of scope.
 Boundary: Mock outputs are selected only by frozen script id and request digest. No Mock code imports OpenAI transport, credentials, disclosure ledger, or a network client.
 ```
@@ -4911,6 +5055,7 @@ def test_mock_request_rejects_openai_transport_fields() -> None:
 **Atomic verification:**
 - Target (16.A): `python -m pytest -q tests/unit/llm/test_prepared_request.py::test_mock_request_rejects_openai_transport_fields`
 - Domain (16.A): `python -m pytest -q tests/unit/llm/test_prepared_request.py tests/unit/llm/test_mock_adapter.py tests/unit/llm/test_call_result.py`
+- Matrix (16.A): `python -m pytest -q tests/unit/llm/test_prepared_request.py::test_prepared_request_profile_matrix`
 - Expected (16.A): closed mode/status combinations and byte-identical Mock responses pass offline with zero real-capability calls.
 
 **Atomic review focus:**
@@ -4921,7 +5066,7 @@ def test_mock_request_rejects_openai_transport_fields() -> None:
 - [ ] **Step 2: Run 16.A RED.** Run `python -m pytest -q tests/unit/llm/test_prepared_request.py::test_mock_request_rejects_openai_transport_fields`. Expected: FAIL for “the exact assertion fails because the task-owned closed prepared requests and Mock adapter behavior does not exist. Record the task-owned failing assertion and exit code; collection, import, runner, environment startup, or unrelated failure does not count as RED”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 3: Implement 16.A GREEN-1.** Define mutually exclusive Mock/OpenAI prepared-request variants, one-call adapter protocol, closed model response, and closed call-result status combinations.
 - [ ] **Step 4: Implement 16.A GREEN-2.** Prepare each mode from frozen profile/messages with deterministic request identity; Mock output is selected only by frozen script id and request digest and is byte-identical offline.
-- [ ] **Step 5: Implement 16.A GREEN-3.** Make `test_mock_request_rejects_openai_transport_fields` GREEN with the smallest cross-mode field rejection before completing response/result combinations.
+- [ ] **Step 5: Implement 16.A GREEN-3.** Make `test_mock_request_rejects_openai_transport_fields` GREEN with the smallest cross-mode field rejection; then make `test_prepared_request_profile_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 6: Implement 16.A GREEN-4.** Own request contracts and deterministic Mock behavior only. Provider transport, credentials, Grant/authorization access, request charging, and network clients remain out of scope.
 - [ ] **Step 7: Run 16.A Target GREEN.** Re-run `python -m pytest -q tests/unit/llm/test_prepared_request.py::test_mock_request_rejects_openai_transport_fields`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 8: Run 16.A Domain.** Run `python -m pytest -q tests/unit/llm/test_prepared_request.py tests/unit/llm/test_mock_adapter.py tests/unit/llm/test_call_result.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -4937,7 +5082,7 @@ Owned files: - Create: src/vespercode/llm/openai_serializer.py - Create: src/ves
 Interface: Produces `serialize_openai_request(request: OpenAIPreparedModelRequestV1) -> OpenAIRequestBodyV1`, `OpenAILLMAdapter.bind(authorization: DisclosureAuthorizationRecordV1, credential: SecretCredentialV1) -> BoundOpenAILLMAdapterV1`, and `BoundOpenAILLMAdapterV1.generate(request: OpenAIPreparedModelRequestV1) -> ModelResponse`; consumes only Task 15.E authorization and a Task 27.B fresh secret wrapper supplied for this call.
 GREEN-1: Serialize one authorized `OpenAIPreparedModelRequestV1` into the exact request body and bind the unbound adapter only with Task 15.E authorization plus a fresh Task 27.B secret wrapper.
 GREEN-2: Allow exactly one call to the sole trusted endpoint with no custom URL, environment credential, redirect replay, retry, or secret/body logging; responses and failures remain bounded/redacted.
-GREEN-3: Make `test_openai_adapter_never_retries_transport` GREEN with the smallest failing transport that records one attempt before completing endpoint/serialization cases.
+GREEN-3: Make `test_openai_adapter_never_retries_transport` GREEN with the smallest failing transport that records one attempt; then make `test_openai_transport_endpoint_serialization_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Credential Manager re-probe and `get_for_call("OPENAI")` must occur upstream before the fresh wrapper is supplied, as owned by Task 25.C/27.B. This adapter cannot perform or bypass that ordering.
 Boundary: The unbound adapter cannot generate. The bound adapter accepts no custom base URL, alternate endpoint, retry policy, environment credential, or redirect replay and returns only `ModelResponse` or raises one bounded typed adapter failure. Per-call credential/Grant/count ordering and `LLMCallResultV1` construction belong to Task 25.C.
 ```
@@ -4960,6 +5105,7 @@ def test_openai_adapter_never_retries_transport(
 **Atomic verification:**
 - Target (16.B): `python -m pytest -q tests/unit/llm/test_openai_adapter.py::test_openai_adapter_never_retries_transport`
 - Domain (16.B): `python -m pytest -q tests/unit/llm/test_openai_serializer.py tests/unit/llm/test_openai_adapter.py`
+- Matrix (16.B): `python -m pytest -q tests/unit/llm/test_openai_adapter.py::test_openai_transport_endpoint_serialization_matrix`
 - Expected (16.B): exact body vectors, one transport call, trusted endpoint enforcement, bounded responses, and redacted failures pass.
 
 **Atomic review focus:**
@@ -4970,7 +5116,7 @@ def test_openai_adapter_never_retries_transport(
 - [ ] **Step 10: Run 16.B RED.** Run `python -m pytest -q tests/unit/llm/test_openai_adapter.py::test_openai_adapter_never_retries_transport`. Expected: FAIL for “the exact assertion fails because the task-owned single-call trusted OpenAI adapter behavior does not exist. Record the task-owned failing assertion and exit code; collection, import, runner, missing or unsafe credential, credential-provider startup, transport-fixture startup, or unrelated failure does not count as RED”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 11: Implement 16.B GREEN-1.** Serialize one authorized `OpenAIPreparedModelRequestV1` into the exact request body and bind the unbound adapter only with Task 15.E authorization plus a fresh Task 27.B secret wrapper.
 - [ ] **Step 12: Implement 16.B GREEN-2.** Allow exactly one call to the sole trusted endpoint with no custom URL, environment credential, redirect replay, retry, or secret/body logging; responses and failures remain bounded/redacted.
-- [ ] **Step 13: Implement 16.B GREEN-3.** Make `test_openai_adapter_never_retries_transport` GREEN with the smallest failing transport that records one attempt before completing endpoint/serialization cases.
+- [ ] **Step 13: Implement 16.B GREEN-3.** Make `test_openai_adapter_never_retries_transport` GREEN with the smallest failing transport that records one attempt; then make `test_openai_transport_endpoint_serialization_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 14: Implement 16.B GREEN-4.** Credential Manager re-probe and `get_for_call("OPENAI")` must occur upstream before the fresh wrapper is supplied, as owned by Task 25.C/27.B. This adapter cannot perform or bypass that ordering.
 - [ ] **Step 15: Run 16.B Target GREEN.** Re-run `python -m pytest -q tests/unit/llm/test_openai_adapter.py::test_openai_adapter_never_retries_transport`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 16: Run 16.B Domain.** Run `python -m pytest -q tests/unit/llm/test_openai_serializer.py tests/unit/llm/test_openai_adapter.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -5036,7 +5182,7 @@ Owned files: - Create: src/vespercode/loop/agent_actions.py - Create: src/vesper
 Interface: Produces closed `AgentAction`, `ModelResponse`, `ParseErrorV1`, and `ActionParser.parse(response: ModelResponse) -> AgentAction | ParseErrorV1`.
 GREEN-1: Parse exactly one complete model-response JSON object into the closed `AgentAction` union or one stable `ParseErrorV1`.
 GREEN-2: Reject surrounding text, multiple objects, defaults, omissions, unknown/extra keys, wrong types, and any model-supplied Harness action identity.
-GREEN-3: Make `test_model_supplied_action_id_is_rejected` GREEN with the smallest forbidden identity field before completing framing/action variants.
+GREEN-3: Make `test_model_supplied_action_id_is_rejected` GREEN with the smallest forbidden identity field; then make `test_action_parser_closed_grammar_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own response framing and action schema only. Harness identity generation, candidate/phase/policy evaluation, dispatch, shell, and high-level agent runners remain out of scope.
 Boundary: Own response JSON framing and closed action schema only. Do not generate identity, evaluate policy/phase, or dispatch tools.
 ```
@@ -5053,6 +5199,7 @@ def test_model_supplied_action_id_is_rejected(parser: ActionParser) -> None:
 **Atomic verification:**
 - Target (17.A): `python -m pytest -q tests/unit/loop/test_action_parser.py::test_model_supplied_action_id_is_rejected`
 - Domain (17.A): `python -m pytest -q tests/unit/loop/test_agent_actions.py tests/unit/loop/test_action_parser.py`
+- Matrix (17.A): `python -m pytest -q tests/unit/loop/test_action_parser.py::test_action_parser_closed_grammar_matrix`
 - Expected (17.A): exactly one valid action parses and every framing/field/type/omission/default/identity violation returns a stable parse error.
 
 **Atomic review focus:**
@@ -5063,7 +5210,7 @@ def test_model_supplied_action_id_is_rejected(parser: ActionParser) -> None:
 - [ ] **Step 2: Run 17.A RED.** Run `python -m pytest -q tests/unit/loop/test_action_parser.py::test_model_supplied_action_id_is_rejected`. Expected: FAIL for “the strict parser/action union does not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 3: Implement 17.A GREEN-1.** Parse exactly one complete model-response JSON object into the closed `AgentAction` union or one stable `ParseErrorV1`.
 - [ ] **Step 4: Implement 17.A GREEN-2.** Reject surrounding text, multiple objects, defaults, omissions, unknown/extra keys, wrong types, and any model-supplied Harness action identity.
-- [ ] **Step 5: Implement 17.A GREEN-3.** Make `test_model_supplied_action_id_is_rejected` GREEN with the smallest forbidden identity field before completing framing/action variants.
+- [ ] **Step 5: Implement 17.A GREEN-3.** Make `test_model_supplied_action_id_is_rejected` GREEN with the smallest forbidden identity field; then make `test_action_parser_closed_grammar_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 6: Implement 17.A GREEN-4.** Own response framing and action schema only. Harness identity generation, candidate/phase/policy evaluation, dispatch, shell, and high-level agent runners remain out of scope.
 - [ ] **Step 7: Run 17.A Target GREEN.** Re-run `python -m pytest -q tests/unit/loop/test_action_parser.py::test_model_supplied_action_id_is_rejected`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 8: Run 17.A Domain.** Run `python -m pytest -q tests/unit/loop/test_agent_actions.py tests/unit/loop/test_action_parser.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -5079,7 +5226,7 @@ Owned files: - Create: src/vespercode/loop/action_binding.py - Test: tests/unit/
 Interface: Produces `ActionIdGeneratorV1.next_id() -> str`, `action_semantic_digest(action: AgentAction) -> str`, and `bind_action(action: AgentAction, id_generator: ActionIdGeneratorV1) -> ActionInstanceV1`.
 GREEN-1: Generate one non-empty Harness-owned action id and bind it with canonical action bytes into `ActionInstanceV1`.
 GREEN-2: Compute semantic digest from action semantics only and instance digest from the semantic identity plus Harness id; reject empty, duplicate, or malformed ids.
-GREEN-3: Make `test_same_semantics_different_harness_ids_change_instance_digest` GREEN with the smallest two-id comparison before completing invalid-id cases.
+GREEN-3: Make `test_same_semantics_different_harness_ids_change_instance_digest` GREEN with the smallest two-id comparison; then make `test_action_binding_identity_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own semantic/instance identity only. Response parsing, List/Search cursors, candidate/phase/policy evaluation, dispatch, and model-supplied identity remain out of scope.
 Boundary: Own action semantic/instance identity only. Do not parse responses, calculate List/Search query cursors, evaluate policy, or dispatch.
 ```
@@ -5099,6 +5246,7 @@ def test_same_semantics_different_harness_ids_change_instance_digest() -> None:
 **Atomic verification:**
 - Target (17.B): `python -m pytest -q tests/unit/loop/test_action_binding.py::test_same_semantics_different_harness_ids_change_instance_digest`
 - Domain (17.B): `python -m pytest -q tests/unit/loop/test_action_binding.py`
+- Matrix (17.B): `python -m pytest -q tests/unit/loop/test_action_binding.py::test_action_binding_identity_matrix`
 - Expected (17.B): semantic and instance identities bind exact action bytes/ID and reject empty, duplicate, or malformed Harness IDs.
 
 **Atomic review focus:**
@@ -5109,7 +5257,7 @@ def test_same_semantics_different_harness_ids_change_instance_digest() -> None:
 - [ ] **Step 10: Run 17.B RED.** Run `python -m pytest -q tests/unit/loop/test_action_binding.py::test_same_semantics_different_harness_ids_change_instance_digest`. Expected: FAIL for “no canonical action identity binder exists”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 11: Implement 17.B GREEN-1.** Generate one non-empty Harness-owned action id and bind it with canonical action bytes into `ActionInstanceV1`.
 - [ ] **Step 12: Implement 17.B GREEN-2.** Compute semantic digest from action semantics only and instance digest from the semantic identity plus Harness id; reject empty, duplicate, or malformed ids.
-- [ ] **Step 13: Implement 17.B GREEN-3.** Make `test_same_semantics_different_harness_ids_change_instance_digest` GREEN with the smallest two-id comparison before completing invalid-id cases.
+- [ ] **Step 13: Implement 17.B GREEN-3.** Make `test_same_semantics_different_harness_ids_change_instance_digest` GREEN with the smallest two-id comparison; then make `test_action_binding_identity_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 14: Implement 17.B GREEN-4.** Own semantic/instance identity only. Response parsing, List/Search cursors, candidate/phase/policy evaluation, dispatch, and model-supplied identity remain out of scope.
 - [ ] **Step 15: Run 17.B Target GREEN.** Re-run `python -m pytest -q tests/unit/loop/test_action_binding.py::test_same_semantics_different_harness_ids_change_instance_digest`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 16: Run 17.B Domain.** Run `python -m pytest -q tests/unit/loop/test_action_binding.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -5125,7 +5273,7 @@ Owned files: - Create: src/vespercode/tools/dispatcher.py - Test: tests/unit/too
 Interface: Produces `DispatchContextV1`, `ArtifactStorePortV1.put(payload: FileToolResultV1) -> ArtifactRefV1`, `FileToolOutcomeV1`, `publish_file_tool_outcome(instance: ActionInstanceV1, result: FileToolResultV1, artifact_store: ArtifactStorePortV1) -> FileToolOutcomeV1`, `ToolPortsV1(list_files, read_file, search_text, apply_candidate_patch, run_check, propose_completion)` whose three file ports use the exact Task 11.A/11.B pure signatures, and `ToolDispatcher.dispatch(instance: ActionInstanceV1, context: DispatchContextV1) -> ActionResultV1`.
 GREEN-1: Validate current-candidate binding, path/object authorization, Run phase, and Task 13 policy in that exact order before selecting one registered typed tool port.
 GREEN-2: Return stable failures with zero port calls for stale candidate, unsafe path, forbidden phase, `DENY`, unknown capability, invalid result, or tool exception; approval cannot widen `DENY`.
-GREEN-3: Make `test_hard_deny_never_invokes_tool_port` GREEN with the smallest policy-DENY trace before completing ordering and exception cases.
+GREEN-3: Make `test_hard_deny_never_invokes_tool_port` GREEN with the smallest policy-DENY trace; then make `test_dispatch_order_exception_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own guarded ordering, exact port selection, pure-result conversion, bounded artifact publication, and exception envelopes only. Parsing/binding, tool implementations, shell, waits, and high-level agent runners remain out of scope.
 Boundary: Own deterministic pre-dispatch ordering, exact port selection, Task 11 pure-result conversion, bounded ArtifactStore publication, result-envelope validation, and exception conversion. Do not parse/bind actions, implement tools, or create approval waits.
 ```
@@ -5144,6 +5292,7 @@ def test_hard_deny_never_invokes_tool_port(dispatcher: ToolDispatcher, ports: Sp
 **Atomic verification:**
 - Target (17.C): `python -m pytest -q tests/unit/tools/test_dispatch_order.py::test_hard_deny_never_invokes_tool_port`
 - Domain (17.C): `python -m pytest -q tests/unit/tools/test_dispatcher.py tests/unit/tools/test_dispatch_order.py`
+- Matrix (17.C): `python -m pytest -q tests/unit/tools/test_dispatch_order.py::test_dispatch_order_exception_matrix`
 - Expected (17.C): stale/path/phase/policy failures call zero ports; only an exact allowed current action invokes one registered port.
 
 **Atomic review focus:**
@@ -5154,7 +5303,7 @@ def test_hard_deny_never_invokes_tool_port(dispatcher: ToolDispatcher, ports: Sp
 - [ ] **Step 18: Run 17.C RED.** Run `python -m pytest -q tests/unit/tools/test_dispatch_order.py::test_hard_deny_never_invokes_tool_port`. Expected: FAIL for “no ordered guarded dispatcher exists”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 19: Implement 17.C GREEN-1.** Validate current-candidate binding, path/object authorization, Run phase, and Task 13 policy in that exact order before selecting one registered typed tool port.
 - [ ] **Step 20: Implement 17.C GREEN-2.** Return stable failures with zero port calls for stale candidate, unsafe path, forbidden phase, `DENY`, unknown capability, invalid result, or tool exception; approval cannot widen `DENY`.
-- [ ] **Step 21: Implement 17.C GREEN-3.** Make `test_hard_deny_never_invokes_tool_port` GREEN with the smallest policy-DENY trace before completing ordering and exception cases.
+- [ ] **Step 21: Implement 17.C GREEN-3.** Make `test_hard_deny_never_invokes_tool_port` GREEN with the smallest policy-DENY trace; then make `test_dispatch_order_exception_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 22: Implement 17.C GREEN-4.** Own guarded ordering, exact port selection, pure-result conversion, bounded artifact publication, and exception envelopes only. Parsing/binding, tool implementations, shell, waits, and high-level agent runners remain out of scope.
 - [ ] **Step 23: Run 17.C Target GREEN.** Re-run `python -m pytest -q tests/unit/tools/test_dispatch_order.py::test_hard_deny_never_invokes_tool_port`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 24: Run 17.C Domain.** Run `python -m pytest -q tests/unit/tools/test_dispatcher.py tests/unit/tools/test_dispatch_order.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -5212,7 +5361,7 @@ Owned files: - Create: src/vespercode/execution/docker_profile.py - Test: tests/
 Interface: Produces `ExecutionArgumentSequenceV1`, an immutable ordered tuple of command arguments, `DockerExecutionProfileV1`, `ExecutionRequestV1`, and `DockerReadinessService.verify(reference: ReferenceProfileManifestV1) -> ExecutionReadinessResultV1`.
 GREEN-1: Define immutable adapter-built argv, environment, resource, execution-profile, and `ExecutionRequestV1` contracts plus reference-image readiness verification.
 GREEN-2: Reject model-supplied executable/argv/environment, mutable resources, profile/image/daemon drift, and any request not bound to frozen built-ins before container creation.
-GREEN-3: Make `test_execution_request_rejects_model_executable_field` GREEN with the smallest forbidden executable field before completing profile/readiness cases.
+GREEN-3: Make `test_execution_request_rejects_model_executable_field` GREEN with the smallest forbidden executable field; then make `test_execution_request_profile_readiness_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own schema, resource, profile, and readiness checks only. Tree materialization, container creation, output collection, result interpretation, image build, and installation remain out of scope.
 Boundary: Own schema/resource/profile readiness only. Do not materialize trees, create containers, collect output, interpret results, or build/install images.
 ```
@@ -5230,6 +5379,7 @@ def test_execution_request_rejects_model_executable_field() -> None:
 **Atomic verification:**
 - Target (18.A): `python -m pytest -q tests/unit/execution/test_docker_request.py::test_execution_request_rejects_model_executable_field`
 - Domain (18.A): `python -m pytest -q tests/unit/execution/test_docker_profile.py tests/unit/execution/test_docker_request.py`
+- Matrix (18.A): `python -m pytest -q tests/unit/execution/test_docker_request.py::test_execution_request_profile_readiness_matrix`
 - Expected (18.A): only adapter-built frozen argv/environment/resources validate and image/profile/daemon drift fails before container creation.
 
 **Atomic review focus:**
@@ -5240,7 +5390,7 @@ def test_execution_request_rejects_model_executable_field() -> None:
 - [ ] **Step 2: Run 18.A RED.** Run `python -m pytest -q tests/unit/execution/test_docker_request.py::test_execution_request_rejects_model_executable_field`. Expected: FAIL for “the closed request/profile/readiness contracts do not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 3: Implement 18.A GREEN-1.** Define immutable adapter-built argv, environment, resource, execution-profile, and `ExecutionRequestV1` contracts plus reference-image readiness verification.
 - [ ] **Step 4: Implement 18.A GREEN-2.** Reject model-supplied executable/argv/environment, mutable resources, profile/image/daemon drift, and any request not bound to frozen built-ins before container creation.
-- [ ] **Step 5: Implement 18.A GREEN-3.** Make `test_execution_request_rejects_model_executable_field` GREEN with the smallest forbidden executable field before completing profile/readiness cases.
+- [ ] **Step 5: Implement 18.A GREEN-3.** Make `test_execution_request_rejects_model_executable_field` GREEN with the smallest forbidden executable field; then make `test_execution_request_profile_readiness_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 6: Implement 18.A GREEN-4.** Own schema, resource, profile, and readiness checks only. Tree materialization, container creation, output collection, result interpretation, image build, and installation remain out of scope.
 - [ ] **Step 7: Run 18.A Target GREEN.** Re-run `python -m pytest -q tests/unit/execution/test_docker_request.py::test_execution_request_rejects_model_executable_field`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 8: Run 18.A Domain.** Run `python -m pytest -q tests/unit/execution/test_docker_profile.py tests/unit/execution/test_docker_request.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -5304,7 +5454,7 @@ Owned files: - Create: src/vespercode/execution/materialization.py - Test: tests
 Interface: Produces `AuthorizedExecutionRootV1`, `MaterializedCandidateV1`, and `materialize_candidate(candidate: CandidateTreeV1, root: AuthorizedExecutionRootV1) -> MaterializedCandidateV1`.
 GREEN-1: Allocate one fresh identity-bound execution root and materialize every verified CandidateTree content object to its exact authorized path and bytes.
 GREEN-2: Reverify content digest, path/object identity, tree binding, and pre-execution root digest before Docker; every invocation uses a unique root and drift fails closed.
-GREEN-3: Make `test_materialization_rejects_content_object_digest_drift` GREEN with the smallest corrupted content object before completing path/object cases.
+GREEN-3: Make `test_materialization_rejects_content_object_digest_drift` GREEN with the smallest corrupted content object; then make `test_candidate_materialization_integrity_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own fresh-root allocation, exact writes, verification, and materialization identity only. Container creation, check interpretation, root reuse, and real-workspace persistence remain out of scope.
 Boundary: Own fresh root allocation, exact content write, identity/path verification, and pre-execution digest. Do not create containers, interpret checks, or persist to the real workspace.
 ```
@@ -5322,6 +5472,7 @@ def test_materialization_rejects_content_object_digest_drift() -> None:
 **Atomic verification:**
 - Target (18.B): `python -m pytest -q -o addopts='' -m docker_integration tests/integration/docker/test_fresh_candidate_materialization.py::test_materialization_rejects_content_object_digest_drift`
 - Domain (18.B): `python -m pytest -q -o addopts='' -m docker_integration tests/integration/docker/test_fresh_candidate_materialization.py`
+- Matrix (18.B): `python -m pytest -q -o addopts='' -m docker_integration tests/integration/docker/test_fresh_candidate_materialization.py::test_candidate_materialization_integrity_matrix`
 - Expected (18.B): each invocation creates a unique verified root and every content/path/object drift fails before Docker.
 
 **Atomic review focus:**
@@ -5332,7 +5483,7 @@ def test_materialization_rejects_content_object_digest_drift() -> None:
 - [ ] **Step 2: Run 18.B RED.** Run `python -m pytest -q -o addopts='' -m docker_integration tests/integration/docker/test_fresh_candidate_materialization.py::test_materialization_rejects_content_object_digest_drift`. Expected: FAIL for “no fresh identity-bound candidate materializer exists”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 3: Implement 18.B GREEN-1.** Allocate one fresh identity-bound execution root and materialize every verified CandidateTree content object to its exact authorized path and bytes.
 - [ ] **Step 4: Implement 18.B GREEN-2.** Reverify content digest, path/object identity, tree binding, and pre-execution root digest before Docker; every invocation uses a unique root and drift fails closed.
-- [ ] **Step 5: Implement 18.B GREEN-3.** Make `test_materialization_rejects_content_object_digest_drift` GREEN with the smallest corrupted content object before completing path/object cases.
+- [ ] **Step 5: Implement 18.B GREEN-3.** Make `test_materialization_rejects_content_object_digest_drift` GREEN with the smallest corrupted content object; then make `test_candidate_materialization_integrity_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 6: Implement 18.B GREEN-4.** Own fresh-root allocation, exact writes, verification, and materialization identity only. Container creation, check interpretation, root reuse, and real-workspace persistence remain out of scope.
 - [ ] **Step 7: Run 18.B Target GREEN.** Re-run `python -m pytest -q -o addopts='' -m docker_integration tests/integration/docker/test_fresh_candidate_materialization.py::test_materialization_rejects_content_object_digest_drift`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 8: Run 18.B Domain.** Run `python -m pytest -q -o addopts='' -m docker_integration tests/integration/docker/test_fresh_candidate_materialization.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -5348,7 +5499,7 @@ Owned files: - Create: src/vespercode/execution/docker_executor.py - Test: tests
 Interface: Produces `RawExecutionResultV1` and `DockerExecutor.execute(request: ExecutionRequestV1, candidate: MaterializedCandidateV1) -> RawExecutionResultV1`.
 GREEN-1: Execute one closed request against one materialized candidate in one fresh container and return only bounded `RawExecutionResultV1` evidence.
 GREEN-2: Enforce network-none, non-root, read-only root/workspace, capability drop, absent Docker socket, bounded tmpfs/CPU/memory/PIDs/time/output, and exact stop/kill cleanup.
-GREEN-3: Make `test_output_limit_kills_exact_container` GREEN with the smallest output-overflow kill path before completing isolation/deadline controls.
+GREEN-3: Make `test_output_limit_kills_exact_container` GREEN with the smallest output-overflow kill path; then make `test_container_isolation_deadline_output_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own container creation, isolation, deadlines, bounded collectors, stop/kill, and raw evidence only. PASS/FAIL parsing and materialization-root deletion remain out of scope.
 Boundary: Own container creation, isolation, deadline, bounded collectors, stop/kill, and raw evidence only. Do not parse PASS/FAIL or delete materialization roots.
 ```
@@ -5367,6 +5518,7 @@ def test_output_limit_kills_exact_container(executor: DockerExecutor) -> None:
 **Atomic verification:**
 - Target (18.C): `python -m pytest -q -o addopts='' -m docker_integration tests/integration/docker/test_execution_output_limits.py::test_output_limit_kills_exact_container`
 - Domain (18.C): `python -m pytest -q -o addopts='' -m docker_integration tests/integration/docker/test_execution_isolation.py tests/integration/docker/test_execution_output_limits.py`
+- Matrix (18.C): `python -m pytest -q -o addopts='' -m docker_integration tests/integration/docker/test_execution_output_limits.py::test_container_isolation_deadline_output_matrix`
 - Expected (18.C): exact isolation/resource/deadline/output controls hold and each execution returns bounded raw evidence.
 
 **Atomic review focus:**
@@ -5377,7 +5529,7 @@ def test_output_limit_kills_exact_container(executor: DockerExecutor) -> None:
 - [ ] **Step 10: Run 18.C RED.** Run `python -m pytest -q -o addopts='' -m docker_integration tests/integration/docker/test_execution_output_limits.py::test_output_limit_kills_exact_container`. Expected: FAIL for “no bounded real Docker executor exists”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 11: Implement 18.C GREEN-1.** Execute one closed request against one materialized candidate in one fresh container and return only bounded `RawExecutionResultV1` evidence.
 - [ ] **Step 12: Implement 18.C GREEN-2.** Enforce network-none, non-root, read-only root/workspace, capability drop, absent Docker socket, bounded tmpfs/CPU/memory/PIDs/time/output, and exact stop/kill cleanup.
-- [ ] **Step 13: Implement 18.C GREEN-3.** Make `test_output_limit_kills_exact_container` GREEN with the smallest output-overflow kill path before completing isolation/deadline controls.
+- [ ] **Step 13: Implement 18.C GREEN-3.** Make `test_output_limit_kills_exact_container` GREEN with the smallest output-overflow kill path; then make `test_container_isolation_deadline_output_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 14: Implement 18.C GREEN-4.** Own container creation, isolation, deadlines, bounded collectors, stop/kill, and raw evidence only. PASS/FAIL parsing and materialization-root deletion remain out of scope.
 - [ ] **Step 15: Run 18.C Target GREEN.** Re-run `python -m pytest -q -o addopts='' -m docker_integration tests/integration/docker/test_execution_output_limits.py::test_output_limit_kills_exact_container`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 16: Run 18.C Domain.** Run `python -m pytest -q -o addopts='' -m docker_integration tests/integration/docker/test_execution_isolation.py tests/integration/docker/test_execution_output_limits.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -5393,7 +5545,7 @@ Owned files: - Create: src/vespercode/execution/cleanup.py - Test: tests/integra
 Interface: Produces `ExecutionCleanupResultV1(container_removed: bool, materialization_removed: bool, workspace_unchanged: bool, residual_artifact: ArtifactRefV1 | None)` and `finalize_execution(result: RawExecutionResultV1, candidate: CandidateTreeV1, materialized: MaterializedCandidateV1) -> ExecutionCleanupResultV1`.
 GREEN-1: Reverify Candidate and materialized bytes/object identities after execution, then remove only the exact container and fresh root without following links.
 GREEN-2: Report container/root removal, unchanged real workspace, and explicit residual artifact evidence; mutation, link, or cleanup failure cannot be hidden as success.
-GREEN-3: Make `test_post_execution_candidate_mutation_fails_closed` GREEN with the smallest post-run byte drift before completing cleanup/link cases.
+GREEN-3: Make `test_post_execution_candidate_mutation_fails_closed` GREEN with the smallest post-run byte drift; then make `test_execution_cleanup_link_integrity_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own post-run integrity and exact cleanup/residue evidence only. Check execution/outcome parsing, root reuse, and real-workspace mutation remain out of scope.
 Boundary: Own post-run byte verification and exact cleanup/residue evidence only. Do not execute checks, classify check outcomes, reuse roots, or mutate the real workspace.
 ```
@@ -5411,6 +5563,7 @@ def test_post_execution_candidate_mutation_fails_closed() -> None:
 **Atomic verification:**
 - Target (18.D): `python -m pytest -q -o addopts='' -m docker_integration tests/integration/docker/test_execution_workspace_integrity.py::test_post_execution_candidate_mutation_fails_closed`
 - Domain (18.D): `python -m pytest -q -o addopts='' -m docker_integration tests/integration/docker/test_execution_cleanup.py tests/integration/docker/test_execution_workspace_integrity.py`
+- Matrix (18.D): `python -m pytest -q -o addopts='' -m docker_integration tests/integration/docker/test_execution_workspace_integrity.py::test_execution_cleanup_link_integrity_matrix`
 - Expected (18.D): clean runs remove exact resources; mutation/link/cleanup failures return explicit non-success residue evidence.
 
 **Atomic review focus:**
@@ -5421,7 +5574,7 @@ def test_post_execution_candidate_mutation_fails_closed() -> None:
 - [ ] **Step 18: Run 18.D RED.** Run `python -m pytest -q -o addopts='' -m docker_integration tests/integration/docker/test_execution_workspace_integrity.py::test_post_execution_candidate_mutation_fails_closed`. Expected: FAIL for “no post-integrity/cleanup verifier exists”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 19: Implement 18.D GREEN-1.** Reverify Candidate and materialized bytes/object identities after execution, then remove only the exact container and fresh root without following links.
 - [ ] **Step 20: Implement 18.D GREEN-2.** Report container/root removal, unchanged real workspace, and explicit residual artifact evidence; mutation, link, or cleanup failure cannot be hidden as success.
-- [ ] **Step 21: Implement 18.D GREEN-3.** Make `test_post_execution_candidate_mutation_fails_closed` GREEN with the smallest post-run byte drift before completing cleanup/link cases.
+- [ ] **Step 21: Implement 18.D GREEN-3.** Make `test_post_execution_candidate_mutation_fails_closed` GREEN with the smallest post-run byte drift; then make `test_execution_cleanup_link_integrity_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 22: Implement 18.D GREEN-4.** Own post-run integrity and exact cleanup/residue evidence only. Check execution/outcome parsing, root reuse, and real-workspace mutation remain out of scope.
 - [ ] **Step 23: Run 18.D Target GREEN.** Re-run `python -m pytest -q -o addopts='' -m docker_integration tests/integration/docker/test_execution_workspace_integrity.py::test_post_execution_candidate_mutation_fails_closed`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 24: Run 18.D Domain.** Run `python -m pytest -q -o addopts='' -m docker_integration tests/integration/docker/test_execution_cleanup.py tests/integration/docker/test_execution_workspace_integrity.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -5488,7 +5641,7 @@ Owned files: - Create: src/vespercode/validation/check_result.py - Test: tests/u
 Interface: Produces `CheckFindingSequenceV1`, an immutable ordered tuple of zero or more `CheckFindingV1` items, `CheckResultV1(status: Literal["PASS","FAIL","ERROR","TIMEOUT","NOT_RUN"], check_kind: CheckPlanIdV1, structured_findings: CheckFindingSequenceV1, raw_digest: str)`, `parse_ruff_result(raw: RawExecutionResultV1, profile: ReferenceProfileManifestV1) -> CheckResultV1`, and `parse_mypy_result(raw: RawExecutionResultV1, profile: ReferenceProfileManifestV1) -> CheckResultV1`.
 GREEN-1: Validate profile-frozen Ruff and Mypy versions, complete output shape, and bounded raw evidence before producing any closed `CheckResultV1`.
 GREEN-2: Map PASS, FAIL, ERROR, TIMEOUT, and NOT_RUN only to their permitted ordered finding combinations, with deterministic canonical raw digests and stable parser error codes.
-GREEN-3: Make `test_truncated_ruff_output_is_check_error` GREEN with the smallest fail-closed truncated-output path before completing malformed, version-drift, and status/finding matrices.
+GREEN-3: Make `test_truncated_ruff_output_is_check_error` GREEN with the smallest fail-closed truncated-output path; then make `test_static_tool_result_parsing_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own static-tool parsing and closed check-result invariants only. Pytest reporting, failure fingerprinting, execution, and Baseline decisions remain out of scope.
 Boundary: This child validates only closed status/finding combinations and profile-frozen Ruff/Mypy formats. It does not emit/parse pytest reports, normalize failures, execute containers, or decide Baseline success.
 ```
@@ -5509,6 +5662,7 @@ def test_truncated_ruff_output_is_check_error(
 **Atomic verification:**
 - Target (19.A): `python -m pytest -q tests/unit/validation/test_ruff_mypy_parsing.py::test_truncated_ruff_output_is_check_error`
 - Domain (19.A): `python -m pytest -q tests/unit/validation/test_check_result.py tests/unit/validation/test_ruff_mypy_parsing.py`
+- Matrix (19.A): `python -m pytest -q tests/unit/validation/test_ruff_mypy_parsing.py::test_static_tool_result_parsing_matrix`
 - Expected (19.A): `0`
 
 **Atomic review focus:**
@@ -5519,7 +5673,7 @@ def test_truncated_ruff_output_is_check_error(
 - [ ] **Step 2: Run 19.A RED.** Run `python -m pytest -q tests/unit/validation/test_ruff_mypy_parsing.py::test_truncated_ruff_output_is_check_error`. Expected: FAIL for “import failure because the check-result schema and static-tool parsers do not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 3: Implement 19.A GREEN-1.** Validate profile-frozen Ruff and Mypy versions, complete output shape, and bounded raw evidence before producing any closed `CheckResultV1`.
 - [ ] **Step 4: Implement 19.A GREEN-2.** Map PASS, FAIL, ERROR, TIMEOUT, and NOT_RUN only to their permitted ordered finding combinations, with deterministic canonical raw digests and stable parser error codes.
-- [ ] **Step 5: Implement 19.A GREEN-3.** Make `test_truncated_ruff_output_is_check_error` GREEN with the smallest fail-closed truncated-output path before completing malformed, version-drift, and status/finding matrices.
+- [ ] **Step 5: Implement 19.A GREEN-3.** Make `test_truncated_ruff_output_is_check_error` GREEN with the smallest fail-closed truncated-output path; then make `test_static_tool_result_parsing_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 6: Implement 19.A GREEN-4.** Own static-tool parsing and closed check-result invariants only. Pytest reporting, failure fingerprinting, execution, and Baseline decisions remain out of scope.
 - [ ] **Step 7: Run 19.A Target GREEN.** Re-run `python -m pytest -q tests/unit/validation/test_ruff_mypy_parsing.py::test_truncated_ruff_output_is_check_error`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 8: Run 19.A Domain.** Run `python -m pytest -q tests/unit/validation/test_check_result.py tests/unit/validation/test_ruff_mypy_parsing.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -5535,7 +5689,7 @@ Owned files: - Create: src/vespercode/validation/pytest_evidence.py - Create: sr
 Interface: Produces `ErrorPhase`, `TestStatus`, `PytestEventV1`, `PytestEvidenceV1`, `StructuredExceptionV1`, and `parse_pytest_evidence(raw: bytes, expectation: PytestReportExpectationV1) -> PytestParseOutcomeV1`.
 GREEN-1: Emit one bounded ordered event stream with declared schema/plugin versions, collection identity, terminal session event, and integrity digest over canonical report bytes.
 GREEN-2: Parse the report channel independently of exit code and console text, rejecting missing, duplicate, reordered, truncated, over-limit, corrupt, or expectation-mismatched events with stable reporter errors.
-GREEN-3: Make `test_missing_session_end_is_reporter_invalid` GREEN with the smallest normal-end validation before completing the offline corruption matrix and real Docker channel.
+GREEN-3: Make `test_missing_session_end_is_reporter_invalid` GREEN with the smallest normal-end validation; then make `test_pytest_report_corruption_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own pytest plugin emission and authoritative report validation only. Fingerprinting, Baseline orchestration, static-tool parsing, and PASS synthesis from other channels remain out of scope.
 Boundary: This child owns plugin emission, report-channel bounds, complete schema/sequence/collection/version/digest validation, and stable reporter errors only. It cannot synthesize PASS from exit code/stdout, build fingerprints, or run Baseline.
 ```
@@ -5558,6 +5712,7 @@ def test_missing_session_end_is_reporter_invalid(
 **Atomic verification:**
 - Target (19.B): `python -m pytest -q tests/unit/validation/test_pytest_evidence.py::test_missing_session_end_is_reporter_invalid`
 - Domain (19.B): `python -m pytest -q tests/unit/validation/test_pytest_evidence.py tests/unit/validation/test_pytest_reporter.py`
+- Matrix (19.B): `python -m pytest -q tests/unit/validation/test_pytest_evidence.py::test_pytest_report_corruption_matrix`
 - Docker (19.B): `python -m pytest -q -o addopts='' -m docker_integration tests/integration/docker/test_pytest_report_channel.py`
 - Expected (19.B): `0`
 
@@ -5569,7 +5724,7 @@ def test_missing_session_end_is_reporter_invalid(
 - [ ] **Step 10: Run 19.B RED.** Run `python -m pytest -q tests/unit/validation/test_pytest_evidence.py::test_missing_session_end_is_reporter_invalid`. Expected: FAIL for “import failure because the production reporter/parser do not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 11: Implement 19.B GREEN-1.** Emit one bounded ordered event stream with declared schema/plugin versions, collection identity, terminal session event, and integrity digest over canonical report bytes.
 - [ ] **Step 12: Implement 19.B GREEN-2.** Parse the report channel independently of exit code and console text, rejecting missing, duplicate, reordered, truncated, over-limit, corrupt, or expectation-mismatched events with stable reporter errors.
-- [ ] **Step 13: Implement 19.B GREEN-3.** Make `test_missing_session_end_is_reporter_invalid` GREEN with the smallest normal-end validation before completing the offline corruption matrix and real Docker channel.
+- [ ] **Step 13: Implement 19.B GREEN-3.** Make `test_missing_session_end_is_reporter_invalid` GREEN with the smallest normal-end validation; then make `test_pytest_report_corruption_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 14: Implement 19.B GREEN-4.** Own pytest plugin emission and authoritative report validation only. Fingerprinting, Baseline orchestration, static-tool parsing, and PASS synthesis from other channels remain out of scope.
 - [ ] **Step 15: Run 19.B Target GREEN.** Re-run `python -m pytest -q tests/unit/validation/test_pytest_evidence.py::test_missing_session_end_is_reporter_invalid`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 16: Run 19.B Domain.** Run `python -m pytest -q tests/unit/validation/test_pytest_evidence.py tests/unit/validation/test_pytest_reporter.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -5585,7 +5740,7 @@ Owned files: - Create: src/vespercode/validation/failure_fingerprint.py - Test: 
 Interface: Produces `FailureFingerprintV1`, `ProjectFrameSignatureV1`, and `build_failure_fingerprint(evidence: PytestEvidenceV1, node_id: str, normalization: FingerprintNormalizationContextV1) -> FingerprintOutcomeV1`.
 GREEN-1: Gate fingerprint construction on complete authoritative evidence for the exact target node in the CALL phase with FAIL status and a valid project-frame identity.
 GREEN-2: Normalize only the declared execution root, temporary root, run/container id, and reporter-marked object addresses while preserving user numbers, times, hexadecimal text, and assertion content.
-GREEN-3: Make `test_user_hexadecimal_value_is_not_normalized_away` GREEN with the smallest allowlist-preserving normalization before completing stability and TARGET_UNSTABLE cases.
+GREEN-3: Make `test_user_hexadecimal_value_is_not_normalized_away` GREEN with the smallest allowlist-preserving normalization; then make `test_failure_fingerprint_stability_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own deterministic target-failure normalization and fingerprint output only. Raw report parsing, check execution, Baseline comparison, and non-target classification remain out of scope.
 Boundary: This child consumes complete Task 19.B evidence and normalizes only the execution root, tmp root, run/container id, and reporter-marked object addresses. It does not parse raw reports, execute checks, compare Baselines, or normalize user numbers/time/hex text.
 ```
@@ -5606,6 +5761,7 @@ def test_user_hexadecimal_value_is_not_normalized_away(
 **Atomic verification:**
 - Target (19.C): `python -m pytest -q tests/unit/validation/test_failure_fingerprint.py::test_user_hexadecimal_value_is_not_normalized_away`
 - Domain (19.C): `python -m pytest -q tests/unit/validation/test_failure_fingerprint.py`
+- Matrix (19.C): `python -m pytest -q tests/unit/validation/test_failure_fingerprint.py::test_failure_fingerprint_stability_matrix`
 - Expected (19.C): `0`
 
 **Atomic review focus:**
@@ -5616,7 +5772,7 @@ def test_user_hexadecimal_value_is_not_normalized_away(
 - [ ] **Step 18: Run 19.C RED.** Run `python -m pytest -q tests/unit/validation/test_failure_fingerprint.py::test_user_hexadecimal_value_is_not_normalized_away`. Expected: FAIL for “import failure because fingerprint normalization does not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 19: Implement 19.C GREEN-1.** Gate fingerprint construction on complete authoritative evidence for the exact target node in the CALL phase with FAIL status and a valid project-frame identity.
 - [ ] **Step 20: Implement 19.C GREEN-2.** Normalize only the declared execution root, temporary root, run/container id, and reporter-marked object addresses while preserving user numbers, times, hexadecimal text, and assertion content.
-- [ ] **Step 21: Implement 19.C GREEN-3.** Make `test_user_hexadecimal_value_is_not_normalized_away` GREEN with the smallest allowlist-preserving normalization before completing stability and TARGET_UNSTABLE cases.
+- [ ] **Step 21: Implement 19.C GREEN-3.** Make `test_user_hexadecimal_value_is_not_normalized_away` GREEN with the smallest allowlist-preserving normalization; then make `test_failure_fingerprint_stability_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 22: Implement 19.C GREEN-4.** Own deterministic target-failure normalization and fingerprint output only. Raw report parsing, check execution, Baseline comparison, and non-target classification remain out of scope.
 - [ ] **Step 23: Run 19.C Target GREEN.** Re-run `python -m pytest -q tests/unit/validation/test_failure_fingerprint.py::test_user_hexadecimal_value_is_not_normalized_away`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 24: Run 19.C Domain.** Run `python -m pytest -q tests/unit/validation/test_failure_fingerprint.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -5674,7 +5830,7 @@ Owned files: - Create: src/vespercode/validation/python_adapter.py - Test: tests
 Interface: Produces `TargetTestIdSequenceV1`, an immutable ordered tuple of one or more target ids, `StaticProjectProfileResultV1 = SupportedProjectV1 | UnsupportedProjectV1`, `PythonProjectAdapterV1.detect_static(snapshot: SnapshotTreeV1, reference_manifest: ReferenceProfileManifestV1) -> StaticProjectProfileResultV1`, `PythonProjectAdapterV1.build_baseline_plan(static_profile: SupportedProjectV1, target_test_ids: TargetTestIdSequenceV1) -> BaselineCheckPlanV1`, and `PythonProjectAdapterV1.build_formal_plan(manifest: ValidationManifestV1, candidate: CandidateIdentityV1) -> FormalValidationCheckPlanV1`.
 GREEN-1: Detect supported Python project facts exclusively from the sealed `SnapshotTreeV1` and frozen reference manifest, with zero filesystem probes, imports, subprocesses, or executor calls.
 GREEN-2: Build immutable exact collect, full-suite, target-test, Ruff, and Mypy identities, argv vectors, ordering, and target bindings for Baseline and formal validation plans.
-GREEN-3: Make `test_static_unsupported_result_performs_no_execution` GREEN with the smallest Snapshot-only unsupported path before completing supported classifications and exact closed plans.
+GREEN-3: Make `test_static_unsupported_result_performs_no_execution` GREEN with the smallest Snapshot-only unsupported path; then make `test_check_plan_classification_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own static support classification and frozen plan generation only. Runtime compatibility, execution, result parsing, and Manifest publication remain out of scope.
 Boundary: Detection reads only Snapshot facts. Runtime/import/tool compatibility is not static unsupported and belongs to Task 20.B.
 ```
@@ -5696,6 +5852,7 @@ def test_static_unsupported_result_performs_no_execution(
 **Atomic verification:**
 - Target (20.A): `python -m pytest -q tests/unit/validation/test_python_adapter_static.py::test_static_unsupported_result_performs_no_execution`
 - Domain (20.A): `python -m pytest -q tests/unit/validation/test_python_adapter_static.py tests/unit/validation/test_check_plan.py`
+- Matrix (20.A): `python -m pytest -q tests/unit/validation/test_python_adapter_static.py::test_check_plan_classification_matrix`
 - Expected (20.A): supported/unsupported classifications and exact closed argv/order vectors pass with zero static execution.
 
 **Atomic review focus:**
@@ -5706,7 +5863,7 @@ def test_static_unsupported_result_performs_no_execution(
 - [ ] **Step 2: Run 20.A RED.** Run `python -m pytest -q tests/unit/validation/test_python_adapter_static.py::test_static_unsupported_result_performs_no_execution`. Expected: FAIL for “the test runner reaches `test_static_unsupported_result_performs_no_execution`, but its first task-owned assertion fails because the required Snapshot-only unsupported path has not been implemented; collection, runner startup, unrelated import, or environment failure does not count”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 3: Implement 20.A GREEN-1.** Detect supported Python project facts exclusively from the sealed `SnapshotTreeV1` and frozen reference manifest, with zero filesystem probes, imports, subprocesses, or executor calls.
 - [ ] **Step 4: Implement 20.A GREEN-2.** Build immutable exact collect, full-suite, target-test, Ruff, and Mypy identities, argv vectors, ordering, and target bindings for Baseline and formal validation plans.
-- [ ] **Step 5: Implement 20.A GREEN-3.** Make `test_static_unsupported_result_performs_no_execution` GREEN with the smallest Snapshot-only unsupported path before completing supported classifications and exact closed plans.
+- [ ] **Step 5: Implement 20.A GREEN-3.** Make `test_static_unsupported_result_performs_no_execution` GREEN with the smallest Snapshot-only unsupported path; then make `test_check_plan_classification_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 6: Implement 20.A GREEN-4.** Own static support classification and frozen plan generation only. Runtime compatibility, execution, result parsing, and Manifest publication remain out of scope.
 - [ ] **Step 7: Run 20.A Target GREEN.** Re-run `python -m pytest -q tests/unit/validation/test_python_adapter_static.py::test_static_unsupported_result_performs_no_execution`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 8: Run 20.A Domain.** Run `python -m pytest -q tests/unit/validation/test_python_adapter_static.py tests/unit/validation/test_check_plan.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -5767,7 +5924,7 @@ Owned files: - Create: src/vespercode/validation/baseline.py - Create: src/vespe
 Interface: Produces `BaselineResultV1 = PassingBaselineV1 | BaselineBlockedV1`, `run_baseline(plan: BaselineCheckPlanV1, snapshot: SnapshotTreeV1, executor: DockerExecutor) -> BaselineResultV1`, and `create_validation_manifest(baseline: PassingBaselineV1, bindings: ManifestBindingsV1) -> ValidationManifestV1`; consumes Task 20.A's exact plan, Task 18.D closed execution boundary, and Task 19.C authoritative check/fingerprint evidence.
 GREEN-1: Execute the frozen collect, full-suite, target, Ruff, and Mypy Baseline requests once each in declared order with fresh boundaries and complete authoritative evidence.
 GREEN-2: Require exact Snapshot, plan, target, reference-profile, environment, collection, and stable repeated fingerprint bindings before constructing one immutable `ValidationManifestV1`.
-GREEN-3: Make `test_unstable_target_fingerprint_creates_no_manifest` GREEN with the smallest baseline-blocked path before completing runtime incompatibility, forbidden state, drift, and publication matrices.
+GREEN-3: Make `test_unstable_target_fingerprint_creates_no_manifest` GREEN with the smallest baseline-blocked path; then make `test_baseline_publication_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own Baseline orchestration, complete success predicates, and Manifest publication only. Static plan construction, check parsing, formal validation, and candidate mutation remain out of scope.
 Boundary: Every check gets a fresh execution. Forbidden pytest states, non-target failure, collection drift, incomplete report, Ruff/Mypy failure, or unstable full/target fingerprints prevent Manifest creation.
 ```
@@ -5793,6 +5950,7 @@ def test_unstable_target_fingerprint_creates_no_manifest(
 **Atomic verification:**
 - Target (20.B): `python -m pytest -q tests/unit/validation/test_baseline.py::test_unstable_target_fingerprint_creates_no_manifest`
 - Domain (20.B): `python -m pytest -q tests/unit/validation/test_baseline.py tests/unit/validation/test_runtime_compatibility.py tests/unit/validation/test_manifest.py`
+- Matrix (20.B): `python -m pytest -q tests/unit/validation/test_baseline.py::test_baseline_publication_matrix`
 - Docker (20.B): `python -m pytest -q -o addopts='' -m docker_integration tests/integration/docker/test_reference_baseline.py`
 - Expected (20.B): only the exact stable reference failure publishes one immutable Manifest.
 
@@ -5804,7 +5962,7 @@ def test_unstable_target_fingerprint_creates_no_manifest(
 - [ ] **Step 2: Run 20.B RED.** Run `python -m pytest -q tests/unit/validation/test_baseline.py::test_unstable_target_fingerprint_creates_no_manifest`. Expected: FAIL for “the test runner reaches `test_unstable_target_fingerprint_creates_no_manifest`, but its first task-owned assertion fails because the required baseline-blocked path has not been implemented; collection, runner startup, unrelated import, or environment failure does not count”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 3: Implement 20.B GREEN-1.** Execute the frozen collect, full-suite, target, Ruff, and Mypy Baseline requests once each in declared order with fresh boundaries and complete authoritative evidence.
 - [ ] **Step 4: Implement 20.B GREEN-2.** Require exact Snapshot, plan, target, reference-profile, environment, collection, and stable repeated fingerprint bindings before constructing one immutable `ValidationManifestV1`.
-- [ ] **Step 5: Implement 20.B GREEN-3.** Make `test_unstable_target_fingerprint_creates_no_manifest` GREEN with the smallest baseline-blocked path before completing runtime incompatibility, forbidden state, drift, and publication matrices.
+- [ ] **Step 5: Implement 20.B GREEN-3.** Make `test_unstable_target_fingerprint_creates_no_manifest` GREEN with the smallest baseline-blocked path; then make `test_baseline_publication_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 6: Implement 20.B GREEN-4.** Own Baseline orchestration, complete success predicates, and Manifest publication only. Static plan construction, check parsing, formal validation, and candidate mutation remain out of scope.
 - [ ] **Step 7: Run 20.B Target GREEN.** Re-run `python -m pytest -q tests/unit/validation/test_baseline.py::test_unstable_target_fingerprint_creates_no_manifest`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 8: Run 20.B Domain.** Run `python -m pytest -q tests/unit/validation/test_baseline.py tests/unit/validation/test_runtime_compatibility.py tests/unit/validation/test_manifest.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -5870,7 +6028,7 @@ Owned files: - Create: src/vespercode/validation/formal_plan.py - Test: tests/un
 Interface: Produces `FormalValidationPlanV1`, `FormalValidationRequestV1`, and `build_formal_validation_plan(manifest: ValidationManifestV1, candidate: CandidateRevisionV1, final_diff: FinalDiffV1) -> FormalValidationPlanV1`.
 GREEN-1: Recompute exact current candidate bytes, final-diff/protected-path state, policy identity, environment/reference profile, Manifest, target, and collection bindings before any execution request exists.
 GREEN-2: Freeze the complete ordered collect, full pytest, Ruff, and Mypy request plan with immutable request identities, candidate identity, bounds, argv, and expected evidence.
-GREEN-3: Make `test_stale_candidate_produces_zero_execution_requests` GREEN with the smallest stale-candidate rejection before completing drift, protected-input, and exact-plan matrices.
+GREEN-3: Make `test_stale_candidate_produces_zero_execution_requests` GREEN with the smallest stale-candidate rejection; then make `test_formal_preflight_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own pure preflight binding validation and full formal-plan construction only. Docker calls, evidence interpretation, lifecycle mutation, and `VerifiedCandidateV1` creation remain out of scope.
 Boundary: Own pure binding revalidation and complete request-plan construction. Do not call Docker, interpret results, or create `VerifiedCandidateV1`.
 ```
@@ -5889,6 +6047,7 @@ def test_stale_candidate_produces_zero_execution_requests() -> None:
 **Atomic verification:**
 - Target (21.A): `python -m pytest -q tests/unit/validation/test_formal_preflight.py::test_stale_candidate_produces_zero_execution_requests`
 - Domain (21.A): `python -m pytest -q tests/unit/validation/test_formal_plan.py tests/unit/validation/test_formal_preflight.py`
+- Matrix (21.A): `python -m pytest -q tests/unit/validation/test_formal_preflight.py::test_formal_preflight_matrix`
 - Expected (21.A): exact current inputs create the complete frozen plan and every stale/drifted/protected input yields zero execution requests.
 
 **Atomic review focus:**
@@ -5899,7 +6058,7 @@ def test_stale_candidate_produces_zero_execution_requests() -> None:
 - [ ] **Step 2: Run 21.A RED.** Run `python -m pytest -q tests/unit/validation/test_formal_preflight.py::test_stale_candidate_produces_zero_execution_requests`. Expected: FAIL for “no pre-execution integrity/plan builder exists”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 3: Implement 21.A GREEN-1.** Recompute exact current candidate bytes, final-diff/protected-path state, policy identity, environment/reference profile, Manifest, target, and collection bindings before any execution request exists.
 - [ ] **Step 4: Implement 21.A GREEN-2.** Freeze the complete ordered collect, full pytest, Ruff, and Mypy request plan with immutable request identities, candidate identity, bounds, argv, and expected evidence.
-- [ ] **Step 5: Implement 21.A GREEN-3.** Make `test_stale_candidate_produces_zero_execution_requests` GREEN with the smallest stale-candidate rejection before completing drift, protected-input, and exact-plan matrices.
+- [ ] **Step 5: Implement 21.A GREEN-3.** Make `test_stale_candidate_produces_zero_execution_requests` GREEN with the smallest stale-candidate rejection; then make `test_formal_preflight_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 6: Implement 21.A GREEN-4.** Own pure preflight binding validation and full formal-plan construction only. Docker calls, evidence interpretation, lifecycle mutation, and `VerifiedCandidateV1` creation remain out of scope.
 - [ ] **Step 7: Run 21.A Target GREEN.** Re-run `python -m pytest -q tests/unit/validation/test_formal_preflight.py::test_stale_candidate_produces_zero_execution_requests`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 8: Run 21.A Domain.** Run `python -m pytest -q tests/unit/validation/test_formal_plan.py tests/unit/validation/test_formal_preflight.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -5915,7 +6074,7 @@ Owned files: - Create: src/vespercode/validation/formal_execution.py - Test: tes
 Interface: Produces `FormalValidationEvidenceV1` and `execute_formal_plan(plan: FormalValidationPlanV1, executor: DockerExecutionPortV1) -> FormalValidationEvidenceV1`.
 GREEN-1: Invoke every frozen request exactly once in plan order through a fresh Task 18 execution boundary without skipping, inserting, replacing, or retrying requests implicitly.
 GREEN-2: Collect ordered request identities and complete raw/check, teardown, cleanup, timeout, and residual evidence so missing, duplicate, or partial execution remains explicit and non-success.
-GREEN-3: Make `test_executor_must_run_every_frozen_request_once` GREEN with the smallest exact-order coordinator before completing cleanup-failed and incomplete-evidence matrices.
+GREEN-3: Make `test_executor_must_run_every_frozen_request_once` GREEN with the smallest exact-order coordinator; then make `test_formal_execution_completeness_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own formal request invocation and evidence collection only. Check selection, plan mutation, success evaluation, loop return, and approval creation remain out of scope.
 Boundary: Own ordered invocation and complete raw/check evidence collection. Do not choose checks, alter the plan, evaluate formal success, return to loop, or create approvals.
 ```
@@ -5933,6 +6092,7 @@ def test_executor_must_run_every_frozen_request_once(executor: SpyDockerExecutio
 **Atomic verification:**
 - Target (21.B): `python -m pytest -q -o addopts='' -m docker_integration tests/integration/docker/test_formal_execution_completeness.py::test_executor_must_run_every_frozen_request_once`
 - Domain (21.B): `python -m pytest -q -o addopts='' -m docker_integration tests/integration/docker/test_reference_formal_validation.py tests/integration/docker/test_formal_execution_completeness.py`
+- Matrix (21.B): `python -m pytest -q -o addopts='' -m docker_integration tests/integration/docker/test_formal_execution_completeness.py::test_formal_execution_completeness_matrix`
 - Expected (21.B): every frozen request runs once with fresh boundaries and missing/duplicate/cleanup-failed evidence remains explicit.
 
 **Atomic review focus:**
@@ -5943,7 +6103,7 @@ def test_executor_must_run_every_frozen_request_once(executor: SpyDockerExecutio
 - [ ] **Step 10: Run 21.B RED.** Run `python -m pytest -q -o addopts='' -m docker_integration tests/integration/docker/test_formal_execution_completeness.py::test_executor_must_run_every_frozen_request_once`. Expected: FAIL for “no formal execution coordinator exists”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 11: Implement 21.B GREEN-1.** Invoke every frozen request exactly once in plan order through a fresh Task 18 execution boundary without skipping, inserting, replacing, or retrying requests implicitly.
 - [ ] **Step 12: Implement 21.B GREEN-2.** Collect ordered request identities and complete raw/check, teardown, cleanup, timeout, and residual evidence so missing, duplicate, or partial execution remains explicit and non-success.
-- [ ] **Step 13: Implement 21.B GREEN-3.** Make `test_executor_must_run_every_frozen_request_once` GREEN with the smallest exact-order coordinator before completing cleanup-failed and incomplete-evidence matrices.
+- [ ] **Step 13: Implement 21.B GREEN-3.** Make `test_executor_must_run_every_frozen_request_once` GREEN with the smallest exact-order coordinator; then make `test_formal_execution_completeness_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 14: Implement 21.B GREEN-4.** Own formal request invocation and evidence collection only. Check selection, plan mutation, success evaluation, loop return, and approval creation remain out of scope.
 - [ ] **Step 15: Run 21.B Target GREEN.** Re-run `python -m pytest -q -o addopts='' -m docker_integration tests/integration/docker/test_formal_execution_completeness.py::test_executor_must_run_every_frozen_request_once`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 16: Run 21.B Domain.** Run `python -m pytest -q -o addopts='' -m docker_integration tests/integration/docker/test_reference_formal_validation.py tests/integration/docker/test_formal_execution_completeness.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -5959,7 +6119,7 @@ Owned files: - Create: src/vespercode/validation/formal.py - Test: tests/unit/va
 Interface: Produces `FormalValidationOutcomeV1`, `VerifiedCandidateV1`, and pure `evaluate_formal_success(manifest: ValidationManifestV1, candidate: CandidateRevisionV1, plan: FormalValidationPlanV1, evidence: FormalValidationEvidenceV1) -> VerifiedCandidateV1 | FormalValidationFailureV1`.
 GREEN-1: Revalidate exact Manifest, candidate revision and bytes, policy/environment, target fingerprint, plan digest, request identities, and evidence bindings without reading ambient state.
 GREEN-2: Require the complete formal plan to have one authoritative passing result and successful teardown/cleanup for every request; skip, error, timeout, missing, duplicate, drift, or mismatch fails closed.
-GREEN-3: Make `test_missing_teardown_evidence_cannot_verify_candidate` GREEN with the smallest typed failure before completing the success predicate and immutable verification digest.
+GREEN-3: Make `test_missing_teardown_evidence_cannot_verify_candidate` GREEN with the smallest typed failure; then make `test_formal_verification_predicate_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own pure formal predicate evaluation and `VerifiedCandidateV1` construction only. Planning, execution, lifecycle mutation, candidate writes, and approval decisions remain out of scope.
 Boundary: Own final evidence predicate, digest, and VerifiedCandidate construction only. Do not execute checks, build plans, mutate lifecycle, or write candidate bytes.
 ```
@@ -5977,6 +6137,7 @@ def test_missing_teardown_evidence_cannot_verify_candidate() -> None:
 **Atomic verification:**
 - Target (21.C): `python -m pytest -q tests/unit/validation/test_formal_predicate.py::test_missing_teardown_evidence_cannot_verify_candidate`
 - Domain (21.C): `python -m pytest -q tests/unit/validation/test_formal_predicate.py tests/unit/validation/test_verified_candidate.py`
+- Matrix (21.C): `python -m pytest -q tests/unit/validation/test_formal_predicate.py::test_formal_verification_predicate_matrix`
 - Expected (21.C): only complete passing current evidence verifies; every skip/error/timeout/missing/drift/fingerprint mismatch returns a typed failure.
 
 **Atomic review focus:**
@@ -5987,7 +6148,7 @@ def test_missing_teardown_evidence_cannot_verify_candidate() -> None:
 - [ ] **Step 18: Run 21.C RED.** Run `python -m pytest -q tests/unit/validation/test_formal_predicate.py::test_missing_teardown_evidence_cannot_verify_candidate`. Expected: FAIL for “no pure closed formal predicate/VerifiedCandidate builder exists”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 19: Implement 21.C GREEN-1.** Revalidate exact Manifest, candidate revision and bytes, policy/environment, target fingerprint, plan digest, request identities, and evidence bindings without reading ambient state.
 - [ ] **Step 20: Implement 21.C GREEN-2.** Require the complete formal plan to have one authoritative passing result and successful teardown/cleanup for every request; skip, error, timeout, missing, duplicate, drift, or mismatch fails closed.
-- [ ] **Step 21: Implement 21.C GREEN-3.** Make `test_missing_teardown_evidence_cannot_verify_candidate` GREEN with the smallest typed failure before completing the success predicate and immutable verification digest.
+- [ ] **Step 21: Implement 21.C GREEN-3.** Make `test_missing_teardown_evidence_cannot_verify_candidate` GREEN with the smallest typed failure; then make `test_formal_verification_predicate_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 22: Implement 21.C GREEN-4.** Own pure formal predicate evaluation and `VerifiedCandidateV1` construction only. Planning, execution, lifecycle mutation, candidate writes, and approval decisions remain out of scope.
 - [ ] **Step 23: Run 21.C Target GREEN.** Re-run `python -m pytest -q tests/unit/validation/test_formal_predicate.py::test_missing_teardown_evidence_cannot_verify_candidate`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 24: Run 21.C Domain.** Run `python -m pytest -q tests/unit/validation/test_formal_predicate.py tests/unit/validation/test_verified_candidate.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -6055,7 +6216,7 @@ Owned files: - Create: src/vespercode/storage/migrations/v0005_memory.py - Creat
 Interface: Produces immutable `MEMORY_V1_MIGRATION = MigrationV1(version=5, name="memory_v1", ...)`, `MemoryKindV1`, `MemoryCreatorV1`, `MemorySourceV1`, `MemoryEntryV1`, `MemoryRepository.create(command: CreateMemoryCommandV1) -> MemoryMutationResultV1`, and `MemoryRepository.confirm(command: ConfirmProjectConventionV1) -> MemoryMutationResultV1`.
 GREEN-1: Define the exact immutable v0005 memory schema and bounded structured entry types with workspace identity, kind, creator, source, timestamps, and clear tombstone fields only.
 GREEN-2: Enforce authorized create/confirm combinations transactionally, reject model-created conventions, full source bodies, secrets, over-limit values, and cross-workspace writes with zero rows.
-GREEN-3: Make `test_model_originated_project_convention_is_rejected` GREEN with the smallest creator-authority rejection before completing schema, source, bounds, and persistence matrices.
+GREEN-3: Make `test_model_originated_project_convention_is_rejected` GREEN with the smallest creator-authority rejection; then make `test_memory_authorization_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own authorized memory schema and create/confirm repository operations only. Registry edits, selection, clearing, audit, and governance/config/validation authority remain out of scope.
 Boundary: Own one coupled workspace-memory storage behavior: immutable v0005 DDL and authorized create/confirm repository operations. It cannot edit the final registry, select context, clear entries, append audit, or allow memory to affect governance/config/validation.
 ```
@@ -6074,6 +6235,7 @@ def test_model_originated_project_convention_is_rejected(repository: MemoryRepos
 - Target (22.A): `python -m pytest -q tests/unit/memory/test_authorization.py::test_model_originated_project_convention_is_rejected`
 - Schema (22.A): `python -m pytest -q tests/unit/storage/test_memory_migration.py::test_memory_migration_has_exact_schema`
 - Domain (22.A): `python -m pytest -q tests/unit/storage/test_memory_migration.py tests/unit/memory/test_entry.py tests/unit/memory/test_repository.py tests/unit/memory/test_authorization.py`
+- Matrix (22.A): `python -m pytest -q tests/unit/memory/test_authorization.py::test_memory_authorization_matrix`
 - Expected (22.A): exact v0005 schema; only allowed creator/source/kind combinations persist in the exact workspace and forbidden/full/secret/over-limit content rejects.
 
 **Atomic review focus:**
@@ -6084,7 +6246,7 @@ def test_model_originated_project_convention_is_rejected(repository: MemoryRepos
 - [ ] **Step 2: Run 22.A RED.** Run `python -m pytest -q tests/unit/memory/test_authorization.py::test_model_originated_project_convention_is_rejected`. Expected: FAIL for “no closed memory entry/repository authority boundary exists”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 3: Implement 22.A GREEN-1.** Define the exact immutable v0005 memory schema and bounded structured entry types with workspace identity, kind, creator, source, timestamps, and clear tombstone fields only.
 - [ ] **Step 4: Implement 22.A GREEN-2.** Enforce authorized create/confirm combinations transactionally, reject model-created conventions, full source bodies, secrets, over-limit values, and cross-workspace writes with zero rows.
-- [ ] **Step 5: Implement 22.A GREEN-3.** Make `test_model_originated_project_convention_is_rejected` GREEN with the smallest creator-authority rejection before completing schema, source, bounds, and persistence matrices.
+- [ ] **Step 5: Implement 22.A GREEN-3.** Make `test_model_originated_project_convention_is_rejected` GREEN with the smallest creator-authority rejection; then make `test_memory_authorization_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 6: Implement 22.A GREEN-4.** Own authorized memory schema and create/confirm repository operations only. Registry edits, selection, clearing, audit, and governance/config/validation authority remain out of scope.
 - [ ] **Step 7: Run 22.A Target GREEN.** Re-run `python -m pytest -q tests/unit/memory/test_authorization.py::test_model_originated_project_convention_is_rejected`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 8: Run 22.A Domain.** Run `python -m pytest -q tests/unit/storage/test_memory_migration.py tests/unit/memory/test_entry.py tests/unit/memory/test_repository.py tests/unit/memory/test_authorization.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -6100,7 +6262,7 @@ Owned files: - Create: src/vespercode/memory/selection.py - Test: tests/unit/mem
 Interface: Produces `MemoryEntrySequenceV1`, an immutable ordered tuple of memory entries, `MemoryRepository.list(workspace_identity_digest: str) -> MemoryEntrySequenceV1`, and pure `select_memory(query: MemorySelectionQueryV1, entries: MemoryEntrySequenceV1) -> MemorySelectionV1`.
 GREEN-1: Query only non-cleared eligible entries whose exact workspace identity matches the request, with stable repository ordering and no fallback to paths, names, or neighboring workspaces.
 GREEN-2: Select deterministically by frozen kind priority, recency, stable tie-breakers, count limit, and canonical byte limit while retaining source attribution and excluding unauthorized data.
-GREEN-3: Make `test_selection_never_crosses_workspace_identity` GREEN with the smallest exact-workspace filter before completing ordering, eligibility, count, and byte-bound matrices.
+GREEN-3: Make `test_selection_never_crosses_workspace_identity` GREEN with the smallest exact-workspace filter; then make `test_memory_selection_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own workspace-bound listing and pure bounded selection only. Memory creation, confirmation, clearing, current Snapshot/check overrides, and governance decisions remain out of scope.
 Boundary: Own eligible listing and pure deterministic selection only. Do not create/confirm/clear memory or override current Snapshot/check evidence.
 ```
@@ -6117,6 +6279,7 @@ def test_selection_never_crosses_workspace_identity(repository: MemoryRepository
 **Atomic verification:**
 - Target (22.B): `python -m pytest -q tests/unit/memory/test_workspace_isolation.py::test_selection_never_crosses_workspace_identity`
 - Domain (22.B): `python -m pytest -q tests/unit/memory/test_selection.py tests/unit/memory/test_workspace_isolation.py`
+- Matrix (22.B): `python -m pytest -q tests/unit/memory/test_workspace_isolation.py::test_memory_selection_matrix`
 - Expected (22.B): exact workspace/count/byte/priority/recency ordering is deterministic and no other workspace or cleared entry appears.
 
 **Atomic review focus:**
@@ -6127,7 +6290,7 @@ def test_selection_never_crosses_workspace_identity(repository: MemoryRepository
 - [ ] **Step 10: Run 22.B RED.** Run `python -m pytest -q tests/unit/memory/test_workspace_isolation.py::test_selection_never_crosses_workspace_identity`. Expected: FAIL for “no exact-workspace list/selection boundary exists”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 11: Implement 22.B GREEN-1.** Query only non-cleared eligible entries whose exact workspace identity matches the request, with stable repository ordering and no fallback to paths, names, or neighboring workspaces.
 - [ ] **Step 12: Implement 22.B GREEN-2.** Select deterministically by frozen kind priority, recency, stable tie-breakers, count limit, and canonical byte limit while retaining source attribution and excluding unauthorized data.
-- [ ] **Step 13: Implement 22.B GREEN-3.** Make `test_selection_never_crosses_workspace_identity` GREEN with the smallest exact-workspace filter before completing ordering, eligibility, count, and byte-bound matrices.
+- [ ] **Step 13: Implement 22.B GREEN-3.** Make `test_selection_never_crosses_workspace_identity` GREEN with the smallest exact-workspace filter; then make `test_memory_selection_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 14: Implement 22.B GREEN-4.** Own workspace-bound listing and pure bounded selection only. Memory creation, confirmation, clearing, current Snapshot/check overrides, and governance decisions remain out of scope.
 - [ ] **Step 15: Run 22.B Target GREEN.** Re-run `python -m pytest -q tests/unit/memory/test_workspace_isolation.py::test_selection_never_crosses_workspace_identity`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 16: Run 22.B Domain.** Run `python -m pytest -q tests/unit/memory/test_selection.py tests/unit/memory/test_workspace_isolation.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -6143,7 +6306,7 @@ Owned files: - Create: src/vespercode/memory/clear.py - Test: tests/unit/memory/
 Interface: Produces `ClearMemoryCommandV1`, `MemoryClearResultV1`, and `MemoryClearService.clear(command: ClearMemoryCommandV1) -> MemoryClearResultV1`.
 GREEN-1: Validate explicit clear authority, exact workspace identity, command/replay identity, and target scope before entering one atomic tombstone/removal transaction.
 GREEN-2: Commit all targeted eligibility changes together so future selections exclude them immediately, while replay stays idempotent and forged, cross-workspace, or partial failures change nothing.
-GREEN-3: Make `test_successful_clear_is_immediately_ineligible_for_selection` GREEN with the smallest post-commit eligibility transition before completing replay and rollback matrices.
+GREEN-3: Make `test_successful_clear_is_immediately_ineligible_for_selection` GREEN with the smallest post-commit eligibility transition; then make `test_memory_clear_transaction_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own authorized clear transaction and future-selection exclusion only. Immutable audit/source facts, other workspaces, creation/selection policy, and retention remain out of scope.
 Boundary: Own clear authority, tombstone/removal transaction, and post-commit eligibility guarantee. Do not delete immutable audit/source facts or affect another workspace.
 ```
@@ -6162,6 +6325,7 @@ def test_successful_clear_is_immediately_ineligible_for_selection() -> None:
 **Atomic verification:**
 - Target (22.C): `python -m pytest -q tests/unit/memory/test_clear.py::test_successful_clear_is_immediately_ineligible_for_selection`
 - Domain (22.C): `python -m pytest -q tests/unit/memory/test_clear.py`
+- Matrix (22.C): `python -m pytest -q tests/unit/memory/test_clear.py::test_memory_clear_transaction_matrix`
 - Expected (22.C): exact authorized clears take effect atomically; replay is idempotent and cross-workspace/forged/partial failures change nothing.
 
 **Atomic review focus:**
@@ -6172,7 +6336,7 @@ def test_successful_clear_is_immediately_ineligible_for_selection() -> None:
 - [ ] **Step 18: Run 22.C RED.** Run `python -m pytest -q tests/unit/memory/test_clear.py::test_successful_clear_is_immediately_ineligible_for_selection`. Expected: FAIL for “no transaction-bound clear service exists”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 19: Implement 22.C GREEN-1.** Validate explicit clear authority, exact workspace identity, command/replay identity, and target scope before entering one atomic tombstone/removal transaction.
 - [ ] **Step 20: Implement 22.C GREEN-2.** Commit all targeted eligibility changes together so future selections exclude them immediately, while replay stays idempotent and forged, cross-workspace, or partial failures change nothing.
-- [ ] **Step 21: Implement 22.C GREEN-3.** Make `test_successful_clear_is_immediately_ineligible_for_selection` GREEN with the smallest post-commit eligibility transition before completing replay and rollback matrices.
+- [ ] **Step 21: Implement 22.C GREEN-3.** Make `test_successful_clear_is_immediately_ineligible_for_selection` GREEN with the smallest post-commit eligibility transition; then make `test_memory_clear_transaction_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 22: Implement 22.C GREEN-4.** Own authorized clear transaction and future-selection exclusion only. Immutable audit/source facts, other workspaces, creation/selection policy, and retention remain out of scope.
 - [ ] **Step 23: Run 22.C Target GREEN.** Re-run `python -m pytest -q tests/unit/memory/test_clear.py::test_successful_clear_is_immediately_ineligible_for_selection`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 24: Run 22.C Domain.** Run `python -m pytest -q tests/unit/memory/test_clear.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -6240,7 +6404,7 @@ Owned files: - Create: src/vespercode/storage/migrations/v0006_audit.py - Create
 Interface: Produces immutable `AUDIT_V1_MIGRATION = MigrationV1(version=6, name="audit_v1", ...)`, `AuditEventV1(run_id: str, sequence: int, event_type: AuditEventTypeV1, redacted_payload: AuditPayloadV1, created_at: CanonicalTimestampV1)`, `AuditRepository.append(command: AppendAuditEventV1) -> AuditAppendResultV1`, `AuditRepository.list_run(run_id: str, page: AuditPageRequestV1) -> AuditPageV1`, and `AuditRepository.clear_ended_run(command: ClearEndedRunAuditV1) -> AuditClearResultV1`.
 GREEN-1: Define the exact immutable v0006 audit schema and closed bounded event/payload types with Run foreign key, unique increasing per-Run sequence, evidence references, and canonical timestamps.
 GREEN-2: Redact and minimize before one append transaction, rejecting forbidden bodies, secrets, raw outputs, overflow, replay conflicts, or invalid sequencing with zero rows while preserving stable pagination and ended-Run clear rules.
-GREEN-3: Make `test_audit_rejects_complete_request_body_and_secret_fields` GREEN with the smallest forbidden-payload rejection before completing schema, monotonicity, replay, pagination, and clear matrices.
+GREEN-3: Make `test_audit_rejects_complete_request_body_and_secret_fields` GREEN with the smallest forbidden-payload rejection; then make `test_audit_schema_replay_pagination_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own audit schema, append/list, redaction, sequencing, pagination, and explicit ended-Run clear only. Final registry edits, user projection, external actions, and time-based retention remain out of scope.
 Boundary: This child owns one coupled audit storage behavior: immutable v0006 DDL, allowlisted payload boundary, redaction/bounds, sequence transaction, pagination, ended-Run explicit clear, and replay/conflict handling. It cannot edit the final registry, map user-visible Run state, or perform time-based retention.
 ```
@@ -6262,6 +6426,7 @@ def test_audit_rejects_complete_request_body_and_secret_fields(
 - Target (23.A): `python -m pytest -q tests/unit/audit/test_redaction.py::test_audit_rejects_complete_request_body_and_secret_fields`
 - Schema (23.A): `python -m pytest -q tests/unit/storage/test_audit_migration.py::test_audit_migration_has_exact_schema`
 - Domain (23.A): `python -m pytest -q tests/unit/storage/test_audit_migration.py tests/unit/audit/test_event.py tests/unit/audit/test_repository.py tests/unit/audit/test_redaction.py`
+- Matrix (23.A): `python -m pytest -q tests/unit/audit/test_redaction.py::test_audit_schema_replay_pagination_matrix`
 - Expected (23.A): `0`
 
 **Atomic review focus:**
@@ -6272,7 +6437,7 @@ def test_audit_rejects_complete_request_body_and_secret_fields(
 - [ ] **Step 2: Run 23.A RED.** Run `python -m pytest -q tests/unit/audit/test_redaction.py::test_audit_rejects_complete_request_body_and_secret_fields`. Expected: FAIL for “import failure because the closed event union and repository do not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 3: Implement 23.A GREEN-1.** Define the exact immutable v0006 audit schema and closed bounded event/payload types with Run foreign key, unique increasing per-Run sequence, evidence references, and canonical timestamps.
 - [ ] **Step 4: Implement 23.A GREEN-2.** Redact and minimize before one append transaction, rejecting forbidden bodies, secrets, raw outputs, overflow, replay conflicts, or invalid sequencing with zero rows while preserving stable pagination and ended-Run clear rules.
-- [ ] **Step 5: Implement 23.A GREEN-3.** Make `test_audit_rejects_complete_request_body_and_secret_fields` GREEN with the smallest forbidden-payload rejection before completing schema, monotonicity, replay, pagination, and clear matrices.
+- [ ] **Step 5: Implement 23.A GREEN-3.** Make `test_audit_rejects_complete_request_body_and_secret_fields` GREEN with the smallest forbidden-payload rejection; then make `test_audit_schema_replay_pagination_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 6: Implement 23.A GREEN-4.** Own audit schema, append/list, redaction, sequencing, pagination, and explicit ended-Run clear only. Final registry edits, user projection, external actions, and time-based retention remain out of scope.
 - [ ] **Step 7: Run 23.A Target GREEN.** Re-run `python -m pytest -q tests/unit/audit/test_redaction.py::test_audit_rejects_complete_request_body_and_secret_fields`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 8: Run 23.A Domain.** Run `python -m pytest -q tests/unit/storage/test_audit_migration.py tests/unit/audit/test_event.py tests/unit/audit/test_repository.py tests/unit/audit/test_redaction.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -6288,7 +6453,7 @@ Owned files: - Create: src/vespercode/audit/projection.py - Test: tests/unit/aud
 Interface: Produces `WaitContextSequenceV1` and `AuditEventSequenceV1`, immutable ordered tuples of their named item types, and `build_run_visibility(run: RunRecordV1, waits: WaitContextSequenceV1, events: AuditEventSequenceV1) -> RunVisibilityV1`.
 GREEN-1: Validate exact Run identity and monotonic typed event/wait inputs, then map each lifecycle phase, wait, recovery, and terminal fact through one closed precedence table.
 GREEN-2: Produce bounded stable state labels, reason codes, next actions, and safe evidence references without exposing internal rows or bodies or treating absent evidence as PASS/STOPPED.
-GREEN-3: Make `test_recovery_required_is_never_projected_as_stopped` GREEN with the smallest recovery-precedence mapping before completing every CREATED/RUNNING/wait/terminal projection.
+GREEN-3: Make `test_recovery_required_is_never_projected_as_stopped` GREEN with the smallest recovery-precedence mapping; then make `test_audit_projection_lifecycle_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own pure user-visible projection over typed facts only. SQLite access, event mutation, lifecycle changes, internal payload exposure, and external-outcome claims remain out of scope.
 Boundary: This child is a pure projection over typed Tasks 7.B/23.A facts. It cannot query SQLite, append/clear events, expose internal rows/bodies, infer PASS, or change lifecycle state.
 ```
@@ -6310,6 +6475,7 @@ def test_recovery_required_is_never_projected_as_stopped(
 **Atomic verification:**
 - Target (23.B): `python -m pytest -q tests/unit/audit/test_projection.py::test_recovery_required_is_never_projected_as_stopped`
 - Domain (23.B): `python -m pytest -q tests/unit/audit/test_projection.py`
+- Matrix (23.B): `python -m pytest -q tests/unit/audit/test_projection.py::test_audit_projection_lifecycle_matrix`
 - Expected (23.B): `0`
 
 **Atomic review focus:**
@@ -6320,7 +6486,7 @@ def test_recovery_required_is_never_projected_as_stopped(
 - [ ] **Step 10: Run 23.B RED.** Run `python -m pytest -q tests/unit/audit/test_projection.py::test_recovery_required_is_never_projected_as_stopped`. Expected: FAIL for “import failure because the visibility projector does not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 11: Implement 23.B GREEN-1.** Validate exact Run identity and monotonic typed event/wait inputs, then map each lifecycle phase, wait, recovery, and terminal fact through one closed precedence table.
 - [ ] **Step 12: Implement 23.B GREEN-2.** Produce bounded stable state labels, reason codes, next actions, and safe evidence references without exposing internal rows or bodies or treating absent evidence as PASS/STOPPED.
-- [ ] **Step 13: Implement 23.B GREEN-3.** Make `test_recovery_required_is_never_projected_as_stopped` GREEN with the smallest recovery-precedence mapping before completing every CREATED/RUNNING/wait/terminal projection.
+- [ ] **Step 13: Implement 23.B GREEN-3.** Make `test_recovery_required_is_never_projected_as_stopped` GREEN with the smallest recovery-precedence mapping; then make `test_audit_projection_lifecycle_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 14: Implement 23.B GREEN-4.** Own pure user-visible projection over typed facts only. SQLite access, event mutation, lifecycle changes, internal payload exposure, and external-outcome claims remain out of scope.
 - [ ] **Step 15: Run 23.B Target GREEN.** Re-run `python -m pytest -q tests/unit/audit/test_projection.py::test_recovery_required_is_never_projected_as_stopped`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 16: Run 23.B Domain.** Run `python -m pytest -q tests/unit/audit/test_projection.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -6336,7 +6502,7 @@ Owned files: - Create: src/vespercode/audit/retention.py - Test: tests/unit/audi
 Interface: Produces `apply_audit_retention(now: CanonicalTimestampV1, repository: AuditRepository) -> AuditRetentionResultV1`.
 GREEN-1: Compute the 30-day cutoff from the supplied canonical time and select only audit events belonging to explicitly ended Runs that are strictly eligible under the declared boundary.
 GREEN-2: Preserve every event referenced by unresolved recovery and every active, non-ended, ambiguous, or missing-terminal Run; delete eligible rows deterministically with bounded counts and idempotent reruns.
-GREEN-3: Make `test_retention_preserves_unresolved_recovery_evidence` GREEN with the smallest preservation predicate before completing cutoff, lifecycle, deletion, and repeat-run matrices.
+GREEN-3: Make `test_retention_preserves_unresolved_recovery_evidence` GREEN with the smallest preservation predicate; then make `test_audit_retention_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own time-based audit eligibility and recovery-preserving deletion only. Active-Run clear, transaction redesign, backup-body erasure, visibility projection, and terminal inference remain out of scope.
 Boundary: This child owns the 30-day eligibility query and recovery-preservation predicate only. It cannot clear active Runs, change transactions, erase backup bodies, create projections, or treat missing evidence as terminal.
 ```
@@ -6359,6 +6525,7 @@ def test_retention_preserves_unresolved_recovery_evidence(
 **Atomic verification:**
 - Target (23.C): `python -m pytest -q tests/unit/audit/test_retention.py::test_retention_preserves_unresolved_recovery_evidence`
 - Domain (23.C): `python -m pytest -q tests/unit/audit/test_retention.py`
+- Matrix (23.C): `python -m pytest -q tests/unit/audit/test_retention.py::test_audit_retention_matrix`
 - Expected (23.C): `0`
 
 **Atomic review focus:**
@@ -6369,7 +6536,7 @@ def test_retention_preserves_unresolved_recovery_evidence(
 - [ ] **Step 18: Run 23.C RED.** Run `python -m pytest -q tests/unit/audit/test_retention.py::test_retention_preserves_unresolved_recovery_evidence`. Expected: FAIL for “import failure because the retention evaluator does not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 19: Implement 23.C GREEN-1.** Compute the 30-day cutoff from the supplied canonical time and select only audit events belonging to explicitly ended Runs that are strictly eligible under the declared boundary.
 - [ ] **Step 20: Implement 23.C GREEN-2.** Preserve every event referenced by unresolved recovery and every active, non-ended, ambiguous, or missing-terminal Run; delete eligible rows deterministically with bounded counts and idempotent reruns.
-- [ ] **Step 21: Implement 23.C GREEN-3.** Make `test_retention_preserves_unresolved_recovery_evidence` GREEN with the smallest preservation predicate before completing cutoff, lifecycle, deletion, and repeat-run matrices.
+- [ ] **Step 21: Implement 23.C GREEN-3.** Make `test_retention_preserves_unresolved_recovery_evidence` GREEN with the smallest preservation predicate; then make `test_audit_retention_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 22: Implement 23.C GREEN-4.** Own time-based audit eligibility and recovery-preserving deletion only. Active-Run clear, transaction redesign, backup-body erasure, visibility projection, and terminal inference remain out of scope.
 - [ ] **Step 23: Run 23.C Target GREEN.** Re-run `python -m pytest -q tests/unit/audit/test_retention.py::test_retention_preserves_unresolved_recovery_evidence`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 24: Run 23.C Domain.** Run `python -m pytest -q tests/unit/audit/test_retention.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -6436,7 +6603,7 @@ Owned files: - Create: src/vespercode/loop/feedback.py - Test: tests/unit/loop/t
 Interface: Produces `FeedbackRecordV1`, `FeedbackRecordSequenceV1`, an immutable ordered tuple of feedback records, `FeedbackSelectionV1`, `build_feedback(source: CheckResultV1 | ActionResultV1 | StableControlErrorV1, clock: ClockV1) -> FeedbackRecordSequenceV1`, and `select_feedback(records: FeedbackRecordSequenceV1) -> FeedbackSelectionV1`.
 GREEN-1: Normalize only typed check, action, and stable control failures into bounded source-attributed records with stable ids, severity, canonical timestamps, summaries, and evidence references.
 GREEN-2: Select unconsumed feedback deterministically under exact count and canonical byte limits, preserving the newest required failure and stable severity/recency/tie-break ordering.
-GREEN-3: Make `test_newest_failure_survives_feedback_limit` GREEN with the smallest mandatory-retention selection before completing source, bounds, ordering, and determinism matrices.
+GREEN-3: Make `test_newest_failure_survives_feedback_limit` GREEN with the smallest mandatory-retention selection; then make `test_feedback_selection_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own pure feedback construction and selection only. Message assembly, record consumption, LLM calls, Run lifecycle mutation, raw bodies, and secrets remain out of scope.
 Boundary: Own pure feedback normalization, severity/order/limit selection, and evidence references. Do not assemble messages, consume records, call an LLM, or mutate Run state.
 ```
@@ -6454,6 +6621,7 @@ def test_newest_failure_survives_feedback_limit() -> None:
 **Atomic verification:**
 - Target (24.A): `python -m pytest -q tests/unit/loop/test_feedback.py::test_newest_failure_survives_feedback_limit`
 - Domain (24.A): `python -m pytest -q tests/unit/loop/test_feedback.py`
+- Matrix (24.A): `python -m pytest -q tests/unit/loop/test_feedback.py::test_feedback_selection_matrix`
 - Expected (24.A): stable inputs produce stable records/order and newest required failure survives exact count/byte limits.
 
 **Atomic review focus:**
@@ -6464,7 +6632,7 @@ def test_newest_failure_survives_feedback_limit() -> None:
 - [ ] **Step 2: Run 24.A RED.** Run `python -m pytest -q tests/unit/loop/test_feedback.py::test_newest_failure_survives_feedback_limit`. Expected: FAIL for “no structured feedback builder/selector exists”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 3: Implement 24.A GREEN-1.** Normalize only typed check, action, and stable control failures into bounded source-attributed records with stable ids, severity, canonical timestamps, summaries, and evidence references.
 - [ ] **Step 4: Implement 24.A GREEN-2.** Select unconsumed feedback deterministically under exact count and canonical byte limits, preserving the newest required failure and stable severity/recency/tie-break ordering.
-- [ ] **Step 5: Implement 24.A GREEN-3.** Make `test_newest_failure_survives_feedback_limit` GREEN with the smallest mandatory-retention selection before completing source, bounds, ordering, and determinism matrices.
+- [ ] **Step 5: Implement 24.A GREEN-3.** Make `test_newest_failure_survives_feedback_limit` GREEN with the smallest mandatory-retention selection; then make `test_feedback_selection_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 6: Implement 24.A GREEN-4.** Own pure feedback construction and selection only. Message assembly, record consumption, LLM calls, Run lifecycle mutation, raw bodies, and secrets remain out of scope.
 - [ ] **Step 7: Run 24.A Target GREEN.** Re-run `python -m pytest -q tests/unit/loop/test_feedback.py::test_newest_failure_survives_feedback_limit`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 8: Run 24.A Domain.** Run `python -m pytest -q tests/unit/loop/test_feedback.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -6480,7 +6648,7 @@ Owned files: - Create: src/vespercode/loop/context_projection.py - Test: tests/u
 Interface: Produces `ContextProjectionV1(messages: RequestMessageSequenceV1, source_projection: SourceProjectionV1, canonical_byte_count: int, projection_digest: str)`, `ContextBudgetFailureV1`, and pure `build_context(inputs: ContextProjectionInputsV1) -> ContextProjectionV1 | ContextBudgetFailureV1`.
 GREEN-1: Assemble each allowed category from exact typed inputs into source-attributed messages with mandatory system, task, current Snapshot/candidate, policy, latest failure, and control facts in frozen order.
 GREEN-2: Trim only declared optional categories by stable priority and canonical byte accounting, preserve source paths and mandatory facts, and compute one canonical projection digest over the final messages and attribution.
-GREEN-3: Make `test_trimming_never_removes_most_recent_failure_feedback` GREEN with the smallest mandatory-feedback retention before completing trimming order, source, digest, and impossible-budget matrices.
+GREEN-3: Make `test_trimming_never_removes_most_recent_failure_feedback` GREEN with the smallest mandatory-feedback retention; then make `test_context_trim_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own pure context assembly, attribution, trimming, bytes, and digest only. Feedback consumption, turn creation, disclosure authorization, adapter calls, raw restricted content, and secret inclusion remain out of scope.
 Boundary: Own pure category assembly, source projection, trimming, canonical bytes, and digest. Do not consume feedback, create turns, authorize disclosure, or call adapters.
 ```
@@ -6498,6 +6666,7 @@ def test_trimming_never_removes_most_recent_failure_feedback() -> None:
 **Atomic verification:**
 - Target (24.B): `python -m pytest -q tests/unit/loop/test_context_trimming.py::test_trimming_never_removes_most_recent_failure_feedback`
 - Domain (24.B): `python -m pytest -q tests/unit/loop/test_context_projection.py tests/unit/loop/test_context_trimming.py tests/unit/loop/test_context_sources.py`
+- Matrix (24.B): `python -m pytest -q tests/unit/loop/test_context_trimming.py::test_context_trim_matrix`
 - Expected (24.B): mandatory facts remain, trim order/budgets/source paths are exact, and impossible mandatory content returns zero-side-effect budget failure.
 
 **Atomic review focus:**
@@ -6508,7 +6677,7 @@ def test_trimming_never_removes_most_recent_failure_feedback() -> None:
 - [ ] **Step 10: Run 24.B RED.** Run `python -m pytest -q tests/unit/loop/test_context_trimming.py::test_trimming_never_removes_most_recent_failure_feedback`. Expected: FAIL for “no deterministic source-preserving context projector exists”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 11: Implement 24.B GREEN-1.** Assemble each allowed category from exact typed inputs into source-attributed messages with mandatory system, task, current Snapshot/candidate, policy, latest failure, and control facts in frozen order.
 - [ ] **Step 12: Implement 24.B GREEN-2.** Trim only declared optional categories by stable priority and canonical byte accounting, preserve source paths and mandatory facts, and compute one canonical projection digest over the final messages and attribution.
-- [ ] **Step 13: Implement 24.B GREEN-3.** Make `test_trimming_never_removes_most_recent_failure_feedback` GREEN with the smallest mandatory-feedback retention before completing trimming order, source, digest, and impossible-budget matrices.
+- [ ] **Step 13: Implement 24.B GREEN-3.** Make `test_trimming_never_removes_most_recent_failure_feedback` GREEN with the smallest mandatory-feedback retention; then make `test_context_trim_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 14: Implement 24.B GREEN-4.** Own pure context assembly, attribution, trimming, bytes, and digest only. Feedback consumption, turn creation, disclosure authorization, adapter calls, raw restricted content, and secret inclusion remain out of scope.
 - [ ] **Step 15: Run 24.B Target GREEN.** Re-run `python -m pytest -q tests/unit/loop/test_context_trimming.py::test_trimming_never_removes_most_recent_failure_feedback`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 16: Run 24.B Domain.** Run `python -m pytest -q tests/unit/loop/test_context_projection.py tests/unit/loop/test_context_trimming.py tests/unit/loop/test_context_sources.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -6524,7 +6693,7 @@ Owned files: - Create: src/vespercode/storage/migrations/v0008_feedback.py - Cre
 Interface: Produces immutable `FEEDBACK_V1_MIGRATION = MigrationV1(version=8, name="feedback_v1", ...)`, `FeedbackReferenceSequenceV1`, an immutable ordered tuple of feedback ids, `FeedbackRepositoryV1.append(records: FeedbackRecordSequenceV1) -> FeedbackAppendResultV1`, `FeedbackConsumptionResultV1`, and `consume_feedback(turn_id: str, refs: FeedbackReferenceSequenceV1, repository: FeedbackRepositoryV1) -> FeedbackConsumptionResultV1`.
 GREEN-1: Define the exact immutable v0008 feedback schema with bounded structured records, primary key, evidence refs, nullable turn foreign key, and one-winner unconsumed predicate only.
 GREEN-2: Validate turn and ordered reference identities before one atomic compare-and-consume transaction so exactly one turn wins, replay is stable, and missing, duplicate, forged, or conflicted refs change nothing.
-GREEN-3: Make `test_two_turns_cannot_consume_one_feedback_record` GREEN with the smallest one-winner transaction before completing schema, append, replay, and rollback matrices.
+GREEN-3: Make `test_two_turns_cannot_consume_one_feedback_record` GREEN with the smallest one-winner transaction; then make `test_feedback_consumption_transaction_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own feedback repository append and atomic turn/reference consumption only. Feedback rebuilding/selection, context assembly, adapter calls, candidate/workspace mutation, raw bodies, and credentials remain out of scope.
 Boundary: Own one coupled feedback-repository behavior: immutable v0008 DDL, append of Task 24.A's already validated bounded records, turn/reference binding, and consume-once transaction. It cannot edit the final registry, rebuild/select feedback, assemble messages, create adapter calls, or mutate candidate/workspace state.
 ```
@@ -6543,6 +6712,7 @@ def test_two_turns_cannot_consume_one_feedback_record(repository: FeedbackReposi
 - Target (24.C): `python -m pytest -q tests/unit/loop/test_feedback_consumption.py::test_two_turns_cannot_consume_one_feedback_record`
 - Schema (24.C): `python -m pytest -q tests/unit/storage/test_feedback_migration.py::test_feedback_migration_has_exact_schema`
 - Domain (24.C): `python -m pytest -q tests/unit/storage/test_feedback_migration.py tests/unit/loop/test_feedback_consumption.py`
+- Matrix (24.C): `python -m pytest -q tests/unit/loop/test_feedback_consumption.py::test_feedback_consumption_transaction_matrix`
 - Expected (24.C): exact v0008 schema; exactly one turn consumes each record; replay is stable and conflicts/missing refs change nothing.
 
 **Atomic review focus:**
@@ -6553,7 +6723,7 @@ def test_two_turns_cannot_consume_one_feedback_record(repository: FeedbackReposi
 - [ ] **Step 18: Run 24.C RED.** Run `python -m pytest -q tests/unit/loop/test_feedback_consumption.py::test_two_turns_cannot_consume_one_feedback_record`. Expected: FAIL for “no transaction-bound feedback consumption service exists”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 19: Implement 24.C GREEN-1.** Define the exact immutable v0008 feedback schema with bounded structured records, primary key, evidence refs, nullable turn foreign key, and one-winner unconsumed predicate only.
 - [ ] **Step 20: Implement 24.C GREEN-2.** Validate turn and ordered reference identities before one atomic compare-and-consume transaction so exactly one turn wins, replay is stable, and missing, duplicate, forged, or conflicted refs change nothing.
-- [ ] **Step 21: Implement 24.C GREEN-3.** Make `test_two_turns_cannot_consume_one_feedback_record` GREEN with the smallest one-winner transaction before completing schema, append, replay, and rollback matrices.
+- [ ] **Step 21: Implement 24.C GREEN-3.** Make `test_two_turns_cannot_consume_one_feedback_record` GREEN with the smallest one-winner transaction; then make `test_feedback_consumption_transaction_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 22: Implement 24.C GREEN-4.** Own feedback repository append and atomic turn/reference consumption only. Feedback rebuilding/selection, context assembly, adapter calls, candidate/workspace mutation, raw bodies, and credentials remain out of scope.
 - [ ] **Step 23: Run 24.C Target GREEN.** Re-run `python -m pytest -q tests/unit/loop/test_feedback_consumption.py::test_two_turns_cannot_consume_one_feedback_record`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 24: Run 24.C Domain.** Run `python -m pytest -q tests/unit/storage/test_feedback_migration.py tests/unit/loop/test_feedback_consumption.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -6612,7 +6782,7 @@ Owned files: - Create: src/vespercode/storage/migrations/v0007_agent_turns.py - 
 Interface: Produces immutable `AGENT_TURNS_V1_MIGRATION = MigrationV1(version=7, name="agent_turns_v1", ...)`, `TurnBoundary.begin(run_id: str, expected_state: RunStateV1) -> BeginTurnResultV1`, `TurnBoundary.record_call_started(run_id: str, turn_id: str, expected_revision: int) -> RecordCallStartedResultV1`, and `TurnBoundary.close_turn(run_id: str, turn_id: str, outcome: TurnOutcomeV1, expected_revision: int) -> CloseTurnResultV1`, using Task 7.B compare-and-update operations.
 GREEN-1: Define the exact immutable v0007 active-turn schema with Run foreign key, one-active-turn constraint, revisions, closed outcomes, counters, and body-free request/result references.
 GREEN-2: Use compare-and-update transactions so one contender begins a turn, pre-call failures increment neither counter, and turn/call counts advance only at their declared successful boundaries.
-GREEN-3: Make `test_pre_call_failure_does_not_increment_turn_or_call` GREEN with the smallest zero-count abort path before completing concurrent begin, call-start, close, replay, and conflict matrices.
+GREEN-3: Make `test_pre_call_failure_does_not_increment_turn_or_call` GREEN with the smallest zero-count abort path; then make `test_turn_count_transaction_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own active-turn persistence and exact counter transitions only. Registry edits, request preparation, credential/Grant/authorization checks, transport, and outer-loop orchestration remain out of scope.
 Boundary: This task owns one coupled active-turn storage behavior: immutable v0007 DDL and exact counter/active-turn state changes. It cannot edit the final registry, prepare, authorize, or invoke an LLM call.
 ```
@@ -6634,6 +6804,7 @@ def test_pre_call_failure_does_not_increment_turn_or_call(
 - Target (25.B): `python -m pytest -q tests/unit/loop/test_turn_counting.py::test_pre_call_failure_does_not_increment_turn_or_call`
 - Schema (25.B): `python -m pytest -q tests/unit/storage/test_agent_turns_migration.py::test_agent_turn_migration_has_exact_schema`
 - Domain (25.B): `python -m pytest -q tests/unit/storage/test_agent_turns_migration.py tests/unit/loop/test_turn_counting.py`
+- Matrix (25.B): `python -m pytest -q tests/unit/loop/test_turn_counting.py::test_turn_count_transaction_matrix`
 - Expected (25.B): exact v0007 schema; every credential/Grant/readiness/transport boundary has an explicit exact count outcome and concurrent starts admit one active turn.
 
 **Atomic review focus:**
@@ -6644,7 +6815,7 @@ def test_pre_call_failure_does_not_increment_turn_or_call(
 - [ ] **Step 2: Run 25.B RED.** Run `python -m pytest -q tests/unit/loop/test_turn_counting.py::test_pre_call_failure_does_not_increment_turn_or_call`. Expected: FAIL for “the test runner reaches `test_pre_call_failure_does_not_increment_turn_or_call`, but its first task-owned assertion fails because the required zero-count abort path has not been implemented; collection, runner startup, unrelated import, or environment failure does not count”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 3: Implement 25.B GREEN-1.** Define the exact immutable v0007 active-turn schema with Run foreign key, one-active-turn constraint, revisions, closed outcomes, counters, and body-free request/result references.
 - [ ] **Step 4: Implement 25.B GREEN-2.** Use compare-and-update transactions so one contender begins a turn, pre-call failures increment neither counter, and turn/call counts advance only at their declared successful boundaries.
-- [ ] **Step 5: Implement 25.B GREEN-3.** Make `test_pre_call_failure_does_not_increment_turn_or_call` GREEN with the smallest zero-count abort path before completing concurrent begin, call-start, close, replay, and conflict matrices.
+- [ ] **Step 5: Implement 25.B GREEN-3.** Make `test_pre_call_failure_does_not_increment_turn_or_call` GREEN with the smallest zero-count abort path; then make `test_turn_count_transaction_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 6: Implement 25.B GREEN-4.** Own active-turn persistence and exact counter transitions only. Registry edits, request preparation, credential/Grant/authorization checks, transport, and outer-loop orchestration remain out of scope.
 - [ ] **Step 7: Run 25.B Target GREEN.** Re-run `python -m pytest -q tests/unit/loop/test_turn_counting.py::test_pre_call_failure_does_not_increment_turn_or_call`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 8: Run 25.B Domain.** Run `python -m pytest -q tests/unit/storage/test_agent_turns_migration.py tests/unit/loop/test_turn_counting.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -6710,7 +6881,7 @@ Owned files: - Create: src/vespercode/loop/call_orchestrator.py - Test: tests/un
 Interface: Produces `build_call_result(request: PreparedModelRequestV1, authorization_ref: OptionalAuthorizationRecordRefV1, outcome: AdapterOutcomeV1) -> LLMCallResultV1` and `CallOrchestrator.call_once(command: CallOnceV1) -> LLMCallResultV1`; consumes Task 16.B's exact unbound/bound `generate` adapters, Task 15.E authorization ledger, Task 27.B `get_for_call`, and Task 25.B counting port.
 GREEN-1: Route Mock requests without real ports and re-probe/read the sole Windows credential store for every real call before Grant, authorization, turn/call counting, or transport.
 GREEN-2: Enforce the exact credential→Grant→authorization→count→transport sequence once, preserve DENY without expansion, and convert only the resulting response or bounded adapter failure into `LLMCallResultV1`.
-GREEN-3: Make `test_cleared_credential_stops_before_every_charge_or_count` GREEN with the smallest missing-credential short circuit before completing ordering, Mock, DENY, and uncertain-transport matrices.
+GREEN-3: Make `test_cleared_credential_stops_before_every_charge_or_count` GREEN with the smallest missing-credential short circuit; then make `test_call_orchestration_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own preparation and exactly one authorized adapter call only. Retry, provider fallback, cached credentials, policy reinterpretation, action processing, and uncertain-response reconstruction remain out of scope.
 Boundary: This orchestration child alone converts a `ModelResponse` or bounded adapter failure into `LLMCallResultV1`. No retry, provider fallback, cached credential, or reconstruction after uncertain transport is permitted.
 ```
@@ -6732,6 +6903,7 @@ def test_cleared_credential_stops_before_every_charge_or_count(
 **Atomic verification:**
 - Target (25.C): `python -m pytest -q tests/unit/loop/test_call_orchestrator.py::test_cleared_credential_stops_before_every_charge_or_count`
 - Domain (25.C): `python -m pytest -q tests/unit/loop/test_call_orchestrator.py tests/unit/loop/test_turn_counting.py`
+- Matrix (25.C): `python -m pytest -q tests/unit/loop/test_call_orchestrator.py::test_call_orchestration_matrix`
 - Expected (25.C): Mock calls never touch real ports; OpenAI calls follow the exact credential→Grant→authorization→count→transport order once.
 
 **Atomic review focus:**
@@ -6742,7 +6914,7 @@ def test_cleared_credential_stops_before_every_charge_or_count(
 - [ ] **Step 2: Run 25.C RED.** Run `python -m pytest -q tests/unit/loop/test_call_orchestrator.py::test_cleared_credential_stops_before_every_charge_or_count`. Expected: FAIL for “the test runner reaches `test_cleared_credential_stops_before_every_charge_or_count`, but its first task-owned assertion fails because the required missing-credential short circuit has not been implemented; collection, runner startup, unrelated import, or environment failure does not count”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 3: Implement 25.C GREEN-1.** Route Mock requests without real ports and re-probe/read the sole Windows credential store for every real call before Grant, authorization, turn/call counting, or transport.
 - [ ] **Step 4: Implement 25.C GREEN-2.** Enforce the exact credential→Grant→authorization→count→transport sequence once, preserve DENY without expansion, and convert only the resulting response or bounded adapter failure into `LLMCallResultV1`.
-- [ ] **Step 5: Implement 25.C GREEN-3.** Make `test_cleared_credential_stops_before_every_charge_or_count` GREEN with the smallest missing-credential short circuit before completing ordering, Mock, DENY, and uncertain-transport matrices.
+- [ ] **Step 5: Implement 25.C GREEN-3.** Make `test_cleared_credential_stops_before_every_charge_or_count` GREEN with the smallest missing-credential short circuit; then make `test_call_orchestration_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 6: Implement 25.C GREEN-4.** Own preparation and exactly one authorized adapter call only. Retry, provider fallback, cached credentials, policy reinterpretation, action processing, and uncertain-response reconstruction remain out of scope.
 - [ ] **Step 7: Run 25.C Target GREEN.** Re-run `python -m pytest -q tests/unit/loop/test_call_orchestrator.py::test_cleared_credential_stops_before_every_charge_or_count`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 8: Run 25.C Domain.** Run `python -m pytest -q tests/unit/loop/test_call_orchestrator.py tests/unit/loop/test_turn_counting.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -6758,7 +6930,7 @@ Owned files: - Create: src/vespercode/storage/migrations/v0009_actions.py - Crea
 Interface: Produces immutable `ACTIONS_V1_MIGRATION = MigrationV1(version=9, name="actions_v1", ...)` and `ActionPipeline.execute(response: ModelResponse, context: ActionPipelineContextV1) -> ActionStepResultV1` using the exact Tasks 17.A–17.C parser/binder/dispatcher, Task 13 policy, and Task 24.A/24.C feedback functions/repository.
 GREEN-1: Define the exact immutable v0009 body-free action-record schema with turn identity, unique action identity, instance/semantic digests, policy decision, and result reference.
 GREEN-2: Sequence one response through exact parse, bind, policy, ALLOW-only dispatch, structured feedback append/consume, and action-record transaction without widening DENY or hiding failures.
-GREEN-3: Make `test_policy_deny_skips_dispatch_and_returns_feedback` GREEN with the smallest DENY feedback path before completing invalid, tool-failure, check, completion, and consume-once traces.
+GREEN-3: Make `test_policy_deny_skips_dispatch_and_returns_feedback` GREEN with the smallest DENY feedback path; then make `test_action_pipeline_trace_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own the coupled single action-step schema and transaction only. Registry edits, context, LLM invocation, counters, waits, restart, stopping, and outer-loop composition remain out of scope.
 Boundary: This child owns one coupled action-step storage behavior: immutable v0009 DDL and the single parse/policy/dispatch/feedback/action-record transaction. It cannot edit the final registry or own LLM invocation, counters, waits, restart, or the outer loop.
 ```
@@ -6782,6 +6954,7 @@ def test_policy_deny_skips_dispatch_and_returns_feedback(
 - Target (25.D): `python -m pytest -q tests/unit/loop/test_action_pipeline.py::test_policy_deny_skips_dispatch_and_returns_feedback`
 - Schema (25.D): `python -m pytest -q tests/unit/storage/test_actions_migration.py::test_action_migration_has_exact_schema`
 - Domain (25.D): `python -m pytest -q tests/unit/storage/test_actions_migration.py tests/unit/loop/test_action_pipeline.py tests/unit/loop/test_main_loop_failures.py`
+- Matrix (25.D): `python -m pytest -q tests/unit/loop/test_action_pipeline.py::test_action_pipeline_trace_matrix`
 - Expected (25.D): exact v0009 schema; invalid, DENY, tool failure, check feedback, completion proposal, and consume-once traces pass without hidden dispatch.
 
 **Atomic review focus:**
@@ -6792,7 +6965,7 @@ def test_policy_deny_skips_dispatch_and_returns_feedback(
 - [ ] **Step 10: Run 25.D RED.** Run `python -m pytest -q tests/unit/loop/test_action_pipeline.py::test_policy_deny_skips_dispatch_and_returns_feedback`. Expected: FAIL for “the test runner reaches `test_policy_deny_skips_dispatch_and_returns_feedback`, but its first task-owned assertion fails because the required DENY feedback path has not been implemented; collection, runner startup, unrelated import, or environment failure does not count”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 11: Implement 25.D GREEN-1.** Define the exact immutable v0009 body-free action-record schema with turn identity, unique action identity, instance/semantic digests, policy decision, and result reference.
 - [ ] **Step 12: Implement 25.D GREEN-2.** Sequence one response through exact parse, bind, policy, ALLOW-only dispatch, structured feedback append/consume, and action-record transaction without widening DENY or hiding failures.
-- [ ] **Step 13: Implement 25.D GREEN-3.** Make `test_policy_deny_skips_dispatch_and_returns_feedback` GREEN with the smallest DENY feedback path before completing invalid, tool-failure, check, completion, and consume-once traces.
+- [ ] **Step 13: Implement 25.D GREEN-3.** Make `test_policy_deny_skips_dispatch_and_returns_feedback` GREEN with the smallest DENY feedback path; then make `test_action_pipeline_trace_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 14: Implement 25.D GREEN-4.** Own the coupled single action-step schema and transaction only. Registry edits, context, LLM invocation, counters, waits, restart, stopping, and outer-loop composition remain out of scope.
 - [ ] **Step 15: Run 25.D Target GREEN.** Re-run `python -m pytest -q tests/unit/loop/test_action_pipeline.py::test_policy_deny_skips_dispatch_and_returns_feedback`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 16: Run 25.D Domain.** Run `python -m pytest -q tests/unit/storage/test_actions_migration.py tests/unit/loop/test_action_pipeline.py tests/unit/loop/test_main_loop_failures.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -6808,7 +6981,7 @@ Owned files: - Create: src/vespercode/loop/restart.py - Test: tests/unit/loop/te
 Interface: Produces `RestartGuard.inspect(run) -> RestartDispositionV1`.
 GREEN-1: Inspect persisted Run, active-turn, phase, and terminal evidence to distinguish a clean boundary from any interrupted non-persistent turn after restart.
 GREEN-2: Return one typed fail-closed stop/audit command with resend forbidden for every interrupted phase, without reconstructing request/response bodies or advancing ordinary work.
-GREEN-3: Make `test_restart_during_active_turn_stops_without_resend` GREEN with the smallest unfinished-turn disposition before completing phase, terminal, and ambiguous-evidence matrices.
+GREEN-3: Make `test_restart_during_active_turn_stops_without_resend` GREEN with the smallest unfinished-turn disposition; then make `test_restart_disposition_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own restart inspection and typed stop/audit intent only. Provider reconstruction, resend, wait consumption, tool invocation, recovery mutation, and outer-loop rules remain out of scope.
 Boundary: It may emit one typed stop/audit command but cannot reconstruct provider requests, consume waits, or invoke a tool.
 ```
@@ -6829,6 +7002,7 @@ def test_restart_during_active_turn_stops_without_resend(
 **Atomic verification:**
 - Target (25.F): `python -m pytest -q tests/unit/loop/test_restart_behavior.py::test_restart_during_active_turn_stops_without_resend`
 - Domain (25.F): `python -m pytest -q tests/unit/loop/test_restart_behavior.py`
+- Matrix (25.F): `python -m pytest -q tests/unit/loop/test_restart_behavior.py::test_restart_disposition_matrix`
 - Expected (25.F): every interrupted non-persistent phase fails closed with zero resend.
 
 **Atomic review focus:**
@@ -6839,7 +7013,7 @@ def test_restart_during_active_turn_stops_without_resend(
 - [ ] **Step 18: Run 25.F RED.** Run `python -m pytest -q tests/unit/loop/test_restart_behavior.py::test_restart_during_active_turn_stops_without_resend`. Expected: FAIL for “the test runner reaches `test_restart_during_active_turn_stops_without_resend`, but its first task-owned assertion fails because the required unfinished-turn disposition has not been implemented; collection, runner startup, unrelated import, or environment failure does not count”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 19: Implement 25.F GREEN-1.** Inspect persisted Run, active-turn, phase, and terminal evidence to distinguish a clean boundary from any interrupted non-persistent turn after restart.
 - [ ] **Step 20: Implement 25.F GREEN-2.** Return one typed fail-closed stop/audit command with resend forbidden for every interrupted phase, without reconstructing request/response bodies or advancing ordinary work.
-- [ ] **Step 21: Implement 25.F GREEN-3.** Make `test_restart_during_active_turn_stops_without_resend` GREEN with the smallest unfinished-turn disposition before completing phase, terminal, and ambiguous-evidence matrices.
+- [ ] **Step 21: Implement 25.F GREEN-3.** Make `test_restart_during_active_turn_stops_without_resend` GREEN with the smallest unfinished-turn disposition; then make `test_restart_disposition_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 22: Implement 25.F GREEN-4.** Own restart inspection and typed stop/audit intent only. Provider reconstruction, resend, wait consumption, tool invocation, recovery mutation, and outer-loop rules remain out of scope.
 - [ ] **Step 23: Run 25.F Target GREEN.** Re-run `python -m pytest -q tests/unit/loop/test_restart_behavior.py::test_restart_during_active_turn_stops_without_resend`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 24: Run 25.F Domain.** Run `python -m pytest -q tests/unit/loop/test_restart_behavior.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -6906,7 +7080,7 @@ Owned files: - Create: src/vespercode/loop/stopping.py - Create: src/vespercode/
 Interface: Produces `ProgressWindowV1`, `ProgressEvaluator.evaluate(window: ProgressWindowV1, observation: ProgressObservationV1) -> ProgressDecisionV1`, and `StopEvaluator.evaluate(state: RunLoopStateV1, evidence: LoopEvidenceV1, progress: ProgressDecisionV1, now: CanonicalTimestampV1) -> StopDecisionV1`. Both are pure and clock values are explicit inputs.
 GREEN-1: Derive deterministic progress observations from immutable semantic action, candidate revision, feedback, check, and completion evidence under exact bounded windows.
 GREEN-2: Evaluate repeated action, no progress, turn/call budget, invalid output, cancellation, and the smaller applicable deadline through one closed precedence table with explicit time.
-GREEN-3: Make `test_repeated_semantic_action_stops_at_exact_limit` GREEN with the smallest exact repetition-boundary decision before completing every stop/progress boundary matrix.
+GREEN-3: Make `test_repeated_semantic_action_stops_at_exact_limit` GREEN with the smallest exact repetition-boundary decision; then make `test_stop_progress_boundary_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own pure progress and stop decisions only. Repository, context, LLM, parser, dispatcher, wait transition, audit, and outer-loop effects remain out of scope.
 Boundary: No repository, LLM, action parser, dispatcher, wait, or audit call is allowed.
 ```
@@ -6931,6 +7105,7 @@ def test_repeated_semantic_action_stops_at_exact_limit() -> None:
 **Atomic verification:**
 - Target (25.A): `python -m pytest -q tests/unit/loop/test_stopping.py::test_repeated_semantic_action_stops_at_exact_limit`
 - Domain (25.A): `python -m pytest -q tests/unit/loop/test_stopping.py tests/unit/loop/test_progress.py`
+- Matrix (25.A): `python -m pytest -q tests/unit/loop/test_stopping.py::test_stop_progress_boundary_matrix`
 - Expected (25.A): exact boundary tables are deterministic and side-effect free.
 
 **Atomic review focus:**
@@ -6941,7 +7116,7 @@ def test_repeated_semantic_action_stops_at_exact_limit() -> None:
 - [ ] **Step 2: Run 25.A RED.** Run `python -m pytest -q tests/unit/loop/test_stopping.py::test_repeated_semantic_action_stops_at_exact_limit`. Expected: FAIL for “the test runner reaches `test_repeated_semantic_action_stops_at_exact_limit`, but its first task-owned assertion fails because the required exact repetition-boundary decision has not been implemented; collection, runner startup, unrelated import, or environment failure does not count”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 3: Implement 25.A GREEN-1.** Derive deterministic progress observations from immutable semantic action, candidate revision, feedback, check, and completion evidence under exact bounded windows.
 - [ ] **Step 4: Implement 25.A GREEN-2.** Evaluate repeated action, no progress, turn/call budget, invalid output, cancellation, and the smaller applicable deadline through one closed precedence table with explicit time.
-- [ ] **Step 5: Implement 25.A GREEN-3.** Make `test_repeated_semantic_action_stops_at_exact_limit` GREEN with the smallest exact repetition-boundary decision before completing every stop/progress boundary matrix.
+- [ ] **Step 5: Implement 25.A GREEN-3.** Make `test_repeated_semantic_action_stops_at_exact_limit` GREEN with the smallest exact repetition-boundary decision; then make `test_stop_progress_boundary_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 6: Implement 25.A GREEN-4.** Own pure progress and stop decisions only. Repository, context, LLM, parser, dispatcher, wait transition, audit, and outer-loop effects remain out of scope.
 - [ ] **Step 7: Run 25.A Target GREEN.** Re-run `python -m pytest -q tests/unit/loop/test_stopping.py::test_repeated_semantic_action_stops_at_exact_limit`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 8: Run 25.A Domain.** Run `python -m pytest -q tests/unit/loop/test_stopping.py tests/unit/loop/test_progress.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -6957,7 +7132,7 @@ Owned files: - Create: src/vespercode/loop/wait_control.py - Create: src/vesperc
 Interface: Produces `WaitController.enter(wait: WaitContextV1, now: CanonicalTimestampV1) -> WaitTransitionResultV1`, `WaitController.resume(wait: WaitContextV1, decision: WaitDecisionV1, now: CanonicalTimestampV1) -> WaitTransitionResultV1`, `WaitController.expire(wait: WaitContextV1, now: CanonicalTimestampV1) -> WaitTransitionResultV1`, and `CancellationController.evaluate_safe_point(run: RunRecordV1, cancellation_requested: bool) -> CancellationDecisionV1`.
 GREEN-1: Validate exact persisted Run/wait/decision identities and permit pause or resume only at declared wait states with one-winner decision handling.
 GREEN-2: Compare injected time against the smaller applicable Run or wait deadline and honor cancellation only at deterministic safe points, never resuming an expired or mismatched action.
-GREEN-3: Make `test_expired_wait_never_resumes_agent_action` GREEN with the smallest expiry-first transition before completing reject, duplicate, wrong-binding, deadline, and cancellation tables.
+GREEN-3: Make `test_expired_wait_never_resumes_agent_action` GREEN with the smallest expiry-first transition; then make `test_wait_resume_decision_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own pure wait/deadline/cancellation transitions over persisted bindings only. LLM, dispatch, persistence writes, policy, progress, stopping, and outer-loop orchestration remain out of scope.
 Boundary: Wait/cancel logic consumes persisted bindings and injected time only; it cannot call the LLM, tool dispatcher, or persistence writer.
 ```
@@ -6979,6 +7154,7 @@ def test_expired_wait_never_resumes_agent_action(
 **Atomic verification:**
 - Target (25.E): `python -m pytest -q tests/unit/loop/test_wait_lifecycle.py::test_expired_wait_never_resumes_agent_action`
 - Domain (25.E): `python -m pytest -q tests/unit/loop/test_wait_lifecycle.py`
+- Matrix (25.E): `python -m pytest -q tests/unit/loop/test_wait_lifecycle.py::test_wait_resume_decision_matrix`
 - Expected (25.E): reject/expiry/wrong binding/duplicate decision/cancel safe-point tables all pass.
 
 **Atomic review focus:**
@@ -6989,7 +7165,7 @@ def test_expired_wait_never_resumes_agent_action(
 - [ ] **Step 10: Run 25.E RED.** Run `python -m pytest -q tests/unit/loop/test_wait_lifecycle.py::test_expired_wait_never_resumes_agent_action`. Expected: FAIL for “the test runner reaches `test_expired_wait_never_resumes_agent_action`, but its first task-owned assertion fails because the required expiry-first transition has not been implemented; collection, runner startup, unrelated import, or environment failure does not count”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 11: Implement 25.E GREEN-1.** Validate exact persisted Run/wait/decision identities and permit pause or resume only at declared wait states with one-winner decision handling.
 - [ ] **Step 12: Implement 25.E GREEN-2.** Compare injected time against the smaller applicable Run or wait deadline and honor cancellation only at deterministic safe points, never resuming an expired or mismatched action.
-- [ ] **Step 13: Implement 25.E GREEN-3.** Make `test_expired_wait_never_resumes_agent_action` GREEN with the smallest expiry-first transition before completing reject, duplicate, wrong-binding, deadline, and cancellation tables.
+- [ ] **Step 13: Implement 25.E GREEN-3.** Make `test_expired_wait_never_resumes_agent_action` GREEN with the smallest expiry-first transition; then make `test_wait_resume_decision_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 14: Implement 25.E GREEN-4.** Own pure wait/deadline/cancellation transitions over persisted bindings only. LLM, dispatch, persistence writes, policy, progress, stopping, and outer-loop orchestration remain out of scope.
 - [ ] **Step 15: Run 25.E Target GREEN.** Re-run `python -m pytest -q tests/unit/loop/test_wait_lifecycle.py::test_expired_wait_never_resumes_agent_action`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 16: Run 25.E Domain.** Run `python -m pytest -q tests/unit/loop/test_wait_lifecycle.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -7005,7 +7181,7 @@ Owned files: - Create: src/vespercode/loop/engine.py - Test: tests/unit/loop/tes
 Interface: Produces `AgentLoopEngine.step(run_id: str) -> LoopStepResultV1` and `AgentLoopEngine.run_until_boundary(run_id: str) -> LoopBoundaryResultV1` by dependency injection of `StopEvaluator`, `TurnBoundary`, `CallOrchestrator`, `ActionPipeline`, `WaitController`, `CancellationController`, and `RestartGuard`.
 GREEN-1: Compose injected production children in the exact context→authorize/one-call→parse/policy/ALLOW-dispatch/feedback→progress/stop→close sequence, respecting restart, wait, deadline, and cancellation boundaries.
 GREEN-2: Preserve exactly one active turn and one eligible call per step, stop at the first typed wait/terminal/failure boundary, and expose ordered evidence without duplicating child decisions.
-GREEN-3: Make `test_one_engine_step_calls_each_stage_once_in_order` GREEN with the smallest thin stage sequence before completing Mock/OpenAI, correction, wait, cancel, stop, and completion compositions.
+GREEN-3: Make `test_one_engine_step_calls_each_stage_once_in_order` GREEN with the smallest thin stage sequence; then make `test_main_loop_composition_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own orchestration only. No copied policy, parser, feedback, count, progress, stop, wait, restart, retry, or high-level agent-runner mechanism is permitted in `engine.py`.
 Boundary: `engine.py` contains orchestration only: no policy table, parser, feedback rule, count predicate, retry, wait predicate, or restart predicate.
 ```
@@ -7026,6 +7202,7 @@ def test_one_engine_step_calls_each_stage_once_in_order(
 **Atomic verification:**
 - Target (25.G): `python -m pytest -q tests/unit/loop/test_main_loop.py::test_one_engine_step_calls_each_stage_once_in_order`
 - Domain (25.G): `python -m pytest -q tests/unit/loop/test_main_loop.py tests/unit/loop/test_main_loop_failures.py`
+- Matrix (25.G): `python -m pytest -q tests/unit/loop/test_main_loop.py::test_main_loop_composition_matrix`
 - Expected (25.G): Mock/OpenAI, correction, wait, cancel, stop, and completion compositions use the child implementations and preserve exactly one active turn/call.
 
 **Atomic review focus:**
@@ -7036,7 +7213,7 @@ def test_one_engine_step_calls_each_stage_once_in_order(
 - [ ] **Step 18: Run 25.G RED.** Run `python -m pytest -q tests/unit/loop/test_main_loop.py::test_one_engine_step_calls_each_stage_once_in_order`. Expected: FAIL for “the test runner reaches `test_one_engine_step_calls_each_stage_once_in_order`, but its first task-owned assertion fails because the required thin stage sequence has not been implemented; collection, runner startup, unrelated import, or environment failure does not count”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 19: Implement 25.G GREEN-1.** Compose injected production children in the exact context→authorize/one-call→parse/policy/ALLOW-dispatch/feedback→progress/stop→close sequence, respecting restart, wait, deadline, and cancellation boundaries.
 - [ ] **Step 20: Implement 25.G GREEN-2.** Preserve exactly one active turn and one eligible call per step, stop at the first typed wait/terminal/failure boundary, and expose ordered evidence without duplicating child decisions.
-- [ ] **Step 21: Implement 25.G GREEN-3.** Make `test_one_engine_step_calls_each_stage_once_in_order` GREEN with the smallest thin stage sequence before completing Mock/OpenAI, correction, wait, cancel, stop, and completion compositions.
+- [ ] **Step 21: Implement 25.G GREEN-3.** Make `test_one_engine_step_calls_each_stage_once_in_order` GREEN with the smallest thin stage sequence; then make `test_main_loop_composition_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 22: Implement 25.G GREEN-4.** Own orchestration only. No copied policy, parser, feedback, count, progress, stop, wait, restart, retry, or high-level agent-runner mechanism is permitted in `engine.py`.
 - [ ] **Step 23: Run 25.G Target GREEN.** Re-run `python -m pytest -q tests/unit/loop/test_main_loop.py::test_one_engine_step_calls_each_stage_once_in_order`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 24: Run 25.G Domain.** Run `python -m pytest -q tests/unit/loop/test_main_loop.py tests/unit/loop/test_main_loop_failures.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -7104,7 +7281,7 @@ Owned files: - Create: src/vespercode/storage/migrations/v0011_persistence.py - 
 Interface: Produces immutable `PERSISTENCE_V1_MIGRATION = MigrationV1(version=11, name="persistence_v1", ...)`, `PersistenceTransactionV1`, `PersistencePathRecordV1`, `PersistenceTransactionRepositoryV1`, and `PersistencePathRecordRepositoryV1`.
 GREEN-1: Define the exact immutable v0011 transaction/path schema with Run, approval, transaction, workspace, ordered canonical-path, closed state, digest, and artifact-reference fields only.
 GREEN-2: Enforce repository creation, unique active workspace transaction, unique ordered path identity, immutable transitions, and body-free access without reading or writing artifact or workspace bytes.
-GREEN-3: Make `test_path_records_are_unique_and_ordered_with_body_free_evidence` GREEN with the smallest duplicate-path rejection and ordered listing before completing schema, state, replay, and concurrency matrices.
+GREEN-3: Make `test_path_records_are_unique_and_ordered_with_body_free_evidence` GREEN with the smallest duplicate-path rejection and ordered listing; then make `test_persistence_path_record_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own persistence record DDL, values, and repositories only. Registry edits, artifact I/O, approval consumption, atomic replace, workspace writeback, and recovery disposition remain out of scope.
 Boundary: This task owns only immutable v0011 DDL plus transaction/path value and repository contracts. It cannot edit the final registry, read or write artifact/workspace bytes, consume approval, perform atomic replace, or decide recovery disposition.
 ```
@@ -7129,6 +7306,7 @@ def test_path_records_are_unique_and_ordered_with_body_free_evidence(
 - Target (26.A): `python -m pytest -q tests/unit/persistence/test_path_record.py::test_path_records_are_unique_and_ordered_with_body_free_evidence`
 - Schema (26.A): `python -m pytest -q tests/unit/storage/test_persistence_migration.py::test_persistence_migration_has_exact_schema`
 - Domain (26.A): `python -m pytest -q tests/unit/storage/test_persistence_migration.py tests/unit/persistence/test_path_record.py tests/unit/persistence/test_transaction.py`
+- Matrix (26.A): `python -m pytest -q tests/unit/persistence/test_path_record.py::test_persistence_path_record_matrix`
 - Expected (26.A): exact v0011 schema, keys, uniqueness, state vocabulary, ordered repository access, and body-free evidence refs pass without artifact or workspace I/O.
 
 **Atomic review focus:**
@@ -7139,7 +7317,7 @@ def test_path_records_are_unique_and_ordered_with_body_free_evidence(
 - [ ] **Step 2: Run 26.A RED.** Run `python -m pytest -q tests/unit/persistence/test_path_record.py::test_path_records_are_unique_and_ordered_with_body_free_evidence`. Expected: FAIL for “the test runner reaches `test_path_records_are_unique_and_ordered_with_body_free_evidence`, but its first task-owned assertion fails because the required duplicate-path rejection and ordered listing has not been implemented; collection, runner startup, unrelated import, or environment failure does not count”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 3: Implement 26.A GREEN-1.** Define the exact immutable v0011 transaction/path schema with Run, approval, transaction, workspace, ordered canonical-path, closed state, digest, and artifact-reference fields only.
 - [ ] **Step 4: Implement 26.A GREEN-2.** Enforce repository creation, unique active workspace transaction, unique ordered path identity, immutable transitions, and body-free access without reading or writing artifact or workspace bytes.
-- [ ] **Step 5: Implement 26.A GREEN-3.** Make `test_path_records_are_unique_and_ordered_with_body_free_evidence` GREEN with the smallest duplicate-path rejection and ordered listing before completing schema, state, replay, and concurrency matrices.
+- [ ] **Step 5: Implement 26.A GREEN-3.** Make `test_path_records_are_unique_and_ordered_with_body_free_evidence` GREEN with the smallest duplicate-path rejection and ordered listing; then make `test_persistence_path_record_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 6: Implement 26.A GREEN-4.** Own persistence record DDL, values, and repositories only. Registry edits, artifact I/O, approval consumption, atomic replace, workspace writeback, and recovery disposition remain out of scope.
 - [ ] **Step 7: Run 26.A Target GREEN.** Re-run `python -m pytest -q tests/unit/persistence/test_path_record.py::test_path_records_are_unique_and_ordered_with_body_free_evidence`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 8: Run 26.A Domain.** Run `python -m pytest -q tests/unit/storage/test_persistence_migration.py tests/unit/persistence/test_path_record.py tests/unit/persistence/test_transaction.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -7155,7 +7333,7 @@ Owned files: - Create: src/vespercode/persistence/artifacts.py - Test: tests/uni
 Interface: Produces `PersistenceArtifactStoreV1.put(kind: PersistenceArtifactKindV1, body: bytes) -> PersistenceArtifactRefV1`, `PersistenceArtifactStoreV1.read_verified(ref: PersistenceArtifactRefV1) -> bytes`, and `PersistenceArtifactStoreV1.verify_acl(ref: PersistenceArtifactRefV1) -> ArtifactAclResultV1`.
 GREEN-1: Publish exact preimage, postimage, backup, and raw recovery bytes atomically under content-addressed immutable references outside SQLite and verify kind, length, and digest on every read.
 GREEN-2: Create and re-probe current-user-only ACLs for every artifact, reject unsafe or unverifiable access, and leave workspace bytes and transaction state untouched on all paths.
-GREEN-3: Make `test_artifact_store_rejects_digest_mismatch_and_non_private_acl` GREEN with the smallest verified-read integrity failure before completing deterministic refs, publication, ACL, and cleanup matrices.
+GREEN-3: Make `test_artifact_store_rejects_digest_mismatch_and_non_private_acl` GREEN with the smallest verified-read integrity failure; then make `test_artifact_store_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own persistence artifact bytes, immutable references, digest verification, and ACL enforcement only. Approval, records/schema, workspace writes, transaction advancement, and recovery classification remain out of scope.
 Boundary: This task owns only content-addressed artifact bytes, digest verification, and current-user ACL enforcement. It stores no body in SQLite, consumes no approval, changes no workspace byte, advances no transaction state, and classifies no recovery disposition.
 ```
@@ -7178,6 +7356,7 @@ def test_artifact_store_rejects_digest_mismatch_and_non_private_acl(
 **Atomic verification:**
 - Target (26.D): `python -m pytest -q tests/unit/persistence/test_artifacts.py::test_artifact_store_rejects_digest_mismatch_and_non_private_acl`
 - Domain (26.D): `python -m pytest -q tests/unit/persistence/test_artifacts.py`
+- Matrix (26.D): `python -m pytest -q tests/unit/persistence/test_artifacts.py::test_artifact_store_matrix`
 - Expected (26.D): deterministic refs, byte-for-byte verification, ACL rejection, atomic artifact publication, and absence of SQLite/workspace mutations pass.
 
 **Atomic review focus:**
@@ -7188,7 +7367,7 @@ def test_artifact_store_rejects_digest_mismatch_and_non_private_acl(
 - [ ] **Step 10: Run 26.D RED.** Run `python -m pytest -q tests/unit/persistence/test_artifacts.py::test_artifact_store_rejects_digest_mismatch_and_non_private_acl`. Expected: FAIL for “the test runner reaches `test_artifact_store_rejects_digest_mismatch_and_non_private_acl`, but its first task-owned assertion fails because the required verified-read integrity failure has not been implemented; collection, runner startup, unrelated import, or environment failure does not count”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 11: Implement 26.D GREEN-1.** Publish exact preimage, postimage, backup, and raw recovery bytes atomically under content-addressed immutable references outside SQLite and verify kind, length, and digest on every read.
 - [ ] **Step 12: Implement 26.D GREEN-2.** Create and re-probe current-user-only ACLs for every artifact, reject unsafe or unverifiable access, and leave workspace bytes and transaction state untouched on all paths.
-- [ ] **Step 13: Implement 26.D GREEN-3.** Make `test_artifact_store_rejects_digest_mismatch_and_non_private_acl` GREEN with the smallest verified-read integrity failure before completing deterministic refs, publication, ACL, and cleanup matrices.
+- [ ] **Step 13: Implement 26.D GREEN-3.** Make `test_artifact_store_rejects_digest_mismatch_and_non_private_acl` GREEN with the smallest verified-read integrity failure; then make `test_artifact_store_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 14: Implement 26.D GREEN-4.** Own persistence artifact bytes, immutable references, digest verification, and ACL enforcement only. Approval, records/schema, workspace writes, transaction advancement, and recovery classification remain out of scope.
 - [ ] **Step 15: Run 26.D Target GREEN.** Re-run `python -m pytest -q tests/unit/persistence/test_artifacts.py::test_artifact_store_rejects_digest_mismatch_and_non_private_acl`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 16: Run 26.D Domain.** Run `python -m pytest -q tests/unit/persistence/test_artifacts.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -7204,7 +7383,7 @@ Owned files: - Create: src/vespercode/persistence/writeback.py - Test: tests/uni
 Interface: Produces `PersistenceCommandFactoryV1.for_approved_run(run_id: str, approval_id: str, event_id: str) -> PersistVerifiedCandidateV1` and `PersistenceCoordinator.persist(command: PersistVerifiedCandidateV1) -> PersistenceResultV1` by injection of Task 26.A repositories and Task 26.D artifact storage.
 GREEN-1: Bind the command to the exact current Run, verified candidate/final diff, workspace identity, event, unconsumed approval, and ordered 1–3 canonical paths before any authoritative write.
 GREEN-2: Through injected record/artifact ports, persist preimages and backups, consume approval once immediately before the first atomic replace, record per-path progress, verify postimages, and publish `COMMITTED` only after every predicate succeeds.
-GREEN-3: Make `test_missing_exact_approval_writes_no_workspace_bytes` GREEN with the smallest approval precondition before completing identity, ordering, cancellation, interruption, verification, and one-winner state matrices.
+GREEN-3: Make `test_missing_exact_approval_writes_no_workspace_bytes` GREEN with the smallest approval precondition; then make `test_writeback_precondition_state_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own thin approved writeback sequencing only. DDL, repository rules, artifact backend, recovery preview/apply, alternate approval, force, partial-success, and policy expansion remain out of scope.
 Boundary: This is a thin protocol composition. It consumes Task 14 approval once immediately before the first authoritative write and sequences preimage/backup refs, per-path progress, atomic replaces, postimage verification, and final transaction state through injected Task 26.A/26.D ports. It owns no DDL, record schema, artifact backend, recovery classification, or alternate persistence predicate.
 ```
@@ -7226,6 +7405,7 @@ def test_missing_exact_approval_writes_no_workspace_bytes(
 **Atomic verification:**
 - Target (26.E): `python -m pytest -q tests/unit/persistence/test_writeback_preconditions.py::test_missing_exact_approval_writes_no_workspace_bytes`
 - Domain (26.E): `python -m pytest -q tests/unit/persistence/test_writeback_preconditions.py tests/fault_injection/persistence/test_writeback_fault_matrix.py`
+- Matrix (26.E): `python -m pytest -q tests/unit/persistence/test_writeback_preconditions.py::test_writeback_precondition_state_matrix`
 - Expected (26.E): exact approval, byte/identity, 1–3-path ordering, backup-before-replace, verification, cancellation, and injected interruption cases pass; any interruption leaves a durable non-terminal transaction rather than false success.
 
 **Atomic review focus:**
@@ -7236,7 +7416,7 @@ def test_missing_exact_approval_writes_no_workspace_bytes(
 - [ ] **Step 18: Run 26.E RED.** Run `python -m pytest -q tests/unit/persistence/test_writeback_preconditions.py::test_missing_exact_approval_writes_no_workspace_bytes`. Expected: FAIL for “the test runner reaches `test_missing_exact_approval_writes_no_workspace_bytes`, but its first task-owned assertion fails because the required approval precondition has not been implemented; collection, runner startup, unrelated import, or environment failure does not count”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 19: Implement 26.E GREEN-1.** Bind the command to the exact current Run, verified candidate/final diff, workspace identity, event, unconsumed approval, and ordered 1–3 canonical paths before any authoritative write.
 - [ ] **Step 20: Implement 26.E GREEN-2.** Through injected record/artifact ports, persist preimages and backups, consume approval once immediately before the first atomic replace, record per-path progress, verify postimages, and publish `COMMITTED` only after every predicate succeeds.
-- [ ] **Step 21: Implement 26.E GREEN-3.** Make `test_missing_exact_approval_writes_no_workspace_bytes` GREEN with the smallest approval precondition before completing identity, ordering, cancellation, interruption, verification, and one-winner state matrices.
+- [ ] **Step 21: Implement 26.E GREEN-3.** Make `test_missing_exact_approval_writes_no_workspace_bytes` GREEN with the smallest approval precondition; then make `test_writeback_precondition_state_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 22: Implement 26.E GREEN-4.** Own thin approved writeback sequencing only. DDL, repository rules, artifact backend, recovery preview/apply, alternate approval, force, partial-success, and policy expansion remain out of scope.
 - [ ] **Step 23: Run 26.E Target GREEN.** Re-run `python -m pytest -q tests/unit/persistence/test_writeback_preconditions.py::test_missing_exact_approval_writes_no_workspace_bytes`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 24: Run 26.E Domain.** Run `python -m pytest -q tests/unit/persistence/test_writeback_preconditions.py tests/fault_injection/persistence/test_writeback_fault_matrix.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -7301,7 +7481,7 @@ Owned files: - Create: src/vespercode/persistence/recovery_preview.py - Test: te
 Interface: Produces `PersistencePathRecordSequenceV1` and `RecoveryPathObservationSequenceV1`, immutable ordered tuples of their named item types, `RecoveryPreviewService.preview_transaction(transaction_id: str) -> RecoveryPreviewV1`, and pure `classify_recovery(records: PersistencePathRecordSequenceV1, observations: RecoveryPathObservationSequenceV1) -> RecoveryDispositionV1`.
 GREEN-1: Read the exact non-terminal transaction, ordered path records, verified artifact metadata, and current workspace object/byte identities into bounded source-attributed observations without mutation.
 GREEN-2: Classify only completely proven all-postimage as `COMMITTED`, all-preimage as `ROLLED_BACK`, and every mixed, missing, ambiguous, corrupt, or external-change state as `UNRESOLVED`.
-GREEN-3: Make `test_recovery_preview_is_read_only` GREEN with the smallest zero-write preview before completing three-value classification, identity, artifact, and ambiguity matrices.
+GREEN-3: Make `test_recovery_preview_is_read_only` GREEN with the smallest zero-write preview; then make `test_recovery_decision_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own read-only recovery observation and pure classification only. Workspace/artifact/record/audit mutation, approval consumption, terminal recording, and recovery apply remain out of scope.
 Boundary: Preview may inspect metadata and digest-safe evidence but never mutate workspace, backups, transaction rows, or audit state.
 ```
@@ -7323,6 +7503,7 @@ def test_recovery_preview_is_read_only(
 **Atomic verification:**
 - Target (26.B): `python -m pytest -q tests/unit/persistence/test_recovery_decision.py::test_recovery_preview_is_read_only`
 - Domain (26.B): `python -m pytest -q tests/unit/persistence/test_recovery_decision.py`
+- Matrix (26.B): `python -m pytest -q tests/unit/persistence/test_recovery_decision.py::test_recovery_decision_matrix`
 - Expected (26.B): `UNRESOLVED`
 
 **Atomic review focus:**
@@ -7333,7 +7514,7 @@ def test_recovery_preview_is_read_only(
 - [ ] **Step 2: Run 26.B RED.** Run `python -m pytest -q tests/unit/persistence/test_recovery_decision.py::test_recovery_preview_is_read_only`. Expected: FAIL for “the test runner reaches `test_recovery_preview_is_read_only`, but its first task-owned assertion fails because the required zero-write preview has not been implemented; collection, runner startup, unrelated import, or environment failure does not count”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 3: Implement 26.B GREEN-1.** Read the exact non-terminal transaction, ordered path records, verified artifact metadata, and current workspace object/byte identities into bounded source-attributed observations without mutation.
 - [ ] **Step 4: Implement 26.B GREEN-2.** Classify only completely proven all-postimage as `COMMITTED`, all-preimage as `ROLLED_BACK`, and every mixed, missing, ambiguous, corrupt, or external-change state as `UNRESOLVED`.
-- [ ] **Step 5: Implement 26.B GREEN-3.** Make `test_recovery_preview_is_read_only` GREEN with the smallest zero-write preview before completing three-value classification, identity, artifact, and ambiguity matrices.
+- [ ] **Step 5: Implement 26.B GREEN-3.** Make `test_recovery_preview_is_read_only` GREEN with the smallest zero-write preview; then make `test_recovery_decision_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 6: Implement 26.B GREEN-4.** Own read-only recovery observation and pure classification only. Workspace/artifact/record/audit mutation, approval consumption, terminal recording, and recovery apply remain out of scope.
 - [ ] **Step 7: Run 26.B Target GREEN.** Re-run `python -m pytest -q tests/unit/persistence/test_recovery_decision.py::test_recovery_preview_is_read_only`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 8: Run 26.B Domain.** Run `python -m pytest -q tests/unit/persistence/test_recovery_decision.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -7349,7 +7530,7 @@ Owned files: - Create: src/vespercode/storage/migrations/v0012_recovery.py - Cre
 Interface: Produces immutable `RECOVERY_V1_MIGRATION = MigrationV1(version=12, name="recovery_v1", ...)`, `RecoveryService.preview(workspace: WorkspaceIdentityV1) -> RecoveryPreviewV1` by selecting the workspace-bound transaction and delegating only to Task 26.B `preview_transaction(transaction_id: str)`, `RecoveryService.apply(command: ApplyRecoveryV1) -> RecoveryResultV1` using Task 26.A records and Task 26.D artifacts, and read-only `has_unresolved_transaction(workspace_identity_digest: str) -> bool`.
 GREEN-1: Define the exact immutable v0012 body-free terminal-result schema and bind apply admission to the current workspace transaction, lease, preview digest, records, artifacts, and requested proven disposition.
 GREEN-2: Execute only the bound recovery path under the lease, rechecking current identities before each authoritative change and recording one service-proven terminal result; stale, external-change, ACL, deadline, or partial evidence remains unresolved.
-GREEN-3: Make `test_stale_preview_cannot_apply_recovery` GREEN with the smallest stale-digest rejection before completing schema, lease, fault, identity, terminal, and admission matrices.
+GREEN-3: Make `test_stale_preview_cannot_apply_recovery` GREEN with the smallest stale-digest rejection; then make `test_recovery_apply_fault_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own v0012 terminal-result storage and explicit recovery apply only. Registry edits, force/ignore/skip/edit overrides, user-declared success, alternate classification, and approval or policy expansion remain out of scope.
 Boundary: This task owns one coupled terminal-recovery storage behavior: immutable v0012 DDL and the exact apply transaction that records one service-proven terminal result. It cannot edit the final registry. Its admission predicate is read-only and returns false only after a service-proven terminal disposition; it cannot mutate or bypass recovery. There is no force, ignore, skip-path, edit-record, or user-declared success path; only service-proven terminal dispositions unblock admission.
 ```
@@ -7372,6 +7553,7 @@ def test_stale_preview_cannot_apply_recovery(
 - Target (26.C): `python -m pytest -q tests/fault_injection/persistence/test_external_change_faults.py::test_stale_preview_cannot_apply_recovery`
 - Schema (26.C): `python -m pytest -q tests/unit/storage/test_recovery_migration.py::test_recovery_migration_has_exact_schema`
 - Domain (26.C): `python -m pytest -q tests/unit/storage/test_recovery_migration.py tests/fault_injection/persistence`
+- Matrix (26.C): `python -m pytest -q tests/fault_injection/persistence/test_external_change_faults.py::test_recovery_apply_fault_matrix`
 - Windows (26.C): `python -m pytest -q -o addopts='' -m windows_integration tests/integration/windows/test_persistence_acl_and_identity.py`
 - Expected (26.C): exact v0012 schema and the complete production matrix produce only the three declared dispositions and never overwrite an unproven external change.
 
@@ -7383,7 +7565,7 @@ def test_stale_preview_cannot_apply_recovery(
 - [ ] **Step 10: Run 26.C RED.** Run `python -m pytest -q tests/fault_injection/persistence/test_external_change_faults.py::test_stale_preview_cannot_apply_recovery`. Expected: FAIL for “the test runner reaches `test_stale_preview_cannot_apply_recovery`, but its first task-owned assertion fails because the required stale-digest rejection has not been implemented; collection, runner startup, unrelated import, or environment failure does not count”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 11: Implement 26.C GREEN-1.** Define the exact immutable v0012 body-free terminal-result schema and bind apply admission to the current workspace transaction, lease, preview digest, records, artifacts, and requested proven disposition.
 - [ ] **Step 12: Implement 26.C GREEN-2.** Execute only the bound recovery path under the lease, rechecking current identities before each authoritative change and recording one service-proven terminal result; stale, external-change, ACL, deadline, or partial evidence remains unresolved.
-- [ ] **Step 13: Implement 26.C GREEN-3.** Make `test_stale_preview_cannot_apply_recovery` GREEN with the smallest stale-digest rejection before completing schema, lease, fault, identity, terminal, and admission matrices.
+- [ ] **Step 13: Implement 26.C GREEN-3.** Make `test_stale_preview_cannot_apply_recovery` GREEN with the smallest stale-digest rejection; then make `test_recovery_apply_fault_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 14: Implement 26.C GREEN-4.** Own v0012 terminal-result storage and explicit recovery apply only. Registry edits, force/ignore/skip/edit overrides, user-declared success, alternate classification, and approval or policy expansion remain out of scope.
 - [ ] **Step 15: Run 26.C Target GREEN.** Re-run `python -m pytest -q tests/fault_injection/persistence/test_external_change_faults.py::test_stale_preview_cannot_apply_recovery`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 16: Run 26.C Domain.** Run `python -m pytest -q tests/unit/storage/test_recovery_migration.py tests/fault_injection/persistence`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -7448,7 +7630,7 @@ Owned files: - Create: src/vespercode/credentials/port.py - Create: src/vesperco
 Interface: Produces `SecretCredentialV1`, `CredentialStorePortV1.set(provider: Literal["OPENAI"], secret: SecretCredentialV1) -> CredentialStoreMutationV1`, `CredentialStorePortV1.get_for_call(provider: Literal["OPENAI"]) -> SecretCredentialV1 | CredentialMissingV1`, `CredentialStorePortV1.status(provider: Literal["OPENAI"]) -> CredentialStatusV1`, `CredentialStorePortV1.clear(provider: Literal["OPENAI"]) -> CredentialStoreMutationV1`, `CredentialService.set(provider: Literal["OPENAI"], secret: SecretCredentialV1) -> CredentialMutationResultV1`, `CredentialService.status(provider: Literal["OPENAI"]) -> CredentialStatusV1`, `CredentialService.update(provider: Literal["OPENAI"], secret: SecretCredentialV1) -> CredentialMutationResultV1`, `CredentialService.clear(provider: Literal["OPENAI"]) -> CredentialMutationResultV1`, and `CredentialService.get_for_call(provider: Literal["OPENAI"]) -> SecretCredentialV1 | CredentialErrorV1`.
 GREEN-1: Close providers to `OPENAI` and wrap hidden input in a non-serializable, non-comparable, redacted secret object whose repr, exceptions, status, logs, and public results expose no value or derivative.
 GREEN-2: Probe the verified store before lifecycle operations, implement set/status/update/clear and fresh get-for-call semantics with typed failures, and reject unsafe backends without fallback, printing, or transport.
-GREEN-3: Make `test_credential_status_never_contains_secret_or_derivative` GREEN with the smallest redacted status result before completing backend, lifecycle, cleared-state, fresh-read, exception, repr, and log matrices.
+GREEN-3: Make `test_credential_status_never_contains_secret_or_derivative` GREEN with the smallest redacted status result; then make `test_credential_backend_lifecycle_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own pure credential lifecycle policy over injectable ports only. WinCred implementation, CLI/env/file input, Web forms, network calls, Grant/authorization, and call counting remain out of scope.
 Boundary: This child owns provider/input closure, backend-probe ordering, public lifecycle results, per-call re-probe/read, and exception/repr/log redaction against injectable fake ports. It does not implement WinCred, accept CLI/env/file secrets, or run a real Windows proof.
 ```
@@ -7472,6 +7654,7 @@ def test_credential_status_never_contains_secret_or_derivative(
 **Atomic verification:**
 - Target (27.A): `python -m pytest -q tests/unit/credentials/test_status.py::test_credential_status_never_contains_secret_or_derivative`
 - Domain (27.A): `python -m pytest -q tests/unit/credentials`
+- Matrix (27.A): `python -m pytest -q tests/unit/credentials/test_status.py::test_credential_backend_lifecycle_matrix`
 - Expected (27.A): `0`
 
 **Atomic review focus:**
@@ -7482,7 +7665,7 @@ def test_credential_status_never_contains_secret_or_derivative(
 - [ ] **Step 2: Run 27.A RED.** Run `python -m pytest -q tests/unit/credentials/test_status.py::test_credential_status_never_contains_secret_or_derivative`. Expected: FAIL for “import failure because the credential port/service and secret wrapper do not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 3: Implement 27.A GREEN-1.** Close providers to `OPENAI` and wrap hidden input in a non-serializable, non-comparable, redacted secret object whose repr, exceptions, status, logs, and public results expose no value or derivative.
 - [ ] **Step 4: Implement 27.A GREEN-2.** Probe the verified store before lifecycle operations, implement set/status/update/clear and fresh get-for-call semantics with typed failures, and reject unsafe backends without fallback, printing, or transport.
-- [ ] **Step 5: Implement 27.A GREEN-3.** Make `test_credential_status_never_contains_secret_or_derivative` GREEN with the smallest redacted status result before completing backend, lifecycle, cleared-state, fresh-read, exception, repr, and log matrices.
+- [ ] **Step 5: Implement 27.A GREEN-3.** Make `test_credential_status_never_contains_secret_or_derivative` GREEN with the smallest redacted status result; then make `test_credential_backend_lifecycle_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 6: Implement 27.A GREEN-4.** Own pure credential lifecycle policy over injectable ports only. WinCred implementation, CLI/env/file input, Web forms, network calls, Grant/authorization, and call counting remain out of scope.
 - [ ] **Step 7: Run 27.A Target GREEN.** Re-run `python -m pytest -q tests/unit/credentials/test_status.py::test_credential_status_never_contains_secret_or_derivative`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 8: Run 27.A Domain.** Run `python -m pytest -q tests/unit/credentials`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -7498,7 +7681,7 @@ Owned files: - Create: src/vespercode/credentials/wincred_store.py - Test: tests
 Interface: Produces `WindowsCredentialManagerStore.probe_backend() -> CredentialBackendProbeV1` and a concrete `WindowsCredentialManagerStore` implementation of every `CredentialStorePortV1` method declared by Task 27.A.
 GREEN-1: Map the sole versioned OPENAI target to mandatory Windows Credential Manager operations and probe backend identity/capability before each mutation or fresh get-for-call read.
 GREEN-2: Implement set/status/overwrite/get-for-call/clear with redacted typed errors, current-user storage, generated-test cleanup in `finally`, and no cache, fallback, environment/file import, printing, or network call.
-GREEN-3: Make `test_wincred_smoke_clears_generated_test_entry` GREEN with the smallest real lifecycle and final cleanup before completing backend identity, overwrite/delete error, fresh-read, and cleared-state proofs.
+GREEN-3: Make `test_wincred_smoke_clears_generated_test_entry` GREEN with the smallest real lifecycle and final cleanup; then make `test_wincred_real_lifecycle_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own the WinCred store adapter and real Windows proof only. Secret input UI, lifecycle policy, Grant/authorization, call counting, provider transport, and per-call network orchestration remain out of scope.
 Boundary: This child maps one versioned target name to WinCred, proves backend capability around mutations/reads, redacts backend failures, and cleans the generated test entry in `finally`. It adds no fallback store, cache, environment import, CLI secret, Web form, or transport call.
 ```
@@ -7524,6 +7707,7 @@ def test_wincred_smoke_clears_generated_test_entry(
 **Atomic verification:**
 - Target (27.B): `python -m pytest -q -o addopts='' -m windows_integration tests/integration/windows/test_wincred_smoke.py::test_wincred_smoke_clears_generated_test_entry`
 - Domain (27.B): `python -m pytest -q -o addopts='' -m windows_integration tests/integration/windows/test_wincred_smoke.py`
+- Matrix (27.B): `python -m pytest -q -o addopts='' -m windows_integration tests/integration/windows/test_wincred_smoke.py::test_wincred_real_lifecycle_matrix`
 - Expected (27.B): `0`
 
 **Atomic review focus:**
@@ -7534,7 +7718,7 @@ def test_wincred_smoke_clears_generated_test_entry(
 - [ ] **Step 10: Run 27.B RED.** Run `python -m pytest -q -o addopts='' -m windows_integration tests/integration/windows/test_wincred_smoke.py::test_wincred_smoke_clears_generated_test_entry`. Expected: FAIL for “import failure because the Windows Credential Manager adapter does not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 11: Implement 27.B GREEN-1.** Map the sole versioned OPENAI target to mandatory Windows Credential Manager operations and probe backend identity/capability before each mutation or fresh get-for-call read.
 - [ ] **Step 12: Implement 27.B GREEN-2.** Implement set/status/overwrite/get-for-call/clear with redacted typed errors, current-user storage, generated-test cleanup in `finally`, and no cache, fallback, environment/file import, printing, or network call.
-- [ ] **Step 13: Implement 27.B GREEN-3.** Make `test_wincred_smoke_clears_generated_test_entry` GREEN with the smallest real lifecycle and final cleanup before completing backend identity, overwrite/delete error, fresh-read, and cleared-state proofs.
+- [ ] **Step 13: Implement 27.B GREEN-3.** Make `test_wincred_smoke_clears_generated_test_entry` GREEN with the smallest real lifecycle and final cleanup; then make `test_wincred_real_lifecycle_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 14: Implement 27.B GREEN-4.** Own the WinCred store adapter and real Windows proof only. Secret input UI, lifecycle policy, Grant/authorization, call counting, provider transport, and per-call network orchestration remain out of scope.
 - [ ] **Step 15: Run 27.B Target GREEN.** Re-run `python -m pytest -q -o addopts='' -m windows_integration tests/integration/windows/test_wincred_smoke.py::test_wincred_smoke_clears_generated_test_entry`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 16: Run 27.B Domain.** Run `python -m pytest -q -o addopts='' -m windows_integration tests/integration/windows/test_wincred_smoke.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -7591,7 +7775,7 @@ Owned files: - Create: src/vespercode/web/security.py - Test: tests/web/test_sec
 Interface: Produces `LocalWebSecurityConfigV1(host: Literal["127.0.0.1"], port: int, session_cookie_name: str, csrf_header_name: str)`, `LocalSessionManager.create() -> LocalSessionV1`, and `verify_local_request(request: Request, session: LocalSessionV1) -> LocalRequestAuthorizationV1`.
 GREEN-1: Close server binding and accepted Host values to loopback, create bounded local sessions, and validate session identity before any route-domain call.
 GREEN-2: Apply state-change Origin and CSRF checks in fixed order, emit stable failures, and attach the exact CSP and response security headers without weakening downstream DENY.
-GREEN-3: Make `test_state_change_rejects_non_loopback_origin` GREEN with the smallest pre-domain Origin rejection before completing binding, Host, session, CSRF, header, and ordering matrices.
+GREEN-3: Make `test_state_change_rejects_non_loopback_origin` GREEN with the smallest pre-domain Origin rejection; then make `test_web_request_security_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own loopback request authorization and response headers only. Domain repositories, credentials, Docker, recovery bodies, templates, assets, CLI parsing, and server launch remain out of scope.
 Boundary: Security middleware owns authorization ordering only and cannot import domain repositories, credentials, Docker, or recovery bodies.
 ```
@@ -7617,6 +7801,7 @@ def test_state_change_rejects_non_loopback_origin(
 **Atomic verification:**
 - Target (28.A): `python -m pytest -q tests/web/test_security.py::test_state_change_rejects_non_loopback_origin`
 - Domain (28.A): `python -m pytest -q tests/web/test_security.py`
+- Matrix (28.A): `python -m pytest -q tests/web/test_security.py::test_web_request_security_matrix`
 - Expected (28.A): binding, session, Host/Origin/CSRF and headers fail before all spy domain calls.
 
 **Atomic review focus:**
@@ -7627,7 +7812,7 @@ def test_state_change_rejects_non_loopback_origin(
 - [ ] **Step 2: Run 28.A RED.** Run `python -m pytest -q tests/web/test_security.py::test_state_change_rejects_non_loopback_origin`. Expected: FAIL for “the test runner reaches `test_state_change_rejects_non_loopback_origin`, but its first task-owned assertion fails because the required pre-domain Origin rejection has not been implemented; collection, runner startup, unrelated import, or environment failure does not count”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 3: Implement 28.A GREEN-1.** Close server binding and accepted Host values to loopback, create bounded local sessions, and validate session identity before any route-domain call.
 - [ ] **Step 4: Implement 28.A GREEN-2.** Apply state-change Origin and CSRF checks in fixed order, emit stable failures, and attach the exact CSP and response security headers without weakening downstream DENY.
-- [ ] **Step 5: Implement 28.A GREEN-3.** Make `test_state_change_rejects_non_loopback_origin` GREEN with the smallest pre-domain Origin rejection before completing binding, Host, session, CSRF, header, and ordering matrices.
+- [ ] **Step 5: Implement 28.A GREEN-3.** Make `test_state_change_rejects_non_loopback_origin` GREEN with the smallest pre-domain Origin rejection; then make `test_web_request_security_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 6: Implement 28.A GREEN-4.** Own loopback request authorization and response headers only. Domain repositories, credentials, Docker, recovery bodies, templates, assets, CLI parsing, and server launch remain out of scope.
 - [ ] **Step 7: Run 28.A Target GREEN.** Re-run `python -m pytest -q tests/web/test_security.py::test_state_change_rejects_non_loopback_origin`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 8: Run 28.A Domain.** Run `python -m pytest -q tests/web/test_security.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -7692,7 +7877,7 @@ Owned files: - Create: src/vespercode/web/app.py - Create: src/vespercode/web/te
 Interface: Produces protocol `LocalShellPortsV1.list_recent_runs() -> RunVisibilitySequenceV1`, `LocalShellPortsV1.credential_status() -> CredentialStatusV1`, protocol `LocalRouteInstallerV1.install(app: FastAPI) -> None`, `LocalRouteInstallerSequenceV1`, an immutable ordered tuple of route installers, `create_local_app(shell_ports: LocalShellPortsV1, security: LocalWebSecurityConfigV1, route_installers: LocalRouteInstallerSequenceV1) -> FastAPI`, and `render_status_badge(visibility: RunVisibilityV1) -> Markup`.
 GREEN-1: Compose the local FastAPI shell from typed ports and a deterministic installer sequence with no service locator or hidden workflow lookup.
 GREEN-2: Render autoescaped templates and distinct text plus accessible-name status semantics with visible focus, keyboard reachability, live-error hooks, non-color cues, sufficient contrast, and reduced-motion-safe behavior.
-GREEN-3: Make `test_status_badge_has_text_and_accessible_name` GREEN with the smallest semantic status component before completing shell composition, escaping, state, focus, and installer-order matrices.
+GREEN-3: Make `test_status_badge_has_text_and_accessible_name` GREEN with the smallest semantic status component; then make `test_status_component_accessibility_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own shell composition, templates, and status semantics only. Static asset bytes, package lookup, CLI parsing, server launch, and domain workflow rules remain out of scope.
 Boundary: The shell installs only typed route installers and exposes no service locator. It owns template/status semantics but no static asset bytes, package-resource lookup, command parser, server launch, or domain workflow rule.
 ```
@@ -7712,6 +7897,7 @@ def test_status_badge_has_text_and_accessible_name(
 **Atomic verification:**
 - Target (28.B): `python -m pytest -q tests/web/test_status_labels.py::test_status_badge_has_text_and_accessible_name`
 - Domain (28.B): `python -m pytest -q tests/web/test_status_labels.py tests/web/test_app_composition.py`
+- Matrix (28.B): `python -m pytest -q tests/web/test_status_labels.py::test_status_component_accessibility_matrix`
 - Expected (28.B): exact status comprehension, escaped template defaults, accessible names, and deterministic typed installer order pass.
 
 **Atomic review focus:**
@@ -7722,7 +7908,7 @@ def test_status_badge_has_text_and_accessible_name(
 - [ ] **Step 2: Run 28.B RED.** Run `python -m pytest -q tests/web/test_status_labels.py::test_status_badge_has_text_and_accessible_name`. Expected: FAIL for “the test runner reaches `test_status_badge_has_text_and_accessible_name`, but its first task-owned assertion fails because the required semantic status component has not been implemented; collection, runner startup, unrelated import, or environment failure does not count”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 3: Implement 28.B GREEN-1.** Compose the local FastAPI shell from typed ports and a deterministic installer sequence with no service locator or hidden workflow lookup.
 - [ ] **Step 4: Implement 28.B GREEN-2.** Render autoescaped templates and distinct text plus accessible-name status semantics with visible focus, keyboard reachability, live-error hooks, non-color cues, sufficient contrast, and reduced-motion-safe behavior.
-- [ ] **Step 5: Implement 28.B GREEN-3.** Make `test_status_badge_has_text_and_accessible_name` GREEN with the smallest semantic status component before completing shell composition, escaping, state, focus, and installer-order matrices.
+- [ ] **Step 5: Implement 28.B GREEN-3.** Make `test_status_badge_has_text_and_accessible_name` GREEN with the smallest semantic status component; then make `test_status_component_accessibility_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 6: Implement 28.B GREEN-4.** Own shell composition, templates, and status semantics only. Static asset bytes, package lookup, CLI parsing, server launch, and domain workflow rules remain out of scope.
 - [ ] **Step 7: Run 28.B Target GREEN.** Re-run `python -m pytest -q tests/web/test_status_labels.py::test_status_badge_has_text_and_accessible_name`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 8: Run 28.B Domain.** Run `python -m pytest -q tests/web/test_status_labels.py tests/web/test_app_composition.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -7737,7 +7923,7 @@ Owned files: - Create: src/vespercode/web/static/htmx.min.js - Test: tests/web/t
 Interface: Produces `PackagedWebAssetV1`, `load_packaged_web_asset(name: Literal["htmx.min.js"]) -> PackagedWebAssetV1`, and `install_packaged_web_assets(app: FastAPI) -> None` for Task 28.B's shell.
 GREEN-1: Load only the pinned packaged `htmx.min.js` through immutable package resources, verify its declared identity, and serve it from the sole local static path with no network or CDN fallback.
 GREEN-2: Preserve autoescaped untrusted text and CSP-compatible markup while exposing keyboard focus and live-error hooks without inline bypass, low-contrast status, layout-shifting interaction, or unsafe external source.
-GREEN-3: Make `test_untrusted_run_text_is_escaped_and_htmx_is_local` GREEN with the smallest local-asset and escaped-render contract before completing identity, packaging, CSP, hook, and no-request matrices.
+GREEN-3: Make `test_untrusted_run_text_is_escaped_and_htmx_is_local` GREEN with the smallest local-asset and escaped-render contract; then make `test_web_escape_asset_csp_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own immutable asset bytes and safe render/resource integration only. Route-domain behavior, security weakening, CLI arguments, runtime download, server launch, and workflow rules remain out of scope.
 Boundary: This task owns only the immutable packaged asset and its safe render/resource contract. It cannot change route-domain behavior, add a CDN or runtime download, weaken Task 28.A security, parse CLI arguments, or start a server.
 ```
@@ -7760,6 +7946,7 @@ def test_untrusted_run_text_is_escaped_and_htmx_is_local(
 **Atomic verification:**
 - Target (28.C): `python -m pytest -q tests/web/test_html_escaping.py::test_untrusted_run_text_is_escaped_and_htmx_is_local`
 - Domain (28.C): `python -m pytest -q tests/web/test_html_escaping.py tests/web/test_packaged_assets.py`
+- Matrix (28.C): `python -m pytest -q tests/web/test_html_escaping.py::test_web_escape_asset_csp_matrix`
 - Browser (28.C): open the loopback shell and verify escaped text, keyboard focus, live errors, CSP, local HTMX loading, and no CDN request.
 - Expected (28.C): packaged asset identity/loading, autoescaping, CSP, accessibility hooks, and zero external asset request pass.
 
@@ -7771,7 +7958,7 @@ def test_untrusted_run_text_is_escaped_and_htmx_is_local(
 - [ ] **Step 10: Run 28.C RED.** Run `python -m pytest -q tests/web/test_html_escaping.py::test_untrusted_run_text_is_escaped_and_htmx_is_local`. Expected: FAIL for “the test runner reaches `test_untrusted_run_text_is_escaped_and_htmx_is_local`, but its first task-owned assertion fails because the required local-asset and escaped-render contract has not been implemented; collection, runner startup, unrelated import, or environment failure does not count”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 11: Implement 28.C GREEN-1.** Load only the pinned packaged `htmx.min.js` through immutable package resources, verify its declared identity, and serve it from the sole local static path with no network or CDN fallback.
 - [ ] **Step 12: Implement 28.C GREEN-2.** Preserve autoescaped untrusted text and CSP-compatible markup while exposing keyboard focus and live-error hooks without inline bypass, low-contrast status, layout-shifting interaction, or unsafe external source.
-- [ ] **Step 13: Implement 28.C GREEN-3.** Make `test_untrusted_run_text_is_escaped_and_htmx_is_local` GREEN with the smallest local-asset and escaped-render contract before completing identity, packaging, CSP, hook, and no-request matrices.
+- [ ] **Step 13: Implement 28.C GREEN-3.** Make `test_untrusted_run_text_is_escaped_and_htmx_is_local` GREEN with the smallest local-asset and escaped-render contract; then make `test_web_escape_asset_csp_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 14: Implement 28.C GREEN-4.** Own immutable asset bytes and safe render/resource integration only. Route-domain behavior, security weakening, CLI arguments, runtime download, server launch, and workflow rules remain out of scope.
 - [ ] **Step 15: Run 28.C Target GREEN.** Re-run `python -m pytest -q tests/web/test_html_escaping.py::test_untrusted_run_text_is_escaped_and_htmx_is_local`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 16: Run 28.C Domain.** Run `python -m pytest -q tests/web/test_html_escaping.py tests/web/test_packaged_assets.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -7828,7 +8015,7 @@ Owned files: - Create: src/vespercode/cli.py - Test: tests/unit/test_cli.py
 Interface: Produces CLI `vespercode serve --host 127.0.0.1 --port 8765` and `install_serve_command(app, shell_factory: LocalShellFactoryV1) -> None`.
 GREEN-1: Parse only the closed `serve` command, literal loopback host, validated port, and declared shell factory while rejecting secret, provider, repository, or alternate-bind inputs.
 GREEN-2: Compose Tasks 28.A–28.C once and launch through the injected application/server boundary without duplicating shell, asset, request-security, or workflow behavior.
-GREEN-3: Make `test_serve_rejects_non_loopback_host_and_secret_arguments` GREEN with the smallest closed-parser rejection before completing port, factory, single-launch, and packaged-asset reachability matrices.
+GREEN-3: Make `test_serve_rejects_non_loopback_host_and_secret_arguments` GREEN with the smallest closed-parser rejection; then make `test_cli_serve_boundary_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own thin serve parsing and loopback launch only. Shell construction, package lookup, request authorization, route behavior, secrets, providers, and repositories remain out of scope.
 Boundary: This is a thin entrypoint composition over Tasks 28.A–28.C. It owns only closed serve parsing and loopback launch; it cannot duplicate shell construction, asset lookup, request authorization, route behavior, or accept secret/provider/repository inputs.
 ```
@@ -7848,6 +8035,7 @@ def test_serve_rejects_non_loopback_host_and_secret_arguments(
 **Atomic verification:**
 - Target (28.D): `python -m pytest -q tests/unit/test_cli.py::test_serve_rejects_non_loopback_host_and_secret_arguments`
 - Domain (28.D): `python -m pytest -q tests/unit/test_cli.py`
+- Matrix (28.D): `python -m pytest -q tests/unit/test_cli.py::test_cli_serve_boundary_matrix`
 - Expected (28.D): `127.0.0.1`
 
 **Atomic review focus:**
@@ -7858,7 +8046,7 @@ def test_serve_rejects_non_loopback_host_and_secret_arguments(
 - [ ] **Step 2: Run 28.D RED.** Run `python -m pytest -q tests/unit/test_cli.py::test_serve_rejects_non_loopback_host_and_secret_arguments`. Expected: FAIL for “the test runner reaches `test_serve_rejects_non_loopback_host_and_secret_arguments`, but its first task-owned assertion fails because the required closed-parser rejection has not been implemented; collection, runner startup, unrelated import, or environment failure does not count”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 3: Implement 28.D GREEN-1.** Parse only the closed `serve` command, literal loopback host, validated port, and declared shell factory while rejecting secret, provider, repository, or alternate-bind inputs.
 - [ ] **Step 4: Implement 28.D GREEN-2.** Compose Tasks 28.A–28.C once and launch through the injected application/server boundary without duplicating shell, asset, request-security, or workflow behavior.
-- [ ] **Step 5: Implement 28.D GREEN-3.** Make `test_serve_rejects_non_loopback_host_and_secret_arguments` GREEN with the smallest closed-parser rejection before completing port, factory, single-launch, and packaged-asset reachability matrices.
+- [ ] **Step 5: Implement 28.D GREEN-3.** Make `test_serve_rejects_non_loopback_host_and_secret_arguments` GREEN with the smallest closed-parser rejection; then make `test_cli_serve_boundary_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 6: Implement 28.D GREEN-4.** Own thin serve parsing and loopback launch only. Shell construction, package lookup, request authorization, route behavior, secrets, providers, and repositories remain out of scope.
 - [ ] **Step 7: Run 28.D Target GREEN.** Re-run `python -m pytest -q tests/unit/test_cli.py::test_serve_rejects_non_loopback_host_and_secret_arguments`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 8: Run 28.D Domain.** Run `python -m pytest -q tests/unit/test_cli.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -7918,7 +8106,7 @@ Owned files: - Create: src/vespercode/web/run_lifecycle_workflow.py - Create: sr
 Interface: Produces `RunCreationWorkflowPortV1`, `RunVisibilityWorkflowPortV1`, `RunCancellationWorkflowPortV1`, their closed result unions, and `RunLifecycleRouteInstallerV1`.
 GREEN-1: Adapt closed create, visibility, and cancellation forms to typed workflow ports only after Task 28 request security, rejecting unknown/override fields before any domain call.
 GREEN-2: Render state-aware escaped Run pages with exact status/reason/next-action text, idempotent controls, accessible labels, visible focus, keyboard operation, live errors, non-color cues, and no domain-rule bypass.
-GREEN-3: Make `test_invalid_run_form_creates_no_run` GREEN with the smallest closed-form validation before completing create/detail/cancel state, replay, escaping, and accessibility matrices.
+GREEN-3: Make `test_invalid_run_form_creates_no_run` GREEN with the smallest closed-form validation; then make `test_run_web_workflow_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own secure form/route adaptation and state-aware rendering only. Run creation rules, lifecycle transitions, status projection, loop behavior, repositories, and security middleware remain out of scope.
 Boundary: Routes perform Task 28 security and closed form adaptation only. Run rules and state transitions remain in Tasks 8, 23, and 25.
 ```
@@ -7942,6 +8130,7 @@ def test_invalid_run_form_creates_no_run(
 **Atomic verification:**
 - Target (29.A): `python -m pytest -q tests/web/test_run_workflow.py::test_invalid_run_form_creates_no_run`
 - Domain (29.A): `python -m pytest -q tests/web/test_run_workflow.py`
+- Matrix (29.A): `python -m pytest -q tests/web/test_run_workflow.py::test_run_web_workflow_matrix`
 - Expected (29.A): create/status/cancel states render safely, idempotently, and without exposing forbidden override fields.
 
 **Atomic review focus:**
@@ -7952,7 +8141,7 @@ def test_invalid_run_form_creates_no_run(
 - [ ] **Step 2: Run 29.A RED.** Run `python -m pytest -q tests/web/test_run_workflow.py::test_invalid_run_form_creates_no_run`. Expected: FAIL for “the test runner reaches `test_invalid_run_form_creates_no_run`, but its first task-owned assertion fails because the required closed-form validation has not been implemented; collection, runner startup, unrelated import, or environment failure does not count”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 3: Implement 29.A GREEN-1.** Adapt closed create, visibility, and cancellation forms to typed workflow ports only after Task 28 request security, rejecting unknown/override fields before any domain call.
 - [ ] **Step 4: Implement 29.A GREEN-2.** Render state-aware escaped Run pages with exact status/reason/next-action text, idempotent controls, accessible labels, visible focus, keyboard operation, live errors, non-color cues, and no domain-rule bypass.
-- [ ] **Step 5: Implement 29.A GREEN-3.** Make `test_invalid_run_form_creates_no_run` GREEN with the smallest closed-form validation before completing create/detail/cancel state, replay, escaping, and accessibility matrices.
+- [ ] **Step 5: Implement 29.A GREEN-3.** Make `test_invalid_run_form_creates_no_run` GREEN with the smallest closed-form validation; then make `test_run_web_workflow_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 6: Implement 29.A GREEN-4.** Own secure form/route adaptation and state-aware rendering only. Run creation rules, lifecycle transitions, status projection, loop behavior, repositories, and security middleware remain out of scope.
 - [ ] **Step 7: Run 29.A Target GREEN.** Re-run `python -m pytest -q tests/web/test_run_workflow.py::test_invalid_run_form_creates_no_run`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 8: Run 29.A Domain.** Run `python -m pytest -q tests/web/test_run_workflow.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -8011,7 +8200,7 @@ Owned files: - Create: src/vespercode/web/disclosure_workflow.py - Create: src/v
 Interface: Produces `DisclosureDecisionWorkflowPortV1.decide(command: DecideDisclosureGrantV1) -> DisclosureDecisionResultV1`, `AuthorizationSummaryV1`, `build_authorization_summary(subject: DisclosureGrantSubjectV1, endpoint: OpenAIEndpointV1) -> AuthorizationSummaryV1`, `render_authorization_summary(summary: AuthorizationSummaryV1) -> Markup`, and `DisclosureRouteInstallerV1.install(app: FastAPI) -> None`.
 GREEN-1: Build the summary only from the exact bound disclosure subject and endpoint, showing provider, endpoint, categories, source paths, byte budget, expiry, and no-content-redaction warning with escaped text.
 GREEN-2: Accept only one bound approve/reject decision after Task 28 security, reject scope/endpoint/budget/credential/clock overrides before the workflow port, and never construct, widen, or mutate a Grant.
-GREEN-3: Make `test_disclosure_form_cannot_supply_scope_or_endpoint_override` GREEN with the smallest override rejection before completing subject, label, expiry, decision, escaping, and accessibility matrices.
+GREEN-3: Make `test_disclosure_form_cannot_supply_scope_or_endpoint_override` GREEN with the smallest override rejection; then make `test_disclosure_web_workflow_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own disclosure summary rendering and decision-form adaptation only. Grant construction, authorization policy, source scope, endpoint selection, credential handling, clocks, and domain state remain out of scope.
 Boundary: The form cannot construct or mutate a Grant, source scope, byte budget, endpoint, credential, or clock value.
 ```
@@ -8037,6 +8226,7 @@ def test_disclosure_form_cannot_supply_scope_or_endpoint_override(
 **Atomic verification:**
 - Target (29.B): `python -m pytest -q tests/web/test_disclosure_workflow.py::test_disclosure_form_cannot_supply_scope_or_endpoint_override`
 - Domain (29.B): `python -m pytest -q tests/web/test_disclosure_workflow.py`
+- Matrix (29.B): `python -m pytest -q tests/web/test_disclosure_workflow.py::test_disclosure_web_workflow_matrix`
 - Expected (29.B): exact human labels, no-content-redaction warning, expiry, budget, and closed decision binding pass.
 
 **Atomic review focus:**
@@ -8047,7 +8237,7 @@ def test_disclosure_form_cannot_supply_scope_or_endpoint_override(
 - [ ] **Step 2: Run 29.B RED.** Run `python -m pytest -q tests/web/test_disclosure_workflow.py::test_disclosure_form_cannot_supply_scope_or_endpoint_override`. Expected: FAIL for “the test runner reaches `test_disclosure_form_cannot_supply_scope_or_endpoint_override`, but its first task-owned assertion fails because the required override rejection has not been implemented; collection, runner startup, unrelated import, or environment failure does not count”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 3: Implement 29.B GREEN-1.** Build the summary only from the exact bound disclosure subject and endpoint, showing provider, endpoint, categories, source paths, byte budget, expiry, and no-content-redaction warning with escaped text.
 - [ ] **Step 4: Implement 29.B GREEN-2.** Accept only one bound approve/reject decision after Task 28 security, reject scope/endpoint/budget/credential/clock overrides before the workflow port, and never construct, widen, or mutate a Grant.
-- [ ] **Step 5: Implement 29.B GREEN-3.** Make `test_disclosure_form_cannot_supply_scope_or_endpoint_override` GREEN with the smallest override rejection before completing subject, label, expiry, decision, escaping, and accessibility matrices.
+- [ ] **Step 5: Implement 29.B GREEN-3.** Make `test_disclosure_form_cannot_supply_scope_or_endpoint_override` GREEN with the smallest override rejection; then make `test_disclosure_web_workflow_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 6: Implement 29.B GREEN-4.** Own disclosure summary rendering and decision-form adaptation only. Grant construction, authorization policy, source scope, endpoint selection, credential handling, clocks, and domain state remain out of scope.
 - [ ] **Step 7: Run 29.B Target GREEN.** Re-run `python -m pytest -q tests/web/test_disclosure_workflow.py::test_disclosure_form_cannot_supply_scope_or_endpoint_override`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 8: Run 29.B Domain.** Run `python -m pytest -q tests/web/test_disclosure_workflow.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -8107,7 +8297,7 @@ Owned files: - Create: src/vespercode/web/writeback_workflow.py - Create: src/ve
 Interface: Produces `FinalWritebackWorkflowPortV1`, `ProductionFinalWritebackWorkflowV1`, `WritebackReviewV1`, `RunGovernanceWorkflowPortsV1`, and `RunGovernanceRouteInstallerV1`.
 GREEN-1: Build the review from the exact current FinalDiff, verification evidence, workspace/candidate/policy identities, and approval subject, rendering all untrusted paths and evidence text escaped.
 GREEN-2: Accept only one bound final approve/reject decision after Task 28 security, reject stale or override fields before domain calls, and let only `WritebackApprovedV1` invoke the typed Task 26.E persistence port.
-GREEN-3: Make `test_stale_writeback_subject_never_calls_persistence` GREEN with the smallest stale-subject rejection before completing decision, exact-subject, persistence, installer-order, escaping, and accessibility matrices.
+GREEN-3: Make `test_stale_writeback_subject_never_calls_persistence` GREEN with the smallest stale-subject rejection; then make `test_writeback_web_workflow_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own final-review route adaptation and deterministic Milestone 29 installer composition only. Approval/persistence predicates, candidate/diff/evidence construction, workspace/policy fields, and domain state transitions remain out of scope.
 Boundary: Only `WritebackApprovedV1` may create a Task 26.E persistence command. Routes cannot accept candidate/diff/evidence/workspace/policy fields or duplicate approval/persistence predicates.
 ```
@@ -8134,6 +8324,7 @@ def test_stale_writeback_subject_never_calls_persistence(
 **Atomic verification:**
 - Target (29.C): `python -m pytest -q tests/web/test_writeback_workflow.py::test_stale_writeback_subject_never_calls_persistence`
 - Domain (29.C): `python -m pytest -q tests/web/test_writeback_workflow.py tests/web/test_accessibility.py tests/web/test_run_workflow.py tests/web/test_disclosure_workflow.py`
+- Matrix (29.C): `python -m pytest -q tests/web/test_writeback_workflow.py::test_writeback_web_workflow_matrix`
 - Browser (29.C): exercise create → running → disclosure → formal review → stale approval by keyboard.
 - Expected (29.C): exact installer order, secure posts, no stale write, escaped evidence, focus/errors, and non-color status cues pass.
 
@@ -8145,7 +8336,7 @@ def test_stale_writeback_subject_never_calls_persistence(
 - [ ] **Step 2: Run 29.C RED.** Run `python -m pytest -q tests/web/test_writeback_workflow.py::test_stale_writeback_subject_never_calls_persistence`. Expected: FAIL for “the test runner reaches `test_stale_writeback_subject_never_calls_persistence`, but its first task-owned assertion fails because the required stale-subject rejection has not been implemented; collection, runner startup, unrelated import, or environment failure does not count”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 3: Implement 29.C GREEN-1.** Build the review from the exact current FinalDiff, verification evidence, workspace/candidate/policy identities, and approval subject, rendering all untrusted paths and evidence text escaped.
 - [ ] **Step 4: Implement 29.C GREEN-2.** Accept only one bound final approve/reject decision after Task 28 security, reject stale or override fields before domain calls, and let only `WritebackApprovedV1` invoke the typed Task 26.E persistence port.
-- [ ] **Step 5: Implement 29.C GREEN-3.** Make `test_stale_writeback_subject_never_calls_persistence` GREEN with the smallest stale-subject rejection before completing decision, exact-subject, persistence, installer-order, escaping, and accessibility matrices.
+- [ ] **Step 5: Implement 29.C GREEN-3.** Make `test_stale_writeback_subject_never_calls_persistence` GREEN with the smallest stale-subject rejection; then make `test_writeback_web_workflow_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 6: Implement 29.C GREEN-4.** Own final-review route adaptation and deterministic Milestone 29 installer composition only. Approval/persistence predicates, candidate/diff/evidence construction, workspace/policy fields, and domain state transitions remain out of scope.
 - [ ] **Step 7: Run 29.C Target GREEN.** Re-run `python -m pytest -q tests/web/test_writeback_workflow.py::test_stale_writeback_subject_never_calls_persistence`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 8: Run 29.C Domain.** Run `python -m pytest -q tests/web/test_writeback_workflow.py tests/web/test_accessibility.py tests/web/test_run_workflow.py tests/web/test_disclosure_workflow.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -8204,7 +8395,7 @@ Owned files: - Create: src/vespercode/demo/types.py - Create: src/vespercode/dem
 Interface: Produces `DemoScenarioV1`, `DemoSessionV1`, `DemoDecisionV1`, `DemoStepResultV1`, `DemoRunStatus`, `DemoDecision`, and `DemoTraceV1`.
 GREEN-1: Define immutable Demo-only scenario, session, decision, step, status, and trace values with closed fields and canonical serialization that cannot accept formal Run/turn/repository identities.
 GREEN-2: Freeze the sole Mock scenario's source, injected failure, expected patch, decisions, statuses, and trace data while rejecting prompts, URLs, uploads, provider, secret, filesystem, Docker, persistence, and recovery inputs.
-GREEN-3: Make `test_fixed_scenario_rejects_formal_identity_types` GREEN with the smallest formal-identity rejection before completing fixed-data, closed-union, serialization, and type-isolation matrices.
+GREEN-3: Make `test_fixed_scenario_rejects_formal_identity_types` GREEN with the smallest formal-identity rejection; then make `test_demo_type_serialization_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own Demo-only types and fixed scenario data only. Executor, shared-core sequencing, session storage, Web behavior, local files, credentials, Docker, recovery, persistence, and real providers remain out of scope.
 Boundary: The scenario stores only immutable fixed data. These modules import no formal Run/turn/repository identity, executor, adapter, session store, Web, disk, credential, Docker, recovery, or persistence capability.
 ```
@@ -8225,6 +8416,7 @@ def test_fixed_scenario_rejects_formal_identity_types(
 **Atomic verification:**
 - Target (30.A): `python -m pytest -q tests/demo/test_types.py::test_fixed_scenario_rejects_formal_identity_types`
 - Domain (30.A): `python -m pytest -q tests/demo/test_types.py tests/demo/test_scenario.py`
+- Matrix (30.A): `python -m pytest -q tests/demo/test_types.py::test_demo_type_serialization_matrix`
 - Expected (30.A): exact fixed data, closed decisions/statuses, canonical trace values, and formal/Demo type separation pass.
 
 **Atomic review focus:**
@@ -8235,7 +8427,7 @@ def test_fixed_scenario_rejects_formal_identity_types(
 - [ ] **Step 2: Run 30.A RED.** Run `python -m pytest -q tests/demo/test_types.py::test_fixed_scenario_rejects_formal_identity_types`. Expected: FAIL for “the test runner reaches `test_fixed_scenario_rejects_formal_identity_types`, but its first task-owned assertion fails because the required formal-identity rejection has not been implemented; collection, runner startup, unrelated import, or environment failure does not count”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 3: Implement 30.A GREEN-1.** Define immutable Demo-only scenario, session, decision, step, status, and trace values with closed fields and canonical serialization that cannot accept formal Run/turn/repository identities.
 - [ ] **Step 4: Implement 30.A GREEN-2.** Freeze the sole Mock scenario's source, injected failure, expected patch, decisions, statuses, and trace data while rejecting prompts, URLs, uploads, provider, secret, filesystem, Docker, persistence, and recovery inputs.
-- [ ] **Step 5: Implement 30.A GREEN-3.** Make `test_fixed_scenario_rejects_formal_identity_types` GREEN with the smallest formal-identity rejection before completing fixed-data, closed-union, serialization, and type-isolation matrices.
+- [ ] **Step 5: Implement 30.A GREEN-3.** Make `test_fixed_scenario_rejects_formal_identity_types` GREEN with the smallest formal-identity rejection; then make `test_demo_type_serialization_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 6: Implement 30.A GREEN-4.** Own Demo-only types and fixed scenario data only. Executor, shared-core sequencing, session storage, Web behavior, local files, credentials, Docker, recovery, persistence, and real providers remain out of scope.
 - [ ] **Step 7: Run 30.A Target GREEN.** Re-run `python -m pytest -q tests/demo/test_types.py::test_fixed_scenario_rejects_formal_identity_types`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 8: Run 30.A Domain.** Run `python -m pytest -q tests/demo/test_types.py tests/demo/test_scenario.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -8304,7 +8496,7 @@ Owned files: - Create: src/vespercode/demo/executor.py - Test: tests/demo/test_e
 Interface: Produces `DemoExecutor.tool_ports() -> ToolPortsV1`, `DemoExecutor.execute(action: BoundActionV1) -> DemoToolResultV1`, and `PROHIBITED_DEMO_MODULE_PREFIXES_V1: frozenset[str]`.
 GREEN-1: Implement deterministic in-memory `DEMO_READ`, `DEMO_PATCH`, and `DEMO_CHECK` ports over Task 30.A fixed values with closed action/result mappings and no ambient input.
 GREEN-2: Enforce prohibited-module and capability construction checks so local files, formal Run/turn repositories, SQLite, Docker, credentials, WinCred, recovery, persistence, and real provider adapters are absent and uncallable.
-GREEN-3: Make `test_demo_executor_exposes_only_simulated_tool_ports` GREEN with the smallest closed capability set before completing deterministic result, import-scan, construction, and zero-formal-call matrices.
+GREEN-3: Make `test_demo_executor_exposes_only_simulated_tool_ports` GREEN with the smallest closed capability set; then make `test_demo_executor_isolation_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own simulated Demo tool-port adaptation only. Shared-core sequencing, stopping, session limits, Web routes, disk, external services, and formal capability adapters remain out of scope.
 Boundary: This task owns only deterministic simulated tool-port adaptation for Task 30.A data. It cannot import or construct formal loop, Run/turn repositories, local files, Docker, credentials, recovery, persistence, SQLite, WinCred, or provider adapters and does not own shared-core sequencing.
 ```
@@ -8324,6 +8516,7 @@ def test_demo_executor_exposes_only_simulated_tool_ports(
 **Atomic verification:**
 - Target (30.C): `python -m pytest -q tests/demo/test_executor_isolation.py::test_demo_executor_exposes_only_simulated_tool_ports`
 - Domain (30.C): `python -m pytest -q tests/demo/test_executor_isolation.py`
+- Matrix (30.C): `python -m pytest -q tests/demo/test_executor_isolation.py::test_demo_executor_isolation_matrix`
 - Expected (30.C): fixed tool results, closed capabilities, prohibited-prefix scans, and zero formal-capability construction/calls pass.
 
 **Atomic review focus:**
@@ -8334,7 +8527,7 @@ def test_demo_executor_exposes_only_simulated_tool_ports(
 - [ ] **Step 2: Run 30.C RED.** Run `python -m pytest -q tests/demo/test_executor_isolation.py::test_demo_executor_exposes_only_simulated_tool_ports`. Expected: FAIL for “the test runner reaches `test_demo_executor_exposes_only_simulated_tool_ports`, but its first task-owned assertion fails because the required closed capability set has not been implemented; collection, runner startup, unrelated import, or environment failure does not count”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 3: Implement 30.C GREEN-1.** Implement deterministic in-memory `DEMO_READ`, `DEMO_PATCH`, and `DEMO_CHECK` ports over Task 30.A fixed values with closed action/result mappings and no ambient input.
 - [ ] **Step 4: Implement 30.C GREEN-2.** Enforce prohibited-module and capability construction checks so local files, formal Run/turn repositories, SQLite, Docker, credentials, WinCred, recovery, persistence, and real provider adapters are absent and uncallable.
-- [ ] **Step 5: Implement 30.C GREEN-3.** Make `test_demo_executor_exposes_only_simulated_tool_ports` GREEN with the smallest closed capability set before completing deterministic result, import-scan, construction, and zero-formal-call matrices.
+- [ ] **Step 5: Implement 30.C GREEN-3.** Make `test_demo_executor_exposes_only_simulated_tool_ports` GREEN with the smallest closed capability set; then make `test_demo_executor_isolation_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 6: Implement 30.C GREEN-4.** Own simulated Demo tool-port adaptation only. Shared-core sequencing, stopping, session limits, Web routes, disk, external services, and formal capability adapters remain out of scope.
 - [ ] **Step 7: Run 30.C Target GREEN.** Re-run `python -m pytest -q tests/demo/test_executor_isolation.py::test_demo_executor_exposes_only_simulated_tool_ports`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 8: Run 30.C Domain.** Run `python -m pytest -q tests/demo/test_executor_isolation.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -8350,7 +8543,7 @@ Owned files: - Create: src/vespercode/demo/runner.py - Test: tests/demo/test_tra
 Interface: Produces `DemoScenarioRunner.advance(session: DemoSessionV1, decision: DemoDecisionV1 | None) -> DemoStepResultV1` and exact constant `DEMO_SHARED_CORE_MODULES_V1: frozenset[str] = frozenset({"vespercode.governance.policy", "vespercode.loop.agent_actions", "vespercode.loop.action_parser", "vespercode.loop.action_binding", "vespercode.loop.context_projection", "vespercode.loop.feedback", "vespercode.loop.stopping", "vespercode.loop.action_pipeline", "vespercode.tools.dispatcher"})`.
 GREEN-1: Construct the real declared shared pure-core components once, inject only Task 30.C ports, and record exact provenance beginning with production `ActionPipeline.execute` without copying any child rule.
 GREEN-2: Advance only the fixed Mock scenario through deterministic trace steps while enforcing in-memory five-minute, 20-action, and 10-concurrent limits plus explicit reset/expiry and no recovery.
-GREEN-3: Make `test_demo_step_invokes_shared_core_and_only_demo_tool_ports` GREEN with the smallest exact provenance sequence before completing repeated-trace, decision, limit, expiry, reset, and isolation matrices.
+GREEN-3: Make `test_demo_step_invokes_shared_core_and_only_demo_tool_ports` GREEN with the smallest exact provenance sequence; then make `test_demo_shared_core_trace_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own headless shared-core Demo composition and bounded ephemeral sessions only. Formal loop engine, Web, local files, Docker, credentials, persistence, recovery, external adapters, and real providers remain out of scope.
 Boundary: Composition constructs the production Task 25.D `ActionPipeline` from the exact Task 13/17.A–17.C/24.A/24.C components, injects it with Task 30.C ports into `DemoScenarioRunner`, and records provenance beginning with the real `ActionPipeline.execute`; Task 24.B context and Task 25.A stopping remain injected production pure functions. It owns no copied rule, formal loop engine, Web route, external adapter, or persistent session. Sessions are in-memory, five-minute/20-action/10-concurrent bounded, and non-recoverable.
 ```
@@ -8384,6 +8577,7 @@ def test_demo_step_invokes_shared_core_and_only_demo_tool_ports(
 **Atomic verification:**
 - Target (30.D): `python -m pytest -q tests/demo/test_shared_core_composition.py::test_demo_step_invokes_shared_core_and_only_demo_tool_ports`
 - Domain (30.D): `python -m pytest -q tests/demo/test_trace_determinism.py tests/demo/test_shared_core_composition.py tests/demo/test_session_limits.py`
+- Matrix (30.D): `python -m pytest -q tests/demo/test_shared_core_composition.py::test_demo_shared_core_trace_matrix`
 - Expected (30.D): shared-call provenance, fixed repeated trace, limit/expiry/reset, in-memory-only lifecycle, and zero formal-capability calls pass.
 
 **Atomic review focus:**
@@ -8394,7 +8588,7 @@ def test_demo_step_invokes_shared_core_and_only_demo_tool_ports(
 - [ ] **Step 10: Run 30.D RED.** Run `python -m pytest -q tests/demo/test_shared_core_composition.py::test_demo_step_invokes_shared_core_and_only_demo_tool_ports`. Expected: FAIL for “the test runner reaches `test_demo_step_invokes_shared_core_and_only_demo_tool_ports`, but its first task-owned assertion fails because the required exact provenance sequence has not been implemented; collection, runner startup, unrelated import, or environment failure does not count”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 11: Implement 30.D GREEN-1.** Construct the real declared shared pure-core components once, inject only Task 30.C ports, and record exact provenance beginning with production `ActionPipeline.execute` without copying any child rule.
 - [ ] **Step 12: Implement 30.D GREEN-2.** Advance only the fixed Mock scenario through deterministic trace steps while enforcing in-memory five-minute, 20-action, and 10-concurrent limits plus explicit reset/expiry and no recovery.
-- [ ] **Step 13: Implement 30.D GREEN-3.** Make `test_demo_step_invokes_shared_core_and_only_demo_tool_ports` GREEN with the smallest exact provenance sequence before completing repeated-trace, decision, limit, expiry, reset, and isolation matrices.
+- [ ] **Step 13: Implement 30.D GREEN-3.** Make `test_demo_step_invokes_shared_core_and_only_demo_tool_ports` GREEN with the smallest exact provenance sequence; then make `test_demo_shared_core_trace_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 14: Implement 30.D GREEN-4.** Own headless shared-core Demo composition and bounded ephemeral sessions only. Formal loop engine, Web, local files, Docker, credentials, persistence, recovery, external adapters, and real providers remain out of scope.
 - [ ] **Step 15: Run 30.D Target GREEN.** Re-run `python -m pytest -q tests/demo/test_shared_core_composition.py::test_demo_step_invokes_shared_core_and_only_demo_tool_ports`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 16: Run 30.D Domain.** Run `python -m pytest -q tests/demo/test_trace_determinism.py tests/demo/test_shared_core_composition.py tests/demo/test_session_limits.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -8410,7 +8604,7 @@ Owned files: - Create: src/vespercode/demo/app.py - Create: src/vespercode/demo/
 Interface: Produces `create_demo_app(config: DemoAppConfigV1) -> FastAPI`, `healthcheck.main() -> int`, `GET /healthz -> 200 {"status":"ok","mode":"simulation"}`, and closed fixed-scenario routes `POST /demo/sessions -> DemoSessionCreatedV1` and `POST /demo/sessions/{session_id}/advance -> DemoStepResultV1`.
 GREEN-1: Compose only Task 30.D's headless runner into the closed health, session-create, and advance routes with validated platform PORT and explicit fixed-simulation capability registry.
 GREEN-2: Render escaped, persistently simulation-labeled fixed-scenario pages with keyboard/focus/live-error support, non-color status, sufficient contrast, reduced motion, and no prompt, URL, repository, upload, provider, or secret input.
-GREEN-3: Make `test_demo_app_registers_no_formal_capability_adapter` GREEN with the smallest fixed capability registry before completing health, PORT, route, escaping, accessibility, and endpoint-absence matrices.
+GREEN-3: Make `test_demo_app_registers_no_formal_capability_adapter` GREEN with the smallest fixed capability registry; then make `test_demo_app_capability_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own the thin public Demo app, rendering, and health boundary only. Local files/routes, Docker, credentials, persistence, recovery, SQLite, WinCred, OpenAI, formal Run repositories, and shared-core/session rules remain out of scope.
 Boundary: No repository path/upload/prompt/URL/provider/secret input, disk persistence, local route, recovery, SQLite, WinCred, Docker, or OpenAI adapter is registered.
 ```
@@ -8429,6 +8623,7 @@ def test_demo_app_registers_no_formal_capability_adapter(
 **Atomic verification:**
 - Target (30.B): `python -m pytest -q tests/demo/test_capability_isolation.py::test_demo_app_registers_no_formal_capability_adapter`
 - Domain (30.B): `python -m pytest -q tests/demo/test_capability_isolation.py tests/demo/test_health.py tests/demo/test_rendering.py`
+- Matrix (30.B): `python -m pytest -q tests/demo/test_capability_isolation.py::test_demo_app_capability_matrix`
 - Browser (30.B): execute the fixed scenario with keyboard and verify persistent simulation labeling and non-color status.
 - Expected (30.B): health validates assets/registry, PORT boundaries hold, and forbidden capabilities/endpoints remain absent.
 
@@ -8440,7 +8635,7 @@ def test_demo_app_registers_no_formal_capability_adapter(
 - [ ] **Step 18: Run 30.B RED.** Run `python -m pytest -q tests/demo/test_capability_isolation.py::test_demo_app_registers_no_formal_capability_adapter`. Expected: FAIL for “the test runner reaches `test_demo_app_registers_no_formal_capability_adapter`, but its first task-owned assertion fails because the required fixed capability registry has not been implemented; collection, runner startup, unrelated import, or environment failure does not count”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 19: Implement 30.B GREEN-1.** Compose only Task 30.D's headless runner into the closed health, session-create, and advance routes with validated platform PORT and explicit fixed-simulation capability registry.
 - [ ] **Step 20: Implement 30.B GREEN-2.** Render escaped, persistently simulation-labeled fixed-scenario pages with keyboard/focus/live-error support, non-color status, sufficient contrast, reduced motion, and no prompt, URL, repository, upload, provider, or secret input.
-- [ ] **Step 21: Implement 30.B GREEN-3.** Make `test_demo_app_registers_no_formal_capability_adapter` GREEN with the smallest fixed capability registry before completing health, PORT, route, escaping, accessibility, and endpoint-absence matrices.
+- [ ] **Step 21: Implement 30.B GREEN-3.** Make `test_demo_app_registers_no_formal_capability_adapter` GREEN with the smallest fixed capability registry; then make `test_demo_app_capability_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 22: Implement 30.B GREEN-4.** Own the thin public Demo app, rendering, and health boundary only. Local files/routes, Docker, credentials, persistence, recovery, SQLite, WinCred, OpenAI, formal Run repositories, and shared-core/session rules remain out of scope.
 - [ ] **Step 23: Run 30.B Target GREEN.** Re-run `python -m pytest -q tests/demo/test_capability_isolation.py::test_demo_app_registers_no_formal_capability_adapter`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 24: Run 30.B Domain.** Run `python -m pytest -q tests/demo/test_capability_isolation.py tests/demo/test_health.py tests/demo/test_rendering.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -8505,7 +8700,7 @@ Owned files: - Create: scripts/run_reference_e2e.py - Create: tests/e2e/referenc
 Interface: Produces `ReferenceE2EHarness.run(config: ReferenceE2EConfigV1) -> ReferenceE2EResultV1`, `run_reference_e2e(config: ReferenceE2EConfigV1) -> ReferenceE2EResultV1`, and content-addressed `ReferenceE2ETraceV1` stages consumed by Tasks 31.B and 31.C.
 GREEN-1: Bind the disposable driver to exact reference workspace, Snapshot, profile/container digest, Mock fixture, clock/id fixture, and production component identities before any stage runs.
 GREEN-2: Execute fresh Windows and Docker production composition through Baseline, corrective loop, formal validation, `VerifiedCandidateV1`, and final wait, emitting ordered content-addressed stage evidence with zero workspace writes.
-GREEN-3: Make `test_reference_happy_path_reaches_verified_candidate` GREEN with the smallest production happy-path driver before completing stage identity, cleanup, final-wait, and repeatability matrices.
+GREEN-3: Make `test_reference_happy_path_reaches_verified_candidate` GREEN with the smallest production happy-path driver; then make `test_reference_success_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own the reusable E2E driver and happy path only. Scenario-specific alternate core logic, negative gates, persistence/recovery completion, fixture mutation, and result fabrication remain out of scope.
 Boundary: Use production composition with only LLM/clock/id fixtures deterministic. Fixture bytes are immutable and the driver exposes explicit stage hooks rather than scenario-specific alternate core logic.
 ```
@@ -8526,6 +8721,7 @@ def test_reference_happy_path_reaches_verified_candidate(
 **Atomic verification:**
 - Target (31.A): `python -m pytest -q -o addopts='' -m reference_e2e tests/e2e/reference/test_reference_success.py::test_reference_happy_path_reaches_verified_candidate`
 - Domain (31.A): `python -m pytest -q -o addopts='' -m reference_e2e tests/e2e/reference/test_reference_success.py::test_reference_happy_path_reaches_verified_candidate`
+- Matrix (31.A): `python -m pytest -q -o addopts='' -m reference_e2e tests/e2e/reference/test_reference_success.py::test_reference_success_matrix`
 - Expected (31.A): the real Windows + Docker + Mock happy path reaches a bound VerifiedCandidate and final wait without writing.
 
 **Atomic review focus:**
@@ -8536,7 +8732,7 @@ def test_reference_happy_path_reaches_verified_candidate(
 - [ ] **Step 2: Run 31.A RED.** Run `python -m pytest -q -o addopts='' -m reference_e2e tests/e2e/reference/test_reference_success.py::test_reference_happy_path_reaches_verified_candidate`. Expected: FAIL for “the test runner reaches `test_reference_happy_path_reaches_verified_candidate`, but its first task-owned assertion fails because the required production happy-path driver has not been implemented; collection, runner startup, unrelated import, or environment failure does not count”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 3: Implement 31.A GREEN-1.** Bind the disposable driver to exact reference workspace, Snapshot, profile/container digest, Mock fixture, clock/id fixture, and production component identities before any stage runs.
 - [ ] **Step 4: Implement 31.A GREEN-2.** Execute fresh Windows and Docker production composition through Baseline, corrective loop, formal validation, `VerifiedCandidateV1`, and final wait, emitting ordered content-addressed stage evidence with zero workspace writes.
-- [ ] **Step 5: Implement 31.A GREEN-3.** Make `test_reference_happy_path_reaches_verified_candidate` GREEN with the smallest production happy-path driver before completing stage identity, cleanup, final-wait, and repeatability matrices.
+- [ ] **Step 5: Implement 31.A GREEN-3.** Make `test_reference_happy_path_reaches_verified_candidate` GREEN with the smallest production happy-path driver; then make `test_reference_success_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 6: Implement 31.A GREEN-4.** Own the reusable E2E driver and happy path only. Scenario-specific alternate core logic, negative gates, persistence/recovery completion, fixture mutation, and result fabrication remain out of scope.
 - [ ] **Step 7: Run 31.A Target GREEN.** Re-run `python -m pytest -q -o addopts='' -m reference_e2e tests/e2e/reference/test_reference_success.py::test_reference_happy_path_reaches_verified_candidate`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 8: Run 31.A Domain.** Run `python -m pytest -q -o addopts='' -m reference_e2e tests/e2e/reference/test_reference_success.py::test_reference_happy_path_reaches_verified_candidate`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -8552,7 +8748,7 @@ Owned files: - Create: tests/e2e/reference/test_reference_denials.py - Create: t
 Interface: Consumes Task 31.A stage hooks only; produces denial/wait/call-gate trace assertions without changing production code or the reference fixture.
 GREEN-1: Drive canonical continuation, hard DENY, protected-artifact, final-wait, and cleared-credential cases only through Task 31.A hooks and exact immutable fixture identities.
 GREEN-2: Assert stable typed reasons and zero forbidden dispatch, candidate publication, artifact, workspace write, authorization, count, charge, transport, or network effects at each production gate.
-GREEN-3: Make `test_cleared_credential_has_zero_real_call_side_effects` GREEN with the smallest fresh credential fail-close scenario before completing denial, cursor, wait, protected-artifact, and no-write matrices.
+GREEN-3: Make `test_cleared_credential_has_zero_real_call_side_effects` GREEN with the smallest fresh credential fail-close scenario; then make `test_reference_call_gate_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own reference negative trace assertions only. Production policy/parser/feedback replacement, fixture mutation, alternate ports, retry, and successful provider-call simulation remain out of scope.
 Boundary: Each negative scenario must prove zero partial artifact/write/dispatch/network where required. Tests cannot replace production ports with alternate policy/parser/feedback implementations.
 ```
@@ -8573,6 +8769,7 @@ def test_cleared_credential_has_zero_real_call_side_effects(
 **Atomic verification:**
 - Target (31.B): `python -m pytest -q -o addopts='' -m reference_e2e tests/e2e/reference/test_reference_call_gate.py::test_cleared_credential_has_zero_real_call_side_effects`
 - Domain (31.B): `python -m pytest -q -o addopts='' -m reference_e2e tests/e2e/reference/test_reference_denials.py tests/e2e/reference/test_reference_waits.py tests/e2e/reference/test_reference_no_write.py tests/e2e/reference/test_reference_call_gate.py`
+- Matrix (31.B): `python -m pytest -q -o addopts='' -m reference_e2e tests/e2e/reference/test_reference_call_gate.py::test_reference_call_gate_matrix`
 - Expected (31.B): every denial/wait/cursor/credential branch produces the exact stable reason and zero forbidden side effects.
 
 **Atomic review focus:**
@@ -8583,7 +8780,7 @@ def test_cleared_credential_has_zero_real_call_side_effects(
 - [ ] **Step 10: Run 31.B RED.** Run `python -m pytest -q -o addopts='' -m reference_e2e tests/e2e/reference/test_reference_call_gate.py::test_cleared_credential_has_zero_real_call_side_effects`. Expected: FAIL for “the test runner reaches `test_cleared_credential_has_zero_real_call_side_effects`, but its first task-owned assertion fails because the required fresh credential fail-close scenario has not been implemented; collection, runner startup, unrelated import, or environment failure does not count”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 11: Implement 31.B GREEN-1.** Drive canonical continuation, hard DENY, protected-artifact, final-wait, and cleared-credential cases only through Task 31.A hooks and exact immutable fixture identities.
 - [ ] **Step 12: Implement 31.B GREEN-2.** Assert stable typed reasons and zero forbidden dispatch, candidate publication, artifact, workspace write, authorization, count, charge, transport, or network effects at each production gate.
-- [ ] **Step 13: Implement 31.B GREEN-3.** Make `test_cleared_credential_has_zero_real_call_side_effects` GREEN with the smallest fresh credential fail-close scenario before completing denial, cursor, wait, protected-artifact, and no-write matrices.
+- [ ] **Step 13: Implement 31.B GREEN-3.** Make `test_cleared_credential_has_zero_real_call_side_effects` GREEN with the smallest fresh credential fail-close scenario; then make `test_reference_call_gate_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 14: Implement 31.B GREEN-4.** Own reference negative trace assertions only. Production policy/parser/feedback replacement, fixture mutation, alternate ports, retry, and successful provider-call simulation remain out of scope.
 - [ ] **Step 15: Run 31.B Target GREEN.** Re-run `python -m pytest -q -o addopts='' -m reference_e2e tests/e2e/reference/test_reference_call_gate.py::test_cleared_credential_has_zero_real_call_side_effects`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 16: Run 31.B Domain.** Run `python -m pytest -q -o addopts='' -m reference_e2e tests/e2e/reference/test_reference_denials.py tests/e2e/reference/test_reference_waits.py tests/e2e/reference/test_reference_no_write.py tests/e2e/reference/test_reference_call_gate.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -8599,7 +8796,7 @@ Owned files: - Create: tests/e2e/reference/test_reference_audit.py - Create: tes
 Interface: Consumes Task 31.A's `ReferenceE2EHarness`/`ReferenceE2ETraceV1`, Task 31.B scenario hooks, production Task 26.C recovery, Tasks 22.A–22.C memory evidence, and Task 23.C audit visibility/retention evidence; produces the finalized `ReferenceE2EResultV1` and standalone canonical report consumed by Tasks 33.A, 34.A, 37.A, 37.B, and 37.C.
 GREEN-1: Bind exact approval, candidate/diff, workspace, transaction, recovery preview, memory, audit, profile/container, and driver identities into ordered production terminal stages.
 GREEN-2: Prove approved postimage commit, read-only uncertain preview, admission blocking until service-proven recovery, redacted monotonic audit, preserved unresolved evidence, cleanup, and two-run semantic equality under the declared volatility allowlist.
-GREEN-3: Make `test_uncertain_transaction_blocks_new_admission_until_proven_recovery` GREEN with the smallest read-only blocked-admission scenario before completing writeback, audit, memory, cleanup, report, and determinism matrices.
+GREEN-3: Make `test_uncertain_transaction_blocks_new_admission_until_proven_recovery` GREEN with the smallest read-only blocked-admission scenario; then make `test_reference_recovery_block_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own final reference terminal scenarios and canonical report only. Alternate approval/recovery paths, volatility expansion, unresolved-evidence deletion, driver replacement, and fabricated external outcomes remain out of scope.
 Boundary: Exact approval is the only write path. Determinism comparison excludes only declared injected volatile ids/times; cleanup may not delete unresolved recovery evidence.
 ```
@@ -8620,6 +8817,7 @@ def test_uncertain_transaction_blocks_new_admission_until_proven_recovery(
 **Atomic verification:**
 - Target (31.C): `python -m pytest -q -o addopts='' -m reference_e2e tests/e2e/reference/test_reference_recovery_block.py::test_uncertain_transaction_blocks_new_admission_until_proven_recovery`
 - Domain (31.C): `python -m pytest -q -o addopts='' -m reference_e2e tests/e2e/reference`
+- Matrix (31.C): `python -m pytest -q -o addopts='' -m reference_e2e tests/e2e/reference/test_reference_recovery_block.py::test_reference_recovery_block_matrix`
 - Script (31.C): `python scripts/run_reference_e2e.py --workspace-root tests/.tmp/reference-e2e --report tests/.tmp/reference-e2e-report.json`
 - Expected (31.C): exact postimages commit, recovery remains three-valued, audit is redacted/monotonic, two semantic traces match, and cleanup is proven.
 
@@ -8631,7 +8829,7 @@ def test_uncertain_transaction_blocks_new_admission_until_proven_recovery(
 - [ ] **Step 18: Run 31.C RED.** Run `python -m pytest -q -o addopts='' -m reference_e2e tests/e2e/reference/test_reference_recovery_block.py::test_uncertain_transaction_blocks_new_admission_until_proven_recovery`. Expected: FAIL for “the test runner reaches `test_uncertain_transaction_blocks_new_admission_until_proven_recovery`, but its first task-owned assertion fails because the required read-only blocked-admission scenario has not been implemented; collection, runner startup, unrelated import, or environment failure does not count”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 19: Implement 31.C GREEN-1.** Bind exact approval, candidate/diff, workspace, transaction, recovery preview, memory, audit, profile/container, and driver identities into ordered production terminal stages.
 - [ ] **Step 20: Implement 31.C GREEN-2.** Prove approved postimage commit, read-only uncertain preview, admission blocking until service-proven recovery, redacted monotonic audit, preserved unresolved evidence, cleanup, and two-run semantic equality under the declared volatility allowlist.
-- [ ] **Step 21: Implement 31.C GREEN-3.** Make `test_uncertain_transaction_blocks_new_admission_until_proven_recovery` GREEN with the smallest read-only blocked-admission scenario before completing writeback, audit, memory, cleanup, report, and determinism matrices.
+- [ ] **Step 21: Implement 31.C GREEN-3.** Make `test_uncertain_transaction_blocks_new_admission_until_proven_recovery` GREEN with the smallest read-only blocked-admission scenario; then make `test_reference_recovery_block_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 22: Implement 31.C GREEN-4.** Own final reference terminal scenarios and canonical report only. Alternate approval/recovery paths, volatility expansion, unresolved-evidence deletion, driver replacement, and fabricated external outcomes remain out of scope.
 - [ ] **Step 23: Run 31.C Target GREEN.** Re-run `python -m pytest -q -o addopts='' -m reference_e2e tests/e2e/reference/test_reference_recovery_block.py::test_uncertain_transaction_blocks_new_admission_until_proven_recovery`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 24: Run 31.C Domain.** Run `python -m pytest -q -o addopts='' -m reference_e2e tests/e2e/reference`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -8698,7 +8896,7 @@ Owned files: - Create: scripts/run_mechanism_demo.py - Create: tests/e2e/mechani
 Interface: Produces `MechanismHarness.run(config: MechanismDemoConfigV1) -> MechanismDemoResultV1`, `run_mechanism_demo(config: MechanismDemoConfigV1) -> MechanismDemoResultV1`, `MechanismDemoTraceV1`, and bounded text/JSON report stages consumed by Tasks 32.B and 32.C.
 GREEN-1: Bind the offline driver to exact fixed Mock scenario, production parser/binder/policy/dispatcher/feedback/stop implementations, candidate/workspace identities, and bounded report schema.
 GREEN-2: Trace hard DENY, protected-artifact precedence, and final-approval no-write through production pure core, proving every guardrail fires before dispatch, publish, write, approval consumption, or real-provider access.
-GREEN-3: Make `test_outside_scope_patch_is_denied_before_dispatch_or_publish` GREEN with the smallest production DENY trace before completing protected-artifact, approval-gate, report-bound, and repeat matrices.
+GREEN-3: Make `test_outside_scope_patch_is_denied_before_dispatch_or_publish` GREEN with the smallest production DENY trace; then make `test_mechanism_hard_deny_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own the offline governance mechanism driver and trace only. Alternate guardrail rules, preselected results, local/Docker capability, credential access, persistence, and real provider calls remain out of scope.
 Boundary: The driver is offline and invokes production parser/policy/dispatcher/feedback/stop components; it cannot introduce alternative mechanism rules.
 ```
@@ -8719,6 +8917,7 @@ def test_outside_scope_patch_is_denied_before_dispatch_or_publish(
 **Atomic verification:**
 - Target (32.A): `python -m pytest -q tests/e2e/mechanism/test_hard_deny.py::test_outside_scope_patch_is_denied_before_dispatch_or_publish`
 - Domain (32.A): `python -m pytest -q tests/e2e/mechanism/test_hard_deny.py tests/e2e/mechanism/test_protected_artifacts.py tests/e2e/mechanism/test_approval_gate.py`
+- Matrix (32.A): `python -m pytest -q tests/e2e/mechanism/test_hard_deny.py::test_mechanism_hard_deny_matrix`
 - Expected (32.A): all governance blocks occur before forbidden dispatch/publish/write.
 
 **Atomic review focus:**
@@ -8729,7 +8928,7 @@ def test_outside_scope_patch_is_denied_before_dispatch_or_publish(
 - [ ] **Step 2: Run 32.A RED.** Run `python -m pytest -q tests/e2e/mechanism/test_hard_deny.py::test_outside_scope_patch_is_denied_before_dispatch_or_publish`. Expected: FAIL for “the test runner reaches `test_outside_scope_patch_is_denied_before_dispatch_or_publish`, but its first task-owned assertion fails because the required production DENY trace has not been implemented; collection, runner startup, unrelated import, or environment failure does not count”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 3: Implement 32.A GREEN-1.** Bind the offline driver to exact fixed Mock scenario, production parser/binder/policy/dispatcher/feedback/stop implementations, candidate/workspace identities, and bounded report schema.
 - [ ] **Step 4: Implement 32.A GREEN-2.** Trace hard DENY, protected-artifact precedence, and final-approval no-write through production pure core, proving every guardrail fires before dispatch, publish, write, approval consumption, or real-provider access.
-- [ ] **Step 5: Implement 32.A GREEN-3.** Make `test_outside_scope_patch_is_denied_before_dispatch_or_publish` GREEN with the smallest production DENY trace before completing protected-artifact, approval-gate, report-bound, and repeat matrices.
+- [ ] **Step 5: Implement 32.A GREEN-3.** Make `test_outside_scope_patch_is_denied_before_dispatch_or_publish` GREEN with the smallest production DENY trace; then make `test_mechanism_hard_deny_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 6: Implement 32.A GREEN-4.** Own the offline governance mechanism driver and trace only. Alternate guardrail rules, preselected results, local/Docker capability, credential access, persistence, and real provider calls remain out of scope.
 - [ ] **Step 7: Run 32.A Target GREEN.** Re-run `python -m pytest -q tests/e2e/mechanism/test_hard_deny.py::test_outside_scope_patch_is_denied_before_dispatch_or_publish`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 8: Run 32.A Domain.** Run `python -m pytest -q tests/e2e/mechanism/test_hard_deny.py tests/e2e/mechanism/test_protected_artifacts.py tests/e2e/mechanism/test_approval_gate.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -8745,7 +8944,7 @@ Owned files: - Create: tests/e2e/mechanism/test_feedback_recovery.py - Create: t
 Interface: Consumes only Task 32.A `MechanismHarness`/`MechanismDemoTraceV1` stages plus production Tasks 11.B, 19.C, and 24.C behavior; produces the feedback-recovery, continuation, and determinism stages appended to `MechanismDemoTraceV1` and consumed by Task 32.C.
 GREEN-1: Inject the declared failing check into the fixed Mock trace and route its structured production feedback into the next context/action exactly once without preselecting the correction.
 GREEN-2: Exercise production paged List/Search continuation with exact cursor identity, zero-payload tamper/stale failures, and two-run semantic comparison under only declared volatile fields.
-GREEN-3: Make `test_failed_check_feedback_changes_next_action_once` GREEN with the smallest feedback-consume correction before completing continuation, tamper, stale, repetition, and report stages.
+GREEN-3: Make `test_failed_check_feedback_changes_next_action_once` GREEN with the smallest feedback-consume correction; then make `test_mechanism_feedback_recovery_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own feedback-recovery, continuation, and semantic-determinism trace assertions only. Alternate feedback/context/action logic, label-only comparison, local capabilities, real providers, and mechanism replacement remain out of scope.
 Boundary: No test may preselect the corrective action outside the fixed Mock response/feedback input or compare only presentation labels.
 ```
@@ -8766,6 +8965,7 @@ def test_failed_check_feedback_changes_next_action_once(
 **Atomic verification:**
 - Target (32.B): `python -m pytest -q tests/e2e/mechanism/test_feedback_recovery.py::test_failed_check_feedback_changes_next_action_once`
 - Domain (32.B): `python -m pytest -q tests/e2e/mechanism/test_feedback_recovery.py tests/e2e/mechanism/test_continuation_gate.py tests/e2e/mechanism/test_trace_determinism.py`
+- Matrix (32.B): `python -m pytest -q tests/e2e/mechanism/test_feedback_recovery.py::test_mechanism_feedback_recovery_matrix`
 - Expected (32.B): feedback is consumed once, cursor pages are exact, tamper/stale returns zero payload, and repeated semantic traces match.
 
 **Atomic review focus:**
@@ -8776,7 +8976,7 @@ def test_failed_check_feedback_changes_next_action_once(
 - [ ] **Step 10: Run 32.B RED.** Run `python -m pytest -q tests/e2e/mechanism/test_feedback_recovery.py::test_failed_check_feedback_changes_next_action_once`. Expected: FAIL for “the test runner reaches `test_failed_check_feedback_changes_next_action_once`, but its first task-owned assertion fails because the required feedback-consume correction has not been implemented; collection, runner startup, unrelated import, or environment failure does not count”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 11: Implement 32.B GREEN-1.** Inject the declared failing check into the fixed Mock trace and route its structured production feedback into the next context/action exactly once without preselecting the correction.
 - [ ] **Step 12: Implement 32.B GREEN-2.** Exercise production paged List/Search continuation with exact cursor identity, zero-payload tamper/stale failures, and two-run semantic comparison under only declared volatile fields.
-- [ ] **Step 13: Implement 32.B GREEN-3.** Make `test_failed_check_feedback_changes_next_action_once` GREEN with the smallest feedback-consume correction before completing continuation, tamper, stale, repetition, and report stages.
+- [ ] **Step 13: Implement 32.B GREEN-3.** Make `test_failed_check_feedback_changes_next_action_once` GREEN with the smallest feedback-consume correction; then make `test_mechanism_feedback_recovery_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 14: Implement 32.B GREEN-4.** Own feedback-recovery, continuation, and semantic-determinism trace assertions only. Alternate feedback/context/action logic, label-only comparison, local capabilities, real providers, and mechanism replacement remain out of scope.
 - [ ] **Step 15: Run 32.B Target GREEN.** Re-run `python -m pytest -q tests/e2e/mechanism/test_feedback_recovery.py::test_failed_check_feedback_changes_next_action_once`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 16: Run 32.B Domain.** Run `python -m pytest -q tests/e2e/mechanism/test_feedback_recovery.py tests/e2e/mechanism/test_continuation_gate.py tests/e2e/mechanism/test_trace_determinism.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -8792,7 +8992,7 @@ Owned files: - Create: tests/e2e/mechanism/test_disclosure_gate.py - Create: tes
 Interface: Consumes Task 32.A `MechanismHarness`/`MechanismDemoTraceV1`, Task 32.B evidence stages, Task 15.E/16.B disclosure/adapter contracts, Task 27.B credential port, and Task 30.B Demo composition; produces the finalized `MechanismDemoTraceV1` report with exact `DEMO_SHARED_CORE_MODULES_V1` implementation provenance, ordered pure-core calls, prohibited-capability absence, adapter counters, and separate formal/Demo presentation alignment.
 GREEN-1: Capture callable/module identity and ordered invocation evidence for the exact declared pure-core implementations in formal and Demo paths, with formal-loop execution recorded separately.
 GREEN-2: Exercise missing disclosure, unsafe/missing/cleared credential, and Demo capability-isolation gates, proving zero authorization, count, charge, transport, network, or formal-capability calls before finalizing the bounded report.
-GREEN-3: Make `test_formal_and_demo_execute_same_core_implementations` GREEN with the smallest identity-based provenance comparison before completing real-call gate, presentation, capability, report, and repeat matrices.
+GREEN-3: Make `test_formal_and_demo_execute_same_core_implementations` GREEN with the smallest identity-based provenance comparison; then make `test_mechanism_shared_core_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own shared-core provenance and zero-unauthorized-call proof only. Label-only equivalence, alternate pure core, real provider success, secret material, Demo formal adapters, and production behavior changes remain out of scope.
 Boundary: Label equality is not reuse proof. Provenance equality covers only the pure modules in `DEMO_SHARED_CORE_MODULES_V1`; formal engine execution is recorded only in the separate formal-loop trace. Missing/unsafe credentials and missing Grants stop before authorization, count, charge, or transport.
 ```
@@ -8830,6 +9030,7 @@ def test_formal_and_demo_execute_same_core_implementations(
 **Atomic verification:**
 - Target (32.C): `python -m pytest -q tests/e2e/mechanism/test_shared_core_reuse.py::test_formal_and_demo_execute_same_core_implementations`
 - Domain (32.C): `python -m pytest -q tests/e2e/mechanism`
+- Matrix (32.C): `python -m pytest -q tests/e2e/mechanism/test_shared_core_reuse.py::test_mechanism_shared_core_matrix`
 - Script (32.C): `python scripts/run_mechanism_demo.py --report tests/.tmp/mechanism-demo-report.json`
 - Expected (32.C): implementation provenance matches, Demo uses only simulated ports, and every real-call gate counter remains zero.
 
@@ -8841,7 +9042,7 @@ def test_formal_and_demo_execute_same_core_implementations(
 - [ ] **Step 18: Run 32.C RED.** Run `python -m pytest -q tests/e2e/mechanism/test_shared_core_reuse.py::test_formal_and_demo_execute_same_core_implementations`. Expected: FAIL for “the test runner reaches `test_formal_and_demo_execute_same_core_implementations`, but its first task-owned assertion fails because the required identity-based provenance comparison has not been implemented; collection, runner startup, unrelated import, or environment failure does not count”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 19: Implement 32.C GREEN-1.** Capture callable/module identity and ordered invocation evidence for the exact declared pure-core implementations in formal and Demo paths, with formal-loop execution recorded separately.
 - [ ] **Step 20: Implement 32.C GREEN-2.** Exercise missing disclosure, unsafe/missing/cleared credential, and Demo capability-isolation gates, proving zero authorization, count, charge, transport, network, or formal-capability calls before finalizing the bounded report.
-- [ ] **Step 21: Implement 32.C GREEN-3.** Make `test_formal_and_demo_execute_same_core_implementations` GREEN with the smallest identity-based provenance comparison before completing real-call gate, presentation, capability, report, and repeat matrices.
+- [ ] **Step 21: Implement 32.C GREEN-3.** Make `test_formal_and_demo_execute_same_core_implementations` GREEN with the smallest identity-based provenance comparison; then make `test_mechanism_shared_core_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 22: Implement 32.C GREEN-4.** Own shared-core provenance and zero-unauthorized-call proof only. Label-only equivalence, alternate pure core, real provider success, secret material, Demo formal adapters, and production behavior changes remain out of scope.
 - [ ] **Step 23: Run 32.C Target GREEN.** Re-run `python -m pytest -q tests/e2e/mechanism/test_shared_core_reuse.py::test_formal_and_demo_execute_same_core_implementations`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 24: Run 32.C Domain.** Run `python -m pytest -q tests/e2e/mechanism`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -8905,7 +9106,7 @@ Owned files: - Modify: pyproject.toml (package data, version, distribution metad
 Interface: Produces exactly one `dist/vespercode-{project_version}-py3-none-any.whl` and adjacent lowercase SHA-256 evidence.
 GREEN-1: Freeze permitted distribution metadata, package data, version, and console entry point so one clean wheel contains every declared runtime module/template/static asset and excludes tests, source evidence, credentials, VCS data, and prohibited members.
 GREEN-2: Build from a clean source identity, inspect filename/version/RECORD and member bytes independently, and publish adjacent lowercase SHA-256 evidence computed from the exact wheel bytes.
-GREEN-3: Make `test_built_wheel_contains_all_runtime_resources` GREEN with the smallest declarative package-data correction before completing one-wheel, metadata, entrypoint, member, RECORD, and digest matrices.
+GREEN-3: Make `test_built_wheel_contains_all_runtime_resources` GREEN with the smallest declarative package-data correction; then make `test_wheel_artifact_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own declarative wheel metadata/content and installed-resource lookup corrections only. Dependency/tooling tables, Python range, lockfile, backend, indexes, source behavior, fabricated digests, and publication remain out of scope.
 Boundary: Packaging is declarative and may correct only installed-resource lookup defects exposed by the smoke. It may modify package data, version, distribution metadata, and the console entry point only; dependency tables, Python range, dependency sources/index policy, `requirements/dev.lock`, build backend, and pytest/Ruff/Mypy/tooling configuration are immutable. Tests/source/evidence/credentials/VCS metadata are excluded.
 ```
@@ -8926,6 +9127,7 @@ def test_built_wheel_contains_all_runtime_resources(
 - Target (33.A): `python -m pytest -q -o addopts='' -m package_smoke tests/smoke/package/test_wheel_contents.py::test_built_wheel_contains_all_runtime_resources`
 - Build (33.A): `python -m build --wheel`
 - Domain (33.A): `python -m pytest -q -o addopts='' -m package_smoke tests/smoke/package/test_wheel_contents.py tests/smoke/package/test_wheel_digest.py`
+- Matrix (33.A): `python -m pytest -q -o addopts='' -m package_smoke tests/smoke/package/test_wheel_contents.py::test_wheel_artifact_matrix`
 - Expected (33.A): one wheel, correct filename/version/RECORD/resources, independent digest, and zero prohibited member.
 
 **Atomic review focus:**
@@ -8936,7 +9138,7 @@ def test_built_wheel_contains_all_runtime_resources(
 - [ ] **Step 2: Run 33.A RED.** Run `python -m pytest -q -o addopts='' -m package_smoke tests/smoke/package/test_wheel_contents.py::test_built_wheel_contains_all_runtime_resources`. Expected: FAIL for “the test runner reaches `test_built_wheel_contains_all_runtime_resources`, but its first task-owned assertion fails because the required declarative package-data correction has not been implemented; collection, runner startup, unrelated import, or environment failure does not count”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 3: Implement 33.A GREEN-1.** Freeze permitted distribution metadata, package data, version, and console entry point so one clean wheel contains every declared runtime module/template/static asset and excludes tests, source evidence, credentials, VCS data, and prohibited members.
 - [ ] **Step 4: Implement 33.A GREEN-2.** Build from a clean source identity, inspect filename/version/RECORD and member bytes independently, and publish adjacent lowercase SHA-256 evidence computed from the exact wheel bytes.
-- [ ] **Step 5: Implement 33.A GREEN-3.** Make `test_built_wheel_contains_all_runtime_resources` GREEN with the smallest declarative package-data correction before completing one-wheel, metadata, entrypoint, member, RECORD, and digest matrices.
+- [ ] **Step 5: Implement 33.A GREEN-3.** Make `test_built_wheel_contains_all_runtime_resources` GREEN with the smallest declarative package-data correction; then make `test_wheel_artifact_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 6: Implement 33.A GREEN-4.** Own declarative wheel metadata/content and installed-resource lookup corrections only. Dependency/tooling tables, Python range, lockfile, backend, indexes, source behavior, fabricated digests, and publication remain out of scope.
 - [ ] **Step 7: Run 33.A Target GREEN.** Re-run `python -m pytest -q -o addopts='' -m package_smoke tests/smoke/package/test_wheel_contents.py::test_built_wheel_contains_all_runtime_resources`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 8: Run 33.A Domain.** Run `python -m pytest -q -o addopts='' -m package_smoke tests/smoke/package/test_wheel_contents.py tests/smoke/package/test_wheel_digest.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -8952,7 +9154,7 @@ Owned files: - Create: scripts/run_package_smoke.py - Create: tests/smoke/packag
 Interface: Produces `run_package_smoke(config: PackageSmokeConfigV1) -> PackageSmokeResultV1` with wheel/source/Python/pipx identities and redacted command outcomes.
 GREEN-1: Bind the driver to Task 33.A's exact wheel digest, clean source revision, Python identity, fresh project-specific pipx home/bin/app data, reserved loopback port, and production installer tuple.
 GREEN-2: Install and execute only packaged entrypoints/resources to prove help, loopback serve, formal pages, read-only recovery preview, and `finally` cleanup with zero source-checkout import or preview write.
-GREEN-3: Make `test_installed_cli_does_not_import_source_checkout` GREEN with the smallest clean installed-help smoke before completing WebUI, asset, preview, identity, port, and cleanup matrices.
+GREEN-3: Make `test_installed_cli_does_not_import_source_checkout` GREEN with the smallest clean installed-help smoke; then make `test_installed_distribution_smoke_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own isolated pipx installation and installed-package smoke only. Source fallback, `recover --apply`, shared pipx state, external publication, wheel mutation, fabricated outcomes, and production data changes remain out of scope.
 Boundary: Use fresh project-specific pipx home/bin/app data, reserved loopback port, production installer tuple, and cleanup in `finally`; never use `recover --apply`.
 ```
@@ -8973,6 +9175,7 @@ def test_installed_cli_does_not_import_source_checkout(
 **Atomic verification:**
 - Target (33.B): `python -m pytest -q -o addopts='' -m package_smoke tests/smoke/package/test_installed_cli.py::test_installed_cli_does_not_import_source_checkout`
 - Domain (33.B): `python -m pytest -q -o addopts='' -m package_smoke tests/smoke/package`
+- Matrix (33.B): `python -m pytest -q -o addopts='' -m package_smoke tests/smoke/package/test_installed_cli.py::test_installed_distribution_smoke_matrix`
 - Driver (33.B): `python scripts/run_package_smoke.py --dist dist --require-one-wheel --report tests/.tmp/package-smoke-report.json`
 - Expected (33.B): clean install, help/serve/formal pages/recovery preview and cleanup pass on Windows with zero source fallback or preview write.
 
@@ -8984,7 +9187,7 @@ def test_installed_cli_does_not_import_source_checkout(
 - [ ] **Step 10: Run 33.B RED.** Run `python -m pytest -q -o addopts='' -m package_smoke tests/smoke/package/test_installed_cli.py::test_installed_cli_does_not_import_source_checkout`. Expected: FAIL for “the test runner reaches `test_installed_cli_does_not_import_source_checkout`, but its first task-owned assertion fails because the required clean installed-help smoke has not been implemented; collection, runner startup, unrelated import, or environment failure does not count”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 11: Implement 33.B GREEN-1.** Bind the driver to Task 33.A's exact wheel digest, clean source revision, Python identity, fresh project-specific pipx home/bin/app data, reserved loopback port, and production installer tuple.
 - [ ] **Step 12: Implement 33.B GREEN-2.** Install and execute only packaged entrypoints/resources to prove help, loopback serve, formal pages, read-only recovery preview, and `finally` cleanup with zero source-checkout import or preview write.
-- [ ] **Step 13: Implement 33.B GREEN-3.** Make `test_installed_cli_does_not_import_source_checkout` GREEN with the smallest clean installed-help smoke before completing WebUI, asset, preview, identity, port, and cleanup matrices.
+- [ ] **Step 13: Implement 33.B GREEN-3.** Make `test_installed_cli_does_not_import_source_checkout` GREEN with the smallest clean installed-help smoke; then make `test_installed_distribution_smoke_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 14: Implement 33.B GREEN-4.** Own isolated pipx installation and installed-package smoke only. Source fallback, `recover --apply`, shared pipx state, external publication, wheel mutation, fabricated outcomes, and production data changes remain out of scope.
 - [ ] **Step 15: Run 33.B Target GREEN.** Re-run `python -m pytest -q -o addopts='' -m package_smoke tests/smoke/package/test_installed_cli.py::test_installed_cli_does_not_import_source_checkout`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 16: Run 33.B Domain.** Run `python -m pytest -q -o addopts='' -m package_smoke tests/smoke/package`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -9045,7 +9248,7 @@ Owned files: - Create: containers/demo/Dockerfile - Create: requirements/demo.lo
 Interface: Produces `run_image_smoke(config: ImageSmokeConfigV1) -> ImageSmokeResultV1`, Demo image digest, filesystem/import inspection, `/healthz`, fixed-trace report, and exact `PROHIBITED_DEMO_MODULE_PREFIXES_V1: frozenset[str] = frozenset({"vespercode.loop.engine", "vespercode.loop.turn_boundary", "vespercode.loop.call_orchestrator", "vespercode.storage", "vespercode.workspace", "vespercode.tools.list_files", "vespercode.tools.read_file", "vespercode.tools.search_text", "vespercode.execution", "vespercode.persistence", "vespercode.credentials", "vespercode.llm.openai_adapter", "vespercode.audit", "vespercode.memory", "vespercode.web", "vespercode.cli_composition"})`.
 GREEN-1: Build from the reviewed shared-core allowlist and hash-locked Demo requirements only, inspecting filesystem/import closure against the exact prohibited formal-capability prefixes.
 GREEN-2: Prove non-root platform PORT, `/healthz`, fixed Mock trace, ephemeral sessions, no persistence, no sockets/secrets/repositories, and zero formal adapter construction or calls.
-GREEN-3: Make `test_demo_image_contains_shared_core_but_no_formal_adapters` GREEN with the smallest allowlist/prohibited-prefix image contract before completing health, trace, filesystem, import, session, and cleanup matrices.
+GREEN-3: Make `test_demo_image_contains_shared_core_but_no_formal_adapters` GREEN with the smallest allowlist/prohibited-prefix image contract; then make `test_demo_image_runtime_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own curated Demo image construction and smoke evidence only. Formal wheel/engine/repositories, local files, Docker control, credentials, persistence, recovery, provider adapters, and capability expansion remain out of scope.
 Boundary: Build from the reviewed allowlist and hash-locked Demo requirements, not the formal wheel. No formal engine, Run/turn/SQLite repository, WinCred/OpenAI/file/Docker/persistence/recovery/local-composition code, socket, secret, or repository enters the image.
 ```
@@ -9070,6 +9273,7 @@ def test_demo_image_contains_shared_core_but_no_formal_adapters(
 - Target (34.B): `python -m pytest -q -o addopts='' -m oci_smoke tests/smoke/images/test_image_capability_separation.py::test_demo_image_contains_shared_core_but_no_formal_adapters`
 - Build (34.B): `docker build --pull=false -f containers/demo/Dockerfile -t vespercode-demo:local .`
 - Domain (34.B): `python -m pytest -q -o addopts='' -m oci_smoke tests/smoke/images/test_demo_image_contract.py tests/smoke/images/test_demo_container_health.py tests/smoke/images/test_image_capability_separation.py`
+- Matrix (34.B): `python -m pytest -q -o addopts='' -m oci_smoke tests/smoke/images/test_image_capability_separation.py::test_demo_image_runtime_matrix`
 - Driver (34.B): `python scripts/run_demo_image_smoke.py --demo vespercode-demo:local --report tests/.tmp/demo-image-smoke-report.json`
 - Expected (34.B): curated import closure, non-root PORT/health/fixed trace, no persistence, and capability absence pass.
 
@@ -9081,7 +9285,7 @@ def test_demo_image_contains_shared_core_but_no_formal_adapters(
 - [ ] **Step 2: Run 34.B RED.** Run `python -m pytest -q -o addopts='' -m oci_smoke tests/smoke/images/test_image_capability_separation.py::test_demo_image_contains_shared_core_but_no_formal_adapters`. Expected: FAIL for “the test runner reaches `test_demo_image_contains_shared_core_but_no_formal_adapters`, but its first task-owned assertion fails because the required allowlist/prohibited-prefix image contract has not been implemented; collection, runner startup, unrelated import, or environment failure does not count”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 3: Implement 34.B GREEN-1.** Build from the reviewed shared-core allowlist and hash-locked Demo requirements only, inspecting filesystem/import closure against the exact prohibited formal-capability prefixes.
 - [ ] **Step 4: Implement 34.B GREEN-2.** Prove non-root platform PORT, `/healthz`, fixed Mock trace, ephemeral sessions, no persistence, no sockets/secrets/repositories, and zero formal adapter construction or calls.
-- [ ] **Step 5: Implement 34.B GREEN-3.** Make `test_demo_image_contains_shared_core_but_no_formal_adapters` GREEN with the smallest allowlist/prohibited-prefix image contract before completing health, trace, filesystem, import, session, and cleanup matrices.
+- [ ] **Step 5: Implement 34.B GREEN-3.** Make `test_demo_image_contains_shared_core_but_no_formal_adapters` GREEN with the smallest allowlist/prohibited-prefix image contract; then make `test_demo_image_runtime_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 6: Implement 34.B GREEN-4.** Own curated Demo image construction and smoke evidence only. Formal wheel/engine/repositories, local files, Docker control, credentials, persistence, recovery, provider adapters, and capability expansion remain out of scope.
 - [ ] **Step 7: Run 34.B Target GREEN.** Re-run `python -m pytest -q -o addopts='' -m oci_smoke tests/smoke/images/test_image_capability_separation.py::test_demo_image_contains_shared_core_but_no_formal_adapters`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 8: Run 34.B Domain.** Run `python -m pytest -q -o addopts='' -m oci_smoke tests/smoke/images/test_demo_image_contract.py tests/smoke/images/test_demo_container_health.py tests/smoke/images/test_image_capability_separation.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -9139,7 +9343,7 @@ Owned files: - Create: scripts/run_reference_image_smoke.py - Create: tests/smok
 Interface: Produces the verified reference image inspection and exact local OCI/loopback/digest-pull comparison against Task 2.G/Task 6.B.
 GREEN-1: Rebuild only from the immutable Task 2 recipe, lock, fixture, manifest, builder, output, and registry inputs, binding the clean source and packaged reference-manifest identities before inspection.
 GREEN-2: Compare rebuilt and loopback-pulled OCI manifest digests to the frozen Task 2 digest, then prove non-root, no-network, read-only, resource, report, fixture, no-self-reference, and cleanup behavior.
-GREEN-3: Make `test_rebuilt_reference_manifest_matches_frozen_task2_digest` GREEN with the smallest exact reproduction path before completing build, pull, isolation, fixture, smoke, and cleanup matrices.
+GREEN-3: Make `test_rebuilt_reference_manifest_matches_frozen_task2_digest` GREEN with the smallest exact reproduction path; then make `test_reference_image_reproduction_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own reference OCI reproduction and smoke evidence only. Task 2 inputs, frozen manifest, production profile rules, registry source, and mismatch disposition remain read-only; any mismatch is NO-GO.
 Boundary: Task 2 recipe/lock/fixture/manifest/builder/output/registry inputs are read-only. Any mismatch is NO-GO and reopens Tasks 2/6 rather than rewriting the manifest.
 ```
@@ -9160,6 +9364,7 @@ def test_rebuilt_reference_manifest_matches_frozen_task2_digest(
 - Target (34.A): `python -m pytest -q -o addopts='' -m oci_smoke tests/smoke/images/test_reference_image_contract.py::test_rebuilt_reference_manifest_matches_frozen_task2_digest`
 - Build (34.A): `docker build --pull=false -f containers/reference/Dockerfile -t vespercode-reference:local .`
 - Domain (34.A): `python -m pytest -q -o addopts='' -m oci_smoke tests/smoke/images/test_reference_image_contract.py tests/smoke/images/test_reference_fixture_smoke.py`
+- Matrix (34.A): `python -m pytest -q -o addopts='' -m oci_smoke tests/smoke/images/test_reference_image_contract.py::test_reference_image_reproduction_matrix`
 - Driver (34.A): `python scripts/run_reference_image_smoke.py --reference vespercode-reference:local --report tests/.tmp/reference-image-smoke-report.json`
 - Expected (34.A): exact digest continuity, no self-reference, non-root/no-network/read-only/resource/report/fixture smoke, and registry cleanup pass.
 
@@ -9171,7 +9376,7 @@ def test_rebuilt_reference_manifest_matches_frozen_task2_digest(
 - [ ] **Step 2: Run 34.A RED.** Run `python -m pytest -q -o addopts='' -m oci_smoke tests/smoke/images/test_reference_image_contract.py::test_rebuilt_reference_manifest_matches_frozen_task2_digest`. Expected: FAIL for “the test runner reaches `test_rebuilt_reference_manifest_matches_frozen_task2_digest`, but its first task-owned assertion fails because the required exact reproduction path has not been implemented; collection, runner startup, unrelated import, or environment failure does not count”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 3: Implement 34.A GREEN-1.** Rebuild only from the immutable Task 2 recipe, lock, fixture, manifest, builder, output, and registry inputs, binding the clean source and packaged reference-manifest identities before inspection.
 - [ ] **Step 4: Implement 34.A GREEN-2.** Compare rebuilt and loopback-pulled OCI manifest digests to the frozen Task 2 digest, then prove non-root, no-network, read-only, resource, report, fixture, no-self-reference, and cleanup behavior.
-- [ ] **Step 5: Implement 34.A GREEN-3.** Make `test_rebuilt_reference_manifest_matches_frozen_task2_digest` GREEN with the smallest exact reproduction path before completing build, pull, isolation, fixture, smoke, and cleanup matrices.
+- [ ] **Step 5: Implement 34.A GREEN-3.** Make `test_rebuilt_reference_manifest_matches_frozen_task2_digest` GREEN with the smallest exact reproduction path; then make `test_reference_image_reproduction_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 6: Implement 34.A GREEN-4.** Own reference OCI reproduction and smoke evidence only. Task 2 inputs, frozen manifest, production profile rules, registry source, and mismatch disposition remain read-only; any mismatch is NO-GO.
 - [ ] **Step 7: Run 34.A Target GREEN.** Re-run `python -m pytest -q -o addopts='' -m oci_smoke tests/smoke/images/test_reference_image_contract.py::test_rebuilt_reference_manifest_matches_frozen_task2_digest`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 8: Run 34.A Domain.** Run `python -m pytest -q -o addopts='' -m oci_smoke tests/smoke/images/test_reference_image_contract.py tests/smoke/images/test_reference_fixture_smoke.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -9236,7 +9441,7 @@ Owned files: - Create: .github/workflows/ci.yml - Create: tests/unit/process/tes
 Interface: Produces the exact three GitHub jobs, push/PR event contract, read-only permissions, locked setup, artifacts, and no-external-publish boundary.
 GREEN-1: Define exact `unit-test`, `reference-image-build`, and `demo-image-build` jobs for every push and pull request with read-only permissions, locked setup, deterministic commands, and required reports/artifacts.
 GREEN-2: Keep fork/ordinary verification secretless and prohibit external registry login/push, Release, GHCR, Render, or other publish actions while capturing real source-commit-bound job URLs and artifact identities.
-GREEN-3: Make `test_github_runs_three_no_publish_jobs_on_push_and_pr` GREEN with the smallest static workflow contract before completing permission, lock, artifact, fork, trigger, and real-run evidence matrices.
+GREEN-3: Make `test_github_runs_three_no_publish_jobs_on_push_and_pr` GREEN with the smallest static workflow contract; then make `test_github_actions_boundary_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own GitHub verification workflow and evidence binding only. Publishing, release secrets, protected tags, GitLab rules, fabricated run ids/statuses, and external deployment remain out of scope.
 Boundary: Fork PRs work without secrets. Loopback registry inside reference build is allowed; external registry login/push, Release, GHCR, or Render action is forbidden.
 ```
@@ -9257,6 +9462,7 @@ def test_github_runs_three_no_publish_jobs_on_push_and_pr(
 **Atomic verification:**
 - Target (35.A): `python -m pytest -q tests/unit/process/test_github_actions_contract.py::test_github_runs_three_no_publish_jobs_on_push_and_pr`
 - Domain (35.A): `python -m pytest -q tests/unit/process/test_github_actions_contract.py`
+- Matrix (35.A): `python -m pytest -q tests/unit/process/test_github_actions_contract.py::test_github_actions_boundary_matrix`
 - Real (35.A): push the branch and open a GitHub PR; require all applicable jobs to pass and save real URLs/artifacts.
 - Expected (35.A): exact jobs/events/permissions/locks/real builds pass with no publish credential/action.
 
@@ -9268,7 +9474,7 @@ def test_github_runs_three_no_publish_jobs_on_push_and_pr(
 - [ ] **Step 2: Run 35.A RED.** Run `python -m pytest -q tests/unit/process/test_github_actions_contract.py::test_github_runs_three_no_publish_jobs_on_push_and_pr`. Expected: FAIL for “the test runner reaches `test_github_runs_three_no_publish_jobs_on_push_and_pr`, but its first task-owned assertion fails because the required static workflow contract has not been implemented; collection, runner startup, unrelated import, or environment failure does not count”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 3: Implement 35.A GREEN-1.** Define exact `unit-test`, `reference-image-build`, and `demo-image-build` jobs for every push and pull request with read-only permissions, locked setup, deterministic commands, and required reports/artifacts.
 - [ ] **Step 4: Implement 35.A GREEN-2.** Keep fork/ordinary verification secretless and prohibit external registry login/push, Release, GHCR, Render, or other publish actions while capturing real source-commit-bound job URLs and artifact identities.
-- [ ] **Step 5: Implement 35.A GREEN-3.** Make `test_github_runs_three_no_publish_jobs_on_push_and_pr` GREEN with the smallest static workflow contract before completing permission, lock, artifact, fork, trigger, and real-run evidence matrices.
+- [ ] **Step 5: Implement 35.A GREEN-3.** Make `test_github_runs_three_no_publish_jobs_on_push_and_pr` GREEN with the smallest static workflow contract; then make `test_github_actions_boundary_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 6: Implement 35.A GREEN-4.** Own GitHub verification workflow and evidence binding only. Publishing, release secrets, protected tags, GitLab rules, fabricated run ids/statuses, and external deployment remain out of scope.
 - [ ] **Step 7: Run 35.A Target GREEN.** Re-run `python -m pytest -q tests/unit/process/test_github_actions_contract.py::test_github_runs_three_no_publish_jobs_on_push_and_pr`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 8: Run 35.A Domain.** Run `python -m pytest -q tests/unit/process/test_github_actions_contract.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -9284,7 +9490,7 @@ Owned files: - Create: .gitlab-ci.yml - Create: tests/unit/process/test_gitlab_c
 Interface: Produces the four exact verification jobs, exclusive `rules`, project Windows runner binding, locked commands, and saved reports/artifacts.
 GREEN-1: Define exact `unit-test`, Windows `wheel-build-smoke`, `reference-image-build`, and `demo-image-build` jobs with exclusive rules for required push, merge request, main, and tag contexts.
 GREEN-2: Bind the project Windows runner, locked commands, reports/artifacts, and secretless ordinary pipeline boundary while capturing only confirmed source-commit job/pipeline URLs and artifact identities.
-GREEN-3: Make `test_gitlab_runs_all_four_verification_jobs_for_merge_request` GREEN with the smallest merge-request rule matrix before completing context exclusivity, runner, artifact, secret, and real-run evidence matrices.
+GREEN-3: Make `test_gitlab_runs_all_four_verification_jobs_for_merge_request` GREEN with the smallest merge-request rule matrix; then make `test_gitlab_pipeline_boundary_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own GitLab verification pipeline and evidence binding only. Release/GHCR/Render secrets or pushes, GitHub workflow, protected release execution, fabricated ids/statuses, and deployment remain out of scope.
 Boundary: Ordinary push/MR/fork jobs have no release/GHCR/Render credential or external push action; missing Windows runner or smoke failure fails the pipeline.
 ```
@@ -9305,6 +9511,7 @@ def test_gitlab_runs_all_four_verification_jobs_for_merge_request(
 **Atomic verification:**
 - Target (35.B): `python -m pytest -q tests/unit/process/test_gitlab_ci_contract.py::test_gitlab_runs_all_four_verification_jobs_for_merge_request`
 - Domain (35.B): `python -m pytest -q tests/unit/process/test_gitlab_ci_contract.py`
+- Matrix (35.B): `python -m pytest -q tests/unit/process/test_gitlab_ci_contract.py::test_gitlab_pipeline_boundary_matrix`
 - Real (35.B): push/open a GitLab MR and require the applicable four jobs, then the main-push set, to pass.
 - Expected (35.B): exact contexts, runner, commands, artifacts and no-secret ordinary boundary pass.
 
@@ -9316,7 +9523,7 @@ def test_gitlab_runs_all_four_verification_jobs_for_merge_request(
 - [ ] **Step 10: Run 35.B RED.** Run `python -m pytest -q tests/unit/process/test_gitlab_ci_contract.py::test_gitlab_runs_all_four_verification_jobs_for_merge_request`. Expected: FAIL for “the test runner reaches `test_gitlab_runs_all_four_verification_jobs_for_merge_request`, but its first task-owned assertion fails because the required merge-request rule matrix has not been implemented; collection, runner startup, unrelated import, or environment failure does not count”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 11: Implement 35.B GREEN-1.** Define exact `unit-test`, Windows `wheel-build-smoke`, `reference-image-build`, and `demo-image-build` jobs with exclusive rules for required push, merge request, main, and tag contexts.
 - [ ] **Step 12: Implement 35.B GREEN-2.** Bind the project Windows runner, locked commands, reports/artifacts, and secretless ordinary pipeline boundary while capturing only confirmed source-commit job/pipeline URLs and artifact identities.
-- [ ] **Step 13: Implement 35.B GREEN-3.** Make `test_gitlab_runs_all_four_verification_jobs_for_merge_request` GREEN with the smallest merge-request rule matrix before completing context exclusivity, runner, artifact, secret, and real-run evidence matrices.
+- [ ] **Step 13: Implement 35.B GREEN-3.** Make `test_gitlab_runs_all_four_verification_jobs_for_merge_request` GREEN with the smallest merge-request rule matrix; then make `test_gitlab_pipeline_boundary_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 14: Implement 35.B GREEN-4.** Own GitLab verification pipeline and evidence binding only. Release/GHCR/Render secrets or pushes, GitHub workflow, protected release execution, fabricated ids/statuses, and deployment remain out of scope.
 - [ ] **Step 15: Run 35.B Target GREEN.** Re-run `python -m pytest -q tests/unit/process/test_gitlab_ci_contract.py::test_gitlab_runs_all_four_verification_jobs_for_merge_request`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 16: Run 35.B Domain.** Run `python -m pytest -q tests/unit/process/test_gitlab_ci_contract.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -9332,7 +9539,7 @@ Owned files: - Modify: .gitlab-ci.yml (protected release rules/stage only) - Cre
 Interface: Produces `verify_ci_contract(github_path: Path, gitlab_path: Path) -> DualCIContractResultV1`, the complete event matrix, protected credential boundary, three-way source-commit precondition, and categorized platform evidence for Task 36.A.
 GREEN-1: Extend only protected-tag rules so release admission requires protected context, exact source/tag/GitHub/GitLab commit equality, passing prerequisite job sets, and secrets unavailable before all prechecks pass.
 GREEN-2: Validate the complete static event/secret matrix and bind fresh real GitHub/GitLab main/source-commit URLs, ids, timestamps, outcomes, and artifact digests without executing a release.
-GREEN-3: Make `test_unprotected_tag_cannot_enter_release_stage` GREEN with the smallest fail-closed protected-tag rule before completing commit, secret-order, event, prerequisite, and dual-platform evidence matrices.
+GREEN-3: Make `test_unprotected_tag_cannot_enter_release_stage` GREEN with the smallest fail-closed protected-tag rule; then make `test_release_rule_boundary_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own protected release rules, contract verifier, and confirmed CI evidence only. GitHub Release, GHCR push, Render deployment, tag creation, protected credentials, fabricated runs, and publication remain out of scope.
 Boundary: This child validates release ordering but does not create a GitHub Release, push GHCR, or deploy Render. Missing/failed external runs leave it incomplete.
 ```
@@ -9351,6 +9558,7 @@ def test_unprotected_tag_cannot_enter_release_stage(
 **Atomic verification:**
 - Target (35.C): `python -m pytest -q tests/unit/process/test_ci_release_rules.py::test_unprotected_tag_cannot_enter_release_stage`
 - Domain (35.C): `python -m pytest -q tests/unit/process/test_github_actions_contract.py tests/unit/process/test_gitlab_ci_contract.py tests/unit/process/test_ci_release_rules.py tests/unit/process/test_ci_secret_boundaries.py`
+- Matrix (35.C): `python -m pytest -q tests/unit/process/test_ci_release_rules.py::test_release_rule_boundary_matrix`
 - Contract (35.C): `python scripts/verify_ci_contract.py .github/workflows/ci.yml .gitlab-ci.yml`
 - Real (35.C): require passing GitHub and GitLab main/source-commit job sets and record their URLs/ids.
 - Expected (35.C): protected release ordering, three-way commit precheck, secret scoping, event matrix and real evidence pass.
@@ -9363,7 +9571,7 @@ def test_unprotected_tag_cannot_enter_release_stage(
 - [ ] **Step 18: Run 35.C RED.** Run `python -m pytest -q tests/unit/process/test_ci_release_rules.py::test_unprotected_tag_cannot_enter_release_stage`. Expected: FAIL for “the test runner reaches `test_unprotected_tag_cannot_enter_release_stage`, but its first task-owned assertion fails because the required fail-closed protected-tag rule has not been implemented; collection, runner startup, unrelated import, or environment failure does not count”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 19: Implement 35.C GREEN-1.** Extend only protected-tag rules so release admission requires protected context, exact source/tag/GitHub/GitLab commit equality, passing prerequisite job sets, and secrets unavailable before all prechecks pass.
 - [ ] **Step 20: Implement 35.C GREEN-2.** Validate the complete static event/secret matrix and bind fresh real GitHub/GitLab main/source-commit URLs, ids, timestamps, outcomes, and artifact digests without executing a release.
-- [ ] **Step 21: Implement 35.C GREEN-3.** Make `test_unprotected_tag_cannot_enter_release_stage` GREEN with the smallest fail-closed protected-tag rule before completing commit, secret-order, event, prerequisite, and dual-platform evidence matrices.
+- [ ] **Step 21: Implement 35.C GREEN-3.** Make `test_unprotected_tag_cannot_enter_release_stage` GREEN with the smallest fail-closed protected-tag rule; then make `test_release_rule_boundary_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 22: Implement 35.C GREEN-4.** Own protected release rules, contract verifier, and confirmed CI evidence only. GitHub Release, GHCR push, Render deployment, tag creation, protected credentials, fabricated runs, and publication remain out of scope.
 - [ ] **Step 23: Run 35.C Target GREEN.** Re-run `python -m pytest -q tests/unit/process/test_ci_release_rules.py::test_unprotected_tag_cannot_enter_release_stage`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 24: Run 35.C Domain.** Run `python -m pytest -q tests/unit/process/test_github_actions_contract.py tests/unit/process/test_gitlab_ci_contract.py tests/unit/process/test_ci_release_rules.py tests/unit/process/test_ci_secret_boundaries.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -9424,7 +9632,7 @@ Owned files: - Create: src/vespercode/delivery/evidence.py - Create: delivery/ev
 Interface: Produces `CIReleaseEvidenceV1`, `ReleaseEvidenceV1`, `DeploymentEvidenceV1`, and `load_and_verify_release_evidence(root, require_live)`.
 GREEN-1: Define closed bounded non-secret CI, release, and deployment evidence unions containing only confirmed ids, URLs, commits, digests, timestamps, environment categories, outcomes, and access metadata.
 GREEN-2: Verify exact source/tag/platform commit, wheel/checksum, reference manifest/GHCR image, Demo image/deployment, freshness, terminal state, content-address, and cross-record alignment while rejecting unknown, planned, invented, missing, or inaccessible evidence.
-GREEN-3: Make `test_release_evidence_rejects_commit_misalignment` GREEN with the smallest closed commit-alignment rejection before completing schema, digest, freshness, access, terminal-state, and cross-file matrices.
+GREEN-3: Make `test_release_evidence_rejects_commit_misalignment` GREEN with the smallest closed commit-alignment rejection; then make `test_release_evidence_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own delivery evidence schemas and read-only verifier only. CI execution, release/publication, deployment, credentials, external mutation, synthetic results, and outcome fabrication remain out of scope.
 Boundary: Unknown fields and invented/planned/non-terminal external results are rejected. Evidence stores only non-secret ids, URLs, commits, digests, timestamps, environment categories, and outcomes.
 ```
@@ -9445,6 +9653,7 @@ def test_release_evidence_rejects_commit_misalignment(
 **Atomic verification:**
 - Target (36.A): `python -m pytest -q -o addopts='' -m deployment_smoke tests/smoke/release/test_commit_alignment.py::test_release_evidence_rejects_commit_misalignment`
 - Domain (36.A): `python -m pytest -q -o addopts='' -m deployment_smoke tests/smoke/release/test_evidence_schema.py tests/smoke/release/test_commit_alignment.py`
+- Matrix (36.A): `python -m pytest -q -o addopts='' -m deployment_smoke tests/smoke/release/test_commit_alignment.py::test_release_evidence_matrix`
 - Expected (36.A): closed schemas and exact identity alignment reject every missing/mismatched/non-terminal case.
 
 **Atomic review focus:**
@@ -9455,7 +9664,7 @@ def test_release_evidence_rejects_commit_misalignment(
 - [ ] **Step 2: Run 36.A RED.** Run `python -m pytest -q -o addopts='' -m deployment_smoke tests/smoke/release/test_commit_alignment.py::test_release_evidence_rejects_commit_misalignment`. Expected: FAIL for “the test runner reaches `test_release_evidence_rejects_commit_misalignment`, but its first task-owned assertion fails because the required closed commit-alignment rejection has not been implemented; collection, runner startup, unrelated import, or environment failure does not count”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 3: Implement 36.A GREEN-1.** Define closed bounded non-secret CI, release, and deployment evidence unions containing only confirmed ids, URLs, commits, digests, timestamps, environment categories, outcomes, and access metadata.
 - [ ] **Step 4: Implement 36.A GREEN-2.** Verify exact source/tag/platform commit, wheel/checksum, reference manifest/GHCR image, Demo image/deployment, freshness, terminal state, content-address, and cross-record alignment while rejecting unknown, planned, invented, missing, or inaccessible evidence.
-- [ ] **Step 5: Implement 36.A GREEN-3.** Make `test_release_evidence_rejects_commit_misalignment` GREEN with the smallest closed commit-alignment rejection before completing schema, digest, freshness, access, terminal-state, and cross-file matrices.
+- [ ] **Step 5: Implement 36.A GREEN-3.** Make `test_release_evidence_rejects_commit_misalignment` GREEN with the smallest closed commit-alignment rejection; then make `test_release_evidence_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 6: Implement 36.A GREEN-4.** Own delivery evidence schemas and read-only verifier only. CI execution, release/publication, deployment, credentials, external mutation, synthetic results, and outcome fabrication remain out of scope.
 - [ ] **Step 7: Run 36.A Target GREEN.** Re-run `python -m pytest -q -o addopts='' -m deployment_smoke tests/smoke/release/test_commit_alignment.py::test_release_evidence_rejects_commit_misalignment`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 8: Run 36.A Domain.** Run `python -m pytest -q -o addopts='' -m deployment_smoke tests/smoke/release/test_evidence_schema.py tests/smoke/release/test_commit_alignment.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -9512,7 +9721,7 @@ Owned files: - Create: delivery/evidence/release-v1.json only from confirmed ext
 Interface: Produces a real GitHub Release URL, released wheel/checksum identities, `ghcr.io/ledstevenovo/vespercode-reference@sha256:{manifest_digest}`, digest re-pull/smoke evidence, and closed `ReleaseEvidenceV1`.
 GREEN-1: Require protected tag/source commit, passing Task 35 evidence, exact Task 33 wheel/checksum, Task 2/34 reference manifest, and least-privilege platform-secret availability before any external publication.
 GREEN-2: Publish once, then independently download and re-hash/clean-install the wheel, pull GHCR by RepoDigest, inspect/smoke the image, compare every manifest digest, and write evidence only from confirmed terminal results.
-GREEN-3: Make `test_release_rejects_ghcr_digest_different_from_frozen_manifest` GREEN with the smallest digest-continuity assertion before completing preflight, publication, download, install, pull, smoke, and evidence matrices.
+GREEN-3: Make `test_release_rejects_ghcr_digest_different_from_frozen_manifest` GREEN with the smallest digest-continuity assertion; then make `test_release_publication_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own the protected GitHub Release/GHCR operation and confirmed evidence only. Credential disclosure, manifest rewriting, retries after uncertain publication, unprotected execution, Render deployment, invented URLs/digests, and partial success remain out of scope.
 Boundary: Human-provided protected least-privilege credentials stay in platform secret stores. A registry transformation, missing lookup, digest mismatch, or failed smoke aborts; it never rewrites the manifest.
 ```
@@ -9531,6 +9740,7 @@ def test_release_rejects_ghcr_digest_different_from_frozen_manifest(
 **Atomic verification:**
 - Target (36.B): `python -m pytest -q -o addopts='' -m deployment_smoke tests/smoke/release/test_manifest_image_alignment.py::test_release_rejects_ghcr_digest_different_from_frozen_manifest`
 - Domain (36.B): `python -m pytest -q -o addopts='' -m deployment_smoke tests/smoke/release/test_manifest_image_alignment.py`
+- Matrix (36.B): `python -m pytest -q -o addopts='' -m deployment_smoke tests/smoke/release/test_manifest_image_alignment.py::test_release_publication_matrix`
 - External (36.B): run the protected tag pipeline; download/re-hash/clean-install the wheel; pull GHCR by RepoDigest and smoke it.
 - Evidence (36.B): `python scripts/verify_release_evidence.py delivery/evidence`
 - Expected (36.B): Task 2 loopback, Task 34 reproduction, built-in manifest, GHCR response, and pulled-image manifest digests are identical; released wheel hash/install pass.
@@ -9543,7 +9753,7 @@ def test_release_rejects_ghcr_digest_different_from_frozen_manifest(
 - [ ] **Step 2: Run 36.B RED.** Run `python -m pytest -q -o addopts='' -m deployment_smoke tests/smoke/release/test_manifest_image_alignment.py::test_release_rejects_ghcr_digest_different_from_frozen_manifest`. Expected: FAIL for “the test runner reaches `test_release_rejects_ghcr_digest_different_from_frozen_manifest`, but its first task-owned assertion fails because the required digest-continuity assertion has not been implemented; collection, runner startup, unrelated import, or environment failure does not count”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 3: Implement 36.B GREEN-1.** Require protected tag/source commit, passing Task 35 evidence, exact Task 33 wheel/checksum, Task 2/34 reference manifest, and least-privilege platform-secret availability before any external publication.
 - [ ] **Step 4: Implement 36.B GREEN-2.** Publish once, then independently download and re-hash/clean-install the wheel, pull GHCR by RepoDigest, inspect/smoke the image, compare every manifest digest, and write evidence only from confirmed terminal results.
-- [ ] **Step 5: Implement 36.B GREEN-3.** Make `test_release_rejects_ghcr_digest_different_from_frozen_manifest` GREEN with the smallest digest-continuity assertion before completing preflight, publication, download, install, pull, smoke, and evidence matrices.
+- [ ] **Step 5: Implement 36.B GREEN-3.** Make `test_release_rejects_ghcr_digest_different_from_frozen_manifest` GREEN with the smallest digest-continuity assertion; then make `test_release_publication_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 6: Implement 36.B GREEN-4.** Own the protected GitHub Release/GHCR operation and confirmed evidence only. Credential disclosure, manifest rewriting, retries after uncertain publication, unprotected execution, Render deployment, invented URLs/digests, and partial success remain out of scope.
 - [ ] **Step 7: Run 36.B Target GREEN.** Re-run `python -m pytest -q -o addopts='' -m deployment_smoke tests/smoke/release/test_manifest_image_alignment.py::test_release_rejects_ghcr_digest_different_from_frozen_manifest`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 8: Run 36.B Domain.** Run `python -m pytest -q -o addopts='' -m deployment_smoke tests/smoke/release/test_manifest_image_alignment.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -9602,7 +9812,7 @@ Owned files: - Create: render.yaml - Create: delivery/evidence/deployment-v1.jso
 Interface: Produces a real Render public URL, deployment id/source commit/image digest, `/healthz`, fixed scenario, session isolation, capability-absence evidence, and closed `DeploymentEvidenceV1`.
 GREEN-1: Define a closed Render service contract for the exact Task 34.B Demo image/config, platform PORT, `/healthz`, no persistent disk, no secret/socket/repository credential, and no formal/local/recovery endpoint.
 GREEN-2: Deploy only the source-aligned image, then bind confirmed deployment id, commit, image digest, public URL, cold-start, health, fixed Mock trace, simulation label, session isolation, and capability-absence observations into terminal evidence.
-GREEN-3: Make `test_render_contract_has_no_disk_or_real_provider_secret` GREEN with the smallest no-disk/no-secret static contract before completing image/config, live health, scenario, isolation, cold-start, and evidence matrices.
+GREEN-3: Make `test_render_contract_has_no_disk_or_real_provider_secret` GREEN with the smallest no-disk/no-secret static contract; then make `test_render_deployment_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own Render Demo configuration, deployment, live smoke, and confirmed evidence only. Formal/local capabilities, real providers, secrets, disks, repository access, recovery, invented public state, and unrelated site behavior remain out of scope.
 Boundary: Use `containers/demo/Dockerfile`, platform PORT, `/healthz`, no disk/key/socket/repository credential, and no formal/local/recovery endpoints. Missing or failed live state leaves the task incomplete.
 ```
@@ -9622,6 +9832,7 @@ def test_render_contract_has_no_disk_or_real_provider_secret(
 **Atomic verification:**
 - Target (36.C): `python -m pytest -q -o addopts='' -m deployment_smoke tests/smoke/release/test_render_contract.py::test_render_contract_has_no_disk_or_real_provider_secret`
 - Domain (36.C): `python -m pytest -q -o addopts='' -m deployment_smoke tests/smoke/release/test_render_contract.py tests/smoke/release/test_public_demo_smoke.py`
+- Matrix (36.C): `python -m pytest -q -o addopts='' -m deployment_smoke tests/smoke/release/test_render_contract.py::test_render_deployment_matrix`
 - Live (36.C): `python scripts/verify_release_evidence.py delivery/evidence --require-live`
 - Expected (36.C): `/healthz`
 
@@ -9633,7 +9844,7 @@ def test_render_contract_has_no_disk_or_real_provider_secret(
 - [ ] **Step 2: Run 36.C RED.** Run `python -m pytest -q -o addopts='' -m deployment_smoke tests/smoke/release/test_render_contract.py::test_render_contract_has_no_disk_or_real_provider_secret`. Expected: FAIL for “the test runner reaches `test_render_contract_has_no_disk_or_real_provider_secret`, but its first task-owned assertion fails because the required no-disk/no-secret static contract has not been implemented; collection, runner startup, unrelated import, or environment failure does not count”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 3: Implement 36.C GREEN-1.** Define a closed Render service contract for the exact Task 34.B Demo image/config, platform PORT, `/healthz`, no persistent disk, no secret/socket/repository credential, and no formal/local/recovery endpoint.
 - [ ] **Step 4: Implement 36.C GREEN-2.** Deploy only the source-aligned image, then bind confirmed deployment id, commit, image digest, public URL, cold-start, health, fixed Mock trace, simulation label, session isolation, and capability-absence observations into terminal evidence.
-- [ ] **Step 5: Implement 36.C GREEN-3.** Make `test_render_contract_has_no_disk_or_real_provider_secret` GREEN with the smallest no-disk/no-secret static contract before completing image/config, live health, scenario, isolation, cold-start, and evidence matrices.
+- [ ] **Step 5: Implement 36.C GREEN-3.** Make `test_render_contract_has_no_disk_or_real_provider_secret` GREEN with the smallest no-disk/no-secret static contract; then make `test_render_deployment_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 6: Implement 36.C GREEN-4.** Own Render Demo configuration, deployment, live smoke, and confirmed evidence only. Formal/local capabilities, real providers, secrets, disks, repository access, recovery, invented public state, and unrelated site behavior remain out of scope.
 - [ ] **Step 7: Run 36.C Target GREEN.** Re-run `python -m pytest -q -o addopts='' -m deployment_smoke tests/smoke/release/test_render_contract.py::test_render_contract_has_no_disk_or_real_provider_secret`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 8: Run 36.C Domain.** Run `python -m pytest -q -o addopts='' -m deployment_smoke tests/smoke/release/test_render_contract.py tests/smoke/release/test_public_demo_smoke.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -10483,6 +10694,129 @@ git commit -m "Implement T38.3 Independent Cross-workflow Browser Acceptance"
 **Done:** legacy steps 38.G 的 Target、Domain、适用真实环境和全局 profile 均通过；Critical/Important finding 全部关闭并复审；没有行为被延后到 successor。
 **Completion evidence:** Not yet executed.
 
+### 5.1 Exact Boundary Matrix Registry
+
+This registry is a normative extension of each matching legacy subsection's **Exact RED test code** and **Atomic verification**. Before any GREEN implementation for a listed legacy step, the implementer must add the complete parameterized test represented by the row, run the exact `Matrix` command displayed in the matching legacy subsection, and observe a behavior-specific RED caused by the absent contract—not collection, import, environment, or unrelated failure. The row must then pass together with the subsection Target and Domain. A broad Domain command never substitutes for the named Matrix node.
+
+Each parameter row stated in the oracle is mandatory. The implementation may choose fixture/helper organization, but may not merge distinct side-effect, rollback, concurrency, adapter, or real-environment observations into an unasserted loop. Expected result names come only from the matching SPEC contract and displayed Interfaces; a discovered mismatch is `SPEC_CONTRACT_MISSING` and stops that session task for a semantic document amendment rather than inventing a new result.
+
+| Legacy | Required pytest node | Mandatory parameter rows and exact oracle |
+|---|---|---|
+| 2.A | `tests/feasibility/docker/test_reference_input_contract.py::test_reference_input_freeze_matrix` | missing reference lock, unequal fixture/reference bytes, or a digest differing from either lock => reject before returning `ReferenceBuildInputV1`; exact bytes and digests => one deterministic immutable `ReferenceBuildInputV1`. |
+| 2.C | `tests/feasibility/docker/test_loopback_registry_probe.py::test_loopback_registry_boundary_matrix` | bind host other than `127.0.0.1`, a non-assigned/LAN-exposed port, or any credential => reject before push; exact loopback/no-credential lifecycle => one immutable `LoopbackRegistryEvidenceV1`; success, failure, and cancellation each leave zero registry containers and zero registry data. |
+| 2.G | `tests/feasibility/docker/test_reference_boundary_gate.py::test_reference_gate_upstream_consistency_matrix` | toolchain, lock, OCI manifest, registry response, pulled manifest, report, or fingerprint identity drift => NO_GO; exact upstream identities and complete evidence => GO. |
+| 3.B | `tests/feasibility/persistence/test_write_fault_matrix.py::test_replace_fault_vocabulary_matrix` | each declared interruption before a replace => zero mutation for that path; each interruption after a replace => durable observation for that path; an unknown fault label => fail closed before a write. |
+| 3.C | `tests/feasibility/persistence/test_persistence_deadlines.py::test_persistence_deadline_boundary_matrix` | expired with zero observed writes => `STOPPED_ZERO_WRITE` and `further_workspace_writes_allowed=false`; expired after any observed write => `RECOVERY_REQUIRED` and `further_workspace_writes_allowed=false`; an unexpired transaction follows the interface's non-expired path without manufacturing either expired disposition. |
+| 3.D | `tests/feasibility/persistence/test_external_change_classifier.py::test_external_change_classification_matrix` | exact preimage bytes/object identity => `PREIMAGE`; exact postimage bytes/object identity => `POSTIMAGE`; declared absence => `ABSENT`; changed bytes or replaced identity => `EXTERNAL_CHANGE`; unsupported or incomplete identity => `UNPROVABLE`. |
+| 3.E | `tests/feasibility/persistence/test_recovery_preview.py::test_recovery_preview_disposition_matrix` | all paths proven postimage => `COMMITTED`; all paths proven preimage/declared absence => `ROLLED_BACK`; every mixed, external-change, or unprovable combination => `UNRESOLVED`; each ordered 1–3-path preview reports `workspace_write_count=0`. |
+| 4.B | `tests/unit/canonical/test_digest_vectors.py::test_canonical_digest_vector_matrix` | CTV-01 through CTV-07 match the SPEC bytes and SHA-256 exactly; non-UTF-8, forbidden scalar, unordered, duplicate, or non-canonical input is rejected before hashing. |
+| 4.C | `tests/unit/canonical/test_clock.py::test_canonical_timestamp_vector_matrix` | fake-clock advances preserve the exact requested millisecond count; zero advance is stable; negative or non-millisecond input is rejected; emitted timestamps match the SPEC UTC canonical form. |
+| 4.D | `tests/unit/canonical/test_path_v1.py::test_canonical_path_sentinel_matrix` | parent, device, ADS, absolute, empty-segment, dot-segment, reserved-name, trailing-dot/space, overlong, and non-canonical-case inputs are rejected; a canonical relative path round-trips unchanged. |
+| 5.A | `tests/unit/contracts/test_optional.py::test_named_optional_union_matrix` | ABSENT forbids value; PRESENT requires value; UNKNOWN is accepted only where the named union declares it; extra fields and cross-variant fields are rejected. |
+| 5.B | `tests/unit/contracts/test_run.py::test_run_state_phase_limit_matrix` | each legal status has exactly its declared phase/wait/limit fields; every illegal status-phase, wait, terminal-reopen, or limit combination is rejected. |
+| 5.C | `tests/unit/contracts/test_action.py::test_action_result_union_matrix` | each action variant accepts only its declared payload; the success variant forbids error fields; the error variant requires its declared code/detail; cross-variant and extra fields are rejected. |
+| 5.E | `tests/unit/contracts/test_location.py::test_location_scope_union_matrix` | repository root forbids path; file requires canonical path; directory requires canonical directory path; artifact requires bound artifact identity; cross-scope and extra fields are rejected. |
+| 5.D | `tests/unit/contracts/test_evidence.py::test_evidence_reference_union_matrix` | each evidence variant requires its declared digest and identity; unbound digest, wrong digest shape, cross-variant fields, secret/body fields, and extra fields are rejected. |
+| 6.A | `tests/unit/profiles/test_editable.py::test_editable_policy_path_operation_matrix` | exact strict `src/` descendants with CREATE or REPLACE => editable; `src` itself, prefix siblings, DELETE, RENAME, binary, link, and mode changes => denied with zero policy widening. |
+| 6.B | `tests/unit/profiles/test_reference.py::test_reference_profile_integrity_matrix` | drift in profile id, lock digest, OCI digest, execution version, tool versions, check plan, or editable policy is rejected; the exact built-in manifest verifies. |
+| 6.C | `tests/unit/profiles/test_llm.py::test_llm_profile_closed_union_matrix` | Mock accepts only mock fields; OpenAI accepts only the frozen endpoint/model fields; cross-mode, custom URL, unknown profile, and extra fields are rejected. |
+| 6.D | `tests/unit/profiles/test_endpoints.py::test_endpoint_resolution_matrix` | OPENAI_PUBLIC_API_V1 resolves exactly to https://api.openai.com:443/v1; raw URLs, aliases, environment overrides, redirects to another origin, and unknown ids are rejected. |
+| 6.E | `tests/unit/profiles/test_registry.py::test_profile_registry_resolution_matrix` | duplicate ids and unknown ids are rejected; insertion order does not change resolution; each built-in id resolves to one immutable verified profile. |
+| 7.A | `tests/unit/storage/test_migration_engine.py::test_migration_replay_rollback_matrix` | first application records version/checksum once; exact replay is a no-op; applied-checksum drift fails closed; a migration exception rolls back schema and history together. |
+| 7.B | `tests/unit/storage/test_run_repository.py::test_run_wait_lifecycle_matrix` | every SPEC legal transition succeeds once; stale, wrong-kind, cancelled, expired-commit, duplicate, and terminal-reopen transitions fail without mutation; concurrent decisions yield exactly one APPLIED. |
+| 7.C | `tests/unit/storage/test_idempotency.py::test_idempotency_replay_rollback_concurrency_matrix` | first request => NEW and one ledger row; identical request/result => REPLAY with unchanged domain/ledger counts; changed request => EVENT_ID_REUSE_CONFLICT with zero mutation; rollback leaves no row; concurrent identical requests produce one NEW and one REPLAY. |
+| 8.A | `tests/unit/runs/test_request.py::test_request_permutation_matrix` | all valid field-order permutations canonicalize identically; custom URL, widened policy, unknown profile, malformed limits, or extra fields are rejected before Run creation. |
+| 8.B | `tests/unit/runs/test_admission_order.py::test_admission_failure_prefix_matrix` | failure at each admission port stops at that port; no later port is called; zero Run rows are created; the all-success trace calls every port exactly once in declared order. |
+| 9.A | `tests/integration/windows/test_workspace_objects.py::test_workspace_object_sentinel_matrix` | reparse final object, non-directory, identity drift, case alias, unsupported volume, or ACL failure is rejected; an exact stable directory handle passes. |
+| 9.B | `tests/integration/windows/test_named_mutex.py::test_named_mutex_timeout_recovery_matrix` | one process acquires; a second process times out without workspace mutation; release permits a later acquire; abandoned-owner recovery is explicit and leaves one owner. |
+| 9.C | `tests/unit/workspace/test_git_preflight.py::test_git_preflight_windows_parity_matrix` | exact stable supported index state => preflight success; skip-worktree, assume-unchanged, unmerged, submodule, symlink, case collision, unsupported mode, dirty protected input, or unstable index => rejected before Snapshot with zero Snapshot rows. |
+| 9.D | `tests/unit/workspace/test_path_guard.py::test_path_authorization_existing_create_matrix` | existing paths require exact canonical identity; CREATE rejects case aliases and existing objects; parent/device/link escapes and non-editable paths are denied with zero filesystem mutation. |
+| 10.B | `tests/unit/trees/test_text_classifier.py::test_text_byte_classification_matrix` | strict UTF-8 with uniform LF or CRLF and one final newline is text; BOM is preserved as declared; bare CR, mixed newline, NUL, invalid UTF-8, missing final newline, or size overflow is non-text. |
+| 10.A | `tests/unit/trees/test_content_store.py::test_content_store_put_get_dedup_matrix` | put returns SHA-256 identity; identical bytes deduplicate; get returns exact bytes; missing object or digest drift fails closed; failed put leaves no partial object. |
+| 10.C | `tests/integration/windows/test_snapshot_from_preflight.py::test_snapshot_integrity_matrix` | preflight identity, object digest, path order, or protected-input drift rejects Snapshot creation; exact inputs create one immutable deterministic Snapshot. |
+| 11.A | `tests/unit/tools/test_read_file.py::test_read_file_bounds_schema_matrix` | reads use only bound Snapshot bytes; non-file, non-text, out-of-range, oversized, missing, or stale identity returns the declared typed error with no workspace read fallback. |
+| 11.B | `tests/unit/tools/test_list_files.py::test_list_search_cursor_integrity_matrix` | paged and unpaged results are identical and ordered; tampered cursor => CONTINUATION_INVALID; tree drift => CONTINUATION_STALE; either error returns zero partial results. |
+| 12.A | `tests/unit/candidate/test_unified_diff.py::test_unified_diff_grammar_matrix` | only complete CREATE/REPLACE patches parse; DELETE, RENAME, binary, mode/link, fuzzy offset, duplicate path, malformed header/hunk, or trailing bytes are rejected. |
+| 12.B | `tests/unit/trees/test_candidate.py::test_candidate_overlay_integrity_matrix` | REPLACE and CREATE produce ordered immutable overlays; parent stays unchanged; duplicate/missing object/digest drift fails closed; identical inputs yield identical Candidate identity. |
+| 12.C | `tests/unit/candidate/test_patch_engine.py::test_patch_atomicity_priority_limit_matrix` | any illegal path/operation/encoding/size/count/byte limit rejects the whole patch with zero Candidate objects; rejection priority is deterministic; exact legal input commits once. |
+| 12.D | `tests/unit/candidate/test_identity.py::test_candidate_identity_restoration_matrix` | revision metadata does not affect identity; any base/path/postimage change does; restoring exact bound facts restores the original digest; a claimed mismatched digest is rejected. |
+| 14.A | `tests/unit/governance/test_writeback_subject.py::test_writeback_subject_bound_fact_matrix` | subject digest changes for any Run, Snapshot, Candidate, FinalDiff, verification, path, endpoint, or expiry change; identical bound facts produce identical bytes/digest. |
+| 14.B | `tests/unit/governance/test_writeback_decision.py::test_writeback_decision_state_matrix` | exact pending approval may approve or reject once; expired, stale, wrong-subject, cancelled, duplicate, or replay-conflict input creates no pending/new write authority. |
+| 14.C | `tests/unit/governance/test_writeback_approval_race.py::test_writeback_approval_consumption_matrix` | two exact concurrent consumers produce exactly one CONSUMED success; stale, expired, rejected, subject-mismatched, or already-consumed approval performs zero persistence calls. |
+| 15.A | `tests/unit/governance/test_request_sources.py::test_disclosure_source_segment_matrix` | each source category requires its declared index/digest and canonical path when file-backed; missing, cross-category, out-of-range, body-bearing, or extra fields are rejected. |
+| 15.B | `tests/unit/governance/test_disclosure_scope.py::test_disclosure_scope_match_matrix` | root matches declared root only; file matches exact canonical file; directory matches true descendants but not string-prefix siblings; artifact matches exact bound artifact. |
+| 15.C | `tests/unit/governance/test_disclosure_subject.py::test_disclosure_subject_drift_matrix` | subject uses frozen endpoint id; any source, scope, label, byte count, endpoint, Run, or expiry drift changes digest; request URL cannot override endpoint. |
+| 15.D | `tests/unit/governance/test_disclosure_decision.py::test_disclosure_decision_state_matrix` | exact pending wait approves or rejects once; expired, stale, wrong-binding, cancelled, duplicate, or replay-conflict input creates no Grant and no resume. |
+| 15.F | `tests/unit/governance/test_disclosure_revocation.py::test_disclosure_revocation_matrix` | exact active subject revokes once; exact replay is stable; mismatched subject or already-exhausted/expired Grant is rejected without changing another Grant. |
+| 15.E | `tests/unit/governance/test_disclosure_budget_race.py::test_disclosure_budget_state_matrix` | exact in-scope charge decrements once; out-of-scope, expired, revoked, or exhausted Grant yields zero disclosure; concurrent charges cannot exceed item/byte limits. |
+| 16.A | `tests/unit/llm/test_prepared_request.py::test_prepared_request_profile_matrix` | Mock request/result excludes OpenAI transport fields; OpenAI request/result excludes Mock fields; malformed response, cross-mode field, unknown endpoint, or extra field is rejected. |
+| 16.B | `tests/unit/llm/test_openai_adapter.py::test_openai_transport_endpoint_serialization_matrix` | one call uses the frozen endpoint and canonical serialization; redirect cross-origin, timeout, malformed response, HTTP failure, or transport uncertainty performs no retry and returns the declared typed failure. |
+| 17.A | `tests/unit/loop/test_action_parser.py::test_action_parser_closed_grammar_matrix` | each closed action variant parses only its fields; model action id, multiple actions, trailing bytes, unknown type, malformed JSON, or extra field is rejected. |
+| 17.B | `tests/unit/loop/test_action_binding.py::test_action_binding_identity_matrix` | Harness assigns canonical ids; same semantics plus different Harness ids changes instance digest but not semantic digest; invalid/duplicate ids and model-supplied ids are rejected. |
+| 17.C | `tests/unit/tools/test_dispatch_order.py::test_dispatch_order_exception_matrix` | parse precedes policy and dispatch; DENY never calls tool; ALLOW calls one tool once; tool exception becomes typed feedback; no exception is swallowed or reported as success. |
+| 18.A | `tests/unit/execution/test_docker_request.py::test_execution_request_profile_readiness_matrix` | only adapter-built executable/argv/env/workdir/mount/resource fields are accepted; model executable/argv, unknown profile, widened env, or failed readiness is rejected before Docker. |
+| 18.B | `tests/integration/docker/test_fresh_candidate_materialization.py::test_candidate_materialization_integrity_matrix` | each request gets a fresh tree with exact ordered paths/bytes/digests; missing/corrupt object, path escape, link, writable source, or reuse is rejected before container start. |
+| 18.C | `tests/integration/docker/test_execution_output_limits.py::test_container_isolation_deadline_output_matrix` | exact closed isolation profile within limits => one bounded result; network, root, capability, Docker socket, writable root/workspace, resource, deadline, or output-limit violation => kill the exact container and return the declared failure with bounded output. |
+| 18.D | `tests/integration/docker/test_execution_workspace_integrity.py::test_execution_cleanup_link_integrity_matrix` | post-run Candidate byte/identity drift, new link/device, incomplete teardown, or cleanup failure fails closed; success requires exact unchanged Candidate and zero surviving container/materialization. |
+| 19.A | `tests/unit/validation/test_ruff_mypy_parsing.py::test_static_tool_result_parsing_matrix` | complete supported Ruff/Mypy output maps deterministically; truncation, malformed output, unsupported version, impossible exit/status, duplicate finding, or schema drift => CHECK_ERROR. |
+| 19.B | `tests/unit/validation/test_pytest_evidence.py::test_pytest_report_corruption_matrix` | complete ordered session/call reports => one validated `PytestParseOutcomeV1`; missing session end, duplicate call, unknown node, count mismatch, truncation, malformed event, forbidden state, or channel drift => the matching stable reporter error and no validated evidence. |
+| 19.C | `tests/unit/validation/test_failure_fingerprint.py::test_failure_fingerprint_stability_matrix` | allowed volatile paths/addresses normalize identically; user hexadecimal values remain; semantic message/node/status change changes digest; inconsistent full/target fingerprints => TARGET_UNSTABLE. |
+| 20.A | `tests/unit/validation/test_python_adapter_static.py::test_check_plan_classification_matrix` | each supported reference input maps to the one closed plan; unsupported marker/config/plugin/collector/path/tool state returns UNSUPPORTED without execution; classification is deterministic. |
+| 20.B | `tests/unit/validation/test_baseline.py::test_baseline_publication_matrix` | runtime incompatibility, forbidden pytest state, non-target failure, target pass, full/target drift, incomplete report, static failure, or cleanup failure publishes no manifest; exact stable target publishes one immutable manifest. |
+| 21.A | `tests/unit/validation/test_formal_preflight.py::test_formal_preflight_matrix` | Candidate/Snapshot/profile/plan/protected-input/object drift or stale identity produces zero execution requests; exact frozen facts produce the exact ordered request set once. |
+| 21.B | `tests/integration/docker/test_formal_execution_completeness.py::test_formal_execution_completeness_matrix` | every frozen request runs exactly once in order; missing, duplicate, reordered, cleanup-failed, or extra execution yields incomplete evidence and cannot verify. |
+| 21.C | `tests/unit/validation/test_formal_predicate.py::test_formal_verification_predicate_matrix` | VERIFIED requires every request success, complete report, exact fingerprints, unchanged Candidate, and teardown success; any missing predicate yields its typed failure and a different immutable digest. |
+| 22.A | `tests/unit/memory/test_authorization.py::test_memory_authorization_matrix` | only user/project-policy authorized bounded body-free records persist; model-originated convention, secret/body, wrong schema/source/workspace, oversized, or extra field is rejected. |
+| 22.B | `tests/unit/memory/test_workspace_isolation.py::test_memory_selection_matrix` | selection filters exact workspace/profile/source/eligibility, orders deterministically, and enforces count/byte bounds; no record crosses workspace or leaks cleared/ineligible content. |
+| 22.C | `tests/unit/memory/test_clear.py::test_memory_clear_transaction_matrix` | successful clear makes records immediately ineligible; exact replay is stable; transaction rollback preserves eligibility; concurrent clear/select observes either pre- or post-state, never partial state. |
+| 23.A | `tests/unit/audit/test_redaction.py::test_audit_schema_replay_pagination_matrix` | schema accepts only bounded redacted facts; secret/body/request/response fields are rejected; sequence is monotonic; exact replay is stable; pagination is complete; clear never exposes removed content. |
+| 23.B | `tests/unit/audit/test_projection.py::test_audit_projection_lifecycle_matrix` | every CREATED/RUNNING/WAIT/terminal state projects exactly once; RECOVERY_REQUIRED takes precedence over STOPPED; impossible/missing phase or regressing revision is rejected. |
+| 23.C | `tests/unit/audit/test_retention.py::test_audit_retention_matrix` | eligible terminal records before cutoff delete in deterministic batches; active/waiting/recovery/unresolved evidence is preserved; repeated retention is idempotent and never crosses workspace. |
+| 24.A | `tests/unit/loop/test_feedback.py::test_feedback_selection_matrix` | newest failure feedback is mandatory; allowed source/type/size/count records are ordered deterministically; stale, foreign, oversized, duplicate, or body-bearing records are excluded. |
+| 24.B | `tests/unit/loop/test_context_trimming.py::test_context_trim_matrix` | trim order follows the declared priority and never removes newest failure feedback; source/order/digest are deterministic; an impossible budget returns the declared failure, not silent truncation. |
+| 24.C | `tests/unit/loop/test_feedback_consumption.py::test_feedback_consumption_transaction_matrix` | append creates one eligible record; exact replay is stable; two turns yield one consumer; rollback preserves eligibility; conflict cannot consume or append another record. |
+| 25.B | `tests/unit/loop/test_turn_counting.py::test_turn_count_transaction_matrix` | pre-call failure increments neither count; successful begin creates one active turn; call-start increments once; close is once-only; exact replay is stable; conflict or concurrent begin admits at most one active turn. |
+| 25.C | `tests/unit/loop/test_call_orchestrator.py::test_call_orchestration_matrix` | credential/backend/readiness/Grant checks precede authorization/count/network; Mock performs no credential/network work; DENY performs no call; uncertain transport has one attempt and no automatic retry. |
+| 25.D | `tests/unit/loop/test_action_pipeline.py::test_action_pipeline_trace_matrix` | invalid action, DENY, tool failure, check result, completion, and consume-once feedback each produce the exact ordered stage trace; skipped stages have zero calls. |
+| 25.F | `tests/unit/loop/test_restart_behavior.py::test_restart_disposition_matrix` | restart with active/ambiguous call stops without resend; terminal Run stays terminal; wait resumes only through its decision path; incomplete persistence enters RECOVERY_REQUIRED; no count or side effect is duplicated. |
+| 25.A | `tests/unit/loop/test_stopping.py::test_stop_progress_boundary_matrix` | each configured turn/call/repetition/no-progress/deadline/cancel/completion boundary stops on the exact limit; one-below-limit continues; progress resets only its declared counter. |
+| 25.E | `tests/unit/loop/test_wait_lifecycle.py::test_wait_resume_decision_matrix` | exact approval resumes once; reject/expiry/cancel stops as declared; duplicate, wrong binding, stale deadline, or replay conflict never resumes an agent action. |
+| 25.G | `tests/unit/loop/test_main_loop.py::test_main_loop_composition_matrix` | each engine step calls context, one LLM call, parse, policy, dispatch, feedback, and stop once in order; Mock/OpenAI, correction, wait, cancel, stop, and completion traces use the same core. |
+| 26.A | `tests/unit/persistence/test_path_record.py::test_persistence_path_record_matrix` | one unique ordered record per canonical path; state transitions and exact replay are deterministic; duplicate/conflict/concurrent create yields one winner; evidence contains no file body. |
+| 26.D | `tests/unit/persistence/test_artifacts.py::test_artifact_store_matrix` | same bytes yield deterministic reference; digest mismatch, non-private ACL, missing publication, corrupt read, or oversized artifact fails closed; cleanup removes only eligible bound artifacts. |
+| 26.E | `tests/unit/persistence/test_writeback_preconditions.py::test_writeback_precondition_state_matrix` | missing/stale approval, identity drift, cancellation, wrong order, or failed verification writes zero workspace bytes; exact preconditions permit one writer; concurrent attempts yield one winner. |
+| 26.B | `tests/unit/persistence/test_recovery_decision.py::test_recovery_decision_matrix` | all ordered records/observations proven postimage => `COMMITTED`; all proven preimage => `ROLLED_BACK`; mixed, missing, ambiguous, corrupt, or external-change state => `UNRESOLVED`; subject/artifact/object identities bind a deterministic read-only preview. |
+| 26.C | `tests/fault_injection/persistence/test_external_change_faults.py::test_recovery_apply_fault_matrix` | stale preview, lost lease, external change, injected fault, identity mismatch, terminal Run, or new admission rejects apply; exact lease/preview applies once and records the declared recovery state. |
+| 27.A | `tests/unit/credentials/test_status.py::test_credential_backend_lifecycle_matrix` | unsafe backend, missing/cleared value, read/write/delete exception, stale cached value, repr/log/status secret or derivative fails closed; set/update/clear/status expose only PRESENT or ABSENT. |
+| 27.B | `tests/integration/windows/test_wincred_smoke.py::test_wincred_real_lifecycle_matrix` | verified Windows Credential Manager set/read/overwrite/clear uses one generated test entry; wrong backend or operation error fails; final cleanup proves ABSENT even after a failed assertion. |
+| 28.A | `tests/web/test_security.py::test_web_request_security_matrix` | non-loopback bind/origin, invalid Host/session/CSRF, unsafe method, missing security header, or wrong validation order is rejected before domain call; exact local request is accepted. |
+| 28.B | `tests/web/test_status_labels.py::test_status_component_accessibility_matrix` | every state renders distinct text and accessible name; shell uses local assets; untrusted text escapes; focus order is deterministic; installer/runtime order matches the declared navigation. |
+| 28.C | `tests/web/test_html_escaping.py::test_web_escape_asset_csp_matrix` | Run/user/model text is escaped; HTMX and all assets are local and packaged; CSP forbids remote script; identity hooks are stable; rendering performs zero external requests. |
+| 28.D | `tests/unit/test_cli.py::test_cli_serve_boundary_matrix` | serve accepts loopback plus valid port/factory once; non-loopback, secret argument, invalid port, duplicate launch, source-checkout asset fallback, or missing packaged asset is rejected. |
+| 29.A | `tests/web/test_run_workflow.py::test_run_web_workflow_matrix` | valid create/detail/cancel follows exact states once; invalid/stale/duplicate form creates no Run or extra transition; text escapes and controls have accessible labels. |
+| 29.B | `tests/web/test_disclosure_workflow.py::test_disclosure_web_workflow_matrix` | server derives subject/scope/endpoint; form override is rejected; exact approve/reject/expiry acts once; stale/duplicate input has zero Grant/resume; labels/text are accessible and escaped. |
+| 29.C | `tests/web/test_writeback_workflow.py::test_writeback_web_workflow_matrix` | exact current subject may approve/reject once; stale/mismatched/duplicate input never calls persistence; stage order, escaped diff, and accessible controls match the declared workflow. |
+| 30.A | `tests/demo/test_types.py::test_demo_type_serialization_matrix` | only fixed demo scenario ids/data and closed demo variants serialize; formal identities, arbitrary body, unknown variant, nondeterministic field, or extra field is rejected. |
+| 30.C | `tests/demo/test_executor_isolation.py::test_demo_executor_isolation_matrix` | capability set contains only simulated ports; fixed input yields fixed result; import/construction never reaches formal adapters; every run has zero filesystem, Docker, credential, or network call. |
+| 30.D | `tests/demo/test_shared_core_composition.py::test_demo_shared_core_trace_matrix` | shared parser/policy/dispatcher/feedback/stop implementations run in exact order; repeated scenario has identical trace; decision/limit/expiry/reset are deterministic and session-isolated. |
+| 30.B | `tests/demo/test_capability_isolation.py::test_demo_app_capability_matrix` | health and fixed routes exist on assigned PORT; formal adapters/routes/endpoints are absent; input escapes; accessibility passes; no request can select a formal capability. |
+| 31.A | `tests/e2e/reference/test_reference_success.py::test_reference_success_matrix` | exact fixture reaches one `VerifiedCandidateV1` through every named stage; identities remain bound; cleanup leaves zero live resources; final wait is exact; two clean runs produce identical deterministic evidence. |
+| 31.B | `tests/e2e/reference/test_reference_call_gate.py::test_reference_call_gate_matrix` | cleared credential, DENY, invalid cursor, expired wait, or protected-artifact request performs zero real-call charges/count/network/write; exact authorized call follows one declared path. |
+| 31.C | `tests/e2e/reference/test_reference_recovery_block.py::test_reference_recovery_block_matrix` | UNRESOLVED transaction blocks new admission and writeback; audit/memory/report remain body-free; cleanup is bounded; proven recovery alone unblocks; repeated observation is deterministic. |
+| 32.A | `tests/e2e/mechanism/test_hard_deny.py::test_mechanism_hard_deny_matrix` | outside-scope/protected-artifact action is denied before dispatch/publish/approval; report records bounded reason; repeated run has same trace and zero workspace mutation. |
+| 32.B | `tests/e2e/mechanism/test_feedback_recovery.py::test_mechanism_feedback_recovery_matrix` | injected check failure is consumed once and changes the next action; stale/tampered feedback is rejected; continuation/repetition limits hold; final report binds both attempts. |
+| 32.C | `tests/e2e/mechanism/test_shared_core_reuse.py::test_mechanism_shared_core_matrix` | formal and demo use identical core implementation identities; only formal path may pass the real-call gate; presentation/capability/report differ only at declared adapters; repeated traces are stable. |
+| 33.A | `tests/smoke/package/test_wheel_contents.py::test_wheel_artifact_matrix` | one clean build yields one wheel with exact metadata/entrypoint/resources/members/RECORD and digest; missing, duplicate, source-only, secret, or undeclared member fails. |
+| 33.B | `tests/smoke/package/test_installed_cli.py::test_installed_distribution_smoke_matrix` | isolated install imports no source checkout; help/WebUI/assets/preview/identity/assigned port work; cleanup removes environment/process; any checkout fallback or leaked process fails. |
+| 34.B | `tests/smoke/images/test_image_capability_separation.py::test_demo_image_runtime_matrix` | image contains shared core and demo allowlist but no formal adapter; health/fixed trace/filesystem/import/session bounds pass; cleanup leaves zero container and zero external call. |
+| 34.A | `tests/smoke/images/test_reference_image_contract.py::test_reference_image_reproduction_matrix` | rebuild, OCI export, loopback response, digest pull, fixture run, isolation inspection, and smoke => exact frozen Task 2 manifest identity; every exit path => zero surviving registry/container/data. |
+| 35.A | `tests/unit/process/test_github_actions_contract.py::test_github_actions_boundary_matrix` | push and PR => exactly unit-test/reference-image-build/demo-image-build with least permissions, frozen locks, bounded artifacts, and fork safety; any publish credential/action or missing/extra job => contract rejection. |
+| 35.B | `tests/unit/process/test_gitlab_ci_contract.py::test_gitlab_pipeline_boundary_matrix` | merge request => exactly four verification jobs; release context is mutually exclusive; runner/lock/artifact/secret rules are closed; missing/extra job or context overlap => rejected; recorded real jobs match the exact static contract. |
+| 35.C | `tests/unit/process/test_ci_release_rules.py::test_release_rule_boundary_matrix` | unprotected/non-tag/wrong-commit/missing-prerequisite event cannot release; protected tag on exact verified commit checks secrets only after admission and requires both platform evidence sets. |
+| 36.A | `tests/smoke/release/test_commit_alignment.py::test_release_evidence_matrix` | schema, digest, commit, freshness, accessibility, terminal-state, or cross-file identity mismatch rejects evidence; exact mutually consistent records validate without inferring missing external facts. |
+| 36.B | `tests/smoke/release/test_manifest_image_alignment.py::test_release_publication_matrix` | preflight precedes publication; GitHub asset download/install and GHCR digest pull/smoke bind exact commit and frozen manifest; any digest/tag/commit mismatch fails and records no valid evidence. |
+| 36.C | `tests/smoke/release/test_render_contract.py::test_render_deployment_matrix` | config/image contain no disk or real-provider secret; live health and fixed scenario pass at recorded URL; formal endpoints/capabilities are absent; cold start is bounded; evidence binds exact deployment/image. |
+
 ## 6. Unified Traceability
 
 This is the sole requirement coverage table. Every implementation set and independent validation set contains session task IDs only, is non-empty, and is disjoint. Legacy IDs and Milestones are resolved through the task cards, not repeated here.
@@ -10651,6 +10985,8 @@ SPEC §1.6 and §11.3 remain the complete v1 non-goal/future-work authority; PLA
 
 Verifier A/B independently require the exact `For agentic workers` header, root Goal, Architecture, Tech Stack, Global Constraints, Planned Repository Structure, Global Execution Contract, Work Package Registry, 68 Session Task Cards, Unified Traceability, Derived Waves, this audit contract, and Execution Handoff.
 
+`Units and authority` appears exactly once and defines: work package = the `AGENTS.md` independent feature / independent task and sole branch/worktree/PR/finishing/merge unit; session task = the smallest fresh-subagent execution/review/commit slice inside one work package and not an independent PR task; legacy step = one atomic RED → minimum GREEN TDD microcycle inside a session task. The workflow and handoff must preserve one PR per work package and must never assign an independent branch, worktree, PR, finishing pass, or merge to a session task.
+
 Every session task contains Status, Work package, Legacy steps, Goal, SPEC contracts, Files, Depends, Parallelization, Interfaces, Implementation points/exact RED/minimum GREEN contracts, task-level verification/review/completion steps, Done, and one-line Completion evidence. Every task has task-specific checkbox steps and one exact commit command block.
 
 All 141 legacy steps are mapped exactly once. Every legacy subsection contains an Atomic goal, nonempty Minimum GREEN patch contract, exact executable RED test code, stable Expected RED reason, Target and Domain commands, Atomic review focus, and checkbox actions for RED, each displayed GREEN implementation point, Target GREEN, and Domain verification. No code step may refer to an undefined "above", "similar" task, later boundary matrix, deferred implementation, or unexpanded placeholder.
@@ -10661,11 +10997,15 @@ The implementation-coordination Interfaces in PLAN bind exact names/signatures f
 
 Two independently implemented verifiers read strict UTF-8 and fail on BOM, any CR byte, invalid decoding, or other than exactly one final LF. PLAN is at most 1,572,864 bytes and 180,000 whitespace-delimited words. Each session task is at most 65,536 UTF-8 bytes and 8,000 words. These caps control representation size; they never authorize omission or placeholders.
 
+`Authoritative Planning Inputs` appears exactly once and contains every required nonempty field with repository-relative paths. Each declared SHA-256 must equal the current bytes at its declared path. The declared SPEC Git blob must equal both `git hash-object SPEC.md` and the `SPEC.md` blob tracked by the planning input baseline. The baseline commit must exist and be the verifier HEAD or its ancestor. The repository-instructions provenance must state when that working-tree input is not contained in the baseline commit. Both timestamps must be strict, timezone-bearing ISO-8601 values, and the last semantic revision must not precede initial generation. The identity table must not contain the complete PLAN SHA-256, an actual `PlanSemanticDigestV2` value, or a future commit claimed to contain the revision.
+
+`Admission Gate Execution Contract` appears exactly once and contains the seven ordered gates, exact evidence-root derivation and filenames, both ordered review schemas, both six-item checklists, reviewer-independence and PASS predicates, fixed `T01.1`/`T38.2` cold-start retrieval, disposable `T01.1` execution with a two-hour hard limit, approved-document/direct-evidence-child/clean-formal-base relation, and the closed invalidation matrix. Verifier A/B validate only that this executable contract is structurally complete; they never infer that a human decision or an external admission artifact exists or passed.
+
 The exact retained graph metrics are 68 session tasks, 141 unique legacy steps, 46 work packages, 309 deduplicated session edges, 42 session waves, 263 deduplicated package edges, 26 package waves, zero cycles, and 55 unified trace rows. Requirement coverage remains 9 US, 9 FR, 6 NFR, and 31 AC rows, each with nonempty independent implementation and validation task sets.
 
 Task-card Files remain the sole execution mutation ownership source. Planned Repository Structure describes responsibility and must include every task path without assigning a conflicting writer. Shared modifiers remain limited to the explicit table in the Global Execution Contract.
 
-Verifier A/B reject missing/duplicate tasks or legacy steps, missing fields, missing Interfaces, missing RED or Minimum GREEN blocks, missing checkboxes, missing Target/Domain, unmapped RED node ids, malformed commands, clipped reviews, placeholders, undefined task references, unauthorized shared writes, graph drift, coverage drift, oversized tasks/documents, and any forbidden source or identity mismatch.
+Verifier A/B reject missing/duplicate tasks or legacy steps, missing or contradictory execution-unit terminology, a session task described as an independent/executable PR unit, missing fields, missing Interfaces, missing RED or Minimum GREEN blocks, missing checkboxes, missing Target/Domain/Matrix commands, unmapped RED or Matrix node ids, incomplete or duplicate 114-row boundary coverage, generic deferred-case language, malformed commands, clipped reviews, placeholders, undefined task references, unauthorized shared writes, graph drift, coverage drift, incomplete admission contracts, oversized tasks/documents, and any forbidden source or identity mismatch.
 
 ### 8.3 PlanSemanticDigestV2
 
@@ -10679,7 +11019,7 @@ Compute SHA-256 over `VesperCode\0PLAN_SEMANTIC_CONTRACT_V2\0` followed by proje
 
 ### 8.4 Independent agreement and identity binding
 
-Verifier A and Verifier B use independent implementations and private negative self-tests for: missing required header; removed Interfaces; removed checkbox; removed RED code; removed Minimum GREEN contract; injected placeholder; leading-quote/truncated command; removed Domain; RED/Target mismatch; clipped review; graph/coverage mutation; semantic-digest tracking and non-tracking mutations.
+Verifier A and Verifier B use independent implementations and private negative self-tests for: missing required header; removed or contradictory work-package/session-task/legacy-step terminology; injected one-PR-per-session-task wording; removed Interfaces; removed checkbox; removed RED code; removed Minimum GREEN contract; injected placeholder; generic deferred-case language; removed, duplicated, or malformed 114-row Boundary Matrix Registry entry; removed Matrix command; Matrix node mismatch; missing exact oracle; leading-quote/truncated command; removed Domain; RED/Target mismatch; clipped review; graph/coverage mutation; missing or duplicated planning-input identity; changed identity path, SHA-256, SPEC blob, baseline, provenance, or timestamp; forbidden self-referential PLAN identity; missing admission gate/schema/checklist/evidence path; changed cold-start task/time limit; broken baseline relation or invalidation coverage; semantic-digest tracking and non-tracking mutations.
 
 Each result binds PlanAuditContractV3, PLAN/SPEC/course/AGENTS SHA-256 identities, Git HEAD, verifier source SHA-256, PlanSemanticDigestV2, every metric above, sorted issues, and PASS/FAIL. Results agree field-for-field except verifier source SHA-256 and are evidence only for their exact unchanged inputs.
 
@@ -10690,7 +11030,7 @@ This PLAN candidate is saved at the user-required repository-root `PLAN.md`; tha
 
 After SPEC M0, PlanAuditContractV3 A/B, independent PLAN_SPEC_COMPLIANCE, independent PLAN_EXECUTABILITY, human identity approval, heterogeneous no-history cold-start, and APPROVED_DOCUMENT_BASELINE_V3 all pass for the exact unchanged identities:
 
-1. **Subagent-Driven (selected):** Use `superpowers:subagent-driven-development`. Dispatch one fresh implementation subagent per session task, then perform the displayed SPEC and quality review stages. One work package retains one branch/worktree/PR.
+1. **Subagent-Driven (selected):** Use `superpowers:subagent-driven-development`. Dispatch one fresh implementation subagent per session task, then perform the displayed SPEC and quality review stages. One work package retains one branch/worktree/PR because the work package—not the session task—is the `AGENTS.md` independent task.
 2. **Inline execution (only if the human changes the selected workflow):** Use `superpowers:executing-plans` with explicit checkpoints and the same task/review/package boundaries.
 
 No implementation starts from this draft or from an unapproved digest.

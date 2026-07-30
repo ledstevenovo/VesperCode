@@ -1177,3 +1177,147 @@ Phase 2 从获批提交 `1759f0fcb96ee6f6e31fb2e2ee07beebaa832c67` 建立独立�
 本轮没有增加 RunStatus、RunPhase、WaitKind、StopReason、AgentAction、generation、takeover、reconciliation、persistent block 或供应商送达协议。3.5 是唯一的组合 dispatch checkpoint 编排权威，拥有调用时点、最终绑定和 feedback reservations 消费。3.9 拥有权威披露子操作及其 `DisclosureGrant` 校验语义、披露预算账本、`DisclosureRecord` 领域／证明语义、发布键与幂等；该披露子操作只能全有或全无地加入 3.5 编排的同一提交，不得在 checkpoint 之外先行、独立或另行提交。3.5 不得重实现或放宽 3.9 的这些语义。3.12 后续只能把 `DisclosureRecord` 展示为“已完成调用前调度提交；适配器调用与交付状态未知”，不得无条件显示“已发送”或“供应商已收到”。本轮不编写 3.9 或 3.12 正文。
 
 下一任务仍是 3.6 CandidateRevision、恢复修订与 FinalDiff，并必须先关闭初始 CandidateRevision／CandidateTree 的下游门禁。完整第三章仍未锁定，课程 PLAN.md 和实现阶段仍未获准开始。
+
+## 14. PLAN readiness gate 与执行合同收口（2026-07-26）
+
+### 14.1 触发与事实核对
+
+外部审查建议在正式 Task 1 前增加 `M0：SPEC readiness gate`，并指出双 CI、List/Search continuation、运行期凭据清除和 PLAN 执行跟踪摘要四类风险。用户随后明确选择 `OD-01=A`（canonical List/Search cursor）与 `OD-02=B`（只排除枚举执行跟踪字段的 PLAN 语义摘要），撤回此前“执行 2”的指令，要求先不要开始实现，最后批准按该建议修改文档。
+
+审查材料所称当前 SPEC 仍锁定旧 blob `5ff2086e131165e6954edbb4635c6d574625d867` 不符合本轮修改前的仓库事实：修改前正式 `SPEC.md` 的实际 `git hash-object` 为 `b11a55bb0ed1d79a2f7c654ee51a238ee12841d5`，原 `PLAN.md` 中也不存在 `5ff2086e...`。本轮拒绝把该旧值描述成当前事实，但采纳“所有身份必须运行时计算、不得在计划正文预埋历史 hash”的原则。
+
+### 14.2 已采纳的合同修改
+
+1. `SPEC.md` §11.2 改为 M0 门禁：唯一解析正式 SPEC，运行时计算 SHA-256、`git hash-object --no-filters` 和当前 commit，对照课程/Harness/仓库规则，核对已知阻断项，并要求人工批准精确 SPEC 身份。失败返回 SPEC 修订/澄清，禁止冻结 PLAN、冷启动和 Task 1。
+2. `SPEC.md` §4.2.2 增加独立 `ListFilesCursorV1`/`SearchTextCursorV1`、cursor-free query digest、visible-tree/query/位置/自身摘要绑定、严格 `truncated`/`next_cursor` 组合、`CONTINUATION_STALE`/`CONTINUATION_INVALID` 零部分结果及 1024-byte Search excerpt 上限。
+3. `SPEC.md` §4.4.4 与 FR-CRED 增加每次真实调用前的 Windows Credential Manager backend probe 和 `get_for_call("OPENAI")`。该检查位于 Grant 消费、durable authorization record、turn/call 和网络之前；凭据缺失/清除或后端不安全时停止当前 Run、零副作用且不自动重试。
+4. `SPEC.md` §5、§8—§10 增加 GitHub Actions 与 GitLab CI 双平台闭环。GitHub 每次 push/PR 运行 `unit-test`、`reference-image-build`、`demo-image-build` 且无发布凭据/发布动作；GitLab 保留四个精确 job，并独占受保护 tag 发布。
+5. `PlanSemanticDigestV1` 使用 `VesperCode\0PLAN_SEMANTIC_CONTRACT_V1\0` 域，只在正式 Task 区域排除 `Status`、checkbox 状态和单行 `Completion evidence`。其他任意 PLAN 变化都要求重新语义批准和冷启动；完整 PLAN SHA-256 始终保留为证据快照身份。
+6. `PLAN.md` 保留已按 writing-plans 重写的 38 个正式 Task 与 Task 1—3 技术门禁，同步 Task 11/16/17/25/27/31/32/35—37、DAG、waves、文件所有权、FR/NFR/AC 和测试/发布矩阵。此前 OD-01/OD-02 不再是开放实现选择。
+
+### 14.3 当前内容地址与门禁状态
+
+- 规划基线 commit：`f6aa9897ca8e9f3cab86143b880a306d96a252e1`。
+- 当前正式 SPEC：`SPEC.md`。
+- 当前 SPEC SHA-256：`2aa8f8cbc386693ca6288f97525b66a94a38ca3548444d07f4ba80dccd7ad4de`。
+- 当前 SPEC Git blob：`ddc2aff270eb6041a86da479aa43185950fb0ce2`。
+- 当前完整 PLAN SHA-256：`80217294c1531ad61b87f9af7d6b35d83fd43b73c0ced914232cd18e2b7040ff`。
+- 当前 `PlanSemanticDigestV1`：`25a9d20436b70564bd770b4897d6c72b32b48927fe0ba5728faf3005b0c58405`。
+
+上述值是修改后机械计算的候选身份，不是人工批准证据。M0 人工批准、PLAN 语义批准和异构 Agent 冷启动试作均未执行、未通过，也没有开始 Task 1 或任何实现。后续若 `SPEC.md` 或 PLAN 非跟踪字段发生变化，必须重算并废弃本节相应候选身份。
+
+### 14.4 机械自审结果
+
+`PLAN.md` 含 38 个连续正式 Task、494 个 checkbox、22 个 dependency waves，其中声明 11 个 parallel waves；Task 1—3 仍为三个串行 GO/NO-GO 技术门禁。FR 9/9、NFR 6/6、AC 31/31 均有覆盖矩阵行；placeholder 扫描无命中。此次只修改规格、计划与过程证据，没有创建实现代码、测试、CI 文件、worktree、branch、commit、PR、tag 或发布/部署工件。
+
+## 15. Task 1—3 可复现 gate bootstrap 收口（2026-07-26）
+
+### 15.1 触发、核对与技术判断
+
+外部审查指出 Task 1—3 已要求执行 pytest、Ruff、Mypy、pytest marker、Docker 机器报告和稳定失败输入，但原 PLAN 直到 Task 4 才首次创建 `pyproject.toml`、`requirements/dev.lock`、正式 marker/config 和凭据扫描脚本；Task 2 的文件所有权也没有明确的 gate 报告器或指纹比较模块。用户先询问该建议是否成立，随后批准执行文档修改。
+
+仓库核对确认核心阻断成立：原 Task 1 从第一个技术门禁就调用未锁定的 pytest/Ruff/Mypy，Task 2 要求完整机器报告和稳定失败输入，但只拥有 `probe.py`/`report.py`，Task 4 才首次创建正式项目配置。审查意见中“Task 1—3 完全缺少凭据扫描”的表述不准确，因为三个任务已有 filename-only PowerShell 扫描；本轮保留该扫描，不把它误报为缺失项。真正需要关闭的是 gate 工具链、marker/config、显式报告插件和稳定输入比较的可复现性。
+
+### 15.2 采纳的最小合同
+
+1. `SPEC.md` §11.2 与 AC-24 增加 gate bootstrap 门禁：Task 1 在首次 RED 前拥有 hash 锁定的 `requirements/gate.lock`、独立 pytest/Ruff/Mypy 配置和唯一 runner；Task 2/3 只消费同一身份，不依赖全局工具或 Task 4。
+2. PLAN 预先分配 `requirements/gate.lock`、`gates/pytest.ini`、`gates/ruff.toml`、`gates/mypy.ini`、`scripts/run_gate_checks.py` 的单一职责和 Task 1 所有权。Task 1 GO 记录 Python、pytest、Ruff、Mypy 版本及全部 lock/config/runner SHA-256。
+3. Task 2 独占 gate-only `pytest_reporter.py` 和 `failure_fingerprint_probe.py`。报告器必须显式加载且插件 autoload 关闭；探针只构造、规范化和比较 Task 19 所需的稳定 `CALL/FAIL` 输入，不得冒充正式 `PytestEvidenceV1`/`FailureFingerprintV1` 实现。
+4. Task 2 的 GO 报告绑定 Task 1 工具链、reporter/probe 版本与 SHA-256、实际镜像和完整报告；Task 3 GO 重复验证同一 Task 1 身份。任何漂移、隐式加载、截断报告或不稳定输入均为 NO-GO。
+5. Task 4 将已验证的版本、marker 和静态规则提升到 `pyproject.toml`/`requirements/dev.lock`，不是首次建立测试环境。任何有意差异必须记录并重新执行受影响的 Task 1—3；静默漂移失败关闭，gate 工件和 GO 证据保留到 Task 37。
+6. 未在 PLAN 正文猜测时间敏感的具体 patch 版本。Task 1 必须形成包含全部直接/传递依赖精确版本与分发 hash 的完整 lock，并由 GO 报告和审查冻结；Task 2/3 禁止重新解析或升级。
+
+### 15.3 同步范围
+
+除 Task 1—4 外，本轮同步了 M0 known blockers、planned repository structure、DAG/直接依赖、waves、文件所有权、NFR-REL、AC-24/AC-25、Test Environment Matrix、Task 37 delivery verifier 和 Release Readiness Gate。正式 Task 数、Task 1—3 的最前顺序、依赖 waves 和 checkbox 数均不因本轮合同修订而改变。
+
+### 15.4 当前候选身份与未完成门禁
+
+- 规划基线 commit：`f6aa9897ca8e9f3cab86143b880a306d96a252e1`。
+- 当前正式 SPEC：`SPEC.md`。
+- 当前 SPEC SHA-256：`75794cdefc7801aa8620b22c529528efe2af06cf36ffc447e570a8eb3be3a7cd`。
+- 当前 SPEC Git blob：`a688434c80ff63e1b39e30283ffed966e92b162b`。
+- 当前完整 PLAN SHA-256：`71c61a1cdc8b043504b49c256d8553817de269e6f2d430793072b144b4556c20`。
+- 当前 `PlanSemanticDigestV1`：`84103c09b55a65536fd5135bb51c29f2bfdcb6fa1620e44567661bf2fc64c6f3`。
+
+这些值是本轮修改后的机械候选身份，不是 M0 或 PLAN 人工批准。M0、PLAN 语义批准和异构 Agent 冷启动试作仍未执行、未通过；Task 1 和所有实现仍被阻断。本轮没有安装依赖，没有创建任何 gate/实现/测试/CI 文件，没有创建 worktree、branch、commit、PR、tag、发布或部署。
+
+### 15.5 机械自审结果
+
+最终只读检查确认：38 个 Task 连续编号 1—38；494 个 checkbox；dependency 和 ownership 表均各有连续 1—38；22 个 waves 连续编号 0—21，表中多任务 waves 精确为 4、5、6、8、9、10、11、12、14、15、18，共 11 个；FR 9/9、NFR 6/6、AC 31/31；Task 1—3 区域没有裸 `python -m pytest|ruff|mypy` 命令；七个新增 gate 规划路径均已在目录/任务/所有权中出现；PLAN placeholder 扫描和四文档高置信凭据格式扫描均为零。
+
+第一次 parallel-wave 校验用过窄的字面量 `Parallel:` 匹配，漏掉写为 `Parallel after ...:` 的 Wave 5/6 并触发断言；改为按 waves 表第二列的 `Tasks ...` 多任务单元格识别后，得到上述精确 11 个 waves。该失败属于校验脚本假阴性，没有据此修改 PLAN 拓扑。
+
+`git diff --check -- SPEC.md SPEC_PROCESS.md AGENT_LOG.md` 退出 0；未跟踪 `PLAN.md` 的 `git diff --no-index --check -- NUL PLAN.md` 只因内容差异退出 1，均仅报告工作树未来 LF→CRLF warning，没有 whitespace error。最终工作区状态与本轮开始相比只在既定四文档内发生内容变化，没有新增实现工件。
+
+## 16. Task 2 loopback registry 与 OCI digest 前置门禁收口（2026-07-26）
+
+### 16.1 触发与决策
+
+外部审查指出：SPEC §11.2 把 GHCR digest 交付列入第二项前置技术验证，但 Task 2 同时禁止 push，真实 GHCR RepoDigest、按 digest 重拉和发布验证又被放到 Task 36；本地 image ID 不能证明 GHCR 交付。核对后确认该阻断成立，同时发现“在不修改 SPEC 的情况下让 Task 2 真实推送 GHCR”会违反 §5.5/§8.4 的另一项硬合同：GHCR 凭据只能进入受保护 GitLab tag release job。
+
+因此没有选择提前开放 GHCR 凭据。用户批准的最小方案是：Task 2 使用本机无凭据临时 registry 完成 OCI manifest 内容寻址和 registry round-trip；Task 36 仍是唯一真实 GHCR push/交付门禁。
+
+### 16.2 冻结的最小合同
+
+1. `ReferenceProfileManifestV1.docker_image_digest` 唯一表示固定单平台 OCI manifest 原始字节的 `sha256:<64 lowercase hex>`，本地 image ID、config digest、tag 和 index digest都不是该身份。
+2. Task 2 固定 target platform、builder、media type、压缩和 attestation 参数，导出一个 OCI manifest；使用 digest-pinned registry image 在 `127.0.0.1` 的 OS-assigned 端口启动无凭据临时 registry。
+3. Task 2 必须证明 `local_oci_manifest_digest == registry_repo_digest == digest_pull_repo_digest`，再生成 `ReferenceProfileManifestV1`，并要求其 `docker_image_digest` 等于上述值。
+4. 为消除 digest cycle，最终 manifest 及任何包含其 digest/image digest 的文件不得进入所绑定镜像的 build context、层、config、annotation 或 attestation。镜像只能携带不引用最终 manifest 的工具/profile 版本证据。
+5. 临时 registry 不读取 Docker Desktop credential store、不监听 LAN/公网、不推送外部 registry；成功、失败、超时、取消和异常路径均必须删除容器与数据。重拉后的检查容器仍使用 `--network none`。
+6. Task 34 只复现 Task 2 已证明的 builder/registry/manifest 流程；任何 cycle 或 digest 差异都使原 Task 2 GO 无效并重新打开 Task 2/6，不能到 Task 34 才首次判断可行性。
+7. GitHub Actions 和普通 GitLab CI 可以运行同一无凭据 loopback round-trip，但不得登录或推送外部 registry。Task 36 以受保护凭据推送 Task 2 冻结的同一 manifest/blobs，要求 Task 2、Task 34、wheel manifest、GHCR 和目标机 pull digest 全部一致。
+
+### 16.3 同步范围与候选身份
+
+本轮同步修改了 SPEC manifest 语义、release credential/CI 边界、AC-24/AC-30、验证矩阵和 §11.2；PLAN 同步 M0、Global Constraints、Task 2/34/35/36、Task 37、ownership、NFR、AC、Test Environment Matrix 和 Release Readiness Gate。没有新增 Task、wave 或 checkbox。
+
+- 规划基线 commit：`f6aa9897ca8e9f3cab86143b880a306d96a252e1`。
+- 当前正式 SPEC：`SPEC.md`。
+- 当前 SPEC SHA-256：`80ccc86d9c06bdf7b4fed8673e2e6879942ca2cbc2b07c91bf1276b19a7447aa`。
+- 当前 SPEC Git blob：`2cc522eeb2eb61e75ce96b6500ebbfdf8db18499`。
+- 当前完整 PLAN SHA-256：`f713f5885482dd38ef66fa23998677a8cfc409d1784c1a0df50fdab12d5916a0`。
+- 当前 `PlanSemanticDigestV1`：`f7ea14dfb0b8cc8c56a96e7f92d4f83aca58098d3ecedf910e18b8a09b9e457c`。
+
+以上仍是机械候选身份，不是 M0、PLAN 人工批准或冷启动通过证据。本轮没有运行 Docker/registry、没有使用凭据、没有安装依赖、没有创建实现文件、worktree、branch、commit、PR、tag、release 或 deployment；正式实现继续被 M0、重新批准和冷启动门禁阻断。
+
+### 16.4 机械自审结果
+
+最终检查确认：38 个连续 Task、494 个 checkbox、38/38 dependency rows、38/38 ownership rows、22 个 waves 和既有 11 个 parallel waves均未改变；FR 9/9、NFR 6/6、AC 31/31。旧短语 `GHCR digest 交付` 和旧字段 `image_repo_digest` 均为零；Task 2 的三个 digest、零外部 push、清理和 manifest-output 字段齐全；Task 34 明确只复现；Task 35 明确 loopback-only/禁止外部 registry；Task 36 明确唯一真实 GHCR push。PLAN placeholder 和四文档高置信凭据格式扫描均为零。
+
+第一次 self-reference 字面量检查因 PowerShell 将 Python 命令字符串中的 Markdown backtick 当作转义符而出现假阴性；直接读取文件并改用不含 backtick 的正则后，最终 manifest 排除、三方一致后生成和 GHCR 保留到 §8.4 三项均通过。该校验错误没有引起文档合同修改。
+
+SPEC/PLAN 摘要和 Git blob 已重新计算并与 PLAN、过程记录和日志一致。tracked `git diff --check` 退出 0；未跟踪 PLAN 的 no-index check 仅因内容差异退出 1，均只有 LF→CRLF warning，没有 whitespace error。最终 `git status` 与本轮开始相比没有新增实现或外部工件。
+
+## 17. 公网 Demo shared core 复用收口（2026-07-26）
+
+### 17.1 触发、核对与技术判断
+
+外部审查指出 SPEC §6.4 明确要求公网 Demo 经过 `shared action parser / policy / feedback core`，但原 Task 30 只依赖 Tasks 4–5、只消费 canonical/closed-schema 基础，并由 `DemoExecutor.advance` 自行推进场景；原 Task 32 只比较 formal trace 与 Demo labels 的语义对齐。用户要求先判断问题是否存在，随后批准执行不新增正式 Task 的最小修复。
+
+仓库核对确认该阻断成立。标签和最终表现一致只能证明两个实现行为相似，不能证明公网 Demo 运行时调用 Task 13/17/24/25 的正式纯核心。原 Task 30 的依赖、接口、测试和并行 wave 都允许其在 PolicyEngine、action parser/dispatcher、feedback 和 stopping 完成前独立实现，因此与 SPEC §6.4 不一致。
+
+### 17.2 采纳的最小合同
+
+1. 保留 38 个正式 Task 和现有编号，不修改 `SPEC.md`。Task 30 的直接依赖改为 Tasks 4–5、13、17、24–25，并在 Task 25 后与 Task 29 并行；Task 32 在 Task 30 后与 Task 38 并行。
+2. Task 30 新增 `demo/runner.py` 和 `tests/demo/test_shared_core_composition.py`。`DemoScenarioV1` 只保存固定 Mock responses、模拟结果 fixtures 和展示标签；`DemoExecutor` 只适配 Task 17 `ToolPortsV1` 并返回固定模拟结果；`DemoScenarioRunner` 按固定顺序调用正式 `ActionParser.parse`、`bind_action`、`PolicyEngine.evaluate`、`ToolDispatcher.dispatch`、Task 24 feedback functions 和 `StopEvaluator.evaluate`。
+3. Demo 只把 `DemoExecutor`、内存 session store 和 renderer 注册为能力适配器。内存 session store 仅为五分钟会话实现 Task 24 feedback repository port，不写磁盘或数据库；Demo 不构造正式 `AgentLoopEngine`、Run repository、Approval、Grant、AuditEvent、恢复或持久化生命周期。
+4. Task 30 的 RED/GREEN 和 review gate 改为运行时 call-recording proof：必须证明 shared core 真实被调用、只有 Demo tool ports 执行、所有文件/WinCred/Docker/OpenAI/SQLite/recovery/persistence adapters 的调用计数为零。类名、源码字符串或 label alignment 不能作为复用证据。
+5. Task 32 新增 `test_shared_core_reuse.py`，同时运行 formal harness 和 Task 30 headless runner，比较实际实现引用与调用序列；label alignment 只保留为独立展示一致性证据，Demo 与正式状态/执行端口仍不互相转换。
+6. Task 34 的 curated Demo image 合同同步为包含 Task 30 `DEMO_SHARED_CORE_MODULES_V1` 和必要 canonical/contract import closure，同时继续排除 file action implementations、WinCred/OpenAI/Docker/recovery/persistence adapters 和正式 wheel。镜像检查必须同时证明 shared pure core 存在与被禁止适配器不存在。
+7. DAG、直接依赖、waves、文件 ownership、FR-UI、NFR-REL、AC-02/AC-05/AC-09/AC-17 和 Public Mock Demo smoke 证据同步更新。依赖 waves 仍为 22 个，其中并行 implementation waves 从 11 个变为 12 个。
+
+### 17.3 当前候选身份与未完成门禁
+
+- 规划基线 commit：`f6aa9897ca8e9f3cab86143b880a306d96a252e1`。
+- 正式 SPEC 路径：`SPEC.md`。
+- SPEC SHA-256：`80ccc86d9c06bdf7b4fed8673e2e6879942ca2cbc2b07c91bf1276b19a7447aa`。
+- SPEC Git blob：`2cc522eeb2eb61e75ce96b6500ebbfdf8db18499`。
+- 完整 PLAN SHA-256：`19ce93606c77c2b36b40ef3301a662f77113e3b945b0949b3a604cbd54fcc98f`。
+- `PlanSemanticDigestV1`：`786b87767842824fae6ffca0f504de69c360bf107a3b545c4327424d2d8cbed6`。
+
+SPEC 身份未因本轮变化；旧 PLAN SHA-256 `f713f5885482dd38ef66fa23998677a8cfc409d1784c1a0df50fdab12d5916a0` 和旧 `PlanSemanticDigestV1` `f7ea14dfb0b8cc8c56a96e7f92d4f83aca58098d3ecedf910e18b8a09b9e457c` 已被语义修改废弃。新值只是机械候选身份，不是人工批准证据。M0 人工批准、PLAN 语义批准和异构 Agent 冷启动试作仍未执行；正式实现继续被阻断。
+
+### 17.4 机械自审
+
+修改后共有 38 个连续正式 Task、494 个步骤 checkbox、38/38 direct dependency rows、38/38 ownership rows、22 个 waves 和 12 个 parallel waves（4、5、6、8、9、10、11、12、14、15、16、18）。`DemoExecutor.advance`、Task 30 仅依赖 Tasks 4–5、`T5 --> T30`、旧 Waves 4/15 分配以及 label-only reuse 表述均为 0；新增 runner、shared-core tests、Task 25 → Task 30 DAG edge、Task 30 direct dependencies 和 curated image assertions 均存在。PLAN placeholder 和四文档高置信凭据格式扫描均为 0；tracked `git diff --check` 退出 0，未跟踪 PLAN 的 no-index check 仅因内容差异退出 1并产生一条 LF→CRLF warning，whitespace error 为 0。三份本轮修改文档均为严格 UTF-8、无 BOM、无裸 CR、无尾空格。本轮未创建实现代码、测试、镜像、CI、branch、worktree、commit、PR、发布或部署工件。
