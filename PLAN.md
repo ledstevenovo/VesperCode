@@ -57,7 +57,7 @@
 
 **Document status:** Draft — design rewrite complete only after mechanical verification; admission reviews and cold-start remain pending.
 
-This PLAN is the self-contained implementation plan for the exact current SPEC and the sole canonical source for executable task steps. It does not change product scope, behavior, security boundaries, non-goals, or acceptance criteria. The 141 legacy child IDs remain immutable atomic TDD and migration-trace identifiers; only the 55 `TNN.X` session tasks are executable review/commit units, and only the 46 `WP...` work packages are branch/worktree/PR units.
+This PLAN is the self-contained implementation plan for the exact current SPEC and the sole canonical source for executable task steps. It does not change product scope, behavior, security boundaries, non-goals, or acceptance criteria. The 141 legacy child IDs remain immutable atomic TDD and migration-trace identifiers; only the 68 `TNN.X` session tasks are executable review/commit units, and only the 46 `WP...` work packages are branch/worktree/PR units.
 
 Implementation is forbidden until all gates below pass in order for the exact unchanged input identities:
 
@@ -447,9 +447,9 @@ The following is the complete shared-modifier exception table. `Read` never gran
 
 | Shared path | Primary owner | Authorized later modifier(s) | Constraint |
 |---|---|---|---|
-| `reference/manifest/reference-profile-v1.json` | T02.2 | T06.1 | T06.1 may promote only the frozen GO identity into the built-in profile; it may not change Task 2 evidence. |
+| `reference/manifest/reference-profile-v1.json` | T02.4 | T06.2 | T06.2 may promote only the frozen GO identity into the built-in profile; it may not change Task 2 evidence. |
 | `pyproject.toml` | T04.1 | T33.1 | T33.1 may add only reviewed wheel/package metadata and resource inclusion. |
-| `src/vespercode/cli.py` | T28.1 | T33.1, T38.2 | T33.1 verifies installed entry points; T38.2 adds only the typed recovery composition binding. |
+| `src/vespercode/cli.py` | T28.3 | T33.1, T38.2 | T33.1 verifies installed entry points; T38.2 adds only the typed recovery composition binding. |
 | `tests/unit/loop/test_main_loop_failures.py` | T25.2 | T25.3 | T25.3 may add outer-loop stop/wait integration cases without rewriting call/dispatch assertions. |
 | `tests/unit/process/test_delivery_evidence.py` | T37.1 | T37.2 | T37.2 adds final fail-closed delivery-gate cases after process evidence is frozen. |
 
@@ -470,13 +470,13 @@ Profiles define repeated workflow commands once. Task cards retain only task-spe
 | Work package | Session tasks | Legacy steps | Branch / worktree | Closure |
 |---|---|---|---|---|
 | WP01 | T01.1, T01.2 | 1.A, 1.B, 1.C, 1.D, 1.E | `codex/wp01` / `.worktrees/wp01` | 最后一个 session task 通过后 finishing 并合并。 |
-| WP02 | T02.1, T02.2 | 2.A, 2.B, 2.C, 2.D, 2.E, 2.F, 2.G | `codex/wp02` / `.worktrees/wp02` | 最后一个 session task 通过后 finishing 并合并。 |
+| WP02 | T02.1, T02.2, T02.3, T02.4 | 2.A, 2.B, 2.C, 2.D, 2.E, 2.F, 2.G | `codex/wp02` / `.worktrees/wp02` | 最后一个 session task 通过后 finishing 并合并。 |
 | WP03 | T03.1, T03.2 | 3.A, 3.B, 3.C, 3.D, 3.E, 3.F, 3.G | `codex/wp03` / `.worktrees/wp03` | 最后一个 session task 通过后 finishing 并合并。 |
 | WP04 | T04.1, T04.2 | 4.A, 4.F, 4.B, 4.C, 4.D, 4.E | `codex/wp04` / `.worktrees/wp04` | 最后一个 session task 通过后 finishing 并合并。 |
 | WP05 | T05.1 | 5.A, 5.B, 5.C, 5.E, 5.D | `codex/wp05` / `.worktrees/wp05` | 最后一个 session task 通过后 finishing 并合并。 |
-| WP06 | T06.1 | 6.A, 6.B, 6.C, 6.D, 6.E | `codex/wp06` / `.worktrees/wp06` | 最后一个 session task 通过后 finishing 并合并。 |
-| WP07-CORE | T07.1 | 7.A, 7.B, 7.C | `codex/wp07-core` / `.worktrees/wp07-core` | 最后一个 session task 通过后 finishing 并合并。 |
-| WP07-REGISTRY | T07.2 | 7.D | `codex/wp07-registry` / `.worktrees/wp07-registry` | 最后一个 session task 通过后 finishing 并合并。 |
+| WP06 | T06.1, T06.2, T06.3, T06.4 | 6.A, 6.B, 6.C, 6.D, 6.E | `codex/wp06` / `.worktrees/wp06` | 最后一个 session task 通过后 finishing 并合并。 |
+| WP07-CORE | T07.1, T07.2, T07.3 | 7.A, 7.B, 7.C | `codex/wp07-core` / `.worktrees/wp07-core` | 最后一个 session task 通过后 finishing 并合并。 |
+| WP07-REGISTRY | T07.4 | 7.D | `codex/wp07-registry` / `.worktrees/wp07-registry` | 最后一个 session task 通过后 finishing 并合并。 |
 | WP08 | T08.1 | 8.A, 8.B | `codex/wp08` / `.worktrees/wp08` | 最后一个 session task 通过后 finishing 并合并。 |
 | WP09 | T09.1 | 9.A, 9.B, 9.C, 9.D | `codex/wp09` / `.worktrees/wp09` | 最后一个 session task 通过后 finishing 并合并。 |
 | WP10-SNAPSHOT | T10.2 | 10.A, 10.C | `codex/wp10-snapshot` / `.worktrees/wp10-snapshot` | 最后一个 session task 通过后 finishing 并合并。 |
@@ -502,8 +502,8 @@ Profiles define repeated workflow commands once. Task cards retain only task-spe
 | WP25-TURN | T25.1 | 25.B | `codex/wp25-turn` / `.worktrees/wp25-turn` | 最后一个 session task 通过后 finishing 并合并。 |
 | WP26 | T26.1, T26.2 | 26.A, 26.D, 26.E, 26.B, 26.C | `codex/wp26` / `.worktrees/wp26` | 最后一个 session task 通过后 finishing 并合并。 |
 | WP27 | T27.1 | 27.A, 27.B | `codex/wp27` / `.worktrees/wp27` | 最后一个 session task 通过后 finishing 并合并。 |
-| WP28 | T28.1 | 28.A, 28.B, 28.C, 28.D | `codex/wp28` / `.worktrees/wp28` | 最后一个 session task 通过后 finishing 并合并。 |
-| WP29 | T29.1 | 29.A, 29.B, 29.C | `codex/wp29` / `.worktrees/wp29` | 最后一个 session task 通过后 finishing 并合并。 |
+| WP28 | T28.1, T28.2, T28.3 | 28.A, 28.B, 28.C, 28.D | `codex/wp28` / `.worktrees/wp28` | 最后一个 session task 通过后 finishing 并合并。 |
+| WP29 | T29.1, T29.2, T29.3 | 29.A, 29.B, 29.C | `codex/wp29` / `.worktrees/wp29` | 最后一个 session task 通过后 finishing 并合并。 |
 | WP30-DEMO | T30.2 | 30.C, 30.D, 30.B | `codex/wp30-demo` / `.worktrees/wp30-demo` | 最后一个 session task 通过后 finishing 并合并。 |
 | WP30-SCENARIO | T30.1 | 30.A | `codex/wp30-scenario` / `.worktrees/wp30-scenario` | 最后一个 session task 通过后 finishing 并合并。 |
 | WP31 | T31.1 | 31.A, 31.B, 31.C | `codex/wp31` / `.worktrees/wp31` | 最后一个 session task 通过后 finishing 并合并。 |
@@ -512,7 +512,7 @@ Profiles define repeated workflow commands once. Task cards retain only task-spe
 | WP34-DEMO | T34.1 | 34.B | `codex/wp34-demo` / `.worktrees/wp34-demo` | 最后一个 session task 通过后 finishing 并合并。 |
 | WP34-REFERENCE | T34.2 | 34.A | `codex/wp34-reference` / `.worktrees/wp34-reference` | 最后一个 session task 通过后 finishing 并合并。 |
 | WP35 | T35.1 | 35.A, 35.B, 35.C | `codex/wp35` / `.worktrees/wp35` | 最后一个 session task 通过后 finishing 并合并。 |
-| WP36 | T36.1 | 36.A, 36.B, 36.C | `codex/wp36` / `.worktrees/wp36` | 最后一个 session task 通过后 finishing 并合并。 |
+| WP36 | T36.1, T36.2, T36.3 | 36.A, 36.B, 36.C | `codex/wp36` / `.worktrees/wp36` | 最后一个 session task 通过后 finishing 并合并。 |
 | WP37 | T37.1, T37.2 | 37.A, 37.B, 37.C | `codex/wp37` / `.worktrees/wp37` | 最后一个 session task 通过后 finishing 并合并。 |
 | WP38 | T38.1, T38.2, T38.3 | 38.A, 38.B, 38.C, 38.D, 38.E, 38.F, 38.G | `codex/wp38` / `.worktrees/wp38` | 最后一个 session task 通过后 finishing 并合并。 |
 
@@ -847,12 +847,12 @@ git commit -m "Implement T01.2 Win32 Boundary Probes and GO Decision"
 **Done:** legacy steps 1.C, 1.D, 1.E 的 Target、Domain、适用真实环境和全局 profile 均通过；Critical/Important finding 全部关闭并复审；没有行为被延后到 successor。
 **Completion evidence:** Not yet executed.
 
-### Task T02.1: Reference OCI Inputs, Build, Registry, and Isolation
+### Task T02.1: Reference Inputs and Reproducible OCI Build
 
 **Status:** Not started
 **Work package:** WP02
-**Legacy steps:** 2.A, 2.B, 2.C, 2.D
-**Goal:** Freeze one reference fixture, dependency lock, tool versions, and non-self-referential build-input manifest.；Build the frozen reference image and prove its manifest is reproducible and contains no final manifest/digest self-reference.；Push the exact local OCI manifest to a credential-free loopback registry, pull by digest, and verify cleanup plus three-way digest equality.；Prove one fresh reference container enforces the frozen no-network, non-root, read-only, bounded execution boundary.
+**Legacy steps:** 2.A, 2.B
+**Goal:** Freeze one reference fixture, dependency lock, tool versions, and non-self-referential build-input manifest.；Build the frozen reference image and prove its manifest is reproducible and contains no final manifest/digest self-reference.
 **SPEC contracts:** SPEC §1.4.1 `ReferenceProfileManifestV1`; §1.4.5; §4.1 behavior 11–13; §4.5; §5.5; §8.2; §8.4; §10.1 AC-04, AC-19, AC-20, AC-24, AC-25, AC-30; §10.3 Docker integration; §11.2 item 2.
 
 **Files:**
@@ -866,10 +866,6 @@ git commit -m "Implement T01.2 Win32 Boundary Probes and GO Decision"
 - Create: `containers/reference/Dockerfile`
 - Create: `spikes/docker_reference_boundary/image_builder.py`
 - Test: `tests/feasibility/docker/test_reference_image_reproducibility.py`
-- Create: `spikes/docker_reference_boundary/registry_probe.py`
-- Test: `tests/feasibility/docker/test_loopback_registry_probe.py`
-- Create: `spikes/docker_reference_boundary/execution_probe.py`
-- Test: `tests/feasibility/docker/test_reference_container_isolation.py`
 
 **Depends:** T01.1, T01.2
 **Parallelization:** Start only after every task/non-task gate in **Depends** has passed. Same-wave execution is allowed only when expanded writable paths are disjoint; the WP02 branch and PR remain the sole package integration boundary.
@@ -877,8 +873,6 @@ git commit -m "Implement T01.2 Win32 Boundary Probes and GO Decision"
 **Interfaces:**
 - **Consumes / Produces (2.A):** Produces `ReferenceBuildInputV1(base_image_digest: str, registry_image_digest: str, requirements_digest: str, fixture_tree_digest: str, tool_versions_digest: str, build_recipe_version: str)` and `freeze_reference_build_input(root: Path) -> ReferenceBuildInputV1`.
 - **Consumes / Produces (2.B):** Produces `ReferenceImageBuildEvidenceV1(local_oci_manifest_digest: str, image_config_digest: str, recipe_digest: str, platform: str, self_reference_scan_passed: bool)` and `build_reference_image(build_input: ReferenceBuildInputV1) -> ReferenceImageBuildEvidenceV1`.
-- **Consumes / Produces (2.C):** Produces `LoopbackRegistryEvidenceV1(registry_image_digest: str, bind_host: Literal["127.0.0.1"], assigned_port: int, credentials_used: Literal[False], external_push_count: Literal[0], local_oci_manifest_digest: str, registry_repo_digest: str, digest_pull_repo_digest: str, cleanup_verified: bool)` and `probe_loopback_registry(build: ReferenceImageBuildEvidenceV1) -> LoopbackRegistryEvidenceV1`.
-- **Consumes / Produces (2.D):** Produces `ContainerIsolationEvidenceV1(network_disabled: bool, non_root: bool, root_read_only: bool, capabilities_dropped: bool, docker_socket_absent: bool, workspace_read_only: bool, tmpfs_bounded: bool, cpu_limit: int, memory_limit_bytes: int, pid_limit: int, cleanup_verified: bool)` and `probe_reference_container(build: ReferenceImageBuildEvidenceV1, fixture: Path) -> ContainerIsolationEvidenceV1`.
 
 **Implementation points, exact RED, and minimum GREEN contracts:**
 
@@ -924,7 +918,6 @@ def test_reference_lock_and_fixture_lock_must_be_byte_identical() -> None:
 - [ ] **Step 6: Implement 2.A GREEN-4.** Own fixture and locked build-input identities only; image builds, registries, validation checks, and final reference-manifest writes remain out of scope.
 - [ ] **Step 7: Run 2.A Target GREEN.** Re-run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/docker/test_reference_input_contract.py::test_reference_lock_and_fixture_lock_must_be_byte_identical -q`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 8: Run 2.A Domain.** Run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/docker/test_reference_input_contract.py -q`; require exit 0 and every displayed Atomic verification expectation to hold.
-
 #### Legacy step 2.B: Reproducible OCI Build and No-self-reference Proof
 
 **Atomic goal:** Build the frozen reference image and prove its manifest is reproducible and contains no final manifest/digest self-reference.
@@ -969,6 +962,47 @@ def test_final_manifest_is_absent_from_image_members(build_fixture: BuildFixture
 - [ ] **Step 15: Run 2.B Target GREEN.** Re-run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/docker/test_reference_image_reproducibility.py::test_final_manifest_is_absent_from_image_members -q`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 16: Run 2.B Domain.** Run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/docker/test_reference_image_reproducibility.py -q`; require exit 0 and every displayed Atomic verification expectation to hold.
 
+**Task-level verification, review, and completion:**
+
+- [ ] **Step 17: Refactor only inside T02.1.** Improve names and local structure in declared writable Files without changing the displayed interfaces, observable behavior, or successor scope; rerun every legacy Target and Domain after the refactor.
+- [ ] **Step 18: Run the GATE_OFFLINE_V1 closure.** Execute every exact command defined for `GATE_OFFLINE_V1` in the Global Execution Contract, including the changed-file redacted credential scan and `git diff --check`; record actual results in `AGENT_LOG.md`.
+- [ ] **Step 19: Request T02.1 SPEC review.** Use `superpowers:requesting-code-review` with the Goal, SPEC contracts, Interfaces, minimum GREEN contracts, RED/GREEN evidence, and task diff. Require an explicit verdict.
+- [ ] **Step 20: Close T02.1 SPEC findings.** Fix every Critical/Important finding, rerun affected Targets, Domains, and profile commands, and obtain same-stage re-review PASS.
+- [ ] **Step 21: Request T02.1 quality review.** Use `superpowers:requesting-code-review` only after SPEC review PASS; review the task diff against every Atomic review focus line.
+- [ ] **Step 22: Close T02.1 quality findings.** Fix every Critical/Important finding, rerun affected checks, and obtain same-stage re-review PASS.
+- [ ] **Step 23: Commit T02.1 implementation.** Stage only the task-owned implementation/tests and create one implementation commit after both review stages PASS.
+
+```bash
+git add -- "requirements/reference.lock" "reference/fixture/pyproject.toml" "reference/fixture/requirements.lock" "reference/fixture/src/vesper_fixture/calculator.py" "reference/fixture/tests/test_calculator.py" "spikes/docker_reference_boundary/input_contract.py" "tests/feasibility/docker/test_reference_input_contract.py" "containers/reference/Dockerfile" "spikes/docker_reference_boundary/image_builder.py" "tests/feasibility/docker/test_reference_image_reproducibility.py"
+git commit -m "Implement T02.1 Reference Inputs and Reproducible OCI Build"
+```
+
+- [ ] **Step 24: Record T02.1 completion evidence.** In a narrow evidence commit, update only this task's Status/Completion evidence and append `AGENT_LOG.md` with the real implementation SHA, responsible fresh subagent, human edits, exact commands/results, review/re-review verdicts, and PR URL.
+- [ ] **Step 25: Continue or finish WP02.** If another session task remains in this package, hand the same branch/PR to a new fresh subagent. Otherwise use `superpowers:finishing-a-development-branch`, verify the package result, and merge only after all predecessors and gates remain valid.
+
+**Done:** legacy steps 2.A, 2.B 的 Target、Domain、适用真实环境和全局 profile 均通过；Critical/Important finding 全部关闭并复审；没有行为被延后到 successor。
+**Completion evidence:** Not yet executed.
+
+### Task T02.2: Loopback Registry Round-trip
+
+**Status:** Not started
+**Work package:** WP02
+**Legacy steps:** 2.C
+**Goal:** Push the exact local OCI manifest to a credential-free loopback registry, pull by digest, and verify cleanup plus three-way digest equality.
+**SPEC contracts:** SPEC §1.4.1 `ReferenceProfileManifestV1`; §1.4.5; §4.1 behavior 11–13; §4.5; §5.5; §8.2; §8.4; §10.1 AC-04, AC-19, AC-20, AC-24, AC-25, AC-30; §10.3 Docker integration; §11.2 item 2.
+
+**Files:**
+- Create: `spikes/docker_reference_boundary/registry_probe.py`
+- Test: `tests/feasibility/docker/test_loopback_registry_probe.py`
+
+**Depends:** T02.1
+**Parallelization:** Start only after every task/non-task gate in **Depends** has passed. Same-wave execution is allowed only when expanded writable paths are disjoint; the WP02 branch and PR remain the sole package integration boundary.
+
+**Interfaces:**
+- **Consumes / Produces (2.C):** Produces `LoopbackRegistryEvidenceV1(registry_image_digest: str, bind_host: Literal["127.0.0.1"], assigned_port: int, credentials_used: Literal[False], external_push_count: Literal[0], local_oci_manifest_digest: str, registry_repo_digest: str, digest_pull_repo_digest: str, cleanup_verified: bool)` and `probe_loopback_registry(build: ReferenceImageBuildEvidenceV1) -> LoopbackRegistryEvidenceV1`.
+
+**Implementation points, exact RED, and minimum GREEN contracts:**
+
 #### Legacy step 2.C: Loopback Registry Lifecycle and Three-way Digest
 
 **Atomic goal:** Push the exact local OCI manifest to a credential-free loopback registry, pull by digest, and verify cleanup plus three-way digest equality.
@@ -1004,14 +1038,55 @@ def test_registry_digest_transformation_fails() -> None:
 - SPEC (2.C): Spec compliance review checks Task 2.C's Goal, Milestone 2's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent loopback registry lifecycle contract.
 - Quality (2.C): Code quality review checks loopback-only binding, credential absence, three-way digest identity, cleanup on every exit path, and deterministic failure evidence.
 
-- [ ] **Step 17: Add the exact 2.C RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
-- [ ] **Step 18: Run 2.C RED.** Run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/docker/test_loopback_registry_probe.py::test_registry_digest_transformation_fails -q`. Expected: FAIL for “the loopback registry lifecycle and exact digest comparison do not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
-- [ ] **Step 19: Implement 2.C GREEN-1.** Run one credential-free registry bound only to `127.0.0.1` on an assigned port, push the exact local OCI manifest, pull by digest, and return immutable lifecycle evidence.
-- [ ] **Step 20: Implement 2.C GREEN-2.** Require local OCI, registry RepoDigest, and digest-pull RepoDigest equality, zero credential/external push use, and verified cleanup on success and injected failure.
-- [ ] **Step 21: Implement 2.C GREEN-3.** Make `test_registry_digest_transformation_fails` GREEN by rejecting the first three-way digest mismatch before completing remaining bind/auth/cleanup cases.
-- [ ] **Step 22: Implement 2.C GREEN-4.** Own loopback bind, push, pull, digest comparison, and cleanup evidence only; image building, fixture checks, and external publication remain out of scope.
-- [ ] **Step 23: Run 2.C Target GREEN.** Re-run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/docker/test_loopback_registry_probe.py::test_registry_digest_transformation_fails -q`; require exit 0 and the displayed RED assertion to pass.
-- [ ] **Step 24: Run 2.C Domain.** Run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/docker/test_loopback_registry_probe.py -q`; require exit 0 and every displayed Atomic verification expectation to hold.
+- [ ] **Step 1: Add the exact 2.C RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
+- [ ] **Step 2: Run 2.C RED.** Run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/docker/test_loopback_registry_probe.py::test_registry_digest_transformation_fails -q`. Expected: FAIL for “the loopback registry lifecycle and exact digest comparison do not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
+- [ ] **Step 3: Implement 2.C GREEN-1.** Run one credential-free registry bound only to `127.0.0.1` on an assigned port, push the exact local OCI manifest, pull by digest, and return immutable lifecycle evidence.
+- [ ] **Step 4: Implement 2.C GREEN-2.** Require local OCI, registry RepoDigest, and digest-pull RepoDigest equality, zero credential/external push use, and verified cleanup on success and injected failure.
+- [ ] **Step 5: Implement 2.C GREEN-3.** Make `test_registry_digest_transformation_fails` GREEN by rejecting the first three-way digest mismatch before completing remaining bind/auth/cleanup cases.
+- [ ] **Step 6: Implement 2.C GREEN-4.** Own loopback bind, push, pull, digest comparison, and cleanup evidence only; image building, fixture checks, and external publication remain out of scope.
+- [ ] **Step 7: Run 2.C Target GREEN.** Re-run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/docker/test_loopback_registry_probe.py::test_registry_digest_transformation_fails -q`; require exit 0 and the displayed RED assertion to pass.
+- [ ] **Step 8: Run 2.C Domain.** Run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/docker/test_loopback_registry_probe.py -q`; require exit 0 and every displayed Atomic verification expectation to hold.
+
+**Task-level verification, review, and completion:**
+
+- [ ] **Step 9: Refactor only inside T02.2.** Improve names and local structure in declared writable Files without changing the displayed interfaces, observable behavior, or successor scope; rerun every legacy Target and Domain after the refactor.
+- [ ] **Step 10: Run the GATE_OFFLINE_V1 closure.** Execute every exact command defined for `GATE_OFFLINE_V1` in the Global Execution Contract, including the changed-file redacted credential scan and `git diff --check`; record actual results in `AGENT_LOG.md`.
+- [ ] **Step 11: Request T02.2 SPEC review.** Use `superpowers:requesting-code-review` with the Goal, SPEC contracts, Interfaces, minimum GREEN contracts, RED/GREEN evidence, and task diff. Require an explicit verdict.
+- [ ] **Step 12: Close T02.2 SPEC findings.** Fix every Critical/Important finding, rerun affected Targets, Domains, and profile commands, and obtain same-stage re-review PASS.
+- [ ] **Step 13: Request T02.2 quality review.** Use `superpowers:requesting-code-review` only after SPEC review PASS; review the task diff against every Atomic review focus line.
+- [ ] **Step 14: Close T02.2 quality findings.** Fix every Critical/Important finding, rerun affected checks, and obtain same-stage re-review PASS.
+- [ ] **Step 15: Commit T02.2 implementation.** Stage only the task-owned implementation/tests and create one implementation commit after both review stages PASS.
+
+```bash
+git add -- "spikes/docker_reference_boundary/registry_probe.py" "tests/feasibility/docker/test_loopback_registry_probe.py"
+git commit -m "Implement T02.2 Loopback Registry Round-trip"
+```
+
+- [ ] **Step 16: Record T02.2 completion evidence.** In a narrow evidence commit, update only this task's Status/Completion evidence and append `AGENT_LOG.md` with the real implementation SHA, responsible fresh subagent, human edits, exact commands/results, review/re-review verdicts, and PR URL.
+- [ ] **Step 17: Continue or finish WP02.** If another session task remains in this package, hand the same branch/PR to a new fresh subagent. Otherwise use `superpowers:finishing-a-development-branch`, verify the package result, and merge only after all predecessors and gates remain valid.
+
+**Done:** legacy steps 2.C 的 Target、Domain、适用真实环境和全局 profile 均通过；Critical/Important finding 全部关闭并复审；没有行为被延后到 successor。
+**Completion evidence:** Not yet executed.
+
+### Task T02.3: Reference Container Isolation
+
+**Status:** Not started
+**Work package:** WP02
+**Legacy steps:** 2.D
+**Goal:** Prove one fresh reference container enforces the frozen no-network, non-root, read-only, bounded execution boundary.
+**SPEC contracts:** SPEC §1.4.1 `ReferenceProfileManifestV1`; §1.4.5; §4.1 behavior 11–13; §4.5; §5.5; §8.2; §8.4; §10.1 AC-04, AC-19, AC-20, AC-24, AC-25, AC-30; §10.3 Docker integration; §11.2 item 2.
+
+**Files:**
+- Create: `spikes/docker_reference_boundary/execution_probe.py`
+- Test: `tests/feasibility/docker/test_reference_container_isolation.py`
+
+**Depends:** T02.2
+**Parallelization:** Start only after every task/non-task gate in **Depends** has passed. Same-wave execution is allowed only when expanded writable paths are disjoint; the WP02 branch and PR remain the sole package integration boundary.
+
+**Interfaces:**
+- **Consumes / Produces (2.D):** Produces `ContainerIsolationEvidenceV1(network_disabled: bool, non_root: bool, root_read_only: bool, capabilities_dropped: bool, docker_socket_absent: bool, workspace_read_only: bool, tmpfs_bounded: bool, cpu_limit: int, memory_limit_bytes: int, pid_limit: int, cleanup_verified: bool)` and `probe_reference_container(build: ReferenceImageBuildEvidenceV1, fixture: Path) -> ContainerIsolationEvidenceV1`.
+
+**Implementation points, exact RED, and minimum GREEN contracts:**
 
 #### Legacy step 2.D: Reference Container Isolation Probe
 
@@ -1048,37 +1123,37 @@ def test_workspace_write_attempt_is_rejected(reference_container: ReferenceConta
 - SPEC (2.D): Spec compliance review checks Task 2.D's Goal, Milestone 2's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent reference-container isolation contract.
 - Quality (2.D): Code quality review checks fresh-container construction, complete observed-control accounting, bounded resources, cleanup on all paths, and fail-closed missing evidence.
 
-- [ ] **Step 25: Add the exact 2.D RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
-- [ ] **Step 26: Run 2.D RED.** Run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/docker/test_reference_container_isolation.py::test_workspace_write_attempt_is_rejected -q`. Expected: FAIL for “no real container configuration probe produces closed isolation evidence”. Collection, import, environment, unrelated, or already-failing tests do not count.
-- [ ] **Step 27: Implement 2.D GREEN-1.** Launch one fresh reference container from frozen build evidence and produce observed isolation controls for network, user, root filesystem, capabilities, socket, workspace, tmpfs, resources, and cleanup.
-- [ ] **Step 28: Implement 2.D GREEN-2.** Treat any missing or false isolation observation as closed failure; a writable workspace, unbounded resource, present Docker socket, or unverified cleanup cannot satisfy evidence.
-- [ ] **Step 29: Implement 2.D GREEN-3.** Make `test_workspace_write_attempt_is_rejected` GREEN with the smallest real read-only workspace probe before adding the remaining isolation controls.
-- [ ] **Step 30: Implement 2.D GREEN-4.** Own container configuration, runtime-isolation observations, and cleanup only; pytest interpretation and failure-fingerprint computation remain out of scope.
-- [ ] **Step 31: Run 2.D Target GREEN.** Re-run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/docker/test_reference_container_isolation.py::test_workspace_write_attempt_is_rejected -q`; require exit 0 and the displayed RED assertion to pass.
-- [ ] **Step 32: Run 2.D Domain.** Run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/docker/test_reference_container_isolation.py -q`; require exit 0 and every displayed Atomic verification expectation to hold.
+- [ ] **Step 1: Add the exact 2.D RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
+- [ ] **Step 2: Run 2.D RED.** Run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/docker/test_reference_container_isolation.py::test_workspace_write_attempt_is_rejected -q`. Expected: FAIL for “no real container configuration probe produces closed isolation evidence”. Collection, import, environment, unrelated, or already-failing tests do not count.
+- [ ] **Step 3: Implement 2.D GREEN-1.** Launch one fresh reference container from frozen build evidence and produce observed isolation controls for network, user, root filesystem, capabilities, socket, workspace, tmpfs, resources, and cleanup.
+- [ ] **Step 4: Implement 2.D GREEN-2.** Treat any missing or false isolation observation as closed failure; a writable workspace, unbounded resource, present Docker socket, or unverified cleanup cannot satisfy evidence.
+- [ ] **Step 5: Implement 2.D GREEN-3.** Make `test_workspace_write_attempt_is_rejected` GREEN with the smallest real read-only workspace probe before adding the remaining isolation controls.
+- [ ] **Step 6: Implement 2.D GREEN-4.** Own container configuration, runtime-isolation observations, and cleanup only; pytest interpretation and failure-fingerprint computation remain out of scope.
+- [ ] **Step 7: Run 2.D Target GREEN.** Re-run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/docker/test_reference_container_isolation.py::test_workspace_write_attempt_is_rejected -q`; require exit 0 and the displayed RED assertion to pass.
+- [ ] **Step 8: Run 2.D Domain.** Run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/docker/test_reference_container_isolation.py -q`; require exit 0 and every displayed Atomic verification expectation to hold.
 
 **Task-level verification, review, and completion:**
 
-- [ ] **Step 33: Refactor only inside T02.1.** Improve names and local structure in declared writable Files without changing the displayed interfaces, observable behavior, or successor scope; rerun every legacy Target and Domain after the refactor.
-- [ ] **Step 34: Run the GATE_OFFLINE_V1 closure.** Execute every exact command defined for `GATE_OFFLINE_V1` in the Global Execution Contract, including the changed-file redacted credential scan and `git diff --check`; record actual results in `AGENT_LOG.md`.
-- [ ] **Step 35: Request T02.1 SPEC review.** Use `superpowers:requesting-code-review` with the Goal, SPEC contracts, Interfaces, minimum GREEN contracts, RED/GREEN evidence, and task diff. Require an explicit verdict.
-- [ ] **Step 36: Close T02.1 SPEC findings.** Fix every Critical/Important finding, rerun affected Targets, Domains, and profile commands, and obtain same-stage re-review PASS.
-- [ ] **Step 37: Request T02.1 quality review.** Use `superpowers:requesting-code-review` only after SPEC review PASS; review the task diff against every Atomic review focus line.
-- [ ] **Step 38: Close T02.1 quality findings.** Fix every Critical/Important finding, rerun affected checks, and obtain same-stage re-review PASS.
-- [ ] **Step 39: Commit T02.1 implementation.** Stage only the task-owned implementation/tests and create one implementation commit after both review stages PASS.
+- [ ] **Step 9: Refactor only inside T02.3.** Improve names and local structure in declared writable Files without changing the displayed interfaces, observable behavior, or successor scope; rerun every legacy Target and Domain after the refactor.
+- [ ] **Step 10: Run the GATE_OFFLINE_V1 closure.** Execute every exact command defined for `GATE_OFFLINE_V1` in the Global Execution Contract, including the changed-file redacted credential scan and `git diff --check`; record actual results in `AGENT_LOG.md`.
+- [ ] **Step 11: Request T02.3 SPEC review.** Use `superpowers:requesting-code-review` with the Goal, SPEC contracts, Interfaces, minimum GREEN contracts, RED/GREEN evidence, and task diff. Require an explicit verdict.
+- [ ] **Step 12: Close T02.3 SPEC findings.** Fix every Critical/Important finding, rerun affected Targets, Domains, and profile commands, and obtain same-stage re-review PASS.
+- [ ] **Step 13: Request T02.3 quality review.** Use `superpowers:requesting-code-review` only after SPEC review PASS; review the task diff against every Atomic review focus line.
+- [ ] **Step 14: Close T02.3 quality findings.** Fix every Critical/Important finding, rerun affected checks, and obtain same-stage re-review PASS.
+- [ ] **Step 15: Commit T02.3 implementation.** Stage only the task-owned implementation/tests and create one implementation commit after both review stages PASS.
 
 ```bash
-git add -- "requirements/reference.lock" "reference/fixture/pyproject.toml" "reference/fixture/requirements.lock" "reference/fixture/src/vesper_fixture/calculator.py" "reference/fixture/tests/test_calculator.py" "spikes/docker_reference_boundary/input_contract.py" "tests/feasibility/docker/test_reference_input_contract.py" "containers/reference/Dockerfile" "spikes/docker_reference_boundary/image_builder.py" "tests/feasibility/docker/test_reference_image_reproducibility.py" "spikes/docker_reference_boundary/registry_probe.py" "tests/feasibility/docker/test_loopback_registry_probe.py" "spikes/docker_reference_boundary/execution_probe.py" "tests/feasibility/docker/test_reference_container_isolation.py"
-git commit -m "Implement T02.1 Reference OCI Inputs, Build, Registry, and Isolation"
+git add -- "spikes/docker_reference_boundary/execution_probe.py" "tests/feasibility/docker/test_reference_container_isolation.py"
+git commit -m "Implement T02.3 Reference Container Isolation"
 ```
 
-- [ ] **Step 40: Record T02.1 completion evidence.** In a narrow evidence commit, update only this task's Status/Completion evidence and append `AGENT_LOG.md` with the real implementation SHA, responsible fresh subagent, human edits, exact commands/results, review/re-review verdicts, and PR URL.
-- [ ] **Step 41: Continue or finish WP02.** If another session task remains in this package, hand the same branch/PR to a new fresh subagent. Otherwise use `superpowers:finishing-a-development-branch`, verify the package result, and merge only after all predecessors and gates remain valid.
+- [ ] **Step 16: Record T02.3 completion evidence.** In a narrow evidence commit, update only this task's Status/Completion evidence and append `AGENT_LOG.md` with the real implementation SHA, responsible fresh subagent, human edits, exact commands/results, review/re-review verdicts, and PR URL.
+- [ ] **Step 17: Continue or finish WP02.** If another session task remains in this package, hand the same branch/PR to a new fresh subagent. Otherwise use `superpowers:finishing-a-development-branch`, verify the package result, and merge only after all predecessors and gates remain valid.
 
-**Done:** legacy steps 2.A, 2.B, 2.C, 2.D 的 Target、Domain、适用真实环境和全局 profile 均通过；Critical/Important finding 全部关闭并复审；没有行为被延后到 successor。
+**Done:** legacy steps 2.D 的 Target、Domain、适用真实环境和全局 profile 均通过；Critical/Important finding 全部关闭并复审；没有行为被延后到 successor。
 **Completion evidence:** Not yet executed.
 
-### Task T02.2: Reference Evidence, Stability, and GO Decision
+### Task T02.4: Reference Evidence, Stability, and GO Decision
 
 **Status:** Not started
 **Work package:** WP02
@@ -1096,7 +1171,7 @@ git commit -m "Implement T02.1 Reference OCI Inputs, Build, Registry, and Isolat
 - Create: `spikes/docker_reference_boundary/report.py`
 - Test: `tests/feasibility/docker/test_reference_boundary_gate.py`
 
-**Depends:** T01.1, T01.2, T02.1
+**Depends:** T02.3
 **Parallelization:** Start only after every task/non-task gate in **Depends** has passed. Same-wave execution is allowed only when expanded writable paths are disjoint; the WP02 branch and PR remain the sole package integration boundary.
 
 **Interfaces:**
@@ -1148,7 +1223,6 @@ def test_missing_teardown_event_invalidates_gate_report() -> None:
 - [ ] **Step 6: Implement 2.E GREEN-4.** Own pytest event capture and completeness only; Docker isolation, image identity, failure stability, and aggregate GO remain out of scope.
 - [ ] **Step 7: Run 2.E Target GREEN.** Re-run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/docker/test_gate_pytest_evidence.py::test_missing_teardown_event_invalidates_gate_report -q`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 8: Run 2.E Domain.** Run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/docker/test_gate_pytest_evidence.py -q`; require exit 0 and every displayed Atomic verification expectation to hold.
-
 #### Legacy step 2.F: Gate Failure Input Stability Probe
 
 **Atomic goal:** Prove two independent target-failure runs produce byte-identical normalized gate fingerprint inputs without defining the production fingerprint.
@@ -1192,7 +1266,6 @@ def test_independent_target_failures_have_identical_inputs() -> None:
 - [ ] **Step 14: Implement 2.F GREEN-4.** Own gate-only normalized input comparison; production `FailureFingerprintV1`, registry lifecycle, and aggregate GO remain out of scope.
 - [ ] **Step 15: Run 2.F Target GREEN.** Re-run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/docker/test_gate_failure_input_stability.py::test_independent_target_failures_have_identical_inputs -q`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 16: Run 2.F Domain.** Run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/docker/test_gate_failure_input_stability.py -q`; require exit 0 and every displayed Atomic verification expectation to hold.
-
 #### Legacy step 2.G: Reference Profile Manifest and Docker Gate GO
 
 **Atomic goal:** Freeze `ReferenceProfileManifestV1` and emit GO only when build, registry, isolation, pytest, and fingerprint evidence are complete and identity-consistent.
@@ -1238,20 +1311,20 @@ def test_gate_rejects_loopback_registry_digest_mismatch() -> None:
 
 **Task-level verification, review, and completion:**
 
-- [ ] **Step 25: Refactor only inside T02.2.** Improve names and local structure in declared writable Files without changing the displayed interfaces, observable behavior, or successor scope; rerun every legacy Target and Domain after the refactor.
+- [ ] **Step 25: Refactor only inside T02.4.** Improve names and local structure in declared writable Files without changing the displayed interfaces, observable behavior, or successor scope; rerun every legacy Target and Domain after the refactor.
 - [ ] **Step 26: Run the GATE_OFFLINE_V1 closure.** Execute every exact command defined for `GATE_OFFLINE_V1` in the Global Execution Contract, including the changed-file redacted credential scan and `git diff --check`; record actual results in `AGENT_LOG.md`.
-- [ ] **Step 27: Request T02.2 SPEC review.** Use `superpowers:requesting-code-review` with the Goal, SPEC contracts, Interfaces, minimum GREEN contracts, RED/GREEN evidence, and task diff. Require an explicit verdict.
-- [ ] **Step 28: Close T02.2 SPEC findings.** Fix every Critical/Important finding, rerun affected Targets, Domains, and profile commands, and obtain same-stage re-review PASS.
-- [ ] **Step 29: Request T02.2 quality review.** Use `superpowers:requesting-code-review` only after SPEC review PASS; review the task diff against every Atomic review focus line.
-- [ ] **Step 30: Close T02.2 quality findings.** Fix every Critical/Important finding, rerun affected checks, and obtain same-stage re-review PASS.
-- [ ] **Step 31: Commit T02.2 implementation.** Stage only the task-owned implementation/tests and create one implementation commit after both review stages PASS.
+- [ ] **Step 27: Request T02.4 SPEC review.** Use `superpowers:requesting-code-review` with the Goal, SPEC contracts, Interfaces, minimum GREEN contracts, RED/GREEN evidence, and task diff. Require an explicit verdict.
+- [ ] **Step 28: Close T02.4 SPEC findings.** Fix every Critical/Important finding, rerun affected Targets, Domains, and profile commands, and obtain same-stage re-review PASS.
+- [ ] **Step 29: Request T02.4 quality review.** Use `superpowers:requesting-code-review` only after SPEC review PASS; review the task diff against every Atomic review focus line.
+- [ ] **Step 30: Close T02.4 quality findings.** Fix every Critical/Important finding, rerun affected checks, and obtain same-stage re-review PASS.
+- [ ] **Step 31: Commit T02.4 implementation.** Stage only the task-owned implementation/tests and create one implementation commit after both review stages PASS.
 
 ```bash
 git add -- "spikes/docker_reference_boundary/pytest_reporter.py" "tests/feasibility/docker/test_gate_pytest_evidence.py" "spikes/docker_reference_boundary/failure_fingerprint_probe.py" "tests/feasibility/docker/test_gate_failure_input_stability.py" "reference/manifest/reference-profile-v1.json" "spikes/docker_reference_boundary/probe.py" "spikes/docker_reference_boundary/report.py" "tests/feasibility/docker/test_reference_boundary_gate.py"
-git commit -m "Implement T02.2 Reference Evidence, Stability, and GO Decision"
+git commit -m "Implement T02.4 Reference Evidence, Stability, and GO Decision"
 ```
 
-- [ ] **Step 32: Record T02.2 completion evidence.** In a narrow evidence commit, update only this task's Status/Completion evidence and append `AGENT_LOG.md` with the real implementation SHA, responsible fresh subagent, human edits, exact commands/results, review/re-review verdicts, and PR URL.
+- [ ] **Step 32: Record T02.4 completion evidence.** In a narrow evidence commit, update only this task's Status/Completion evidence and append `AGENT_LOG.md` with the real implementation SHA, responsible fresh subagent, human edits, exact commands/results, review/re-review verdicts, and PR URL.
 - [ ] **Step 33: Continue or finish WP02.** If another session task remains in this package, hand the same branch/PR to a new fresh subagent. Otherwise use `superpowers:finishing-a-development-branch`, verify the package result, and merge only after all predecessors and gates remain valid.
 
 **Done:** legacy steps 2.E, 2.F, 2.G 的 Target、Domain、适用真实环境和全局 profile 均通过；Critical/Important finding 全部关闭并复审；没有行为被延后到 successor。
@@ -1275,7 +1348,7 @@ git commit -m "Implement T02.2 Reference Evidence, Stability, and GO Decision"
 - Create: `spikes/persistence_recovery/observation.py`
 - Test: `tests/feasibility/persistence/test_external_change_classifier.py`
 
-**Depends:** T01.1, T02.2
+**Depends:** T01.1, T02.4
 **Parallelization:** Start only after every task/non-task gate in **Depends** has passed. Same-wave execution is allowed only when expanded writable paths are disjoint; the WP03 branch and PR remain the sole package integration boundary.
 
 **Interfaces:**
@@ -1496,7 +1569,7 @@ git commit -m "Implement T03.1 Persistence Protocol, Faults, Deadlines, and Iden
 - Create: `spikes/persistence_recovery/report.py`
 - Test: `tests/feasibility/persistence/test_recovery_gate.py`
 
-**Depends:** T01.2, T02.2, T03.1
+**Depends:** T01.2, T02.4, T03.1
 **Parallelization:** Start only after every task/non-task gate in **Depends** has passed. Same-wave execution is allowed only when expanded writable paths are disjoint; the WP03 branch and PR remain the sole package integration boundary.
 
 **Interfaces:**
@@ -1679,7 +1752,7 @@ git commit -m "Implement T03.2 Recovery Classification, Application, and GO Deci
 - Create: `config/formal-toolchain-promotion-v1.json`
 - Test: `tests/unit/process/test_toolchain_promotion.py`
 
-**Depends:** T01.2, T02.2, T03.2
+**Depends:** T01.2, T02.4, T03.2
 **Parallelization:** Start only after every task/non-task gate in **Depends** has passed. Same-wave execution is allowed only when expanded writable paths are disjoint; the WP04 branch and PR remain the sole package integration boundary.
 
 **Interfaces:**
@@ -2330,39 +2403,23 @@ git commit -m "Implement T05.1 Closed Shared Value, Location, Evidence, and Erro
 **Done:** legacy steps 5.A, 5.B, 5.C, 5.E, 5.D 的 Target、Domain、适用真实环境和全局 profile 均通过；Critical/Important finding 全部关闭并复审；没有行为被延后到 successor。
 **Completion evidence:** Not yet executed.
 
-### Task T06.1: Built-in Profiles, Trusted Endpoints, and Registry
+### Task T06.1: Immutable Editable-path Policy
 
 **Status:** Not started
 **Work package:** WP06
-**Legacy steps:** 6.A, 6.B, 6.C, 6.D, 6.E
-**Goal:** Implement the sole built-in editable path/operation policy and deterministic segment-boundary matching.；Load and integrity-check the built-in reference manifest against Task 2.G image, lock, tool, execution, and check-plan evidence.；Define immutable mutually exclusive Mock and OpenAI LLM profile contracts and packaged built-ins.；Resolve only the built-in public OpenAI endpoint ID to an immutable trusted endpoint record.；Resolve exact built-in editable/reference/LLM/endpoint profiles and reject missing, duplicate, extra, or cross-profile data before Run creation.
+**Legacy steps:** 6.A
+**Goal:** Implement the sole built-in editable path/operation policy and deterministic segment-boundary matching.
 **SPEC contracts:** SPEC §1.4.1; §4.1 input and behavior 1–4; §4.4.3 endpoint/profile fields; §5.2; §7 profile/config rows; §8.2; §9; §10.1 AC-13, AC-15, AC-26, AC-30, AC-31.
 
 **Files:**
 - Create: `src/vespercode/profiles/editable.py`
 - Test: `tests/unit/profiles/test_editable.py`
-- Create: `src/vespercode/profiles/reference.py`
-- Create: `src/vespercode/profiles/builtin/reference-profile-v1.json`
-- Test: `tests/unit/profiles/test_reference.py`
-- Modify: `reference/manifest/reference-profile-v1.json`
-- Create: `src/vespercode/profiles/llm.py`
-- Create: `src/vespercode/profiles/builtin/mock-deterministic-v1.json`
-- Create: `src/vespercode/profiles/builtin/openai-single-turn-v1.json`
-- Test: `tests/unit/profiles/test_llm.py`
-- Create: `src/vespercode/profiles/endpoints.py`
-- Test: `tests/unit/profiles/test_endpoints.py`
-- Create: `src/vespercode/profiles/registry.py`
-- Test: `tests/unit/profiles/test_registry.py`
 
-**Depends:** T02.2, T04.2, T05.1
+**Depends:** T02.4, T04.2, T05.1
 **Parallelization:** Start only after every task/non-task gate in **Depends** has passed. Same-wave execution is allowed only when expanded writable paths are disjoint; the WP06 branch and PR remain the sole package integration boundary.
 
 **Interfaces:**
 - **Consumes / Produces (6.A):** Produces `EditableOperationV1 = Literal["CREATE","REPLACE"]`, `EditablePathPolicyV1(policy_digest: str, roots: CanonicalPathSequenceV1, operations: EditableOperationSequenceV1)`, and `EditablePathPolicyV1.matches(path: CanonicalRelativePathV1, operation: EditableOperationV1) -> bool`.
-- **Consumes / Produces (6.B):** Produces production `ReferenceProfileManifestV1` and `ReferenceProfileManifestV1.verify_integrity(gate_manifest: GateReferenceProfileManifestV1) -> None`.
-- **Consumes / Produces (6.C):** Produces `MockLLMProfileV1`, `OpenAILLMProfileV1`, `LLMProfileManifestV1 = MockLLMProfileV1 | OpenAILLMProfileV1`, and `load_llm_profile(raw: bytes) -> LLMProfileManifestV1`.
-- **Consumes / Produces (6.D):** Produces `OpenAIEndpointV1(endpoint_id: Literal["OPENAI_PUBLIC_API_V1"], base_url: Literal["https://api.openai.com/v1"])` and `OpenAIEndpointRegistry.resolve(endpoint_id: str) -> OpenAIEndpointV1`.
-- **Consumes / Produces (6.E):** Produces `ProfileRegistry.resolve_reference(profile_id: str) -> ReferenceProfileManifestV1`, `ProfileRegistry.resolve_llm(profile_id: str) -> LLMProfileManifestV1`, `ProfileRegistry.resolve_editable(policy_id: str) -> EditablePathPolicyV1`, and `ProfileRegistry.resolve_endpoint(endpoint_id: str) -> OpenAIEndpointV1`.
 
 **Implementation points, exact RED, and minimum GREEN contracts:**
 
@@ -2409,6 +2466,49 @@ def test_src_prefix_without_segment_boundary_is_not_editable() -> None:
 - [ ] **Step 7: Run 6.A Target GREEN.** Re-run `python -m pytest -q tests/unit/profiles/test_editable.py::test_src_prefix_without_segment_boundary_is_not_editable`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 8: Run 6.A Domain.** Run `python -m pytest -q tests/unit/profiles/test_editable.py`; require exit 0 and every displayed Atomic verification expectation to hold.
 
+**Task-level verification, review, and completion:**
+
+- [ ] **Step 9: Refactor only inside T06.1.** Improve names and local structure in declared writable Files without changing the displayed interfaces, observable behavior, or successor scope; rerun every legacy Target and Domain after the refactor.
+- [ ] **Step 10: Run the FORMAL_OFFLINE_V1 closure.** Execute every exact command defined for `FORMAL_OFFLINE_V1` in the Global Execution Contract, including the changed-file redacted credential scan and `git diff --check`; record actual results in `AGENT_LOG.md`.
+- [ ] **Step 11: Request T06.1 SPEC review.** Use `superpowers:requesting-code-review` with the Goal, SPEC contracts, Interfaces, minimum GREEN contracts, RED/GREEN evidence, and task diff. Require an explicit verdict.
+- [ ] **Step 12: Close T06.1 SPEC findings.** Fix every Critical/Important finding, rerun affected Targets, Domains, and profile commands, and obtain same-stage re-review PASS.
+- [ ] **Step 13: Request T06.1 quality review.** Use `superpowers:requesting-code-review` only after SPEC review PASS; review the task diff against every Atomic review focus line.
+- [ ] **Step 14: Close T06.1 quality findings.** Fix every Critical/Important finding, rerun affected checks, and obtain same-stage re-review PASS.
+- [ ] **Step 15: Commit T06.1 implementation.** Stage only the task-owned implementation/tests and create one implementation commit after both review stages PASS.
+
+```bash
+git add -- "src/vespercode/profiles/editable.py" "tests/unit/profiles/test_editable.py"
+git commit -m "Implement T06.1 Immutable Editable-path Policy"
+```
+
+- [ ] **Step 16: Record T06.1 completion evidence.** In a narrow evidence commit, update only this task's Status/Completion evidence and append `AGENT_LOG.md` with the real implementation SHA, responsible fresh subagent, human edits, exact commands/results, review/re-review verdicts, and PR URL.
+- [ ] **Step 17: Continue or finish WP06.** If another session task remains in this package, hand the same branch/PR to a new fresh subagent. Otherwise use `superpowers:finishing-a-development-branch`, verify the package result, and merge only after all predecessors and gates remain valid.
+
+**Done:** legacy steps 6.A 的 Target、Domain、适用真实环境和全局 profile 均通过；Critical/Important finding 全部关闭并复审；没有行为被延后到 successor。
+**Completion evidence:** Not yet executed.
+
+### Task T06.2: Reference Profile Manifest Integrity
+
+**Status:** Not started
+**Work package:** WP06
+**Legacy steps:** 6.B
+**Goal:** Load and integrity-check the built-in reference manifest against Task 2.G image, lock, tool, execution, and check-plan evidence.
+**SPEC contracts:** SPEC §1.4.1; §4.1 input and behavior 1–4; §4.4.3 endpoint/profile fields; §5.2; §7 profile/config rows; §8.2; §9; §10.1 AC-13, AC-15, AC-26, AC-30, AC-31.
+
+**Files:**
+- Create: `src/vespercode/profiles/reference.py`
+- Create: `src/vespercode/profiles/builtin/reference-profile-v1.json`
+- Test: `tests/unit/profiles/test_reference.py`
+- Modify: `reference/manifest/reference-profile-v1.json`
+
+**Depends:** T06.1
+**Parallelization:** Start only after every task/non-task gate in **Depends** has passed. Same-wave execution is allowed only when expanded writable paths are disjoint; the WP06 branch and PR remain the sole package integration boundary.
+
+**Interfaces:**
+- **Consumes / Produces (6.B):** Produces production `ReferenceProfileManifestV1` and `ReferenceProfileManifestV1.verify_integrity(gate_manifest: GateReferenceProfileManifestV1) -> None`.
+
+**Implementation points, exact RED, and minimum GREEN contracts:**
+
 #### Legacy step 6.B: Reference Profile Manifest Contract
 
 **Atomic goal:** Load and integrity-check the built-in reference manifest against Task 2.G image, lock, tool, execution, and check-plan evidence.
@@ -2444,14 +2544,60 @@ def test_reference_profile_rejects_image_digest_drift() -> None:
 - SPEC (6.B): Spec compliance review checks Task 6.B's Goal, Milestone 6's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent reference-profile manifest integrity contract.
 - Quality (6.B): Code quality review checks exact gate/production field correspondence, digest identity, packaged-resource immutability, missing/extra rejection, and side-effect-free integrity validation.
 
-- [ ] **Step 9: Add the exact 6.B RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
-- [ ] **Step 10: Run 6.B RED.** Run `python -m pytest -q tests/unit/profiles/test_reference.py::test_reference_profile_rejects_image_digest_drift`. Expected: FAIL for “the production manifest integrity contract and packaged resource do not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
-- [ ] **Step 11: Implement 6.B GREEN-1.** Load the packaged production `ReferenceProfileManifestV1` and verify it against Task 2.G gate manifest identities for image, lock, tools, execution, and check plan.
-- [ ] **Step 12: Implement 6.B GREEN-2.** Require exact field and digest equality; every missing, extra, malformed, or drifted identity rejects without mutating gate evidence or packaged bytes.
-- [ ] **Step 13: Implement 6.B GREEN-3.** Make `test_reference_profile_rejects_image_digest_drift` GREEN with the smallest image-identity mismatch before completing the full integrity matrix.
-- [ ] **Step 14: Implement 6.B GREEN-4.** Own manifest parsing, integrity checking, and package-data copy only. Image builds, editable policy, endpoints, and gate-evidence mutation remain out of scope.
-- [ ] **Step 15: Run 6.B Target GREEN.** Re-run `python -m pytest -q tests/unit/profiles/test_reference.py::test_reference_profile_rejects_image_digest_drift`; require exit 0 and the displayed RED assertion to pass.
-- [ ] **Step 16: Run 6.B Domain.** Run `python -m pytest -q tests/unit/profiles/test_reference.py`; require exit 0 and every displayed Atomic verification expectation to hold.
+- [ ] **Step 1: Add the exact 6.B RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
+- [ ] **Step 2: Run 6.B RED.** Run `python -m pytest -q tests/unit/profiles/test_reference.py::test_reference_profile_rejects_image_digest_drift`. Expected: FAIL for “the production manifest integrity contract and packaged resource do not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
+- [ ] **Step 3: Implement 6.B GREEN-1.** Load the packaged production `ReferenceProfileManifestV1` and verify it against Task 2.G gate manifest identities for image, lock, tools, execution, and check plan.
+- [ ] **Step 4: Implement 6.B GREEN-2.** Require exact field and digest equality; every missing, extra, malformed, or drifted identity rejects without mutating gate evidence or packaged bytes.
+- [ ] **Step 5: Implement 6.B GREEN-3.** Make `test_reference_profile_rejects_image_digest_drift` GREEN with the smallest image-identity mismatch before completing the full integrity matrix.
+- [ ] **Step 6: Implement 6.B GREEN-4.** Own manifest parsing, integrity checking, and package-data copy only. Image builds, editable policy, endpoints, and gate-evidence mutation remain out of scope.
+- [ ] **Step 7: Run 6.B Target GREEN.** Re-run `python -m pytest -q tests/unit/profiles/test_reference.py::test_reference_profile_rejects_image_digest_drift`; require exit 0 and the displayed RED assertion to pass.
+- [ ] **Step 8: Run 6.B Domain.** Run `python -m pytest -q tests/unit/profiles/test_reference.py`; require exit 0 and every displayed Atomic verification expectation to hold.
+
+**Task-level verification, review, and completion:**
+
+- [ ] **Step 9: Refactor only inside T06.2.** Improve names and local structure in declared writable Files without changing the displayed interfaces, observable behavior, or successor scope; rerun every legacy Target and Domain after the refactor.
+- [ ] **Step 10: Run the FORMAL_OFFLINE_V1 closure.** Execute every exact command defined for `FORMAL_OFFLINE_V1` in the Global Execution Contract, including the changed-file redacted credential scan and `git diff --check`; record actual results in `AGENT_LOG.md`.
+- [ ] **Step 11: Request T06.2 SPEC review.** Use `superpowers:requesting-code-review` with the Goal, SPEC contracts, Interfaces, minimum GREEN contracts, RED/GREEN evidence, and task diff. Require an explicit verdict.
+- [ ] **Step 12: Close T06.2 SPEC findings.** Fix every Critical/Important finding, rerun affected Targets, Domains, and profile commands, and obtain same-stage re-review PASS.
+- [ ] **Step 13: Request T06.2 quality review.** Use `superpowers:requesting-code-review` only after SPEC review PASS; review the task diff against every Atomic review focus line.
+- [ ] **Step 14: Close T06.2 quality findings.** Fix every Critical/Important finding, rerun affected checks, and obtain same-stage re-review PASS.
+- [ ] **Step 15: Commit T06.2 implementation.** Stage only the task-owned implementation/tests and create one implementation commit after both review stages PASS.
+
+```bash
+git add -- "src/vespercode/profiles/reference.py" "src/vespercode/profiles/builtin/reference-profile-v1.json" "tests/unit/profiles/test_reference.py" "reference/manifest/reference-profile-v1.json"
+git commit -m "Implement T06.2 Reference Profile Manifest Integrity"
+```
+
+- [ ] **Step 16: Record T06.2 completion evidence.** In a narrow evidence commit, update only this task's Status/Completion evidence and append `AGENT_LOG.md` with the real implementation SHA, responsible fresh subagent, human edits, exact commands/results, review/re-review verdicts, and PR URL.
+- [ ] **Step 17: Continue or finish WP06.** If another session task remains in this package, hand the same branch/PR to a new fresh subagent. Otherwise use `superpowers:finishing-a-development-branch`, verify the package result, and merge only after all predecessors and gates remain valid.
+
+**Done:** legacy steps 6.B 的 Target、Domain、适用真实环境和全局 profile 均通过；Critical/Important finding 全部关闭并复审；没有行为被延后到 successor。
+**Completion evidence:** Not yet executed.
+
+### Task T06.3: Closed LLM Profiles and Trusted Endpoint
+
+**Status:** Not started
+**Work package:** WP06
+**Legacy steps:** 6.C, 6.D
+**Goal:** Define immutable mutually exclusive Mock and OpenAI LLM profile contracts and packaged built-ins.；Resolve only the built-in public OpenAI endpoint ID to an immutable trusted endpoint record.
+**SPEC contracts:** SPEC §1.4.1; §4.1 input and behavior 1–4; §4.4.3 endpoint/profile fields; §5.2; §7 profile/config rows; §8.2; §9; §10.1 AC-13, AC-15, AC-26, AC-30, AC-31.
+
+**Files:**
+- Create: `src/vespercode/profiles/llm.py`
+- Create: `src/vespercode/profiles/builtin/mock-deterministic-v1.json`
+- Create: `src/vespercode/profiles/builtin/openai-single-turn-v1.json`
+- Test: `tests/unit/profiles/test_llm.py`
+- Create: `src/vespercode/profiles/endpoints.py`
+- Test: `tests/unit/profiles/test_endpoints.py`
+
+**Depends:** T06.2
+**Parallelization:** Start only after every task/non-task gate in **Depends** has passed. Same-wave execution is allowed only when expanded writable paths are disjoint; the WP06 branch and PR remain the sole package integration boundary.
+
+**Interfaces:**
+- **Consumes / Produces (6.C):** Produces `MockLLMProfileV1`, `OpenAILLMProfileV1`, `LLMProfileManifestV1 = MockLLMProfileV1 | OpenAILLMProfileV1`, and `load_llm_profile(raw: bytes) -> LLMProfileManifestV1`.
+- **Consumes / Produces (6.D):** Produces `OpenAIEndpointV1(endpoint_id: Literal["OPENAI_PUBLIC_API_V1"], base_url: Literal["https://api.openai.com/v1"])` and `OpenAIEndpointRegistry.resolve(endpoint_id: str) -> OpenAIEndpointV1`.
+
+**Implementation points, exact RED, and minimum GREEN contracts:**
 
 #### Legacy step 6.C: Closed Mock and OpenAI LLM Profiles
 
@@ -2488,15 +2634,14 @@ def test_mock_profile_rejects_openai_fields() -> None:
 - SPEC (6.C): Spec compliance review checks Task 6.C's Goal, Milestone 6's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent closed LLM profiles contract.
 - Quality (6.C): Code quality review checks mode-discriminant closure, cross-field exclusivity, immutable resource identity, unknown-field rejection, deterministic loading, and zero credential/network behavior.
 
-- [ ] **Step 17: Add the exact 6.C RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
-- [ ] **Step 18: Run 6.C RED.** Run `python -m pytest -q tests/unit/profiles/test_llm.py::test_mock_profile_rejects_openai_fields`. Expected: FAIL for “the mutually exclusive closed LLM profile union does not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
-- [ ] **Step 19: Implement 6.C GREEN-1.** Define immutable mutually exclusive Mock and OpenAI profile variants and load packaged bytes into the closed `LLMProfileManifestV1` union.
-- [ ] **Step 20: Implement 6.C GREEN-2.** Reject cross-mode, unknown, extra, or mutable fields so Mock data cannot carry OpenAI configuration and each built-in resource has one integrity identity.
-- [ ] **Step 21: Implement 6.C GREEN-3.** Make `test_mock_profile_rejects_openai_fields` GREEN with the smallest cross-mode rejection before completing both profile variants.
-- [ ] **Step 22: Implement 6.C GREEN-4.** Own profile schemas and packaged-resource integrity only. Endpoint resolution, request serialization, credential access, and adapter calls remain out of scope.
-- [ ] **Step 23: Run 6.C Target GREEN.** Re-run `python -m pytest -q tests/unit/profiles/test_llm.py::test_mock_profile_rejects_openai_fields`; require exit 0 and the displayed RED assertion to pass.
-- [ ] **Step 24: Run 6.C Domain.** Run `python -m pytest -q tests/unit/profiles/test_llm.py`; require exit 0 and every displayed Atomic verification expectation to hold.
-
+- [ ] **Step 1: Add the exact 6.C RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
+- [ ] **Step 2: Run 6.C RED.** Run `python -m pytest -q tests/unit/profiles/test_llm.py::test_mock_profile_rejects_openai_fields`. Expected: FAIL for “the mutually exclusive closed LLM profile union does not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
+- [ ] **Step 3: Implement 6.C GREEN-1.** Define immutable mutually exclusive Mock and OpenAI profile variants and load packaged bytes into the closed `LLMProfileManifestV1` union.
+- [ ] **Step 4: Implement 6.C GREEN-2.** Reject cross-mode, unknown, extra, or mutable fields so Mock data cannot carry OpenAI configuration and each built-in resource has one integrity identity.
+- [ ] **Step 5: Implement 6.C GREEN-3.** Make `test_mock_profile_rejects_openai_fields` GREEN with the smallest cross-mode rejection before completing both profile variants.
+- [ ] **Step 6: Implement 6.C GREEN-4.** Own profile schemas and packaged-resource integrity only. Endpoint resolution, request serialization, credential access, and adapter calls remain out of scope.
+- [ ] **Step 7: Run 6.C Target GREEN.** Re-run `python -m pytest -q tests/unit/profiles/test_llm.py::test_mock_profile_rejects_openai_fields`; require exit 0 and the displayed RED assertion to pass.
+- [ ] **Step 8: Run 6.C Domain.** Run `python -m pytest -q tests/unit/profiles/test_llm.py`; require exit 0 and every displayed Atomic verification expectation to hold.
 #### Legacy step 6.D: Trusted OpenAI Endpoint Map
 
 **Atomic goal:** Resolve only the built-in public OpenAI endpoint ID to an immutable trusted endpoint record.
@@ -2532,14 +2677,55 @@ def test_endpoint_registry_rejects_user_url() -> None:
 - SPEC (6.D): Spec compliance review checks Task 6.D's Goal, Milestone 6's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent trusted OpenAI endpoint registry contract.
 - Quality (6.D): Code quality review checks exact literal identity, closed lookup behavior, raw-URL rejection, immutable returned records, deterministic errors, and network-free resolution.
 
-- [ ] **Step 25: Add the exact 6.D RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
-- [ ] **Step 26: Run 6.D RED.** Run `python -m pytest -q tests/unit/profiles/test_endpoints.py::test_endpoint_registry_rejects_user_url`. Expected: FAIL for “the closed endpoint map does not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
-- [ ] **Step 27: Implement 6.D GREEN-1.** Define the immutable `OpenAIEndpointV1` record for the sole `OPENAI_PUBLIC_API_V1` identifier and exact public base URL.
-- [ ] **Step 28: Implement 6.D GREEN-2.** Resolve only that built-in identifier; raw user URLs, config overrides, unknown ids, and alternate records reject without network access.
-- [ ] **Step 29: Implement 6.D GREEN-3.** Make `test_endpoint_registry_rejects_user_url` GREEN with the smallest raw-URL rejection before completing sole-id resolution.
-- [ ] **Step 30: Implement 6.D GREEN-4.** Own endpoint id-to-record resolution only. HTTP request preparation, URL overrides, credential management, and network calls remain out of scope.
-- [ ] **Step 31: Run 6.D Target GREEN.** Re-run `python -m pytest -q tests/unit/profiles/test_endpoints.py::test_endpoint_registry_rejects_user_url`; require exit 0 and the displayed RED assertion to pass.
-- [ ] **Step 32: Run 6.D Domain.** Run `python -m pytest -q tests/unit/profiles/test_endpoints.py`; require exit 0 and every displayed Atomic verification expectation to hold.
+- [ ] **Step 9: Add the exact 6.D RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
+- [ ] **Step 10: Run 6.D RED.** Run `python -m pytest -q tests/unit/profiles/test_endpoints.py::test_endpoint_registry_rejects_user_url`. Expected: FAIL for “the closed endpoint map does not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
+- [ ] **Step 11: Implement 6.D GREEN-1.** Define the immutable `OpenAIEndpointV1` record for the sole `OPENAI_PUBLIC_API_V1` identifier and exact public base URL.
+- [ ] **Step 12: Implement 6.D GREEN-2.** Resolve only that built-in identifier; raw user URLs, config overrides, unknown ids, and alternate records reject without network access.
+- [ ] **Step 13: Implement 6.D GREEN-3.** Make `test_endpoint_registry_rejects_user_url` GREEN with the smallest raw-URL rejection before completing sole-id resolution.
+- [ ] **Step 14: Implement 6.D GREEN-4.** Own endpoint id-to-record resolution only. HTTP request preparation, URL overrides, credential management, and network calls remain out of scope.
+- [ ] **Step 15: Run 6.D Target GREEN.** Re-run `python -m pytest -q tests/unit/profiles/test_endpoints.py::test_endpoint_registry_rejects_user_url`; require exit 0 and the displayed RED assertion to pass.
+- [ ] **Step 16: Run 6.D Domain.** Run `python -m pytest -q tests/unit/profiles/test_endpoints.py`; require exit 0 and every displayed Atomic verification expectation to hold.
+
+**Task-level verification, review, and completion:**
+
+- [ ] **Step 17: Refactor only inside T06.3.** Improve names and local structure in declared writable Files without changing the displayed interfaces, observable behavior, or successor scope; rerun every legacy Target and Domain after the refactor.
+- [ ] **Step 18: Run the FORMAL_OFFLINE_V1 closure.** Execute every exact command defined for `FORMAL_OFFLINE_V1` in the Global Execution Contract, including the changed-file redacted credential scan and `git diff --check`; record actual results in `AGENT_LOG.md`.
+- [ ] **Step 19: Request T06.3 SPEC review.** Use `superpowers:requesting-code-review` with the Goal, SPEC contracts, Interfaces, minimum GREEN contracts, RED/GREEN evidence, and task diff. Require an explicit verdict.
+- [ ] **Step 20: Close T06.3 SPEC findings.** Fix every Critical/Important finding, rerun affected Targets, Domains, and profile commands, and obtain same-stage re-review PASS.
+- [ ] **Step 21: Request T06.3 quality review.** Use `superpowers:requesting-code-review` only after SPEC review PASS; review the task diff against every Atomic review focus line.
+- [ ] **Step 22: Close T06.3 quality findings.** Fix every Critical/Important finding, rerun affected checks, and obtain same-stage re-review PASS.
+- [ ] **Step 23: Commit T06.3 implementation.** Stage only the task-owned implementation/tests and create one implementation commit after both review stages PASS.
+
+```bash
+git add -- "src/vespercode/profiles/llm.py" "src/vespercode/profiles/builtin/mock-deterministic-v1.json" "src/vespercode/profiles/builtin/openai-single-turn-v1.json" "tests/unit/profiles/test_llm.py" "src/vespercode/profiles/endpoints.py" "tests/unit/profiles/test_endpoints.py"
+git commit -m "Implement T06.3 Closed LLM Profiles and Trusted Endpoint"
+```
+
+- [ ] **Step 24: Record T06.3 completion evidence.** In a narrow evidence commit, update only this task's Status/Completion evidence and append `AGENT_LOG.md` with the real implementation SHA, responsible fresh subagent, human edits, exact commands/results, review/re-review verdicts, and PR URL.
+- [ ] **Step 25: Continue or finish WP06.** If another session task remains in this package, hand the same branch/PR to a new fresh subagent. Otherwise use `superpowers:finishing-a-development-branch`, verify the package result, and merge only after all predecessors and gates remain valid.
+
+**Done:** legacy steps 6.C, 6.D 的 Target、Domain、适用真实环境和全局 profile 均通过；Critical/Important finding 全部关闭并复审；没有行为被延后到 successor。
+**Completion evidence:** Not yet executed.
+
+### Task T06.4: Built-in Profile Registry Resolution
+
+**Status:** Not started
+**Work package:** WP06
+**Legacy steps:** 6.E
+**Goal:** Resolve exact built-in editable/reference/LLM/endpoint profiles and reject missing, duplicate, extra, or cross-profile data before Run creation.
+**SPEC contracts:** SPEC §1.4.1; §4.1 input and behavior 1–4; §4.4.3 endpoint/profile fields; §5.2; §7 profile/config rows; §8.2; §9; §10.1 AC-13, AC-15, AC-26, AC-30, AC-31.
+
+**Files:**
+- Create: `src/vespercode/profiles/registry.py`
+- Test: `tests/unit/profiles/test_registry.py`
+
+**Depends:** T06.3
+**Parallelization:** Start only after every task/non-task gate in **Depends** has passed. Same-wave execution is allowed only when expanded writable paths are disjoint; the WP06 branch and PR remain the sole package integration boundary.
+
+**Interfaces:**
+- **Consumes / Produces (6.E):** Produces `ProfileRegistry.resolve_reference(profile_id: str) -> ReferenceProfileManifestV1`, `ProfileRegistry.resolve_llm(profile_id: str) -> LLMProfileManifestV1`, `ProfileRegistry.resolve_editable(policy_id: str) -> EditablePathPolicyV1`, and `ProfileRegistry.resolve_endpoint(endpoint_id: str) -> OpenAIEndpointV1`.
+
+**Implementation points, exact RED, and minimum GREEN contracts:**
 
 #### Legacy step 6.E: Built-in Profile Registry Resolution
 
@@ -2576,42 +2762,42 @@ def test_registry_rejects_duplicate_profile_id() -> None:
 - SPEC (6.E): Spec compliance review checks Task 6.E's Goal, Milestone 6's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent built-in profile registry contract.
 - Quality (6.E): Code quality review checks deterministic enumeration, per-kind id uniqueness, integrity delegation, exact typed returns, ambiguity/drift rejection, and absence of mutable/external discovery.
 
-- [ ] **Step 33: Add the exact 6.E RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
-- [ ] **Step 34: Run 6.E RED.** Run `python -m pytest -q tests/unit/profiles/test_registry.py::test_registry_rejects_duplicate_profile_id`. Expected: FAIL for “the composition registry does not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
-- [ ] **Step 35: Implement 6.E GREEN-1.** Enumerate the exact built-in editable, reference, LLM, and endpoint resources and expose their four typed resolution methods through `ProfileRegistry`.
-- [ ] **Step 36: Implement 6.E GREEN-2.** Delegate each resource integrity check to its owner and reject missing, duplicate, extra, drifted, cross-profile, or unknown ids before Run creation.
-- [ ] **Step 37: Implement 6.E GREEN-3.** Make `test_registry_rejects_duplicate_profile_id` GREEN with the smallest duplicate-id rejection before completing deterministic resolution cases.
-- [ ] **Step 38: Implement 6.E GREEN-4.** Own built-in enumeration, integrity delegation, and exact id resolution only. Mutators, external discovery, run-request validation, and adapter behavior remain out of scope.
-- [ ] **Step 39: Run 6.E Target GREEN.** Re-run `python -m pytest -q tests/unit/profiles/test_registry.py::test_registry_rejects_duplicate_profile_id`; require exit 0 and the displayed RED assertion to pass.
-- [ ] **Step 40: Run 6.E Domain.** Run `python -m pytest -q tests/unit/profiles/test_registry.py`; require exit 0 and every displayed Atomic verification expectation to hold.
+- [ ] **Step 1: Add the exact 6.E RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
+- [ ] **Step 2: Run 6.E RED.** Run `python -m pytest -q tests/unit/profiles/test_registry.py::test_registry_rejects_duplicate_profile_id`. Expected: FAIL for “the composition registry does not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
+- [ ] **Step 3: Implement 6.E GREEN-1.** Enumerate the exact built-in editable, reference, LLM, and endpoint resources and expose their four typed resolution methods through `ProfileRegistry`.
+- [ ] **Step 4: Implement 6.E GREEN-2.** Delegate each resource integrity check to its owner and reject missing, duplicate, extra, drifted, cross-profile, or unknown ids before Run creation.
+- [ ] **Step 5: Implement 6.E GREEN-3.** Make `test_registry_rejects_duplicate_profile_id` GREEN with the smallest duplicate-id rejection before completing deterministic resolution cases.
+- [ ] **Step 6: Implement 6.E GREEN-4.** Own built-in enumeration, integrity delegation, and exact id resolution only. Mutators, external discovery, run-request validation, and adapter behavior remain out of scope.
+- [ ] **Step 7: Run 6.E Target GREEN.** Re-run `python -m pytest -q tests/unit/profiles/test_registry.py::test_registry_rejects_duplicate_profile_id`; require exit 0 and the displayed RED assertion to pass.
+- [ ] **Step 8: Run 6.E Domain.** Run `python -m pytest -q tests/unit/profiles/test_registry.py`; require exit 0 and every displayed Atomic verification expectation to hold.
 
 **Task-level verification, review, and completion:**
 
-- [ ] **Step 41: Refactor only inside T06.1.** Improve names and local structure in declared writable Files without changing the displayed interfaces, observable behavior, or successor scope; rerun every legacy Target and Domain after the refactor.
-- [ ] **Step 42: Run the FORMAL_OFFLINE_V1 closure.** Execute every exact command defined for `FORMAL_OFFLINE_V1` in the Global Execution Contract, including the changed-file redacted credential scan and `git diff --check`; record actual results in `AGENT_LOG.md`.
-- [ ] **Step 43: Request T06.1 SPEC review.** Use `superpowers:requesting-code-review` with the Goal, SPEC contracts, Interfaces, minimum GREEN contracts, RED/GREEN evidence, and task diff. Require an explicit verdict.
-- [ ] **Step 44: Close T06.1 SPEC findings.** Fix every Critical/Important finding, rerun affected Targets, Domains, and profile commands, and obtain same-stage re-review PASS.
-- [ ] **Step 45: Request T06.1 quality review.** Use `superpowers:requesting-code-review` only after SPEC review PASS; review the task diff against every Atomic review focus line.
-- [ ] **Step 46: Close T06.1 quality findings.** Fix every Critical/Important finding, rerun affected checks, and obtain same-stage re-review PASS.
-- [ ] **Step 47: Commit T06.1 implementation.** Stage only the task-owned implementation/tests and create one implementation commit after both review stages PASS.
+- [ ] **Step 9: Refactor only inside T06.4.** Improve names and local structure in declared writable Files without changing the displayed interfaces, observable behavior, or successor scope; rerun every legacy Target and Domain after the refactor.
+- [ ] **Step 10: Run the FORMAL_OFFLINE_V1 closure.** Execute every exact command defined for `FORMAL_OFFLINE_V1` in the Global Execution Contract, including the changed-file redacted credential scan and `git diff --check`; record actual results in `AGENT_LOG.md`.
+- [ ] **Step 11: Request T06.4 SPEC review.** Use `superpowers:requesting-code-review` with the Goal, SPEC contracts, Interfaces, minimum GREEN contracts, RED/GREEN evidence, and task diff. Require an explicit verdict.
+- [ ] **Step 12: Close T06.4 SPEC findings.** Fix every Critical/Important finding, rerun affected Targets, Domains, and profile commands, and obtain same-stage re-review PASS.
+- [ ] **Step 13: Request T06.4 quality review.** Use `superpowers:requesting-code-review` only after SPEC review PASS; review the task diff against every Atomic review focus line.
+- [ ] **Step 14: Close T06.4 quality findings.** Fix every Critical/Important finding, rerun affected checks, and obtain same-stage re-review PASS.
+- [ ] **Step 15: Commit T06.4 implementation.** Stage only the task-owned implementation/tests and create one implementation commit after both review stages PASS.
 
 ```bash
-git add -- "src/vespercode/profiles/editable.py" "tests/unit/profiles/test_editable.py" "src/vespercode/profiles/reference.py" "src/vespercode/profiles/builtin/reference-profile-v1.json" "tests/unit/profiles/test_reference.py" "reference/manifest/reference-profile-v1.json" "src/vespercode/profiles/llm.py" "src/vespercode/profiles/builtin/mock-deterministic-v1.json" "src/vespercode/profiles/builtin/openai-single-turn-v1.json" "tests/unit/profiles/test_llm.py" "src/vespercode/profiles/endpoints.py" "tests/unit/profiles/test_endpoints.py" "src/vespercode/profiles/registry.py" "tests/unit/profiles/test_registry.py"
-git commit -m "Implement T06.1 Built-in Profiles, Trusted Endpoints, and Registry"
+git add -- "src/vespercode/profiles/registry.py" "tests/unit/profiles/test_registry.py"
+git commit -m "Implement T06.4 Built-in Profile Registry Resolution"
 ```
 
-- [ ] **Step 48: Record T06.1 completion evidence.** In a narrow evidence commit, update only this task's Status/Completion evidence and append `AGENT_LOG.md` with the real implementation SHA, responsible fresh subagent, human edits, exact commands/results, review/re-review verdicts, and PR URL.
-- [ ] **Step 49: Continue or finish WP06.** If another session task remains in this package, hand the same branch/PR to a new fresh subagent. Otherwise use `superpowers:finishing-a-development-branch`, verify the package result, and merge only after all predecessors and gates remain valid.
+- [ ] **Step 16: Record T06.4 completion evidence.** In a narrow evidence commit, update only this task's Status/Completion evidence and append `AGENT_LOG.md` with the real implementation SHA, responsible fresh subagent, human edits, exact commands/results, review/re-review verdicts, and PR URL.
+- [ ] **Step 17: Continue or finish WP06.** If another session task remains in this package, hand the same branch/PR to a new fresh subagent. Otherwise use `superpowers:finishing-a-development-branch`, verify the package result, and merge only after all predecessors and gates remain valid.
 
-**Done:** legacy steps 6.A, 6.B, 6.C, 6.D, 6.E 的 Target、Domain、适用真实环境和全局 profile 均通过；Critical/Important finding 全部关闭并复审；没有行为被延后到 successor。
+**Done:** legacy steps 6.E 的 Target、Domain、适用真实环境和全局 profile 均通过；Critical/Important finding 全部关闭并复审；没有行为被延后到 successor。
 **Completion evidence:** Not yet executed.
 
-### Task T07.1: SQLite Migration, Run Lifecycle, and Idempotency Core
+### Task T07.1: Domain-independent SQLite Migration Engine
 
 **Status:** Not started
 **Work package:** WP07-CORE
-**Legacy steps:** 7.A, 7.B, 7.C
-**Goal:** Open the local control database with explicit transaction semantics and apply an injected tuple of closed migrations in order, atomically, idempotently, and fail-closed on checksum drift without knowing any application-domain schema.；Apply the closed Run/wait transition matrix atomically so exactly one correctly bound wait decision can win.；Return the first result for an identical event request and reject reuse of the same event id for different request bytes without performing domain mutation.
+**Legacy steps:** 7.A
+**Goal:** Open the local control database with explicit transaction semantics and apply an injected tuple of closed migrations in order, atomically, idempotently, and fail-closed on checksum drift without knowing any application-domain schema.
 **SPEC contracts:** SPEC §4.2.1; §4.2.7; §4.7 audit ordering; §5.2; §5.4; §5.6; §7 complete data model and storage split; §10.1 AC-16, AC-21, AC-27, AC-28.
 
 **Files:**
@@ -2620,24 +2806,12 @@ git commit -m "Implement T06.1 Built-in Profiles, Trusted Endpoints, and Registr
 - Create: `src/vespercode/storage/migrations/__init__.py`
 - Test: `tests/unit/storage/test_connection.py`
 - Test: `tests/unit/storage/test_migration_engine.py`
-- Create: `src/vespercode/storage/migrations/v0001_run_wait.py`
-- Create: `src/vespercode/storage/run_repository.py`
-- Create: `src/vespercode/runs/lifecycle.py`
-- Test: `tests/unit/storage/test_run_wait_migration.py`
-- Test: `tests/unit/storage/test_run_repository.py`
-- Test: `tests/unit/runs/test_lifecycle.py`
-- Create: `src/vespercode/storage/migrations/v0002_idempotency.py`
-- Create: `src/vespercode/storage/idempotency.py`
-- Test: `tests/unit/storage/test_idempotency_migration.py`
-- Test: `tests/unit/storage/test_idempotency.py`
 
 **Depends:** T05.1
 **Parallelization:** Start only after every task/non-task gate in **Depends** has passed. Same-wave execution is allowed only when expanded writable paths are disjoint; the WP07-CORE branch and PR remain the sole package integration boundary.
 
 **Interfaces:**
 - **Consumes / Produces (7.A):** Produces `open_control_database(path: Path) -> ControlDatabase`, `ControlDatabase.immediate_transaction() -> AbstractContextManager[ControlTransactionV1]`, closed `MigrationV1(version: int, name: str, checksum: DigestV1, apply: MigrationApplyV1)`, and `apply_migrations(db: ControlDatabase, migrations: tuple[MigrationV1, ...]) -> MigrationResultV1`.
-- **Consumes / Produces (7.B):** Produces immutable `RUN_WAIT_V1_MIGRATION = MigrationV1(version=1, name="run_wait_v1", ...)`, `RunRepository.insert_created(run: RunRecordV1) -> None`, `RunRepository.compare_and_transition(command: TransitionCommandV1) -> TransitionResultV1`, `RunRepository.create_wait(context: WaitContextV1) -> None`, `RunRepository.lock_wait_for_decision(tx: ControlTransactionV1, decision: WaitDecisionV1) -> WaitDecisionLockResultV1`, `RunRepository.commit_wait_decision(tx: ControlTransactionV1, lock: LockedWaitDecisionV1, decision: WaitDecisionV1) -> WaitDecisionResultV1`, `RunRepository.expire_wait(tx: ControlTransactionV1, lock: LockedWaitDecisionV1, now: CanonicalTimestampV1) -> WaitDecisionResultV1`, and `LifecycleRules.evaluate(current: RunStateV1, event: LifecycleEventV1) -> RunStateV1`.
-- **Consumes / Produces (7.C):** Produces immutable `IDEMPOTENCY_V1_MIGRATION = MigrationV1(version=2, name="idempotency_v1", ...)` and `IdempotencyRepository.record_or_replay(tx: ControlTransactionV1, scope: str, event_id: str, request_digest: str, result_digest: str) -> IdempotencyResultV1`, where `IdempotencyResultV1` is the closed `NEW | REPLAY | EVENT_ID_REUSE_CONFLICT` union.
 
 **Implementation points, exact RED, and minimum GREEN contracts:**
 
@@ -2690,6 +2864,51 @@ def test_changed_applied_migration_checksum_fails_closed(
 - [ ] **Step 7: Run 7.A Target GREEN.** Re-run `python -m pytest -q tests/unit/storage/test_migration_engine.py::test_changed_applied_migration_checksum_fails_closed`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 8: Run 7.A Domain.** Run `python -m pytest -q tests/unit/storage/test_connection.py tests/unit/storage/test_migration_engine.py`; require exit 0 and every displayed Atomic verification expectation to hold.
 
+**Task-level verification, review, and completion:**
+
+- [ ] **Step 9: Refactor only inside T07.1.** Improve names and local structure in declared writable Files without changing the displayed interfaces, observable behavior, or successor scope; rerun every legacy Target and Domain after the refactor.
+- [ ] **Step 10: Run the FORMAL_OFFLINE_V1 closure.** Execute every exact command defined for `FORMAL_OFFLINE_V1` in the Global Execution Contract, including the changed-file redacted credential scan and `git diff --check`; record actual results in `AGENT_LOG.md`.
+- [ ] **Step 11: Request T07.1 SPEC review.** Use `superpowers:requesting-code-review` with the Goal, SPEC contracts, Interfaces, minimum GREEN contracts, RED/GREEN evidence, and task diff. Require an explicit verdict.
+- [ ] **Step 12: Close T07.1 SPEC findings.** Fix every Critical/Important finding, rerun affected Targets, Domains, and profile commands, and obtain same-stage re-review PASS.
+- [ ] **Step 13: Request T07.1 quality review.** Use `superpowers:requesting-code-review` only after SPEC review PASS; review the task diff against every Atomic review focus line.
+- [ ] **Step 14: Close T07.1 quality findings.** Fix every Critical/Important finding, rerun affected checks, and obtain same-stage re-review PASS.
+- [ ] **Step 15: Commit T07.1 implementation.** Stage only the task-owned implementation/tests and create one implementation commit after both review stages PASS.
+
+```bash
+git add -- "src/vespercode/storage/connection.py" "src/vespercode/storage/migration_engine.py" "src/vespercode/storage/migrations/__init__.py" "tests/unit/storage/test_connection.py" "tests/unit/storage/test_migration_engine.py"
+git commit -m "Implement T07.1 Domain-independent SQLite Migration Engine"
+```
+
+- [ ] **Step 16: Record T07.1 completion evidence.** In a narrow evidence commit, update only this task's Status/Completion evidence and append `AGENT_LOG.md` with the real implementation SHA, responsible fresh subagent, human edits, exact commands/results, review/re-review verdicts, and PR URL.
+- [ ] **Step 17: Continue or finish WP07-CORE.** If another session task remains in this package, hand the same branch/PR to a new fresh subagent. Otherwise use `superpowers:finishing-a-development-branch`, verify the package result, and merge only after all predecessors and gates remain valid.
+
+**Done:** legacy steps 7.A 的 Target、Domain、适用真实环境和全局 profile 均通过；Critical/Important finding 全部关闭并复审；没有行为被延后到 successor。
+**Completion evidence:** Not yet executed.
+
+### Task T07.2: Transactional Run and Wait Lifecycle
+
+**Status:** Not started
+**Work package:** WP07-CORE
+**Legacy steps:** 7.B
+**Goal:** Apply the closed Run/wait transition matrix atomically so exactly one correctly bound wait decision can win.
+**SPEC contracts:** SPEC §4.2.1; §4.2.7; §4.7 audit ordering; §5.2; §5.4; §5.6; §7 complete data model and storage split; §10.1 AC-16, AC-21, AC-27, AC-28.
+
+**Files:**
+- Create: `src/vespercode/storage/migrations/v0001_run_wait.py`
+- Create: `src/vespercode/storage/run_repository.py`
+- Create: `src/vespercode/runs/lifecycle.py`
+- Test: `tests/unit/storage/test_run_wait_migration.py`
+- Test: `tests/unit/storage/test_run_repository.py`
+- Test: `tests/unit/runs/test_lifecycle.py`
+
+**Depends:** T07.1
+**Parallelization:** Start only after every task/non-task gate in **Depends** has passed. Same-wave execution is allowed only when expanded writable paths are disjoint; the WP07-CORE branch and PR remain the sole package integration boundary.
+
+**Interfaces:**
+- **Consumes / Produces (7.B):** Produces immutable `RUN_WAIT_V1_MIGRATION = MigrationV1(version=1, name="run_wait_v1", ...)`, `RunRepository.insert_created(run: RunRecordV1) -> None`, `RunRepository.compare_and_transition(command: TransitionCommandV1) -> TransitionResultV1`, `RunRepository.create_wait(context: WaitContextV1) -> None`, `RunRepository.lock_wait_for_decision(tx: ControlTransactionV1, decision: WaitDecisionV1) -> WaitDecisionLockResultV1`, `RunRepository.commit_wait_decision(tx: ControlTransactionV1, lock: LockedWaitDecisionV1, decision: WaitDecisionV1) -> WaitDecisionResultV1`, `RunRepository.expire_wait(tx: ControlTransactionV1, lock: LockedWaitDecisionV1, now: CanonicalTimestampV1) -> WaitDecisionResultV1`, and `LifecycleRules.evaluate(current: RunStateV1, event: LifecycleEventV1) -> RunStateV1`.
+
+**Implementation points, exact RED, and minimum GREEN contracts:**
+
 #### Legacy step 7.B: Transactional Run and Wait Lifecycle
 
 **Atomic goal:** Apply the closed Run/wait transition matrix atomically so exactly one correctly bound wait decision can win.
@@ -2728,14 +2947,57 @@ def test_same_wait_decision_can_win_only_once(run_repository: RunRepository, dec
 - SPEC (7.B): Spec compliance review checks Task 7.B's Goal, Milestone 7's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent Run/wait transactional lifecycle contract.
 - Quality (7.B): Code quality review checks exact v0001 schema, transaction-bound locking, one-winner concurrency, transition-table exhaustiveness, expiry/time binding, rollback, and prohibited-column absence.
 
-- [ ] **Step 9: Add the exact 7.B RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
-- [ ] **Step 10: Run 7.B RED.** Run `python -m pytest -q tests/unit/storage/test_run_repository.py::test_same_wait_decision_can_win_only_once`. Expected: FAIL for “import failure because the Run repository and lifecycle rules do not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
-- [ ] **Step 11: Implement 7.B GREEN-1.** Own immutable v0001 Run/config/wait DDL, persistence repositories, and pure `LifecycleRules` target-state derivation without editing the final registry.
-- [ ] **Step 12: Implement 7.B GREEN-2.** Lock and commit one exactly bound wait decision in a caller transaction so only one decision wins; rollback, expiry, terminal, and invalid transitions remain atomic and closed.
-- [ ] **Step 13: Implement 7.B GREEN-3.** Make `test_same_wait_decision_can_win_only_once` GREEN with the smallest competing-decision transaction before completing the lifecycle matrix.
-- [ ] **Step 14: Implement 7.B GREEN-4.** Keep approval, Grant, authorization, idempotency replay, audit projection, and persistence-recovery schema outside this coupled Run/wait owner.
-- [ ] **Step 15: Run 7.B Target GREEN.** Re-run `python -m pytest -q tests/unit/storage/test_run_repository.py::test_same_wait_decision_can_win_only_once`; require exit 0 and the displayed RED assertion to pass.
-- [ ] **Step 16: Run 7.B Domain.** Run `python -m pytest -q tests/unit/storage/test_run_wait_migration.py tests/unit/storage/test_run_repository.py tests/unit/runs/test_lifecycle.py`; require exit 0 and every displayed Atomic verification expectation to hold.
+- [ ] **Step 1: Add the exact 7.B RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
+- [ ] **Step 2: Run 7.B RED.** Run `python -m pytest -q tests/unit/storage/test_run_repository.py::test_same_wait_decision_can_win_only_once`. Expected: FAIL for “import failure because the Run repository and lifecycle rules do not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
+- [ ] **Step 3: Implement 7.B GREEN-1.** Own immutable v0001 Run/config/wait DDL, persistence repositories, and pure `LifecycleRules` target-state derivation without editing the final registry.
+- [ ] **Step 4: Implement 7.B GREEN-2.** Lock and commit one exactly bound wait decision in a caller transaction so only one decision wins; rollback, expiry, terminal, and invalid transitions remain atomic and closed.
+- [ ] **Step 5: Implement 7.B GREEN-3.** Make `test_same_wait_decision_can_win_only_once` GREEN with the smallest competing-decision transaction before completing the lifecycle matrix.
+- [ ] **Step 6: Implement 7.B GREEN-4.** Keep approval, Grant, authorization, idempotency replay, audit projection, and persistence-recovery schema outside this coupled Run/wait owner.
+- [ ] **Step 7: Run 7.B Target GREEN.** Re-run `python -m pytest -q tests/unit/storage/test_run_repository.py::test_same_wait_decision_can_win_only_once`; require exit 0 and the displayed RED assertion to pass.
+- [ ] **Step 8: Run 7.B Domain.** Run `python -m pytest -q tests/unit/storage/test_run_wait_migration.py tests/unit/storage/test_run_repository.py tests/unit/runs/test_lifecycle.py`; require exit 0 and every displayed Atomic verification expectation to hold.
+
+**Task-level verification, review, and completion:**
+
+- [ ] **Step 9: Refactor only inside T07.2.** Improve names and local structure in declared writable Files without changing the displayed interfaces, observable behavior, or successor scope; rerun every legacy Target and Domain after the refactor.
+- [ ] **Step 10: Run the FORMAL_OFFLINE_V1 closure.** Execute every exact command defined for `FORMAL_OFFLINE_V1` in the Global Execution Contract, including the changed-file redacted credential scan and `git diff --check`; record actual results in `AGENT_LOG.md`.
+- [ ] **Step 11: Request T07.2 SPEC review.** Use `superpowers:requesting-code-review` with the Goal, SPEC contracts, Interfaces, minimum GREEN contracts, RED/GREEN evidence, and task diff. Require an explicit verdict.
+- [ ] **Step 12: Close T07.2 SPEC findings.** Fix every Critical/Important finding, rerun affected Targets, Domains, and profile commands, and obtain same-stage re-review PASS.
+- [ ] **Step 13: Request T07.2 quality review.** Use `superpowers:requesting-code-review` only after SPEC review PASS; review the task diff against every Atomic review focus line.
+- [ ] **Step 14: Close T07.2 quality findings.** Fix every Critical/Important finding, rerun affected checks, and obtain same-stage re-review PASS.
+- [ ] **Step 15: Commit T07.2 implementation.** Stage only the task-owned implementation/tests and create one implementation commit after both review stages PASS.
+
+```bash
+git add -- "src/vespercode/storage/migrations/v0001_run_wait.py" "src/vespercode/storage/run_repository.py" "src/vespercode/runs/lifecycle.py" "tests/unit/storage/test_run_wait_migration.py" "tests/unit/storage/test_run_repository.py" "tests/unit/runs/test_lifecycle.py"
+git commit -m "Implement T07.2 Transactional Run and Wait Lifecycle"
+```
+
+- [ ] **Step 16: Record T07.2 completion evidence.** In a narrow evidence commit, update only this task's Status/Completion evidence and append `AGENT_LOG.md` with the real implementation SHA, responsible fresh subagent, human edits, exact commands/results, review/re-review verdicts, and PR URL.
+- [ ] **Step 17: Continue or finish WP07-CORE.** If another session task remains in this package, hand the same branch/PR to a new fresh subagent. Otherwise use `superpowers:finishing-a-development-branch`, verify the package result, and merge only after all predecessors and gates remain valid.
+
+**Done:** legacy steps 7.B 的 Target、Domain、适用真实环境和全局 profile 均通过；Critical/Important finding 全部关闭并复审；没有行为被延后到 successor。
+**Completion evidence:** Not yet executed.
+
+### Task T07.3: Transaction-bound Idempotency Ledger
+
+**Status:** Not started
+**Work package:** WP07-CORE
+**Legacy steps:** 7.C
+**Goal:** Return the first result for an identical event request and reject reuse of the same event id for different request bytes without performing domain mutation.
+**SPEC contracts:** SPEC §4.2.1; §4.2.7; §4.7 audit ordering; §5.2; §5.4; §5.6; §7 complete data model and storage split; §10.1 AC-16, AC-21, AC-27, AC-28.
+
+**Files:**
+- Create: `src/vespercode/storage/migrations/v0002_idempotency.py`
+- Create: `src/vespercode/storage/idempotency.py`
+- Test: `tests/unit/storage/test_idempotency_migration.py`
+- Test: `tests/unit/storage/test_idempotency.py`
+
+**Depends:** T07.2
+**Parallelization:** Start only after every task/non-task gate in **Depends** has passed. Same-wave execution is allowed only when expanded writable paths are disjoint; the WP07-CORE branch and PR remain the sole package integration boundary.
+
+**Interfaces:**
+- **Consumes / Produces (7.C):** Produces immutable `IDEMPOTENCY_V1_MIGRATION = MigrationV1(version=2, name="idempotency_v1", ...)` and `IdempotencyRepository.record_or_replay(tx: ControlTransactionV1, scope: str, event_id: str, request_digest: str, result_digest: str) -> IdempotencyResultV1`, where `IdempotencyResultV1` is the closed `NEW | REPLAY | EVENT_ID_REUSE_CONFLICT` union.
+
+**Implementation points, exact RED, and minimum GREEN contracts:**
 
 #### Legacy step 7.C: Transaction-bound Idempotency Ledger
 
@@ -2776,37 +3038,37 @@ def test_event_id_reuse_with_different_request_is_conflict(
 - SPEC (7.C): Spec compliance review checks Task 7.C's Goal, Milestone 7's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent transaction-bound idempotency ledger contract.
 - Quality (7.C): Code quality review checks exact v0002 schema, transaction participation, request/result digest binding, replay purity, conflict non-mutation, rollback, and concurrency determinism.
 
-- [ ] **Step 17: Add the exact 7.C RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
-- [ ] **Step 18: Run 7.C RED.** Run `python -m pytest -q tests/unit/storage/test_idempotency.py::test_event_id_reuse_with_different_request_is_conflict`. Expected: FAIL for “import failure because the idempotency repository does not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
-- [ ] **Step 19: Implement 7.C GREEN-1.** Own immutable v0002 idempotency DDL and a repository that records scope/event/request/result identities only inside the caller-owned Task 7.A transaction.
-- [ ] **Step 20: Implement 7.C GREEN-2.** Return `NEW` for the first identity, identical `REPLAY` without domain mutation, and `EVENT_ID_REUSE_CONFLICT` for changed request bytes without mutation.
-- [ ] **Step 21: Implement 7.C GREEN-3.** Make `test_event_id_reuse_with_different_request_is_conflict` GREEN with the smallest request-digest conflict before completing replay, rollback, and concurrency cases.
-- [ ] **Step 22: Implement 7.C GREEN-4.** Keep final registry edits, domain-result reconstruction, Run transitions, and replay/conflict mutation outside the idempotency owner.
-- [ ] **Step 23: Run 7.C Target GREEN.** Re-run `python -m pytest -q tests/unit/storage/test_idempotency.py::test_event_id_reuse_with_different_request_is_conflict`; require exit 0 and the displayed RED assertion to pass.
-- [ ] **Step 24: Run 7.C Domain.** Run `python -m pytest -q tests/unit/storage/test_idempotency_migration.py tests/unit/storage/test_idempotency.py`; require exit 0 and every displayed Atomic verification expectation to hold.
+- [ ] **Step 1: Add the exact 7.C RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
+- [ ] **Step 2: Run 7.C RED.** Run `python -m pytest -q tests/unit/storage/test_idempotency.py::test_event_id_reuse_with_different_request_is_conflict`. Expected: FAIL for “import failure because the idempotency repository does not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
+- [ ] **Step 3: Implement 7.C GREEN-1.** Own immutable v0002 idempotency DDL and a repository that records scope/event/request/result identities only inside the caller-owned Task 7.A transaction.
+- [ ] **Step 4: Implement 7.C GREEN-2.** Return `NEW` for the first identity, identical `REPLAY` without domain mutation, and `EVENT_ID_REUSE_CONFLICT` for changed request bytes without mutation.
+- [ ] **Step 5: Implement 7.C GREEN-3.** Make `test_event_id_reuse_with_different_request_is_conflict` GREEN with the smallest request-digest conflict before completing replay, rollback, and concurrency cases.
+- [ ] **Step 6: Implement 7.C GREEN-4.** Keep final registry edits, domain-result reconstruction, Run transitions, and replay/conflict mutation outside the idempotency owner.
+- [ ] **Step 7: Run 7.C Target GREEN.** Re-run `python -m pytest -q tests/unit/storage/test_idempotency.py::test_event_id_reuse_with_different_request_is_conflict`; require exit 0 and the displayed RED assertion to pass.
+- [ ] **Step 8: Run 7.C Domain.** Run `python -m pytest -q tests/unit/storage/test_idempotency_migration.py tests/unit/storage/test_idempotency.py`; require exit 0 and every displayed Atomic verification expectation to hold.
 
 **Task-level verification, review, and completion:**
 
-- [ ] **Step 25: Refactor only inside T07.1.** Improve names and local structure in declared writable Files without changing the displayed interfaces, observable behavior, or successor scope; rerun every legacy Target and Domain after the refactor.
-- [ ] **Step 26: Run the FORMAL_OFFLINE_V1 closure.** Execute every exact command defined for `FORMAL_OFFLINE_V1` in the Global Execution Contract, including the changed-file redacted credential scan and `git diff --check`; record actual results in `AGENT_LOG.md`.
-- [ ] **Step 27: Request T07.1 SPEC review.** Use `superpowers:requesting-code-review` with the Goal, SPEC contracts, Interfaces, minimum GREEN contracts, RED/GREEN evidence, and task diff. Require an explicit verdict.
-- [ ] **Step 28: Close T07.1 SPEC findings.** Fix every Critical/Important finding, rerun affected Targets, Domains, and profile commands, and obtain same-stage re-review PASS.
-- [ ] **Step 29: Request T07.1 quality review.** Use `superpowers:requesting-code-review` only after SPEC review PASS; review the task diff against every Atomic review focus line.
-- [ ] **Step 30: Close T07.1 quality findings.** Fix every Critical/Important finding, rerun affected checks, and obtain same-stage re-review PASS.
-- [ ] **Step 31: Commit T07.1 implementation.** Stage only the task-owned implementation/tests and create one implementation commit after both review stages PASS.
+- [ ] **Step 9: Refactor only inside T07.3.** Improve names and local structure in declared writable Files without changing the displayed interfaces, observable behavior, or successor scope; rerun every legacy Target and Domain after the refactor.
+- [ ] **Step 10: Run the FORMAL_OFFLINE_V1 closure.** Execute every exact command defined for `FORMAL_OFFLINE_V1` in the Global Execution Contract, including the changed-file redacted credential scan and `git diff --check`; record actual results in `AGENT_LOG.md`.
+- [ ] **Step 11: Request T07.3 SPEC review.** Use `superpowers:requesting-code-review` with the Goal, SPEC contracts, Interfaces, minimum GREEN contracts, RED/GREEN evidence, and task diff. Require an explicit verdict.
+- [ ] **Step 12: Close T07.3 SPEC findings.** Fix every Critical/Important finding, rerun affected Targets, Domains, and profile commands, and obtain same-stage re-review PASS.
+- [ ] **Step 13: Request T07.3 quality review.** Use `superpowers:requesting-code-review` only after SPEC review PASS; review the task diff against every Atomic review focus line.
+- [ ] **Step 14: Close T07.3 quality findings.** Fix every Critical/Important finding, rerun affected checks, and obtain same-stage re-review PASS.
+- [ ] **Step 15: Commit T07.3 implementation.** Stage only the task-owned implementation/tests and create one implementation commit after both review stages PASS.
 
 ```bash
-git add -- "src/vespercode/storage/connection.py" "src/vespercode/storage/migration_engine.py" "src/vespercode/storage/migrations/__init__.py" "tests/unit/storage/test_connection.py" "tests/unit/storage/test_migration_engine.py" "src/vespercode/storage/migrations/v0001_run_wait.py" "src/vespercode/storage/run_repository.py" "src/vespercode/runs/lifecycle.py" "tests/unit/storage/test_run_wait_migration.py" "tests/unit/storage/test_run_repository.py" "tests/unit/runs/test_lifecycle.py" "src/vespercode/storage/migrations/v0002_idempotency.py" "src/vespercode/storage/idempotency.py" "tests/unit/storage/test_idempotency_migration.py" "tests/unit/storage/test_idempotency.py"
-git commit -m "Implement T07.1 SQLite Migration, Run Lifecycle, and Idempotency Core"
+git add -- "src/vespercode/storage/migrations/v0002_idempotency.py" "src/vespercode/storage/idempotency.py" "tests/unit/storage/test_idempotency_migration.py" "tests/unit/storage/test_idempotency.py"
+git commit -m "Implement T07.3 Transaction-bound Idempotency Ledger"
 ```
 
-- [ ] **Step 32: Record T07.1 completion evidence.** In a narrow evidence commit, update only this task's Status/Completion evidence and append `AGENT_LOG.md` with the real implementation SHA, responsible fresh subagent, human edits, exact commands/results, review/re-review verdicts, and PR URL.
-- [ ] **Step 33: Continue or finish WP07-CORE.** If another session task remains in this package, hand the same branch/PR to a new fresh subagent. Otherwise use `superpowers:finishing-a-development-branch`, verify the package result, and merge only after all predecessors and gates remain valid.
+- [ ] **Step 16: Record T07.3 completion evidence.** In a narrow evidence commit, update only this task's Status/Completion evidence and append `AGENT_LOG.md` with the real implementation SHA, responsible fresh subagent, human edits, exact commands/results, review/re-review verdicts, and PR URL.
+- [ ] **Step 17: Continue or finish WP07-CORE.** If another session task remains in this package, hand the same branch/PR to a new fresh subagent. Otherwise use `superpowers:finishing-a-development-branch`, verify the package result, and merge only after all predecessors and gates remain valid.
 
-**Done:** legacy steps 7.A, 7.B, 7.C 的 Target、Domain、适用真实环境和全局 profile 均通过；Critical/Important finding 全部关闭并复审；没有行为被延后到 successor。
+**Done:** legacy steps 7.C 的 Target、Domain、适用真实环境和全局 profile 均通过；Critical/Important finding 全部关闭并复审；没有行为被延后到 successor。
 **Completion evidence:** Not yet executed.
 
-### Task T07.2: Complete V1 Migration Registry
+### Task T07.4: Complete V1 Migration Registry
 
 **Status:** Not started
 **Work package:** WP07-REGISTRY
@@ -2818,7 +3080,7 @@ git commit -m "Implement T07.1 SQLite Migration, Run Lifecycle, and Idempotency 
 - Create: `src/vespercode/storage/migrations/registry.py`
 - Test: `tests/unit/storage/test_migration_registry.py`
 
-**Depends:** T07.1, T14.1, T15.2, T22.1, T23.1, T24.1, T25.1, T25.2, T26.1, T26.2
+**Depends:** T07.3, T14.1, T15.2, T22.1, T23.1, T24.1, T25.1, T25.2, T26.1, T26.2
 **Parallelization:** Start only after every task/non-task gate in **Depends** has passed. Same-wave execution is allowed only when expanded writable paths are disjoint; the WP07-REGISTRY branch and PR remain the sole package integration boundary.
 
 **Interfaces:**
@@ -2934,20 +3196,20 @@ def test_registry_prefixes_match_exact_schema_owner_map(
 
 **Task-level verification, review, and completion:**
 
-- [ ] **Step 9: Refactor only inside T07.2.** Improve names and local structure in declared writable Files without changing the displayed interfaces, observable behavior, or successor scope; rerun every legacy Target and Domain after the refactor.
+- [ ] **Step 9: Refactor only inside T07.4.** Improve names and local structure in declared writable Files without changing the displayed interfaces, observable behavior, or successor scope; rerun every legacy Target and Domain after the refactor.
 - [ ] **Step 10: Run the FORMAL_OFFLINE_V1 closure.** Execute every exact command defined for `FORMAL_OFFLINE_V1` in the Global Execution Contract, including the changed-file redacted credential scan and `git diff --check`; record actual results in `AGENT_LOG.md`.
-- [ ] **Step 11: Request T07.2 SPEC review.** Use `superpowers:requesting-code-review` with the Goal, SPEC contracts, Interfaces, minimum GREEN contracts, RED/GREEN evidence, and task diff. Require an explicit verdict.
-- [ ] **Step 12: Close T07.2 SPEC findings.** Fix every Critical/Important finding, rerun affected Targets, Domains, and profile commands, and obtain same-stage re-review PASS.
-- [ ] **Step 13: Request T07.2 quality review.** Use `superpowers:requesting-code-review` only after SPEC review PASS; review the task diff against every Atomic review focus line.
-- [ ] **Step 14: Close T07.2 quality findings.** Fix every Critical/Important finding, rerun affected checks, and obtain same-stage re-review PASS.
-- [ ] **Step 15: Commit T07.2 implementation.** Stage only the task-owned implementation/tests and create one implementation commit after both review stages PASS.
+- [ ] **Step 11: Request T07.4 SPEC review.** Use `superpowers:requesting-code-review` with the Goal, SPEC contracts, Interfaces, minimum GREEN contracts, RED/GREEN evidence, and task diff. Require an explicit verdict.
+- [ ] **Step 12: Close T07.4 SPEC findings.** Fix every Critical/Important finding, rerun affected Targets, Domains, and profile commands, and obtain same-stage re-review PASS.
+- [ ] **Step 13: Request T07.4 quality review.** Use `superpowers:requesting-code-review` only after SPEC review PASS; review the task diff against every Atomic review focus line.
+- [ ] **Step 14: Close T07.4 quality findings.** Fix every Critical/Important finding, rerun affected checks, and obtain same-stage re-review PASS.
+- [ ] **Step 15: Commit T07.4 implementation.** Stage only the task-owned implementation/tests and create one implementation commit after both review stages PASS.
 
 ```bash
 git add -- "src/vespercode/storage/migrations/registry.py" "tests/unit/storage/test_migration_registry.py"
-git commit -m "Implement T07.2 Complete V1 Migration Registry"
+git commit -m "Implement T07.4 Complete V1 Migration Registry"
 ```
 
-- [ ] **Step 16: Record T07.2 completion evidence.** In a narrow evidence commit, update only this task's Status/Completion evidence and append `AGENT_LOG.md` with the real implementation SHA, responsible fresh subagent, human edits, exact commands/results, review/re-review verdicts, and PR URL.
+- [ ] **Step 16: Record T07.4 completion evidence.** In a narrow evidence commit, update only this task's Status/Completion evidence and append `AGENT_LOG.md` with the real implementation SHA, responsible fresh subagent, human edits, exact commands/results, review/re-review verdicts, and PR URL.
 - [ ] **Step 17: Continue or finish WP07-REGISTRY.** If another session task remains in this package, hand the same branch/PR to a new fresh subagent. Otherwise use `superpowers:finishing-a-development-branch`, verify the package result, and merge only after all predecessors and gates remain valid.
 
 **Done:** legacy steps 7.D 的 Target、Domain、适用真实环境和全局 profile 均通过；Critical/Important finding 全部关闭并复审；没有行为被延后到 successor。
@@ -2968,7 +3230,7 @@ git commit -m "Implement T07.2 Complete V1 Migration Registry"
 - Test: `tests/unit/runs/test_admission.py`
 - Test: `tests/unit/runs/test_admission_order.py`
 
-**Depends:** T06.1, T07.1
+**Depends:** T06.4, T07.3
 **Parallelization:** Start only after every task/non-task gate in **Depends** has passed. Same-wave execution is allowed only when expanded writable paths are disjoint; the WP08 branch and PR remain the sole package integration boundary.
 
 **Interfaces:**
@@ -3118,7 +3380,7 @@ git commit -m "Implement T08.1 Strict Run Request and Ordered Admission Coordina
 - Create: `src/vespercode/workspace/path_guard.py`
 - Test: `tests/unit/workspace/test_path_guard.py`
 
-**Depends:** T01.2, T05.1, T07.1, T08.1
+**Depends:** T01.2, T05.1, T07.3, T08.1
 **Parallelization:** Start only after every task/non-task gate in **Depends** has passed. Same-wave execution is allowed only when expanded writable paths are disjoint; the WP09 branch and PR remain the sole package integration boundary.
 
 **Interfaces:**
@@ -3723,7 +3985,7 @@ git commit -m "Implement T11.1 Read-only List, Read, and Literal Search Tools"
 - Test: `tests/unit/candidate/test_final_diff.py`
 - Test: `tests/unit/candidate/test_identity.py`
 
-**Depends:** T06.1, T09.1, T10.2
+**Depends:** T06.4, T09.1, T10.2
 **Parallelization:** Start only after every task/non-task gate in **Depends** has passed. Same-wave execution is allowed only when expanded writable paths are disjoint; the WP12 branch and PR remain the sole package integration boundary.
 
 **Interfaces:**
@@ -3956,7 +4218,7 @@ git commit -m "Implement T12.1 CandidateTree, Strict Patch Engine, and FinalDiff
 - Test: `tests/unit/governance/test_policy.py`
 - Test: `tests/unit/governance/test_policy_precedence.py`
 
-**Depends:** T05.1, T06.1, T12.1
+**Depends:** T05.1, T06.4, T12.1
 **Parallelization:** Start only after every task/non-task gate in **Depends** has passed. Same-wave execution is allowed only when expanded writable paths are disjoint; the WP13 branch and PR remain the sole package integration boundary.
 
 **Interfaces:**
@@ -4066,7 +4328,7 @@ git commit -m "Implement T13.1 Versioned PolicyEngine and Non-overridable DENY"
 - Test: `tests/unit/governance/test_writeback_approval.py`
 - Test: `tests/unit/governance/test_writeback_approval_race.py`
 
-**Depends:** T04.2, T05.1, T07.1, T12.1, T13.1, T20.2, T21.1, T25.2
+**Depends:** T04.2, T05.1, T07.3, T12.1, T13.1, T20.2, T21.1, T25.2
 **Parallelization:** Start only after every task/non-task gate in **Depends** has passed. Same-wave execution is allowed only when expanded writable paths are disjoint; the WP14 branch and PR remain the sole package integration boundary.
 
 **Interfaces:**
@@ -4246,7 +4508,7 @@ git commit -m "Implement T14.1 FinalWritebackSubject and One-time Approval"
 - Create: `src/vespercode/governance/disclosure_subject.py`
 - Test: `tests/unit/governance/test_disclosure_subject.py`
 
-**Depends:** T04.2, T05.1, T06.1
+**Depends:** T04.2, T05.1, T06.4
 **Parallelization:** Start only after every task/non-task gate in **Depends** has passed. Same-wave execution is allowed only when expanded writable paths are disjoint; the WP15 branch and PR remain the sole package integration boundary.
 
 **Interfaces:**
@@ -4424,7 +4686,7 @@ git commit -m "Implement T15.1 Disclosure Sources, Scope, and Grant Subjects"
 - Create: `src/vespercode/governance/disclosure_revocation.py`
 - Test: `tests/unit/governance/test_disclosure_revocation.py`
 
-**Depends:** T04.2, T05.1, T07.1, T15.1
+**Depends:** T04.2, T05.1, T07.3, T15.1
 **Parallelization:** Start only after every task/non-task gate in **Depends** has passed. Same-wave execution is allowed only when expanded writable paths are disjoint; the WP15 branch and PR remain the sole package integration boundary.
 
 **Interfaces:**
@@ -4609,7 +4871,7 @@ git commit -m "Implement T15.2 Disclosure Decisions, Revocation, and Authorizati
 - Test: `tests/unit/llm/test_mock_adapter.py`
 - Test: `tests/unit/llm/test_call_result.py`
 
-**Depends:** T06.1, T15.2, T27.1
+**Depends:** T06.4, T15.2, T27.1
 **Parallelization:** Start only after every task/non-task gate in **Depends** has passed. Same-wave execution is allowed only when expanded writable paths are disjoint; the WP16 branch and PR remain the sole package integration boundary.
 
 **Interfaces:**
@@ -4931,7 +5193,7 @@ git commit -m "Implement T17.1 Agent Action Parser, Identity Binding, and Dispat
 - Test: `tests/unit/execution/test_docker_profile.py`
 - Test: `tests/unit/execution/test_docker_request.py`
 
-**Depends:** T02.2, T05.1, T06.1
+**Depends:** T02.4, T05.1, T06.4
 **Parallelization:** Start only after every task/non-task gate in **Depends** has passed. Same-wave execution is allowed only when expanded writable paths are disjoint; the WP18-CONTRACT branch and PR remain the sole package integration boundary.
 
 **Interfaces:**
@@ -5021,7 +5283,7 @@ git commit -m "Implement T18.1 Docker Execution Contract and Readiness"
 - Test: `tests/integration/docker/test_execution_cleanup.py`
 - Test: `tests/integration/docker/test_execution_workspace_integrity.py`
 
-**Depends:** T02.2, T04.2, T09.1, T10.2, T12.1, T18.1
+**Depends:** T02.4, T04.2, T09.1, T10.2, T12.1, T18.1
 **Parallelization:** Start only after every task/non-task gate in **Depends** has passed. Same-wave execution is allowed only when expanded writable paths are disjoint; the WP18-EXECUTION branch and PR remain the sole package integration boundary.
 
 **Interfaces:**
@@ -5205,7 +5467,7 @@ git commit -m "Implement T18.2 Candidate Materialization, Execution, and Cleanup
 - Create: `src/vespercode/validation/failure_fingerprint.py`
 - Test: `tests/unit/validation/test_failure_fingerprint.py`
 
-**Depends:** T04.2, T05.1, T06.1, T18.2
+**Depends:** T04.2, T05.1, T06.4, T18.2
 **Parallelization:** Start only after every task/non-task gate in **Depends** has passed. Same-wave execution is allowed only when expanded writable paths are disjoint; the WP19 branch and PR remain the sole package integration boundary.
 
 **Interfaces:**
@@ -5393,7 +5655,7 @@ git commit -m "Implement T19.1 Pytest Evidence, Check Results, and Failure Finge
 - Test: `tests/unit/validation/test_python_adapter_static.py`
 - Test: `tests/unit/validation/test_check_plan.py`
 
-**Depends:** T05.1, T06.1, T08.1, T10.2
+**Depends:** T05.1, T06.4, T08.1, T10.2
 **Parallelization:** Start only after every task/non-task gate in **Depends** has passed. Same-wave execution is allowed only when expanded writable paths are disjoint; the WP20-DETECTION branch and PR remain the sole package integration boundary.
 
 **Interfaces:**
@@ -5772,7 +6034,7 @@ git commit -m "Implement T21.1 Formal Validation and VerifiedCandidate"
 - Create: `src/vespercode/memory/clear.py`
 - Test: `tests/unit/memory/test_clear.py`
 
-**Depends:** T07.1, T10.2, T15.2, T19.1
+**Depends:** T07.3, T10.2, T15.2, T19.1
 **Parallelization:** Start only after every task/non-task gate in **Depends** has passed. Same-wave execution is allowed only when expanded writable paths are disjoint; the WP22 branch and PR remain the sole package integration boundary.
 
 **Interfaces:**
@@ -5957,7 +6219,7 @@ git commit -m "Implement T22.1 Workspace-isolated Repository Memory"
 - Create: `src/vespercode/audit/retention.py`
 - Test: `tests/unit/audit/test_retention.py`
 
-**Depends:** T07.1, T22.1
+**Depends:** T07.3, T22.1
 **Parallelization:** Start only after every task/non-task gate in **Depends** has passed. Same-wave execution is allowed only when expanded writable paths are disjoint; the WP23 branch and PR remain the sole package integration boundary.
 
 **Interfaces:**
@@ -6153,7 +6415,7 @@ git commit -m "Implement T23.1 Redacted Audit and User-facing Visibility Project
 - Test: `tests/unit/storage/test_feedback_migration.py`
 - Test: `tests/unit/loop/test_feedback_consumption.py`
 
-**Depends:** T04.2, T05.1, T07.1, T10.2, T11.1, T15.2, T16.1, T19.1, T22.1, T25.1
+**Depends:** T04.2, T05.1, T07.3, T10.2, T11.1, T15.2, T16.1, T19.1, T22.1, T25.1
 **Parallelization:** Start only after every task/non-task gate in **Depends** has passed. Same-wave execution is allowed only when expanded writable paths are disjoint; the WP24 branch and PR remain the sole package integration boundary.
 
 **Interfaces:**
@@ -6331,7 +6593,7 @@ git commit -m "Implement T24.1 ContextProjection and Structured Feedback"
 - Test: `tests/unit/storage/test_agent_turns_migration.py`
 - Test: `tests/unit/loop/test_turn_counting.py`
 
-**Depends:** T07.1, T08.1, T23.1
+**Depends:** T07.3, T08.1, T23.1
 **Parallelization:** Start only after every task/non-task gate in **Depends** has passed. Same-wave execution is allowed only when expanded writable paths are disjoint; the WP25-TURN branch and PR remain the sole package integration boundary.
 
 **Interfaces:**
@@ -6427,7 +6689,7 @@ git commit -m "Implement T25.1 Active Turn and Call Counting Boundary"
 - Create: `src/vespercode/loop/restart.py`
 - Test: `tests/unit/loop/test_restart_behavior.py`
 
-**Depends:** T07.1, T11.1, T12.1, T13.1, T15.2, T16.1, T17.1, T19.1, T23.1, T24.1, T25.1, T27.1
+**Depends:** T07.3, T11.1, T12.1, T13.1, T15.2, T16.1, T17.1, T19.1, T23.1, T24.1, T25.1, T27.1
 **Parallelization:** Start only after every task/non-task gate in **Depends** has passed. Same-wave execution is allowed only when expanded writable paths are disjoint; the WP25-CALL branch and PR remain the sole package integration boundary.
 
 **Interfaces:**
@@ -6623,7 +6885,7 @@ git commit -m "Implement T25.2 Call, Dispatch, and Restart Boundary"
 - Test: `tests/unit/loop/test_main_loop.py`
 - Test: `tests/unit/loop/test_main_loop_failures.py`
 
-**Depends:** T05.1, T07.1, T08.1, T14.1, T17.1, T21.1, T24.1, T25.1, T25.2
+**Depends:** T05.1, T07.3, T08.1, T14.1, T17.1, T21.1, T24.1, T25.1, T25.2
 **Parallelization:** Start only after every task/non-task gate in **Depends** has passed. Same-wave execution is allowed only when expanded writable paths are disjoint; the WP25-LOOP branch and PR remain the sole package integration boundary.
 
 **Interfaces:**
@@ -6821,7 +7083,7 @@ git commit -m "Implement T25.3 Stop, Wait, and Sequential Loop Composition"
 - Test: `tests/unit/persistence/test_writeback_preconditions.py`
 - Test: `tests/fault_injection/persistence/test_writeback_fault_matrix.py`
 
-**Depends:** T03.2, T07.1, T09.1, T12.1, T14.1, T21.1, T23.1
+**Depends:** T03.2, T07.3, T09.1, T12.1, T14.1, T21.1, T23.1
 **Parallelization:** Start only after every task/non-task gate in **Depends** has passed. Same-wave execution is allowed only when expanded writable paths are disjoint; the WP26 branch and PR remain the sole package integration boundary.
 
 **Interfaces:**
@@ -7019,7 +7281,7 @@ git commit -m "Implement T26.1 Persistence Records, Protected Storage, and Write
 - Test: `tests/fault_injection/persistence/test_external_change_faults.py`
 - Test: `tests/integration/windows/test_persistence_acl_and_identity.py`
 
-**Depends:** T07.1, T09.1, T23.1, T26.1
+**Depends:** T07.3, T09.1, T23.1, T26.1
 **Parallelization:** Start only after every task/non-task gate in **Depends** has passed. Same-wave execution is allowed only when expanded writable paths are disjoint; the WP26 branch and PR remain the sole package integration boundary.
 
 **Interfaces:**
@@ -7166,7 +7428,7 @@ git commit -m "Implement T26.2 Recovery Preview and Apply"
 - Create: `src/vespercode/credentials/wincred_store.py`
 - Test: `tests/integration/windows/test_wincred_smoke.py`
 
-**Depends:** T04.2, T05.1, T06.1
+**Depends:** T04.2, T05.1, T06.4
 **Parallelization:** Start only after every task/non-task gate in **Depends** has passed. Same-wave execution is allowed only when expanded writable paths are disjoint; the WP27 branch and PR remain the sole package integration boundary.
 
 **Interfaces:**
@@ -7298,37 +7560,23 @@ git commit -m "Implement T27.1 Windows Credential Manager Lifecycle"
 **Done:** legacy steps 27.A, 27.B 的 Target、Domain、适用真实环境和全局 profile 均通过；Critical/Important finding 全部关闭并复审；没有行为被延后到 successor。
 **Completion evidence:** Not yet executed.
 
-### Task T28.1: Loopback WebUI Security and Application Shell
+### Task T28.1: Loopback WebUI Request Security
 
 **Status:** Not started
 **Work package:** WP28
-**Legacy steps:** 28.A, 28.B, 28.C, 28.D
-**Goal:** Enforce loopback-only binding, local session, Host, Origin, CSRF, and response security headers before every route-domain call.；Define the extensible local FastAPI shell, typed route installers, escaped templates, and unambiguous accessible status semantics without owning packaged assets or CLI startup.；Serve the pinned packaged HTMX asset locally and prove escaped rendering, CSP compatibility, keyboard/live-error hooks, and zero CDN/network fallback.；Thinly bind the completed local shell/security/assets to the closed loopback-only `vespercode serve` CLI entry point.
+**Legacy steps:** 28.A
+**Goal:** Enforce loopback-only binding, local session, Host, Origin, CSRF, and response security headers before every route-domain call.
 **SPEC contracts:** SPEC §4.9 local mode and tests; §5.3; §5.5 WebUI threat; §8.2 `vespercode serve`; §9 UI choice; §10.1 AC-08, AC-11, AC-13, AC-16, AC-24; course WebUI deliverable.
 
 **Files:**
 - Create: `src/vespercode/web/security.py`
 - Test: `tests/web/test_security.py`
-- Create: `src/vespercode/web/app.py`
-- Create: `src/vespercode/web/templates/base.html`
-- Create: `src/vespercode/web/templates/home.html`
-- Create: `src/vespercode/web/templates/components/status_badge.html`
-- Test: `tests/web/test_status_labels.py`
-- Test: `tests/web/test_app_composition.py`
-- Create: `src/vespercode/web/static/htmx.min.js`
-- Test: `tests/web/test_html_escaping.py`
-- Test: `tests/web/test_packaged_assets.py`
-- Create: `src/vespercode/cli.py`
-- Test: `tests/unit/test_cli.py`
 
-**Depends:** T07.1, T08.1, T23.1, T27.1
+**Depends:** T07.3, T08.1, T23.1, T27.1
 **Parallelization:** Start only after every task/non-task gate in **Depends** has passed. Same-wave execution is allowed only when expanded writable paths are disjoint; the WP28 branch and PR remain the sole package integration boundary.
 
 **Interfaces:**
 - **Consumes / Produces (28.A):** Produces `LocalWebSecurityConfigV1(host: Literal["127.0.0.1"], port: int, session_cookie_name: str, csrf_header_name: str)`, `LocalSessionManager.create() -> LocalSessionV1`, and `verify_local_request(request: Request, session: LocalSessionV1) -> LocalRequestAuthorizationV1`.
-- **Consumes / Produces (28.B):** Produces protocol `LocalShellPortsV1.list_recent_runs() -> RunVisibilitySequenceV1`, `LocalShellPortsV1.credential_status() -> CredentialStatusV1`, protocol `LocalRouteInstallerV1.install(app: FastAPI) -> None`, `LocalRouteInstallerSequenceV1`, an immutable ordered tuple of route installers, `create_local_app(shell_ports: LocalShellPortsV1, security: LocalWebSecurityConfigV1, route_installers: LocalRouteInstallerSequenceV1) -> FastAPI`, and `render_status_badge(visibility: RunVisibilityV1) -> Markup`.
-- **Consumes / Produces (28.C):** Produces `PackagedWebAssetV1`, `load_packaged_web_asset(name: Literal["htmx.min.js"]) -> PackagedWebAssetV1`, and `install_packaged_web_assets(app: FastAPI) -> None` for Task 28.B's shell.
-- **Consumes / Produces (28.D):** Produces CLI `vespercode serve --host 127.0.0.1 --port 8765` and `install_serve_command(app, shell_factory: LocalShellFactoryV1) -> None`.
 
 **Implementation points, exact RED, and minimum GREEN contracts:**
 
@@ -7384,6 +7632,55 @@ def test_state_change_rejects_non_loopback_origin(
 - [ ] **Step 7: Run 28.A Target GREEN.** Re-run `python -m pytest -q tests/web/test_security.py::test_state_change_rejects_non_loopback_origin`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 8: Run 28.A Domain.** Run `python -m pytest -q tests/web/test_security.py`; require exit 0 and every displayed Atomic verification expectation to hold.
 
+**Task-level verification, review, and completion:**
+
+- [ ] **Step 9: Refactor only inside T28.1.** Improve names and local structure in declared writable Files without changing the displayed interfaces, observable behavior, or successor scope; rerun every legacy Target and Domain after the refactor.
+- [ ] **Step 10: Run the FORMAL_OFFLINE_V1 closure.** Execute every exact command defined for `FORMAL_OFFLINE_V1` in the Global Execution Contract, including the changed-file redacted credential scan and `git diff --check`; record actual results in `AGENT_LOG.md`.
+- [ ] **Step 11: Request T28.1 SPEC review.** Use `superpowers:requesting-code-review` with the Goal, SPEC contracts, Interfaces, minimum GREEN contracts, RED/GREEN evidence, and task diff. Require an explicit verdict.
+- [ ] **Step 12: Close T28.1 SPEC findings.** Fix every Critical/Important finding, rerun affected Targets, Domains, and profile commands, and obtain same-stage re-review PASS.
+- [ ] **Step 13: Request T28.1 quality review.** Use `superpowers:requesting-code-review` only after SPEC review PASS; review the task diff against every Atomic review focus line.
+- [ ] **Step 14: Close T28.1 quality findings.** Fix every Critical/Important finding, rerun affected checks, and obtain same-stage re-review PASS.
+- [ ] **Step 15: Commit T28.1 implementation.** Stage only the task-owned implementation/tests and create one implementation commit after both review stages PASS.
+
+```bash
+git add -- "src/vespercode/web/security.py" "tests/web/test_security.py"
+git commit -m "Implement T28.1 Loopback WebUI Request Security"
+```
+
+- [ ] **Step 16: Record T28.1 completion evidence.** In a narrow evidence commit, update only this task's Status/Completion evidence and append `AGENT_LOG.md` with the real implementation SHA, responsible fresh subagent, human edits, exact commands/results, review/re-review verdicts, and PR URL.
+- [ ] **Step 17: Continue or finish WP28.** If another session task remains in this package, hand the same branch/PR to a new fresh subagent. Otherwise use `superpowers:finishing-a-development-branch`, verify the package result, and merge only after all predecessors and gates remain valid.
+
+**Done:** legacy steps 28.A 的 Target、Domain、适用真实环境和全局 profile 均通过；Critical/Important finding 全部关闭并复审；没有行为被延后到 successor。
+**Completion evidence:** Not yet executed.
+
+### Task T28.2: Local WebUI Shell, Templates, and Packaged Assets
+
+**Status:** Not started
+**Work package:** WP28
+**Legacy steps:** 28.B, 28.C
+**Goal:** Define the extensible local FastAPI shell, typed route installers, escaped templates, and unambiguous accessible status semantics without owning packaged assets or CLI startup.；Serve the pinned packaged HTMX asset locally and prove escaped rendering, CSP compatibility, keyboard/live-error hooks, and zero CDN/network fallback.
+**SPEC contracts:** SPEC §4.9 local mode and tests; §5.3; §5.5 WebUI threat; §8.2 `vespercode serve`; §9 UI choice; §10.1 AC-08, AC-11, AC-13, AC-16, AC-24; course WebUI deliverable.
+
+**Files:**
+- Create: `src/vespercode/web/app.py`
+- Create: `src/vespercode/web/templates/base.html`
+- Create: `src/vespercode/web/templates/home.html`
+- Create: `src/vespercode/web/templates/components/status_badge.html`
+- Test: `tests/web/test_status_labels.py`
+- Test: `tests/web/test_app_composition.py`
+- Create: `src/vespercode/web/static/htmx.min.js`
+- Test: `tests/web/test_html_escaping.py`
+- Test: `tests/web/test_packaged_assets.py`
+
+**Depends:** T28.1
+**Parallelization:** Start only after every task/non-task gate in **Depends** has passed. Same-wave execution is allowed only when expanded writable paths are disjoint; the WP28 branch and PR remain the sole package integration boundary.
+
+**Interfaces:**
+- **Consumes / Produces (28.B):** Produces protocol `LocalShellPortsV1.list_recent_runs() -> RunVisibilitySequenceV1`, `LocalShellPortsV1.credential_status() -> CredentialStatusV1`, protocol `LocalRouteInstallerV1.install(app: FastAPI) -> None`, `LocalRouteInstallerSequenceV1`, an immutable ordered tuple of route installers, `create_local_app(shell_ports: LocalShellPortsV1, security: LocalWebSecurityConfigV1, route_installers: LocalRouteInstallerSequenceV1) -> FastAPI`, and `render_status_badge(visibility: RunVisibilityV1) -> Markup`.
+- **Consumes / Produces (28.C):** Produces `PackagedWebAssetV1`, `load_packaged_web_asset(name: Literal["htmx.min.js"]) -> PackagedWebAssetV1`, and `install_packaged_web_assets(app: FastAPI) -> None` for Task 28.B's shell.
+
+**Implementation points, exact RED, and minimum GREEN contracts:**
+
 #### Legacy step 28.B: Local FastAPI Shell, Templates, and Status Semantics
 
 **Atomic goal:** Define the extensible local FastAPI shell, typed route installers, escaped templates, and unambiguous accessible status semantics without owning packaged assets or CLI startup.
@@ -7421,15 +7718,14 @@ def test_status_badge_has_text_and_accessible_name(
 - SPEC (28.B): Spec compliance review checks Task 28.B's Goal, Milestone 28's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent local shell/template/status contract.
 - Quality (28.B): Code quality and Open Design/`ui-ux-pro-max` review check typed installer order, autoescaping, scanable hierarchy, text/non-color status, contrast, accessible names, keyboard/focus, live errors, reduced motion, stable layout, and Task 28.A security integration without asset or CLI leakage.
 
-- [ ] **Step 9: Add the exact 28.B RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
-- [ ] **Step 10: Run 28.B RED.** Run `python -m pytest -q tests/web/test_status_labels.py::test_status_badge_has_text_and_accessible_name`. Expected: FAIL for “the test runner reaches `test_status_badge_has_text_and_accessible_name`, but its first task-owned assertion fails because the required semantic status component has not been implemented; collection, runner startup, unrelated import, or environment failure does not count”. Collection, import, environment, unrelated, or already-failing tests do not count.
-- [ ] **Step 11: Implement 28.B GREEN-1.** Compose the local FastAPI shell from typed ports and a deterministic installer sequence with no service locator or hidden workflow lookup.
-- [ ] **Step 12: Implement 28.B GREEN-2.** Render autoescaped templates and distinct text plus accessible-name status semantics with visible focus, keyboard reachability, live-error hooks, non-color cues, sufficient contrast, and reduced-motion-safe behavior.
-- [ ] **Step 13: Implement 28.B GREEN-3.** Make `test_status_badge_has_text_and_accessible_name` GREEN with the smallest semantic status component before completing shell composition, escaping, state, focus, and installer-order matrices.
-- [ ] **Step 14: Implement 28.B GREEN-4.** Own shell composition, templates, and status semantics only. Static asset bytes, package lookup, CLI parsing, server launch, and domain workflow rules remain out of scope.
-- [ ] **Step 15: Run 28.B Target GREEN.** Re-run `python -m pytest -q tests/web/test_status_labels.py::test_status_badge_has_text_and_accessible_name`; require exit 0 and the displayed RED assertion to pass.
-- [ ] **Step 16: Run 28.B Domain.** Run `python -m pytest -q tests/web/test_status_labels.py tests/web/test_app_composition.py`; require exit 0 and every displayed Atomic verification expectation to hold.
-
+- [ ] **Step 1: Add the exact 28.B RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
+- [ ] **Step 2: Run 28.B RED.** Run `python -m pytest -q tests/web/test_status_labels.py::test_status_badge_has_text_and_accessible_name`. Expected: FAIL for “the test runner reaches `test_status_badge_has_text_and_accessible_name`, but its first task-owned assertion fails because the required semantic status component has not been implemented; collection, runner startup, unrelated import, or environment failure does not count”. Collection, import, environment, unrelated, or already-failing tests do not count.
+- [ ] **Step 3: Implement 28.B GREEN-1.** Compose the local FastAPI shell from typed ports and a deterministic installer sequence with no service locator or hidden workflow lookup.
+- [ ] **Step 4: Implement 28.B GREEN-2.** Render autoescaped templates and distinct text plus accessible-name status semantics with visible focus, keyboard reachability, live-error hooks, non-color cues, sufficient contrast, and reduced-motion-safe behavior.
+- [ ] **Step 5: Implement 28.B GREEN-3.** Make `test_status_badge_has_text_and_accessible_name` GREEN with the smallest semantic status component before completing shell composition, escaping, state, focus, and installer-order matrices.
+- [ ] **Step 6: Implement 28.B GREEN-4.** Own shell composition, templates, and status semantics only. Static asset bytes, package lookup, CLI parsing, server launch, and domain workflow rules remain out of scope.
+- [ ] **Step 7: Run 28.B Target GREEN.** Re-run `python -m pytest -q tests/web/test_status_labels.py::test_status_badge_has_text_and_accessible_name`; require exit 0 and the displayed RED assertion to pass.
+- [ ] **Step 8: Run 28.B Domain.** Run `python -m pytest -q tests/web/test_status_labels.py tests/web/test_app_composition.py`; require exit 0 and every displayed Atomic verification expectation to hold.
 #### Legacy step 28.C: Packaged HTMX and Safe Render Asset Contract
 
 **Atomic goal:** Serve the pinned packaged HTMX asset locally and prove escaped rendering, CSP compatibility, keyboard/live-error hooks, and zero CDN/network fallback.
@@ -7471,14 +7767,55 @@ def test_untrusted_run_text_is_escaped_and_htmx_is_local(
 - SPEC (28.C): Spec compliance review checks Task 28.C's Goal, Milestone 28's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent packaged safe-render asset contract.
 - Quality (28.C): Code quality and Open Design/`ui-ux-pro-max` review check pinned identity, local-only loading, no fallback, autoescaping, CSP compatibility, keyboard/focus/live errors, contrast and non-color cues, reduced motion, stable interaction layout, and zero external asset request.
 
-- [ ] **Step 17: Add the exact 28.C RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
-- [ ] **Step 18: Run 28.C RED.** Run `python -m pytest -q tests/web/test_html_escaping.py::test_untrusted_run_text_is_escaped_and_htmx_is_local`. Expected: FAIL for “the test runner reaches `test_untrusted_run_text_is_escaped_and_htmx_is_local`, but its first task-owned assertion fails because the required local-asset and escaped-render contract has not been implemented; collection, runner startup, unrelated import, or environment failure does not count”. Collection, import, environment, unrelated, or already-failing tests do not count.
-- [ ] **Step 19: Implement 28.C GREEN-1.** Load only the pinned packaged `htmx.min.js` through immutable package resources, verify its declared identity, and serve it from the sole local static path with no network or CDN fallback.
-- [ ] **Step 20: Implement 28.C GREEN-2.** Preserve autoescaped untrusted text and CSP-compatible markup while exposing keyboard focus and live-error hooks without inline bypass, low-contrast status, layout-shifting interaction, or unsafe external source.
-- [ ] **Step 21: Implement 28.C GREEN-3.** Make `test_untrusted_run_text_is_escaped_and_htmx_is_local` GREEN with the smallest local-asset and escaped-render contract before completing identity, packaging, CSP, hook, and no-request matrices.
-- [ ] **Step 22: Implement 28.C GREEN-4.** Own immutable asset bytes and safe render/resource integration only. Route-domain behavior, security weakening, CLI arguments, runtime download, server launch, and workflow rules remain out of scope.
-- [ ] **Step 23: Run 28.C Target GREEN.** Re-run `python -m pytest -q tests/web/test_html_escaping.py::test_untrusted_run_text_is_escaped_and_htmx_is_local`; require exit 0 and the displayed RED assertion to pass.
-- [ ] **Step 24: Run 28.C Domain.** Run `python -m pytest -q tests/web/test_html_escaping.py tests/web/test_packaged_assets.py`; require exit 0 and every displayed Atomic verification expectation to hold.
+- [ ] **Step 9: Add the exact 28.C RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
+- [ ] **Step 10: Run 28.C RED.** Run `python -m pytest -q tests/web/test_html_escaping.py::test_untrusted_run_text_is_escaped_and_htmx_is_local`. Expected: FAIL for “the test runner reaches `test_untrusted_run_text_is_escaped_and_htmx_is_local`, but its first task-owned assertion fails because the required local-asset and escaped-render contract has not been implemented; collection, runner startup, unrelated import, or environment failure does not count”. Collection, import, environment, unrelated, or already-failing tests do not count.
+- [ ] **Step 11: Implement 28.C GREEN-1.** Load only the pinned packaged `htmx.min.js` through immutable package resources, verify its declared identity, and serve it from the sole local static path with no network or CDN fallback.
+- [ ] **Step 12: Implement 28.C GREEN-2.** Preserve autoescaped untrusted text and CSP-compatible markup while exposing keyboard focus and live-error hooks without inline bypass, low-contrast status, layout-shifting interaction, or unsafe external source.
+- [ ] **Step 13: Implement 28.C GREEN-3.** Make `test_untrusted_run_text_is_escaped_and_htmx_is_local` GREEN with the smallest local-asset and escaped-render contract before completing identity, packaging, CSP, hook, and no-request matrices.
+- [ ] **Step 14: Implement 28.C GREEN-4.** Own immutable asset bytes and safe render/resource integration only. Route-domain behavior, security weakening, CLI arguments, runtime download, server launch, and workflow rules remain out of scope.
+- [ ] **Step 15: Run 28.C Target GREEN.** Re-run `python -m pytest -q tests/web/test_html_escaping.py::test_untrusted_run_text_is_escaped_and_htmx_is_local`; require exit 0 and the displayed RED assertion to pass.
+- [ ] **Step 16: Run 28.C Domain.** Run `python -m pytest -q tests/web/test_html_escaping.py tests/web/test_packaged_assets.py`; require exit 0 and every displayed Atomic verification expectation to hold.
+
+**Task-level verification, review, and completion:**
+
+- [ ] **Step 17: Refactor only inside T28.2.** Improve names and local structure in declared writable Files without changing the displayed interfaces, observable behavior, or successor scope; rerun every legacy Target and Domain after the refactor.
+- [ ] **Step 18: Run the FORMAL_OFFLINE_V1 closure.** Execute every exact command defined for `FORMAL_OFFLINE_V1` in the Global Execution Contract, including the changed-file redacted credential scan and `git diff --check`; record actual results in `AGENT_LOG.md`.
+- [ ] **Step 19: Request T28.2 SPEC review.** Use `superpowers:requesting-code-review` with the Goal, SPEC contracts, Interfaces, minimum GREEN contracts, RED/GREEN evidence, and task diff. Require an explicit verdict.
+- [ ] **Step 20: Close T28.2 SPEC findings.** Fix every Critical/Important finding, rerun affected Targets, Domains, and profile commands, and obtain same-stage re-review PASS.
+- [ ] **Step 21: Request T28.2 quality review.** Use `superpowers:requesting-code-review` only after SPEC review PASS; review the task diff against every Atomic review focus line.
+- [ ] **Step 22: Close T28.2 quality findings.** Fix every Critical/Important finding, rerun affected checks, and obtain same-stage re-review PASS.
+- [ ] **Step 23: Commit T28.2 implementation.** Stage only the task-owned implementation/tests and create one implementation commit after both review stages PASS.
+
+```bash
+git add -- "src/vespercode/web/app.py" "src/vespercode/web/templates/base.html" "src/vespercode/web/templates/home.html" "src/vespercode/web/templates/components/status_badge.html" "tests/web/test_status_labels.py" "tests/web/test_app_composition.py" "src/vespercode/web/static/htmx.min.js" "tests/web/test_html_escaping.py" "tests/web/test_packaged_assets.py"
+git commit -m "Implement T28.2 Local WebUI Shell, Templates, and Packaged Assets"
+```
+
+- [ ] **Step 24: Record T28.2 completion evidence.** In a narrow evidence commit, update only this task's Status/Completion evidence and append `AGENT_LOG.md` with the real implementation SHA, responsible fresh subagent, human edits, exact commands/results, review/re-review verdicts, and PR URL.
+- [ ] **Step 25: Continue or finish WP28.** If another session task remains in this package, hand the same branch/PR to a new fresh subagent. Otherwise use `superpowers:finishing-a-development-branch`, verify the package result, and merge only after all predecessors and gates remain valid.
+
+**Done:** legacy steps 28.B, 28.C 的 Target、Domain、适用真实环境和全局 profile 均通过；Critical/Important finding 全部关闭并复审；没有行为被延后到 successor。
+**Completion evidence:** Not yet executed.
+
+### Task T28.3: Loopback Serve CLI Composition
+
+**Status:** Not started
+**Work package:** WP28
+**Legacy steps:** 28.D
+**Goal:** Thinly bind the completed local shell/security/assets to the closed loopback-only `vespercode serve` CLI entry point.
+**SPEC contracts:** SPEC §4.9 local mode and tests; §5.3; §5.5 WebUI threat; §8.2 `vespercode serve`; §9 UI choice; §10.1 AC-08, AC-11, AC-13, AC-16, AC-24; course WebUI deliverable.
+
+**Files:**
+- Create: `src/vespercode/cli.py`
+- Test: `tests/unit/test_cli.py`
+
+**Depends:** T28.2
+**Parallelization:** Start only after every task/non-task gate in **Depends** has passed. Same-wave execution is allowed only when expanded writable paths are disjoint; the WP28 branch and PR remain the sole package integration boundary.
+
+**Interfaces:**
+- **Consumes / Produces (28.D):** Produces CLI `vespercode serve --host 127.0.0.1 --port 8765` and `install_serve_command(app, shell_factory: LocalShellFactoryV1) -> None`.
+
+**Implementation points, exact RED, and minimum GREEN contracts:**
 
 #### Legacy step 28.D: Loopback Serve CLI Composition
 
@@ -7517,42 +7854,42 @@ def test_serve_rejects_non_loopback_host_and_secret_arguments(
 - SPEC (28.D): Spec compliance review checks Task 28.D's Goal, Milestone 28's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent thin loopback-serve CLI contract.
 - Quality (28.D): Code quality review checks closed parsing, literal loopback host, port bounds, clear keyboard-readable errors, secret/provider/repository rejection, one shell factory, one launch, packaged-asset reachability, and no duplicated security, UI, or workflow rule.
 
-- [ ] **Step 25: Add the exact 28.D RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
-- [ ] **Step 26: Run 28.D RED.** Run `python -m pytest -q tests/unit/test_cli.py::test_serve_rejects_non_loopback_host_and_secret_arguments`. Expected: FAIL for “the test runner reaches `test_serve_rejects_non_loopback_host_and_secret_arguments`, but its first task-owned assertion fails because the required closed-parser rejection has not been implemented; collection, runner startup, unrelated import, or environment failure does not count”. Collection, import, environment, unrelated, or already-failing tests do not count.
-- [ ] **Step 27: Implement 28.D GREEN-1.** Parse only the closed `serve` command, literal loopback host, validated port, and declared shell factory while rejecting secret, provider, repository, or alternate-bind inputs.
-- [ ] **Step 28: Implement 28.D GREEN-2.** Compose Tasks 28.A–28.C once and launch through the injected application/server boundary without duplicating shell, asset, request-security, or workflow behavior.
-- [ ] **Step 29: Implement 28.D GREEN-3.** Make `test_serve_rejects_non_loopback_host_and_secret_arguments` GREEN with the smallest closed-parser rejection before completing port, factory, single-launch, and packaged-asset reachability matrices.
-- [ ] **Step 30: Implement 28.D GREEN-4.** Own thin serve parsing and loopback launch only. Shell construction, package lookup, request authorization, route behavior, secrets, providers, and repositories remain out of scope.
-- [ ] **Step 31: Run 28.D Target GREEN.** Re-run `python -m pytest -q tests/unit/test_cli.py::test_serve_rejects_non_loopback_host_and_secret_arguments`; require exit 0 and the displayed RED assertion to pass.
-- [ ] **Step 32: Run 28.D Domain.** Run `python -m pytest -q tests/unit/test_cli.py`; require exit 0 and every displayed Atomic verification expectation to hold.
+- [ ] **Step 1: Add the exact 28.D RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
+- [ ] **Step 2: Run 28.D RED.** Run `python -m pytest -q tests/unit/test_cli.py::test_serve_rejects_non_loopback_host_and_secret_arguments`. Expected: FAIL for “the test runner reaches `test_serve_rejects_non_loopback_host_and_secret_arguments`, but its first task-owned assertion fails because the required closed-parser rejection has not been implemented; collection, runner startup, unrelated import, or environment failure does not count”. Collection, import, environment, unrelated, or already-failing tests do not count.
+- [ ] **Step 3: Implement 28.D GREEN-1.** Parse only the closed `serve` command, literal loopback host, validated port, and declared shell factory while rejecting secret, provider, repository, or alternate-bind inputs.
+- [ ] **Step 4: Implement 28.D GREEN-2.** Compose Tasks 28.A–28.C once and launch through the injected application/server boundary without duplicating shell, asset, request-security, or workflow behavior.
+- [ ] **Step 5: Implement 28.D GREEN-3.** Make `test_serve_rejects_non_loopback_host_and_secret_arguments` GREEN with the smallest closed-parser rejection before completing port, factory, single-launch, and packaged-asset reachability matrices.
+- [ ] **Step 6: Implement 28.D GREEN-4.** Own thin serve parsing and loopback launch only. Shell construction, package lookup, request authorization, route behavior, secrets, providers, and repositories remain out of scope.
+- [ ] **Step 7: Run 28.D Target GREEN.** Re-run `python -m pytest -q tests/unit/test_cli.py::test_serve_rejects_non_loopback_host_and_secret_arguments`; require exit 0 and the displayed RED assertion to pass.
+- [ ] **Step 8: Run 28.D Domain.** Run `python -m pytest -q tests/unit/test_cli.py`; require exit 0 and every displayed Atomic verification expectation to hold.
 
 **Task-level verification, review, and completion:**
 
-- [ ] **Step 33: Refactor only inside T28.1.** Improve names and local structure in declared writable Files without changing the displayed interfaces, observable behavior, or successor scope; rerun every legacy Target and Domain after the refactor.
-- [ ] **Step 34: Run the FORMAL_OFFLINE_V1 closure.** Execute every exact command defined for `FORMAL_OFFLINE_V1` in the Global Execution Contract, including the changed-file redacted credential scan and `git diff --check`; record actual results in `AGENT_LOG.md`.
-- [ ] **Step 35: Request T28.1 SPEC review.** Use `superpowers:requesting-code-review` with the Goal, SPEC contracts, Interfaces, minimum GREEN contracts, RED/GREEN evidence, and task diff. Require an explicit verdict.
-- [ ] **Step 36: Close T28.1 SPEC findings.** Fix every Critical/Important finding, rerun affected Targets, Domains, and profile commands, and obtain same-stage re-review PASS.
-- [ ] **Step 37: Request T28.1 quality review.** Use `superpowers:requesting-code-review` only after SPEC review PASS; review the task diff against every Atomic review focus line.
-- [ ] **Step 38: Close T28.1 quality findings.** Fix every Critical/Important finding, rerun affected checks, and obtain same-stage re-review PASS.
-- [ ] **Step 39: Commit T28.1 implementation.** Stage only the task-owned implementation/tests and create one implementation commit after both review stages PASS.
+- [ ] **Step 9: Refactor only inside T28.3.** Improve names and local structure in declared writable Files without changing the displayed interfaces, observable behavior, or successor scope; rerun every legacy Target and Domain after the refactor.
+- [ ] **Step 10: Run the FORMAL_OFFLINE_V1 closure.** Execute every exact command defined for `FORMAL_OFFLINE_V1` in the Global Execution Contract, including the changed-file redacted credential scan and `git diff --check`; record actual results in `AGENT_LOG.md`.
+- [ ] **Step 11: Request T28.3 SPEC review.** Use `superpowers:requesting-code-review` with the Goal, SPEC contracts, Interfaces, minimum GREEN contracts, RED/GREEN evidence, and task diff. Require an explicit verdict.
+- [ ] **Step 12: Close T28.3 SPEC findings.** Fix every Critical/Important finding, rerun affected Targets, Domains, and profile commands, and obtain same-stage re-review PASS.
+- [ ] **Step 13: Request T28.3 quality review.** Use `superpowers:requesting-code-review` only after SPEC review PASS; review the task diff against every Atomic review focus line.
+- [ ] **Step 14: Close T28.3 quality findings.** Fix every Critical/Important finding, rerun affected checks, and obtain same-stage re-review PASS.
+- [ ] **Step 15: Commit T28.3 implementation.** Stage only the task-owned implementation/tests and create one implementation commit after both review stages PASS.
 
 ```bash
-git add -- "src/vespercode/web/security.py" "tests/web/test_security.py" "src/vespercode/web/app.py" "src/vespercode/web/templates/base.html" "src/vespercode/web/templates/home.html" "src/vespercode/web/templates/components/status_badge.html" "tests/web/test_status_labels.py" "tests/web/test_app_composition.py" "src/vespercode/web/static/htmx.min.js" "tests/web/test_html_escaping.py" "tests/web/test_packaged_assets.py" "src/vespercode/cli.py" "tests/unit/test_cli.py"
-git commit -m "Implement T28.1 Loopback WebUI Security and Application Shell"
+git add -- "src/vespercode/cli.py" "tests/unit/test_cli.py"
+git commit -m "Implement T28.3 Loopback Serve CLI Composition"
 ```
 
-- [ ] **Step 40: Record T28.1 completion evidence.** In a narrow evidence commit, update only this task's Status/Completion evidence and append `AGENT_LOG.md` with the real implementation SHA, responsible fresh subagent, human edits, exact commands/results, review/re-review verdicts, and PR URL.
-- [ ] **Step 41: Continue or finish WP28.** If another session task remains in this package, hand the same branch/PR to a new fresh subagent. Otherwise use `superpowers:finishing-a-development-branch`, verify the package result, and merge only after all predecessors and gates remain valid.
+- [ ] **Step 16: Record T28.3 completion evidence.** In a narrow evidence commit, update only this task's Status/Completion evidence and append `AGENT_LOG.md` with the real implementation SHA, responsible fresh subagent, human edits, exact commands/results, review/re-review verdicts, and PR URL.
+- [ ] **Step 17: Continue or finish WP28.** If another session task remains in this package, hand the same branch/PR to a new fresh subagent. Otherwise use `superpowers:finishing-a-development-branch`, verify the package result, and merge only after all predecessors and gates remain valid.
 
-**Done:** legacy steps 28.A, 28.B, 28.C, 28.D 的 Target、Domain、适用真实环境和全局 profile 均通过；Critical/Important finding 全部关闭并复审；没有行为被延后到 successor。
+**Done:** legacy steps 28.D 的 Target、Domain、适用真实环境和全局 profile 均通过；Critical/Important finding 全部关闭并复审；没有行为被延后到 successor。
 **Completion evidence:** Not yet executed.
 
-### Task T29.1: Local Run and Governance WebUI Workflows
+### Task T29.1: Run Lifecycle WebUI
 
 **Status:** Not started
 **Work package:** WP29
-**Legacy steps:** 29.A, 29.B, 29.C
-**Goal:** Expose strict Run creation, state/status detail, and cancellation through closed secure forms and typed workflow ports.；Render exact provider/endpoint/category/path/budget disclosure facts and submit only a bound approve/reject decision to the Task 15 workflow.；Render the exact FinalDiff/evidence/subject, delegate one bound final decision, call persistence only after exact approval, and install all Milestone 29 routes.
+**Legacy steps:** 29.A
+**Goal:** Expose strict Run creation, state/status detail, and cancellation through closed secure forms and typed workflow ports.
 **SPEC contracts:** SPEC §2 US-01, US-03–US-06, US-08; §4.2.7 waits; §4.4.2–§4.4.3 UI disclosures; §4.6 writeback review; §4.9 local run capabilities; §5.3–§5.5; §8.2; §10.1 AC-03, AC-06–AC-07, AC-13, AC-15–AC-16, AC-21, AC-27–AC-28, AC-31.
 
 **Files:**
@@ -7561,23 +7898,12 @@ git commit -m "Implement T28.1 Loopback WebUI Security and Application Shell"
 - Create: `src/vespercode/web/templates/run_create.html`
 - Create: `src/vespercode/web/templates/run_detail.html`
 - Test: `tests/web/test_run_workflow.py`
-- Create: `src/vespercode/web/disclosure_workflow.py`
-- Create: `src/vespercode/web/routes_disclosure.py`
-- Create: `src/vespercode/web/templates/disclosure_wait.html`
-- Test: `tests/web/test_disclosure_workflow.py`
-- Create: `src/vespercode/web/writeback_workflow.py`
-- Create: `src/vespercode/web/routes_writeback.py`
-- Create: `src/vespercode/web/run_workflows.py`
-- Test: `tests/web/test_writeback_workflow.py`
-- Test: `tests/web/test_accessibility.py`
 
-**Depends:** T08.1, T14.1, T15.2, T16.1, T21.1, T23.1, T25.3, T26.1, T28.1
+**Depends:** T08.1, T14.1, T15.2, T16.1, T21.1, T23.1, T25.3, T26.1, T28.3
 **Parallelization:** Start only after every task/non-task gate in **Depends** has passed. Same-wave execution is allowed only when expanded writable paths are disjoint; the WP29 branch and PR remain the sole package integration boundary.
 
 **Interfaces:**
 - **Consumes / Produces (29.A):** Produces `RunCreationWorkflowPortV1`, `RunVisibilityWorkflowPortV1`, `RunCancellationWorkflowPortV1`, their closed result unions, and `RunLifecycleRouteInstallerV1`.
-- **Consumes / Produces (29.B):** Produces `DisclosureDecisionWorkflowPortV1.decide(command: DecideDisclosureGrantV1) -> DisclosureDecisionResultV1`, `AuthorizationSummaryV1`, `build_authorization_summary(subject: DisclosureGrantSubjectV1, endpoint: OpenAIEndpointV1) -> AuthorizationSummaryV1`, `render_authorization_summary(summary: AuthorizationSummaryV1) -> Markup`, and `DisclosureRouteInstallerV1.install(app: FastAPI) -> None`.
-- **Consumes / Produces (29.C):** Produces `FinalWritebackWorkflowPortV1`, `ProductionFinalWritebackWorkflowV1`, `WritebackReviewV1`, `RunGovernanceWorkflowPortsV1`, and `RunGovernanceRouteInstallerV1`.
 
 **Implementation points, exact RED, and minimum GREEN contracts:**
 
@@ -7631,6 +7957,49 @@ def test_invalid_run_form_creates_no_run(
 - [ ] **Step 7: Run 29.A Target GREEN.** Re-run `python -m pytest -q tests/web/test_run_workflow.py::test_invalid_run_form_creates_no_run`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 8: Run 29.A Domain.** Run `python -m pytest -q tests/web/test_run_workflow.py`; require exit 0 and every displayed Atomic verification expectation to hold.
 
+**Task-level verification, review, and completion:**
+
+- [ ] **Step 9: Refactor only inside T29.1.** Improve names and local structure in declared writable Files without changing the displayed interfaces, observable behavior, or successor scope; rerun every legacy Target and Domain after the refactor.
+- [ ] **Step 10: Run the FORMAL_OFFLINE_V1 closure.** Execute every exact command defined for `FORMAL_OFFLINE_V1` in the Global Execution Contract, including the changed-file redacted credential scan and `git diff --check`; record actual results in `AGENT_LOG.md`.
+- [ ] **Step 11: Request T29.1 SPEC review.** Use `superpowers:requesting-code-review` with the Goal, SPEC contracts, Interfaces, minimum GREEN contracts, RED/GREEN evidence, and task diff. Require an explicit verdict.
+- [ ] **Step 12: Close T29.1 SPEC findings.** Fix every Critical/Important finding, rerun affected Targets, Domains, and profile commands, and obtain same-stage re-review PASS.
+- [ ] **Step 13: Request T29.1 quality review.** Use `superpowers:requesting-code-review` only after SPEC review PASS; review the task diff against every Atomic review focus line.
+- [ ] **Step 14: Close T29.1 quality findings.** Fix every Critical/Important finding, rerun affected checks, and obtain same-stage re-review PASS.
+- [ ] **Step 15: Commit T29.1 implementation.** Stage only the task-owned implementation/tests and create one implementation commit after both review stages PASS.
+
+```bash
+git add -- "src/vespercode/web/run_lifecycle_workflow.py" "src/vespercode/web/routes_runs.py" "src/vespercode/web/templates/run_create.html" "src/vespercode/web/templates/run_detail.html" "tests/web/test_run_workflow.py"
+git commit -m "Implement T29.1 Run Lifecycle WebUI"
+```
+
+- [ ] **Step 16: Record T29.1 completion evidence.** In a narrow evidence commit, update only this task's Status/Completion evidence and append `AGENT_LOG.md` with the real implementation SHA, responsible fresh subagent, human edits, exact commands/results, review/re-review verdicts, and PR URL.
+- [ ] **Step 17: Continue or finish WP29.** If another session task remains in this package, hand the same branch/PR to a new fresh subagent. Otherwise use `superpowers:finishing-a-development-branch`, verify the package result, and merge only after all predecessors and gates remain valid.
+
+**Done:** legacy steps 29.A 的 Target、Domain、适用真实环境和全局 profile 均通过；Critical/Important finding 全部关闭并复审；没有行为被延后到 successor。
+**Completion evidence:** Not yet executed.
+
+### Task T29.2: Disclosure Decision WebUI
+
+**Status:** Not started
+**Work package:** WP29
+**Legacy steps:** 29.B
+**Goal:** Render exact provider/endpoint/category/path/budget disclosure facts and submit only a bound approve/reject decision to the Task 15 workflow.
+**SPEC contracts:** SPEC §2 US-01, US-03–US-06, US-08; §4.2.7 waits; §4.4.2–§4.4.3 UI disclosures; §4.6 writeback review; §4.9 local run capabilities; §5.3–§5.5; §8.2; §10.1 AC-03, AC-06–AC-07, AC-13, AC-15–AC-16, AC-21, AC-27–AC-28, AC-31.
+
+**Files:**
+- Create: `src/vespercode/web/disclosure_workflow.py`
+- Create: `src/vespercode/web/routes_disclosure.py`
+- Create: `src/vespercode/web/templates/disclosure_wait.html`
+- Test: `tests/web/test_disclosure_workflow.py`
+
+**Depends:** T29.1
+**Parallelization:** Start only after every task/non-task gate in **Depends** has passed. Same-wave execution is allowed only when expanded writable paths are disjoint; the WP29 branch and PR remain the sole package integration boundary.
+
+**Interfaces:**
+- **Consumes / Produces (29.B):** Produces `DisclosureDecisionWorkflowPortV1.decide(command: DecideDisclosureGrantV1) -> DisclosureDecisionResultV1`, `AuthorizationSummaryV1`, `build_authorization_summary(subject: DisclosureGrantSubjectV1, endpoint: OpenAIEndpointV1) -> AuthorizationSummaryV1`, `render_authorization_summary(summary: AuthorizationSummaryV1) -> Markup`, and `DisclosureRouteInstallerV1.install(app: FastAPI) -> None`.
+
+**Implementation points, exact RED, and minimum GREEN contracts:**
+
 #### Legacy step 29.B: Disclosure Decision WebUI
 
 **Atomic goal:** Render exact provider/endpoint/category/path/budget disclosure facts and submit only a bound approve/reject decision to the Task 15 workflow.
@@ -7674,14 +8043,58 @@ def test_disclosure_form_cannot_supply_scope_or_endpoint_override(
 - SPEC (29.B): Spec compliance review checks Task 29.B's Goal, Milestone 29's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent bound disclosure-decision WebUI contract.
 - Quality (29.B): Code quality and Open Design/`ui-ux-pro-max` review check exact subject labels, escaped paths/text, scanable warning/budget/expiry, approve/reject clarity, keyboard/focus/live errors, non-color state, relevant CSRF/Host/Origin/CSP checks, and zero Grant/endpoint/scope override.
 
-- [ ] **Step 9: Add the exact 29.B RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
-- [ ] **Step 10: Run 29.B RED.** Run `python -m pytest -q tests/web/test_disclosure_workflow.py::test_disclosure_form_cannot_supply_scope_or_endpoint_override`. Expected: FAIL for “the test runner reaches `test_disclosure_form_cannot_supply_scope_or_endpoint_override`, but its first task-owned assertion fails because the required override rejection has not been implemented; collection, runner startup, unrelated import, or environment failure does not count”. Collection, import, environment, unrelated, or already-failing tests do not count.
-- [ ] **Step 11: Implement 29.B GREEN-1.** Build the summary only from the exact bound disclosure subject and endpoint, showing provider, endpoint, categories, source paths, byte budget, expiry, and no-content-redaction warning with escaped text.
-- [ ] **Step 12: Implement 29.B GREEN-2.** Accept only one bound approve/reject decision after Task 28 security, reject scope/endpoint/budget/credential/clock overrides before the workflow port, and never construct, widen, or mutate a Grant.
-- [ ] **Step 13: Implement 29.B GREEN-3.** Make `test_disclosure_form_cannot_supply_scope_or_endpoint_override` GREEN with the smallest override rejection before completing subject, label, expiry, decision, escaping, and accessibility matrices.
-- [ ] **Step 14: Implement 29.B GREEN-4.** Own disclosure summary rendering and decision-form adaptation only. Grant construction, authorization policy, source scope, endpoint selection, credential handling, clocks, and domain state remain out of scope.
-- [ ] **Step 15: Run 29.B Target GREEN.** Re-run `python -m pytest -q tests/web/test_disclosure_workflow.py::test_disclosure_form_cannot_supply_scope_or_endpoint_override`; require exit 0 and the displayed RED assertion to pass.
-- [ ] **Step 16: Run 29.B Domain.** Run `python -m pytest -q tests/web/test_disclosure_workflow.py`; require exit 0 and every displayed Atomic verification expectation to hold.
+- [ ] **Step 1: Add the exact 29.B RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
+- [ ] **Step 2: Run 29.B RED.** Run `python -m pytest -q tests/web/test_disclosure_workflow.py::test_disclosure_form_cannot_supply_scope_or_endpoint_override`. Expected: FAIL for “the test runner reaches `test_disclosure_form_cannot_supply_scope_or_endpoint_override`, but its first task-owned assertion fails because the required override rejection has not been implemented; collection, runner startup, unrelated import, or environment failure does not count”. Collection, import, environment, unrelated, or already-failing tests do not count.
+- [ ] **Step 3: Implement 29.B GREEN-1.** Build the summary only from the exact bound disclosure subject and endpoint, showing provider, endpoint, categories, source paths, byte budget, expiry, and no-content-redaction warning with escaped text.
+- [ ] **Step 4: Implement 29.B GREEN-2.** Accept only one bound approve/reject decision after Task 28 security, reject scope/endpoint/budget/credential/clock overrides before the workflow port, and never construct, widen, or mutate a Grant.
+- [ ] **Step 5: Implement 29.B GREEN-3.** Make `test_disclosure_form_cannot_supply_scope_or_endpoint_override` GREEN with the smallest override rejection before completing subject, label, expiry, decision, escaping, and accessibility matrices.
+- [ ] **Step 6: Implement 29.B GREEN-4.** Own disclosure summary rendering and decision-form adaptation only. Grant construction, authorization policy, source scope, endpoint selection, credential handling, clocks, and domain state remain out of scope.
+- [ ] **Step 7: Run 29.B Target GREEN.** Re-run `python -m pytest -q tests/web/test_disclosure_workflow.py::test_disclosure_form_cannot_supply_scope_or_endpoint_override`; require exit 0 and the displayed RED assertion to pass.
+- [ ] **Step 8: Run 29.B Domain.** Run `python -m pytest -q tests/web/test_disclosure_workflow.py`; require exit 0 and every displayed Atomic verification expectation to hold.
+
+**Task-level verification, review, and completion:**
+
+- [ ] **Step 9: Refactor only inside T29.2.** Improve names and local structure in declared writable Files without changing the displayed interfaces, observable behavior, or successor scope; rerun every legacy Target and Domain after the refactor.
+- [ ] **Step 10: Run the FORMAL_OFFLINE_V1 closure.** Execute every exact command defined for `FORMAL_OFFLINE_V1` in the Global Execution Contract, including the changed-file redacted credential scan and `git diff --check`; record actual results in `AGENT_LOG.md`.
+- [ ] **Step 11: Request T29.2 SPEC review.** Use `superpowers:requesting-code-review` with the Goal, SPEC contracts, Interfaces, minimum GREEN contracts, RED/GREEN evidence, and task diff. Require an explicit verdict.
+- [ ] **Step 12: Close T29.2 SPEC findings.** Fix every Critical/Important finding, rerun affected Targets, Domains, and profile commands, and obtain same-stage re-review PASS.
+- [ ] **Step 13: Request T29.2 quality review.** Use `superpowers:requesting-code-review` only after SPEC review PASS; review the task diff against every Atomic review focus line.
+- [ ] **Step 14: Close T29.2 quality findings.** Fix every Critical/Important finding, rerun affected checks, and obtain same-stage re-review PASS.
+- [ ] **Step 15: Commit T29.2 implementation.** Stage only the task-owned implementation/tests and create one implementation commit after both review stages PASS.
+
+```bash
+git add -- "src/vespercode/web/disclosure_workflow.py" "src/vespercode/web/routes_disclosure.py" "src/vespercode/web/templates/disclosure_wait.html" "tests/web/test_disclosure_workflow.py"
+git commit -m "Implement T29.2 Disclosure Decision WebUI"
+```
+
+- [ ] **Step 16: Record T29.2 completion evidence.** In a narrow evidence commit, update only this task's Status/Completion evidence and append `AGENT_LOG.md` with the real implementation SHA, responsible fresh subagent, human edits, exact commands/results, review/re-review verdicts, and PR URL.
+- [ ] **Step 17: Continue or finish WP29.** If another session task remains in this package, hand the same branch/PR to a new fresh subagent. Otherwise use `superpowers:finishing-a-development-branch`, verify the package result, and merge only after all predecessors and gates remain valid.
+
+**Done:** legacy steps 29.B 的 Target、Domain、适用真实环境和全局 profile 均通过；Critical/Important finding 全部关闭并复审；没有行为被延后到 successor。
+**Completion evidence:** Not yet executed.
+
+### Task T29.3: Final Writeback WebUI and Governance Composition
+
+**Status:** Not started
+**Work package:** WP29
+**Legacy steps:** 29.C
+**Goal:** Render the exact FinalDiff/evidence/subject, delegate one bound final decision, call persistence only after exact approval, and install all Milestone 29 routes.
+**SPEC contracts:** SPEC §2 US-01, US-03–US-06, US-08; §4.2.7 waits; §4.4.2–§4.4.3 UI disclosures; §4.6 writeback review; §4.9 local run capabilities; §5.3–§5.5; §8.2; §10.1 AC-03, AC-06–AC-07, AC-13, AC-15–AC-16, AC-21, AC-27–AC-28, AC-31.
+
+**Files:**
+- Create: `src/vespercode/web/writeback_workflow.py`
+- Create: `src/vespercode/web/routes_writeback.py`
+- Create: `src/vespercode/web/run_workflows.py`
+- Test: `tests/web/test_writeback_workflow.py`
+- Test: `tests/web/test_accessibility.py`
+
+**Depends:** T29.2
+**Parallelization:** Start only after every task/non-task gate in **Depends** has passed. Same-wave execution is allowed only when expanded writable paths are disjoint; the WP29 branch and PR remain the sole package integration boundary.
+
+**Interfaces:**
+- **Consumes / Produces (29.C):** Produces `FinalWritebackWorkflowPortV1`, `ProductionFinalWritebackWorkflowV1`, `WritebackReviewV1`, `RunGovernanceWorkflowPortsV1`, and `RunGovernanceRouteInstallerV1`.
+
+**Implementation points, exact RED, and minimum GREEN contracts:**
 
 #### Legacy step 29.C: Final Writeback WebUI and Governance Route Composition
 
@@ -7728,34 +8141,34 @@ def test_stale_writeback_subject_never_calls_persistence(
 - SPEC (29.C): Spec compliance review checks Task 29.C's Goal, Milestone 29's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent final-writeback governance-route contract.
 - Quality (29.C): Code quality and Open Design/`ui-ux-pro-max` review check exact subject/evidence hierarchy, escaped paths/text, state-aware approve/reject controls, keyboard/focus/live errors, non-color status, stale conflict clarity, and relevant CSRF/Host/Origin/CSP checks before typed domain calls.
 
-- [ ] **Step 17: Add the exact 29.C RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
-- [ ] **Step 18: Run 29.C RED.** Run `python -m pytest -q tests/web/test_writeback_workflow.py::test_stale_writeback_subject_never_calls_persistence`. Expected: FAIL for “the test runner reaches `test_stale_writeback_subject_never_calls_persistence`, but its first task-owned assertion fails because the required stale-subject rejection has not been implemented; collection, runner startup, unrelated import, or environment failure does not count”. Collection, import, environment, unrelated, or already-failing tests do not count.
-- [ ] **Step 19: Implement 29.C GREEN-1.** Build the review from the exact current FinalDiff, verification evidence, workspace/candidate/policy identities, and approval subject, rendering all untrusted paths and evidence text escaped.
-- [ ] **Step 20: Implement 29.C GREEN-2.** Accept only one bound final approve/reject decision after Task 28 security, reject stale or override fields before domain calls, and let only `WritebackApprovedV1` invoke the typed Task 26.E persistence port.
-- [ ] **Step 21: Implement 29.C GREEN-3.** Make `test_stale_writeback_subject_never_calls_persistence` GREEN with the smallest stale-subject rejection before completing decision, exact-subject, persistence, installer-order, escaping, and accessibility matrices.
-- [ ] **Step 22: Implement 29.C GREEN-4.** Own final-review route adaptation and deterministic Milestone 29 installer composition only. Approval/persistence predicates, candidate/diff/evidence construction, workspace/policy fields, and domain state transitions remain out of scope.
-- [ ] **Step 23: Run 29.C Target GREEN.** Re-run `python -m pytest -q tests/web/test_writeback_workflow.py::test_stale_writeback_subject_never_calls_persistence`; require exit 0 and the displayed RED assertion to pass.
-- [ ] **Step 24: Run 29.C Domain.** Run `python -m pytest -q tests/web/test_writeback_workflow.py tests/web/test_accessibility.py tests/web/test_run_workflow.py tests/web/test_disclosure_workflow.py`; require exit 0 and every displayed Atomic verification expectation to hold.
+- [ ] **Step 1: Add the exact 29.C RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
+- [ ] **Step 2: Run 29.C RED.** Run `python -m pytest -q tests/web/test_writeback_workflow.py::test_stale_writeback_subject_never_calls_persistence`. Expected: FAIL for “the test runner reaches `test_stale_writeback_subject_never_calls_persistence`, but its first task-owned assertion fails because the required stale-subject rejection has not been implemented; collection, runner startup, unrelated import, or environment failure does not count”. Collection, import, environment, unrelated, or already-failing tests do not count.
+- [ ] **Step 3: Implement 29.C GREEN-1.** Build the review from the exact current FinalDiff, verification evidence, workspace/candidate/policy identities, and approval subject, rendering all untrusted paths and evidence text escaped.
+- [ ] **Step 4: Implement 29.C GREEN-2.** Accept only one bound final approve/reject decision after Task 28 security, reject stale or override fields before domain calls, and let only `WritebackApprovedV1` invoke the typed Task 26.E persistence port.
+- [ ] **Step 5: Implement 29.C GREEN-3.** Make `test_stale_writeback_subject_never_calls_persistence` GREEN with the smallest stale-subject rejection before completing decision, exact-subject, persistence, installer-order, escaping, and accessibility matrices.
+- [ ] **Step 6: Implement 29.C GREEN-4.** Own final-review route adaptation and deterministic Milestone 29 installer composition only. Approval/persistence predicates, candidate/diff/evidence construction, workspace/policy fields, and domain state transitions remain out of scope.
+- [ ] **Step 7: Run 29.C Target GREEN.** Re-run `python -m pytest -q tests/web/test_writeback_workflow.py::test_stale_writeback_subject_never_calls_persistence`; require exit 0 and the displayed RED assertion to pass.
+- [ ] **Step 8: Run 29.C Domain.** Run `python -m pytest -q tests/web/test_writeback_workflow.py tests/web/test_accessibility.py tests/web/test_run_workflow.py tests/web/test_disclosure_workflow.py`; require exit 0 and every displayed Atomic verification expectation to hold.
 
 **Task-level verification, review, and completion:**
 
-- [ ] **Step 25: Refactor only inside T29.1.** Improve names and local structure in declared writable Files without changing the displayed interfaces, observable behavior, or successor scope; rerun every legacy Target and Domain after the refactor.
-- [ ] **Step 26: Run the FORMAL_OFFLINE_V1 closure.** Execute every exact command defined for `FORMAL_OFFLINE_V1` in the Global Execution Contract, including the changed-file redacted credential scan and `git diff --check`; record actual results in `AGENT_LOG.md`.
-- [ ] **Step 27: Request T29.1 SPEC review.** Use `superpowers:requesting-code-review` with the Goal, SPEC contracts, Interfaces, minimum GREEN contracts, RED/GREEN evidence, and task diff. Require an explicit verdict.
-- [ ] **Step 28: Close T29.1 SPEC findings.** Fix every Critical/Important finding, rerun affected Targets, Domains, and profile commands, and obtain same-stage re-review PASS.
-- [ ] **Step 29: Request T29.1 quality review.** Use `superpowers:requesting-code-review` only after SPEC review PASS; review the task diff against every Atomic review focus line.
-- [ ] **Step 30: Close T29.1 quality findings.** Fix every Critical/Important finding, rerun affected checks, and obtain same-stage re-review PASS.
-- [ ] **Step 31: Commit T29.1 implementation.** Stage only the task-owned implementation/tests and create one implementation commit after both review stages PASS.
+- [ ] **Step 9: Refactor only inside T29.3.** Improve names and local structure in declared writable Files without changing the displayed interfaces, observable behavior, or successor scope; rerun every legacy Target and Domain after the refactor.
+- [ ] **Step 10: Run the FORMAL_OFFLINE_V1 closure.** Execute every exact command defined for `FORMAL_OFFLINE_V1` in the Global Execution Contract, including the changed-file redacted credential scan and `git diff --check`; record actual results in `AGENT_LOG.md`.
+- [ ] **Step 11: Request T29.3 SPEC review.** Use `superpowers:requesting-code-review` with the Goal, SPEC contracts, Interfaces, minimum GREEN contracts, RED/GREEN evidence, and task diff. Require an explicit verdict.
+- [ ] **Step 12: Close T29.3 SPEC findings.** Fix every Critical/Important finding, rerun affected Targets, Domains, and profile commands, and obtain same-stage re-review PASS.
+- [ ] **Step 13: Request T29.3 quality review.** Use `superpowers:requesting-code-review` only after SPEC review PASS; review the task diff against every Atomic review focus line.
+- [ ] **Step 14: Close T29.3 quality findings.** Fix every Critical/Important finding, rerun affected checks, and obtain same-stage re-review PASS.
+- [ ] **Step 15: Commit T29.3 implementation.** Stage only the task-owned implementation/tests and create one implementation commit after both review stages PASS.
 
 ```bash
-git add -- "src/vespercode/web/run_lifecycle_workflow.py" "src/vespercode/web/routes_runs.py" "src/vespercode/web/templates/run_create.html" "src/vespercode/web/templates/run_detail.html" "tests/web/test_run_workflow.py" "src/vespercode/web/disclosure_workflow.py" "src/vespercode/web/routes_disclosure.py" "src/vespercode/web/templates/disclosure_wait.html" "tests/web/test_disclosure_workflow.py" "src/vespercode/web/writeback_workflow.py" "src/vespercode/web/routes_writeback.py" "src/vespercode/web/run_workflows.py" "tests/web/test_writeback_workflow.py" "tests/web/test_accessibility.py"
-git commit -m "Implement T29.1 Local Run and Governance WebUI Workflows"
+git add -- "src/vespercode/web/writeback_workflow.py" "src/vespercode/web/routes_writeback.py" "src/vespercode/web/run_workflows.py" "tests/web/test_writeback_workflow.py" "tests/web/test_accessibility.py"
+git commit -m "Implement T29.3 Final Writeback WebUI and Governance Composition"
 ```
 
-- [ ] **Step 32: Record T29.1 completion evidence.** In a narrow evidence commit, update only this task's Status/Completion evidence and append `AGENT_LOG.md` with the real implementation SHA, responsible fresh subagent, human edits, exact commands/results, review/re-review verdicts, and PR URL.
-- [ ] **Step 33: Continue or finish WP29.** If another session task remains in this package, hand the same branch/PR to a new fresh subagent. Otherwise use `superpowers:finishing-a-development-branch`, verify the package result, and merge only after all predecessors and gates remain valid.
+- [ ] **Step 16: Record T29.3 completion evidence.** In a narrow evidence commit, update only this task's Status/Completion evidence and append `AGENT_LOG.md` with the real implementation SHA, responsible fresh subagent, human edits, exact commands/results, review/re-review verdicts, and PR URL.
+- [ ] **Step 17: Continue or finish WP29.** If another session task remains in this package, hand the same branch/PR to a new fresh subagent. Otherwise use `superpowers:finishing-a-development-branch`, verify the package result, and merge only after all predecessors and gates remain valid.
 
-**Done:** legacy steps 29.A, 29.B, 29.C 的 Target、Domain、适用真实环境和全局 profile 均通过；Critical/Important finding 全部关闭并复审；没有行为被延后到 successor。
+**Done:** legacy steps 29.C 的 Target、Domain、适用真实环境和全局 profile 均通过；Critical/Important finding 全部关闭并复审；没有行为被延后到 successor。
 **Completion evidence:** Not yet executed.
 
 ### Task T30.1: Closed Demo Scenario
@@ -8071,7 +8484,7 @@ git commit -m "Implement T30.2 Capability-isolated Demo Execution and Web App"
 - Create: `tests/e2e/reference/test_reference_audit.py`
 - Create: `tests/e2e/reference/test_reference_recovery_block.py`
 
-**Depends:** T09.1, T10.2, T11.1, T12.1, T13.1, T14.1, T15.2, T16.1, T17.1, T18.2, T19.1, T20.2, T21.1, T22.1, T23.1, T24.1, T25.3, T26.1, T26.2, T27.1, T28.1, T29.1, T38.2, T38.3
+**Depends:** T09.1, T10.2, T11.1, T12.1, T13.1, T14.1, T15.2, T16.1, T17.1, T18.2, T19.1, T20.2, T21.1, T22.1, T23.1, T24.1, T25.3, T26.1, T26.2, T27.1, T28.3, T29.3, T38.2, T38.3
 **Parallelization:** Start only after every task/non-task gate in **Depends** has passed. Same-wave execution is allowed only when expanded writable paths are disjoint; the WP31 branch and PR remain the sole package integration boundary.
 
 **Interfaces:**
@@ -8472,7 +8885,7 @@ git commit -m "Implement T32.1 Repeatable Governance and Feedback Mechanism Demo
 - Create: `tests/smoke/package/test_installed_webui.py`
 - Modify: `src/vespercode/cli.py`
 
-**Depends:** T26.2, T28.1, T29.1, T31.1, T32.1, T38.2, T38.3
+**Depends:** T26.2, T28.3, T29.3, T31.1, T32.1, T38.2, T38.3
 **Parallelization:** Start only after every task/non-task gate in **Depends** has passed. Same-wave execution is allowed only when expanded writable paths are disjoint; the WP33 branch and PR remain the sole package integration boundary.
 
 **Interfaces:**
@@ -8707,7 +9120,7 @@ git commit -m "Implement T34.1 Demo OCI Smoke"
 - Create: `tests/smoke/images/test_reference_image_contract.py`
 - Create: `tests/smoke/images/test_reference_fixture_smoke.py`
 
-**Depends:** T02.2, T18.2, T20.2, T31.1, T32.1
+**Depends:** T02.4, T18.2, T20.2, T31.1, T32.1
 **Parallelization:** Start only after every task/non-task gate in **Depends** has passed. Same-wave execution is allowed only when expanded writable paths are disjoint; the WP34-REFERENCE branch and PR remain the sole package integration boundary.
 
 **Interfaces:**
@@ -8976,12 +9389,12 @@ git commit -m "Implement T35.1 Dual GitHub Actions and GitLab CI Contracts"
 **Done:** legacy steps 35.A, 35.B, 35.C 的 Target、Domain、适用真实环境和全局 profile 均通过；Critical/Important finding 全部关闭并复审；没有行为被延后到 successor。
 **Completion evidence:** Not yet executed.
 
-### Task T36.1: GitHub Release, GHCR, and Render Deployment Evidence
+### Task T36.1: Closed Delivery Evidence and Commit Alignment
 
 **Status:** Not started
 **Work package:** WP36
-**Legacy steps:** 36.A, 36.B, 36.C
-**Goal:** Define closed non-secret CI/release/deployment evidence schemas and reject any source-commit, wheel, manifest, or platform-state misalignment before external publication.；Execute one protected source-aligned release that publishes the exact wheel/checksum and Task 2 reference manifest, then re-download/re-pull and verify both artifacts.；Deploy the exact capability-isolated Demo image/config to Render and freeze verified public health, scenario, isolation, and source-commit evidence.
+**Legacy steps:** 36.A
+**Goal:** Define closed non-secret CI/release/deployment evidence schemas and reject any source-commit, wheel, manifest, or platform-state misalignment before external publication.
 **SPEC contracts:** SPEC §5.4–§5.6; §8.2–§8.4; §10.1 AC-10–AC-12, AC-24, AC-30; §10.3 package/public smoke; course CI/CD record and accessible WebUI URL deliverables.
 
 **Files:**
@@ -8991,20 +9404,12 @@ git commit -m "Implement T35.1 Dual GitHub Actions and GitLab CI Contracts"
 - Create: `scripts/verify_release_evidence.py`
 - Create: `tests/smoke/release/test_evidence_schema.py`
 - Create: `tests/smoke/release/test_commit_alignment.py`
-- Create: `delivery/evidence/release-v1.json`
-- Create: `tests/smoke/release/test_manifest_image_alignment.py`
-- Create: `render.yaml`
-- Create: `delivery/evidence/deployment-v1.json`
-- Create: `tests/smoke/release/test_render_contract.py`
-- Create: `tests/smoke/release/test_public_demo_smoke.py`
 
-**Depends:** T02.2, T33.1, T34.1, T34.2, T35.1
+**Depends:** T02.4, T33.1, T34.1, T34.2, T35.1
 **Parallelization:** Start only after every task/non-task gate in **Depends** has passed. Same-wave execution is allowed only when expanded writable paths are disjoint; the WP36 branch and PR remain the sole package integration boundary.
 
 **Interfaces:**
 - **Consumes / Produces (36.A):** Produces `CIReleaseEvidenceV1`, `ReleaseEvidenceV1`, `DeploymentEvidenceV1`, and `load_and_verify_release_evidence(root, require_live)`.
-- **Consumes / Produces (36.B):** Produces a real GitHub Release URL, released wheel/checksum identities, `ghcr.io/ledstevenovo/vespercode-reference@sha256:{manifest_digest}`, digest re-pull/smoke evidence, and closed `ReleaseEvidenceV1`.
-- **Consumes / Produces (36.C):** Produces a real Render public URL, deployment id/source commit/image digest, `/healthz`, fixed scenario, session isolation, capability-absence evidence, and closed `DeploymentEvidenceV1`.
 
 **Implementation points, exact RED, and minimum GREEN contracts:**
 
@@ -9055,6 +9460,47 @@ def test_release_evidence_rejects_commit_misalignment(
 - [ ] **Step 7: Run 36.A Target GREEN.** Re-run `python -m pytest -q -o addopts='' -m deployment_smoke tests/smoke/release/test_commit_alignment.py::test_release_evidence_rejects_commit_misalignment`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 8: Run 36.A Domain.** Run `python -m pytest -q -o addopts='' -m deployment_smoke tests/smoke/release/test_evidence_schema.py tests/smoke/release/test_commit_alignment.py`; require exit 0 and every displayed Atomic verification expectation to hold.
 
+**Task-level verification, review, and completion:**
+
+- [ ] **Step 9: Refactor only inside T36.1.** Improve names and local structure in declared writable Files without changing the displayed interfaces, observable behavior, or successor scope; rerun every legacy Target and Domain after the refactor.
+- [ ] **Step 10: Run the FORMAL_OFFLINE_V1 closure.** Execute every exact command defined for `FORMAL_OFFLINE_V1` in the Global Execution Contract, including the changed-file redacted credential scan and `git diff --check`; record actual results in `AGENT_LOG.md`.
+- [ ] **Step 11: Request T36.1 SPEC review.** Use `superpowers:requesting-code-review` with the Goal, SPEC contracts, Interfaces, minimum GREEN contracts, RED/GREEN evidence, and task diff. Require an explicit verdict.
+- [ ] **Step 12: Close T36.1 SPEC findings.** Fix every Critical/Important finding, rerun affected Targets, Domains, and profile commands, and obtain same-stage re-review PASS.
+- [ ] **Step 13: Request T36.1 quality review.** Use `superpowers:requesting-code-review` only after SPEC review PASS; review the task diff against every Atomic review focus line.
+- [ ] **Step 14: Close T36.1 quality findings.** Fix every Critical/Important finding, rerun affected checks, and obtain same-stage re-review PASS.
+- [ ] **Step 15: Commit T36.1 implementation.** Stage only the task-owned implementation/tests and create one implementation commit after both review stages PASS.
+
+```bash
+git add -- "src/vespercode/delivery/evidence.py" "delivery/evidence/README.md" "delivery/evidence/ci-v1.json" "scripts/verify_release_evidence.py" "tests/smoke/release/test_evidence_schema.py" "tests/smoke/release/test_commit_alignment.py"
+git commit -m "Implement T36.1 Closed Delivery Evidence and Commit Alignment"
+```
+
+- [ ] **Step 16: Record T36.1 completion evidence.** In a narrow evidence commit, update only this task's Status/Completion evidence and append `AGENT_LOG.md` with the real implementation SHA, responsible fresh subagent, human edits, exact commands/results, review/re-review verdicts, and PR URL.
+- [ ] **Step 17: Continue or finish WP36.** If another session task remains in this package, hand the same branch/PR to a new fresh subagent. Otherwise use `superpowers:finishing-a-development-branch`, verify the package result, and merge only after all predecessors and gates remain valid.
+
+**Done:** legacy steps 36.A 的 Target、Domain、适用真实环境和全局 profile 均通过；Critical/Important finding 全部关闭并复审；没有行为被延后到 successor。
+**Completion evidence:** Not yet executed.
+
+### Task T36.2: GitHub Release and GHCR Publication
+
+**Status:** Not started
+**Work package:** WP36
+**Legacy steps:** 36.B
+**Goal:** Execute one protected source-aligned release that publishes the exact wheel/checksum and Task 2 reference manifest, then re-download/re-pull and verify both artifacts.
+**SPEC contracts:** SPEC §5.4–§5.6; §8.2–§8.4; §10.1 AC-10–AC-12, AC-24, AC-30; §10.3 package/public smoke; course CI/CD record and accessible WebUI URL deliverables.
+
+**Files:**
+- Create: `delivery/evidence/release-v1.json`
+- Create: `tests/smoke/release/test_manifest_image_alignment.py`
+
+**Depends:** T36.1
+**Parallelization:** Start only after every task/non-task gate in **Depends** has passed. Same-wave execution is allowed only when expanded writable paths are disjoint; the WP36 branch and PR remain the sole package integration boundary.
+
+**Interfaces:**
+- **Consumes / Produces (36.B):** Produces a real GitHub Release URL, released wheel/checksum identities, `ghcr.io/ledstevenovo/vespercode-reference@sha256:{manifest_digest}`, digest re-pull/smoke evidence, and closed `ReleaseEvidenceV1`.
+
+**Implementation points, exact RED, and minimum GREEN contracts:**
+
 #### Legacy step 36.B: GitHub Release and GHCR Content-addressed Publication
 
 **Atomic goal:** Execute one protected source-aligned release that publishes the exact wheel/checksum and Task 2 reference manifest, then re-download/re-pull and verify both artifacts.
@@ -9093,14 +9539,57 @@ def test_release_rejects_ghcr_digest_different_from_frozen_manifest(
 - SPEC (36.B): Spec compliance review checks Task 36.B's Goal, Milestone 36's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent protected content-addressed publication contract.
 - Quality (36.B): Code quality review checks protected/source/CI preflight, secret-store access, wheel/checksum identity, Task 2/34 manifest continuity, one-shot uncertain-state handling, re-download/re-hash/install, content-addressed RepoDigest pull/smoke, terminal evidence freshness, URL/artifact access control, and no invented result.
 
-- [ ] **Step 9: Add the exact 36.B RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
-- [ ] **Step 10: Run 36.B RED.** Run `python -m pytest -q -o addopts='' -m deployment_smoke tests/smoke/release/test_manifest_image_alignment.py::test_release_rejects_ghcr_digest_different_from_frozen_manifest`. Expected: FAIL for “the test runner reaches `test_release_rejects_ghcr_digest_different_from_frozen_manifest`, but its first task-owned assertion fails because the required digest-continuity assertion has not been implemented; collection, runner startup, unrelated import, or environment failure does not count”. Collection, import, environment, unrelated, or already-failing tests do not count.
-- [ ] **Step 11: Implement 36.B GREEN-1.** Require protected tag/source commit, passing Task 35 evidence, exact Task 33 wheel/checksum, Task 2/34 reference manifest, and least-privilege platform-secret availability before any external publication.
-- [ ] **Step 12: Implement 36.B GREEN-2.** Publish once, then independently download and re-hash/clean-install the wheel, pull GHCR by RepoDigest, inspect/smoke the image, compare every manifest digest, and write evidence only from confirmed terminal results.
-- [ ] **Step 13: Implement 36.B GREEN-3.** Make `test_release_rejects_ghcr_digest_different_from_frozen_manifest` GREEN with the smallest digest-continuity assertion before completing preflight, publication, download, install, pull, smoke, and evidence matrices.
-- [ ] **Step 14: Implement 36.B GREEN-4.** Own the protected GitHub Release/GHCR operation and confirmed evidence only. Credential disclosure, manifest rewriting, retries after uncertain publication, unprotected execution, Render deployment, invented URLs/digests, and partial success remain out of scope.
-- [ ] **Step 15: Run 36.B Target GREEN.** Re-run `python -m pytest -q -o addopts='' -m deployment_smoke tests/smoke/release/test_manifest_image_alignment.py::test_release_rejects_ghcr_digest_different_from_frozen_manifest`; require exit 0 and the displayed RED assertion to pass.
-- [ ] **Step 16: Run 36.B Domain.** Run `python -m pytest -q -o addopts='' -m deployment_smoke tests/smoke/release/test_manifest_image_alignment.py`; require exit 0 and every displayed Atomic verification expectation to hold.
+- [ ] **Step 1: Add the exact 36.B RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
+- [ ] **Step 2: Run 36.B RED.** Run `python -m pytest -q -o addopts='' -m deployment_smoke tests/smoke/release/test_manifest_image_alignment.py::test_release_rejects_ghcr_digest_different_from_frozen_manifest`. Expected: FAIL for “the test runner reaches `test_release_rejects_ghcr_digest_different_from_frozen_manifest`, but its first task-owned assertion fails because the required digest-continuity assertion has not been implemented; collection, runner startup, unrelated import, or environment failure does not count”. Collection, import, environment, unrelated, or already-failing tests do not count.
+- [ ] **Step 3: Implement 36.B GREEN-1.** Require protected tag/source commit, passing Task 35 evidence, exact Task 33 wheel/checksum, Task 2/34 reference manifest, and least-privilege platform-secret availability before any external publication.
+- [ ] **Step 4: Implement 36.B GREEN-2.** Publish once, then independently download and re-hash/clean-install the wheel, pull GHCR by RepoDigest, inspect/smoke the image, compare every manifest digest, and write evidence only from confirmed terminal results.
+- [ ] **Step 5: Implement 36.B GREEN-3.** Make `test_release_rejects_ghcr_digest_different_from_frozen_manifest` GREEN with the smallest digest-continuity assertion before completing preflight, publication, download, install, pull, smoke, and evidence matrices.
+- [ ] **Step 6: Implement 36.B GREEN-4.** Own the protected GitHub Release/GHCR operation and confirmed evidence only. Credential disclosure, manifest rewriting, retries after uncertain publication, unprotected execution, Render deployment, invented URLs/digests, and partial success remain out of scope.
+- [ ] **Step 7: Run 36.B Target GREEN.** Re-run `python -m pytest -q -o addopts='' -m deployment_smoke tests/smoke/release/test_manifest_image_alignment.py::test_release_rejects_ghcr_digest_different_from_frozen_manifest`; require exit 0 and the displayed RED assertion to pass.
+- [ ] **Step 8: Run 36.B Domain.** Run `python -m pytest -q -o addopts='' -m deployment_smoke tests/smoke/release/test_manifest_image_alignment.py`; require exit 0 and every displayed Atomic verification expectation to hold.
+
+**Task-level verification, review, and completion:**
+
+- [ ] **Step 9: Refactor only inside T36.2.** Improve names and local structure in declared writable Files without changing the displayed interfaces, observable behavior, or successor scope; rerun every legacy Target and Domain after the refactor.
+- [ ] **Step 10: Run the FORMAL_OFFLINE_V1 closure.** Execute every exact command defined for `FORMAL_OFFLINE_V1` in the Global Execution Contract, including the changed-file redacted credential scan and `git diff --check`; record actual results in `AGENT_LOG.md`.
+- [ ] **Step 11: Request T36.2 SPEC review.** Use `superpowers:requesting-code-review` with the Goal, SPEC contracts, Interfaces, minimum GREEN contracts, RED/GREEN evidence, and task diff. Require an explicit verdict.
+- [ ] **Step 12: Close T36.2 SPEC findings.** Fix every Critical/Important finding, rerun affected Targets, Domains, and profile commands, and obtain same-stage re-review PASS.
+- [ ] **Step 13: Request T36.2 quality review.** Use `superpowers:requesting-code-review` only after SPEC review PASS; review the task diff against every Atomic review focus line.
+- [ ] **Step 14: Close T36.2 quality findings.** Fix every Critical/Important finding, rerun affected checks, and obtain same-stage re-review PASS.
+- [ ] **Step 15: Commit T36.2 implementation.** Stage only the task-owned implementation/tests and create one implementation commit after both review stages PASS.
+
+```bash
+git add -- "delivery/evidence/release-v1.json" "tests/smoke/release/test_manifest_image_alignment.py"
+git commit -m "Implement T36.2 GitHub Release and GHCR Publication"
+```
+
+- [ ] **Step 16: Record T36.2 completion evidence.** In a narrow evidence commit, update only this task's Status/Completion evidence and append `AGENT_LOG.md` with the real implementation SHA, responsible fresh subagent, human edits, exact commands/results, review/re-review verdicts, and PR URL.
+- [ ] **Step 17: Continue or finish WP36.** If another session task remains in this package, hand the same branch/PR to a new fresh subagent. Otherwise use `superpowers:finishing-a-development-branch`, verify the package result, and merge only after all predecessors and gates remain valid.
+
+**Done:** legacy steps 36.B 的 Target、Domain、适用真实环境和全局 profile 均通过；Critical/Important finding 全部关闭并复审；没有行为被延后到 successor。
+**Completion evidence:** Not yet executed.
+
+### Task T36.3: Render Deployment and Live Demo Evidence
+
+**Status:** Not started
+**Work package:** WP36
+**Legacy steps:** 36.C
+**Goal:** Deploy the exact capability-isolated Demo image/config to Render and freeze verified public health, scenario, isolation, and source-commit evidence.
+**SPEC contracts:** SPEC §5.4–§5.6; §8.2–§8.4; §10.1 AC-10–AC-12, AC-24, AC-30; §10.3 package/public smoke; course CI/CD record and accessible WebUI URL deliverables.
+
+**Files:**
+- Create: `render.yaml`
+- Create: `delivery/evidence/deployment-v1.json`
+- Create: `tests/smoke/release/test_render_contract.py`
+- Create: `tests/smoke/release/test_public_demo_smoke.py`
+
+**Depends:** T36.2
+**Parallelization:** Start only after every task/non-task gate in **Depends** has passed. Same-wave execution is allowed only when expanded writable paths are disjoint; the WP36 branch and PR remain the sole package integration boundary.
+
+**Interfaces:**
+- **Consumes / Produces (36.C):** Produces a real Render public URL, deployment id/source commit/image digest, `/healthz`, fixed scenario, session isolation, capability-absence evidence, and closed `DeploymentEvidenceV1`.
+
+**Implementation points, exact RED, and minimum GREEN contracts:**
 
 #### Legacy step 36.C: Render Deployment and Live Public Demo Evidence
 
@@ -9140,34 +9629,34 @@ def test_render_contract_has_no_disk_or_real_provider_secret(
 - SPEC (36.C): Spec compliance review checks Task 36.C's Goal, Milestone 36's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent Render live-Demo evidence contract.
 - Quality (36.C): Code quality review checks source/image/config identity, PORT/health contract, disk/secret/socket/repository absence, endpoint isolation, deployment/URL freshness, content-addressed image binding, cold-start/trace/session/capability observations, evidence access control, and no invented live outcome.
 
-- [ ] **Step 17: Add the exact 36.C RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
-- [ ] **Step 18: Run 36.C RED.** Run `python -m pytest -q -o addopts='' -m deployment_smoke tests/smoke/release/test_render_contract.py::test_render_contract_has_no_disk_or_real_provider_secret`. Expected: FAIL for “the test runner reaches `test_render_contract_has_no_disk_or_real_provider_secret`, but its first task-owned assertion fails because the required no-disk/no-secret static contract has not been implemented; collection, runner startup, unrelated import, or environment failure does not count”. Collection, import, environment, unrelated, or already-failing tests do not count.
-- [ ] **Step 19: Implement 36.C GREEN-1.** Define a closed Render service contract for the exact Task 34.B Demo image/config, platform PORT, `/healthz`, no persistent disk, no secret/socket/repository credential, and no formal/local/recovery endpoint.
-- [ ] **Step 20: Implement 36.C GREEN-2.** Deploy only the source-aligned image, then bind confirmed deployment id, commit, image digest, public URL, cold-start, health, fixed Mock trace, simulation label, session isolation, and capability-absence observations into terminal evidence.
-- [ ] **Step 21: Implement 36.C GREEN-3.** Make `test_render_contract_has_no_disk_or_real_provider_secret` GREEN with the smallest no-disk/no-secret static contract before completing image/config, live health, scenario, isolation, cold-start, and evidence matrices.
-- [ ] **Step 22: Implement 36.C GREEN-4.** Own Render Demo configuration, deployment, live smoke, and confirmed evidence only. Formal/local capabilities, real providers, secrets, disks, repository access, recovery, invented public state, and unrelated site behavior remain out of scope.
-- [ ] **Step 23: Run 36.C Target GREEN.** Re-run `python -m pytest -q -o addopts='' -m deployment_smoke tests/smoke/release/test_render_contract.py::test_render_contract_has_no_disk_or_real_provider_secret`; require exit 0 and the displayed RED assertion to pass.
-- [ ] **Step 24: Run 36.C Domain.** Run `python -m pytest -q -o addopts='' -m deployment_smoke tests/smoke/release/test_render_contract.py tests/smoke/release/test_public_demo_smoke.py`; require exit 0 and every displayed Atomic verification expectation to hold.
+- [ ] **Step 1: Add the exact 36.C RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
+- [ ] **Step 2: Run 36.C RED.** Run `python -m pytest -q -o addopts='' -m deployment_smoke tests/smoke/release/test_render_contract.py::test_render_contract_has_no_disk_or_real_provider_secret`. Expected: FAIL for “the test runner reaches `test_render_contract_has_no_disk_or_real_provider_secret`, but its first task-owned assertion fails because the required no-disk/no-secret static contract has not been implemented; collection, runner startup, unrelated import, or environment failure does not count”. Collection, import, environment, unrelated, or already-failing tests do not count.
+- [ ] **Step 3: Implement 36.C GREEN-1.** Define a closed Render service contract for the exact Task 34.B Demo image/config, platform PORT, `/healthz`, no persistent disk, no secret/socket/repository credential, and no formal/local/recovery endpoint.
+- [ ] **Step 4: Implement 36.C GREEN-2.** Deploy only the source-aligned image, then bind confirmed deployment id, commit, image digest, public URL, cold-start, health, fixed Mock trace, simulation label, session isolation, and capability-absence observations into terminal evidence.
+- [ ] **Step 5: Implement 36.C GREEN-3.** Make `test_render_contract_has_no_disk_or_real_provider_secret` GREEN with the smallest no-disk/no-secret static contract before completing image/config, live health, scenario, isolation, cold-start, and evidence matrices.
+- [ ] **Step 6: Implement 36.C GREEN-4.** Own Render Demo configuration, deployment, live smoke, and confirmed evidence only. Formal/local capabilities, real providers, secrets, disks, repository access, recovery, invented public state, and unrelated site behavior remain out of scope.
+- [ ] **Step 7: Run 36.C Target GREEN.** Re-run `python -m pytest -q -o addopts='' -m deployment_smoke tests/smoke/release/test_render_contract.py::test_render_contract_has_no_disk_or_real_provider_secret`; require exit 0 and the displayed RED assertion to pass.
+- [ ] **Step 8: Run 36.C Domain.** Run `python -m pytest -q -o addopts='' -m deployment_smoke tests/smoke/release/test_render_contract.py tests/smoke/release/test_public_demo_smoke.py`; require exit 0 and every displayed Atomic verification expectation to hold.
 
 **Task-level verification, review, and completion:**
 
-- [ ] **Step 25: Refactor only inside T36.1.** Improve names and local structure in declared writable Files without changing the displayed interfaces, observable behavior, or successor scope; rerun every legacy Target and Domain after the refactor.
-- [ ] **Step 26: Run the FORMAL_OFFLINE_V1 closure.** Execute every exact command defined for `FORMAL_OFFLINE_V1` in the Global Execution Contract, including the changed-file redacted credential scan and `git diff --check`; record actual results in `AGENT_LOG.md`.
-- [ ] **Step 27: Request T36.1 SPEC review.** Use `superpowers:requesting-code-review` with the Goal, SPEC contracts, Interfaces, minimum GREEN contracts, RED/GREEN evidence, and task diff. Require an explicit verdict.
-- [ ] **Step 28: Close T36.1 SPEC findings.** Fix every Critical/Important finding, rerun affected Targets, Domains, and profile commands, and obtain same-stage re-review PASS.
-- [ ] **Step 29: Request T36.1 quality review.** Use `superpowers:requesting-code-review` only after SPEC review PASS; review the task diff against every Atomic review focus line.
-- [ ] **Step 30: Close T36.1 quality findings.** Fix every Critical/Important finding, rerun affected checks, and obtain same-stage re-review PASS.
-- [ ] **Step 31: Commit T36.1 implementation.** Stage only the task-owned implementation/tests and create one implementation commit after both review stages PASS.
+- [ ] **Step 9: Refactor only inside T36.3.** Improve names and local structure in declared writable Files without changing the displayed interfaces, observable behavior, or successor scope; rerun every legacy Target and Domain after the refactor.
+- [ ] **Step 10: Run the FORMAL_OFFLINE_V1 closure.** Execute every exact command defined for `FORMAL_OFFLINE_V1` in the Global Execution Contract, including the changed-file redacted credential scan and `git diff --check`; record actual results in `AGENT_LOG.md`.
+- [ ] **Step 11: Request T36.3 SPEC review.** Use `superpowers:requesting-code-review` with the Goal, SPEC contracts, Interfaces, minimum GREEN contracts, RED/GREEN evidence, and task diff. Require an explicit verdict.
+- [ ] **Step 12: Close T36.3 SPEC findings.** Fix every Critical/Important finding, rerun affected Targets, Domains, and profile commands, and obtain same-stage re-review PASS.
+- [ ] **Step 13: Request T36.3 quality review.** Use `superpowers:requesting-code-review` only after SPEC review PASS; review the task diff against every Atomic review focus line.
+- [ ] **Step 14: Close T36.3 quality findings.** Fix every Critical/Important finding, rerun affected checks, and obtain same-stage re-review PASS.
+- [ ] **Step 15: Commit T36.3 implementation.** Stage only the task-owned implementation/tests and create one implementation commit after both review stages PASS.
 
 ```bash
-git add -- "src/vespercode/delivery/evidence.py" "delivery/evidence/README.md" "delivery/evidence/ci-v1.json" "scripts/verify_release_evidence.py" "tests/smoke/release/test_evidence_schema.py" "tests/smoke/release/test_commit_alignment.py" "delivery/evidence/release-v1.json" "tests/smoke/release/test_manifest_image_alignment.py" "render.yaml" "delivery/evidence/deployment-v1.json" "tests/smoke/release/test_render_contract.py" "tests/smoke/release/test_public_demo_smoke.py"
-git commit -m "Implement T36.1 GitHub Release, GHCR, and Render Deployment Evidence"
+git add -- "render.yaml" "delivery/evidence/deployment-v1.json" "tests/smoke/release/test_render_contract.py" "tests/smoke/release/test_public_demo_smoke.py"
+git commit -m "Implement T36.3 Render Deployment and Live Demo Evidence"
 ```
 
-- [ ] **Step 32: Record T36.1 completion evidence.** In a narrow evidence commit, update only this task's Status/Completion evidence and append `AGENT_LOG.md` with the real implementation SHA, responsible fresh subagent, human edits, exact commands/results, review/re-review verdicts, and PR URL.
-- [ ] **Step 33: Continue or finish WP36.** If another session task remains in this package, hand the same branch/PR to a new fresh subagent. Otherwise use `superpowers:finishing-a-development-branch`, verify the package result, and merge only after all predecessors and gates remain valid.
+- [ ] **Step 16: Record T36.3 completion evidence.** In a narrow evidence commit, update only this task's Status/Completion evidence and append `AGENT_LOG.md` with the real implementation SHA, responsible fresh subagent, human edits, exact commands/results, review/re-review verdicts, and PR URL.
+- [ ] **Step 17: Continue or finish WP36.** If another session task remains in this package, hand the same branch/PR to a new fresh subagent. Otherwise use `superpowers:finishing-a-development-branch`, verify the package result, and merge only after all predecessors and gates remain valid.
 
-**Done:** legacy steps 36.A, 36.B, 36.C 的 Target、Domain、适用真实环境和全局 profile 均通过；Critical/Important finding 全部关闭并复审；没有行为被延后到 successor。
+**Done:** legacy steps 36.C 的 Target、Domain、适用真实环境和全局 profile 均通过；Critical/Important finding 全部关闭并复审；没有行为被延后到 successor。
 **Completion evidence:** Not yet executed.
 
 ### Task T37.1: README and Final Process Evidence
@@ -9188,7 +9677,7 @@ git commit -m "Implement T36.1 GitHub Release, GHCR, and Render Deployment Evide
 - Modify: `SPEC_PROCESS.md`
 - Test: `tests/unit/process/test_delivery_evidence.py`
 
-**Depends:** T01.1, T01.2, T02.1, T02.2, T03.1, T03.2, T04.1, T04.2, T05.1, T06.1, T07.1, T07.2, T08.1, T09.1, T10.1, T10.2, T11.1, T12.1, T13.1, T14.1, T15.1, T15.2, T16.1, T17.1, T18.1, T18.2, T19.1, T20.1, T20.2, T21.1, T22.1, T23.1, T24.1, T25.1, T25.2, T25.3, T26.1, T26.2, T27.1, T28.1, T29.1, T30.1, T30.2, T31.1, T32.1, T33.1, T34.1, T34.2, T35.1, T36.1, T38.1, T38.2, T38.3
+**Depends:** T01.1, T01.2, T02.3, T02.4, T03.1, T03.2, T04.1, T04.2, T05.1, T06.4, T07.3, T07.4, T08.1, T09.1, T10.1, T10.2, T11.1, T12.1, T13.1, T14.1, T15.1, T15.2, T16.1, T17.1, T18.1, T18.2, T19.1, T20.1, T20.2, T21.1, T22.1, T23.1, T24.1, T25.1, T25.2, T25.3, T26.1, T26.2, T27.1, T28.3, T29.3, T30.1, T30.2, T31.1, T32.1, T33.1, T34.1, T34.2, T35.1, T36.3, T38.1, T38.2, T38.3
 **Parallelization:** Start only after every task/non-task gate in **Depends** has passed. Same-wave execution is allowed only when expanded writable paths are disjoint; the WP37 branch and PR remain the sole package integration boundary.
 
 **Interfaces:**
@@ -9367,7 +9856,7 @@ git commit -m "Implement T37.1 README and Final Process Evidence"
 **Status:** Not started
 **Work package:** WP37
 **Legacy steps:** 37.C
-**Goal:** Aggregate every local/external/process/documentation check, including independently validated typed Independent PLAN Review and Approved-document Baseline evidence results, and report ready only when all 55 session tasks cover all 141 legacy steps and a valid student-authored reflection exists.
+**Goal:** Aggregate every local/external/process/documentation check, including independently validated typed Independent PLAN Review and Approved-document Baseline evidence results, and report ready only when all 68 session tasks cover all 141 legacy steps and a valid student-authored reflection exists.
 **SPEC contracts:** SPEC §1.6; §5.3–§5.6; §8.1–§8.4; §10.1 AC-01–AC-31; §10.3; §11.3; course required artifacts, process evidence, README, CI/CD, WebUI URL, and reflection rules; `AGENTS.md` final-report rules.
 
 **Files:**
@@ -9501,7 +9990,7 @@ git commit -m "Implement T37.2 Independent Delivery and Reflection Readiness Gat
 - Create: `src/vespercode/web/templates/audit.html`
 - Create: `tests/web/test_audit_workflow.py`
 
-**Depends:** T22.1, T23.1, T27.1, T28.1, T29.1
+**Depends:** T22.1, T23.1, T27.1, T28.3, T29.3
 **Parallelization:** Start only after every task/non-task gate in **Depends** has passed. Same-wave execution is allowed only when expanded writable paths are disjoint; the WP38 branch and PR remain the sole package integration boundary.
 
 **Interfaces:**
@@ -9697,7 +10186,7 @@ git commit -m "Implement T38.1 Credential, Memory, and Audit Web Workflows"
 - Create: `src/vespercode/web/local_composition.py`
 - Create: `src/vespercode/cli_composition.py`
 
-**Depends:** T07.2, T09.1, T23.1, T26.2, T28.1, T29.1, T38.1
+**Depends:** T07.4, T09.1, T23.1, T26.2, T28.3, T29.3, T38.1
 **Parallelization:** Start only after every task/non-task gate in **Depends** has passed. Same-wave execution is allowed only when expanded writable paths are disjoint; the WP38 branch and PR remain the sole package integration boundary.
 
 **Interfaces:**
@@ -10000,67 +10489,67 @@ This is the sole requirement coverage table. Every implementation set and indepe
 
 | Requirement | SPEC contract / acceptance scope | Implementation task(s) | Independent validation task(s) | Required evidence |
 |---|---|---|---|---|
-| US-01 | FR-ADM, FR-LOOP; NFR-PERF, NFR-USE, NFR-SEC; AC-15, AC-16, AC-21, AC-26, AC-28, AC-30, AC-31 | T06.1, T07.1, T07.2, T08.1, T09.1, T10.1, T10.2, T20.1, T20.2, T23.1, T25.1, T25.2, T25.3, T28.1, T29.1 | T31.1, T33.1, T35.1, T37.1, T37.2, T38.3 | 适用 task card 的 Target/Domain 与独立验证 task 证据。 |
+| US-01 | FR-ADM, FR-LOOP; NFR-PERF, NFR-USE, NFR-SEC; AC-15, AC-16, AC-21, AC-26, AC-28, AC-30, AC-31 | T06.1, T06.2, T06.3, T06.4, T07.1, T07.2, T07.3, T07.4, T08.1, T09.1, T10.1, T10.2, T20.1, T20.2, T23.1, T25.1, T25.2, T25.3, T28.1, T28.2, T28.3, T29.1, T29.2, T29.3 | T31.1, T33.1, T35.1, T37.1, T37.2, T38.3 | 适用 task card 的 Target/Domain 与独立验证 task 证据。 |
 | US-02 | FR-CRED, SPEC §8.1; NFR-SEC, NFR-PRIV; AC-08 | T16.1, T25.2, T27.1, T38.1, T38.2 | T31.1, T32.1, T33.1, T35.1, T37.2, T38.3 | 适用 task card 的 Target/Domain 与独立验证 task 证据。 |
 | US-03 | FR-LOOP, FR-WS, FR-VAL; NFR-PERF, NFR-REL; AC-04, AC-05, AC-06, AC-17, AC-18, AC-19, AC-20, AC-25, AC-26, AC-28, AC-31 | T10.1, T10.2, T11.1, T12.1, T13.1, T17.1, T18.1, T18.2, T19.1, T20.1, T20.2, T21.1, T24.1, T25.1, T25.2, T25.3 | T31.1, T32.1, T34.2, T35.1, T37.2 | 适用 task card 的 Target/Domain 与独立验证 task 证据。 |
-| US-04 | FR-GOV; NFR-SEC, NFR-PRIV; AC-13, AC-26, AC-27 | T15.1, T15.2, T16.1, T24.1, T25.1, T25.2, T25.3, T29.1 | T31.1, T32.1, T35.1, T37.1, T37.2, T38.3 | 适用 task card 的 Target/Domain 与独立验证 task 证据。 |
+| US-04 | FR-GOV; NFR-SEC, NFR-PRIV; AC-13, AC-26, AC-27 | T15.1, T15.2, T16.1, T24.1, T25.1, T25.2, T25.3, T29.1, T29.2, T29.3 | T31.1, T32.1, T35.1, T37.1, T37.2, T38.3 | 适用 task card 的 Target/Domain 与独立验证 task 证据。 |
 | US-05 | FR-GOV; NFR-REL, NFR-SEC; AC-01, AC-02, AC-03, AC-26, AC-27, AC-31 | T09.1, T12.1, T13.1, T14.1, T15.1, T15.2, T17.1, T25.2, T25.3 | T31.1, T32.1, T35.1, T37.2 | 适用 task card 的 Target/Domain 与独立验证 task 证据。 |
-| US-06 | FR-PERSIST; NFR-REL, NFR-SEC; AC-07, AC-21, AC-22, AC-26, AC-29, AC-31 | T03.1, T03.2, T09.1, T12.1, T14.1, T21.1, T26.1, T26.2, T29.1, T38.2 | T31.1, T33.1, T35.1, T37.2, T38.3 | 适用 task card 的 Target/Domain 与独立验证 task 证据。 |
+| US-06 | FR-PERSIST; NFR-REL, NFR-SEC; AC-07, AC-21, AC-22, AC-26, AC-29, AC-31 | T03.1, T03.2, T09.1, T12.1, T14.1, T21.1, T26.1, T26.2, T29.1, T29.2, T29.3, T38.2 | T31.1, T33.1, T35.1, T37.2, T38.3 | 适用 task card 的 Target/Domain 与独立验证 task 证据。 |
 | US-07 | FR-MEM; NFR-OBS, NFR-PRIV; AC-14, AC-23 | T22.1, T23.1, T24.1, T38.1, T38.2 | T31.1, T35.1, T37.2, T38.3 | 适用 task card 的 Target/Domain 与独立验证 task 证据。 |
-| US-08 | FR-LOOP, FR-MEM, FR-UI; NFR-USE, NFR-OBS; AC-06, AC-16, AC-27, AC-28 | T07.1, T07.2, T23.1, T25.2, T25.3, T28.1, T29.1, T38.1, T38.2 | T31.1, T33.1, T35.1, T37.1, T37.2, T38.3 | 适用 task card 的 Target/Domain 与独立验证 task 证据。 |
-| US-09 | FR-UI; NFR-PERF, NFR-REL, NFR-SEC; AC-09, AC-12 | T30.1, T30.2, T34.1 | T32.1, T35.1, T36.1, T37.1, T37.2 | 适用 task card 的 Target/Domain 与独立验证 task 证据。 |
-| FR-ADM | FR-ADM — request validation, Run creation, and ordered preflight | T06.1, T07.1, T07.2, T08.1, T09.1, T10.1, T10.2, T20.1, T20.2 | T31.1 | Child RED/GREEN suites prove the engine/domain/registry schema closure and zero-downstream admission failures; Windows checks prove workspace/Git/Snapshot; Task 31.A records the production call order and Task 31.B records denials. |
-| FR-LOOP | FR-LOOP — loop, action protocol, context, budgets, stopping, and lifecycle | T05.1, T07.1, T11.1, T15.1, T15.2, T16.1, T17.1, T24.1, T25.1, T25.2, T25.3 | T31.1, T32.1 | Component suites prove action, context, feedback, count, progress, timeout, cancel and restart rules; reference and mechanism traces prove composition. |
-| FR-WS | FR-WS — Snapshot, path boundary, strict patches, and CandidateTree | T01.1, T01.2, T04.2, T06.1, T09.1, T10.1, T10.2, T11.1, T12.1 | T31.1, T32.1 | Task 1.E `GO` and Tasks 9.A–9.D Windows evidence prove object/path behavior; domain suites and later traces prove legal correction, cursor continuity, and denials. |
-| FR-GOV | FR-GOV — policy, final approval, disclosure, and real LLM authorization | T13.1, T14.1, T15.1, T15.2, T16.1, T25.1, T25.2, T25.3, T29.1 | T31.1, T32.1, T38.3 | Pure governance tests plus reference/mechanism/browser traces prove no unauthorized dispatch, network, approval consumption, or write. |
+| US-08 | FR-LOOP, FR-MEM, FR-UI; NFR-USE, NFR-OBS; AC-06, AC-16, AC-27, AC-28 | T07.1, T07.2, T07.3, T07.4, T23.1, T25.2, T25.3, T28.1, T28.2, T28.3, T29.1, T29.2, T29.3, T38.1, T38.2 | T31.1, T33.1, T35.1, T37.1, T37.2, T38.3 | 适用 task card 的 Target/Domain 与独立验证 task 证据。 |
+| US-09 | FR-UI; NFR-PERF, NFR-REL, NFR-SEC; AC-09, AC-12 | T30.1, T30.2, T34.1 | T32.1, T35.1, T36.1, T36.2, T36.3, T37.1, T37.2 | 适用 task card 的 Target/Domain 与独立验证 task 证据。 |
+| FR-ADM | FR-ADM — request validation, Run creation, and ordered preflight | T06.1, T06.2, T06.3, T06.4, T07.1, T07.2, T07.3, T07.4, T08.1, T09.1, T10.1, T10.2, T20.1, T20.2 | T31.1 | Child RED/GREEN suites prove the engine/domain/registry schema closure and zero-downstream admission failures; Windows checks prove workspace/Git/Snapshot; Task 31.A records the production call order and Task 31.B records denials. |
+| FR-LOOP | FR-LOOP — loop, action protocol, context, budgets, stopping, and lifecycle | T05.1, T07.1, T07.2, T07.3, T11.1, T15.1, T15.2, T16.1, T17.1, T24.1, T25.1, T25.2, T25.3 | T31.1, T32.1 | Component suites prove action, context, feedback, count, progress, timeout, cancel and restart rules; reference and mechanism traces prove composition. |
+| FR-WS | FR-WS — Snapshot, path boundary, strict patches, and CandidateTree | T01.1, T01.2, T04.2, T06.1, T06.2, T06.3, T06.4, T09.1, T10.1, T10.2, T11.1, T12.1 | T31.1, T32.1 | Task 1.E `GO` and Tasks 9.A–9.D Windows evidence prove object/path behavior; domain suites and later traces prove legal correction, cursor continuity, and denials. |
+| FR-GOV | FR-GOV — policy, final approval, disclosure, and real LLM authorization | T13.1, T14.1, T15.1, T15.2, T16.1, T25.1, T25.2, T25.3, T29.1, T29.2, T29.3 | T31.1, T32.1, T38.3 | Pure governance tests plus reference/mechanism/browser traces prove no unauthorized dispatch, network, approval consumption, or write. |
 | FR-VAL | FR-VAL — Python adapter, Baseline, checks, Manifest, feedback, and formal success | T18.1, T18.2, T19.1, T20.1, T20.2, T21.1, T24.1, T25.2, T25.3 | T31.1, T34.2 | Docker commands prove isolation/report/Baseline/formal behavior; the reference flow and image smoke preserve the same Manifest and evidence. |
-| FR-PERSIST | FR-PERSIST — final approval, controlled writeback, and recovery | T03.1, T03.2, T09.1, T12.1, T14.1, T21.1, T26.1, T26.2, T29.1, T38.2 | T31.1, T33.1, T38.3 | Task 3.G gate, production fault/Windows tests, recovery UI/CLI, reference terminal trace, and installed smoke prove exact writeback and three-value recovery. |
+| FR-PERSIST | FR-PERSIST — final approval, controlled writeback, and recovery | T03.1, T03.2, T09.1, T12.1, T14.1, T21.1, T26.1, T26.2, T29.1, T29.2, T29.3, T38.2 | T31.1, T33.1, T38.3 | Task 3.G gate, production fault/Windows tests, recovery UI/CLI, reference terminal trace, and installed smoke prove exact writeback and three-value recovery. |
 | FR-MEM | FR-MEM — memory and audit | T22.1, T23.1, T24.1, T38.1, T38.2 | T31.1, T38.3 | Domain suites prove isolation/authority/order/retention; reference and browser evidence prove scoped visible operations. |
 | FR-CRED | FR-CRED — credential lifecycle | T16.1, T25.2, T27.1, T38.1, T38.2 | T31.1, T32.1, T35.1, T38.3 | WinCred smoke, zero-side-effect call-gate traces, WebUI response scans, and Windows CI evidence prove lifecycle and per-call revalidation. |
-| FR-UI | FR-UI — formal local WebUI and public Demo | T28.1, T29.1, T30.1, T30.2, T38.1, T38.2 | T32.1, T33.1, T34.1, T36.1, T38.3 | Local security/browser/installed tests plus shared-core proof, Demo image health, and live public smoke prove both isolated compositions. |
+| FR-UI | FR-UI — formal local WebUI and public Demo | T28.1, T28.2, T28.3, T29.1, T29.2, T29.3, T30.1, T30.2, T38.1, T38.2 | T32.1, T33.1, T34.1, T36.1, T36.2, T36.3, T38.3 | Local security/browser/installed tests plus shared-core proof, Demo image health, and live public smoke prove both isolated compositions. |
 | NFR-PERF | NFR-PERF — hard budgets and bounded resources | T05.1, T08.1, T11.1, T15.1, T15.2, T16.1, T18.1, T18.2, T24.1, T25.1, T25.2, T25.3, T30.1, T30.2 | T31.1, T32.1, T34.1, T34.2 | FakeClock and boundary tests prove pre-side-effect limits; Docker/Demo image smoke and reference traces prove real resource ceilings. |
-| NFR-REL | NFR-REL — deterministic and fail-closed behavior | T01.1, T01.2, T02.1, T02.2, T03.1, T03.2, T04.1, T04.2, T05.1, T06.1, T07.1, T07.2, T08.1, T09.1, T10.1, T10.2, T11.1, T12.1, T13.1, T14.1, T15.1, T15.2, T16.1, T17.1, T18.1, T18.2, T19.1, T20.1, T20.2, T21.1, T22.1, T23.1, T24.1, T25.1, T25.2, T25.3, T26.1, T26.2, T30.1, T30.2 | T31.1, T32.1, T37.2 | Gate identity, dependency closure, formal toolchain promotion, canonical vectors, immutable structures, checksum-verified domain/registry closure, transactions, repeated semantic traces, shared-core provenance, and final missing-evidence rejection prove determinism/fail-close. |
-| NFR-USE | NFR-USE — understandable status, decisions, diff, and recovery | T23.1, T28.1, T29.1, T37.1, T38.1, T38.2 | T33.1, T38.3 | Local WebUI/browser/accessibility tests, installed UI smoke, and README contract prove understandable non-color-only operation. |
-| NFR-OBS | NFR-OBS — ordered evidence and categorized CI/release records | T07.1, T07.2, T23.1, T31.1, T32.1, T35.1, T36.1, T38.1, T38.2 | T37.1, T37.2, T38.3 | Schema history/registry checks, audit concurrency, deterministic reports, real dual-platform records, release/deployment JSON, browser evidence, and evidence-age checks prove observability. |
-| NFR-SEC | NFR-SEC — declared threat-boundary mechanisms | T01.1, T01.2, T02.1, T02.2, T03.1, T03.2, T06.1, T09.1, T12.1, T13.1, T14.1, T15.1, T15.2, T16.1, T17.1, T18.1, T18.2, T21.1, T25.1, T25.2, T25.3, T26.1, T26.2, T27.1, T28.1, T29.1, T30.1, T30.2, T35.1, T36.1, T38.1, T38.2 | T31.1, T32.1, T34.1, T34.2, T37.2, T38.3 | Windows/Docker/fault/Web/Demo/dual-CI/live checks plus every credential scan prove the declared boundary without overclaiming SPEC §5.5. |
-| NFR-PRIV | NFR-PRIV — local retention and minimal disclosure/storage | T15.1, T15.2, T16.1, T22.1, T23.1, T26.1, T26.2, T27.1, T30.1, T30.2, T36.1, T38.1, T38.2 | T31.1, T32.1, T38.3 | Source/record rejection, ACL/retention, WinCred, no-disk Demo, non-secret evidence, and local response scans prove minimal disclosure/storage. |
+| NFR-REL | NFR-REL — deterministic and fail-closed behavior | T01.1, T01.2, T02.1, T02.2, T02.3, T02.4, T03.1, T03.2, T04.1, T04.2, T05.1, T06.1, T06.2, T06.3, T06.4, T07.1, T07.2, T07.3, T07.4, T08.1, T09.1, T10.1, T10.2, T11.1, T12.1, T13.1, T14.1, T15.1, T15.2, T16.1, T17.1, T18.1, T18.2, T19.1, T20.1, T20.2, T21.1, T22.1, T23.1, T24.1, T25.1, T25.2, T25.3, T26.1, T26.2, T30.1, T30.2 | T31.1, T32.1, T37.2 | Gate identity, dependency closure, formal toolchain promotion, canonical vectors, immutable structures, checksum-verified domain/registry closure, transactions, repeated semantic traces, shared-core provenance, and final missing-evidence rejection prove determinism/fail-close. |
+| NFR-USE | NFR-USE — understandable status, decisions, diff, and recovery | T23.1, T28.1, T28.2, T28.3, T29.1, T29.2, T29.3, T37.1, T38.1, T38.2 | T33.1, T38.3 | Local WebUI/browser/accessibility tests, installed UI smoke, and README contract prove understandable non-color-only operation. |
+| NFR-OBS | NFR-OBS — ordered evidence and categorized CI/release records | T07.1, T07.2, T07.3, T07.4, T23.1, T31.1, T32.1, T35.1, T36.1, T36.2, T36.3, T38.1, T38.2 | T37.1, T37.2, T38.3 | Schema history/registry checks, audit concurrency, deterministic reports, real dual-platform records, release/deployment JSON, browser evidence, and evidence-age checks prove observability. |
+| NFR-SEC | NFR-SEC — declared threat-boundary mechanisms | T01.1, T01.2, T02.1, T02.2, T02.3, T02.4, T03.1, T03.2, T06.1, T06.2, T06.3, T06.4, T09.1, T12.1, T13.1, T14.1, T15.1, T15.2, T16.1, T17.1, T18.1, T18.2, T21.1, T25.1, T25.2, T25.3, T26.1, T26.2, T27.1, T28.1, T28.2, T28.3, T29.1, T29.2, T29.3, T30.1, T30.2, T35.1, T36.1, T36.2, T36.3, T38.1, T38.2 | T31.1, T32.1, T34.1, T34.2, T37.2, T38.3 | Windows/Docker/fault/Web/Demo/dual-CI/live checks plus every credential scan prove the declared boundary without overclaiming SPEC §5.5. |
+| NFR-PRIV | NFR-PRIV — local retention and minimal disclosure/storage | T15.1, T15.2, T16.1, T22.1, T23.1, T26.1, T26.2, T27.1, T30.1, T30.2, T36.1, T36.2, T36.3, T38.1, T38.2 | T31.1, T32.1, T38.3 | Source/record rejection, ACL/retention, WinCred, no-disk Demo, non-secret evidence, and local response scans prove minimal disclosure/storage. |
 | AC-01 | AC-01 | T01.1, T01.2, T04.2, T09.1, T12.1, T13.1 | T31.1, T32.1 | Win32 gate/object tests, strict patch tests, Task 1.E `GO`, Windows job log, and denial traces. |
 | AC-02 | AC-02 | T13.1, T14.1, T15.1, T15.2, T17.1, T25.2, T30.1, T30.2 | T32.1 | Policy precedence, shared-core Demo composition, and mechanism hard-DENY report prove zero dispatch/publication. |
-| AC-03 | AC-03 | T07.1, T12.1, T13.1, T14.1, T20.2, T21.1, T26.1 | T31.1, T32.1 | Subject/approval/race tests and stale/expiry/duplicate approval traces prove zero write. |
+| AC-03 | AC-03 | T07.1, T07.2, T07.3, T12.1, T13.1, T14.1, T20.2, T21.1, T26.1 | T31.1, T32.1 | Subject/approval/race tests and stale/expiry/duplicate approval traces prove zero write. |
 | AC-04 | AC-04 | T12.1, T13.1, T20.1, T20.2, T21.1 | T31.1, T32.1 | Patch/formal/protected-artifact tests and reference/mechanism zero-container evidence. |
 | AC-05 | AC-05 | T16.1, T19.1, T24.1, T25.2, T25.3, T30.1, T30.2 | T31.1, T32.1 | Main-loop, shared-core, and feedback-recovery traces prove the Task 24.C feedback consumption changes the next action once. |
-| AC-06 | AC-06 | T14.1, T17.1, T20.2, T21.1, T25.2, T25.3, T29.1 | T31.1, T38.3 | Formal predicate, loop, writeback workflow, and completion → validation → final-wait/no-write evidence. |
-| AC-07 | AC-07 | T12.1, T14.1, T21.1, T26.1, T29.1 | T31.1, T38.3 | Writeback preconditions/fault matrix/Web workflow plus approved FinalDiff/postimage/untouched-file digest report. |
-| AC-08 | AC-08 | T27.1, T28.1, T38.1, T38.2 | T31.1, T33.1, T35.1, T38.3 | Credential status/redaction/WinCred/Web tests, cleared state, Windows CI log, and installed smoke. |
-| AC-09 | AC-09 | T13.1, T17.1, T24.1, T25.2, T25.3, T30.1, T30.2 | T32.1, T34.1, T36.1 | Exact shared-pure-core call sequence, repeated Demo trace, forbidden-capability absence, Demo image, and public scenario smoke. |
-| AC-10 | AC-10 | T04.1, T35.1, T37.2 | T36.1, T37.1 | Complete hash-locked dependency closure, `python -m pytest -q`, exact GitHub/GitLab contract tests, real unit-test jobs, and final process report. |
-| AC-11 | AC-11 | T28.1, T29.1, T33.1, T35.1, T36.1, T37.1, T38.1, T38.2 | T37.2, T38.3 | Clean pipx/installed CLI/WebUI, real wheel job, GitHub Release wheel/SHA, and verified install/start instructions. |
-| AC-12 | AC-12 | T30.1, T30.2, T34.1, T35.1, T36.1 | T32.1, T37.2 | Demo container health/capability smoke, real image-build log/digest, Render URL, and live `/healthz`. |
-| AC-13 | AC-13 | T06.1, T15.1, T15.2, T16.1, T24.1, T25.1, T25.2, T25.3, T27.1, T29.1 | T31.1, T32.1 | Source/scope/budget, fresh credential, counting, adapter, disclosure UI, and zero-side-effect reference/mechanism traces. |
+| AC-06 | AC-06 | T14.1, T17.1, T20.2, T21.1, T25.2, T25.3, T29.1, T29.2, T29.3 | T31.1, T38.3 | Formal predicate, loop, writeback workflow, and completion → validation → final-wait/no-write evidence. |
+| AC-07 | AC-07 | T12.1, T14.1, T21.1, T26.1, T29.1, T29.2, T29.3 | T31.1, T38.3 | Writeback preconditions/fault matrix/Web workflow plus approved FinalDiff/postimage/untouched-file digest report. |
+| AC-08 | AC-08 | T27.1, T28.1, T28.2, T28.3, T38.1, T38.2 | T31.1, T33.1, T35.1, T38.3 | Credential status/redaction/WinCred/Web tests, cleared state, Windows CI log, and installed smoke. |
+| AC-09 | AC-09 | T13.1, T17.1, T24.1, T25.2, T25.3, T30.1, T30.2 | T32.1, T34.1, T36.1, T36.2, T36.3 | Exact shared-pure-core call sequence, repeated Demo trace, forbidden-capability absence, Demo image, and public scenario smoke. |
+| AC-10 | AC-10 | T04.1, T35.1, T37.2 | T36.1, T36.2, T36.3, T37.1 | Complete hash-locked dependency closure, `python -m pytest -q`, exact GitHub/GitLab contract tests, real unit-test jobs, and final process report. |
+| AC-11 | AC-11 | T28.1, T28.2, T28.3, T29.1, T29.2, T29.3, T33.1, T35.1, T36.1, T36.2, T36.3, T37.1, T38.1, T38.2 | T37.2, T38.3 | Clean pipx/installed CLI/WebUI, real wheel job, GitHub Release wheel/SHA, and verified install/start instructions. |
+| AC-12 | AC-12 | T30.1, T30.2, T34.1, T35.1, T36.1, T36.2, T36.3 | T32.1, T37.2 | Demo container health/capability smoke, real image-build log/digest, Render URL, and live `/healthz`. |
+| AC-13 | AC-13 | T06.1, T06.2, T06.3, T06.4, T15.1, T15.2, T16.1, T24.1, T25.1, T25.2, T25.3, T27.1, T29.1, T29.2, T29.3 | T31.1, T32.1 | Source/scope/budget, fresh credential, counting, adapter, disclosure UI, and zero-side-effect reference/mechanism traces. |
 | AC-14 | AC-14 | T22.1, T24.1, T38.1, T38.2 | T31.1, T38.3 | Memory repository/authorization/context tests plus cross-workspace/clear and visible-operation evidence. |
-| AC-15 | AC-15 | T06.1, T08.1, T09.1, T10.1, T10.2, T20.1, T20.2, T25.1, T25.3 | T31.1 | Admission-order/static tests, Windows identity/Snapshot checks, and exact PREFLIGHT/one-Snapshot E2E trace. |
-| AC-16 | AC-16 | T07.1, T07.2, T23.1, T25.2, T25.3, T28.1, T29.1, T38.1, T38.2 | T31.1, T33.1, T38.3 | Migration engine/registry, audit projection/status/run/audit Web tests plus state trace and installed browser captures. |
+| AC-15 | AC-15 | T06.1, T06.2, T06.3, T06.4, T08.1, T09.1, T10.1, T10.2, T20.1, T20.2, T25.1, T25.3 | T31.1 | Admission-order/static tests, Windows identity/Snapshot checks, and exact PREFLIGHT/one-Snapshot E2E trace. |
+| AC-16 | AC-16 | T07.1, T07.2, T07.3, T07.4, T23.1, T25.2, T25.3, T28.1, T28.2, T28.3, T29.1, T29.2, T29.3, T38.1, T38.2 | T31.1, T33.1, T38.3 | Migration engine/registry, audit projection/status/run/audit Web tests plus state trace and installed browser captures. |
 | AC-17 | AC-17 | T05.1, T10.1, T10.2, T11.1, T17.1, T30.1, T30.2 | T31.1, T32.1 | Cursor round-trip/stale/invalid/excerpt, parser/binding, production Demo call sequence, and paged/unpaged traces. |
 | AC-18 | AC-18 | T10.1, T10.2, T12.1, T17.1, T20.1, T20.2, T21.1 | T31.1 | FinalDiff/identity/patch/formal tests plus cumulative-patch, stale identity, and verified-candidate report. |
-| AC-19 | AC-19 | T02.1, T02.2, T18.1, T18.2, T19.1, T20.2, T34.2 | T31.1, T35.1 | Docker gate/isolation/reference baseline, frozen digest, image smoke, and real reference-image-build logs. |
+| AC-19 | AC-19 | T02.1, T02.2, T02.3, T02.4, T18.1, T18.2, T19.1, T20.2, T34.2 | T31.1, T35.1 | Docker gate/isolation/reference baseline, frozen digest, image smoke, and real reference-image-build logs. |
 | AC-20 | AC-20 | T19.1, T20.1, T20.2, T21.1 | T31.1, T34.2 | Formal predicate/reference Docker validation plus VerifiedCandidate digest and container smoke. |
-| AC-21 | AC-21 | T01.1, T01.2, T07.1, T09.1, T26.1, T26.2 | T31.1 | Named mutex/repository/fault tests, Task 1.E mutex `GO`, recovery-block trace, and Windows log. |
+| AC-21 | AC-21 | T01.1, T01.2, T07.1, T07.2, T07.3, T09.1, T26.1, T26.2 | T31.1 | Named mutex/repository/fault tests, Task 1.E mutex `GO`, recovery-block trace, and Windows log. |
 | AC-22 | AC-22 | T03.1, T03.2, T26.1, T26.2 | T31.1, T38.2 | Feasibility gate, deadline/external-change fault matrix, three-value report, and preview/apply evidence. |
 | AC-23 | AC-23 | T22.1, T38.1, T38.2 | T31.1, T38.3 | Memory authorization and Web workflow plus creator/source audit and scoped-form evidence. |
-| AC-24 | AC-24 | T01.1, T01.2, T02.1, T02.2, T03.1, T03.2, T04.1, T04.2, T18.1, T18.2, T19.1, T20.1, T20.2, T21.1, T26.1, T26.2, T27.1, T31.1, T33.1, T34.1, T34.2, T35.1, T36.1, T37.1 | T37.2 | Gate identities, dedicated Windows/Docker/E2E/fault/package/OCI/CI/live commands, and categorized URLs/digests in closed evidence JSON. |
-| AC-25 | AC-25 | T02.1, T02.2, T19.1, T20.2 | T31.1, T34.2 | Gate-only normalized-input comparator, production fingerprint/Baseline tests, and stable full/target digests in reference/image reports. |
-| AC-26 | AC-26 | T04.2, T05.1, T06.1, T10.1, T10.2, T12.1, T14.1, T15.1, T15.2, T16.1, T17.1, T18.1, T18.2, T19.1, T20.1, T20.2, T21.1, T24.1, T25.1, T25.2, T25.3 | T31.1, T37.1, T37.2 | CTV vectors and candidate/profile/request/fingerprint/Manifest/subject digest suites plus cross-process trace and final digest audit. |
-| AC-27 | AC-27 | T07.1, T14.1, T15.1, T15.2, T25.3, T29.1 | T31.1, T38.3 | Repository/approval/ledger/wait tests plus restart/wait decisions and browser-bound decision evidence. |
-| AC-28 | AC-28 | T05.1, T07.1, T08.1, T15.1, T15.2, T16.1, T17.1, T24.1, T25.1, T25.2, T25.3, T27.1 | T31.1, T32.1 | Counting/stopping/wait/credential/ledger tests plus deadline/order and cleared/unsafe zero-count reports. |
+| AC-24 | AC-24 | T01.1, T01.2, T02.1, T02.2, T02.3, T02.4, T03.1, T03.2, T04.1, T04.2, T18.1, T18.2, T19.1, T20.1, T20.2, T21.1, T26.1, T26.2, T27.1, T31.1, T33.1, T34.1, T34.2, T35.1, T36.1, T36.2, T36.3, T37.1 | T37.2 | Gate identities, dedicated Windows/Docker/E2E/fault/package/OCI/CI/live commands, and categorized URLs/digests in closed evidence JSON. |
+| AC-25 | AC-25 | T02.1, T02.2, T02.3, T02.4, T19.1, T20.2 | T31.1, T34.2 | Gate-only normalized-input comparator, production fingerprint/Baseline tests, and stable full/target digests in reference/image reports. |
+| AC-26 | AC-26 | T04.2, T05.1, T06.1, T06.2, T06.3, T06.4, T10.1, T10.2, T12.1, T14.1, T15.1, T15.2, T16.1, T17.1, T18.1, T18.2, T19.1, T20.1, T20.2, T21.1, T24.1, T25.1, T25.2, T25.3 | T31.1, T37.1, T37.2 | CTV vectors and candidate/profile/request/fingerprint/Manifest/subject digest suites plus cross-process trace and final digest audit. |
+| AC-27 | AC-27 | T07.1, T07.2, T07.3, T14.1, T15.1, T15.2, T25.3, T29.1, T29.2, T29.3 | T31.1, T38.3 | Repository/approval/ledger/wait tests plus restart/wait decisions and browser-bound decision evidence. |
+| AC-28 | AC-28 | T05.1, T07.1, T07.2, T07.3, T08.1, T15.1, T15.2, T16.1, T17.1, T24.1, T25.1, T25.2, T25.3, T27.1 | T31.1, T32.1 | Counting/stopping/wait/credential/ledger tests plus deadline/order and cleared/unsafe zero-count reports. |
 | AC-29 | AC-29 | T03.1, T03.2, T26.1, T26.2, T38.2 | T31.1, T33.1, T38.3 | External-change/recovery Web/CLI tests plus preview/apply/new-file and installed preview evidence. |
-| AC-30 | AC-30 | T02.1, T02.2, T06.1, T18.1, T18.2, T20.2, T34.2, T35.1, T36.1 | T37.2 | Local OCI/loopback/digest-pull proof, exact reproduction, protected pipeline, released manifest, GHCR RepoDigest, and target pull equality. |
-| AC-31 | AC-31 | T06.1, T09.1, T10.1, T10.2, T11.1, T12.1, T13.1, T14.1, T18.1, T18.2, T20.1, T20.2, T21.1, T26.1 | T31.1, T32.1 | Editable/candidate/policy/formal/persistence tamper and Windows alias tests plus legal/illegal mixed-patch and hard-DENY reports. |
+| AC-30 | AC-30 | T02.1, T02.2, T02.3, T02.4, T06.1, T06.2, T06.3, T06.4, T18.1, T18.2, T20.2, T34.2, T35.1, T36.1, T36.2, T36.3 | T37.2 | Local OCI/loopback/digest-pull proof, exact reproduction, protected pipeline, released manifest, GHCR RepoDigest, and target pull equality. |
+| AC-31 | AC-31 | T06.1, T06.2, T06.3, T06.4, T09.1, T10.1, T10.2, T11.1, T12.1, T13.1, T14.1, T18.1, T18.2, T20.1, T20.2, T21.1, T26.1 | T31.1, T32.1 | Editable/candidate/policy/formal/persistence tamper and Windows alias tests plus legal/illegal mixed-patch and hard-DENY reports. |
 
 ## 7. Derived Waves and Delivery Conditions
 
 ### 7.1 Session-task waves
 
-These 33 waves are mechanically derived from the sole `Depends` fields. They are explanatory projections, not a second edge source.
+These 42 waves are mechanically derived from the sole `Depends` fields. They are explanatory projections, not a second edge source.
 
 | Wave | Session tasks |
 |---:|---|
@@ -10068,35 +10557,44 @@ These 33 waves are mechanically derived from the sole `Depends` fields. They are
 | 2 | T01.2 |
 | 3 | T02.1 |
 | 4 | T02.2 |
-| 5 | T03.1 |
-| 6 | T03.2 |
-| 7 | T04.1 |
-| 8 | T04.2 |
-| 9 | T05.1 |
-| 10 | T06.1, T07.1, T10.1, T30.1 |
-| 11 | T08.1, T15.1, T18.1, T27.1 |
-| 12 | T09.1, T15.2 |
-| 13 | T10.2, T16.1 |
-| 14 | T11.1, T12.1, T20.1 |
-| 15 | T13.1, T18.2 |
-| 16 | T17.1, T19.1 |
-| 17 | T20.2, T22.1 |
-| 18 | T21.1, T23.1 |
-| 19 | T25.1, T28.1 |
-| 20 | T24.1 |
-| 21 | T25.2 |
-| 22 | T14.1 |
-| 23 | T25.3, T26.1 |
-| 24 | T26.2, T29.1, T30.2 |
-| 25 | T07.2, T32.1, T38.1 |
-| 26 | T34.1, T38.2 |
-| 27 | T38.3 |
-| 28 | T31.1 |
-| 29 | T33.1, T34.2 |
-| 30 | T35.1 |
-| 31 | T36.1 |
-| 32 | T37.1 |
-| 33 | T37.2 |
+| 5 | T02.3 |
+| 6 | T02.4 |
+| 7 | T03.1 |
+| 8 | T03.2 |
+| 9 | T04.1 |
+| 10 | T04.2 |
+| 11 | T05.1 |
+| 12 | T06.1, T07.1, T10.1, T30.1 |
+| 13 | T06.2, T07.2 |
+| 14 | T06.3, T07.3 |
+| 15 | T06.4 |
+| 16 | T08.1, T15.1, T18.1, T27.1 |
+| 17 | T09.1, T15.2 |
+| 18 | T10.2, T16.1 |
+| 19 | T11.1, T12.1, T20.1 |
+| 20 | T13.1, T18.2 |
+| 21 | T17.1, T19.1 |
+| 22 | T20.2, T22.1 |
+| 23 | T21.1, T23.1 |
+| 24 | T25.1, T28.1 |
+| 25 | T24.1, T28.2 |
+| 26 | T25.2, T28.3 |
+| 27 | T14.1 |
+| 28 | T25.3, T26.1 |
+| 29 | T26.2, T29.1, T30.2 |
+| 30 | T07.4, T29.2, T32.1 |
+| 31 | T29.3, T34.1 |
+| 32 | T38.1 |
+| 33 | T38.2 |
+| 34 | T38.3 |
+| 35 | T31.1 |
+| 36 | T33.1, T34.2 |
+| 37 | T35.1 |
+| 38 | T36.1 |
+| 39 | T36.2 |
+| 40 | T36.3 |
+| 41 | T37.1 |
+| 42 | T37.2 |
 
 ### 7.2 Work-package waves
 
@@ -10135,7 +10633,7 @@ These 26 waves are mechanically derived by collapsing the session DAG through ea
 
 Delivery is complete only when:
 
-- all 55 session tasks are `Complete`, each with real implementation/evidence commits and both review stages PASS;
+- all 68 session tasks are `Complete`, each with real implementation/evidence commits and both review stages PASS;
 - all 46 work packages have a finishing PASS and merged PR;
 - all three feasibility milestones record terminal GO without identity drift;
 - all required offline, Windows, Docker, fault, browser, package, OCI, CI, release, and live checks pass without required skip;
@@ -10151,7 +10649,7 @@ SPEC §1.6 and §11.3 remain the complete v1 non-goal/future-work authority; PLA
 
 ### 8.1 Writing-plans conformance
 
-Verifier A/B independently require the exact `For agentic workers` header, root Goal, Architecture, Tech Stack, Global Constraints, Planned Repository Structure, Global Execution Contract, Work Package Registry, 55 Session Task Cards, Unified Traceability, Derived Waves, this audit contract, and Execution Handoff.
+Verifier A/B independently require the exact `For agentic workers` header, root Goal, Architecture, Tech Stack, Global Constraints, Planned Repository Structure, Global Execution Contract, Work Package Registry, 68 Session Task Cards, Unified Traceability, Derived Waves, this audit contract, and Execution Handoff.
 
 Every session task contains Status, Work package, Legacy steps, Goal, SPEC contracts, Files, Depends, Parallelization, Interfaces, Implementation points/exact RED/minimum GREEN contracts, task-level verification/review/completion steps, Done, and one-line Completion evidence. Every task has task-specific checkbox steps and one exact commit command block.
 
@@ -10163,7 +10661,7 @@ The implementation-coordination Interfaces in PLAN bind exact names/signatures f
 
 Two independently implemented verifiers read strict UTF-8 and fail on BOM, any CR byte, invalid decoding, or other than exactly one final LF. PLAN is at most 1,572,864 bytes and 180,000 whitespace-delimited words. Each session task is at most 65,536 UTF-8 bytes and 8,000 words. These caps control representation size; they never authorize omission or placeholders.
 
-The exact retained graph metrics are 55 session tasks, 141 unique legacy steps, 46 work packages, 298 deduplicated session edges, 33 session waves, 263 deduplicated package edges, 26 package waves, zero cycles, and 55 unified trace rows. Requirement coverage remains 9 US, 9 FR, 6 NFR, and 31 AC rows, each with nonempty independent implementation and validation task sets.
+The exact retained graph metrics are 68 session tasks, 141 unique legacy steps, 46 work packages, 309 deduplicated session edges, 42 session waves, 263 deduplicated package edges, 26 package waves, zero cycles, and 55 unified trace rows. Requirement coverage remains 9 US, 9 FR, 6 NFR, and 31 AC rows, each with nonempty independent implementation and validation task sets.
 
 Task-card Files remain the sole execution mutation ownership source. Planned Repository Structure describes responsibility and must include every task path without assigning a conflicting writer. Shared modifiers remain limited to the explicit table in the Global Execution Contract.
 
