@@ -2172,7 +2172,7 @@ M0 必须在运行时对唯一正式 SPEC 执行并记录：
 2. 执行 `git hash-object --no-filters <正式 SPEC 路径>` 计算 Git blob；
 3. 执行 `git rev-parse HEAD` 记录当前 Git commit；
 4. 对照 `AI4SE_Final_Project_通用要求.md`、`AI4SE_Final_Project_A_Coding_Agent_Harness(1).md` 和适用 `AGENTS.md`，逐项确认课程与 Harness 强制要求没有被 SPEC 降级或遗漏；
-5. 明确核对已知阻断项已经关闭：GitHub Actions 与 GitLab CI 双平台闭环；List/Search canonical cursor；每次真实调用前凭据复验；下述 `PlanSemanticDigestV1` 执行跟踪排除规则；前三项技术门禁可从仅有获准 SPEC/PLAN 的冷启动环境建立并复现同一锁定 gate toolchain；Task 2 以无凭据 loopback registry 证明 OCI digest round-trip 和无自引用流程，而 GHCR 凭据与真实发布仍只属于受保护 release gate；
+5. 明确核对已知阻断项已经关闭：GitHub Actions 与 GitLab CI 双平台闭环；List/Search canonical cursor；每次真实调用前凭据复验；下述 `PlanSemanticDigestV2` 执行跟踪排除规则；前三项技术门禁可从仅有获准 SPEC/PLAN 的冷启动环境建立并复现同一锁定 gate toolchain；Task 2 以无凭据 loopback registry 证明 OCI digest round-trip 和无自引用流程，而 GHCR 凭据与真实发布仍只属于受保护 release gate；
 6. 由人类批准上述精确 SPEC 路径、SHA-256、Git blob 和基线 commit。
 
 M0 的摘要和批准记录必须写入外部批准记录及随后生成的 PLAN 元数据，不得把摘要写回被摘要的 `SPEC.md`。任何命令失败、内容冲突、阻断项未关闭或人类未批准都使 M0 失败：流程必须返回修改/澄清 SPEC，不得继续生成或冻结 PLAN，不得开始冷启动或 Task 1。
@@ -2189,17 +2189,17 @@ M0 的摘要和批准记录必须写入外部批准记录及随后生成的 PLAN
 
 因此，PLAN 不得再让实现者自行选择上述语义。精确依赖 patch 版本、OpenAI model、镜像摘要和部署 URL 由发布 manifest、lock file、README 与流水线证据记录，并通过 digest 绑定到运行。
 
-获准的 PLAN 使用 `PlanSemanticDigestV1` 区分语义合同与执行跟踪。该摘要不得写入 `PLAN.md` 自身，必须存入外部批准记录，并按以下唯一投影计算：
+获准的 PLAN 使用 `PlanSemanticDigestV2` 区分语义合同与执行跟踪。该摘要不得写入 `PLAN.md` 自身，必须存入外部批准记录，并按以下唯一投影计算：
 
 1. 输入必须是无 BOM UTF-8；所有 CRLF 先规范为 LF，裸 CR 拒绝。
-2. 正式 Task 区域精确定义为从完整行 `## Formal Tasks` 起，到下一完整行 `## Task Dependency DAG` 之前。只在该区域执行三种替换：
-   - 每个完整行前缀为 `**Status:** ` 的行统一替换为 `**Status:** TRACKING_STATUS_EXCLUDED_V1`；
+2. 正式 Task 区域精确定义为从完整行 `## 5. Session Task Cards` 起，到下一完整行 `## 6. Unified Traceability` 之前。只在该区域执行三种替换：
+   - 每个完整行前缀为 `**Status:** ` 的行统一替换为 `**Status:** TRACKING_STATUS_EXCLUDED_V2`；
    - 所有 checkbox token `[ ]` 与 `[x]` 统一为 `[ ]`，步骤正文仍参与摘要；
-   - 每个完整单行前缀为 `**Completion evidence:** ` 的行统一替换为 `**Completion evidence:** TRACKING_EVIDENCE_EXCLUDED_V1`。
+   - 每个完整单行前缀为 `**Completion evidence:** ` 的行统一替换为 `**Completion evidence:** TRACKING_EVIDENCE_EXCLUDED_V2`。
 3. 除上述精确替换外，PLAN 的其他全部字节都参与摘要；不得排除 task 标题、Goal、依赖、文件、接口、实现点、测试、命令、review gate、矩阵、门禁或人工动作。
-4. 对投影后的无 BOM UTF-8 字节计算 `SHA-256(b"VesperCode\0PLAN_SEMANTIC_CONTRACT_V1\0" + projected_plan_bytes)`。
-5. 仅 task 状态、checkbox 勾选和单行 completion evidence 的变化不要求重新进行 PLAN 语义批准或冷启动；任何其他字节变化都必须生成新的 `PlanSemanticDigestV1`、重新人工批准并重新通过冷启动门禁。
-6. 完整 PLAN 文件 SHA-256 始终作为每次证据更新的审计身份记录，但不取代 `PlanSemanticDigestV1`，也不因合法执行跟踪更新使既有语义批准失效。
+4. 对投影后的无 BOM UTF-8 字节计算 `SHA-256(b"VesperCode\0PLAN_SEMANTIC_CONTRACT_V2\0" + projected_plan_bytes)`。
+5. 仅 task 状态、checkbox 勾选和单行 completion evidence 的变化不要求重新进行 PLAN 语义批准或冷启动；任何其他字节变化都必须生成新的 `PlanSemanticDigestV2`、重新人工批准并重新通过冷启动门禁。
+6. 完整 PLAN 文件 SHA-256 始终作为每次证据更新的审计身份记录，但不取代 `PlanSemanticDigestV2`，也不因合法执行跟踪更新使既有语义批准失效。
 
 通过 M0 和 PLAN 人工批准后，PLAN 的最前部仍必须安排三项技术验证任务，并采用失败关闭而不是放宽设计：
 
