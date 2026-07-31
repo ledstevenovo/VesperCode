@@ -2164,7 +2164,7 @@ GitHub Release 与 GHCR 使用彼此独立的最小权限发布凭据：前者�
 
 ## 11.2 M0：SPEC Readiness Gate 与进入 PLAN 的关闭清单
 
-M0 是 PLAN 生成、冻结和冷启动之前的人工准入门禁，不是实现 Task，也不产生实现 commit。执行者必须从用户本次指定、文件状态声明和当前 Git/文件系统事实中唯一解析正式 SPEC 路径；若存在内容不同且无法唯一判定的候选，M0 失败并返回 SPEC/文件身份澄清。
+M0 是 PLAN 人工批准、冻结为实施基线、冷启动和 Task 1 之前的人工准入门禁，不是实现 Task，也不产生实现 commit。为给 M0 和 PLAN 审查提供可哈希、可审查的输入，允许在 M0 前生成仅用于这两项审查的未获准 Candidate PLAN；该文件的存在不构成人工批准、冻结为实施基线、冷启动或 Task 1 授权。执行者必须从用户本次指定、文件状态声明和当前 Git/文件系统事实中唯一解析正式 SPEC 路径；若存在内容不同且无法唯一判定的候选，M0 失败并返回 SPEC/文件身份澄清。
 
 M0 必须在运行时对唯一正式 SPEC 执行并记录：
 
@@ -2175,7 +2175,7 @@ M0 必须在运行时对唯一正式 SPEC 执行并记录：
 5. 明确核对已知阻断项已经关闭：GitHub Actions 与 GitLab CI 双平台闭环；List/Search canonical cursor；每次真实调用前凭据复验；下述 `PlanSemanticDigestV2` 执行跟踪排除规则；前三项技术门禁可从仅有获准 SPEC/PLAN 的冷启动环境建立并复现同一锁定 gate toolchain；Task 2 以无凭据 loopback registry 证明 OCI digest round-trip 和无自引用流程，而 GHCR 凭据与真实发布仍只属于受保护 release gate；
 6. 由人类批准上述精确 SPEC 路径、SHA-256、Git blob 和基线 commit。
 
-M0 的摘要和批准记录必须写入外部批准记录及随后生成的 PLAN 元数据，不得把摘要写回被摘要的 `SPEC.md`。任何命令失败、内容冲突、阻断项未关闭或人类未批准都使 M0 失败：流程必须返回修改/澄清 SPEC，不得继续生成或冻结 PLAN，不得开始冷启动或 Task 1。
+M0 的摘要和批准记录必须写入外部批准记录及随后生成或重新生成的 PLAN 元数据，不得把摘要写回被摘要的 `SPEC.md`。任何命令失败、内容冲突、阻断项未关闭或人类未批准都使 M0 失败：任何现有 Candidate PLAN 立即失效；流程必须先返回修改/澄清 SPEC，再针对修正后的 SPEC 重新生成 Candidate PLAN。失败状态下不得批准或冻结 PLAN 为实施基线，不得开始冷启动或 Task 1。
 
 本版供 M0 核对的关闭合同包括：
 
