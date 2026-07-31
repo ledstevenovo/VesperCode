@@ -39,7 +39,7 @@
 - Task 4.A selects the reviewed exact patch versions, transitive distributions, markers, and hashes at execution time without inventing them in this PLAN. The exact Task 1 Python patch and every overlapping pytest/Ruff/Mypy version are preserved. Task 4.F alone promotes those frozen interpreter/tool identities, marker definitions, static rules, build backend, and canonical formal commands into the non-dependency sections of `pyproject.toml`.
 - After Task 4.A completes, no task may add, remove, resolve, upgrade, downgrade, or install an undeclared project package. Discovery of a missing package stops the current task. Any dependency-closure change requires a non-tracking PLAN semantic revision, dependency review, recomputation of every affected mechanical structure and digest, renewed human PLAN approval, and a repeated heterogeneous cold-start; M0 also repeats if the authoritative SPEC identity or requirements change. Ad-hoc installation and silent regeneration of `requirements/dev.lock` are prohibited. Rebuilding `.venv-formal` from the unchanged `requirements/dev.lock` with `--require-hashes --no-deps` is only materialization of the already-declared exact/hash-verified closure and is not a dependency change; resolution, upgrade, extra installation, or re-locking remains prohibited and triggers this fail-closed amendment rule.
 - Task 4.A solely owns `scripts/bootstrap_formal_env.py`. In every fresh formal-task worktree, the candidate interpreter is located only with `py -3.12`; before creating, rebuilding, or using `.venv-formal`, the bootstrap reads the Task 1.E terminal `GO` toolchain identity and requires `platform.python_version() == gate_evidence.python_version`. A mismatch exits nonzero before the environment is created or used. The bootstrap then materializes only the immutable `requirements/dev.lock` closure with `.venv-formal\Scripts\python.exe -m pip install --disable-pip-version-check --require-hashes --no-deps -r requirements/dev.lock`; it never reads another worktree's `.venv-gate`, invokes an ambient bare `python`, resolves packages, upgrades, or rewrites the lock.
-- The canonical offline suite is logically `python -m pytest -q`, executed in formal worktrees as `.venv-formal\Scripts\python.exe -m pytest -q`. Task 4.A runs its dependency-closure RED and lock/config consistency checks through that exact interpreter without claiming the formal tool configuration exists; Task 4.F establishes the canonical offline and closure commands through the same interpreter. Every later task also runs the logical commands `python -m ruff format --check .`, `python -m ruff check .`, and `python -m mypy src tests` from the verified `.venv-formal` environment.
+- The canonical offline suite is logically `python -m pytest -q`, executed in formal worktrees as `.venv-formal\Scripts\python.exe -m pytest -q`. Before those task-owned formal artifacts exist, Task 4.A runs only its displayed entry-runnable bootstrap RED through `py -3.12 -m unittest`; after the bootstrap verifies exact Task 1.E Python equality and materializes `.venv-formal`, Task 4.A runs every dependency-closure Target, Domain, and lock/config consistency check through that exact formal interpreter. Task 4.F establishes the canonical offline and closure commands through the same interpreter. Every later task also runs the logical commands `python -m ruff format --check .`, `python -m ruff check .`, and `python -m mypy src tests` from the verified `.venv-formal` environment.
 - The five standard closure commands referenced by Tasks 5–38 are exactly `python -m ruff format --check .`, `python -m ruff check .`, `python -m mypy src tests`, `python scripts/scan_credentials.py --changed --redact --fail-on-match`, and `git diff --check`.
 - One session task is one fresh-subagent execution/review/commit slice inside its work package and uses one fresh implementation subagent plus one implementation/evidence commit pair. It is not an independent PR task. One work package is the `AGENTS.md` independent feature / independent task and owns one isolated worktree, branch, draft PR, finishing pass, and merge. Use `superpowers:using-git-worktrees` for every package worktree and `superpowers:test-driven-development` for every behavior change.
 - A session task first receives a spec-compliance review and then a code-quality review, with `superpowers:requesting-code-review` used for both explicit stages. Critical or Important findings block dependents until the implementing or explicitly assigned repair subagent closes them and the same review stage passes.
@@ -75,7 +75,7 @@ The following identities define the exact repository inputs used to author and m
 | Repository instructions SHA-256 | `f4e68e302cfb9cc9f383704ef3be9eb8975277a0715e5357e65070cad2738656` |
 | Repository instructions provenance | Working-tree planning input; not contained in the planning baseline commit. |
 | Initial generation timestamp | `2026-07-26T17:17:01+08:00` |
-| Last semantic revision timestamp | `2026-07-30T19:26:44+08:00` |
+| Last semantic revision timestamp | `2026-07-31T22:37:06+08:00` |
 
 This PLAN is the self-contained implementation plan for the exact current SPEC and the sole canonical source for executable task steps. It does not change product scope, behavior, security boundaries, non-goals, or acceptance criteria. The 141 legacy child IDs remain immutable atomic TDD microcycles and migration-trace identifiers. The 68 `TNN.X` session tasks are fresh-subagent execution/review/commit slices, not independent PR tasks. The 46 `WP...` work packages are the `AGENTS.md` independent features / independent tasks and the sole branch/worktree/PR units.
 
@@ -293,6 +293,7 @@ The paths below lock file ownership before task decomposition. Files are small, 
 | `src/vespercode/trees/content_store.py` | Immutable raw-byte content objects addressed by digest |
 | `src/vespercode/trees/snapshot.py` | Single sealed `SnapshotTree` construction and integrity verification |
 | `src/vespercode/trees/text_classifier.py` | Shared `SupportedTextFileV1` classification and `TextMetadataV1` |
+| `src/vespercode/trees/readable.py` | Minimal immutable-tree read protocol shared by Snapshot, Candidate, and file tools |
 | `src/vespercode/trees/candidate.py` | Immutable CandidateTree overlay and parent-independent tree digest |
 | `src/vespercode/candidate/unified_diff.py` | Strict `UNIFIED_DIFF_V1` parser |
 | `src/vespercode/candidate/patch_engine.py` | Whole-patch validation and atomic CandidateRevision derivation |
@@ -394,6 +395,7 @@ The paths below lock file ownership before task decomposition. Files are small, 
 | `src/vespercode/cli.py` | `serve`, `recover`, status, and help entry points without secret arguments |
 | `src/vespercode/cli_composition.py` | Task 38.F sole production recovery-CLI handler/service wiring after complete v1 database initialization |
 | `src/vespercode/delivery/evidence.py` | Closed non-secret CI, release, and deployment evidence schemas |
+| `src/vespercode/delivery/publication.py` | Pure frozen-input/observed-result release-publication alignment verifier with zero external side effects |
 | `src/vespercode/delivery/readme_verifier.py` | Read-only README section/command/link/digest contract verifier |
 | `src/vespercode/delivery/process_verifier.py` | Read-only M0/cold-start/typed independent-PLAN-review/task/review/commit/PR process-evidence verifier |
 
@@ -521,7 +523,7 @@ In this workflow, “one PR per independent task” means one PR per work packag
 1. Start only after every predecessor package has merged and every non-task gate named by the root task has passed.
 2. Use `superpowers:using-git-worktrees` to create the package branch/worktree from the common merged baseline and open one draft PR.
 3. Use `superpowers:subagent-driven-development` to give each session task to a fresh subagent with exact SPEC, PLAN, package diff, and predecessor evidence.
-4. Use `superpowers:test-driven-development` to execute each listed legacy step sequentially as an independent RED → minimum GREEN microcycle. A collection, import, environment, unrelated, or already-failing test is not valid RED.
+4. Use `superpowers:test-driven-development` to execute each listed legacy step sequentially as an independent RED → minimum GREEN microcycle. A RED is valid only when the declared runner starts, attempts to load the declared test target, and the observed failure matches that legacy step's displayed Expected RED. A collection/import failure is valid only when Expected RED explicitly names the current legacy step's missing task-owned module, symbol, or artifact and the traceback identifies that exact missing object. Runner/interpreter startup failure, a missing test target, any other import or dependency failure, external-environment failure, unrelated failure, or already-failing test is not valid RED.
 5. After all microcycles, run task Target, Domain, applicable real-environment checks, and the declared global profile.
 6. Use `superpowers:requesting-code-review` to run task-level SPEC review first. Close every Critical/Important finding, rerun affected checks, and obtain same-stage re-review PASS.
 7. Only then use `superpowers:requesting-code-review` to run task-level quality review. Close every Critical/Important finding, rerun checks, and obtain same-stage re-review PASS.
@@ -612,6 +614,57 @@ Profiles define repeated workflow commands once. Task cards retain only task-spe
 | WP36 | T36.1, T36.2, T36.3 | 36.A, 36.B, 36.C | `codex/wp36` / `.worktrees/wp36` | 最后一个 session task 通过后 finishing 并合并。 |
 | WP37 | T37.1, T37.2 | 37.A, 37.B, 37.C | `codex/wp37` / `.worktrees/wp37` | 最后一个 session task 通过后 finishing 并合并。 |
 | WP38 | T38.1, T38.2, T38.3 | 38.A, 38.B, 38.C, 38.D, 38.E, 38.F, 38.G | `codex/wp38` / `.worktrees/wp38` | 最后一个 session task 通过后 finishing 并合并。 |
+
+### 4.1 Milestone Registry
+
+This registry is the sole normative definition of Milestones 1–38. A Milestone is a non-executable review aggregate with exactly four fields: Goal, SPEC scope, Session tasks, and Aggregate completion. It owns no Files, Depends, behavior, branch, worktree, PR, implementation step, independent acceptance, or new completion obligation; task cards remain authoritative for those facts.
+
+`MILESTONE_GOAL_V1(N)` reads each listed task's single-line `**Goal:** ` value in displayed Session tasks order, splits on U+FF1B `；`, rejects empty clauses, preserves clause bytes and first-occurrence order, removes only byte-identical duplicate clauses, and rejoins with one `；`. `MILESTONE_SPEC_SCOPE_V1(N)` reads each listed task's single-line `**SPEC contracts:** ` value in the same order, splits on ASCII `;`, trims only leading and trailing ASCII spaces from each atom, rejects empty atoms, preserves first-occurrence order, removes only byte-identical duplicate atoms, and rejoins with `; `. The Goal and SPEC scope cells below contain those actual derived values and must match independent recomputation byte-for-byte after Markdown `\|` is decoded to `|`.
+
+`SESSION_TASK_COMPLETE_V1(T)` means the task's full Status line is exactly `**Status:** Complete`, every task-step checkbox is `[x]`, Completion evidence is nonempty and not `Not yet executed.`, and every existing Done condition has corresponding completion evidence. `MILESTONE_COMPLETE_V1(N)` means every listed task satisfies `SESSION_TASK_COMPLETE_V1`, every legacy step owned by those tasks has its existing Target and Domain PASS, every existing applicable profile or real-environment check PASS, and every Critical/Important finding is CLOSED with same-stage re-review PASS. These predicates only derive completion from existing task state and evidence; they create no new implementation, verification, approval, or delivery obligation, and their presence does not claim that an unexecuted Milestone is complete.
+
+Every session task appears in exactly one row. All legacy steps within one task resolve to one Milestone: legacy `13` resolves to Milestone 13, and every `N.X` resolves to Milestone N. Row N's Session tasks are exactly the task-card set whose legacy steps resolve to N, in Session Task Cards order. The table has exactly 38 single-line rows in ascending 1–38 order; task ids use `T[0-9]{2}\.[0-9]+` separated only by `, `, with no ranges, ellipses, aliases, or natural-language abbreviation.
+
+| Milestone | Goal | SPEC scope | Session tasks | Aggregate completion |
+|---:|---|---|---|---|
+| 1 | Create the sole Python 3.12 feasibility environment, frozen configs, and closed command runner used by every Task 1–3 proof.；Evaluate closed lexical/final-object/ACL observations without touching the filesystem and return stable pass/fail codes.；Produce real handle-derived identity, collision, reparse/hard-link, and ACL observations from a disposable NTFS workspace.；Prove two independent Windows processes cannot concurrently hold the same workspace-identity mutex.；Assemble the exact Task 1 GO/NO-GO report only when bootstrap, object/ACL, and mutex evidence are complete and identity-consistent. | SPEC §0.1 `CanonicalRelativePathV1`; §1.4.3; §4.1 behavior 6–10; §4.3 behavior 4–5; §5.2; §5.5; §10.1 AC-01, AC-15, AC-21, AC-26, AC-31; §10.3 Windows integration; §11.2 item 1. | T01.1, T01.2 | `MILESTONE_COMPLETE_V1(1)` |
+| 2 | Freeze one reference fixture, dependency lock, tool versions, and non-self-referential build-input manifest.；Build the frozen reference image and prove its manifest is reproducible and contains no final manifest/digest self-reference.；Push the exact local OCI manifest to a credential-free loopback registry, pull by digest, and verify cleanup plus three-way digest equality.；Prove one fresh reference container enforces the frozen no-network, non-root, read-only, bounded execution boundary.；Emit complete explicitly loaded pytest lifecycle evidence for collection, full run, and target rerun inside the reference boundary.；Prove two independent target-failure runs produce byte-identical normalized gate fingerprint inputs without defining the production fingerprint.；Freeze `ReferenceProfileManifestV1` and emit GO only when build, registry, isolation, pytest, and fingerprint evidence are complete and identity-consistent. | SPEC §1.4.1 `ReferenceProfileManifestV1`; §1.4.5; §4.1 behavior 11–13; §4.5; §5.5; §8.2; §8.4; §10.1 AC-04, AC-19, AC-20, AC-24, AC-25, AC-30; §10.3 Docker integration; §11.2 item 2. | T02.1, T02.2, T02.3, T02.4 | `MILESTONE_COMPLETE_V1(2)` |
+| 3 | Define and durably record the sorted one-to-three-path PREPARED/WRITING/terminal transaction protocol without applying recovery.；Apply sorted CREATE/REPLACE operations with deterministic interruption around every replace and durable-state write.；Stop before any write on pre-write expiry and stop all subsequent workspace writes after post-write expiry.；Classify current bytes/object identity against preimage/postimage evidence and fail closed on any external or unprovable change.；Produce a byte-for-byte read-only recovery preview with only COMMITTED, ROLLED_BACK, or UNRESOLVED.；Apply only a previously previewed safe recovery while holding the workspace mutex and preserve unknown/external objects.；Run the complete fault/deadline/external-change/preview/apply matrix on disposable NTFS objects and emit the Task 3 GO/NO-GO report. | SPEC §1.4.4; §4.2.6 deadline rules; §4.6; §5.2; §5.5; §5.6; §10.1 AC-07, AC-21, AC-22, AC-29, AC-31; §10.3 recovery fault injection; §11.2 item 3. | T03.1, T03.2 | `MILESTONE_COMPLETE_V1(3)` |
+| 4 | Create the minimal Python 3.12 project identity and freeze the sole complete, reviewed, hash-locked v1 runtime/build/development dependency closure without package, classification, marker, source, or lock ambiguity.；Promote the exact Task 1 pytest/Ruff/Mypy identities, marker set, and static rules into the sole formal offline toolchain and configure the locked build backend without changing the completed dependency closure.；Encode every v1 canonical value into exact bytes and compute the sole domain-separated SHA-256 identity.；Accept only the v1 UTC millisecond timestamp form and make every current-time observation injectable and deterministic.；Reject every unsupported lexical path form before any filesystem access and return the sole canonical relative-path representation.；Fail a changed-file credential scan on a match while reporting only bounded paths and rule ids and never the matched value. | SPEC §0; §0.1 and CTV-01–CTV-07; §5.2; §9; §10.1 AC-10 and AC-26; course requirements §3.6, §4.8, §5; `AGENTS.md` build/test, TDD, and credential-scan rules. | T04.1, T04.2 | `MILESTONE_COMPLETE_V1(4)` |
+| 5 | Define closed generic optional-value objects so every absent/present field is explicit and cannot collapse into nullable ambiguity.；Define the shared closed evidence/artifact/digest/location vocabulary consumed across tools, validation, audit, and delivery.；Define the closed Run state/phase/wait/limit vocabulary and exact specialized wait-decision envelope.；Define the shared closed action identity, policy decision, stable action error, and action-result envelopes.；Define canonical repository-location and disclosure-path-scope value objects with no ambiguous root/path representation. | SPEC §0.1 closed-schema rules; §4.2.1–§4.2.2 shared status/action contracts; §4.4.3–§4.4.4 location/source unions; §7 data model; §10.1 AC-17, AC-26, AC-27, AC-28. | T05.1 | `MILESTONE_COMPLETE_V1(5)` |
+| 6 | Implement the sole built-in editable path/operation policy and deterministic segment-boundary matching.；Load and integrity-check the built-in reference manifest against Task 2.G image, lock, tool, execution, and check-plan evidence.；Define immutable mutually exclusive Mock and OpenAI LLM profile contracts and packaged built-ins.；Resolve only the built-in public OpenAI endpoint ID to an immutable trusted endpoint record.；Resolve exact built-in editable/reference/LLM/endpoint profiles and reject missing, duplicate, extra, or cross-profile data before Run creation. | SPEC §1.4.1; §4.1 input and behavior 1–4; §4.4.3 endpoint/profile fields; §5.2; §7 profile/config rows; §8.2; §9; §10.1 AC-13, AC-15, AC-26, AC-30, AC-31. | T06.1, T06.2, T06.3, T06.4 | `MILESTONE_COMPLETE_V1(6)` |
+| 7 | Open the local control database with explicit transaction semantics and apply an injected tuple of closed migrations in order, atomically, idempotently, and fail-closed on checksum drift without knowing any application-domain schema.；Apply the closed Run/wait transition matrix atomically so exactly one correctly bound wait decision can win.；Return the first result for an identical event request and reject reuse of the same event id for different request bytes without performing domain mutation.；Compose the exact immutable domain migration constants into the sole complete v1 registry and, through a test-only expected owner map, fail closed when any required migration or per-version/final SQLite table ownership is missing, duplicated, introduced by the wrong version, early, late, reordered, unexpected, or checksum-drifted. | SPEC §4.2.1; §4.2.7; §4.7 audit ordering; §5.2; §5.4; §5.6; §7 complete data model and storage split; §10.1 AC-16, AC-21, AC-27, AC-28. | T07.1, T07.2, T07.3, T07.4 | `MILESTONE_COMPLETE_V1(7)` |
+| 8 | Reject every invalid or ambiguous run request before a run id exists, and create one `CREATED` Run with an immutable `RunConfigSnapshotV1` for valid input.；Move one existing `CREATED` Run through the exact PREFLIGHT port order while every failure prevents all later calls and forbidden side effects. | SPEC §4.1 FR-ADM in full; §4.2.7 lifecycle entry; §5.1; §5.3; §10.1 AC-15, AC-16, AC-21, AC-26, AC-28, AC-30, AC-31. | T08.1 | `MILESTONE_COMPLETE_V1(8)` |
+| 9 | Resolve one handle-derived workspace identity and reject every unprovable, aliased, reparse, ADS, hard-link, kind, or ACL final object.；Give one process exclusive ownership of a workspace-identity-derived named mutex until explicit lease release.；Freeze and validate the exact Git config/index/HEAD/worktree/ignore/attribute state before Snapshot creation.；Authorize an existing object or create parent only when lexical, final-object, root-ancestry, alias, sensitive-path, and editable-policy facts all match. | SPEC §0.1 path identity; §1.4.1 Git rules; §1.4.2–§1.4.4; §4.1 behavior 6–10; §4.3 behavior 4–5; §4.6 ACL/lease requirements; §5.5; §10.1 AC-01, AC-15, AC-21, AC-26, AC-29, AC-31. | T09.1 | `MILESTONE_COMPLETE_V1(9)` |
+| 10 | Classify raw bytes once for all file tools and candidate operations under the exact UTF-8/newline rules.；Store and retrieve exact immutable file bytes by verified raw SHA-256 content reference.；Define the minimal immutable-tree read protocol, construct the Run's sole immutable SnapshotTree from sealed Git-preflight bytes, and verify all content, ordering, identity, and policy bindings. | SPEC §1.4.1 `StaticProjectProfileCheckV1`; §1.4.4; §4.1 behavior 8–10; §4.2.2 `SupportedTextFileV1`; §4.3 behavior 1–3; §7 Snapshot/List entry rows; §10.1 AC-04, AC-15, AC-17, AC-18, AC-26, AC-31. | T10.1, T10.2 | `MILESTONE_COMPLETE_V1(10)` |
+| 11 | Freeze the common file action/result contracts and implement bounded text reads that can observe only the bound immutable tree.；Implement stable List/Search discovery whose distinct canonical cursors reproduce unpaged results exactly and fail closed on tampering or tree drift. | SPEC §4.2.2 file actions/results and `SupportedTextFileV1`; §4.2.8; §4.3 input/behavior 2–5; §5.1; §7 `RepositoryLocationV1`/`ListFilesEntryV1`; §10.1 AC-01, AC-17, AC-26, AC-31; §10.3 offline core tests. | T11.1 | `MILESTONE_COMPLETE_V1(11)` |
+| 12 | Parse the complete no-BOM UTF-8/LF `UNIFIED_DIFF_V1` grammar or return one closed parse failure without deriving candidate state.；Derive an immutable content-addressed child tree from complete staged postimages while leaving its parent tree unchanged.；Apply one parsed patch exactly against the named base candidate and publish one validated revision or no revision.；Recompute the complete Snapshot-to-candidate structured diff and bind its exact digest with Snapshot and CandidateTree digests. | SPEC §1.4.2–§1.4.4; §4.2.2 `ApplyCandidatePatchAction`; §4.3 in full; §4.4.1 path-policy binding; §4.5 pre-check policy revalidation; §7 Candidate/FinalDiff rows; §10.1 AC-01, AC-04, AC-07, AC-18, AC-26, AC-31. | T12.1 | `MILESTONE_COMPLETE_V1(12)` |
+| 13 | Centralize deterministic `ALLOW/ASK/DENY` evaluation so unsafe capabilities and non-editable candidate changes cannot be approved, prompted around, or dispatched. | SPEC §1.4.2–§1.4.3; §4.2.3; §4.3 error priority; §4.4.1; §5.2; §5.5; §10.1 AC-01, AC-02, AC-04, AC-06, AC-26, AC-31; §10.4 mechanism demo items 1–4. | T13.1 | `MILESTONE_COMPLETE_V1(13)` |
+| 14 | Build the immutable final-writeback subject/binding from exact current candidate, policy, validation, Run, and expiry facts.；Apply APPROVE/REJECT/expiry/stale decisions atomically to the exact final-writeback wait with idempotent event replay.；Consume one exact current PENDING final-writeback approval at most once under concurrent/replayed attempts. | SPEC §4.2.7 final-writeback wait; §4.4.1–§4.4.2; §4.6 writeback preconditions; §5.2; §7 subject/approval rows; §10.1 AC-02, AC-03, AC-06, AC-07, AC-27, AC-31. | T14.1 | `MILESTONE_COMPLETE_V1(14)` |
+| 15 | Validate exact request message/segment source categories, paths, content digests, indexes, and byte counts before subject construction.；Canonicalize disclosure scopes and match ROOT/FILE/DIRECTORY only at exact path-segment boundaries.；Build the immutable disclosure Grant subject from validated sources, canonical scopes/categories, frozen profile, endpoint, serializer, and expiry.；Atomically approve/reject/expire/stale/replay the exact disclosure wait and create at most one matching active Grant.；Atomically revoke only the exact matching active disclosure Grant, with idempotent replay and no mutation for stale or mismatched subjects.；Revalidate one prepared request against the current active Grant and atomically charge cumulative bytes exactly once under races. | SPEC §4.2.7 disclosure wait; §4.4.3–§4.4.4 source/scope/budget contracts; §5.1–§5.2; §5.5–§5.6; §7 disclosure rows; §10.1 AC-13, AC-26, AC-27, AC-28. | T15.1, T15.2 | `MILESTONE_COMPLETE_V1(15)` |
+| 16 | Build closed Mock/OpenAI prepared-request contracts and a deterministic Mock adapter with no provider, credential, Grant, authorization, or network behavior.；Serialize one authorized `OpenAIPreparedModelRequestV1` to the sole trusted endpoint and perform at most one non-retried transport call through a freshly bound adapter. | SPEC §4.2.1; §4.2.5; §4.2.8 LLM errors; §4.4.3–§4.4.4 prepared request/call sequence; §5.1–§5.2; §5.5; §7 LLM rows; §9 LLM choice; §10.1 AC-05, AC-13, AC-26, AC-28. | T16.1 | `MILESTONE_COMPLETE_V1(16)` |
+| 17 | Parse exactly one closed model action object with no surrounding text, defaults, unknown fields, or model-supplied Harness identity.；Bind one parsed action to a Harness-generated non-empty ID plus canonical semantic and instance digests.；Dispatch a bound action only after current-candidate, path/object, phase, and policy gates pass in the required order. | SPEC §4.2.1–§4.2.3; §4.2.5 behavior 3–5; §4.2.8; §4.3 candidate binding; §4.4.1; §5.1–§5.2; §7 ActionRecord; §10.1 AC-02, AC-06, AC-17, AC-18, AC-26, AC-28, AC-31. | T17.1 | `MILESTONE_COMPLETE_V1(17)` |
+| 18 | Build and validate the sole executable/profile/environment/resource request and verify the frozen reference image is locally ready.；Materialize one verified CandidateTree into a fresh identity-bound execution root and verify exact bytes before container creation.；Execute one closed request in one fresh locked container with no network/root/write/socket and bounded time/resources/output.；Reverify Candidate/materialization bytes after execution and remove the exact container/root without following links or hiding residue. | SPEC §1.4.1 runtime compatibility; §1.4.5; §4.1 readiness; §4.3 cleanup; §4.5 adapter/check execution; §5.1; §5.5; §8.2; §10.1 AC-04, AC-19, AC-20, AC-24, AC-25, AC-30; §10.3 Docker integration. | T18.1, T18.2 | `MILESTONE_COMPLETE_V1(18)` |
+| 19 | Convert bounded Ruff and Mypy executions into the sole closed `CheckResultV1` combinations and fail malformed, truncated, or version-inconsistent output closed.；Emit and validate one complete ordered pytest event report whose integrity and normal end are authoritative over exit code or console text.；Produce a stable fingerprint only for one complete exact target `CALL/FAIL`, with allowlisted volatility removed and user failure content preserved. | SPEC §1.4.1 runtime compatibility; §4.5 `PytestEvidenceV1`, fingerprint, check execution, errors, and deterministic tests; §5.2; §5.5 trust assumption; §7 evidence rows; §10.1 AC-19, AC-20, AC-24, AC-25, AC-26. | T19.1 | `MILESTONE_COMPLETE_V1(19)` |
+| 20 | Determine support from one sealed Snapshot without execution and generate the complete closed Python check plan.；Execute the frozen baseline sequence, require stable target failure evidence, and publish `ValidationManifestV1` only after every baseline predicate succeeds. | SPEC §1.4.1 `PythonProjectProfileV1`, static detection, runtime compatibility; §4.1 behavior 9–13; §4.5 adapter boundary, baseline, Manifest, errors/tests; §5.1–§5.2; §7 static/runtime/Manifest rows; §10.1 AC-04, AC-15, AC-19, AC-20, AC-25, AC-26, AC-30–AC-31. | T20.1, T20.2 | `MILESTONE_COMPLETE_V1(20)` |
+| 21 | Recompute current candidate/policy/environment bindings and freeze the complete collect/full pytest/Ruff/Mypy formal plan before any container call.；Execute every request in the frozen formal plan with a fresh Task 18 boundary and collect complete ordered check evidence.；Evaluate the complete formal predicate and create `VerifiedCandidateV1` only for exact current complete passing evidence. | SPEC §4.2.3 formal-validation phase; §4.2.5 completion; §4.3 candidate identity; §4.4.2 final subject inputs; §4.5 check execution and formal success predicate; §4.6 writeback inputs; §7 VerifiedCandidate; §10.1 AC-03–AC-07, AC-18, AC-20, AC-26–AC-28, AC-31. | T21.1 | `MILESTONE_COMPLETE_V1(21)` |
+| 22 | Create/confirm only authorized structured memory with exact workspace identity, creator/source, bounded content, and no authorization power.；List and select only eligible non-cleared entries from the exact workspace under frozen priority, recency, count, and byte limits.；Make an explicit authorized memory clear transaction immediately exclude the targeted workspace entries from every future selection. | SPEC §4.2.4 context memory; §4.7 memory write/selection/clear; §5.2; §5.4; §5.6; §7 MemoryEntry; §10.1 AC-14, AC-23, AC-26; §10.3 offline tests. | T22.1 | `MILESTONE_COMPLETE_V1(22)` |
+| 23 | Append one allowlisted, data-minimized audit event under a unique increasing per-Run sequence or reject it with zero rows.；Project each formal Run/phase/wait/recovery/terminal fact into one distinct bounded user-visible state and reason without inferring success from missing evidence.；Remove only eligible audit records older than 30 days while preserving every unresolved-recovery reference and active/non-ended Run. | SPEC §4.7 audit; §5.3–§5.6; §7 AuditEvent; §8.4 evidence separation; §10.1 AC-08, AC-13, AC-16, AC-21–AC-24, AC-27–AC-29; §10.3 evidence matrix. | T23.1 | `MILESTONE_COMPLETE_V1(23)` |
+| 24 | Convert stable check/action/control failures into deterministic bounded feedback records and select the most relevant unconsumed records.；Assemble the exact source-attributed message projection and trim only allowed categories under the frozen context budget.；Bind selected feedback references to one new turn and consume them atomically so no record can be attached to multiple turns. | SPEC §4.2.4–§4.2.6; §4.4.4 source segments; §4.5 structured feedback; §5.1–§5.2; §5.5 disclosure isolation; §7 FeedbackRecord; §10.1 AC-05, AC-13–AC-14, AC-17, AC-26, AC-28. | T24.1 | `MILESTONE_COMPLETE_V1(24)` |
+| 25 | Atomically establish one active turn and define exactly which successful pre-call boundary increments turn/call counters.；Prepare and perform exactly one Mock or OpenAI call, enforcing fresh credential and authorization ordering before Task 25.B records call start.；Convert one model response into at most one bound action, evaluate policy, dispatch only ALLOW, and produce/consume structured feedback exactly once.；Detect an interrupted non-persistent Agent turn after process restart and stop without reconstructing, retrying, or resending it.；Decide repeated-action, no-progress, budget, invalid-output, cancel, and deadline stops from immutable inputs without performing loop side effects.；Pause only at declared waits, expire against the smaller applicable deadline, and honor cancellation only at deterministic safe points.；Compose Tasks 25.A–25.F into the formal sequential loop without reimplementing any child rule. | SPEC §3.2 dimensions; §4.2 in full; §4.4.4 call ordering; §4.5 feedback/formal transition; §5.1–§5.4; §7 AgentTurn/Action/Feedback; §9 LLM boundary; §10.1 AC-02, AC-05–AC-06, AC-13, AC-15–AC-18, AC-20, AC-27–AC-28, AC-31; Harness requirement prohibiting high-level agent executors. | T25.1, T25.2, T25.3 | `MILESTONE_COMPLETE_V1(25)` |
+| 26 | Define the immutable v0011 persistence schema and typed repositories for transaction and ordered per-path records without performing artifact I/O or workspace writeback.；Store exact preimage, postimage, backup, and raw recovery evidence bytes as current-user ACL-restricted content-addressed artifacts with verified immutable refs.；Thinly compose Task 26.A records and Task 26.D artifacts into the exact approval-bound 1–3-path atomic writeback protocol ending only in verified `COMMITTED` or a durable non-terminal transaction.；Inspect a non-terminal transaction and current object/byte identities without writing, returning only proven `COMMITTED`, `ROLLED_BACK`, or `UNRESOLVED`.；Apply only a current bound recovery preview under the workspace lease and prove the production protocol across deadline, external-change, ACL, and Windows identity faults. | SPEC §4.2.6–§4.2.7 persistence cancellation/lifecycle; §4.4.2 approval; §4.6 in full; §5.2; §5.5–§5.6; §7 persistence rows; §8.2 recovery CLI; §10.1 AC-03, AC-07, AC-21–AC-22, AC-26–AC-29, AC-31; §10.3 recovery fault injection. | T26.1, T26.2 | `MILESTONE_COMPLETE_V1(26)` |
+| 27 | Enforce the OPENAI-only set/status/update/clear/get-for-call contract through a redacted non-serializable secret wrapper and a verified store port.；Implement the sole WinCred store port and prove real set/status/get-for-call/clear lifecycle with final cleanup and no fallback backend. | SPEC §4.1 OpenAI readiness; §4.8 in full; §5.5 credential threat; §5.6; §8.1; §8.2; §10.1 AC-08, AC-13, AC-15, AC-24, AC-28; §10.3 Windows integration. | T27.1 | `MILESTONE_COMPLETE_V1(27)` |
+| 28 | Enforce loopback-only binding, local session, Host, Origin, CSRF, and response security headers before every route-domain call.；Define the extensible local FastAPI shell, typed route installers, escaped templates, and unambiguous accessible status semantics without owning packaged assets or CLI startup.；Serve the pinned packaged HTMX asset locally and prove escaped rendering, CSP compatibility, keyboard/live-error hooks, and zero CDN/network fallback.；Thinly bind the completed local shell/security/assets to the closed loopback-only `vespercode serve` CLI entry point. | SPEC §4.9 local mode and tests; §5.3; §5.5 WebUI threat; §8.2 `vespercode serve`; §9 UI choice; §10.1 AC-08, AC-11, AC-13, AC-16, AC-24; course WebUI deliverable. | T28.1, T28.2, T28.3 | `MILESTONE_COMPLETE_V1(28)` |
+| 29 | Expose strict Run creation, state/status detail, and cancellation through closed secure forms and typed workflow ports.；Render exact provider/endpoint/category/path/budget disclosure facts and submit only a bound approve/reject decision to the Task 15 workflow.；Render the exact FinalDiff/evidence/subject, delegate one bound final decision, call persistence only after exact approval, and install all Milestone 29 routes. | SPEC §2 US-01, US-03–US-06, US-08; §4.2.7 waits; §4.4.2–§4.4.3 UI disclosures; §4.6 writeback review; §4.9 local run capabilities; §5.3–§5.5; §8.2; §10.1 AC-03, AC-06–AC-07, AC-13, AC-15–AC-16, AC-21, AC-27–AC-28, AC-31. | T29.1, T29.2, T29.3 | `MILESTONE_COMPLETE_V1(29)` |
+| 30 | Define Demo-only immutable types and the exact fixed scenario data without executor, shared-core orchestration, session storage, or Web behavior.；Implement only the deterministic Demo executor and simulated tool ports while proving that no formal capability adapter can be constructed or called.；Thinly compose the real shared pure-core pipeline with Task 30.C ports and bounded in-memory Demo sessions to produce the deterministic fixed trace.；Present the headless Demo through an escaped simulation-labeled FastAPI app with `/healthz`, platform PORT handling, and explicit capability-absence verification. | SPEC §1.5 public demo goal; §2.9 US-09; §4.2.1 Demo states; §4.9 public Demo; §5.1–§5.2; §5.5–§5.6; §6.4; §7 Demo rows; §8.3; §10.1 AC-02, AC-05, AC-09, AC-12, AC-17, AC-24; §10.4 visual scenario. | T30.1, T30.2 | `MILESTONE_COMPLETE_V1(30)` |
+| 31 | Build the deterministic disposable reference harness and prove admission through stable baseline, corrective loop, formal validation, and `VerifiedCandidateV1`.；Prove canonical continuation, hard denial, protected-artifact defense, final-wait no-write branches, and per-real-call credential fail-close in the production E2E harness.；Complete exact approved writeback, uncertain recovery blocking, memory/audit evidence, cleanup, and two-run semantic determinism in the reference harness. | SPEC §1.4 reference profile; §2 US-01 and US-03–US-08; §4.1–§4.8; §5.1–§5.6; §6.2; §7; §10.1 AC-01–AC-08, AC-13–AC-31; §10.3 reference fixture E2E; course repeatable mechanism/demo requirement. | T31.1 | `MILESTONE_COMPLETE_V1(31)` |
+| 32 | Build the headless mechanism driver and prove hard DENY, protected-artifact precedence, final-approval no-write, and bounded canonical reporting.；Prove failing-check feedback changes the next action once and that paged List/Search plus repeated mechanism runs are semantically deterministic.；Prove formal and public Demo compositions execute the same exact pure-core subset while disclosure/credential failures create zero unauthorized real-call side effects. | SPEC §3.1–§3.3 main contribution; §4.4 policy/disclosure; §4.5 feedback; §4.9 Demo scenario; §10.1 AC-02, AC-04–AC-06, AC-09, AC-13, AC-17, AC-20, AC-26–AC-28, AC-31; §10.4 mechanism demo; Harness course mechanism-demo requirement. | T32.1 | `MILESTONE_COMPLETE_V1(32)` |
+| 33 | Build exactly one versioned wheel containing every required runtime resource, excluding prohibited files, and publish an independently verified SHA-256.；Install Task 33.A's exact wheel into an isolated Windows pipx home and prove installed CLI, production WebUI composition, and read-only recovery preview without source-checkout fallback. | SPEC §5.4 evidence; §8.2 local distribution; §8.4 `wheel-build-smoke`; §9 package choice; §10.1 AC-08, AC-10–AC-11, AC-24, AC-26, AC-29–AC-30; §10.3 package smoke; course distribution requirement. | T33.1 | `MILESTONE_COMPLETE_V1(33)` |
+| 34 | Build a Demo-only image from an explicit shared-core allowlist and prove health, fixed trace, non-persistence, and absence of every formal capability adapter.；Reproduce the Task 2-frozen reference OCI manifest exactly and prove its production executor/profile/fixture isolation contract. | SPEC §1.4.1/§1.4.5; §4.5 Docker checks; §4.9 Demo; §5.5–§5.6; §6.4 shared core; §8.2–§8.4; §9; §10.1 AC-04, AC-09, AC-12, AC-19–AC-20, AC-24–AC-25, AC-30; §10.3 OCI smoke. | T34.1, T34.2 | `MILESTONE_COMPLETE_V1(34)` |
+| 35 | Run exact `unit-test`, `reference-image-build`, and `demo-image-build` verification jobs on every GitHub push and pull request with no publishing secret or action.；Run exact GitLab `unit-test`, Windows `wheel-build-smoke`, `reference-image-build`, and `demo-image-build` jobs in all required push/MR/main/tag contexts without release secrets in ordinary pipelines.；Add fail-closed protected-tag release rules, verify commit/digest/secret ordering, and freeze real passing GitHub/GitLab source-commit evidence without performing the release. | SPEC §5.4 NFR-OBS; §5.5 release credentials; §8.4 in full; §9 CI choice; §10.1 AC-10–AC-12, AC-24, AC-30; §10.3 GitHub Actions/GitLab/package/image evidence; course common requirements for GitHub Actions on every push and `.gitlab-ci.yml` `unit-test`. | T35.1 | `MILESTONE_COMPLETE_V1(35)` |
+| 36 | Define closed non-secret CI/release/deployment evidence schemas and reject any source-commit, wheel, manifest, or platform-state misalignment before external publication.；Execute one protected source-aligned release that publishes the exact wheel/checksum and Task 2 reference manifest, then re-download/re-pull and verify both artifacts.；Deploy the exact capability-isolated Demo image/config to Render and freeze verified public health, scenario, isolation, and source-commit evidence. | SPEC §5.4–§5.6; §8.2–§8.4; §10.1 AC-10–AC-12, AC-24, AC-30; §10.3 package/public smoke; course CI/CD record and accessible WebUI URL deliverables. | T36.1, T36.2, T36.3 | `MILESTONE_COMPLETE_V1(36)` |
+| 37 | Write an accurate user-facing README for installation, operation, security, recovery, distribution, CI/release/deployment, limitations, and non-goals using only verified current evidence.；Complete truthful append-preserving `SPEC_PROCESS.md` and `AGENT_LOG.md` records and fail-closed verification for M0, semantic approval, both typed Independent PLAN Review passes, cold-start, approved-document baseline materialization, every executable task, review, intervention, commit, PR, failure, and lesson.；Aggregate every local/external/process/documentation check, including independently validated typed Independent PLAN Review and Approved-document Baseline evidence results, and report ready only when all 68 session tasks cover all 141 legacy steps and a valid student-authored reflection exists. | SPEC §1.6; §5.3–§5.6; §8.1–§8.4; §10.1 AC-01–AC-31; §10.3; §11.3; course required artifacts, process evidence, README, CI/CD, WebUI URL, and reflection rules; `AGENTS.md` final-report rules. | T37.1, T37.2 | `MILESTONE_COMPLETE_V1(37)` |
+| 38 | Expose hidden credential set/status/update/clear through Task 27 with no secret or derivative in any response, error, audit, log, or redisplay.；Expose authorized workspace-scoped memory list/create/confirm/clear operations without cross-workspace selection or policy/control mutation.；Render monotonic paged redacted audit projections and permit explicit clear only for an ended Run without unresolved recovery evidence.；Render Task 26.B preview with zero writes and allow only a separately confirmed, currently bound Task 26.C apply command without bypass controls.；Add injectable typed parsing/delegation for `vespercode recover --workspace PATH` as read-only preview and require the literal `--apply` switch for the only recovery mutation path, without owning production database or service wiring.；Install Credential, Memory, Audit, and Recovery routes through typed ports, freeze the sole production installer tuple after Run/Governance routes, and own the sole installed recovery-CLI handler/service binding after complete v1 database initialization.；Verify the merged local application end to end with keyboard navigation while preserving each child workflow's security, privacy, scoping, and no-bypass invariants. | SPEC §2 US-02 and US-06–US-08; §4.6 recovery; §4.7 FR-MEM; §4.8 FR-CRED; §4.9 local mode; §5.3–§5.6; §7 MemoryEntry/AuditEvent/PersistenceTransaction; §8.1–§8.2; §10.1 AC-08, AC-14, AC-16, AC-21–AC-24, AC-29; §10.3 local, Windows, and recovery verification. | T38.1, T38.2, T38.3 | `MILESTONE_COMPLETE_V1(38)` |
 
 ## 5. Session Task Cards
 
@@ -1097,7 +1150,7 @@ git commit -m "Implement T02.1 Reference Inputs and Reproducible OCI Build"
 **Parallelization:** Start only after every task/non-task gate in **Depends** has passed. Same-wave execution is allowed only when expanded writable paths are disjoint; the WP02 branch and PR remain the sole package integration boundary.
 
 **Interfaces:**
-- **Consumes / Produces (2.C):** Produces `LoopbackRegistryEvidenceV1(registry_image_digest: str, bind_host: Literal["127.0.0.1"], assigned_port: int, credentials_used: Literal[False], external_push_count: Literal[0], local_oci_manifest_digest: str, registry_repo_digest: str, digest_pull_repo_digest: str, cleanup_verified: bool)` and `probe_loopback_registry(build: ReferenceImageBuildEvidenceV1) -> LoopbackRegistryEvidenceV1`.
+- **Consumes / Produces (2.C):** Produces `LoopbackRegistryEvidenceV1(registry_image_digest: str, bind_host: Literal["127.0.0.1"], assigned_port: int, credentials_used: Literal[False], external_push_count: Literal[0], local_oci_manifest_digest: str, registry_repo_digest: str, digest_pull_repo_digest: str, cleanup_verified: bool)`, the immutable task-owned exception `LoopbackRegistryDigestMismatchV1(error_code: Literal["OCI_REGISTRY_DIGEST_MISMATCH"], external_push_count: Literal[0], cleanup_verified: Literal[True], accepted_evidence_returned: Literal[False])`, and `probe_loopback_registry(build: ReferenceImageBuildEvidenceV1) -> LoopbackRegistryEvidenceV1`; the probe raises `LoopbackRegistryDigestMismatchV1` after verified cleanup when any of the three observed digests differ and returns no partial `LoopbackRegistryEvidenceV1`.
 
 **Implementation points, exact RED, and minimum GREEN contracts:**
 
@@ -1109,10 +1162,10 @@ git commit -m "Implement T02.1 Reference Inputs and Reproducible OCI Build"
 
 ```text
 Owned files: - Create: spikes/docker_reference_boundary/registry_probe.py - Test: tests/feasibility/docker/test_loopback_registry_probe.py
-Interface: Produces `LoopbackRegistryEvidenceV1(registry_image_digest: str, bind_host: Literal["127.0.0.1"], assigned_port: int, credentials_used: Literal[False], external_push_count: Literal[0], local_oci_manifest_digest: str, registry_repo_digest: str, digest_pull_repo_digest: str, cleanup_verified: bool)` and `probe_loopback_registry(build: ReferenceImageBuildEvidenceV1) -> LoopbackRegistryEvidenceV1`.
+Interface: Produces `LoopbackRegistryEvidenceV1(registry_image_digest: str, bind_host: Literal["127.0.0.1"], assigned_port: int, credentials_used: Literal[False], external_push_count: Literal[0], local_oci_manifest_digest: str, registry_repo_digest: str, digest_pull_repo_digest: str, cleanup_verified: bool)`, the immutable task-owned exception `LoopbackRegistryDigestMismatchV1(error_code: Literal["OCI_REGISTRY_DIGEST_MISMATCH"], external_push_count: Literal[0], cleanup_verified: Literal[True], accepted_evidence_returned: Literal[False])`, and `probe_loopback_registry(build: ReferenceImageBuildEvidenceV1) -> LoopbackRegistryEvidenceV1`; the probe raises `LoopbackRegistryDigestMismatchV1` after verified cleanup when any of the three observed digests differ and returns no partial `LoopbackRegistryEvidenceV1`.
 GREEN-1: Run one credential-free registry bound only to `127.0.0.1` on an assigned port, push the exact local OCI manifest, pull by digest, and return immutable lifecycle evidence.
-GREEN-2: Require local OCI, registry RepoDigest, and digest-pull RepoDigest equality, zero credential/external push use, and verified cleanup on success and injected failure.
-GREEN-3: Make `test_registry_digest_transformation_fails` GREEN by rejecting the first three-way digest mismatch; then make `test_loopback_registry_boundary_matrix` RED and GREEN against the exact §5.1 matrix.
+GREEN-2: Compare the three raw observed digest bytes without normalization or replacement; construct `LoopbackRegistryEvidenceV1` only when local OCI, registry RepoDigest, and digest-pull RepoDigest are byte-identical, credential/external push use is zero, and cleanup is verified on success and injected failure.
+GREEN-3: Make `test_registry_digest_transformation_fails` GREEN by completing cleanup and raising exact `LoopbackRegistryDigestMismatchV1(error_code="OCI_REGISTRY_DIGEST_MISMATCH", external_push_count=0, cleanup_verified=True, accepted_evidence_returned=False)` on the first three-way digest mismatch without returning or rewriting any digest evidence; then make `test_loopback_registry_boundary_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own loopback bind, push, pull, digest comparison, and cleanup evidence only; image building, fixture checks, and external publication remain out of scope.
 Boundary: Own registry bind/push/pull/cleanup evidence only. Do not build the image, execute fixture checks, or publish externally.
 ```
@@ -1121,29 +1174,35 @@ Boundary: Own registry bind/push/pull/cleanup evidence only. Do not build the im
 
 ```python
 def test_registry_digest_transformation_fails() -> None:
-    result = probe_loopback_registry(transformed_registry_fixture())
-    assert result.registry_repo_digest == result.local_oci_manifest_digest
+    with pytest.raises(LoopbackRegistryDigestMismatchV1) as captured:
+        probe_loopback_registry(transformed_registry_fixture())
+
+    rejection = captured.value
+    assert rejection.error_code == "OCI_REGISTRY_DIGEST_MISMATCH"
+    assert rejection.external_push_count == 0
+    assert rejection.cleanup_verified is True
+    assert rejection.accepted_evidence_returned is False
 ```
 
-**Expected RED:** the loopback registry lifecycle and exact digest comparison do not exist.
+**Expected RED:** import failure because the exact task-owned `registry_probe` and `LoopbackRegistryDigestMismatchV1` rejection contract do not exist. The traceback must identify those exact missing objects; any other collection/import, runner/interpreter, dependency, environment, fixture-cleanup, unrelated, or already-failing error does not count.
 
 **Atomic verification:**
 - Target (2.C): `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/docker/test_loopback_registry_probe.py::test_registry_digest_transformation_fails -q`
 - Domain (2.C): `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/docker/test_loopback_registry_probe.py -q`
 - Matrix (2.C): `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/docker/test_loopback_registry_probe.py::test_loopback_registry_boundary_matrix -q`
-- Expected (2.C): local/registry/pull digests match; credential, external bind/push, cleanup, and injected-failure cases close deterministically.
+- Expected (2.C): exact local/registry/pull digests return one immutable `LoopbackRegistryEvidenceV1`; any observed digest transformation raises `LoopbackRegistryDigestMismatchV1` with `OCI_REGISTRY_DIGEST_MISMATCH`, zero external push, verified cleanup, and no returned accepted evidence; credential, external bind/push, cleanup, and injected-failure cases close deterministically.
 
 **Atomic review focus:**
 - SPEC (2.C): Spec compliance review checks Task 2.C's Goal, Milestone 2's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent loopback registry lifecycle contract.
-- Quality (2.C): Code quality review checks loopback-only binding, credential absence, three-way digest identity, cleanup on every exit path, and deterministic failure evidence.
+- Quality (2.C): Code quality review checks loopback-only binding, credential absence, raw observed digest preservation, three-way digest identity, construction of success evidence only after equality, cleanup on every exit path, and deterministic zero-partial-evidence rejection.
 
 - [ ] **Step 1: Add the exact 2.C RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
-- [ ] **Step 2: Run 2.C RED.** Run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/docker/test_loopback_registry_probe.py::test_registry_digest_transformation_fails -q`. Expected: FAIL for “the loopback registry lifecycle and exact digest comparison do not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
+- [ ] **Step 2: Run 2.C RED.** Run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/docker/test_loopback_registry_probe.py::test_registry_digest_transformation_fails -q`. Expected: the exact task-owned import failure displayed above counts. Runner/interpreter startup failure, a missing test target, any other collection/import or dependency failure, environment or fixture-cleanup failure, unrelated failure, or already-failing test does not count.
 - [ ] **Step 3: Implement 2.C GREEN-1.** Run one credential-free registry bound only to `127.0.0.1` on an assigned port, push the exact local OCI manifest, pull by digest, and return immutable lifecycle evidence.
-- [ ] **Step 4: Implement 2.C GREEN-2.** Require local OCI, registry RepoDigest, and digest-pull RepoDigest equality, zero credential/external push use, and verified cleanup on success and injected failure.
-- [ ] **Step 5: Implement 2.C GREEN-3.** Make `test_registry_digest_transformation_fails` GREEN by rejecting the first three-way digest mismatch; then make `test_loopback_registry_boundary_matrix` RED and GREEN against the exact §5.1 matrix.
+- [ ] **Step 4: Implement 2.C GREEN-2.** Compare the raw observed local OCI, registry RepoDigest, and digest-pull RepoDigest bytes without normalization or replacement; construct success evidence only after exact equality, zero credential/external push use, and verified cleanup on success and injected failure.
+- [ ] **Step 5: Implement 2.C GREEN-3.** Make `test_registry_digest_transformation_fails` GREEN by raising the exact displayed `LoopbackRegistryDigestMismatchV1` only after verified cleanup, with zero external push and no returned or rewritten digest evidence; then make `test_loopback_registry_boundary_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 6: Implement 2.C GREEN-4.** Own loopback bind, push, pull, digest comparison, and cleanup evidence only; image building, fixture checks, and external publication remain out of scope.
-- [ ] **Step 7: Run 2.C Target GREEN.** Re-run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/docker/test_loopback_registry_probe.py::test_registry_digest_transformation_fails -q`; require exit 0 and the displayed RED assertion to pass.
+- [ ] **Step 7: Run 2.C Target GREEN.** Re-run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/docker/test_loopback_registry_probe.py::test_registry_digest_transformation_fails -q`; require exit 0 and every displayed rejection assertion to pass.
 - [ ] **Step 8: Run 2.C Domain.** Run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/docker/test_loopback_registry_probe.py -q`; require exit 0 and every displayed Atomic verification expectation to hold.
 
 **Task-level verification, review, and completion:**
@@ -1876,12 +1935,36 @@ Owned files: - Create: pyproject.toml - Create: requirements/dev.lock - Create: 
 Interface: Consumes the declared PLAN Tech Stack, public Python range `>=3.12,<3.13`, exact Task 1.E terminal `GO` `GateToolchainEvidenceV1.python_version`, and unchanged Task 2.G/3.G identity matrices. `src/vespercode/project/dependency_closure.py` produces `DeclaredDependencySetV1(runtime_direct_names: tuple[str, ...], build_direct_names: tuple[str, ...], development_direct_names: tuple[str, ...])`, `LockedDistributionV1(name: str, version: str, classification: Literal["RUNTIME","BUILD","DEVELOPMENT"], python_marker: str, hashes: tuple[str, ...])`, `DependencyClosureV1(python_range: Literal[">=3.12,<3.13"], python_version: str, runtime_direct_names: tuple[str, ...], build_direct_names: tuple[str, ...], development_direct_names: tuple[str, ...], locked_distributions: tuple[LockedDistributionV1, ...], source_policy_digest: str, closure_digest: str)`, `DependencyClosureValidationReportV1(missing_direct: tuple[str, ...], extra_or_misclassified_direct: tuple[str, ...], missing_transitive_or_hash: tuple[str, ...], marker_or_source_mismatches: tuple[str, ...], gate_tool_version_mismatches: tuple[str, ...], python_version_mismatches: tuple[str, ...])`, `load_dependency_closure(root: Path) -> DependencyClosureV1`, and `validate_dependency_closure(root: Path, reviewed_plan_stack: DeclaredDependencySetV1) -> DependencyClosureValidationReportV1`. `scripts/bootstrap_formal_env.py` produces `bootstrap_formal_environment(root: Path, gate_evidence: GateToolchainEvidenceV1) -> FormalEnvironmentBootstrapResultV1`, where `FormalEnvironmentBootstrapResultV1(python_version: str, lock_sha256: str, installed_distribution_names: tuple[str, ...])`.
 GREEN-1: Own the complete reviewed v1 dependency declaration: exact public Python range, direct runtime/build/development families, classifications, source policy, and minimal project identity.
 GREEN-2: Freeze every direct/transitive distribution, marker, and hash into `requirements/dev.lock` and the unique closure record while preserving exact Task 1 Python/pytest/Ruff/Mypy identities.
-GREEN-3: Bootstrap `.venv-formal` only after `py -3.12` proves exact Task 1.E Python equality, then perform only hash-locked `--no-deps` materialization through the declared interpreter.
+GREEN-3: Make the entry-runnable stdlib bootstrap probe GREEN only after every declared formal-environment bootstrap artifact exists; bootstrap `.venv-formal` only after `py -3.12` proves exact Task 1.E Python equality and perform only hash-locked `--no-deps` materialization through the declared interpreter. Before implementing closure loader/validator/record-agreement behavior, add and run the displayed post-bootstrap dependency-closure Target test, require its exact task-owned import/assertion RED, then make it GREEN.
 GREEN-4: Keep dependency ownership separate from build backend, formal pytest/Ruff/Mypy configuration, canonical primitives, scanners, application behavior, and all Task 1–3 or profile locks.
 Boundary: This child is the sole owner of all `pyproject.toml` dependency tables, the public Python range, dependency source/index policy, minimal package identity, `requirements/dev.lock`, `src/vespercode/project/dependency_closure.py`, the unique persistent machine-readable non-secret `config/dependency-closure-v1.json`, and `scripts/bootstrap_formal_env.py`. It declares and classifies every direct runtime, build/distribution, and development/verification family listed by the PLAN; inventories every low-level HTTP/TestClient/template/form/server or typing/test package imported or invoked directly so none is hidden as a transitive; freezes every direct/transitive distribution and hash; preserves exact Task 1 Python/pytest/Ruff/Mypy versions; and writes the closure record only when its `python_version` equals Task 1.E terminal `GO` evidence character-for-character. Before creating, rebuilding, or using `.venv-formal`, the bootstrap locates the candidate only with `py -3.12`, reads that terminal `GO` identity, evaluates `platform.python_version() == gate_evidence.python_version`, and exits nonzero on mismatch. On equality it creates/rebuilds `.venv-formal` and invokes only `.venv-formal\Scripts\python.exe -m pip install --disable-pip-version-check --require-hashes --no-deps -r requirements/dev.lock`; this hash-only materialization is not a dependency change. The bootstrap never reads another worktree's `.venv-gate`, invokes an ambient bare `python`, resolves, upgrades, installs an undeclared distribution, or re-locks. This child does not configure the build backend, pytest markers, Ruff, Mypy, canonical commands, package data/version/distribution metadata/entry point, canonical values, paths, scanning, or application behavior. It never modifies Task 1–3 evidence or the separate gate/reference/Demo locks.
 ```
 
 **Exact RED test code:**
+
+```python
+import unittest
+from pathlib import Path
+
+
+class FormalBootstrapContractTest(unittest.TestCase):
+    def test_required_formal_bootstrap_artifacts_exist(self) -> None:
+        root = Path(__file__).resolve().parents[3]
+        required = (
+            "pyproject.toml",
+            "requirements/dev.lock",
+            "scripts/bootstrap_formal_env.py",
+            ".venv-formal/Scripts/python.exe",
+        )
+        missing = tuple(path for path in required if not (root / path).is_file())
+        self.assertEqual(
+            missing,
+            (),
+            "MISSING_FORMAL_BOOTSTRAP_ARTIFACTS:" + ",".join(missing),
+        )
+```
+
+**Post-bootstrap Target test code:**
 
 ```python
 def test_declared_v1_dependency_closure_is_complete(
@@ -1899,9 +1982,12 @@ def test_declared_v1_dependency_closure_is_complete(
     assert report.python_version_mismatches == ()
 ```
 
-**Expected RED:** import/configuration failure because the project dependency tables, source policy, hash-complete environment lock, closure validator/loader, unique persisted closure record, and verified formal environment do not exist.
+**Expected RED:** the entry-runnable stdlib test starts without `.venv-formal`, pytest, `pyproject.toml`, `requirements/dev.lock`, or `scripts/bootstrap_formal_env.py` and fails its displayed assertion with `MISSING_FORMAL_BOOTSTRAP_ARTIFACTS:` followed by the exact absent bootstrap paths. Runner/interpreter startup failure, test-module load failure, or any failure other than that exact assertion does not count.
+
+**Required post-bootstrap Target RED:** `.venv-formal\Scripts\python.exe` must start, pytest must load the declared Target, and the first displayed failure must be either the exact absence of the Task 4.A-owned `load_dependency_closure` or `validate_dependency_closure` symbol used by that test, or the test's first dependency-closure assertion failure. Runner/interpreter startup failure, a missing test target, any other collection/import/dependency failure, environment failure, unrelated failure, or already-failing test does not count.
 
 **Atomic verification:**
+- Entry (4.A): `py -3.12 -m unittest -v tests.unit.process.test_dependency_closure.FormalBootstrapContractTest.test_required_formal_bootstrap_artifacts_exist`
 - Bootstrap (4.A): `py -3.12 scripts/bootstrap_formal_env.py`
 - Target (4.A): `.venv-formal\Scripts\python.exe -m pytest -q tests/unit/process/test_dependency_closure.py::test_declared_v1_dependency_closure_is_complete`
 - Domain (4.A): `.venv-formal\Scripts\python.exe -m pytest -q tests/unit/process/test_dependency_closure.py`
@@ -1910,15 +1996,15 @@ def test_declared_v1_dependency_closure_is_complete(
 
 **Atomic review focus:**
 - SPEC (4.A): Spec compliance review checks Task 4.A's Goal, Milestone 4's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent dependency-closure/bootstrap contract.
-- Quality (4.A): Code quality review checks dependency-family completeness, classification/source/marker consistency, total hash closure, exact gate identity equality, bootstrap fail-closed behavior, and unique record/lock agreement.
+- Quality (4.A): Code quality review checks entry-runner independence from task-owned artifacts, exact missing-artifact assertion, dependency-family completeness, classification/source/marker consistency, total hash closure, exact gate identity equality, bootstrap fail-closed behavior, and unique record/lock agreement.
 
-- [ ] **Step 1: Add the exact 4.A RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
-- [ ] **Step 2: Run 4.A RED.** Run `.venv-formal\Scripts\python.exe -m pytest -q tests/unit/process/test_dependency_closure.py::test_declared_v1_dependency_closure_is_complete`. Expected: FAIL for “import/configuration failure because the project dependency tables, source policy, hash-complete environment lock, closure validator/loader, unique persisted closure record, and verified formal environment do not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
+- [ ] **Step 1: Add the exact 4.A entry-runnable RED test.** Copy only the complete displayed stdlib `FormalBootstrapContractTest` into the declared Test file without changing implementation files or adding the post-bootstrap Target test.
+- [ ] **Step 2: Run 4.A RED.** Run `py -3.12 -m unittest -v tests.unit.process.test_dependency_closure.FormalBootstrapContractTest.test_required_formal_bootstrap_artifacts_exist`. Expected: FAIL only at the displayed assertion with `MISSING_FORMAL_BOOTSTRAP_ARTIFACTS:` and the exact absent task-owned formal paths. Runner/interpreter startup failure, test-module load failure, or any other failure does not count.
 - [ ] **Step 3: Implement 4.A GREEN-1.** Own the complete reviewed v1 dependency declaration: exact public Python range, direct runtime/build/development families, classifications, source policy, and minimal project identity.
 - [ ] **Step 4: Implement 4.A GREEN-2.** Freeze every direct/transitive distribution, marker, and hash into `requirements/dev.lock` and the unique closure record while preserving exact Task 1 Python/pytest/Ruff/Mypy identities.
-- [ ] **Step 5: Implement 4.A GREEN-3.** Bootstrap `.venv-formal` only after `py -3.12` proves exact Task 1.E Python equality, then perform only hash-locked `--no-deps` materialization through the declared interpreter.
+- [ ] **Step 5: Implement 4.A GREEN-3.** Make the entry-runnable stdlib bootstrap probe GREEN only after every declared formal-environment bootstrap artifact exists; bootstrap `.venv-formal` only after `py -3.12` proves exact Task 1.E Python equality and perform only hash-locked `--no-deps` materialization through the declared interpreter. Before implementing closure loader/validator/record-agreement behavior, add and run the displayed post-bootstrap dependency-closure Target test, require its exact task-owned import/assertion RED, then make it GREEN.
 - [ ] **Step 6: Implement 4.A GREEN-4.** Keep dependency ownership separate from build backend, formal pytest/Ruff/Mypy configuration, canonical primitives, scanners, application behavior, and all Task 1–3 or profile locks.
-- [ ] **Step 7: Run 4.A Target GREEN.** Re-run `.venv-formal\Scripts\python.exe -m pytest -q tests/unit/process/test_dependency_closure.py::test_declared_v1_dependency_closure_is_complete`; require exit 0 and the displayed RED assertion to pass.
+- [ ] **Step 7: Run 4.A Entry and Target GREEN.** First re-run `py -3.12 -m unittest -v tests.unit.process.test_dependency_closure.FormalBootstrapContractTest.test_required_formal_bootstrap_artifacts_exist` and require exit 0; then run `.venv-formal\Scripts\python.exe -m pytest -q tests/unit/process/test_dependency_closure.py::test_declared_v1_dependency_closure_is_complete` and require exit 0.
 - [ ] **Step 8: Run 4.A Domain.** Run `.venv-formal\Scripts\python.exe -m pytest -q tests/unit/process/test_dependency_closure.py`; require exit 0 and every displayed Atomic verification expectation to hold.
 
 #### Legacy step 4.F: Formal Toolchain Promotion
@@ -1968,7 +2054,7 @@ def test_formal_toolchain_matches_frozen_gate_identity(
 - Quality (4.F): Code quality review checks exact gate-to-formal identity comparison, marker/addopts closure, canonical command construction, tooling-section-only edits, immutable promotion records, and dependency-byte preservation.
 
 - [ ] **Step 9: Add the exact 4.F RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
-- [ ] **Step 10: Run 4.F RED.** Run `.venv-formal\Scripts\python.exe -m pytest -q tests/unit/process/test_toolchain_promotion.py::test_formal_toolchain_matches_frozen_gate_identity`. Expected: FAIL for “import/configuration failure because the promotion loader, unique persisted promotion record, build backend, formal marker/static-rule configuration, and canonical commands do not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
+- [ ] **Step 10: Run 4.F RED.** Run `.venv-formal\Scripts\python.exe -m pytest -q tests/unit/process/test_toolchain_promotion.py::test_formal_toolchain_matches_frozen_gate_identity`. Expected: FAIL for “import/configuration failure because the promotion loader, unique persisted promotion record, build backend, formal marker/static-rule configuration, and canonical commands do not exist”. The exact task-owned collection/import failure displayed above counts. Runner/interpreter startup failure, a missing test target, any other import or dependency failure, environment failure, unrelated failure, or already-failing test does not count.
 - [ ] **Step 11: Implement 4.F GREEN-1.** Consume the immutable Task 4.A closure and verified `.venv-formal` interpreter to configure the locked build backend and the sole formal pytest/Ruff/Mypy sections without changing dependencies.
 - [ ] **Step 12: Implement 4.F GREEN-2.** Persist one `FormalToolchainPromotionV1` whose Python and tool identities exactly match gate evidence, whose six real-environment markers are closed, and whose canonical commands are fixed.
 - [ ] **Step 13: Implement 4.F GREEN-3.** Make `test_formal_toolchain_matches_frozen_gate_identity` GREEN by establishing the promotion loader, unique record, marker/static-rule configuration, and gate-to-formal comparison.
@@ -2068,7 +2154,7 @@ def test_ctv_01_exact_bytes_and_digest() -> None:
 - Quality (4.B): Code quality review checks recursive closed-value validation, deterministic byte identity, domain/version separation, Unicode rejection, immutable arrays, and vector stability.
 
 - [ ] **Step 1: Add the exact 4.B RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
-- [ ] **Step 2: Run 4.B RED.** Run `python -m pytest -q tests/unit/canonical/test_digest_vectors.py::test_ctv_01_exact_bytes_and_digest`. Expected: FAIL for “import failure because `canonical_json_bytes` and `domain_digest` do not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
+- [ ] **Step 2: Run 4.B RED.** Run `python -m pytest -q tests/unit/canonical/test_digest_vectors.py::test_ctv_01_exact_bytes_and_digest`. Expected: FAIL for “import failure because `canonical_json_bytes` and `domain_digest` do not exist”. The exact task-owned collection/import failure displayed above counts. Runner/interpreter startup failure, a missing test target, any other import or dependency failure, environment failure, unrelated failure, or already-failing test does not count.
 - [ ] **Step 3: Implement 4.B GREEN-1.** Define the recursive closed `CanonicalValueV1` domain and encode every accepted value into one exact canonical JSON byte representation.
 - [ ] **Step 4: Implement 4.B GREEN-2.** Compute the sole SHA-256 identity through `domain_digest` with explicit object type and schema version, and reject every forbidden scalar, Unicode, array, or mapping value deterministically.
 - [ ] **Step 5: Implement 4.B GREEN-3.** Make `test_ctv_01_exact_bytes_and_digest` GREEN with the exact CTV-01 vector; then make `test_canonical_digest_vector_matrix` RED and GREEN against the exact §5.1 matrix.
@@ -2114,7 +2200,7 @@ def test_fake_clock_advances_exact_milliseconds() -> None:
 - Quality (4.C): Code quality review checks UTC/millisecond exactness, Gregorian edge rejection, leap-second handling, deterministic fake-clock state, protocol substitutability, and absence of hidden wall-clock reads.
 
 - [ ] **Step 9: Add the exact 4.C RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
-- [ ] **Step 10: Run 4.C RED.** Run `python -m pytest -q tests/unit/canonical/test_clock.py::test_fake_clock_advances_exact_milliseconds`. Expected: FAIL for “import failure because the timestamp and clock types do not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
+- [ ] **Step 10: Run 4.C RED.** Run `python -m pytest -q tests/unit/canonical/test_clock.py::test_fake_clock_advances_exact_milliseconds`. Expected: FAIL for “import failure because the timestamp and clock types do not exist”. The exact task-owned collection/import failure displayed above counts. Runner/interpreter startup failure, a missing test target, any other import or dependency failure, environment failure, unrelated failure, or already-failing test does not count.
 - [ ] **Step 11: Implement 4.C GREEN-1.** Parse and render only the canonical UTC millisecond timestamp form, and convert exact epoch milliseconds through `CanonicalTimestampV1`.
 - [ ] **Step 12: Implement 4.C GREEN-2.** Expose all current-time observation through `ClockV1`; `FakeClockV1` advances deterministically by the exact requested milliseconds while invalid dates and leap seconds reject.
 - [ ] **Step 13: Implement 4.C GREEN-3.** Make `test_fake_clock_advances_exact_milliseconds` GREEN with the smallest injectable fake-clock path; then make `test_canonical_timestamp_vector_matrix` RED and GREEN against the exact §5.1 matrix.
@@ -2160,7 +2246,7 @@ def test_device_and_parent_paths_are_rejected() -> None:
 - Quality (4.D): Code quality review checks normalization-free lexical decisions, complete sentinel rejection, segment handling, stable errors, side-effect freedom, and no leakage of filesystem authorization.
 
 - [ ] **Step 17: Add the exact 4.D RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
-- [ ] **Step 18: Run 4.D RED.** Run `python -m pytest -q tests/unit/canonical/test_path_v1.py::test_device_and_parent_paths_are_rejected`. Expected: FAIL for “import failure because the canonical path validator does not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
+- [ ] **Step 18: Run 4.D RED.** Run `python -m pytest -q tests/unit/canonical/test_path_v1.py::test_device_and_parent_paths_are_rejected`. Expected: FAIL for “import failure because the canonical path validator does not exist”. The exact task-owned collection/import failure displayed above counts. Runner/interpreter startup failure, a missing test target, any other import or dependency failure, environment failure, unrelated failure, or already-failing test does not count.
 - [ ] **Step 19: Implement 4.D GREEN-1.** Validate one lexical string into the sole `CanonicalRelativePathV1` representation before any filesystem access.
 - [ ] **Step 20: Implement 4.D GREEN-2.** Reject root, absolute, device, ADS, parent/dot, trailing, reserved-name, and other unsupported lexical forms with deterministic closed errors.
 - [ ] **Step 21: Implement 4.D GREEN-3.** Make `test_device_and_parent_paths_are_rejected` GREEN with the smallest device/parent rejection; then make `test_canonical_path_sentinel_matrix` RED and GREEN against the exact §5.1 matrix.
@@ -2208,7 +2294,7 @@ def test_scanner_reports_rule_without_matched_value(tmp_path: Path) -> None:
 - Quality (4.E): Code quality review checks explicit path scoping, deterministic finding order, binary handling, stable path errors, redaction completeness, non-disclosure in exceptions/logs, and zero network use.
 
 - [ ] **Step 25: Add the exact 4.E RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
-- [ ] **Step 26: Run 4.E RED.** Run `python -m pytest -q tests/unit/process/test_scan_credentials.py::test_scanner_reports_rule_without_matched_value`. Expected: FAIL for “import failure because the changed-file scanner does not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
+- [ ] **Step 26: Run 4.E RED.** Run `python -m pytest -q tests/unit/process/test_scan_credentials.py::test_scanner_reports_rule_without_matched_value`. Expected: FAIL for “import failure because the changed-file scanner does not exist”. The exact task-owned collection/import failure displayed above counts. Runner/interpreter startup failure, a missing test target, any other import or dependency failure, environment failure, unrelated failure, or already-failing test does not count.
 - [ ] **Step 27: Implement 4.E GREEN-1.** Scan only an explicit changed-file path sequence and return an immutable ordered report containing bounded path and rule-id findings plus the scanned-file count.
 - [ ] **Step 28: Implement 4.E GREEN-2.** Fail on a match without emitting matched values, contents, offsets, derivatives, or network traffic; binary input remains non-text and path errors remain bounded.
 - [ ] **Step 29: Implement 4.E GREEN-3.** Make `test_scanner_reports_rule_without_matched_value` GREEN with the smallest sentinel match that exposes only its rule id and path.
@@ -2241,31 +2327,31 @@ git commit -m "Implement T04.2 Canonical Bytes, Time, Paths, and Credential Scan
 
 **Status:** Not started
 **Work package:** WP05
-**Legacy steps:** 5.A, 5.B, 5.C, 5.E, 5.D
-**Goal:** Define closed generic optional-value objects so every absent/present field is explicit and cannot collapse into nullable ambiguity.；Define the closed Run state/phase/wait/limit vocabulary and exact specialized wait-decision envelope.；Define the shared closed action identity, policy decision, stable action error, and action-result envelopes.；Define canonical repository-location and disclosure-path-scope value objects with no ambiguous root/path representation.；Define the shared closed evidence/artifact/digest/location vocabulary consumed across tools, validation, audit, and delivery.
+**Legacy steps:** 5.A, 5.D, 5.B, 5.C, 5.E
+**Goal:** Define closed generic optional-value objects so every absent/present field is explicit and cannot collapse into nullable ambiguity.；Define the shared closed evidence/artifact/digest/location vocabulary consumed across tools, validation, audit, and delivery.；Define the closed Run state/phase/wait/limit vocabulary and exact specialized wait-decision envelope.；Define the shared closed action identity, policy decision, stable action error, and action-result envelopes.；Define canonical repository-location and disclosure-path-scope value objects with no ambiguous root/path representation.
 **SPEC contracts:** SPEC §0.1 closed-schema rules; §4.2.1–§4.2.2 shared status/action contracts; §4.4.3–§4.4.4 location/source unions; §7 data model; §10.1 AC-17, AC-26, AC-27, AC-28.
 
 **Files:**
 - Create: `src/vespercode/contracts/optional.py`
 - Test: `tests/unit/contracts/test_optional.py`
+- Create: `src/vespercode/contracts/evidence.py`
+- Test: `tests/unit/contracts/test_evidence.py`
 - Create: `src/vespercode/contracts/run.py`
 - Test: `tests/unit/contracts/test_run.py`
 - Create: `src/vespercode/contracts/action.py`
 - Test: `tests/unit/contracts/test_action.py`
 - Create: `src/vespercode/contracts/location.py`
 - Test: `tests/unit/contracts/test_location.py`
-- Create: `src/vespercode/contracts/evidence.py`
-- Test: `tests/unit/contracts/test_evidence.py`
 
 **Depends:** T04.1, T04.2
 **Parallelization:** Start only after every task/non-task gate in **Depends** has passed. Same-wave execution is allowed only when expanded writable paths are disjoint; the WP05 branch and PR remain the sole package integration boundary.
 
 **Interfaces:**
 - **Consumes / Produces (5.A):** Produces `AbsentV1`, `PresentV1[T]`, and every named closed optional union required by SPEC.
+- **Consumes / Produces (5.D):** Produces `ArtifactRefV1`, `DigestV1`, `StableControlErrorV1`, `EvidenceLocationV1`, `StableCodeSequenceV1`, an immutable ordered tuple of zero or more stable error codes, and common closed evidence-envelope validation.
 - **Consumes / Produces (5.B):** Produces `RunStatus`, `RunPhase`, `RunStateV1`, `WaitKind`, `RunLimitsV1`, `WaitContextV1`, `WaitDecisionChoiceV1 = Literal["APPROVE","REJECT"]`, and `WaitDecisionV1(wait_id: str, run_id: str, wait_kind: WaitKind, subject_digest: DigestV1, decision: WaitDecisionChoiceV1, event_id: str, decided_at: CanonicalTimestampV1)`.
 - **Consumes / Produces (5.C):** Produces `CheckPlanIdV1 = Literal["TARGET_TESTS","FULL_PYTEST","RUFF","MYPY"]`, `ActionStatusV1`, `PolicyDecisionV1`, `ActionErrorV1`, `ActionResultV1`, and `ActionInstanceV1(action_id: str, semantic_digest: str, instance_digest: str, action: SharedActionV1)`.
 - **Consumes / Produces (5.E):** Produces `RepositoryLocationV1 = RootLocationV1 | PathLocationV1` and `DisclosurePathScopeV1 = RootScopeV1 | FileScopeV1 | DirectoryScopeV1`.
-- **Consumes / Produces (5.D):** Produces `ArtifactRefV1`, `DigestV1`, `StableControlErrorV1`, `EvidenceLocationV1`, `StableCodeSequenceV1`, an immutable ordered tuple of zero or more stable error codes, and common closed evidence-envelope validation.
 
 **Implementation points, exact RED, and minimum GREEN contracts:**
 
@@ -2314,6 +2400,51 @@ def test_present_optional_requires_value() -> None:
 - [ ] **Step 7: Run 5.A Target GREEN.** Re-run `python -m pytest -q tests/unit/contracts/test_optional.py::test_present_optional_requires_value`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 8: Run 5.A Domain.** Run `python -m pytest -q tests/unit/contracts/test_optional.py`; require exit 0 and every displayed Atomic verification expectation to hold.
 
+#### Legacy step 5.D: Evidence, Artifact, Digest, and Stable Error Contracts
+
+**Atomic goal:** Define the shared closed evidence/artifact/digest/location vocabulary consumed across tools, validation, audit, and delivery.
+
+**Minimum GREEN patch contract:**
+
+```text
+Owned files: - Create: src/vespercode/contracts/evidence.py - Test: tests/unit/contracts/test_evidence.py
+Interface: Produces `ArtifactRefV1`, `DigestV1`, `StableControlErrorV1`, `EvidenceLocationV1`, `StableCodeSequenceV1`, an immutable ordered tuple of zero or more stable error codes, and common closed evidence-envelope validation.
+GREEN-1: Define immutable artifact references, digests, evidence locations, stable control errors, ordered stable-code sequences, and common closed evidence envelopes.
+GREEN-2: Require every artifact/evidence variant to bind its digest and location consistently, rejecting missing, unknown, mixed, or contradictory fields deterministically.
+GREEN-3: Make `test_artifact_reference_rejects_unbound_digest` GREEN with the smallest missing-digest rejection; then make `test_evidence_reference_union_matrix` RED and GREEN against the exact §5.1 matrix.
+GREEN-4: Own shared evidence schemas only. Artifact creation, byte storage, audit append, and validation-outcome interpretation remain out of scope.
+Boundary: Own shared evidence schemas only. Do not create artifacts, store bytes, append audit events, or interpret validation outcomes.
+```
+
+**Exact RED test code:**
+
+```python
+def test_artifact_reference_rejects_unbound_digest() -> None:
+    with pytest.raises(ValidationError):
+        ArtifactRefV1.model_validate({"artifact_id": "a1", "digest": ""})
+```
+
+**Expected RED:** the shared evidence/artifact contract does not exist.
+
+**Atomic verification:**
+- Target (5.D): `python -m pytest -q tests/unit/contracts/test_evidence.py::test_artifact_reference_rejects_unbound_digest`
+- Domain (5.D): `python -m pytest -q tests/unit/contracts/test_evidence.py`
+- Matrix (5.D): `python -m pytest -q tests/unit/contracts/test_evidence.py::test_evidence_reference_union_matrix`
+- Expected (5.D): every evidence variant is closed/digest-bound and invalid/unknown combinations reject.
+
+**Atomic review focus:**
+- SPEC (5.D): Spec compliance review checks Task 5.D's Goal, Milestone 5's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent shared evidence contracts contract.
+- Quality (5.D): Code quality review checks digest/location binding, closed variant exhaustiveness, immutable stable-code ordering, deterministic stable errors, and separation from artifact/audit side effects.
+
+- [ ] **Step 9: Add the exact 5.D RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
+- [ ] **Step 10: Run 5.D RED.** Run `python -m pytest -q tests/unit/contracts/test_evidence.py::test_artifact_reference_rejects_unbound_digest`. Expected: FAIL for “the shared evidence/artifact contract does not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
+- [ ] **Step 11: Implement 5.D GREEN-1.** Define immutable artifact references, digests, evidence locations, stable control errors, ordered stable-code sequences, and common closed evidence envelopes.
+- [ ] **Step 12: Implement 5.D GREEN-2.** Require every artifact/evidence variant to bind its digest and location consistently, rejecting missing, unknown, mixed, or contradictory fields deterministically.
+- [ ] **Step 13: Implement 5.D GREEN-3.** Make `test_artifact_reference_rejects_unbound_digest` GREEN with the smallest missing-digest rejection; then make `test_evidence_reference_union_matrix` RED and GREEN against the exact §5.1 matrix.
+- [ ] **Step 14: Implement 5.D GREEN-4.** Own shared evidence schemas only. Artifact creation, byte storage, audit append, and validation-outcome interpretation remain out of scope.
+- [ ] **Step 15: Run 5.D Target GREEN.** Re-run `python -m pytest -q tests/unit/contracts/test_evidence.py::test_artifact_reference_rejects_unbound_digest`; require exit 0 and the displayed RED assertion to pass.
+- [ ] **Step 16: Run 5.D Domain.** Run `python -m pytest -q tests/unit/contracts/test_evidence.py`; require exit 0 and every displayed Atomic verification expectation to hold.
+
 #### Legacy step 5.B: Run, Phase, Wait, and Limit Contracts
 
 **Atomic goal:** Define the closed Run state/phase/wait/limit vocabulary and exact specialized wait-decision envelope.
@@ -2350,14 +2481,14 @@ def test_running_state_requires_exact_phase() -> None:
 - SPEC (5.B): Spec compliance review checks Task 5.B's Goal, Milestone 5's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent Run/wait state contracts contract.
 - Quality (5.B): Code quality review checks enum/union exhaustiveness, state-phase invariants, wait subject identity binding, timestamp typing, deterministic rejection, and absence of lifecycle side effects.
 
-- [ ] **Step 9: Add the exact 5.B RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
-- [ ] **Step 10: Run 5.B RED.** Run `python -m pytest -q tests/unit/contracts/test_run.py::test_running_state_requires_exact_phase`. Expected: FAIL for “the closed Run/wait state contracts do not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
-- [ ] **Step 11: Implement 5.B GREEN-1.** Define the closed Run status, phase, state, wait kind, limit, context, and exact `WaitDecisionV1` value-object vocabulary.
-- [ ] **Step 12: Implement 5.B GREEN-2.** Validate cross-field combinations so RUNNING requires its exact phase and every wait decision binds wait/run/kind/subject/event/time with a closed APPROVE/REJECT choice.
-- [ ] **Step 13: Implement 5.B GREEN-3.** Make `test_running_state_requires_exact_phase` GREEN with the smallest state/phase rejection; then make `test_run_state_phase_limit_matrix` RED and GREEN against the exact §5.1 matrix.
-- [ ] **Step 14: Implement 5.B GREEN-4.** Own value-object validation only; lifecycle transitions, repositories, decision services, and clock behavior remain out of scope.
-- [ ] **Step 15: Run 5.B Target GREEN.** Re-run `python -m pytest -q tests/unit/contracts/test_run.py::test_running_state_requires_exact_phase`; require exit 0 and the displayed RED assertion to pass.
-- [ ] **Step 16: Run 5.B Domain.** Run `python -m pytest -q tests/unit/contracts/test_run.py`; require exit 0 and every displayed Atomic verification expectation to hold.
+- [ ] **Step 17: Add the exact 5.B RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
+- [ ] **Step 18: Run 5.B RED.** Run `python -m pytest -q tests/unit/contracts/test_run.py::test_running_state_requires_exact_phase`. Expected: FAIL for “the closed Run/wait state contracts do not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
+- [ ] **Step 19: Implement 5.B GREEN-1.** Define the closed Run status, phase, state, wait kind, limit, context, and exact `WaitDecisionV1` value-object vocabulary.
+- [ ] **Step 20: Implement 5.B GREEN-2.** Validate cross-field combinations so RUNNING requires its exact phase and every wait decision binds wait/run/kind/subject/event/time with a closed APPROVE/REJECT choice.
+- [ ] **Step 21: Implement 5.B GREEN-3.** Make `test_running_state_requires_exact_phase` GREEN with the smallest state/phase rejection; then make `test_run_state_phase_limit_matrix` RED and GREEN against the exact §5.1 matrix.
+- [ ] **Step 22: Implement 5.B GREEN-4.** Own value-object validation only; lifecycle transitions, repositories, decision services, and clock behavior remain out of scope.
+- [ ] **Step 23: Run 5.B Target GREEN.** Re-run `python -m pytest -q tests/unit/contracts/test_run.py::test_running_state_requires_exact_phase`; require exit 0 and the displayed RED assertion to pass.
+- [ ] **Step 24: Run 5.B Domain.** Run `python -m pytest -q tests/unit/contracts/test_run.py`; require exit 0 and every displayed Atomic verification expectation to hold.
 
 #### Legacy step 5.C: Action, Policy-decision, and Result Contracts
 
@@ -2395,14 +2526,14 @@ def test_success_result_rejects_error_payload() -> None:
 - SPEC (5.C): Spec compliance review checks Task 5.C's Goal, Milestone 5's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent closed action/result contracts contract.
 - Quality (5.C): Code quality review checks discriminant exhaustiveness, semantic/instance identity typing, status/payload invariants, stable error closure, deterministic rejection, and schema-only purity.
 
-- [ ] **Step 17: Add the exact 5.C RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
-- [ ] **Step 18: Run 5.C RED.** Run `python -m pytest -q tests/unit/contracts/test_action.py::test_success_result_rejects_error_payload`. Expected: FAIL for “no closed action/result union enforces payload/status consistency”. Collection, import, environment, unrelated, or already-failing tests do not count.
-- [ ] **Step 19: Implement 5.C GREEN-1.** Define the shared closed action identity, check-plan vocabulary, status, policy decision, stable error, result, and `ActionInstanceV1` envelopes.
-- [ ] **Step 20: Implement 5.C GREEN-2.** Bind semantic and instance identities to the action value and enforce status/payload consistency so success cannot carry error data and contradictory variants reject.
-- [ ] **Step 21: Implement 5.C GREEN-3.** Make `test_success_result_rejects_error_payload` GREEN with the smallest success/error contradiction; then make `test_action_result_union_matrix` RED and GREEN against the exact §5.1 matrix.
-- [ ] **Step 22: Implement 5.C GREEN-4.** Own schemas and cross-field validation only. Model JSON parsing, policy evaluation, dispatch, and check execution remain out of scope.
-- [ ] **Step 23: Run 5.C Target GREEN.** Re-run `python -m pytest -q tests/unit/contracts/test_action.py::test_success_result_rejects_error_payload`; require exit 0 and the displayed RED assertion to pass.
-- [ ] **Step 24: Run 5.C Domain.** Run `python -m pytest -q tests/unit/contracts/test_action.py`; require exit 0 and every displayed Atomic verification expectation to hold.
+- [ ] **Step 25: Add the exact 5.C RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
+- [ ] **Step 26: Run 5.C RED.** Run `python -m pytest -q tests/unit/contracts/test_action.py::test_success_result_rejects_error_payload`. Expected: FAIL for “no closed action/result union enforces payload/status consistency”. Collection, import, environment, unrelated, or already-failing tests do not count.
+- [ ] **Step 27: Implement 5.C GREEN-1.** Define the shared closed action identity, check-plan vocabulary, status, policy decision, stable error, result, and `ActionInstanceV1` envelopes.
+- [ ] **Step 28: Implement 5.C GREEN-2.** Bind semantic and instance identities to the action value and enforce status/payload consistency so success cannot carry error data and contradictory variants reject.
+- [ ] **Step 29: Implement 5.C GREEN-3.** Make `test_success_result_rejects_error_payload` GREEN with the smallest success/error contradiction; then make `test_action_result_union_matrix` RED and GREEN against the exact §5.1 matrix.
+- [ ] **Step 30: Implement 5.C GREEN-4.** Own schemas and cross-field validation only. Model JSON parsing, policy evaluation, dispatch, and check execution remain out of scope.
+- [ ] **Step 31: Run 5.C Target GREEN.** Re-run `python -m pytest -q tests/unit/contracts/test_action.py::test_success_result_rejects_error_payload`; require exit 0 and the displayed RED assertion to pass.
+- [ ] **Step 32: Run 5.C Domain.** Run `python -m pytest -q tests/unit/contracts/test_action.py`; require exit 0 and every displayed Atomic verification expectation to hold.
 
 #### Legacy step 5.E: Repository-location and Disclosure-scope Contracts
 
@@ -2440,59 +2571,14 @@ def test_repository_root_rejects_path_field() -> None:
 - SPEC (5.E): Spec compliance review checks Task 5.E's Goal, Milestone 5's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent repository/disclosure location contracts contract.
 - Quality (5.E): Code quality review checks discriminant closure, root/path exclusivity, file/directory scope separation, canonical field typing, deterministic rejection, and absence of domain behavior.
 
-- [ ] **Step 25: Add the exact 5.E RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
-- [ ] **Step 26: Run 5.E RED.** Run `python -m pytest -q tests/unit/contracts/test_location.py::test_repository_root_rejects_path_field`. Expected: FAIL for “the closed discriminated repository-location and disclosure-scope unions do not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
-- [ ] **Step 27: Implement 5.E GREEN-1.** Define closed discriminated repository locations for root versus path and disclosure scopes for root, file, or directory.
-- [ ] **Step 28: Implement 5.E GREEN-2.** Keep root and path representations mutually exclusive so unknown, ambiguous, mixed, or mismatched location/scope variants reject deterministically.
-- [ ] **Step 29: Implement 5.E GREEN-3.** Make `test_repository_root_rejects_path_field` GREEN with the smallest root/path contradiction; then make `test_location_scope_union_matrix` RED and GREEN against the exact §5.1 matrix.
-- [ ] **Step 30: Implement 5.E GREEN-4.** Own repository-location and disclosure-scope schemas only. Generic optionals, Run state, actions, evidence, profiles, and persistence remain out of scope.
-- [ ] **Step 31: Run 5.E Target GREEN.** Re-run `python -m pytest -q tests/unit/contracts/test_location.py::test_repository_root_rejects_path_field`; require exit 0 and the displayed RED assertion to pass.
-- [ ] **Step 32: Run 5.E Domain.** Run `python -m pytest -q tests/unit/contracts/test_location.py`; require exit 0 and every displayed Atomic verification expectation to hold.
-
-#### Legacy step 5.D: Evidence, Artifact, Digest, and Stable Error Contracts
-
-**Atomic goal:** Define the shared closed evidence/artifact/digest/location vocabulary consumed across tools, validation, audit, and delivery.
-
-**Minimum GREEN patch contract:**
-
-```text
-Owned files: - Create: src/vespercode/contracts/evidence.py - Test: tests/unit/contracts/test_evidence.py
-Interface: Produces `ArtifactRefV1`, `DigestV1`, `StableControlErrorV1`, `EvidenceLocationV1`, `StableCodeSequenceV1`, an immutable ordered tuple of zero or more stable error codes, and common closed evidence-envelope validation.
-GREEN-1: Define immutable artifact references, digests, evidence locations, stable control errors, ordered stable-code sequences, and common closed evidence envelopes.
-GREEN-2: Require every artifact/evidence variant to bind its digest and location consistently, rejecting missing, unknown, mixed, or contradictory fields deterministically.
-GREEN-3: Make `test_artifact_reference_rejects_unbound_digest` GREEN with the smallest missing-digest rejection; then make `test_evidence_reference_union_matrix` RED and GREEN against the exact §5.1 matrix.
-GREEN-4: Own shared evidence schemas only. Artifact creation, byte storage, audit append, and validation-outcome interpretation remain out of scope.
-Boundary: Own shared evidence schemas only. Do not create artifacts, store bytes, append audit events, or interpret validation outcomes.
-```
-
-**Exact RED test code:**
-
-```python
-def test_artifact_reference_rejects_unbound_digest() -> None:
-    with pytest.raises(ValidationError):
-        ArtifactRefV1.model_validate({"artifact_id": "a1", "digest": ""})
-```
-
-**Expected RED:** the shared evidence/artifact contract does not exist.
-
-**Atomic verification:**
-- Target (5.D): `python -m pytest -q tests/unit/contracts/test_evidence.py::test_artifact_reference_rejects_unbound_digest`
-- Domain (5.D): `python -m pytest -q tests/unit/contracts/test_evidence.py`
-- Matrix (5.D): `python -m pytest -q tests/unit/contracts/test_evidence.py::test_evidence_reference_union_matrix`
-- Expected (5.D): every evidence variant is closed/digest-bound and invalid/unknown combinations reject.
-
-**Atomic review focus:**
-- SPEC (5.D): Spec compliance review checks Task 5.D's Goal, Milestone 5's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent shared evidence contracts contract.
-- Quality (5.D): Code quality review checks digest/location binding, closed variant exhaustiveness, immutable stable-code ordering, deterministic stable errors, and separation from artifact/audit side effects.
-
-- [ ] **Step 33: Add the exact 5.D RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
-- [ ] **Step 34: Run 5.D RED.** Run `python -m pytest -q tests/unit/contracts/test_evidence.py::test_artifact_reference_rejects_unbound_digest`. Expected: FAIL for “the shared evidence/artifact contract does not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
-- [ ] **Step 35: Implement 5.D GREEN-1.** Define immutable artifact references, digests, evidence locations, stable control errors, ordered stable-code sequences, and common closed evidence envelopes.
-- [ ] **Step 36: Implement 5.D GREEN-2.** Require every artifact/evidence variant to bind its digest and location consistently, rejecting missing, unknown, mixed, or contradictory fields deterministically.
-- [ ] **Step 37: Implement 5.D GREEN-3.** Make `test_artifact_reference_rejects_unbound_digest` GREEN with the smallest missing-digest rejection; then make `test_evidence_reference_union_matrix` RED and GREEN against the exact §5.1 matrix.
-- [ ] **Step 38: Implement 5.D GREEN-4.** Own shared evidence schemas only. Artifact creation, byte storage, audit append, and validation-outcome interpretation remain out of scope.
-- [ ] **Step 39: Run 5.D Target GREEN.** Re-run `python -m pytest -q tests/unit/contracts/test_evidence.py::test_artifact_reference_rejects_unbound_digest`; require exit 0 and the displayed RED assertion to pass.
-- [ ] **Step 40: Run 5.D Domain.** Run `python -m pytest -q tests/unit/contracts/test_evidence.py`; require exit 0 and every displayed Atomic verification expectation to hold.
+- [ ] **Step 33: Add the exact 5.E RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
+- [ ] **Step 34: Run 5.E RED.** Run `python -m pytest -q tests/unit/contracts/test_location.py::test_repository_root_rejects_path_field`. Expected: FAIL for “the closed discriminated repository-location and disclosure-scope unions do not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
+- [ ] **Step 35: Implement 5.E GREEN-1.** Define closed discriminated repository locations for root versus path and disclosure scopes for root, file, or directory.
+- [ ] **Step 36: Implement 5.E GREEN-2.** Keep root and path representations mutually exclusive so unknown, ambiguous, mixed, or mismatched location/scope variants reject deterministically.
+- [ ] **Step 37: Implement 5.E GREEN-3.** Make `test_repository_root_rejects_path_field` GREEN with the smallest root/path contradiction; then make `test_location_scope_union_matrix` RED and GREEN against the exact §5.1 matrix.
+- [ ] **Step 38: Implement 5.E GREEN-4.** Own repository-location and disclosure-scope schemas only. Generic optionals, Run state, actions, evidence, profiles, and persistence remain out of scope.
+- [ ] **Step 39: Run 5.E Target GREEN.** Re-run `python -m pytest -q tests/unit/contracts/test_location.py::test_repository_root_rejects_path_field`; require exit 0 and the displayed RED assertion to pass.
+- [ ] **Step 40: Run 5.E Domain.** Run `python -m pytest -q tests/unit/contracts/test_location.py`; require exit 0 and every displayed Atomic verification expectation to hold.
 
 **Task-level verification, review, and completion:**
 
@@ -2505,14 +2591,14 @@ def test_artifact_reference_rejects_unbound_digest() -> None:
 - [ ] **Step 47: Commit T05.1 implementation.** Stage only the task-owned implementation/tests and create one implementation commit after both review stages PASS.
 
 ```bash
-git add -- "src/vespercode/contracts/optional.py" "tests/unit/contracts/test_optional.py" "src/vespercode/contracts/run.py" "tests/unit/contracts/test_run.py" "src/vespercode/contracts/action.py" "tests/unit/contracts/test_action.py" "src/vespercode/contracts/location.py" "tests/unit/contracts/test_location.py" "src/vespercode/contracts/evidence.py" "tests/unit/contracts/test_evidence.py"
+git add -- "src/vespercode/contracts/optional.py" "tests/unit/contracts/test_optional.py" "src/vespercode/contracts/evidence.py" "tests/unit/contracts/test_evidence.py" "src/vespercode/contracts/run.py" "tests/unit/contracts/test_run.py" "src/vespercode/contracts/action.py" "tests/unit/contracts/test_action.py" "src/vespercode/contracts/location.py" "tests/unit/contracts/test_location.py"
 git commit -m "Implement T05.1 Closed Shared Value, Location, Evidence, and Error Contracts"
 ```
 
 - [ ] **Step 48: Record T05.1 completion evidence.** In a narrow evidence commit, update only this task's Status/Completion evidence and append `AGENT_LOG.md` with the real implementation SHA, responsible fresh subagent, human edits, exact commands/results, review/re-review verdicts, and PR URL.
 - [ ] **Step 49: Continue or finish WP05.** If another session task remains in this package, hand the same branch/PR to a new fresh subagent. Otherwise use `superpowers:finishing-a-development-branch`, verify the package result, and merge only after all predecessors and gates remain valid.
 
-**Done:** legacy steps 5.A, 5.B, 5.C, 5.E, 5.D 的 Target、Domain、适用真实环境和全局 profile 均通过；Critical/Important finding 全部关闭并复审；没有行为被延后到 successor。
+**Done:** legacy steps 5.A, 5.D, 5.B, 5.C, 5.E 的 Target、Domain、适用真实环境和全局 profile 均通过；Critical/Important finding 全部关闭并复审；没有行为被延后到 successor。
 **Completion evidence:** Not yet executed.
 
 ### Task T06.1: Immutable Editable-path Policy
@@ -2709,7 +2795,7 @@ git commit -m "Implement T06.2 Reference Profile Manifest Integrity"
 
 **Interfaces:**
 - **Consumes / Produces (6.C):** Produces `MockLLMProfileV1`, `OpenAILLMProfileV1`, `LLMProfileManifestV1 = MockLLMProfileV1 | OpenAILLMProfileV1`, and `load_llm_profile(raw: bytes) -> LLMProfileManifestV1`.
-- **Consumes / Produces (6.D):** Produces `OpenAIEndpointV1(endpoint_id: Literal["OPENAI_PUBLIC_API_V1"], base_url: Literal["https://api.openai.com/v1"])` and `OpenAIEndpointRegistry.resolve(endpoint_id: str) -> OpenAIEndpointV1`.
+- **Consumes / Produces (6.D):** Produces `OpenAIEndpointV1(endpoint_id: Literal["OPENAI_PUBLIC_API_V1"], base_url: Literal["https://api.openai.com:443/v1"])` and `OpenAIEndpointRegistry.resolve(endpoint_id: str) -> OpenAIEndpointV1`.
 
 **Implementation points, exact RED, and minimum GREEN contracts:**
 
@@ -2765,7 +2851,7 @@ def test_mock_profile_rejects_openai_fields() -> None:
 
 ```text
 Owned files: - Create: src/vespercode/profiles/endpoints.py - Test: tests/unit/profiles/test_endpoints.py
-Interface: Produces `OpenAIEndpointV1(endpoint_id: Literal["OPENAI_PUBLIC_API_V1"], base_url: Literal["https://api.openai.com/v1"])` and `OpenAIEndpointRegistry.resolve(endpoint_id: str) -> OpenAIEndpointV1`.
+Interface: Produces `OpenAIEndpointV1(endpoint_id: Literal["OPENAI_PUBLIC_API_V1"], base_url: Literal["https://api.openai.com:443/v1"])` and `OpenAIEndpointRegistry.resolve(endpoint_id: str) -> OpenAIEndpointV1`.
 GREEN-1: Define the immutable `OpenAIEndpointV1` record for the sole `OPENAI_PUBLIC_API_V1` identifier and exact public base URL.
 GREEN-2: Resolve only that built-in identifier; raw user URLs, config overrides, unknown ids, and alternate records reject without network access.
 GREEN-3: Make `test_endpoint_registry_rejects_user_url` GREEN with the smallest raw-URL rejection; then make `test_endpoint_resolution_matrix` RED and GREEN against the exact §5.1 matrix.
@@ -2777,6 +2863,9 @@ Boundary: Own endpoint ID-to-record resolution only. Do not accept URLs/config o
 
 ```python
 def test_endpoint_registry_rejects_user_url() -> None:
+    endpoint = OpenAIEndpointRegistry.resolve("OPENAI_PUBLIC_API_V1")
+    assert endpoint.base_url.encode("utf-8") == b"https://api.openai.com:443/v1"
+
     with pytest.raises(UnknownEndpointError):
         OpenAIEndpointRegistry.resolve("https://proxy.invalid/v1")
 ```
@@ -2974,7 +3063,7 @@ def test_changed_applied_migration_checksum_fails_closed(
 - Quality (7.A): Code quality review checks transaction identity, foreign-key/connection flags, strict ordering, batch rollback, replay idempotency, checksum history, descriptor closure, and zero domain-schema knowledge.
 
 - [ ] **Step 1: Add the exact 7.A RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
-- [ ] **Step 2: Run 7.A RED.** Run `python -m pytest -q tests/unit/storage/test_migration_engine.py::test_changed_applied_migration_checksum_fails_closed`. Expected: FAIL for “import failure because the database, closed migration descriptor, checksum history, and injected runner do not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
+- [ ] **Step 2: Run 7.A RED.** Run `python -m pytest -q tests/unit/storage/test_migration_engine.py::test_changed_applied_migration_checksum_fails_closed`. Expected: FAIL for “import failure because the database, closed migration descriptor, checksum history, and injected runner do not exist”. The exact task-owned collection/import failure displayed above counts. Runner/interpreter startup failure, a missing test target, any other import or dependency failure, environment failure, unrelated failure, or already-failing test does not count.
 - [ ] **Step 3: Implement 7.A GREEN-1.** Open SQLite with explicit control-database flags and expose one immediate transaction identity plus a closed injected `MigrationV1` runner.
 - [ ] **Step 4: Implement 7.A GREEN-2.** Apply synthetic migrations in strict version order atomically and idempotently; duplicate/gap descriptors, whole-batch failure, or applied-checksum drift fail closed.
 - [ ] **Step 5: Implement 7.A GREEN-3.** Make `test_changed_applied_migration_checksum_fails_closed` GREEN with the smallest history-checksum rejection; then make `test_migration_replay_rollback_matrix` RED and GREEN against the exact §5.1 matrix.
@@ -3067,7 +3156,7 @@ def test_same_wait_decision_can_win_only_once(run_repository: RunRepository, dec
 - Quality (7.B): Code quality review checks exact v0001 schema, transaction-bound locking, one-winner concurrency, transition-table exhaustiveness, expiry/time binding, rollback, and prohibited-column absence.
 
 - [ ] **Step 1: Add the exact 7.B RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
-- [ ] **Step 2: Run 7.B RED.** Run `python -m pytest -q tests/unit/storage/test_run_repository.py::test_same_wait_decision_can_win_only_once`. Expected: FAIL for “import failure because the Run repository and lifecycle rules do not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
+- [ ] **Step 2: Run 7.B RED.** Run `python -m pytest -q tests/unit/storage/test_run_repository.py::test_same_wait_decision_can_win_only_once`. Expected: FAIL for “import failure because the Run repository and lifecycle rules do not exist”. The exact task-owned collection/import failure displayed above counts. Runner/interpreter startup failure, a missing test target, any other import or dependency failure, environment failure, unrelated failure, or already-failing test does not count.
 - [ ] **Step 3: Implement 7.B GREEN-1.** Own immutable v0001 Run/config/wait DDL, persistence repositories, and pure `LifecycleRules` target-state derivation without editing the final registry.
 - [ ] **Step 4: Implement 7.B GREEN-2.** Lock and commit one exactly bound wait decision in a caller transaction so only one decision wins; rollback, expiry, terminal, and invalid transitions remain atomic and closed.
 - [ ] **Step 5: Implement 7.B GREEN-3.** Make `test_same_wait_decision_can_win_only_once` GREEN with the smallest competing-decision transaction; then make `test_run_wait_lifecycle_matrix` RED and GREEN against the exact §5.1 matrix.
@@ -3159,7 +3248,7 @@ def test_event_id_reuse_with_different_request_is_conflict(
 - Quality (7.C): Code quality review checks exact v0002 schema, transaction participation, request/result digest binding, replay purity, conflict non-mutation, rollback, and concurrency determinism.
 
 - [ ] **Step 1: Add the exact 7.C RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
-- [ ] **Step 2: Run 7.C RED.** Run `python -m pytest -q tests/unit/storage/test_idempotency.py::test_event_id_reuse_with_different_request_is_conflict`. Expected: FAIL for “import failure because the idempotency repository does not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
+- [ ] **Step 2: Run 7.C RED.** Run `python -m pytest -q tests/unit/storage/test_idempotency.py::test_event_id_reuse_with_different_request_is_conflict`. Expected: FAIL for “import failure because the idempotency repository does not exist”. The exact task-owned collection/import failure displayed above counts. Runner/interpreter startup failure, a missing test target, any other import or dependency failure, environment failure, unrelated failure, or already-failing test does not count.
 - [ ] **Step 3: Implement 7.C GREEN-1.** Own immutable v0002 idempotency DDL and a repository that records scope/event/request/result identities only inside the caller-owned Task 7.A transaction.
 - [ ] **Step 4: Implement 7.C GREEN-2.** Return `NEW` for the first identity, identical `REPLAY` without domain mutation, and `EVENT_ID_REUSE_CONFLICT` for changed request bytes without mutation.
 - [ ] **Step 5: Implement 7.C GREEN-3.** Make `test_event_id_reuse_with_different_request_is_conflict` GREEN with the smallest request-digest conflict; then make `test_idempotency_replay_rollback_concurrency_matrix` RED and GREEN against the exact §5.1 matrix.
@@ -3306,7 +3395,7 @@ def test_registry_prefixes_match_exact_schema_owner_map(
 - Quality (7.D): Code quality review checks exact producer set, versions/names/order/checksums, composition immutability, test-only owner-map isolation, prefix introspection purity, and final 18-table agreement.
 
 - [ ] **Step 1: Add the exact 7.D RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
-- [ ] **Step 2: Run 7.D RED.** Run `python -m pytest -q tests/unit/storage/test_migration_registry.py::test_registry_rejects_missing_required_domain_migration`. Expected: FAIL for “import failure because no final registry/composition contract exists. After the registry exists, the schema-owner RED still fails if a migration introduces an undeclared table, omits its declared table, attempts to repeat an already owned table, or moves a table to an earlier/later version; v0001 alone may add the framework-owned `schema_migrations` table in addition to its exact domain delta”. Collection, import, environment, unrelated, or already-failing tests do not count.
+- [ ] **Step 2: Run 7.D RED.** Run `python -m pytest -q tests/unit/storage/test_migration_registry.py::test_registry_rejects_missing_required_domain_migration`. Expected: FAIL for “import failure because no final registry/composition contract exists. After the registry exists, the schema-owner RED still fails if a migration introduces an undeclared table, omits its declared table, attempts to repeat an already owned table, or moves a table to an earlier/later version; v0001 alone may add the framework-owned `schema_migrations` table in addition to its exact domain delta”. The exact task-owned collection/import failure displayed above counts. Runner/interpreter startup failure, a missing test target, any other import or dependency failure, environment failure, unrelated failure, or already-failing test does not count.
 - [ ] **Step 3: Implement 7.D GREEN-1.** Compose exactly the twelve declared domain migration constants into `ALL_V1_MIGRATIONS` with versions 1–12, expected names/order, and unique descriptor checksums.
 - [ ] **Step 4: Implement 7.D GREEN-2.** Fail closed on missing, duplicate, gapped, reordered, early/late, wrong-owner, unexpected, or checksum-drifted composition; prefix schema ownership is verified through read-only test introspection.
 - [ ] **Step 5: Implement 7.D GREEN-3.** Make both declared registry RED probes enforce missing-migration rejection and exact per-prefix/final table ownership before accepting the complete tuple.
@@ -3554,7 +3643,7 @@ def test_reparse_final_object_is_rejected(
 - Quality (9.A): Code quality review checks handle lifetime, final-versus-lexical identity, ancestry proof, object-kind/reparse/ADS/link/ACL coverage, stable Win32 error handling, and cleanup.
 
 - [ ] **Step 1: Add the exact 9.A RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
-- [ ] **Step 2: Run 9.A RED.** Run `python -m pytest -q -o addopts='' -m windows_integration tests/integration/windows/test_workspace_objects.py::test_reparse_final_object_is_rejected`. Expected: FAIL for “import failure because the production Win32 identity/object adapters do not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
+- [ ] **Step 2: Run 9.A RED.** Run `python -m pytest -q -o addopts='' -m windows_integration tests/integration/windows/test_workspace_objects.py::test_reparse_final_object_is_rejected`. Expected: FAIL for “import failure because the production Win32 identity/object adapters do not exist”. The exact task-owned collection/import failure displayed above counts. Runner/interpreter startup failure, a missing test target, any other import or dependency failure, environment failure, unrelated failure, or already-failing test does not count.
 - [ ] **Step 3: Implement 9.A GREEN-1.** Resolve workspace and child objects from Win32 handles, producing sealed root/final identities with ancestry, kind, reparse, ADS, link, and ACL facts.
 - [ ] **Step 4: Implement 9.A GREEN-2.** Reject every unprovable, aliased, reparse, ADS, hard-link, wrong-kind, ACL, or root-escape object through stable closed errors; lexical identity alone never authorizes.
 - [ ] **Step 5: Implement 9.A GREEN-3.** Make `test_reparse_final_object_is_rejected` GREEN with the smallest real handle-derived reparse rejection; then make `test_workspace_object_sentinel_matrix` RED and GREEN against the exact §5.1 matrix.
@@ -3604,7 +3693,7 @@ def test_second_process_cannot_acquire_same_workspace_mutex(
 - Quality (9.B): Code quality review checks deterministic mutex naming, cross-process exclusivity, timeout boundaries, lease identity, idempotent cleanup/release, abandoned-handle behavior, and error propagation.
 
 - [ ] **Step 9: Add the exact 9.B RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
-- [ ] **Step 10: Run 9.B RED.** Run `python -m pytest -q -o addopts='' -m windows_integration tests/integration/windows/test_named_mutex.py::test_second_process_cannot_acquire_same_workspace_mutex`. Expected: FAIL for “import failure because the production named-mutex adapter does not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
+- [ ] **Step 10: Run 9.B RED.** Run `python -m pytest -q -o addopts='' -m windows_integration tests/integration/windows/test_named_mutex.py::test_second_process_cannot_acquire_same_workspace_mutex`. Expected: FAIL for “import failure because the production named-mutex adapter does not exist”. The exact task-owned collection/import failure displayed above counts. Runner/interpreter startup failure, a missing test target, any other import or dependency failure, environment failure, unrelated failure, or already-failing test does not count.
 - [ ] **Step 11: Implement 9.B GREEN-1.** Derive one stable named mutex from `WorkspaceIdentityV1` and return an explicit lease that owns the acquired handle until release.
 - [ ] **Step 12: Implement 9.B GREEN-2.** Guarantee same-workspace cross-process exclusion while preserving different-workspace independence, bounded timeout, explicit release, and crashed-child cleanup.
 - [ ] **Step 13: Implement 9.B GREEN-3.** Make `test_second_process_cannot_acquire_same_workspace_mutex` GREEN with the smallest two-process contention path; then make `test_named_mutex_timeout_recovery_matrix` RED and GREEN against the exact §5.1 matrix.
@@ -3654,7 +3743,7 @@ def test_tracked_file_with_skip_worktree_is_rejected_before_snapshot(
 - Quality (9.C): Code quality review checks shell-free argv, closed environment/config, complete Git state sealing, non-secret evidence, skip-worktree/conversion handling, stable errors, and zero writes.
 
 - [ ] **Step 17: Add the exact 9.C RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
-- [ ] **Step 18: Run 9.C RED.** Run `python -m pytest -q tests/unit/workspace/test_git_preflight.py::test_tracked_file_with_skip_worktree_is_rejected_before_snapshot`. Expected: FAIL for “import failure because sealed Git preflight does not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
+- [ ] **Step 18: Run 9.C RED.** Run `python -m pytest -q tests/unit/workspace/test_git_preflight.py::test_tracked_file_with_skip_worktree_is_rejected_before_snapshot`. Expected: FAIL for “import failure because sealed Git preflight does not exist”. The exact task-owned collection/import failure displayed above counts. Runner/interpreter startup failure, a missing test target, any other import or dependency failure, environment failure, unrelated failure, or already-failing test does not count.
 - [ ] **Step 19: Implement 9.C GREEN-1.** Invoke Git without a shell under closed configuration/environment and seal config, index, HEAD, worktree, ignore, attribute, and conversion observations before Snapshot creation.
 - [ ] **Step 20: Implement 9.C GREEN-2.** Reject skip-worktree, alias, conversion, forbidden config/index/worktree, and identity drift states deterministically before any Snapshot or repository write.
 - [ ] **Step 21: Implement 9.C GREEN-3.** Make `test_tracked_file_with_skip_worktree_is_rejected_before_snapshot` GREEN with the smallest index-flag rejection; then make `test_git_preflight_windows_parity_matrix` RED and GREEN against the exact §5.1 matrix.
@@ -3700,7 +3789,7 @@ def test_create_rejects_case_alias_of_existing_path(path_guard: PathGuard) -> No
 - Quality (9.D): Code quality review checks handle/root binding, ancestry and kind proof, case/alias collisions, sensitive/editable precedence, create-parent safety, stable failures, and no string fallback.
 
 - [ ] **Step 25: Add the exact 9.D RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
-- [ ] **Step 26: Run 9.D RED.** Run `python -m pytest -q tests/unit/workspace/test_path_guard.py::test_create_rejects_case_alias_of_existing_path`. Expected: FAIL for “import failure because `PathGuard` does not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
+- [ ] **Step 26: Run 9.D RED.** Run `python -m pytest -q tests/unit/workspace/test_path_guard.py::test_create_rejects_case_alias_of_existing_path`. Expected: FAIL for “import failure because `PathGuard` does not exist”. The exact task-owned collection/import failure displayed above counts. Runner/interpreter startup failure, a missing test target, any other import or dependency failure, environment failure, unrelated failure, or already-failing test does not count.
 - [ ] **Step 27: Implement 9.D GREEN-1.** Combine canonical lexical paths, handle-derived final-object/root ancestry, sealed Git/ignore facts, sensitive-path rules, and frozen editable policy into authorized existing/create handles.
 - [ ] **Step 28: Implement 9.D GREEN-2.** Fail closed on alias, case collision, reparse, ADS, link, wrong kind, root escape, sensitive path, noneditable operation, or unproved create parent; never fall back to strings.
 - [ ] **Step 29: Implement 9.D GREEN-3.** Make `test_create_rejects_case_alias_of_existing_path` GREEN with the smallest create-alias rejection; then make `test_path_authorization_existing_create_matrix` RED and GREEN against the exact §5.1 matrix.
@@ -3819,12 +3908,13 @@ git commit -m "Implement T10.1 Shared Supported-text Classification"
 **Status:** Not started
 **Work package:** WP10-SNAPSHOT
 **Legacy steps:** 10.A, 10.C
-**Goal:** Store and retrieve exact immutable file bytes by verified raw SHA-256 content reference.；Construct the Run's sole immutable SnapshotTree from sealed Git-preflight bytes and verify all content, ordering, identity, and policy bindings.
+**Goal:** Store and retrieve exact immutable file bytes by verified raw SHA-256 content reference.；Define the minimal immutable-tree read protocol, construct the Run's sole immutable SnapshotTree from sealed Git-preflight bytes, and verify all content, ordering, identity, and policy bindings.
 **SPEC contracts:** SPEC §1.4.1 `StaticProjectProfileCheckV1`; §1.4.4; §4.1 behavior 8–10; §4.2.2 `SupportedTextFileV1`; §4.3 behavior 1–3; §7 Snapshot/List entry rows; §10.1 AC-04, AC-15, AC-17, AC-18, AC-26, AC-31.
 
 **Files:**
 - Create: `src/vespercode/trees/content_store.py`
 - Test: `tests/unit/trees/test_content_store.py`
+- Create: `src/vespercode/trees/readable.py`
 - Create: `src/vespercode/trees/snapshot.py`
 - Test: `tests/unit/trees/test_snapshot.py`
 - Test: `tests/integration/windows/test_snapshot_from_preflight.py`
@@ -3834,7 +3924,7 @@ git commit -m "Implement T10.1 Shared Supported-text Classification"
 
 **Interfaces:**
 - **Consumes / Produces (10.A):** Produces `ContentObjectRefV1(sha256: str, byte_count: int)`, `ContentObjectStore.put(raw_bytes: bytes) -> ContentObjectRefV1`, and `ContentObjectStore.get(ref: ContentObjectRefV1) -> bytes`.
-- **Consumes / Produces (10.C):** Produces `SnapshotTreeV1`, `SnapshotIntegrityResultV1`, `create_snapshot(preflight: AcceptedGitPreflightV1, store: ContentObjectStore, classifier: SupportedTextClassifierV1) -> SnapshotTreeV1`, and `verify_snapshot(snapshot: SnapshotTreeV1, store: ContentObjectStore) -> SnapshotIntegrityResultV1`.
+- **Consumes / Produces (10.C):** Produces structural `ReadableTreeV1` with read-only `digest: str`, `list_directories() -> tuple[CanonicalRelativePathV1, ...]`, `list_file_paths() -> tuple[CanonicalRelativePathV1, ...]`, and `read_bytes(path: CanonicalRelativePathV1) -> bytes`; produces `SnapshotTreeV1`, which satisfies that protocol with `digest == root_digest`; and produces `SnapshotIntegrityResultV1`, `create_snapshot(preflight: AcceptedGitPreflightV1, store: ContentObjectStore, classifier: SupportedTextClassifierV1) -> SnapshotTreeV1`, and `verify_snapshot(snapshot: SnapshotTreeV1, store: ContentObjectStore) -> SnapshotIntegrityResultV1`.
 
 **Implementation points, exact RED, and minimum GREEN contracts:**
 
@@ -3887,18 +3977,18 @@ def test_get_rejects_bytes_whose_digest_drifted(store: ContentObjectStore) -> No
 
 #### Legacy step 10.C: Sole SnapshotTree Construction and Verification
 
-**Atomic goal:** Construct the Run's sole immutable SnapshotTree from sealed Git-preflight bytes and verify all content, ordering, identity, and policy bindings.
+**Atomic goal:** Define the minimal immutable-tree read protocol, construct the Run's sole immutable SnapshotTree from sealed Git-preflight bytes, and verify all content, ordering, identity, and policy bindings.
 
 **Minimum GREEN patch contract:**
 
 ```text
-Owned files: - Create: src/vespercode/trees/snapshot.py - Test: tests/unit/trees/test_snapshot.py - Test: tests/integration/windows/test_snapshot_from_preflight.py
-Interface: Produces `SnapshotTreeV1`, `SnapshotIntegrityResultV1`, `create_snapshot(preflight: AcceptedGitPreflightV1, store: ContentObjectStore, classifier: SupportedTextClassifierV1) -> SnapshotTreeV1`, and `verify_snapshot(snapshot: SnapshotTreeV1, store: ContentObjectStore) -> SnapshotIntegrityResultV1`.
-GREEN-1: Construct the Run’s sole `SnapshotTreeV1` only from accepted sealed Git-preflight bytes/object identities using the Task 10.A store and Task 10.B classifier.
-GREEN-2: Bind deterministic entry order, content refs, object identity, text metadata, policy facts, and root digest; every size/order/content/object/policy drift fails integrity verification.
-GREEN-3: Make `test_snapshot_rejects_preflight_object_identity_drift` GREEN with the smallest sealed-identity mismatch; then make `test_snapshot_integrity_matrix` RED and GREEN against the exact §5.1 matrix.
-GREEN-4: Own Snapshot entry construction, root digest, and verification only. Mutable repository paths are never reread and content/classification rules are not redefined.
-Boundary: Own Snapshot entry construction/root digest/verification only. Never reread mutable repository paths or redefine content/classification rules.
+Owned files: - Create: src/vespercode/trees/readable.py - Create: src/vespercode/trees/snapshot.py - Test: tests/unit/trees/test_snapshot.py - Test: tests/integration/windows/test_snapshot_from_preflight.py
+Interface: Produces structural `ReadableTreeV1` with read-only `digest: str`, `list_directories() -> tuple[CanonicalRelativePathV1, ...]`, `list_file_paths() -> tuple[CanonicalRelativePathV1, ...]`, and `read_bytes(path: CanonicalRelativePathV1) -> bytes`; produces `SnapshotTreeV1`, which satisfies that protocol with `digest == root_digest`; and produces `SnapshotIntegrityResultV1`, `create_snapshot(preflight: AcceptedGitPreflightV1, store: ContentObjectStore, classifier: SupportedTextClassifierV1) -> SnapshotTreeV1`, and `verify_snapshot(snapshot: SnapshotTreeV1, store: ContentObjectStore) -> SnapshotIntegrityResultV1`.
+GREEN-1: Define the minimal immutable-tree read protocol and construct the Run’s sole `SnapshotTreeV1` only from accepted sealed Git-preflight bytes/object identities using the Task 10.A store and Task 10.B classifier.
+GREEN-2: Bind deterministic directory/file-path order, content refs, object identity, text metadata, policy facts, and one root digest exposed identically as `digest` and `root_digest`; every size/order/content/object/policy drift fails integrity verification.
+GREEN-3: Make `test_snapshot_rejects_preflight_object_identity_drift` GREEN with the smallest sealed-identity mismatch; then make `test_snapshot_integrity_matrix` RED and GREEN against the exact §5.1 matrix, including structural protocol compatibility and exact digest aliasing.
+GREEN-4: Own the structural read protocol plus Snapshot entry construction, root digest, and verification only. Mutable repository paths are never reread and content/classification rules are not redefined.
+Boundary: The protocol exposes only immutable digest, canonical directory/file-path enumeration, and exact byte reads. Own Snapshot entry construction/root digest/verification only. Never reread mutable repository paths or redefine content/classification rules.
 ```
 
 **Exact RED test code:**
@@ -3915,18 +4005,18 @@ def test_snapshot_rejects_preflight_object_identity_drift() -> None:
 - Target (10.C): `python -m pytest -q -o addopts='' -m windows_integration tests/integration/windows/test_snapshot_from_preflight.py::test_snapshot_rejects_preflight_object_identity_drift`
 - Domain (10.C): `python -m pytest -q -o addopts='' -m windows_integration tests/integration/windows/test_snapshot_from_preflight.py`
 - Matrix (10.C): `python -m pytest -q -o addopts='' -m windows_integration tests/integration/windows/test_snapshot_from_preflight.py::test_snapshot_integrity_matrix`
-- Expected (10.C): exact sealed preflight builds one verified deterministic Snapshot and every size/order/content/object/policy drift rejects.
+- Expected (10.C): exact sealed preflight builds one verified deterministic Snapshot satisfying `ReadableTreeV1`, and every size/order/content/object/policy drift rejects.
 
 **Atomic review focus:**
 - SPEC (10.C): Spec compliance review checks Task 10.C's Goal, Milestone 10's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent sealed immutable Snapshot contract.
-- Quality (10.C): Code quality review checks sealed-input provenance, deterministic entry ordering/root digest, object/content/policy identity binding, integrity fail-closed behavior, and zero mutable-workspace rereads.
+- Quality (10.C): Code quality review checks minimal protocol surface, structural Snapshot compatibility, `digest == root_digest`, sealed-input provenance, deterministic directory/file-path ordering, object/content/policy identity binding, integrity fail-closed behavior, and zero mutable-workspace rereads.
 
 - [ ] **Step 9: Add the exact 10.C RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
 - [ ] **Step 10: Run 10.C RED.** Run `python -m pytest -q -o addopts='' -m windows_integration tests/integration/windows/test_snapshot_from_preflight.py::test_snapshot_rejects_preflight_object_identity_drift`. Expected: FAIL for “no single-Snapshot constructor binds sealed bytes/object identities”. Collection, import, environment, unrelated, or already-failing tests do not count.
-- [ ] **Step 11: Implement 10.C GREEN-1.** Construct the Run’s sole `SnapshotTreeV1` only from accepted sealed Git-preflight bytes/object identities using the Task 10.A store and Task 10.B classifier.
-- [ ] **Step 12: Implement 10.C GREEN-2.** Bind deterministic entry order, content refs, object identity, text metadata, policy facts, and root digest; every size/order/content/object/policy drift fails integrity verification.
-- [ ] **Step 13: Implement 10.C GREEN-3.** Make `test_snapshot_rejects_preflight_object_identity_drift` GREEN with the smallest sealed-identity mismatch; then make `test_snapshot_integrity_matrix` RED and GREEN against the exact §5.1 matrix.
-- [ ] **Step 14: Implement 10.C GREEN-4.** Own Snapshot entry construction, root digest, and verification only. Mutable repository paths are never reread and content/classification rules are not redefined.
+- [ ] **Step 11: Implement 10.C GREEN-1.** Define the minimal immutable-tree read protocol and construct the Run’s sole `SnapshotTreeV1` only from accepted sealed Git-preflight bytes/object identities using the Task 10.A store and Task 10.B classifier.
+- [ ] **Step 12: Implement 10.C GREEN-2.** Bind deterministic directory/file-path order, content refs, object identity, text metadata, policy facts, and one root digest exposed identically as `digest` and `root_digest`; every size/order/content/object/policy drift fails integrity verification.
+- [ ] **Step 13: Implement 10.C GREEN-3.** Make `test_snapshot_rejects_preflight_object_identity_drift` GREEN with the smallest sealed-identity mismatch; then make `test_snapshot_integrity_matrix` RED and GREEN against the exact §5.1 matrix, including structural protocol compatibility and exact digest aliasing.
+- [ ] **Step 14: Implement 10.C GREEN-4.** Own the structural read protocol plus Snapshot entry construction, root digest, and verification only. Mutable repository paths are never reread and content/classification rules are not redefined.
 - [ ] **Step 15: Run 10.C Target GREEN.** Re-run `python -m pytest -q -o addopts='' -m windows_integration tests/integration/windows/test_snapshot_from_preflight.py::test_snapshot_rejects_preflight_object_identity_drift`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 16: Run 10.C Domain.** Run `python -m pytest -q -o addopts='' -m windows_integration tests/integration/windows/test_snapshot_from_preflight.py`; require exit 0 and every displayed Atomic verification expectation to hold.
 
@@ -3941,7 +4031,7 @@ def test_snapshot_rejects_preflight_object_identity_drift() -> None:
 - [ ] **Step 23: Commit T10.2 implementation.** Stage only the task-owned implementation/tests and create one implementation commit after both review stages PASS.
 
 ```bash
-git add -- "src/vespercode/trees/content_store.py" "tests/unit/trees/test_content_store.py" "src/vespercode/trees/snapshot.py" "tests/unit/trees/test_snapshot.py" "tests/integration/windows/test_snapshot_from_preflight.py"
+git add -- "src/vespercode/trees/content_store.py" "tests/unit/trees/test_content_store.py" "src/vespercode/trees/readable.py" "src/vespercode/trees/snapshot.py" "tests/unit/trees/test_snapshot.py" "tests/integration/windows/test_snapshot_from_preflight.py"
 git commit -m "Implement T10.2 Content Objects and Snapshot Construction"
 ```
 
@@ -3974,8 +4064,8 @@ git commit -m "Implement T10.2 Content Objects and Snapshot Construction"
 **Parallelization:** Start only after every task/non-task gate in **Depends** has passed. Same-wave execution is allowed only when expanded writable paths are disjoint; the WP11 branch and PR remain the sole package integration boundary.
 
 **Interfaces:**
-- **Consumes / Produces (11.A):** Produces `FileToolActionV1 = ListFilesActionV1 | ReadFileActionV1 | SearchTextActionV1`, `FileToolResultV1 = ListFilesResultV1 | ReadFileResultV1 | SearchTextResultV1`, `ReadFileActionV1`, `ReadFileResultV1`, and `read_file(tree: SnapshotTreeV1 | CandidateTreeV1, action: ReadFileActionV1) -> ReadFileResultV1`.
-- **Consumes / Produces (11.B):** Produces `list_files(tree: SnapshotTreeV1 | CandidateTreeV1, action: ListFilesActionV1) -> ListFilesResultV1` and `search_text(tree: SnapshotTreeV1 | CandidateTreeV1, action: SearchTextActionV1) -> SearchTextResultV1`; uses separate List/Search cursor types binding visible-tree digest, cursor-free query digest, next scan position, and cursor self-digest.
+- **Consumes / Produces (11.A):** Consumes only T10.2's structural `ReadableTreeV1`; produces `FileToolActionV1 = ListFilesActionV1 | ReadFileActionV1 | SearchTextActionV1`, `FileToolResultV1 = ListFilesResultV1 | ReadFileResultV1 | SearchTextResultV1`, `ReadFileActionV1`, `ReadFileResultV1`, and `read_file(tree: ReadableTreeV1, action: ReadFileActionV1) -> ReadFileResultV1`.
+- **Consumes / Produces (11.B):** Produces `list_files(tree: ReadableTreeV1, action: ListFilesActionV1) -> ListFilesResultV1` and `search_text(tree: ReadableTreeV1, action: SearchTextActionV1) -> SearchTextResultV1`; uses separate List/Search cursor types binding `ReadableTreeV1.digest`, cursor-free query digest, next scan position, and cursor self-digest.
 
 **Implementation points, exact RED, and minimum GREEN contracts:**
 
@@ -3987,8 +4077,8 @@ git commit -m "Implement T10.2 Content Objects and Snapshot Construction"
 
 ```text
 Owned files: - Create: src/vespercode/tools/file_actions.py - Create: src/vespercode/tools/file_results.py - Create: src/vespercode/tools/read_file.py - Test: tests/unit/tools/test_file_actions.py - Test: tests/unit/tools/test_read_file.py
-Interface: Produces `FileToolActionV1 = ListFilesActionV1 | ReadFileActionV1 | SearchTextActionV1`, `FileToolResultV1 = ListFilesResultV1 | ReadFileResultV1 | SearchTextResultV1`, `ReadFileActionV1`, `ReadFileResultV1`, and `read_file(tree: SnapshotTreeV1 | CandidateTreeV1, action: ReadFileActionV1) -> ReadFileResultV1`.
-GREEN-1: Define the closed common file action/result unions and implement `read_file` over only the bound SnapshotTree or CandidateTree object.
+Interface: Consumes only T10.2's structural `ReadableTreeV1`; produces `FileToolActionV1 = ListFilesActionV1 | ReadFileActionV1 | SearchTextActionV1`, `FileToolResultV1 = ListFilesResultV1 | ReadFileResultV1 | SearchTextResultV1`, `ReadFileActionV1`, `ReadFileResultV1`, and `read_file(tree: ReadableTreeV1, action: ReadFileActionV1) -> ReadFileResultV1`.
+GREEN-1: Define the closed common file action/result unions and implement `read_file` only through the bound `ReadableTreeV1` protocol, without importing any concrete Candidate type.
 GREEN-2: Validate supported-text classification, line/byte bounds, BOM/newline metadata, and artifact truncation so mutable workspace state and arbitrary paths cannot affect results.
 GREEN-3: Make `test_read_uses_only_bound_snapshot_bytes` GREEN with the smallest workspace-drift scenario; then make `test_read_file_bounds_schema_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own bounded immutable-tree reads and contracts only. Filesystem access, cursors, policy, shell, arbitrary path dispatch, and tool dispatch remain out of scope.
@@ -4017,11 +4107,11 @@ def test_read_uses_only_bound_snapshot_bytes(
 
 **Atomic review focus:**
 - SPEC (11.A): Spec compliance review checks Task 11.A's Goal, Milestone 11's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent bounded immutable-tree read contract.
-- Quality (11.A): Code quality review checks closed action/result schemas, tree binding, text metadata preservation, line/byte bounds, deterministic truncation, zero filesystem reads, and stable errors.
+- Quality (11.A): Code quality review checks closed action/result schemas, protocol-only tree binding, absence of concrete Candidate imports, text metadata preservation, line/byte bounds, deterministic truncation, zero filesystem reads, and stable errors.
 
 - [ ] **Step 1: Add the exact 11.A RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
 - [ ] **Step 2: Run 11.A RED.** Run `python -m pytest -q tests/unit/tools/test_read_file.py::test_read_uses_only_bound_snapshot_bytes`. Expected: FAIL for “the exact assertion fails because the task-owned bounded immutable-tree read behavior does not exist. Record the task-owned failing assertion and exit code; collection, import, runner, environment startup, or unrelated failure does not count as RED”. Collection, import, environment, unrelated, or already-failing tests do not count.
-- [ ] **Step 3: Implement 11.A GREEN-1.** Define the closed common file action/result unions and implement `read_file` over only the bound SnapshotTree or CandidateTree object.
+- [ ] **Step 3: Implement 11.A GREEN-1.** Define the closed common file action/result unions and implement `read_file` only through the bound `ReadableTreeV1` protocol, without importing any concrete Candidate type.
 - [ ] **Step 4: Implement 11.A GREEN-2.** Validate supported-text classification, line/byte bounds, BOM/newline metadata, and artifact truncation so mutable workspace state and arbitrary paths cannot affect results.
 - [ ] **Step 5: Implement 11.A GREEN-3.** Make `test_read_uses_only_bound_snapshot_bytes` GREEN with the smallest workspace-drift scenario; then make `test_read_file_bounds_schema_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 6: Implement 11.A GREEN-4.** Own bounded immutable-tree reads and contracts only. Filesystem access, cursors, policy, shell, arbitrary path dispatch, and tool dispatch remain out of scope.
@@ -4036,8 +4126,8 @@ def test_read_uses_only_bound_snapshot_bytes(
 
 ```text
 Owned files: - Create: src/vespercode/tools/list_files.py - Create: src/vespercode/tools/search_text.py - Test: tests/unit/tools/test_list_files.py - Test: tests/unit/tools/test_search_text.py
-Interface: Produces `list_files(tree: SnapshotTreeV1 | CandidateTreeV1, action: ListFilesActionV1) -> ListFilesResultV1` and `search_text(tree: SnapshotTreeV1 | CandidateTreeV1, action: SearchTextActionV1) -> SearchTextResultV1`; uses separate List/Search cursor types binding visible-tree digest, cursor-free query digest, next scan position, and cursor self-digest.
-GREEN-1: Implement pure immutable-tree List and Search with stable sorting and distinct canonical cursor types for the two query families.
+Interface: Produces `list_files(tree: ReadableTreeV1, action: ListFilesActionV1) -> ListFilesResultV1` and `search_text(tree: ReadableTreeV1, action: SearchTextActionV1) -> SearchTextResultV1`; uses separate List/Search cursor types binding `ReadableTreeV1.digest`, cursor-free query digest, next scan position, and cursor self-digest.
+GREEN-1: Implement pure `ReadableTreeV1` List and Search with stable sorting and distinct canonical cursor types for the two query families, without importing any concrete Candidate type.
 GREEN-2: Bind each cursor to visible-tree digest, cursor-free query digest, next scan position, and self-digest; invalid or stale continuations return zero rows and artifacts.
 GREEN-3: Make `test_paged_discovery_equals_unpaged_without_duplicates` GREEN with the smallest multi-page traversal; then make `test_list_search_cursor_integrity_matrix` RED and GREEN against the exact §5.1 matrix.
 GREEN-4: Own stable discovery and continuation only. Filesystem access, arbitrary paths, shell execution, policy mutation, and cross-tool cursor reuse remain out of scope.
@@ -4064,11 +4154,11 @@ def test_paged_discovery_equals_unpaged_without_duplicates(
 
 **Atomic review focus:**
 - SPEC (11.B): Spec compliance review checks Task 11.B's Goal, Milestone 11's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent stable paged List/Search contract.
-- Quality (11.B): Code quality review checks stable ordering, paged/unpaged equivalence, distinct cursor schemas, tree/query/position/self binding, zero-payload failures, non-text accounting, and purity.
+- Quality (11.B): Code quality review checks protocol-only tree access, absence of concrete Candidate imports, stable ordering, paged/unpaged equivalence, distinct cursor schemas, tree/query/position/self binding, zero-payload failures, non-text accounting, and purity.
 
 - [ ] **Step 9: Add the exact 11.B RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
 - [ ] **Step 10: Run 11.B RED.** Run `python -m pytest -q tests/unit/tools/test_list_files.py::test_paged_discovery_equals_unpaged_without_duplicates`. Expected: FAIL for “the exact assertion fails because the task-owned stable paged List/Search behavior does not exist. Record the task-owned failing assertion and exit code; collection, import, runner, environment startup, or unrelated failure does not count as RED”. Collection, import, environment, unrelated, or already-failing tests do not count.
-- [ ] **Step 11: Implement 11.B GREEN-1.** Implement pure immutable-tree List and Search with stable sorting and distinct canonical cursor types for the two query families.
+- [ ] **Step 11: Implement 11.B GREEN-1.** Implement pure `ReadableTreeV1` List and Search with stable sorting and distinct canonical cursor types for the two query families, without importing any concrete Candidate type.
 - [ ] **Step 12: Implement 11.B GREEN-2.** Bind each cursor to visible-tree digest, cursor-free query digest, next scan position, and self-digest; invalid or stale continuations return zero rows and artifacts.
 - [ ] **Step 13: Implement 11.B GREEN-3.** Make `test_paged_discovery_equals_unpaged_without_duplicates` GREEN with the smallest multi-page traversal; then make `test_list_search_cursor_integrity_matrix` RED and GREEN against the exact §5.1 matrix.
 - [ ] **Step 14: Implement 11.B GREEN-4.** Own stable discovery and continuation only. Filesystem access, arbitrary paths, shell execution, policy mutation, and cross-tool cursor reuse remain out of scope.
@@ -4121,7 +4211,7 @@ git commit -m "Implement T11.1 Read-only List, Read, and Literal Search Tools"
 
 **Interfaces:**
 - **Consumes / Produces (12.A):** Produces `parse_unified_diff_v1(patch_text: str) -> ParsedPatchV1 | PatchParseFailureV1`.
-- **Consumes / Produces (12.B):** Produces `CandidatePostimageSequenceV1`, an immutable ordered tuple of zero or more `CandidatePostimageV1` items, plus `CandidateTreeV1`, `CandidateRevisionV1`, and `derive_candidate_revision(parent: CandidateRevisionV1, postimages: CandidatePostimageSequenceV1) -> CandidateRevisionV1`.
+- **Consumes / Produces (12.B):** Produces `CandidatePostimageSequenceV1`, an immutable ordered tuple of zero or more `CandidatePostimageV1` items, plus `CandidateTreeV1`, which structurally satisfies T10.2's `ReadableTreeV1` without importing T11.1, `CandidateRevisionV1`, and `derive_candidate_revision(parent: CandidateRevisionV1, postimages: CandidatePostimageSequenceV1) -> CandidateRevisionV1`.
 - **Consumes / Produces (12.C):** Produces `ApplyCandidatePatchAction` and `apply_candidate_patch(action: ApplyCandidatePatchAction, current: CandidateRevisionV1, context: CandidatePatchContextV1) -> CandidatePatchOutcomeV1`.
 - **Consumes / Produces (12.D):** Produces `FinalDiffPreimageV1`, `FinalDiffEntryV1`, `FinalDiffV1`, `recompute_final_diff(snapshot: SnapshotTreeV1, candidate: CandidateTreeV1, policy: EditablePathPolicyV1) -> FinalDiffV1`, and `build_candidate_identity(snapshot_tree_digest: str, candidate_tree_digest: str, final_diff_digest: str) -> CandidateIdentityV1`.
 
@@ -4165,7 +4255,7 @@ def test_trailing_unparsed_patch_bytes_are_rejected() -> None:
 - Quality (12.A): Code quality review checks total-input consumption, grammar/range exhaustiveness, deterministic parse errors, prohibited-form closure, entry uniqueness, UTF-8/LF rules, and side-effect freedom.
 
 - [ ] **Step 1: Add the exact 12.A RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
-- [ ] **Step 2: Run 12.A RED.** Run `python -m pytest -q tests/unit/candidate/test_unified_diff.py::test_trailing_unparsed_patch_bytes_are_rejected`. Expected: FAIL for “import failure because the strict parser does not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
+- [ ] **Step 2: Run 12.A RED.** Run `python -m pytest -q tests/unit/candidate/test_unified_diff.py::test_trailing_unparsed_patch_bytes_are_rejected`. Expected: FAIL for “import failure because the strict parser does not exist”. The exact task-owned collection/import failure displayed above counts. Runner/interpreter startup failure, a missing test target, any other import or dependency failure, environment failure, unrelated failure, or already-failing test does not count.
 - [ ] **Step 3: Implement 12.A GREEN-1.** Parse the complete no-BOM UTF-8/LF `UNIFIED_DIFF_V1` grammar into one closed parsed patch or one closed parse failure.
 - [ ] **Step 4: Implement 12.A GREEN-2.** Validate complete headers, ranges, hunks, entry uniqueness, and full input consumption; delete, rename, mode, binary, timestamp, no-newline, malformed, or trailing forms reject.
 - [ ] **Step 5: Implement 12.A GREEN-3.** Make `test_trailing_unparsed_patch_bytes_are_rejected` GREEN with the smallest trailing-byte rejection; then make `test_unified_diff_grammar_matrix` RED and GREEN against the exact §5.1 matrix.
@@ -4181,12 +4271,12 @@ def test_trailing_unparsed_patch_bytes_are_rejected() -> None:
 
 ```text
 Owned files: - Create: src/vespercode/trees/candidate.py - Test: tests/unit/trees/test_candidate.py
-Interface: Produces `CandidatePostimageSequenceV1`, an immutable ordered tuple of zero or more `CandidatePostimageV1` items, plus `CandidateTreeV1`, `CandidateRevisionV1`, and `derive_candidate_revision(parent: CandidateRevisionV1, postimages: CandidatePostimageSequenceV1) -> CandidateRevisionV1`.
+Interface: Produces `CandidatePostimageSequenceV1`, an immutable ordered tuple of zero or more `CandidatePostimageV1` items, plus `CandidateTreeV1`, which structurally satisfies T10.2's `ReadableTreeV1` without importing T11.1, `CandidateRevisionV1`, and `derive_candidate_revision(parent: CandidateRevisionV1, postimages: CandidatePostimageSequenceV1) -> CandidateRevisionV1`.
 GREEN-1: Derive a child `CandidateRevisionV1` from complete staged postimages using content-store references while leaving the parent revision and tree unchanged.
-GREEN-2: Provide immutable overlay lookup, deterministic path ordering/tree digest, parent independence, and fail-closed handling for missing or drifted content references.
-GREEN-3: Make `test_child_revision_does_not_mutate_parent` GREEN with the smallest replace overlay; then make `test_candidate_overlay_integrity_matrix` RED and GREEN against the exact §5.1 matrix.
+GREEN-2: Provide immutable overlay lookup, deterministic directory/file-path ordering/tree digest, the exact `ReadableTreeV1` surface, parent independence, and fail-closed handling for missing or drifted content references.
+GREEN-3: Make `test_child_revision_does_not_mutate_parent` GREEN with the smallest replace overlay; then make `test_candidate_overlay_integrity_matrix` RED and GREEN against the exact §5.1 matrix, including structural protocol compatibility without any T11.1 import.
 GREEN-4: Own overlay derivation and content-addressed tree identity only. Patch parsing, path authorization, transactional publication, FinalDiff, and policy decisions remain out of scope.
-Boundary: This child owns immutable overlay lookup, sorted tree digest, parent independence, and content-store references only. It does not parse patches, authorize paths, publish through a transaction, compute FinalDiff, or decide policy.
+Boundary: This child owns immutable overlay lookup, sorted tree digest, structural `ReadableTreeV1` compatibility, parent independence, and content-store references only. It imports no T11.1 module and does not parse patches, authorize paths, publish through a transaction, compute FinalDiff, or decide policy.
 ```
 
 **Exact RED test code:**
@@ -4208,13 +4298,13 @@ def test_child_revision_does_not_mutate_parent(parent_revision: CandidateRevisio
 
 **Atomic review focus:**
 - SPEC (12.B): Spec compliance review checks Task 12.B's Goal, Milestone 12's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent immutable Candidate overlay contract.
-- Quality (12.B): Code quality review checks structural immutability, parent independence, overlay lookup precedence, deterministic ordering/digest, content-ref integrity, and absence of publication side effects.
+- Quality (12.B): Code quality review checks structural `ReadableTreeV1` compatibility without T11.1 imports, immutability, parent independence, overlay lookup precedence, deterministic ordering/digest, content-ref integrity, and absence of publication side effects.
 
 - [ ] **Step 9: Add the exact 12.B RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
-- [ ] **Step 10: Run 12.B RED.** Run `python -m pytest -q tests/unit/trees/test_candidate.py::test_child_revision_does_not_mutate_parent`. Expected: FAIL for “import failure because immutable candidate revisions do not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
+- [ ] **Step 10: Run 12.B RED.** Run `python -m pytest -q tests/unit/trees/test_candidate.py::test_child_revision_does_not_mutate_parent`. Expected: FAIL for “import failure because immutable candidate revisions do not exist”. The exact task-owned collection/import failure displayed above counts. Runner/interpreter startup failure, a missing test target, any other import or dependency failure, environment failure, unrelated failure, or already-failing test does not count.
 - [ ] **Step 11: Implement 12.B GREEN-1.** Derive a child `CandidateRevisionV1` from complete staged postimages using content-store references while leaving the parent revision and tree unchanged.
-- [ ] **Step 12: Implement 12.B GREEN-2.** Provide immutable overlay lookup, deterministic path ordering/tree digest, parent independence, and fail-closed handling for missing or drifted content references.
-- [ ] **Step 13: Implement 12.B GREEN-3.** Make `test_child_revision_does_not_mutate_parent` GREEN with the smallest replace overlay; then make `test_candidate_overlay_integrity_matrix` RED and GREEN against the exact §5.1 matrix.
+- [ ] **Step 12: Implement 12.B GREEN-2.** Provide immutable overlay lookup, deterministic directory/file-path ordering/tree digest, the exact `ReadableTreeV1` surface, parent independence, and fail-closed handling for missing or drifted content references.
+- [ ] **Step 13: Implement 12.B GREEN-3.** Make `test_child_revision_does_not_mutate_parent` GREEN with the smallest replace overlay; then make `test_candidate_overlay_integrity_matrix` RED and GREEN against the exact §5.1 matrix, including structural protocol compatibility without any T11.1 import.
 - [ ] **Step 14: Implement 12.B GREEN-4.** Own overlay derivation and content-addressed tree identity only. Patch parsing, path authorization, transactional publication, FinalDiff, and policy decisions remain out of scope.
 - [ ] **Step 15: Run 12.B Target GREEN.** Re-run `python -m pytest -q tests/unit/trees/test_candidate.py::test_child_revision_does_not_mutate_parent`; require exit 0 and the displayed RED assertion to pass.
 - [ ] **Step 16: Run 12.B Domain.** Run `python -m pytest -q tests/unit/trees/test_candidate.py`; require exit 0 and every displayed Atomic verification expectation to hold.
@@ -4260,7 +4350,7 @@ def test_mixed_legal_and_noneditable_patch_has_no_candidate_side_effect(
 - Quality (12.C): Code quality review checks all-or-nothing staging, exact-hunk/base binding, authorization precedence, text/limit/collision validation, zero-publication failures, and deterministic errors.
 
 - [ ] **Step 17: Add the exact 12.C RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
-- [ ] **Step 18: Run 12.C RED.** Run `python -m pytest -q tests/unit/candidate/test_patch_engine.py::test_mixed_legal_and_noneditable_patch_has_no_candidate_side_effect`. Expected: FAIL for “import failure because the atomic patch engine does not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
+- [ ] **Step 18: Run 12.C RED.** Run `python -m pytest -q tests/unit/candidate/test_patch_engine.py::test_mixed_legal_and_noneditable_patch_has_no_candidate_side_effect`. Expected: FAIL for “import failure because the atomic patch engine does not exist”. The exact task-owned collection/import failure displayed above counts. Runner/interpreter startup failure, a missing test target, any other import or dependency failure, environment failure, unrelated failure, or already-failing test does not count.
 - [ ] **Step 19: Implement 12.C GREEN-1.** Consume the Task 12.A parse result, Task 12.B staging, Task 9.D authorization, frozen policy, and named base candidate to validate one complete patch.
 - [ ] **Step 20: Implement 12.C GREEN-2.** Require exact base digest and hunk matches, editable paths, text preservation, limits, and collision checks before publishing; any mixed legal/illegal entry yields zero revision side effects.
 - [ ] **Step 21: Implement 12.C GREEN-3.** Make `test_mixed_legal_and_noneditable_patch_has_no_candidate_side_effect` GREEN with the smallest all-or-nothing rejection; then make `test_patch_atomicity_priority_limit_matrix` RED and GREEN against the exact §5.1 matrix.
@@ -4311,7 +4401,7 @@ def test_candidate_identity_ignores_revision_metadata(
 - Quality (12.D): Code quality review checks complete diff recomputation, preimage/postimage accuracy, byte accounting, stable ordering, policy/tree consistency, three-root digest binding, and metadata independence.
 
 - [ ] **Step 25: Add the exact 12.D RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
-- [ ] **Step 26: Run 12.D RED.** Run `python -m pytest -q tests/unit/candidate/test_identity.py::test_candidate_identity_ignores_revision_metadata`. Expected: FAIL for “import failure because FinalDiff and candidate identity do not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
+- [ ] **Step 26: Run 12.D RED.** Run `python -m pytest -q tests/unit/candidate/test_identity.py::test_candidate_identity_ignores_revision_metadata`. Expected: FAIL for “import failure because FinalDiff and candidate identity do not exist”. The exact task-owned collection/import failure displayed above counts. Runner/interpreter startup failure, a missing test target, any other import or dependency failure, environment failure, unrelated failure, or already-failing test does not count.
 - [ ] **Step 27: Implement 12.D GREEN-1.** Recompute the complete Snapshot-to-Candidate structured CREATE/REPLACE diff, including exact preimages/postimages, byte counts, and deterministic path order.
 - [ ] **Step 28: Implement 12.D GREEN-2.** Revalidate the sole editable policy and bind `CandidateIdentityV1` only to Snapshot tree digest, Candidate tree digest, and FinalDiff digest; revision metadata is excluded.
 - [ ] **Step 29: Implement 12.D GREEN-3.** Make `test_candidate_identity_ignores_revision_metadata` GREEN with the smallest metadata-only variation; then make `test_candidate_identity_restoration_matrix` RED and GREEN against the exact §5.1 matrix.
@@ -5670,7 +5760,7 @@ def test_truncated_ruff_output_is_check_error(
 - Quality (19.A): Code quality review checks complete-output detection, version binding, status/finding exhaustiveness, deterministic ordering/digests, bounded parsing, and fail-closed malformed or truncated evidence.
 
 - [ ] **Step 1: Add the exact 19.A RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
-- [ ] **Step 2: Run 19.A RED.** Run `python -m pytest -q tests/unit/validation/test_ruff_mypy_parsing.py::test_truncated_ruff_output_is_check_error`. Expected: FAIL for “import failure because the check-result schema and static-tool parsers do not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
+- [ ] **Step 2: Run 19.A RED.** Run `python -m pytest -q tests/unit/validation/test_ruff_mypy_parsing.py::test_truncated_ruff_output_is_check_error`. Expected: FAIL for “import failure because the check-result schema and static-tool parsers do not exist”. The exact task-owned collection/import failure displayed above counts. Runner/interpreter startup failure, a missing test target, any other import or dependency failure, environment failure, unrelated failure, or already-failing test does not count.
 - [ ] **Step 3: Implement 19.A GREEN-1.** Validate profile-frozen Ruff and Mypy versions, complete output shape, and bounded raw evidence before producing any closed `CheckResultV1`.
 - [ ] **Step 4: Implement 19.A GREEN-2.** Map PASS, FAIL, ERROR, TIMEOUT, and NOT_RUN only to their permitted ordered finding combinations, with deterministic canonical raw digests and stable parser error codes.
 - [ ] **Step 5: Implement 19.A GREEN-3.** Make `test_truncated_ruff_output_is_check_error` GREEN with the smallest fail-closed truncated-output path; then make `test_static_tool_result_parsing_matrix` RED and GREEN against the exact §5.1 matrix.
@@ -5721,7 +5811,7 @@ def test_missing_session_end_is_reporter_invalid(
 - Quality (19.B): Code quality review checks event sequencing, canonical integrity, expectation/version/collection binding, report bounds, terminal completeness, stable error taxonomy, and independence from exit code or truncated text.
 
 - [ ] **Step 9: Add the exact 19.B RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
-- [ ] **Step 10: Run 19.B RED.** Run `python -m pytest -q tests/unit/validation/test_pytest_evidence.py::test_missing_session_end_is_reporter_invalid`. Expected: FAIL for “import failure because the production reporter/parser do not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
+- [ ] **Step 10: Run 19.B RED.** Run `python -m pytest -q tests/unit/validation/test_pytest_evidence.py::test_missing_session_end_is_reporter_invalid`. Expected: FAIL for “import failure because the production reporter/parser do not exist”. The exact task-owned collection/import failure displayed above counts. Runner/interpreter startup failure, a missing test target, any other import or dependency failure, environment failure, unrelated failure, or already-failing test does not count.
 - [ ] **Step 11: Implement 19.B GREEN-1.** Emit one bounded ordered event stream with declared schema/plugin versions, collection identity, terminal session event, and integrity digest over canonical report bytes.
 - [ ] **Step 12: Implement 19.B GREEN-2.** Parse the report channel independently of exit code and console text, rejecting missing, duplicate, reordered, truncated, over-limit, corrupt, or expectation-mismatched events with stable reporter errors.
 - [ ] **Step 13: Implement 19.B GREEN-3.** Make `test_missing_session_end_is_reporter_invalid` GREEN with the smallest normal-end validation; then make `test_pytest_report_corruption_matrix` RED and GREEN against the exact §5.1 matrix.
@@ -5769,7 +5859,7 @@ def test_user_hexadecimal_value_is_not_normalized_away(
 - Quality (19.C): Code quality review checks exact node/phase/status gating, project-frame inclusion, canonical normalization, allowlist narrowness, user-content preservation, missing assertion evidence, and deterministic unstable outcomes.
 
 - [ ] **Step 17: Add the exact 19.C RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
-- [ ] **Step 18: Run 19.C RED.** Run `python -m pytest -q tests/unit/validation/test_failure_fingerprint.py::test_user_hexadecimal_value_is_not_normalized_away`. Expected: FAIL for “import failure because fingerprint normalization does not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
+- [ ] **Step 18: Run 19.C RED.** Run `python -m pytest -q tests/unit/validation/test_failure_fingerprint.py::test_user_hexadecimal_value_is_not_normalized_away`. Expected: FAIL for “import failure because fingerprint normalization does not exist”. The exact task-owned collection/import failure displayed above counts. Runner/interpreter startup failure, a missing test target, any other import or dependency failure, environment failure, unrelated failure, or already-failing test does not count.
 - [ ] **Step 19: Implement 19.C GREEN-1.** Gate fingerprint construction on complete authoritative evidence for the exact target node in the CALL phase with FAIL status and a valid project-frame identity.
 - [ ] **Step 20: Implement 19.C GREEN-2.** Normalize only the declared execution root, temporary root, run/container id, and reporter-marked object addresses while preserving user numbers, times, hexadecimal text, and assertion content.
 - [ ] **Step 21: Implement 19.C GREEN-3.** Make `test_user_hexadecimal_value_is_not_normalized_away` GREEN with the smallest allowlist-preserving normalization; then make `test_failure_fingerprint_stability_matrix` RED and GREEN against the exact §5.1 matrix.
@@ -6434,7 +6524,7 @@ def test_audit_rejects_complete_request_body_and_secret_fields(
 - Quality (23.A): Code quality review checks v0006 schema exactness, per-Run sequence atomicity, redaction before persistence, payload bounds, zero-row forbidden data, replay/conflict handling, stable pagination, ended-Run authority, and no fabricated external outcome.
 
 - [ ] **Step 1: Add the exact 23.A RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
-- [ ] **Step 2: Run 23.A RED.** Run `python -m pytest -q tests/unit/audit/test_redaction.py::test_audit_rejects_complete_request_body_and_secret_fields`. Expected: FAIL for “import failure because the closed event union and repository do not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
+- [ ] **Step 2: Run 23.A RED.** Run `python -m pytest -q tests/unit/audit/test_redaction.py::test_audit_rejects_complete_request_body_and_secret_fields`. Expected: FAIL for “import failure because the closed event union and repository do not exist”. The exact task-owned collection/import failure displayed above counts. Runner/interpreter startup failure, a missing test target, any other import or dependency failure, environment failure, unrelated failure, or already-failing test does not count.
 - [ ] **Step 3: Implement 23.A GREEN-1.** Define the exact immutable v0006 audit schema and closed bounded event/payload types with Run foreign key, unique increasing per-Run sequence, evidence references, and canonical timestamps.
 - [ ] **Step 4: Implement 23.A GREEN-2.** Redact and minimize before one append transaction, rejecting forbidden bodies, secrets, raw outputs, overflow, replay conflicts, or invalid sequencing with zero rows while preserving stable pagination and ended-Run clear rules.
 - [ ] **Step 5: Implement 23.A GREEN-3.** Make `test_audit_rejects_complete_request_body_and_secret_fields` GREEN with the smallest forbidden-payload rejection; then make `test_audit_schema_replay_pagination_matrix` RED and GREEN against the exact §5.1 matrix.
@@ -6483,7 +6573,7 @@ def test_recovery_required_is_never_projected_as_stopped(
 - Quality (23.B): Code quality review checks closed precedence, Run/event identity, monotonic input handling, distinct phase/wait/recovery/terminal mappings, bounded redacted output, missing-evidence fail-closed behavior, and absence of fabricated success or external outcomes.
 
 - [ ] **Step 9: Add the exact 23.B RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
-- [ ] **Step 10: Run 23.B RED.** Run `python -m pytest -q tests/unit/audit/test_projection.py::test_recovery_required_is_never_projected_as_stopped`. Expected: FAIL for “import failure because the visibility projector does not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
+- [ ] **Step 10: Run 23.B RED.** Run `python -m pytest -q tests/unit/audit/test_projection.py::test_recovery_required_is_never_projected_as_stopped`. Expected: FAIL for “import failure because the visibility projector does not exist”. The exact task-owned collection/import failure displayed above counts. Runner/interpreter startup failure, a missing test target, any other import or dependency failure, environment failure, unrelated failure, or already-failing test does not count.
 - [ ] **Step 11: Implement 23.B GREEN-1.** Validate exact Run identity and monotonic typed event/wait inputs, then map each lifecycle phase, wait, recovery, and terminal fact through one closed precedence table.
 - [ ] **Step 12: Implement 23.B GREEN-2.** Produce bounded stable state labels, reason codes, next actions, and safe evidence references without exposing internal rows or bodies or treating absent evidence as PASS/STOPPED.
 - [ ] **Step 13: Implement 23.B GREEN-3.** Make `test_recovery_required_is_never_projected_as_stopped` GREEN with the smallest recovery-precedence mapping; then make `test_audit_projection_lifecycle_matrix` RED and GREEN against the exact §5.1 matrix.
@@ -6533,7 +6623,7 @@ def test_retention_preserves_unresolved_recovery_evidence(
 - Quality (23.C): Code quality review checks canonical cutoff edges, explicit ended-Run classification, unresolved-recovery reachability, fail-closed missing terminal evidence, deterministic deletion order/counts, idempotency, and preservation of active or ambiguous records.
 
 - [ ] **Step 17: Add the exact 23.C RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
-- [ ] **Step 18: Run 23.C RED.** Run `python -m pytest -q tests/unit/audit/test_retention.py::test_retention_preserves_unresolved_recovery_evidence`. Expected: FAIL for “import failure because the retention evaluator does not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
+- [ ] **Step 18: Run 23.C RED.** Run `python -m pytest -q tests/unit/audit/test_retention.py::test_retention_preserves_unresolved_recovery_evidence`. Expected: FAIL for “import failure because the retention evaluator does not exist”. The exact task-owned collection/import failure displayed above counts. Runner/interpreter startup failure, a missing test target, any other import or dependency failure, environment failure, unrelated failure, or already-failing test does not count.
 - [ ] **Step 19: Implement 23.C GREEN-1.** Compute the 30-day cutoff from the supplied canonical time and select only audit events belonging to explicitly ended Runs that are strictly eligible under the declared boundary.
 - [ ] **Step 20: Implement 23.C GREEN-2.** Preserve every event referenced by unresolved recovery and every active, non-ended, ambiguous, or missing-terminal Run; delete eligible rows deterministically with bounded counts and idempotent reruns.
 - [ ] **Step 21: Implement 23.C GREEN-3.** Make `test_retention_preserves_unresolved_recovery_evidence` GREEN with the smallest preservation predicate; then make `test_audit_retention_matrix` RED and GREEN against the exact §5.1 matrix.
@@ -7662,7 +7752,7 @@ def test_credential_status_never_contains_secret_or_derivative(
 - Quality (27.A): Code quality review checks OPENAI closure, hidden-input wrapper properties, status/exception/repr/log redaction, derivative absence, probe ordering, update/clear atomicity, fresh call lookup, unsafe-backend failure, and no fallback/print/transport.
 
 - [ ] **Step 1: Add the exact 27.A RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
-- [ ] **Step 2: Run 27.A RED.** Run `python -m pytest -q tests/unit/credentials/test_status.py::test_credential_status_never_contains_secret_or_derivative`. Expected: FAIL for “import failure because the credential port/service and secret wrapper do not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
+- [ ] **Step 2: Run 27.A RED.** Run `python -m pytest -q tests/unit/credentials/test_status.py::test_credential_status_never_contains_secret_or_derivative`. Expected: FAIL for “import failure because the credential port/service and secret wrapper do not exist”. The exact task-owned collection/import failure displayed above counts. Runner/interpreter startup failure, a missing test target, any other import or dependency failure, environment failure, unrelated failure, or already-failing test does not count.
 - [ ] **Step 3: Implement 27.A GREEN-1.** Close providers to `OPENAI` and wrap hidden input in a non-serializable, non-comparable, redacted secret object whose repr, exceptions, status, logs, and public results expose no value or derivative.
 - [ ] **Step 4: Implement 27.A GREEN-2.** Probe the verified store before lifecycle operations, implement set/status/update/clear and fresh get-for-call semantics with typed failures, and reject unsafe backends without fallback, printing, or transport.
 - [ ] **Step 5: Implement 27.A GREEN-3.** Make `test_credential_status_never_contains_secret_or_derivative` GREEN with the smallest redacted status result; then make `test_credential_backend_lifecycle_matrix` RED and GREEN against the exact §5.1 matrix.
@@ -7715,7 +7805,7 @@ def test_wincred_smoke_clears_generated_test_entry(
 - Quality (27.B): Code quality review checks versioned target identity, backend probe-before-operation order, current-user WinCred semantics, overwrite/delete/fresh-read behavior, redacted failures, `finally` cleanup, no fallback/cache/import/print, and no transport call.
 
 - [ ] **Step 9: Add the exact 27.B RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
-- [ ] **Step 10: Run 27.B RED.** Run `python -m pytest -q -o addopts='' -m windows_integration tests/integration/windows/test_wincred_smoke.py::test_wincred_smoke_clears_generated_test_entry`. Expected: FAIL for “import failure because the Windows Credential Manager adapter does not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
+- [ ] **Step 10: Run 27.B RED.** Run `python -m pytest -q -o addopts='' -m windows_integration tests/integration/windows/test_wincred_smoke.py::test_wincred_smoke_clears_generated_test_entry`. Expected: FAIL for “import failure because the Windows Credential Manager adapter does not exist”. The exact task-owned collection/import failure displayed above counts. Runner/interpreter startup failure, a missing test target, any other import or dependency failure, environment failure, unrelated failure, or already-failing test does not count.
 - [ ] **Step 11: Implement 27.B GREEN-1.** Map the sole versioned OPENAI target to mandatory Windows Credential Manager operations and probe backend identity/capability before each mutation or fresh get-for-call read.
 - [ ] **Step 12: Implement 27.B GREEN-2.** Implement set/status/overwrite/get-for-call/clear with redacted typed errors, current-user storage, generated-test cleanup in `finally`, and no cache, fallback, environment/file import, printing, or network call.
 - [ ] **Step 13: Implement 27.B GREEN-3.** Make `test_wincred_smoke_clears_generated_test_entry` GREEN with the smallest real lifecycle and final cleanup; then make `test_wincred_real_lifecycle_matrix` RED and GREEN against the exact §5.1 matrix.
@@ -9699,6 +9789,7 @@ git commit -m "Implement T36.1 Closed Delivery Evidence and Commit Alignment"
 **SPEC contracts:** SPEC §5.4–§5.6; §8.2–§8.4; §10.1 AC-10–AC-12, AC-24, AC-30; §10.3 package/public smoke; course CI/CD record and accessible WebUI URL deliverables.
 
 **Files:**
+- Create: `src/vespercode/delivery/publication.py`
 - Create: `delivery/evidence/release-v1.json`
 - Create: `tests/smoke/release/test_manifest_image_alignment.py`
 
@@ -9706,7 +9797,7 @@ git commit -m "Implement T36.1 Closed Delivery Evidence and Commit Alignment"
 **Parallelization:** Start only after every task/non-task gate in **Depends** has passed. Same-wave execution is allowed only when expanded writable paths are disjoint; the WP36 branch and PR remain the sole package integration boundary.
 
 **Interfaces:**
-- **Consumes / Produces (36.B):** Produces a real GitHub Release URL, released wheel/checksum identities, `ghcr.io/ledstevenovo/vespercode-reference@sha256:{manifest_digest}`, digest re-pull/smoke evidence, and closed `ReleaseEvidenceV1`.
+- **Consumes / Produces (36.B):** Produces immutable `FrozenReleaseInputsV1(source_commit: str, tag_name: str, wheel_sha256: str, reference_manifest_digest: str)`, `ObservedReleaseResultV1(source_commit: str, tag_name: str, released_wheel_sha256: str, ghcr_repo_digest: str, pulled_image_digest: str, wheel_install_passed: bool, image_smoke_passed: bool)`, `ReleasePublicationErrorCodeV1 = Literal["SOURCE_COMMIT_MISMATCH","TAG_MISMATCH","WHEEL_DIGEST_MISMATCH","GHCR_DIGEST_MISMATCH","PULLED_IMAGE_DIGEST_MISMATCH","WHEEL_INSTALL_FAILED","IMAGE_SMOKE_FAILED"]`, `ReleasePublicationAcceptedV1(kind: Literal["ACCEPTED"], evidence_write_allowed: Literal[True])`, `ReleasePublicationRejectedV1(kind: Literal["REJECTED"], error_code: ReleasePublicationErrorCodeV1, evidence_write_allowed: Literal[False])`, `ReleasePublicationVerificationV1 = ReleasePublicationAcceptedV1 | ReleasePublicationRejectedV1`, and pure `verify_release_publication_result(frozen: FrozenReleaseInputsV1, observed: ObservedReleaseResultV1) -> ReleasePublicationVerificationV1`; after offline verification and an implementation commit, the task produces a real GitHub Release URL, released wheel/checksum identities, `ghcr.io/ledstevenovo/vespercode-reference@sha256:{manifest_digest}`, digest re-pull/smoke evidence, and closed `ReleaseEvidenceV1` only from `ACCEPTED` observed results.
 
 **Implementation points, exact RED, and minimum GREEN contracts:**
 
@@ -9717,46 +9808,66 @@ git commit -m "Implement T36.1 Closed Delivery Evidence and Commit Alignment"
 **Minimum GREEN patch contract:**
 
 ```text
-Owned files: - Create: delivery/evidence/release-v1.json only from confirmed external results - Create: tests/smoke/release/test_manifest_image_alignment.py
-Interface: Produces a real GitHub Release URL, released wheel/checksum identities, `ghcr.io/ledstevenovo/vespercode-reference@sha256:{manifest_digest}`, digest re-pull/smoke evidence, and closed `ReleaseEvidenceV1`.
-GREEN-1: Require protected tag/source commit, passing Task 35 evidence, exact Task 33 wheel/checksum, Task 2/34 reference manifest, and least-privilege platform-secret availability before any external publication.
-GREEN-2: Publish once, then independently download and re-hash/clean-install the wheel, pull GHCR by RepoDigest, inspect/smoke the image, compare every manifest digest, and write evidence only from confirmed terminal results.
-GREEN-3: Make `test_release_rejects_ghcr_digest_different_from_frozen_manifest` GREEN with the smallest digest-continuity assertion; then make `test_release_publication_matrix` RED and GREEN against the exact §5.1 matrix.
+Owned files: - Create: src/vespercode/delivery/publication.py - Create: delivery/evidence/release-v1.json only after the implementation commit and only from confirmed external `ACCEPTED` results - Create: tests/smoke/release/test_manifest_image_alignment.py
+Interface: Produces immutable `FrozenReleaseInputsV1`, `ObservedReleaseResultV1`, closed `ReleasePublicationVerificationV1`, and pure zero-I/O `verify_release_publication_result(frozen, observed)` exactly as displayed in the task Interfaces; after offline verification and an implementation commit, produces a real GitHub Release URL, released wheel/checksum identities, `ghcr.io/ledstevenovo/vespercode-reference@sha256:{manifest_digest}`, digest re-pull/smoke evidence, and closed `ReleaseEvidenceV1` only from `ACCEPTED` observed results.
+GREEN-1: Define the displayed immutable frozen-input, observed-result, accepted/rejected, error-code, and verification contracts; the verifier performs zero network, credential, environment, subprocess, publication, or filesystem access.
+GREEN-2: Compare exact source commit, tag, wheel SHA-256, frozen manifest, GHCR RepoDigest, pulled-image digest, install result, and smoke result in the displayed error-code order; any mismatch returns `REJECTED` with `evidence_write_allowed=False`, while only complete exact alignment returns `ACCEPTED` with `evidence_write_allowed=True`, without normalizing or rewriting an input.
+GREEN-3: Make `test_release_rejects_ghcr_digest_different_from_frozen_manifest` GREEN through `verify_release_publication_result`; then make `test_release_publication_matrix` RED and GREEN against the exact §5.1 matrix using only fake frozen/observed values and zero external side effects.
 GREEN-4: Own the protected GitHub Release/GHCR operation and confirmed evidence only. Credential disclosure, manifest rewriting, retries after uncertain publication, unprotected execution, Render deployment, invented URLs/digests, and partial success remain out of scope.
-Boundary: Human-provided protected least-privilege credentials stay in platform secret stores. A registry transformation, missing lookup, digest mismatch, or failed smoke aborts; it never rewrites the manifest.
+Boundary: Human-provided protected least-privilege credentials stay in platform secret stores. Offline verification, both reviews, and the implementation commit precede the one protected external publication. A registry transformation, missing lookup, digest mismatch, or failed smoke returns/requires rejection, forbids `release-v1.json`, and never rewrites the manifest.
 ```
 
 **Exact RED test code:**
 
 ```python
-def test_release_rejects_ghcr_digest_different_from_frozen_manifest(
-    release_evidence: ReleaseEvidenceV1,
-) -> None:
-    assert release_evidence.ghcr_repo_digest == release_evidence.reference_manifest_digest
+@pytest.mark.deployment_smoke
+def test_release_rejects_ghcr_digest_different_from_frozen_manifest() -> None:
+    frozen = FrozenReleaseInputsV1(
+        source_commit="a" * 40,
+        tag_name="v1.0.0",
+        wheel_sha256="b" * 64,
+        reference_manifest_digest="sha256:" + "c" * 64,
+    )
+    observed = ObservedReleaseResultV1(
+        source_commit=frozen.source_commit,
+        tag_name=frozen.tag_name,
+        released_wheel_sha256=frozen.wheel_sha256,
+        ghcr_repo_digest="sha256:" + "d" * 64,
+        pulled_image_digest="sha256:" + "d" * 64,
+        wheel_install_passed=True,
+        image_smoke_passed=True,
+    )
+
+    result = verify_release_publication_result(frozen, observed)
+
+    assert isinstance(result, ReleasePublicationRejectedV1)
+    assert result.kind == "REJECTED"
+    assert result.error_code == "GHCR_DIGEST_MISMATCH"
+    assert result.evidence_write_allowed is False
 ```
 
-**Expected RED:** the test runner reaches `test_release_rejects_ghcr_digest_different_from_frozen_manifest`, but its first task-owned assertion fails because the required digest-continuity assertion has not been implemented; collection, runner startup, unrelated import, or environment failure does not count
+**Expected RED:** import failure because the exact task-owned `vespercode.delivery.publication` module, its displayed value types, and `verify_release_publication_result` do not exist. The traceback must identify those exact missing objects; any other collection/import, runner/interpreter, dependency, environment, fixture, unrelated, or already-failing error does not count.
 
 **Atomic verification:**
 - Target (36.B): `python -m pytest -q -o addopts='' -m deployment_smoke tests/smoke/release/test_manifest_image_alignment.py::test_release_rejects_ghcr_digest_different_from_frozen_manifest`
 - Domain (36.B): `python -m pytest -q -o addopts='' -m deployment_smoke tests/smoke/release/test_manifest_image_alignment.py`
 - Matrix (36.B): `python -m pytest -q -o addopts='' -m deployment_smoke tests/smoke/release/test_manifest_image_alignment.py::test_release_publication_matrix`
-- External (36.B): run the protected tag pipeline; download/re-hash/clean-install the wheel; pull GHCR by RepoDigest and smoke it.
+- External (36.B): only after the implementation commit exists, create/run the protected tag pipeline for that exact commit once; download/re-hash/clean-install the wheel; pull GHCR by RepoDigest and smoke it; convert confirmed terminal facts to `ObservedReleaseResultV1`; require `ACCEPTED` before writing `release-v1.json`.
 - Evidence (36.B): `python scripts/verify_release_evidence.py delivery/evidence`
-- Expected (36.B): Task 2 loopback, Task 34 reproduction, built-in manifest, GHCR response, and pulled-image manifest digests are identical; released wheel hash/install pass.
+- Expected (36.B): fake digest mismatch returns exact `REJECTED/GHCR_DIGEST_MISMATCH/evidence_write_allowed=False` with zero I/O; exact fake alignment returns `ACCEPTED/evidence_write_allowed=True`; the real Task 2 loopback, Task 34 reproduction, built-in manifest, GHCR response, and pulled-image manifest digests are identical; released wheel hash/install pass; rejected or incomplete external results create no `release-v1.json`.
 
 **Atomic review focus:**
 - SPEC (36.B): Spec compliance review checks Task 36.B's Goal, Milestone 36's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent protected content-addressed publication contract.
-- Quality (36.B): Code quality review checks protected/source/CI preflight, secret-store access, wheel/checksum identity, Task 2/34 manifest continuity, one-shot uncertain-state handling, re-download/re-hash/install, content-addressed RepoDigest pull/smoke, terminal evidence freshness, URL/artifact access control, and no invented result.
+- Quality (36.B): Code quality review checks direct RED invocation of the task-owned pure verifier, closed result/error variants, deterministic mismatch priority, zero-I/O fake tests, protected/source/CI preflight, secret-store access, implementation-commit-before-publication ordering, wheel/checksum identity, Task 2/34 manifest continuity, one-shot uncertain-state handling, re-download/re-hash/install, content-addressed RepoDigest pull/smoke, accepted-only evidence writing, terminal evidence freshness, URL/artifact access control, and no invented result.
 
 - [ ] **Step 1: Add the exact 36.B RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
-- [ ] **Step 2: Run 36.B RED.** Run `python -m pytest -q -o addopts='' -m deployment_smoke tests/smoke/release/test_manifest_image_alignment.py::test_release_rejects_ghcr_digest_different_from_frozen_manifest`. Expected: FAIL for “the test runner reaches `test_release_rejects_ghcr_digest_different_from_frozen_manifest`, but its first task-owned assertion fails because the required digest-continuity assertion has not been implemented; collection, runner startup, unrelated import, or environment failure does not count”. Collection, import, environment, unrelated, or already-failing tests do not count.
-- [ ] **Step 3: Implement 36.B GREEN-1.** Require protected tag/source commit, passing Task 35 evidence, exact Task 33 wheel/checksum, Task 2/34 reference manifest, and least-privilege platform-secret availability before any external publication.
-- [ ] **Step 4: Implement 36.B GREEN-2.** Publish once, then independently download and re-hash/clean-install the wheel, pull GHCR by RepoDigest, inspect/smoke the image, compare every manifest digest, and write evidence only from confirmed terminal results.
-- [ ] **Step 5: Implement 36.B GREEN-3.** Make `test_release_rejects_ghcr_digest_different_from_frozen_manifest` GREEN with the smallest digest-continuity assertion; then make `test_release_publication_matrix` RED and GREEN against the exact §5.1 matrix.
+- [ ] **Step 2: Run 36.B RED.** Run `python -m pytest -q -o addopts='' -m deployment_smoke tests/smoke/release/test_manifest_image_alignment.py::test_release_rejects_ghcr_digest_different_from_frozen_manifest`. Expected: the exact task-owned collection/import failure displayed above counts. Runner/interpreter startup failure, a missing test target, any other collection/import or dependency failure, environment or fixture failure, unrelated failure, or already-failing test does not count.
+- [ ] **Step 3: Implement 36.B GREEN-1.** Define the displayed immutable frozen-input, observed-result, accepted/rejected, error-code, and verification contracts in `src/vespercode/delivery/publication.py`; keep the verifier pure and zero-I/O.
+- [ ] **Step 4: Implement 36.B GREEN-2.** Compare the displayed source/tag/wheel/manifest/GHCR/pulled/install/smoke facts in deterministic error-code order; reject every mismatch with evidence writing forbidden, accept only exact complete alignment, and never normalize or rewrite an input.
+- [ ] **Step 5: Implement 36.B GREEN-3.** Make `test_release_rejects_ghcr_digest_different_from_frozen_manifest` GREEN only through `verify_release_publication_result`; then make `test_release_publication_matrix` RED and GREEN against the exact §5.1 matrix using only fake frozen/observed values and zero external side effects.
 - [ ] **Step 6: Implement 36.B GREEN-4.** Own the protected GitHub Release/GHCR operation and confirmed evidence only. Credential disclosure, manifest rewriting, retries after uncertain publication, unprotected execution, Render deployment, invented URLs/digests, and partial success remain out of scope.
-- [ ] **Step 7: Run 36.B Target GREEN.** Re-run `python -m pytest -q -o addopts='' -m deployment_smoke tests/smoke/release/test_manifest_image_alignment.py::test_release_rejects_ghcr_digest_different_from_frozen_manifest`; require exit 0 and the displayed RED assertion to pass.
-- [ ] **Step 8: Run 36.B Domain.** Run `python -m pytest -q -o addopts='' -m deployment_smoke tests/smoke/release/test_manifest_image_alignment.py`; require exit 0 and every displayed Atomic verification expectation to hold.
+- [ ] **Step 7: Run 36.B Target GREEN.** Re-run `python -m pytest -q -o addopts='' -m deployment_smoke tests/smoke/release/test_manifest_image_alignment.py::test_release_rejects_ghcr_digest_different_from_frozen_manifest`; require exit 0 and every displayed rejection assertion to pass with zero external side effects.
+- [ ] **Step 8: Run 36.B Matrix and Domain.** Run the displayed Matrix command and then `python -m pytest -q -o addopts='' -m deployment_smoke tests/smoke/release/test_manifest_image_alignment.py`; require both to exit 0 and every fake-input Atomic verification expectation to hold before any external publication.
 
 **Task-level verification, review, and completion:**
 
@@ -9766,15 +9877,17 @@ def test_release_rejects_ghcr_digest_different_from_frozen_manifest(
 - [ ] **Step 12: Close T36.2 SPEC findings.** Fix every Critical/Important finding, rerun affected Targets, Domains, and profile commands, and obtain same-stage re-review PASS.
 - [ ] **Step 13: Request T36.2 quality review.** Use `superpowers:requesting-code-review` only after SPEC review PASS; review the task diff against every Atomic review focus line.
 - [ ] **Step 14: Close T36.2 quality findings.** Fix every Critical/Important finding, rerun affected checks, and obtain same-stage re-review PASS.
-- [ ] **Step 15: Commit T36.2 implementation.** Stage only the task-owned implementation/tests and create one implementation commit after both review stages PASS.
+- [ ] **Step 15: Commit T36.2 implementation.** Stage only the task-owned pure publication verifier and tests—never `release-v1.json`—and create one implementation commit after both review stages PASS.
 
 ```bash
-git add -- "delivery/evidence/release-v1.json" "tests/smoke/release/test_manifest_image_alignment.py"
+git add -- "src/vespercode/delivery/publication.py" "tests/smoke/release/test_manifest_image_alignment.py"
 git commit -m "Implement T36.2 GitHub Release and GHCR Publication"
 ```
 
-- [ ] **Step 16: Record T36.2 completion evidence.** In a narrow evidence commit, update only this task's Status/Completion evidence and append `AGENT_LOG.md` with the real implementation SHA, responsible fresh subagent, human edits, exact commands/results, review/re-review verdicts, and PR URL.
-- [ ] **Step 17: Continue or finish WP36.** If another session task remains in this package, hand the same branch/PR to a new fresh subagent. Otherwise use `superpowers:finishing-a-development-branch`, verify the package result, and merge only after all predecessors and gates remain valid.
+- [ ] **Step 16: Execute the one protected external publication from the implementation commit.** Require the protected tag to identify the exact Step 15 SHA; confirm passing Task 35 evidence, exact Task 33 wheel/checksum, Task 2/34 frozen manifest, and least-privilege platform-secret availability before the first external mutation; publish once without retry after uncertain state, independently download/re-hash/clean-install the wheel, pull GHCR by RepoDigest, inspect/smoke the image, construct `ObservedReleaseResultV1` only from confirmed terminal facts, run `verify_release_publication_result`, and create `delivery/evidence/release-v1.json` only when it returns `ACCEPTED`.
+- [ ] **Step 17: Verify T36.2 external evidence.** Run `python scripts/verify_release_evidence.py delivery/evidence`; require exit 0, exact source/tag/wheel/Task 2/Task 34/GHCR/pulled-image identity alignment, accessible terminal release artifacts, and no invented, partial, rejected, or stale result.
+- [ ] **Step 18: Record T36.2 completion evidence.** In a narrow evidence commit after Step 17 PASS, stage `delivery/evidence/release-v1.json`, update only this task's Status/Completion evidence, and append `AGENT_LOG.md` with the real implementation SHA, protected tag/pipeline/release identities, responsible fresh subagent, human edits, exact commands/results, review/re-review verdicts, and PR URL.
+- [ ] **Step 19: Continue or finish WP36.** If another session task remains in this package, hand the same branch/PR to a new fresh subagent. Otherwise use `superpowers:finishing-a-development-branch`, verify the package result, and merge only after all predecessors and gates remain valid.
 
 **Done:** legacy steps 36.B 的 Target、Domain、适用真实环境和全局 profile 均通过；Critical/Important finding 全部关闭并复审；没有行为被延后到 successor。
 **Completion evidence:** Not yet executed.
@@ -10665,7 +10778,7 @@ def test_operations_acceptance_runner_requires_all_workflows(
 - Quality (38.G): Code quality and Open Design review checks deterministic bounded runner output, exact four-workflow coverage, production-interface isolation, keyboard navigation, focus order, labels, live errors/status, escaping, request/access control, readable hierarchy/contrast, secret/body redaction, server-derived scope, recovery no-bypass, and evidence truthfulness.
 
 - [ ] **Step 1: Add the exact 38.G RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
-- [ ] **Step 2: Run 38.G RED.** Run `python -m pytest -q tests/web/test_operations_accessibility.py::test_operations_acceptance_runner_requires_all_workflows`. Expected: FAIL for “the pytest runner and existing production-page fixture start successfully, then the test fails because the task-owned `run_operations_accessibility_acceptance` and `OperationsAccessibilityAcceptanceResultV1` do not exist. A missing test, collection/import failure unrelated to those exact task-owned symbols, unavailable browser, or production-application startup failure does not count as RED”. Collection, import, environment, unrelated, or already-failing tests do not count.
+- [ ] **Step 2: Run 38.G RED.** Run `python -m pytest -q tests/web/test_operations_accessibility.py::test_operations_acceptance_runner_requires_all_workflows`. Expected: FAIL for “the pytest runner and existing production-page fixture start successfully, then the test fails because the task-owned `run_operations_accessibility_acceptance` and `OperationsAccessibilityAcceptanceResultV1` do not exist. A missing test, collection/import failure unrelated to those exact task-owned symbols, unavailable browser, or production-application startup failure does not count as RED”. The exact task-owned collection/import failure displayed above counts. Runner/interpreter startup failure, a missing test target, any other import or dependency failure, environment failure, unrelated failure, or already-failing test does not count.
 - [ ] **Step 3: Implement 38.G GREEN-1.** Define the test-owned result and acceptance runner in the declared test file with deterministic workflow ordering, bounded capture counts, and stable failure codes; production modules expose no new interface.
 - [ ] **Step 4: Implement 38.G GREEN-2.** Exercise credential, memory, audit, and recovery pages through Task 38.F's production composition using only keyboard input events and the exact local request-security contract.
 - [ ] **Step 5: Implement 38.G GREEN-3.** Fail closed when any required workflow, label, focus transition, live error/status region, redaction/scope invariant, or recovery no-bypass observation is absent; record only bounded in-memory acceptance evidence.
@@ -10703,7 +10816,7 @@ Each parameter row stated in the oracle is mandatory. The implementation may cho
 | Legacy | Required pytest node | Mandatory parameter rows and exact oracle |
 |---|---|---|
 | 2.A | `tests/feasibility/docker/test_reference_input_contract.py::test_reference_input_freeze_matrix` | missing reference lock, unequal fixture/reference bytes, or a digest differing from either lock => reject before returning `ReferenceBuildInputV1`; exact bytes and digests => one deterministic immutable `ReferenceBuildInputV1`. |
-| 2.C | `tests/feasibility/docker/test_loopback_registry_probe.py::test_loopback_registry_boundary_matrix` | bind host other than `127.0.0.1`, a non-assigned/LAN-exposed port, or any credential => reject before push; exact loopback/no-credential lifecycle => one immutable `LoopbackRegistryEvidenceV1`; success, failure, and cancellation each leave zero registry containers and zero registry data. |
+| 2.C | `tests/feasibility/docker/test_loopback_registry_probe.py::test_loopback_registry_boundary_matrix` | bind host other than `127.0.0.1`, a non-assigned/LAN-exposed port, or any credential => reject before push; any transformation among the raw observed local OCI, registry RepoDigest, and digest-pull RepoDigest bytes => exact `LoopbackRegistryDigestMismatchV1(error_code="OCI_REGISTRY_DIGEST_MISMATCH", external_push_count=0, cleanup_verified=True, accepted_evidence_returned=False)` and no `LoopbackRegistryEvidenceV1`; exact loopback/no-credential three-way-equal lifecycle => one immutable `LoopbackRegistryEvidenceV1`; success, failure, and cancellation each leave zero registry containers and zero registry data. |
 | 2.G | `tests/feasibility/docker/test_reference_boundary_gate.py::test_reference_gate_upstream_consistency_matrix` | toolchain, lock, OCI manifest, registry response, pulled manifest, report, or fingerprint identity drift => NO_GO; exact upstream identities and complete evidence => GO. |
 | 3.B | `tests/feasibility/persistence/test_write_fault_matrix.py::test_replace_fault_vocabulary_matrix` | each declared interruption before a replace => zero mutation for that path; each interruption after a replace => durable observation for that path; an unknown fault label => fail closed before a write. |
 | 3.C | `tests/feasibility/persistence/test_persistence_deadlines.py::test_persistence_deadline_boundary_matrix` | expired with zero observed writes => `STOPPED_ZERO_WRITE` and `further_workspace_writes_allowed=false`; expired after any observed write => `RECOVERY_REQUIRED` and `further_workspace_writes_allowed=false`; an unexpired transaction follows the interface's non-expired path without manufacturing either expired disposition. |
@@ -10713,10 +10826,10 @@ Each parameter row stated in the oracle is mandatory. The implementation may cho
 | 4.C | `tests/unit/canonical/test_clock.py::test_canonical_timestamp_vector_matrix` | fake-clock advances preserve the exact requested millisecond count; zero advance is stable; negative or non-millisecond input is rejected; emitted timestamps match the SPEC UTC canonical form. |
 | 4.D | `tests/unit/canonical/test_path_v1.py::test_canonical_path_sentinel_matrix` | parent, device, ADS, absolute, empty-segment, dot-segment, reserved-name, trailing-dot/space, overlong, and non-canonical-case inputs are rejected; a canonical relative path round-trips unchanged. |
 | 5.A | `tests/unit/contracts/test_optional.py::test_named_optional_union_matrix` | ABSENT forbids value; PRESENT requires value; UNKNOWN is accepted only where the named union declares it; extra fields and cross-variant fields are rejected. |
+| 5.D | `tests/unit/contracts/test_evidence.py::test_evidence_reference_union_matrix` | each evidence variant requires its declared digest and identity; unbound digest, wrong digest shape, cross-variant fields, secret/body fields, and extra fields are rejected. |
 | 5.B | `tests/unit/contracts/test_run.py::test_run_state_phase_limit_matrix` | each legal status has exactly its declared phase/wait/limit fields; every illegal status-phase, wait, terminal-reopen, or limit combination is rejected. |
 | 5.C | `tests/unit/contracts/test_action.py::test_action_result_union_matrix` | each action variant accepts only its declared payload; the success variant forbids error fields; the error variant requires its declared code/detail; cross-variant and extra fields are rejected. |
 | 5.E | `tests/unit/contracts/test_location.py::test_location_scope_union_matrix` | repository root forbids path; file requires canonical path; directory requires canonical directory path; artifact requires bound artifact identity; cross-scope and extra fields are rejected. |
-| 5.D | `tests/unit/contracts/test_evidence.py::test_evidence_reference_union_matrix` | each evidence variant requires its declared digest and identity; unbound digest, wrong digest shape, cross-variant fields, secret/body fields, and extra fields are rejected. |
 | 6.A | `tests/unit/profiles/test_editable.py::test_editable_policy_path_operation_matrix` | exact strict `src/` descendants with CREATE or REPLACE => editable; `src` itself, prefix siblings, DELETE, RENAME, binary, link, and mode changes => denied with zero policy widening. |
 | 6.B | `tests/unit/profiles/test_reference.py::test_reference_profile_integrity_matrix` | drift in profile id, lock digest, OCI digest, execution version, tool versions, check plan, or editable policy is rejected; the exact built-in manifest verifies. |
 | 6.C | `tests/unit/profiles/test_llm.py::test_llm_profile_closed_union_matrix` | Mock accepts only mock fields; OpenAI accepts only the frozen endpoint/model fields; cross-mode, custom URL, unknown profile, and extra fields are rejected. |
@@ -10733,11 +10846,11 @@ Each parameter row stated in the oracle is mandatory. The implementation may cho
 | 9.D | `tests/unit/workspace/test_path_guard.py::test_path_authorization_existing_create_matrix` | existing paths require exact canonical identity; CREATE rejects case aliases and existing objects; parent/device/link escapes and non-editable paths are denied with zero filesystem mutation. |
 | 10.B | `tests/unit/trees/test_text_classifier.py::test_text_byte_classification_matrix` | strict UTF-8 with uniform LF or CRLF and one final newline is text; BOM is preserved as declared; bare CR, mixed newline, NUL, invalid UTF-8, missing final newline, or size overflow is non-text. |
 | 10.A | `tests/unit/trees/test_content_store.py::test_content_store_put_get_dedup_matrix` | put returns SHA-256 identity; identical bytes deduplicate; get returns exact bytes; missing object or digest drift fails closed; failed put leaves no partial object. |
-| 10.C | `tests/integration/windows/test_snapshot_from_preflight.py::test_snapshot_integrity_matrix` | preflight identity, object digest, path order, or protected-input drift rejects Snapshot creation; exact inputs create one immutable deterministic Snapshot. |
-| 11.A | `tests/unit/tools/test_read_file.py::test_read_file_bounds_schema_matrix` | reads use only bound Snapshot bytes; non-file, non-text, out-of-range, oversized, missing, or stale identity returns the declared typed error with no workspace read fallback. |
-| 11.B | `tests/unit/tools/test_list_files.py::test_list_search_cursor_integrity_matrix` | paged and unpaged results are identical and ordered; tampered cursor => CONTINUATION_INVALID; tree drift => CONTINUATION_STALE; either error returns zero partial results. |
+| 10.C | `tests/integration/windows/test_snapshot_from_preflight.py::test_snapshot_integrity_matrix` | preflight identity, object digest, path order, or protected-input drift rejects Snapshot creation; exact inputs create one immutable deterministic Snapshot that structurally satisfies `ReadableTreeV1`, exposes identical `digest`/`root_digest`, and returns deterministic directory/file paths and exact bytes. |
+| 11.A | `tests/unit/tools/test_read_file.py::test_read_file_bounds_schema_matrix` | reads through a protocol-only fake and the bound Snapshot use only `ReadableTreeV1` bytes without importing Candidate modules; non-file, non-text, out-of-range, oversized, missing, or stale identity returns the declared typed error with no workspace read fallback. |
+| 11.B | `tests/unit/tools/test_list_files.py::test_list_search_cursor_integrity_matrix` | protocol-only fake-tree paged and unpaged results are identical and ordered without importing Candidate modules; tampered cursor => CONTINUATION_INVALID; tree drift => CONTINUATION_STALE; either error returns zero partial results. |
 | 12.A | `tests/unit/candidate/test_unified_diff.py::test_unified_diff_grammar_matrix` | only complete CREATE/REPLACE patches parse; DELETE, RENAME, binary, mode/link, fuzzy offset, duplicate path, malformed header/hunk, or trailing bytes are rejected. |
-| 12.B | `tests/unit/trees/test_candidate.py::test_candidate_overlay_integrity_matrix` | REPLACE and CREATE produce ordered immutable overlays; parent stays unchanged; duplicate/missing object/digest drift fails closed; identical inputs yield identical Candidate identity. |
+| 12.B | `tests/unit/trees/test_candidate.py::test_candidate_overlay_integrity_matrix` | REPLACE and CREATE produce ordered immutable overlays that structurally satisfy T10.2's `ReadableTreeV1` without importing T11.1; parent stays unchanged; duplicate/missing object/digest drift fails closed; identical inputs yield identical Candidate identity. |
 | 12.C | `tests/unit/candidate/test_patch_engine.py::test_patch_atomicity_priority_limit_matrix` | any illegal path/operation/encoding/size/count/byte limit rejects the whole patch with zero Candidate objects; rejection priority is deterministic; exact legal input commits once. |
 | 12.D | `tests/unit/candidate/test_identity.py::test_candidate_identity_restoration_matrix` | revision metadata does not affect identity; any base/path/postimage change does; restoring exact bound facts restores the original digest; a claimed mismatched digest is rejected. |
 | 14.A | `tests/unit/governance/test_writeback_subject.py::test_writeback_subject_bound_fact_matrix` | subject digest changes for any Run, Snapshot, Candidate, FinalDiff, verification, path, endpoint, or expiry change; identical bound facts produce identical bytes/digest. |
@@ -10814,12 +10927,12 @@ Each parameter row stated in the oracle is mandatory. The implementation may cho
 | 35.B | `tests/unit/process/test_gitlab_ci_contract.py::test_gitlab_pipeline_boundary_matrix` | merge request => exactly four verification jobs; release context is mutually exclusive; runner/lock/artifact/secret rules are closed; missing/extra job or context overlap => rejected; recorded real jobs match the exact static contract. |
 | 35.C | `tests/unit/process/test_ci_release_rules.py::test_release_rule_boundary_matrix` | unprotected/non-tag/wrong-commit/missing-prerequisite event cannot release; protected tag on exact verified commit checks secrets only after admission and requires both platform evidence sets. |
 | 36.A | `tests/smoke/release/test_commit_alignment.py::test_release_evidence_matrix` | schema, digest, commit, freshness, accessibility, terminal-state, or cross-file identity mismatch rejects evidence; exact mutually consistent records validate without inferring missing external facts. |
-| 36.B | `tests/smoke/release/test_manifest_image_alignment.py::test_release_publication_matrix` | preflight precedes publication; GitHub asset download/install and GHCR digest pull/smoke bind exact commit and frozen manifest; any digest/tag/commit mismatch fails and records no valid evidence. |
+| 36.B | `tests/smoke/release/test_manifest_image_alignment.py::test_release_publication_matrix` | fake frozen/observed values call task-owned `verify_release_publication_result` with zero I/O; source, tag, wheel, frozen-manifest/GHCR, frozen-manifest/pulled-image, install, and smoke mismatches return the matching closed `ReleasePublicationErrorCodeV1` in displayed priority order with `kind=REJECTED` and `evidence_write_allowed=false`; exact complete alignment returns `kind=ACCEPTED` and `evidence_write_allowed=true`; offline Target/Matrix/Domain, both reviews, and the implementation commit precede publication; the protected tag identifies that exact commit; GitHub asset download/install and GHCR digest pull/smoke bind the frozen inputs; any preflight failure, rejected/partial/uncertain result, digest/tag/commit mismatch, failed install, or failed smoke creates no `release-v1.json`. |
 | 36.C | `tests/smoke/release/test_render_contract.py::test_render_deployment_matrix` | config/image contain no disk or real-provider secret; live health and fixed scenario pass at recorded URL; formal endpoints/capabilities are absent; cold start is bounded; evidence binds exact deployment/image. |
 
 ## 6. Unified Traceability
 
-This is the sole requirement coverage table. Every implementation set and independent validation set contains session task IDs only, is non-empty, and is disjoint. Legacy IDs and Milestones are resolved through the task cards, not repeated here.
+This is the sole requirement coverage table. Every implementation set and independent validation set contains session task IDs only, is non-empty, and is disjoint. Legacy IDs are resolved through the task cards; Milestones are resolved through the sole Milestone Registry and are not repeated here.
 
 | Requirement | SPEC contract / acceptance scope | Implementation task(s) | Independent validation task(s) | Required evidence |
 |---|---|---|---|---|
@@ -10983,7 +11096,7 @@ SPEC §1.6 and §11.3 remain the complete v1 non-goal/future-work authority; PLA
 
 ### 8.1 Writing-plans conformance
 
-Verifier A/B independently require the exact `For agentic workers` header, root Goal, Architecture, Tech Stack, Global Constraints, Planned Repository Structure, Global Execution Contract, Work Package Registry, 68 Session Task Cards, Unified Traceability, Derived Waves, this audit contract, and Execution Handoff.
+Verifier A/B independently require the exact `For agentic workers` header, root Goal, Architecture, Tech Stack, Global Constraints, Planned Repository Structure, Global Execution Contract, Work Package Registry, Milestone Registry, 68 Session Task Cards, Unified Traceability, Derived Waves, this audit contract, and Execution Handoff.
 
 `Units and authority` appears exactly once and defines: work package = the `AGENTS.md` independent feature / independent task and sole branch/worktree/PR/finishing/merge unit; session task = the smallest fresh-subagent execution/review/commit slice inside one work package and not an independent PR task; legacy step = one atomic RED → minimum GREEN TDD microcycle inside a session task. The workflow and handoff must preserve one PR per work package and must never assign an independent branch, worktree, PR, finishing pass, or merge to a session task.
 
@@ -11003,23 +11116,43 @@ Two independently implemented verifiers read strict UTF-8 and fail on BOM, any C
 
 The exact retained graph metrics are 68 session tasks, 141 unique legacy steps, 46 work packages, 309 deduplicated session edges, 42 session waves, 263 deduplicated package edges, 26 package waves, zero cycles, and 55 unified trace rows. Requirement coverage remains 9 US, 9 FR, 6 NFR, and 31 AC rows, each with nonempty independent implementation and validation task sets.
 
+Milestone Registry invariants are closed:
+
+1. The exact heading `### 4.1 Milestone Registry` appears exactly once.
+2. The Registry contains exactly one header row, one separator row, and 38 single-line data rows.
+3. Milestone ids are exactly the ascending sequence 1 through 38.
+4. Each row contains the Milestone id plus exactly four nonempty fields: Goal, SPEC scope, Session tasks, and Aggregate completion.
+5. Every session task appears in exactly one Milestone row.
+6. Every session task's legacy steps resolve to one and only one Milestone id.
+7. Legacy `13` resolves to Milestone 13; every `N.X` resolves to Milestone N.
+8. Row N's Session tasks equal the complete task-card-derived task set for N in Session Task Cards order.
+9. Row N's Goal equals `MILESTONE_GOAL_V1(N)` byte-for-byte after the sole Markdown `\|` escape is decoded.
+10. Row N's SPEC scope equals `MILESTONE_SPEC_SCOPE_V1(N)` byte-for-byte after the same decoding.
+11. Aggregate completion is exactly `MILESTONE_COMPLETE_V1(N)`.
+12. The Registry contains no Files, Depends, ownership, branch, worktree, PR, implementation, verification, independent acceptance, or new completion field.
+13. Every textual `Milestone N` reference resolves to exactly one Registry row.
+14. No Milestone id outside 1 through 38 is referenced.
+15. Any missing, duplicate, reordered, remapped, mutated, unparsable, multiline, unescaped-pipe, abbreviated-task, ranged-task, or ellipsis-bearing row is `FAIL`.
+
+The Registry syntax is mechanical: every data row is one Markdown line; an in-cell `|` is encoded only as `\|`; Session tasks use exact `, ` separators; every task id matches `T[0-9]{2}\.[0-9]+`; and ranges, aliases, ellipses, and natural-language abbreviations are forbidden. Verifier A/B recompute both derived text fields from task cards rather than trusting nonempty cells. They validate the predicate definitions and exact row expressions before execution; they do not treat current `Not started` tasks as completed.
+
 Task-card Files remain the sole execution mutation ownership source. Planned Repository Structure describes responsibility and must include every task path without assigning a conflicting writer. Shared modifiers remain limited to the explicit table in the Global Execution Contract.
 
-Verifier A/B reject missing/duplicate tasks or legacy steps, missing or contradictory execution-unit terminology, a session task described as an independent/executable PR unit, missing fields, missing Interfaces, missing RED or Minimum GREEN blocks, missing checkboxes, missing Target/Domain/Matrix commands, unmapped RED or Matrix node ids, incomplete or duplicate 114-row boundary coverage, generic deferred-case language, malformed commands, clipped reviews, placeholders, undefined task references, unauthorized shared writes, graph drift, coverage drift, incomplete admission contracts, oversized tasks/documents, and any forbidden source or identity mismatch.
+Verifier A/B reject missing/duplicate tasks or legacy steps, missing or contradictory execution-unit terminology, a session task described as an independent/executable PR unit, missing fields, missing Interfaces, missing RED or Minimum GREEN blocks, missing checkboxes, missing Target/Domain/Matrix commands, unmapped RED or Matrix node ids, an Expected RED/Run RED failure-class contradiction, a RED command that consumes an interpreter, runner, script, lock, module, or artifact produced only by later GREEN in the same legacy step without an entry-runnable bootstrap probe, incomplete or duplicate 114-row boundary coverage, missing/duplicate/malformed Milestone Registry data, non-derived Milestone Goal or SPEC scope, non-bijective task/Milestone mapping, unresolved Milestone reference, generic deferred-case language, malformed commands, clipped reviews, placeholders, undefined task references, unauthorized shared writes, graph drift, coverage drift, incomplete admission contracts, oversized tasks/documents, and any forbidden source or identity mismatch.
 
 ### 8.3 PlanSemanticDigestV2
 
-The projection boundary is the full-line range from `## 5. Session Task Cards` through immediately before `## 6. Unified Traceability`. Normalize only:
+`PlanSemanticDigestV2` hashes the complete normalized PLAN document. The sole tracking-normalization window begins with the exact full line `## 5. Session Task Cards` and ends immediately before the exact full line `## 6. Unified Traceability`. Only inside that window:
 
 1. each full-line `**Status:** ...` value to `TRACKING_STATUS_EXCLUDED_V2`;
-2. each full-line `**Completion evidence:** ...` value to `TRACKING_EVIDENCE_EXCLUDED_V2`;
-3. every task-step checkbox token `[ ]` or `[x]` to `[ ]`.
+2. every task-step checkbox token `[ ]` or `[x]` to `[ ]`;
+3. each full-line `**Completion evidence:** ...` value to `TRACKING_EVIDENCE_EXCLUDED_V2`.
 
-Compute SHA-256 over `VesperCode\0PLAN_SEMANTIC_CONTRACT_V2\0` followed by projected UTF-8 bytes. Status, legitimate task checkbox state, and one-line completion evidence changes preserve the digest. Any Goal, file, interface, implementation point, RED/GREEN code, command, dependency, review, traceability, wave, workflow, header, constraint, or audit-contract change must change it.
+All bytes outside that window, including the complete `### 4.1 Milestone Registry`, are preserved byte-for-byte in the semantic projection. Input is no-BOM UTF-8; CRLF is normalized to LF and a bare CR is rejected. Compute SHA-256 over `VesperCode\0PLAN_SEMANTIC_CONTRACT_V2\0` followed by the complete projected PLAN UTF-8 bytes. Status, legitimate task checkbox state, and one-line completion evidence changes preserve the digest. Any Milestone Goal, Milestone SPEC scope, Milestone Session tasks order/membership, aggregate-completion expression, Goal, file, interface, implementation point, RED/GREEN code, command, dependency, review, traceability, wave, workflow, header, constraint, or audit-contract change must change it.
 
 ### 8.4 Independent agreement and identity binding
 
-Verifier A and Verifier B use independent implementations and private negative self-tests for: missing required header; removed or contradictory work-package/session-task/legacy-step terminology; injected one-PR-per-session-task wording; removed Interfaces; removed checkbox; removed RED code; removed Minimum GREEN contract; injected placeholder; generic deferred-case language; removed, duplicated, or malformed 114-row Boundary Matrix Registry entry; removed Matrix command; Matrix node mismatch; missing exact oracle; leading-quote/truncated command; removed Domain; RED/Target mismatch; clipped review; graph/coverage mutation; missing or duplicated planning-input identity; changed identity path, SHA-256, SPEC blob, baseline, provenance, or timestamp; forbidden self-referential PLAN identity; missing admission gate/schema/checklist/evidence path; changed cold-start task/time limit; broken baseline relation or invalidation coverage; semantic-digest tracking and non-tracking mutations.
+Verifier A and Verifier B use independent implementations and private negative self-tests for: missing required header; removed or contradictory work-package/session-task/legacy-step terminology; injected one-PR-per-session-task wording; removed Interfaces; removed checkbox; removed RED code; removed Minimum GREEN contract; injected Expected RED/Run RED failure-class contradiction; changed a RED command to consume an interpreter, runner, script, lock, module, or artifact produced only by later GREEN in the same legacy step without an entry-runnable bootstrap probe; injected placeholder; generic deferred-case language; removed, duplicated, or malformed 114-row Boundary Matrix Registry entry; removed, duplicated, reordered, remapped, truncated, multiline, unescaped-pipe, abbreviated-task, ranged-task, ellipsis-bearing, or otherwise malformed Milestone Registry entry; changed Milestone Goal or SPEC scope byte; changed Milestone Session tasks order or membership; changed aggregate-completion expression; task omitted from or duplicated across Milestones; mixed legacy prefixes within one task; unresolved or out-of-range Milestone reference; removed Matrix command; Matrix node mismatch; missing exact oracle; leading-quote/truncated command; removed Domain; RED/Target mismatch; clipped review; graph/coverage mutation; missing or duplicated planning-input identity; changed identity path, SHA-256, SPEC blob, baseline, provenance, or timestamp; forbidden self-referential PLAN identity; missing admission gate/schema/checklist/evidence path; changed cold-start task/time limit; broken baseline relation or invalidation coverage; semantic-digest tracking and non-tracking mutations, including proof that every Milestone Registry semantic mutation changes `PlanSemanticDigestV2`.
 
 Each result binds PlanAuditContractV3, PLAN/SPEC/course/AGENTS SHA-256 identities, Git HEAD, verifier source SHA-256, PlanSemanticDigestV2, every metric above, sorted issues, and PASS/FAIL. Results agree field-for-field except verifier source SHA-256 and are evidence only for their exact unchanged inputs.
 
