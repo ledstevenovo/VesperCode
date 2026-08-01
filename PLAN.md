@@ -64,18 +64,18 @@ The following identities define the exact repository inputs used to author and m
 | Field | Value |
 |---|---|
 | Authoritative SPEC path | `SPEC.md` |
-| Authoritative SPEC SHA-256 | `9eb4ffc7b3b9fc8a99b7f38fb93f1b8b583ed92aafbd86d75b9e01dde37b98bc` |
-| Authoritative SPEC Git blob | `678c83a238ecd6bfb5d3ef4557a625d28dd4e734` |
-| Planning input baseline Git HEAD | `d29d68bca9783c7a5226034e65cf844a41fc6ebf` |
+| Authoritative SPEC SHA-256 | `258ae933dfbc88fed609563ffa144d16db4a6f95bc9351daac2412d5b2337e5c` |
+| Authoritative SPEC Git blob | `27bba78767edf69826e62dbff0e2d2eb11b7a580` |
+| Planning input baseline Git HEAD | `2521bd2e09874bad308545883d83e43224433594` |
 | General course requirements path | `AI4SE_Final_Project_通用要求.md` |
 | General course requirements SHA-256 | `ee0c5770847ed34caf22c62fa183a6787318a3dcbbfe863a5b06de1f53704220` |
 | Harness requirements path | `AI4SE_Final_Project_A_Coding_Agent_Harness(1).md` |
 | Harness requirements SHA-256 | `6c225b996302bdbe0736c4327617b99ac7575198d0537c8a19b4bb7bc2620d81` |
 | Repository instructions path | `AGENTS.md` |
 | Repository instructions SHA-256 | `f4e68e302cfb9cc9f383704ef3be9eb8975277a0715e5357e65070cad2738656` |
-| Repository instructions provenance | Working-tree planning input; not contained in the planning baseline commit. |
+| Repository instructions provenance | Tracked planning input; contained in the planning baseline commit. |
 | Initial generation timestamp | `2026-07-26T17:17:01+08:00` |
-| Last semantic revision timestamp | `2026-08-01T00:52:04+08:00` |
+| Last semantic revision timestamp | `2026-08-01T01:18:07+08:00` |
 
 This PLAN is the self-contained implementation plan for the exact current SPEC and the sole canonical source for executable task steps. It does not change product scope, behavior, security boundaries, non-goals, or acceptance criteria. The 141 legacy child IDs remain immutable atomic TDD microcycles and migration-trace identifiers. The 68 `TNN.X` session tasks are fresh-subagent execution/review/commit slices, not independent PR tasks. The 46 `WP...` work packages are the `AGENTS.md` independent features / independent tasks and the sole branch/worktree/PR units.
 
