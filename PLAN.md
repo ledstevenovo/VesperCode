@@ -33,13 +33,14 @@
 - LangChain `AgentExecutor`, AutoGen, CrewAI, LlamaIndex Agent, OpenAI Agents SDK runner, and host coding-agent runners must not implement the delivered main loop.
 - The repository implements context assembly, exactly one LLM call per turn, action parsing, policy, dispatch, result feedback, and stop evaluation. Replacing the real LLM with Mock/Stub must leave tool dispatch, governance, feedback correction, memory, and stopping deterministically testable offline.
 - All behavior changes use strict TDD: write and run the intended RED test, make the smallest GREEN change, then refactor without changing behavior.
-- Tasks 1–3 use one Task 1-owned feasibility-gate bootstrap: an isolated `.venv-gate`, `requirements/gate.lock` with exact direct/transitive versions and distribution hashes, explicit gate pytest/Ruff/Mypy configs, and `scripts/run_gate_checks.py`. Every gate command must use that environment and configuration; global tools and Task 4 project configuration are invalid inputs.
-- Task 1 selects, records, reviews, and freezes the exact Python/pytest/Ruff/Mypy versions and all gate file SHA-256 values. Tasks 2–3 consume those exact identities without re-resolution. Task 4.A and Task 4.F each persist the exact Task 1 `python_version` and compare it character-for-character with the Task 1.E terminal `GO` evidence; the public compatibility range remains `>=3.12,<3.13` and never substitutes for that exact interpreter identity. The PLAN intentionally does not guess time-sensitive patch versions before the lock is created; a Task 1 GO is impossible until the complete hash-locked file and installed-version evidence exist.
+- Task 1.A is the SPEC §11.2 pre-RED execution prerequisite, not a product behavior change. It must establish, review, and freeze the gate lock/config/runner/gate-scan set before any Task 1 failing behavior test is added or run. Its positive integrity checks prove that the prerequisite is usable; they are not represented as a TDD RED. Task 1.B is the first Task 1 behavior RED.
+- Tasks 1–3 use one Task 1-owned feasibility-gate bootstrap: an isolated `.venv-gate`, `requirements/gate.lock` with exact direct/transitive versions and distribution hashes, explicit gate pytest/Ruff/Mypy configs, `scripts/run_gate_checks.py`, and `scripts/scan_gate_changed_files.ps1`. The sole pre-gate exception is the PATH-resolved `python` used to run the entry-runnable Task 1.A stdlib probe and create `.venv-gate`; that probe requires `sys.version_info[:2] == (3, 12)` before any gate artifact can be accepted. Every later gate command must use the frozen environment and configuration; global tools and Task 4 project configuration are invalid inputs.
+- Task 1 selects, reviews, and freezes the exact Python/pytest/Ruff/Mypy versions and the gate lock/config/runner/gate-scan SHA-256 values in `gates/evidence/gate-toolchain-v1.json`; Tasks 2–3 consume that record without re-resolution. Task 1.E embeds the same identity in the terminal `gates/evidence/workspace-boundary-go-v1.json`. Task 4.A, Task 4.F, and Task 37.B read that fixed terminal file and compare its exact `python_version` character-for-character. The public range `>=3.12,<3.13` never substitutes for exact patch equality.
 - Task 4.A is the sole complete v1 project dependency-closure owner. It creates the dependency tables, Python range, reviewed source/index policy, minimal package identity, and hash-complete `requirements/dev.lock`; the closure includes every declared direct runtime, build/distribution, and development/verification dependency plus every transitive distribution and hash. Runtime families include FastAPI, Pydantic v2, pywin32, keyring with Windows Credential Manager verification support, Docker SDK for Python, and every low-level HTTP, test-client, template/form, or serving package imported or invoked directly by project code. Build/distribution families include Hatchling and `build`; development/verification families include pytest 8.x, Ruff, Mypy, and every directly used typing/test support package. Vendored HTMX remains package data, not a Python dependency. `requirements/gate.lock`, `requirements/reference.lock`, and `requirements/demo.lock` remain separate immutable profiles under Tasks 1.A, 2.A, and 34.B respectively and never merge into `requirements/dev.lock`.
 - Task 4.A selects the reviewed exact patch versions, transitive distributions, markers, and hashes at execution time without inventing them in this PLAN. The exact Task 1 Python patch and every overlapping pytest/Ruff/Mypy version are preserved. Task 4.F alone promotes those frozen interpreter/tool identities, marker definitions, static rules, build backend, and canonical formal commands into the non-dependency sections of `pyproject.toml`.
 - After Task 4.A completes, no task may add, remove, resolve, upgrade, downgrade, or install an undeclared project package. Discovery of a missing package stops the current task. Any dependency-closure change requires a non-tracking PLAN semantic revision, dependency review, recomputation of every affected mechanical structure and digest, renewed human PLAN approval, and a repeated heterogeneous cold-start; M0 also repeats if the authoritative SPEC identity or requirements change. Ad-hoc installation and silent regeneration of `requirements/dev.lock` are prohibited. Rebuilding `.venv-formal` from the unchanged `requirements/dev.lock` with `--require-hashes --no-deps` is only materialization of the already-declared exact/hash-verified closure and is not a dependency change; resolution, upgrade, extra installation, or re-locking remains prohibited and triggers this fail-closed amendment rule.
-- Task 4.A solely owns `scripts/bootstrap_formal_env.py`. In every fresh formal-task worktree, the candidate interpreter is located only with `py -3.12`; before creating, rebuilding, or using `.venv-formal`, the bootstrap reads the Task 1.E terminal `GO` toolchain identity and requires `platform.python_version() == gate_evidence.python_version`. A mismatch exits nonzero before the environment is created or used. The bootstrap then materializes only the immutable `requirements/dev.lock` closure with `.venv-formal\Scripts\python.exe -m pip install --disable-pip-version-check --require-hashes --no-deps -r requirements/dev.lock`; it never reads another worktree's `.venv-gate`, invokes an ambient bare `python`, resolves packages, upgrades, or rewrites the lock.
-- The canonical offline suite is logically `python -m pytest -q`, executed in formal worktrees as `.venv-formal\Scripts\python.exe -m pytest -q`. Before those task-owned formal artifacts exist, Task 4.A runs only its displayed entry-runnable bootstrap RED through `py -3.12 -m unittest`; after the bootstrap verifies exact Task 1.E Python equality and materializes `.venv-formal`, Task 4.A runs every dependency-closure Target, Domain, and lock/config consistency check through that exact formal interpreter. Task 4.F establishes the canonical offline and closure commands through the same interpreter. Every later task also runs the logical commands `python -m ruff format --check .`, `python -m ruff check .`, and `python -m mypy src tests` from the verified `.venv-formal` environment.
+- Task 4.A solely owns `scripts/bootstrap_formal_env.py`. Before creating or using `.venv-formal`, it reads only `gates/evidence/workspace-boundary-go-v1.json`, requires a digest-valid terminal `GO`, and compares the PATH-resolved Python patch with the recorded `python_version`. Missing, invalid, non-GO, drifted, or mismatched evidence stops before environment creation. On equality it materializes only `requirements/dev.lock` with `--require-hashes --no-deps`; it never reads another worktree's `.venv-gate`, resolves packages, upgrades, or rewrites the lock.
+- The canonical offline suite is logically `python -m pytest -q`, executed in formal worktrees as `.venv-formal\Scripts\python.exe -m pytest -q`. Before those task-owned formal artifacts exist, Task 4.A runs only its displayed entry-runnable bootstrap RED through `python -m unittest`; after the bootstrap verifies exact Task 1.E Python equality and materializes `.venv-formal`, Task 4.A runs every dependency-closure Target, Domain, and lock/config consistency check through that exact formal interpreter. Task 4.F establishes the canonical offline and closure commands through the same interpreter. Every later task also runs the logical commands `python -m ruff format --check .`, `python -m ruff check .`, and `python -m mypy src tests` from the verified `.venv-formal` environment.
 - The five standard closure commands referenced by Tasks 5–38 are exactly `python -m ruff format --check .`, `python -m ruff check .`, `python -m mypy src tests`, `python scripts/scan_credentials.py --changed --redact --fail-on-match`, and `git diff --check`.
 - One session task is one fresh-subagent execution/review/commit slice inside its work package and uses one fresh implementation subagent plus one implementation/evidence commit pair. It is not an independent PR task. One work package is the `AGENTS.md` independent feature / independent task and owns one isolated worktree, branch, draft PR, finishing pass, and merge. Use `superpowers:using-git-worktrees` for every package worktree and `superpowers:test-driven-development` for every behavior change. A commit-bound live check is never treated as pre-commit implementation verification: it may consume only an immutable committed and pushed SHA.
 - A session task first receives a spec-compliance review and then a code-quality review, with `superpowers:requesting-code-review` used for both explicit stages. Critical or Important findings block dependents until the implementing or explicitly assigned repair subagent closes them and the same review stage passes.
@@ -48,6 +49,7 @@
 - PLAN semantic approval follows SPEC §11.2 exactly: normalize no-BOM UTF-8/LF, exclude only enumerated task tracking fields, prepend the declared domain, and hash with SHA-256. Any other PLAN byte change requires renewed semantic approval and cold-start validation.
 - Parallel tasks may implement in separate worktrees, but their PR merges and append-only edits to `PLAN.md` and `AGENT_LOG.md` are serialized in task-number order within a wave.
 - Before every implementation commit, run `python scripts/scan_credentials.py --changed --redact --fail-on-match` after Task 4 creates it. Tasks 1–3 use their explicit filename-only PowerShell scan. No scan may print a matched value.
+- In T01.2 and every T02/T03 fresh worktree, run `python scripts/bootstrap_gate_env.py materialize --lock requirements/gate.lock --evidence gates/evidence/gate-toolchain-v1.json --require-existing-evidence` before the first RED. This may create only the local untracked `.venv-gate` from the existing hash lock, must verify the recorded interpreter/tool/config/runner/gate-scan identities, and must not resolve dependencies, rewrite evidence, or contact an index. T01.1 uses the first-resolution sequence stated in its own steps.
 - `REFLECTION.md` is written by the student in 1,500–2,500 words. An agent may only perform disclosed language polishing after a human draft exists and may run structural checks without authoring the substantive body.
 - SPEC §1.6 and §11.3 non-goals must not acquire v1 implementation tasks, tests, release gates, or hidden compatibility branches.
 
@@ -75,7 +77,7 @@ The following identities define the exact repository inputs used to author and m
 | Repository instructions SHA-256 | `f4e68e302cfb9cc9f383704ef3be9eb8975277a0715e5357e65070cad2738656` |
 | Repository instructions provenance | Tracked planning input; contained in the planning baseline commit. |
 | Initial generation timestamp | `2026-07-26T17:17:01+08:00` |
-| Last semantic revision timestamp | `2026-08-01T01:18:07+08:00` |
+| Last semantic revision timestamp | `2026-08-01T22:20:05+08:00` |
 
 This PLAN is the self-contained implementation plan for the exact current SPEC and the sole canonical source for executable task steps. It does not change product scope, behavior, security boundaries, non-goals, or acceptance criteria. The 141 legacy child IDs remain immutable atomic TDD microcycles and migration-trace identifiers. The 68 `TNN.X` session tasks are fresh-subagent execution/review/commit slices, not independent PR tasks. The 46 `WP...` work packages are the `AGENTS.md` independent features / independent tasks and the sole branch/worktree/PR units.
 
@@ -87,23 +89,23 @@ Implementation is forbidden until all gates below pass in order for the exact un
 4. `PLAN_EXECUTABILITY`: independent execution-document review confirms each session task is self-contained and feasible in one fresh-agent session.
 5. Human identity approval of exact SPEC SHA-256, PLAN complete-file SHA-256, `PlanSemanticDigestV2`, course inputs, `AGENTS.md`, and Git HEAD.
 6. Heterogeneous no-history cold-start retrieval and representative execution trial.
-7. `APPROVED_DOCUMENT_BASELINE_V3`: commit the exact approved bytes and prove the implementation base is its clean direct descendant.
+7. `APPROVED_DOCUMENT_BASELINE_V3`: commit the exact approved bytes, the immutable repository-contained admission evidence, and the non-self-referential baseline record in three ordered commits; prove the implementation base is the clean third commit.
 
 All prior M0, PLAN audit, review, approval, cold-start, and baseline results are invalid after this non-tracking SPEC/PLAN rewrite. No embedded statement in this document is admission evidence.
 
 ### 1.2 Admission Gate Execution Contract
 
-The seven gates above use the single contract in this section. The evidence root is `.worktrees/_review-packages/admission-v3/` joined with the lowercase complete-file SHA-256 of the candidate `PLAN.md`. Every artifact uses strict UTF-8 JSON with repository-relative input paths and exact candidate identities. `manifest.json` records each artifact's relative path, byte length, and complete-file SHA-256. An artifact may carry a `content_digest` computed over canonical JSON with that field omitted; no file embeds its own complete-file SHA-256.
+The seven gates above use the single contract in this section. The sole formal evidence root is the tracked repository path `process/evidence/admission-v3/` joined with the lowercase complete-file SHA-256 of the candidate `PLAN.md`. Tools may stage uncommitted working artifacts under `.worktrees/_review-packages/admission-v3/`, but no PASS decision, process registration, baseline, or verifier input may cite that temporary tree; the byte-identical accepted artifacts must be promoted into the formal root before baseline materialization. Every artifact uses strict UTF-8 JSON with repository-relative input paths and exact candidate identities. `manifest.json` records the relative path, byte length, and complete-file SHA-256 of the ten accepted pre-baseline artifacts other than itself; it does not list itself or the later `baseline.json`. An artifact may carry a `content_digest` computed over canonical JSON with that field omitted; no file embeds its own complete-file SHA-256.
 
 | Gate | Authority and exact inputs | Independence | PASS predicate | Evidence artifact |
 |---|---|---|---|---|
 | `SPEC_M0` | SPEC §11.2; authoritative SPEC bytes/path/blob, both course files, repository `AGENTS.md`, and planning HEAD | One fresh reviewer session whose id is absent from the recorded SPEC author/fixer ids; the human performs the identity approval required by SPEC §11.2 | Every §11.2 item passes, no unresolved identity or requirement conflict exists, and the human approves the exact SPEC path/SHA/blob/HEAD | `m0.json` |
 | `PLAN_AUDIT_V3_A` / `PLAN_AUDIT_V3_B` | PLAN §8; exact PLAN/SPEC/course/AGENTS bytes and Git HEAD | Independent source implementations and private negative self-tests | Both decisions are `PASS`, both issue lists are empty, and all result fields except verifier source SHA-256 agree | `plan-audit-a.json`, `plan-audit-b.json` |
 | `PLAN_SPEC_COMPLIANCE` | `PlanReviewChecklistV1` with `review_kind=PLAN_SPEC_COMPLIANCE`; exact candidate identities and both A/B result SHA-256 values | One fresh no-history reviewer session, not a recorded PLAN/SPEC author or fixer and distinct from the executability reviewer | All `PSC-01`—`PSC-06` checks pass, the result identities match the candidate and A/B, and no Critical or Important finding remains open | `plan-spec-compliance.checklist.json`, `plan-spec-compliance.result.json` |
-| `PLAN_EXECUTABILITY` | `PlanReviewChecklistV1` with `review_kind=PLAN_EXECUTABILITY`; exact candidate identities and both A/B result SHA-256 values | A second fresh no-history reviewer session, not a recorded PLAN/SPEC author or fixer, distinct from the compliance reviewer, and unable to read that review before issuing its own result | All `PEX-01`—`PEX-06` checks pass for all 68 session tasks, the result identities match the candidate and A/B, and no Critical or Important finding remains open | `plan-executability.checklist.json`, `plan-executability.result.json` |
+| `PLAN_EXECUTABILITY` | `PlanReviewChecklistV1` with `review_kind=PLAN_EXECUTABILITY`; exact candidate identities and both A/B result SHA-256 values | A second fresh no-history reviewer session, not a recorded PLAN/SPEC author or fixer, distinct from the compliance reviewer, and unable to read that review before issuing its own result | All `PEX-01`—`PEX-06` checks pass; PEX-04 evidence contains exactly one complete ordered assessment for each of the 68 session tasks, including explicit T04.2/T05.1/T09.1/T12.1 load evidence; the result identities match the candidate and A/B; and no Critical or Important finding remains open | `plan-executability.checklist.json`, `plan-executability.result.json` |
 | Human PLAN identity approval | Exact SPEC SHA-256/blob, PLAN complete-file SHA-256, `PlanSemanticDigestV2`, both course-file SHA-256 values, AGENTS SHA-256, Git HEAD, A/B SHA-256 values, and both independent review-result SHA-256 values | Only the human may issue this decision; an agent may serialize but never infer or fabricate it | `approver_kind=human`, `decision=APPROVE`, every identity equals the preceding PASS evidence, and the approval timestamp follows both reviews | `human-approval.json` |
 | Heterogeneous no-history cold-start | Exact human-approved inputs plus the retrieval and disposable-execution contracts below | One fresh agent type different from the PLAN authoring agent type, with no conversation, memory, prior review, or generated-result context beyond the exact approved inputs and this contract | Both cold-start artifacts return `PASS`; every listed failure condition remains false | `cold-start-retrieval.json`, `cold-start-execution.json` |
-| `APPROVED_DOCUMENT_BASELINE_V3` | All preceding PASS artifacts, the approved identities, and Git committed-tree facts | Mechanical committed-tree and ancestry validation; no agent judgment may substitute for Git facts | The approved-document commit and its direct admission-evidence child satisfy the baseline relation below, the formal base is that clean child, and the candidate semantic/SPEC identities remain exact | `baseline.json` |
+| `APPROVED_DOCUMENT_BASELINE_V3` | All preceding PASS artifacts from the tracked formal evidence root, the approved identities, and Git committed-tree facts | Mechanical committed-tree and ancestry validation; no agent judgment may substitute for Git facts | The approved-document, admission-evidence, and baseline-record commits satisfy the three-commit relation below, the formal base is the clean baseline-record commit, and the candidate semantic/SPEC/AGENTS identities remain exact | `baseline.json` |
 
 `PlanReviewChecklistV1` has these ordered required fields:
 
@@ -112,6 +114,8 @@ schema_version, review_kind, candidate_plan_complete_file_sha256, candidate_plan
 ```
 
 Each checklist `check` has ordered fields `check_id`, `status: PASS | FAIL`, and nonempty `evidence`. Each `finding` has ordered fields `finding_id`, `severity: Critical | Important | Minor`, `location`, `statement`, `evidence`, `required_change`, `status: OPEN | CLOSED`, `resolution`, and `closure_evidence`. A closed finding requires nonempty resolution and closure evidence; an open finding requires both to be empty. Finding ids are unique within one review and remain stable across repair/re-review.
+
+For `PEX-04` only, `evidence` is an ordered array of exactly 68 objects in Session Task Cards order with fields `task_id`, `estimated_elapsed_minutes` as a positive integer, nonempty `context_load_assessment`, `required_external_environment` as an array, `decision: PASS | FAIL`, and nonempty `rationale`. Task ids are unique and complete. The T04.2, T05.1, T09.1, and T12.1 rationales explicitly account for their displayed legacy-step and checkbox loads. Any `FAIL` blocks PLAN_EXECUTABILITY and identifies the task for amendment; a required split stays inside the existing work package unless independent file ownership and PR acceptance require a new work-package boundary.
 
 `PlanReviewResultV1` has these ordered required fields:
 
@@ -135,22 +139,23 @@ The executability checklist is exactly:
 - `PEX-01`: all 68 session tasks contain every field and closure step required by §8.1.
 - `PEX-02`: every task's displayed interfaces, RED, minimum GREEN, Target, Domain, review and Done conditions are mutually executable.
 - `PEX-03`: a fresh agent needs no undisclosed cross-task design decision, file, command, credential or environment fact.
-- `PEX-04`: each session task fits one fresh-agent session; independently acceptable/rejectable implementation behavior is split into session-task execution slices without creating another independent PR task unless it also requires an independent work-package boundary.
+- `PEX-04`: each session task fits one fresh-agent session, proven by the complete per-task time/context/environment/rationale evidence above; independently acceptable/rejectable implementation behavior is split into session-task execution slices without creating another independent PR task unless it also requires an independent work-package boundary.
 - `PEX-05`: work-package boundaries, file ownership, dependencies and parallelization produce no integration ambiguity or hidden long-lived branch dependency.
 - `PEX-06`: every command is complete, directly runnable in its declared environment and mapped to the displayed verification expectation.
 
-Cold-start uses exact fixed probes. Retrieval requires the fresh agent to locate `T01.1` and `T38.2` and, for each, restate Goal, SPEC contracts, Files, Depends, Interfaces, RED, minimum GREEN, Target, Domain, review focus, Done, work-package boundary, and applicable Global Constraints without an Important or Critical omission. Disposable execution starts `T01.1` from the exact approved candidate in an isolated throwaway worktree, performs every displayed legacy-step RED/minimum-GREEN microcycle and task Target/Domain verification, records location, RED preparation, implementation, verification, and projected review/evidence administration time, and creates no production merge or completion claim. The hard elapsed-time limit is two hours; reaching it stops the trial and returns `FAIL`. Any missing contract, hidden context dependency, incorrect RED, Critical/Important constraint omission, Target/Domain failure, or inability to complete `T01.1` within the limit also returns `FAIL`.
+Cold-start uses exact fixed probes. Retrieval requires the fresh agent to locate `T01.1` and `T38.2` and restate their Goal, SPEC contracts, Files, Depends, Interfaces, execution order, verification, review focus, Done, work-package boundary, and applicable Global Constraints without an Important or Critical omission. For `T01.1`, it must distinguish the 1.A pre-RED bootstrap contract from the 1.B RED/minimum-GREEN behavior cycle. Disposable execution starts `T01.1` from the exact approved candidate in an isolated throwaway worktree, completes and verifies 1.A before adding or running the 1.B RED, then performs the 1.B TDD cycle and task verification. It records bootstrap, review, RED, implementation, verification, and projected review/evidence administration time, and creates no production merge or completion claim. The hard elapsed-time limit is two hours; reaching it stops the trial and returns `FAIL`. Any missing contract, hidden context dependency, incorrect order or RED, Critical/Important constraint omission, verification failure, or inability to complete `T01.1` within the limit also returns `FAIL`.
 
 The approved-document baseline relation is:
 
 ```text
 approved_document_commit
-  -> direct admission_evidence_commit
-       == clean formal_base
-            -> T01.1 work-package branch/worktree
+  -> admission_evidence_commit
+       -> baseline_record_commit
+            == clean formal_base
+                 -> T01.1 work-package branch/worktree
 ```
 
-`approved_document_commit` contains the exact M0-approved SPEC raw SHA/blob and human-approved PLAN raw SHA/semantic digest. Its sole direct `admission_evidence_commit` preserves those bytes and changes only `SPEC_PROCESS.md` and `AGENT_LOG.md` to register the deterministic evidence root, all pre-baseline artifact paths/digests, the human decision, cold-start result, and the approved-document commit. After that child exists, `baseline.json` binds both commit SHAs and the same candidate identities. Task 1 starts only from a clean worktree whose HEAD equals `admission_evidence_commit`; a working-file match, descendant with intervening changes, dirty tree, sibling, or uncommitted copy fails the gate.
+`approved_document_commit` contains the exact M0-approved SPEC raw SHA/blob, human-approved PLAN raw SHA/semantic digest, and approved `AGENTS.md` blob/SHA-256. Its direct `admission_evidence_commit` preserves every approved input byte; adds only `manifest.json` and the ten fixed accepted pre-baseline JSON artifacts under the deterministic formal evidence root; and changes only `SPEC_PROCESS.md` and `AGENT_LOG.md` outside that root to register the repository-relative paths/digests, human decision, cold-start result, and approved-document commit. Its direct `baseline_record_commit` preserves all prior bytes and adds only `baseline.json` under the same root. `baseline.json` binds `approved_document_commit`, `admission_evidence_commit`, the manifest SHA-256, every candidate SPEC/PLAN/semantic/course/AGENTS identity, and the fixed artifact digests; it neither records its own complete-file SHA-256 nor embeds `baseline_record_commit`. Mechanical validation derives the baseline-record identity from the current clean `HEAD`, requires `HEAD^ == admission_evidence_commit` and `HEAD^^ == approved_document_commit`, and proves that the two commit diffs contain only the allowed paths above. Task 1 starts only from a clean worktree whose HEAD equals `baseline_record_commit`; a working-file match, descendant with intervening changes, dirty tree, sibling, uncommitted copy, missing tracked artifact, or evidence reachable only through `.worktrees` fails the gate.
 
 Gate invalidation is closed:
 
@@ -164,7 +169,7 @@ Gate invalidation is closed:
 | Any admission artifact is corrected, replaced, missing, inaccessible, or identity-mismatched | That gate and every subsequent gate |
 | Any semantic change after baseline materialization | Baseline is invalid immediately; no Task 1 work may start or continue |
 
-Absence of an artifact, schema/order mismatch, invalid digest, path escape, inaccessible evidence, reviewer-identity conflict, open Critical/Important finding, stale candidate identity, non-`PASS`/non-`APPROVE` decision, failed cold-start probe, or baseline ancestry/cleanliness mismatch fails closed. `SPEC_PROCESS.md` records each attempt and exact artifact path/digest; `AGENT_LOG.md` records the chronological action without converting a failed or pending gate into success.
+Absence of a formal artifact, schema/order mismatch, invalid digest, untracked or repository-external formal evidence, `.worktrees` formal input, path escape, inaccessible evidence, reviewer-identity conflict, open Critical/Important finding, stale candidate identity, non-`PASS`/non-`APPROVE` decision, failed cold-start probe, or baseline ancestry/cleanliness mismatch fails closed. `SPEC_PROCESS.md` records every attempt truthfully, but only the accepted formal set may be registered as gate input with exact repository-relative paths/digests; failed or pending attempts remain chronological history and never become formal PASS inputs. `AGENT_LOG.md` records the chronological action without converting a failed or pending gate into success.
 
 ## 2. Planned Repository Structure
 
@@ -175,6 +180,7 @@ The paths below lock file ownership before task decomposition. Files are small, 
 | Path | Single responsibility |
 |---|---|
 | `pyproject.toml` | Section-frozen project configuration: Task 4.A alone owns dependency tables, Python range, dependency source/index policy, and minimal package identity; Task 4.F alone adds the build backend and pytest/Ruff/Mypy/tooling configuration; Task 33.A alone later adds package data, version, distribution metadata, and the console entry point |
+| `requirements/gate.in` | Task 1-reviewed direct feasibility dependency and PyPI source input used only to resolve the frozen gate lock |
 | `requirements/gate.lock` | Task 1-frozen exact direct/transitive feasibility-gate dependencies and distribution hashes consumed unchanged by Tasks 2–3 |
 | `requirements/dev.lock` | Exact hash-complete environment closure used by formal local/CI verification, including all declared runtime, build/distribution, and development/verification packages plus every transitive distribution |
 | `requirements/reference.lock` | Exact dependency set accepted by `python-src-py312-v1` and hashed by its manifest |
@@ -185,7 +191,9 @@ The paths below lock file ownership before task decomposition. Files are small, 
 | `README.md` | Installation, usage, layout, credential setup, distribution, deployment, threat boundary, and limitations |
 | `REFLECTION.md` | Student-authored reflection; implementation agents do not author the body |
 | `scripts/scan_credentials.py` | Redacted filename-only credential-pattern gate over an explicit changed-file set |
+| `scripts/bootstrap_gate_env.py` | Task 1-only resolver/materializer that creates the reviewed hash lock, isolated `.venv-gate`, and frozen gate-toolchain evidence |
 | `scripts/run_gate_checks.py` | Sole Task 1–3 command adapter that verifies the gate environment/lock identities and supplies explicit pytest/Ruff/Mypy configuration |
+| `scripts/scan_gate_changed_files.ps1` | Task 1-owned deterministic changed-file credential scan used unchanged by Tasks 1–3; emits only relative paths and stable rule ids |
 | `scripts/run_reference_e2e.py` | Repeatable formal reference-fixture workflow driver |
 | `scripts/run_mechanism_demo.py` | Repeatable Mock-LLM governance and feedback mechanism demonstration |
 | `scripts/run_package_smoke.py` | Clean-wheel build, isolated pipx install, CLI/WebUI, and cleanup smoke driver |
@@ -201,6 +209,7 @@ The paths below lock file ownership before task decomposition. Files are small, 
 | `delivery/evidence/ci-v1.json` | Real last-passing GitHub workflow/job and GitLab pipeline/job identities with categorized evidence |
 | `delivery/evidence/release-v1.json` | Real source commit, GitHub Release, wheel, and GHCR immutable identity evidence |
 | `delivery/evidence/deployment-v1.json` | Real Render deployment, public URL, health, and fixed-scenario smoke evidence |
+| `process/evidence/admission-v3/` | Parent of immutable Git-tracked formal evidence directories; each sole child name is one exact approved PLAN complete-file SHA-256 and contains its M0, PLAN audit/review, human approval, cold-start, manifest, and non-self-referential baseline evidence |
 
 ### Project foundation records
 
@@ -219,6 +228,8 @@ The paths below lock file ownership before task decomposition. Files are small, 
 | `gates/pytest.ini` | Gate-only pytest addopts and registration of every marker needed before Task 4 |
 | `gates/ruff.toml` | Gate-only Ruff target/version-compatible formatting and lint rules |
 | `gates/mypy.ini` | Gate-only strict Mypy configuration for spike and feasibility-test paths |
+| `gates/evidence/gate-toolchain-v1.json` | Closed Task 1.A Python/pytest/Ruff/Mypy and gate lock/config/runner/gate-scan identity consumed unchanged by Tasks 1–3 |
+| `gates/evidence/workspace-boundary-go-v1.json` | Closed, digest-validated terminal Task 1.E GO evidence and sole Task 4/final-process gate-toolchain input |
 | `spikes/win32_workspace_boundary/probe.py` | Standalone Win32 identity, object, collision, ACL, and named-mutex feasibility probe |
 | `spikes/win32_workspace_boundary/report.py` | Closed GO/NO-GO evidence schema for Task 1 |
 | `spikes/docker_reference_boundary/probe.py` | Standalone OCI export, loopback registry lifecycle, no-self-reference, image-policy, mount, resource, report, and fingerprint feasibility probe |
@@ -337,6 +348,7 @@ The paths below lock file ownership before task decomposition. Files are small, 
 | `src/vespercode/loop/restart.py` | Non-persistent active-turn restart fail-close |
 | `src/vespercode/loop/engine.py` | Thin sequential composition of the Task 25.A–25.F components |
 | `src/vespercode/execution/docker_profile.py` | Closed Docker execution profile v1 parameters and digest |
+| `src/vespercode/execution/materialization.py` | Identity-bound fresh candidate-tree materialization with exact path, byte, digest, and source-integrity checks |
 | `src/vespercode/execution/docker_executor.py` | Fresh-container execution with hard resource and mount boundaries |
 | `src/vespercode/validation/check_result.py` | Closed pytest/Ruff/Mypy result and stable error schemas |
 | `src/vespercode/validation/pytest_evidence.py` | Strict `PytestEvidenceV1` event validation |
@@ -511,7 +523,7 @@ The following task-owned paths refine the directory responsibilities above. They
 
 ### 3.1 Units and authority
 
-- A legacy step such as `25.C` is one atomic RED → minimum GREEN TDD microcycle and historical trace ID inside a session task. It is not a subagent, review, commit, branch, worktree, PR, or independent execution unit.
+- A behavior legacy step such as `25.C` is one atomic RED → minimum GREEN TDD microcycle and historical trace ID inside a session task. The sole exception is `1.A`, which SPEC §11.2 defines as the reviewed pre-RED gate bootstrap; it is a non-product prerequisite and must finish before `1.B`, the first Task 1 behavior RED. A legacy step is not a subagent, review, commit, branch, worktree, PR, or independent execution unit.
 - A session task such as `T25.2` is the smallest fresh-subagent execution/review/commit slice inside one work package. It is not an independent PR task and does not receive a separate branch, worktree, PR, finishing pass, or merge. Exactly one fresh subagent implements all listed legacy steps in order, then receives one task-level SPEC review and one later task-level quality review.
 - A work package such as `WP25-CALL` is the independent feature / independent task required by `AGENTS.md` and the integration boundary. It is the sole branch, isolated worktree, draft PR, finishing pass, and merge unit.
 - Task-card `Depends`, `Files`, `SPEC contracts`, and `Legacy steps` are the sole dependency, ownership, design-reference, and atomic-mapping facts. All waves and summaries are derived.
@@ -523,7 +535,7 @@ In this workflow, “one PR per independent task” means one PR per work packag
 1. Start only after every predecessor package has merged and every non-task gate named by the root task has passed.
 2. Use `superpowers:using-git-worktrees` to create the package branch/worktree from the common merged baseline and open one draft PR.
 3. Use `superpowers:subagent-driven-development` to give each session task to a fresh subagent with exact SPEC, PLAN, package diff, and predecessor evidence.
-4. Use `superpowers:test-driven-development` to execute each listed legacy step sequentially as an independent RED → minimum GREEN microcycle. A RED is valid only when the declared runner starts, attempts to load the declared test target, and the observed failure matches that legacy step's displayed Expected RED. A collection/import failure is valid only when Expected RED explicitly names the current legacy step's missing task-owned module, symbol, or artifact and the traceback identifies that exact missing object. Runner/interpreter startup failure, a missing test target, any other import or dependency failure, external-environment failure, unrelated failure, or already-failing test is not valid RED.
+4. Complete and verify `1.A` before adding or running any Task 1 behavior RED. Use `superpowers:test-driven-development` for every behavior legacy step, starting with `1.B`, and execute each sequentially as an independent RED → minimum GREEN microcycle. A RED is valid only when the declared runner starts, attempts to load the declared test target, and the observed failure matches that legacy step's displayed Expected RED. A collection/import failure is valid only when Expected RED explicitly names the current behavior step's missing task-owned module, symbol, or artifact and the traceback identifies that exact missing object. Runner/interpreter startup failure, a missing test target, any other import or dependency failure, external-environment failure, unrelated failure, or already-failing test is not valid RED.
 5. After all microcycles, run task Target, Domain, every real-environment check that does not require a committed SHA, and the offline portion of the declared global profile. A commit-bound CI, release, registry, Render, or public-live action is forbidden here.
 6. Use `superpowers:requesting-code-review` to run task-level SPEC review first. Close every Critical/Important finding, rerun affected checks, and obtain same-stage re-review PASS.
 7. Only then use `superpowers:requesting-code-review` to run task-level quality review. Close every Critical/Important finding, rerun checks, and obtain same-stage re-review PASS.
@@ -557,7 +569,8 @@ The following is the complete shared-modifier exception table. `Read` never gran
 
 | Profile | Required once per session task | Additional scope |
 |---|---|---|
-| `GATE_OFFLINE_V1` | task Target/Domain through the frozen gate runner; gate Ruff format/check and Mypy choices; changed-file redacted credential scan; `git diff --check` | Tasks 1–3 use only the hash-locked feasibility environment and declared real probe. |
+| `GATE_OFFLINE_V1` | Run the displayed Target and Domain commands, then exactly `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py ruff-format -- .`, `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py ruff-check -- .`, `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py mypy -- spikes tests/feasibility scripts/run_gate_checks.py scripts/bootstrap_gate_env.py`, `powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File scripts\scan_gate_changed_files.ps1`, and `git diff --check`. | Tasks 1–3 use only the reviewed, hash-locked feasibility environment; the gate scan consumes only the staged, unstaged, and untracked changed-file union and may emit normalized repository-relative paths plus stable rule ids, never matched values or context. |
+| `GATE_WORKTREE_BOOTSTRAP_V1` | `python scripts/bootstrap_gate_env.py materialize --lock requirements/gate.lock --evidence gates/evidence/gate-toolchain-v1.json --require-existing-evidence` before any T01.2/T02/T03 RED in a fresh agent/worktree. | Creates only local `.venv-gate`; requires existing exact lock/evidence and performs no resolution, evidence rewrite, or network. |
 | `FORMAL_OFFLINE_V1` | task Target/Domain; `python -m pytest -q`; `python -m ruff format --check .`; `python -m ruff check .`; `python -m mypy src tests`; `python scripts/scan_credentials.py --changed --redact --fail-on-match`; `git diff --check` | No network, credential, external publication, or undeclared environment use. |
 | `WINDOWS_REAL_V1` | exact task-specific Windows/NTFS/WinCred/pipx/browser command and redacted evidence | Required when the task Verification names Windows, Win32, NTFS, WinCred, installed package, or local browser evidence. |
 | `DOCKER_REAL_V1` | exact task-specific Docker/OCI/loopback-registry command, digest, cleanup, and no-credential evidence | Required when Verification names Docker, OCI, registry, image, or container evidence. |
@@ -678,11 +691,15 @@ Every session task appears in exactly one row. All legacy steps within one task 
 **SPEC contracts:** SPEC §0.1 `CanonicalRelativePathV1`; §1.4.3; §4.1 behavior 6–10; §4.3 behavior 4–5; §5.2; §5.5; §10.1 AC-01, AC-15, AC-21, AC-26, AC-31; §10.3 Windows integration; §11.2 item 1.
 
 **Files:**
+- Create: `requirements/gate.in`
 - Create: `requirements/gate.lock`
 - Create: `gates/pytest.ini`
 - Create: `gates/ruff.toml`
 - Create: `gates/mypy.ini`
+- Create: `gates/evidence/gate-toolchain-v1.json`
+- Create: `scripts/bootstrap_gate_env.py`
 - Create: `scripts/run_gate_checks.py`
+- Create: `scripts/scan_gate_changed_files.ps1`
 - Test: `tests/feasibility/gate/test_gate_bootstrap.py`
 - Create: `spikes/win32_workspace_boundary/evaluator.py`
 - Test: `tests/feasibility/windows/test_workspace_boundary_evaluator.py`
@@ -691,67 +708,42 @@ Every session task appears in exactly one row. All legacy steps within one task 
 **Parallelization:** Start only after every task/non-task gate in **Depends** has passed. Same-wave execution is allowed only when expanded writable paths are disjoint; the WP01 branch and PR remain the sole package integration boundary.
 
 **Interfaces:**
-- **Consumes / Produces (1.A):** Produces `GateCommandV1 = Literal["pytest","ruff-format","ruff-check","mypy"]`, `GateArgumentSequenceV1`, an immutable ordered tuple of zero or more strings, `GateToolchainEvidenceV1(python_version: str, pytest_version: str, ruff_version: str, mypy_version: str, gate_lock_sha256: str, pytest_config_sha256: str, ruff_config_sha256: str, mypy_config_sha256: str, runner_sha256: str)`, and `run_gate_checks(command: GateCommandV1, arguments: GateArgumentSequenceV1) -> int`.
+- **Consumes / Produces (1.A):** Consumes the reviewed direct gate requirements (`pytest>=8,<9`, Ruff, Mypy, pywin32, and Docker SDK) from `https://pypi.org/simple`. Produces the complete hash-locked `requirements/gate.lock`, an isolated `.venv-gate`, one closed toolchain evidence record at `gates/evidence/gate-toolchain-v1.json`, the existing closed runner commands `pytest`, `ruff-format`, `ruff-check`, and `mypy`, and the fixed `scripts/scan_gate_changed_files.ps1` gate scan. Runner syntax is `<runner> <closed-command> -- <tool-arguments>`: `--` is the command-line separator, is consumed during runner parsing, and is not part of the forwarded tuple; the runner forwards every argument after it unchanged and must not require the consumed literal to remain in parsed arguments. The gate scan takes no caller-supplied path, rule, regex, or output-mode argument; it deterministically enumerates the repository-relative staged, unstaged, and untracked changed-file union, scans only regular files inside the repository, emits only sorted unique `(path, rule_id)` facts, and exits nonzero on a credential match, Git enumeration failure, path escape, non-regular object, or required-file read failure without printing any matched value or context.
 - **Consumes / Produces (1.B):** Produces `BoundaryObservationV1(code: str, lexical_path: str, final_path: str, expected_volume_serial: int, observed_volume_serial: int, expected_file_id_128: bytes, observed_file_id_128: bytes, object_kind: Literal["FILE","DIRECTORY"], link_count: int, reparse_tag: int, acl_observable: bool)`, `BoundaryObservationSequenceV1`, an immutable ordered tuple of one or more observations, `BoundaryEvaluationV1(passed: bool, failed_codes: StableCodeSequenceV1)`, and pure `evaluate_workspace_observations(observations: BoundaryObservationSequenceV1) -> BoundaryEvaluationV1`.
 
 **Implementation points, exact RED, and minimum GREEN contracts:**
 
-#### Legacy step 1.A: Hash-locked Feasibility Gate Bootstrap
+#### Legacy step 1.A: Pre-RED Hash-locked Feasibility Gate Bootstrap
 
-**Atomic goal:** Create the sole Python 3.12 feasibility environment, frozen configs, and closed command runner used by every Task 1–3 proof.
+**Atomic goal:** Before any Task 1 behavior RED, create, review, and freeze the sole Python 3.12 feasibility environment, configs, lock, and closed runner used by every Task 1–3 proof.
 
-**Minimum GREEN patch contract:**
+**Pre-RED bootstrap contract:**
 
 ```text
-Owned files: - Create: requirements/gate.lock - Create: gates/pytest.ini - Create: gates/ruff.toml - Create: gates/mypy.ini - Create: scripts/run_gate_checks.py - Test: tests/feasibility/gate/test_gate_bootstrap.py
-Interface: Produces `GateCommandV1 = Literal["pytest","ruff-format","ruff-check","mypy"]`, `GateArgumentSequenceV1`, an immutable ordered tuple of zero or more strings, `GateToolchainEvidenceV1(python_version: str, pytest_version: str, ruff_version: str, mypy_version: str, gate_lock_sha256: str, pytest_config_sha256: str, ruff_config_sha256: str, mypy_config_sha256: str, runner_sha256: str)`, and `run_gate_checks(command: GateCommandV1, arguments: GateArgumentSequenceV1) -> int`.
-GREEN-1: Define the sole feasibility-gate producer: closed `GateCommandV1` values, immutable `GateArgumentSequenceV1`, exact `GateToolchainEvidenceV1`, and `run_gate_checks` dispatch; consumers cannot supply alternate argv or config.
-GREEN-2: Bind lock, config, runner, interpreter, and tool identities before execution; unknown commands, wrong interpreter/config, and digest drift fail closed.
-GREEN-3: Make the exact bootstrap RED probe GREEN by creating all five declared artifacts, then extend only through the Domain cases for hash-only installation and closed dispatch.
-GREEN-4: Own only gate lock/config/runner identity and closed argv construction; Win32, Docker, persistence, and feasibility-observation interpretation remain out of scope.
-Boundary: Own only lock/config/runner identity and closed argv construction. Do not call Win32, Docker, persistence, or interpret any feasibility observation.
+Owned files: - Create: requirements/gate.in - Create: requirements/gate.lock - Create: gates/pytest.ini - Create: gates/ruff.toml - Create: gates/mypy.ini - Create: gates/evidence/gate-toolchain-v1.json - Create: scripts/bootstrap_gate_env.py - Create: scripts/run_gate_checks.py - Create: scripts/scan_gate_changed_files.ps1 - Test: tests/feasibility/gate/test_gate_bootstrap.py
+Interface: Consume the reviewed direct gate requirements from `https://pypi.org/simple`; produce the complete hash lock, isolated gate environment, closed toolchain identity record, four declared runner commands, and the fixed changed-file gate scan.
+Required order: validate PATH Python 3.12; create the gate input/config/bootstrap/runner/gate-scan set; resolve the complete direct/transitive hash lock; review and accept every version, marker, source, and hash; materialize `.venv-gate` with `--require-hashes --no-deps`; freeze Python/pytest/Ruff/Mypy and lock/config/runner/gate-scan identities; run the positive gate integrity checks and the exact gate-scan command. Only then may Task 1.B add or run its RED.
+Gate scan: enumerate the staged, unstaged, and untracked changed-file union relative to `HEAD`; accept only repository-contained regular files; scan the fixed task-owned high-confidence credential rules; emit only sorted unique normalized relative paths and stable rule ids; never emit a matched value or context; fail closed on a match, Git/path/object/read error, or caller-supplied widening input.
+Failure rule: alternate sources, an incomplete or unreviewed lock, wrong interpreter/config, unknown runner commands, incomplete or drifting changed-file enumeration, non-redacted gate-scan output, installation drift, or identity drift stops Task 1 before its first behavior RED.
+Boundary: Resolution may contact only `https://pypi.org/simple` during the explicit lock step. Review must precede installation; every later gate command is offline. This prerequisite does not implement or test Win32/Docker/product behavior.
 ```
 
-**Exact RED test code:**
-
-```python
-class GateBootstrapContractTest(unittest.TestCase):
-    def test_required_bootstrap_artifacts_are_declared(self) -> None:
-        root = Path(__file__).resolve().parents[3]
-        required = (
-            "requirements/gate.lock",
-            "gates/pytest.ini",
-            "gates/ruff.toml",
-            "gates/mypy.ini",
-            "scripts/run_gate_checks.py",
-        )
-        missing = tuple(path for path in required if not (root / path).is_file())
-        self.assertEqual(
-            missing,
-            (),
-            "MISSING_BOOTSTRAP_ARTIFACTS:" + ",".join(missing),
-        )
-```
-
-**Expected RED:** the entry-runnable stdlib test starts without `.venv-gate`, pytest, or `scripts/run_gate_checks.py` and fails its assertion with `MISSING_BOOTSTRAP_ARTIFACTS:` followed by the absent lock/config/runner paths; runner startup failure is not accepted.
-
-**Atomic verification:**
-- Target (1.A): `py -3.12 -m unittest -v tests.feasibility.gate.test_gate_bootstrap.GateBootstrapContractTest.test_required_bootstrap_artifacts_are_declared`
-- Domain (1.A): `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/gate/test_gate_bootstrap.py -q`
-- Expected (1.A): `0`
+**Bootstrap verification:**
+- Resolve: `python scripts/bootstrap_gate_env.py resolve-lock --input requirements/gate.in --lock requirements/gate.lock --index-url https://pypi.org/simple`
+- Materialize: `python scripts/bootstrap_gate_env.py materialize --lock requirements/gate.lock --evidence gates/evidence/gate-toolchain-v1.json`
+- Integrity: `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/gate/test_gate_bootstrap.py -q`
+- Gate scan: `powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File scripts\scan_gate_changed_files.ps1`
+- Expected: all four commands exit `0`; the integrity suite proves staged, unstaged, and untracked coverage, deterministic `(path, rule_id)` output, match rejection, redaction, and fail-closed Git/path/object/read handling, and the evidence matches the reviewed lock/config/runner/gate-scan and installed Python/pytest/Ruff/Mypy identities exactly.
 
 **Atomic review focus:**
-- SPEC (1.A): Spec compliance review checks Task 1.A's Goal, Milestone 1's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent bootstrap contract.
-- Quality (1.A): Code quality review checks closed command exhaustiveness, immutable argument handling, identity/digest binding, deterministic exit propagation, and rejection before execution.
+- SPEC (1.A): Spec compliance review checks that the full bootstrap and review complete before Task 1.B adds or runs the first Task 1 RED, exactly as required by SPEC §11.2.
+- Quality (1.A): Code quality review checks closed command exhaustiveness, immutable argument handling, complete changed-file enumeration, value-free gate-scan output, identity/digest binding, deterministic exit propagation, and rejection before execution.
 
-- [ ] **Step 1: Add the exact 1.A RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
-- [ ] **Step 2: Run 1.A RED.** Run `py -3.12 -m unittest -v tests.feasibility.gate.test_gate_bootstrap.GateBootstrapContractTest.test_required_bootstrap_artifacts_are_declared`. Expected: FAIL for “the entry-runnable stdlib test starts without `.venv-gate`, pytest, or `scripts/run_gate_checks.py` and fails its assertion with `MISSING_BOOTSTRAP_ARTIFACTS:` followed by the absent lock/config/runner paths; runner startup failure is not accepted”. Collection, import, environment, unrelated, or already-failing tests do not count.
-- [ ] **Step 3: Implement 1.A GREEN-1.** Define the sole feasibility-gate producer: closed `GateCommandV1` values, immutable `GateArgumentSequenceV1`, exact `GateToolchainEvidenceV1`, and `run_gate_checks` dispatch; consumers cannot supply alternate argv or config.
-- [ ] **Step 4: Implement 1.A GREEN-2.** Bind lock, config, runner, interpreter, and tool identities before execution; unknown commands, wrong interpreter/config, and digest drift fail closed.
-- [ ] **Step 5: Implement 1.A GREEN-3.** Make the exact bootstrap RED probe GREEN by creating all five declared artifacts, then extend only through the Domain cases for hash-only installation and closed dispatch.
-- [ ] **Step 6: Implement 1.A GREEN-4.** Own only gate lock/config/runner identity and closed argv construction; Win32, Docker, persistence, and feasibility-observation interpretation remain out of scope.
-- [ ] **Step 7: Run 1.A Target GREEN.** Re-run `py -3.12 -m unittest -v tests.feasibility.gate.test_gate_bootstrap.GateBootstrapContractTest.test_required_bootstrap_artifacts_are_declared`; require exit 0 and the displayed RED assertion to pass.
-- [ ] **Step 8: Run 1.A Domain.** Run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/gate/test_gate_bootstrap.py -q`; require exit 0 and every displayed Atomic verification expectation to hold.
+- [ ] **Step 1: Establish the Task 1 pre-RED gate files.** Validate PATH Python 3.12 and create only the declared gate input, configs, bootstrap command, runner, fixed changed-file gate scan, and positive integrity tests. The integrity tests cover staged/unstaged/untracked enumeration, deterministic path/rule-id output, match rejection, redaction, fail-closed Git/path/object/read cases, and gate-scan identity without adding a Task 1 behavior RED.
+- [ ] **Step 2: Resolve the gate lock.** Run the displayed Resolve command. Require exact direct/transitive versions and compatible distribution SHA-256 hashes, with no editable, VCS, local, path, or alternate-index source.
+- [ ] **Step 3: Review and freeze the gate lock.** Review the input and generated lock together; verify the complete dependency graph, exact versions, markers, source, normalized names, and hashes. Stop on every unexplained entry. Installation before this review is prohibited.
+- [ ] **Step 4: Materialize and freeze the gate toolchain.** Run the displayed Materialize command. Create `.venv-gate` only from the reviewed lock with `--require-hashes --no-deps`, then write the exact toolchain and lock/config/runner/gate-scan identities to the fixed evidence file.
+- [ ] **Step 5: Verify the pre-RED gate.** Run the displayed Integrity and Gate scan commands plus the exact `GATE_OFFLINE_V1` Ruff-format, Ruff-check, and Mypy commands. All must pass before Task 1.B begins; any mismatch stops Task 1.
 
 #### Legacy step 1.B: Pure Workspace Boundary Observation Evaluator
 
@@ -788,34 +780,34 @@ def test_unprovable_final_identity_fails_closed() -> None:
 - SPEC (1.B): Spec compliance review checks Task 1.B's Goal, Milestone 1's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent observation-evaluation contract.
 - Quality (1.B): Code quality review checks pure evaluation, exhaustive stable reason mapping, ordered immutable inputs, deterministic precedence, and fail-closed handling of missing facts.
 
-- [ ] **Step 9: Add the exact 1.B RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
-- [ ] **Step 10: Run 1.B RED.** Run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/windows/test_workspace_boundary_evaluator.py::test_unprovable_final_identity_fails_closed -q`. Expected: FAIL for “the closed evaluator and stable failure taxonomy do not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
-- [ ] **Step 11: Implement 1.B GREEN-1.** Implement `evaluate_workspace_observations` as the pure producer from an immutable ordered `BoundaryObservationSequenceV1` to one `BoundaryEvaluationV1`; it performs no observation I/O.
-- [ ] **Step 12: Implement 1.B GREEN-2.** Map missing identity, mismatch, collision, reparse, link, and ACL facts to stable closed outcomes; incomplete or unprovable final identity never becomes GO-like evidence.
-- [ ] **Step 13: Implement 1.B GREEN-3.** Make `test_unprovable_final_identity_fails_closed` GREEN with the smallest deterministic evaluation branch before adding the remaining Domain taxonomy cases.
-- [ ] **Step 14: Implement 1.B GREEN-4.** Own deterministic observation evaluation only; path opening, ACL inspection, mutex acquisition, and GO report construction remain out of scope.
-- [ ] **Step 15: Run 1.B Target GREEN.** Re-run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/windows/test_workspace_boundary_evaluator.py::test_unprovable_final_identity_fails_closed -q`; require exit 0 and the displayed RED assertion to pass.
-- [ ] **Step 16: Run 1.B Domain.** Run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/windows/test_workspace_boundary_evaluator.py -q`; require exit 0 and every displayed Atomic verification expectation to hold.
+- [ ] **Step 6: Add the exact 1.B RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
+- [ ] **Step 7: Run the first Task 1 behavior RED.** Run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/windows/test_workspace_boundary_evaluator.py::test_unprovable_final_identity_fails_closed -q`. Expected: FAIL because the closed evaluator and stable failure taxonomy do not exist. Gate, collection, import, environment, unrelated, or already-failing failures do not count.
+- [ ] **Step 8: Implement 1.B GREEN-1.** Implement `evaluate_workspace_observations` as the pure producer from an immutable ordered `BoundaryObservationSequenceV1` to one `BoundaryEvaluationV1`; it performs no observation I/O.
+- [ ] **Step 9: Implement 1.B GREEN-2.** Map missing identity, mismatch, collision, reparse, link, and ACL facts to stable closed outcomes; incomplete or unprovable final identity never becomes GO-like evidence.
+- [ ] **Step 10: Implement 1.B GREEN-3.** Make `test_unprovable_final_identity_fails_closed` GREEN with the smallest deterministic evaluation branch before adding the remaining Domain taxonomy cases.
+- [ ] **Step 11: Implement 1.B GREEN-4.** Own deterministic observation evaluation only; path opening, ACL inspection, mutex acquisition, and GO report construction remain out of scope.
+- [ ] **Step 12: Run 1.B Target GREEN.** Re-run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/windows/test_workspace_boundary_evaluator.py::test_unprovable_final_identity_fails_closed -q`; require exit 0 and the displayed RED assertion to pass.
+- [ ] **Step 13: Run 1.B Domain.** Run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/windows/test_workspace_boundary_evaluator.py -q`; require exit 0 and every displayed Atomic verification expectation to hold.
 
 **Task-level verification, review, and completion:**
 
-- [ ] **Step 17: Refactor only inside T01.1.** Improve names and local structure in declared writable Files without changing the displayed interfaces, observable behavior, or successor scope; rerun every legacy Target and Domain after the refactor.
-- [ ] **Step 18: Run the GATE_OFFLINE_V1 closure.** Execute every exact command defined for `GATE_OFFLINE_V1` in the Global Execution Contract, including the changed-file redacted credential scan and `git diff --check`; record actual results in `AGENT_LOG.md`.
-- [ ] **Step 19: Request T01.1 SPEC review.** Use `superpowers:requesting-code-review` with the Goal, SPEC contracts, Interfaces, minimum GREEN contracts, RED/GREEN evidence, and task diff. Require an explicit verdict.
-- [ ] **Step 20: Close T01.1 SPEC findings.** Fix every Critical/Important finding, rerun affected Targets, Domains, and profile commands, and obtain same-stage re-review PASS.
-- [ ] **Step 21: Request T01.1 quality review.** Use `superpowers:requesting-code-review` only after SPEC review PASS; review the task diff against every Atomic review focus line.
-- [ ] **Step 22: Close T01.1 quality findings.** Fix every Critical/Important finding, rerun affected checks, and obtain same-stage re-review PASS.
-- [ ] **Step 23: Commit T01.1 implementation.** Stage only the task-owned implementation/tests and create one implementation commit after both review stages PASS.
+- [ ] **Step 14: Refactor only inside T01.1.** Improve names and local structure in declared writable Files without changing the displayed interfaces, observable behavior, or successor scope; rerun the 1.B Target and Domain after the refactor.
+- [ ] **Step 15: Run the GATE_OFFLINE_V1 closure.** Execute every exact command defined for `GATE_OFFLINE_V1`, including all four frozen runner commands, the filename-only credential scan, and `git diff --check`; record actual results in `AGENT_LOG.md`.
+- [ ] **Step 16: Request T01.1 SPEC review.** Review the pre-RED gate order, the 1.B RED/GREEN evidence, and the task diff. Require an explicit verdict.
+- [ ] **Step 17: Close T01.1 SPEC findings.** Fix every Critical/Important finding, rerun affected checks, and obtain same-stage re-review PASS.
+- [ ] **Step 18: Request T01.1 quality review.** Run only after SPEC review PASS; review the task diff against the Atomic review focus.
+- [ ] **Step 19: Close T01.1 quality findings.** Fix every Critical/Important finding, rerun affected checks, and obtain same-stage re-review PASS.
+- [ ] **Step 20: Commit T01.1 implementation.** Stage only the task-owned files and create one implementation commit after both review stages PASS.
 
 ```bash
-git add -- "requirements/gate.lock" "gates/pytest.ini" "gates/ruff.toml" "gates/mypy.ini" "scripts/run_gate_checks.py" "tests/feasibility/gate/test_gate_bootstrap.py" "spikes/win32_workspace_boundary/evaluator.py" "tests/feasibility/windows/test_workspace_boundary_evaluator.py"
+git add -- "requirements/gate.in" "requirements/gate.lock" "gates/pytest.ini" "gates/ruff.toml" "gates/mypy.ini" "gates/evidence/gate-toolchain-v1.json" "scripts/bootstrap_gate_env.py" "scripts/run_gate_checks.py" "scripts/scan_gate_changed_files.ps1" "tests/feasibility/gate/test_gate_bootstrap.py" "spikes/win32_workspace_boundary/evaluator.py" "tests/feasibility/windows/test_workspace_boundary_evaluator.py"
 git commit -m "Implement T01.1 Workspace Gate Bootstrap and Pure Boundary Evaluation"
 ```
 
-- [ ] **Step 24: Record T01.1 completion evidence.** In a narrow evidence commit, update only this task's Status/Completion evidence and append `AGENT_LOG.md` with the real implementation SHA, responsible fresh subagent, human edits, exact commands/results, review/re-review verdicts, and PR URL.
-- [ ] **Step 25: Continue or finish WP01.** If another session task remains in this package, hand the same branch/PR to a new fresh subagent. Otherwise use `superpowers:finishing-a-development-branch`, verify the package result, and merge only after all predecessors and gates remain valid.
+- [ ] **Step 21: Record T01.1 completion evidence.** In a narrow evidence commit, update only this task's Status/Completion evidence and append `AGENT_LOG.md` with the real implementation SHA, responsible fresh subagent, human edits, exact commands/results, review/re-review verdicts, and PR URL.
+- [ ] **Step 22: Continue or finish WP01.** If another session task remains in this package, hand the same branch/PR to a new fresh subagent. Otherwise finish and merge only after all predecessors and gates remain valid.
 
-**Done:** legacy steps 1.A, 1.B 的 Target、Domain、适用真实环境和全局 profile 均通过；Critical/Important finding 全部关闭并复审；没有行为被延后到 successor。
+**Done:** 1.A 的 pre-RED bootstrap、人工 lock 审查、身份冻结和完整性验证全部通过；随后 1.B 的 RED、Target、Domain、适用真实环境和全局 profile 均通过；Critical/Important finding 全部关闭并复审；没有行为被延后到 successor。
 **Completion evidence:** Not yet executed.
 
 ### Task T01.2: Win32 Boundary Probes and GO Decision
@@ -833,6 +825,7 @@ git commit -m "Implement T01.1 Workspace Gate Bootstrap and Pure Boundary Evalua
 - Test: `tests/feasibility/windows/test_workspace_mutex_probe.py`
 - Create: `spikes/win32_workspace_boundary/report.py`
 - Create: `spikes/win32_workspace_boundary/probe.py`
+- Create: `gates/evidence/workspace-boundary-go-v1.json`
 - Test: `tests/feasibility/windows/test_workspace_boundary_gate.py`
 
 **Depends:** T01.1
@@ -841,7 +834,7 @@ git commit -m "Implement T01.1 Workspace Gate Bootstrap and Pure Boundary Evalua
 **Interfaces:**
 - **Consumes / Produces (1.C):** Produces `WorkspaceObjectIdentityV1(canonical_absolute_path: str, volume_serial_number: int, file_id_128: bytes, object_kind: Literal["FILE","DIRECTORY"], link_count: int, reparse_tag: int)`, `WorkspaceObjectProbeResultV1(observations: BoundaryObservationSequenceV1, cleanup_verified: bool)`, and `probe_workspace_objects(workspace: Path, case_manifest: BoundaryCaseManifestV1) -> WorkspaceObjectProbeResultV1`.
 - **Consumes / Produces (1.D):** Produces `WorkspaceMutexProbeResultV1(workspace_identity_digest: str, contender_count: int, maximum_concurrent_holders: int, timeout_count: int, cleanup_verified: bool)` and `probe_workspace_mutex(workspace_identity_digest: str, contender_count: int, timeout_ms: int) -> WorkspaceMutexProbeResultV1`.
-- **Consumes / Produces (1.E):** Produces `WorkspaceBoundaryGateReportV1(outcome: Literal["GO","NO_GO"], gate_toolchain: GateToolchainEvidenceV1, object_probe: WorkspaceObjectProbeResultV1, mutex_probe: WorkspaceMutexProbeResultV1, evaluation: BoundaryEvaluationV1, evidence_digest: str)` and `assemble_workspace_boundary_report(toolchain: GateToolchainEvidenceV1, object_probe: WorkspaceObjectProbeResultV1, mutex_probe: WorkspaceMutexProbeResultV1) -> WorkspaceBoundaryGateReportV1`.
+- **Consumes / Produces (1.E):** Produces `WorkspaceBoundaryGateReportV1(outcome: Literal["GO","NO_GO"], gate_toolchain: GateToolchainEvidenceV1, object_probe: WorkspaceObjectProbeResultV1, mutex_probe: WorkspaceMutexProbeResultV1, evaluation: BoundaryEvaluationV1, evidence_digest: str)`, `assemble_workspace_boundary_report(toolchain: GateToolchainEvidenceV1, object_probe: WorkspaceObjectProbeResultV1, mutex_probe: WorkspaceMutexProbeResultV1) -> WorkspaceBoundaryGateReportV1`, `WORKSPACE_BOUNDARY_GO_EVIDENCE_PATH = Path("gates/evidence/workspace-boundary-go-v1.json")`, `write_workspace_boundary_gate_report(report: WorkspaceBoundaryGateReportV1, path: Path = WORKSPACE_BOUNDARY_GO_EVIDENCE_PATH) -> None`, and `load_workspace_boundary_gate_report(root: Path) -> WorkspaceBoundaryGateReportV1`. The fixed file is written only for a terminal `GO`.
 
 **Implementation points, exact RED, and minimum GREEN contracts:**
 
@@ -940,13 +933,13 @@ def test_two_processes_never_hold_one_workspace_mutex_together() -> None:
 **Minimum GREEN patch contract:**
 
 ```text
-Owned files: - Create: spikes/win32_workspace_boundary/report.py - Create: spikes/win32_workspace_boundary/probe.py - Test: tests/feasibility/windows/test_workspace_boundary_gate.py
-Interface: Produces `WorkspaceBoundaryGateReportV1(outcome: Literal["GO","NO_GO"], gate_toolchain: GateToolchainEvidenceV1, object_probe: WorkspaceObjectProbeResultV1, mutex_probe: WorkspaceMutexProbeResultV1, evaluation: BoundaryEvaluationV1, evidence_digest: str)` and `assemble_workspace_boundary_report(toolchain: GateToolchainEvidenceV1, object_probe: WorkspaceObjectProbeResultV1, mutex_probe: WorkspaceMutexProbeResultV1) -> WorkspaceBoundaryGateReportV1`.
-GREEN-1: Consume the frozen gate-toolchain, object-probe, mutex-probe, and boundary-evaluation evidence to produce one immutable `WorkspaceBoundaryGateReportV1` and report digest.
-GREEN-2: Emit `GO` only when every required evidence item is present, identity-matched, and internally consistent; missing, drifted, or unprovable evidence yields `NO_GO`.
+Owned files: - Create: spikes/win32_workspace_boundary/report.py - Create: spikes/win32_workspace_boundary/probe.py - Create: gates/evidence/workspace-boundary-go-v1.json - Test: tests/feasibility/windows/test_workspace_boundary_gate.py
+Interface: Produces `WorkspaceBoundaryGateReportV1(outcome: Literal["GO","NO_GO"], gate_toolchain: GateToolchainEvidenceV1, object_probe: WorkspaceObjectProbeResultV1, mutex_probe: WorkspaceMutexProbeResultV1, evaluation: BoundaryEvaluationV1, evidence_digest: str)`, `assemble_workspace_boundary_report(toolchain: GateToolchainEvidenceV1, object_probe: WorkspaceObjectProbeResultV1, mutex_probe: WorkspaceMutexProbeResultV1) -> WorkspaceBoundaryGateReportV1`, and `WORKSPACE_BOUNDARY_GO_EVIDENCE_PATH = Path("gates/evidence/workspace-boundary-go-v1.json")`, `write_workspace_boundary_gate_report(report: WorkspaceBoundaryGateReportV1, path: Path = WORKSPACE_BOUNDARY_GO_EVIDENCE_PATH) -> None`, and `load_workspace_boundary_gate_report(root: Path) -> WorkspaceBoundaryGateReportV1`.
+GREEN-1: Consume the fixed `gates/evidence/gate-toolchain-v1.json`, object-probe, mutex-probe, and boundary-evaluation evidence to produce one immutable `WorkspaceBoundaryGateReportV1` and canonical report digest.
+GREEN-2: Emit `GO` only when every required evidence item is present, identity-matched, and internally consistent; atomically serialize a closed required-field JSON record to the fixed path only for terminal `GO`. Missing, unknown, malformed, non-GO, digest-drifted, or toolchain-drifted evidence rejects in the loader and never becomes a terminal file.
 GREEN-3: Make `test_gate_refuses_go_when_mutex_evidence_is_missing` GREEN with the smallest completeness check before adding the remaining report-identity Domain cases.
-GREEN-4: Own final report completeness, digest, and GO/NO_GO decision only; do not re-probe Windows or mutate Task 1.A–1.D evidence.
-Boundary: Own only final report completeness, digest, and GO decision. Do not re-probe Windows or mutate Task 1.A–1.D evidence.
+GREEN-4: Own final report completeness, closed serialization/loader, digest, fixed terminal path, and GO/NO_GO decision only; do not re-probe Windows or mutate Task 1.A–1.D evidence.
+Boundary: Own only final report completeness, closed serialization/loader, digest, fixed terminal path, and GO decision. The committed terminal file must bind the unchanged Task 1.A evidence byte-for-byte. Do not re-probe Windows or mutate Task 1.A–1.D evidence.
 ```
 
 **Exact RED test code:**
@@ -955,12 +948,19 @@ Boundary: Own only final report completeness, digest, and GO decision. Do not re
 def test_gate_refuses_go_when_mutex_evidence_is_missing() -> None:
     report = assemble_workspace_boundary_report(toolchain(), object_probe(), missing_mutex_probe())
     assert report.outcome == "NO_GO"
+
+
+def test_terminal_go_evidence_round_trips_at_fixed_path(tmp_path: Path) -> None:
+    report = assemble_workspace_boundary_report(toolchain(), object_probe(), mutex_probe())
+    path = tmp_path / WORKSPACE_BOUNDARY_GO_EVIDENCE_PATH
+    write_workspace_boundary_gate_report(report, path)
+    assert load_workspace_boundary_gate_report(tmp_path) == report
 ```
 
 **Expected RED:** no closed report assembler enforces completeness and identity continuity.
 
 **Atomic verification:**
-- Target (1.E): `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/windows/test_workspace_boundary_gate.py::test_gate_refuses_go_when_mutex_evidence_is_missing -q`
+- Target (1.E): `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/windows/test_workspace_boundary_gate.py::test_gate_refuses_go_when_mutex_evidence_is_missing tests/feasibility/windows/test_workspace_boundary_gate.py::test_terminal_go_evidence_round_trips_at_fixed_path -q`
 - Domain (1.E): `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/windows/test_workspace_boundary_gate.py -q`
 - Expected (1.E): only complete identity-matching evidence yields GO; all missing/drifted/unprovable evidence yields NO_GO.
 
@@ -969,12 +969,12 @@ def test_gate_refuses_go_when_mutex_evidence_is_missing() -> None:
 - Quality (1.E): Code quality review checks complete evidence accounting, identity continuity, deterministic report digesting, GO/NO_GO exhaustiveness, and immutability of consumed evidence.
 
 - [ ] **Step 17: Add the exact 1.E RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
-- [ ] **Step 18: Run 1.E RED.** Run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/windows/test_workspace_boundary_gate.py::test_gate_refuses_go_when_mutex_evidence_is_missing -q`. Expected: FAIL for “no closed report assembler enforces completeness and identity continuity”. Collection, import, environment, unrelated, or already-failing tests do not count.
-- [ ] **Step 19: Implement 1.E GREEN-1.** Consume the frozen gate-toolchain, object-probe, mutex-probe, and boundary-evaluation evidence to produce one immutable `WorkspaceBoundaryGateReportV1` and report digest.
-- [ ] **Step 20: Implement 1.E GREEN-2.** Emit `GO` only when every required evidence item is present, identity-matched, and internally consistent; missing, drifted, or unprovable evidence yields `NO_GO`.
+- [ ] **Step 18: Run 1.E RED.** Run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/windows/test_workspace_boundary_gate.py::test_gate_refuses_go_when_mutex_evidence_is_missing tests/feasibility/windows/test_workspace_boundary_gate.py::test_terminal_go_evidence_round_trips_at_fixed_path -q`. Expected: both tests FAIL because no closed report assembler, fixed terminal path, serializer, or digest-validating loader exists. Collection, runner/interpreter, environment, unrelated, or already-failing tests do not count.
+- [ ] **Step 19: Implement 1.E GREEN-1.** Consume the fixed `gates/evidence/gate-toolchain-v1.json`, object-probe, mutex-probe, and boundary-evaluation evidence to produce one immutable `WorkspaceBoundaryGateReportV1` and canonical report digest.
+- [ ] **Step 20: Implement 1.E GREEN-2.** Emit `GO` only when every required evidence item is present, identity-matched, and internally consistent; atomically serialize a closed required-field JSON record to the fixed path only for terminal `GO`. Reject missing, unknown, malformed, non-GO, digest-drifted, or toolchain-drifted evidence in the loader.
 - [ ] **Step 21: Implement 1.E GREEN-3.** Make `test_gate_refuses_go_when_mutex_evidence_is_missing` GREEN with the smallest completeness check before adding the remaining report-identity Domain cases.
-- [ ] **Step 22: Implement 1.E GREEN-4.** Own final report completeness, digest, and GO/NO_GO decision only; do not re-probe Windows or mutate Task 1.A–1.D evidence.
-- [ ] **Step 23: Run 1.E Target GREEN.** Re-run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/windows/test_workspace_boundary_gate.py::test_gate_refuses_go_when_mutex_evidence_is_missing -q`; require exit 0 and the displayed RED assertion to pass.
+- [ ] **Step 22: Implement 1.E GREEN-4.** Own final report completeness, closed serialization/loader, digest, fixed terminal path, and GO/NO_GO decision only; do not re-probe Windows or mutate Task 1.A–1.D evidence.
+- [ ] **Step 23: Run 1.E Target GREEN.** Re-run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/windows/test_workspace_boundary_gate.py::test_gate_refuses_go_when_mutex_evidence_is_missing tests/feasibility/windows/test_workspace_boundary_gate.py::test_terminal_go_evidence_round_trips_at_fixed_path -q`; require exit 0 and both displayed RED tests to pass.
 - [ ] **Step 24: Run 1.E Domain.** Run `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/windows/test_workspace_boundary_gate.py -q`; require exit 0 and every displayed Atomic verification expectation to hold.
 
 **Task-level verification, review, and completion:**
@@ -988,14 +988,14 @@ def test_gate_refuses_go_when_mutex_evidence_is_missing() -> None:
 - [ ] **Step 31: Commit T01.2 implementation.** Stage only the task-owned implementation/tests and create one implementation commit after both review stages PASS.
 
 ```bash
-git add -- "spikes/win32_workspace_boundary/object_probe.py" "tests/feasibility/windows/test_workspace_object_probe.py" "spikes/win32_workspace_boundary/mutex_probe.py" "tests/feasibility/windows/test_workspace_mutex_probe.py" "spikes/win32_workspace_boundary/report.py" "spikes/win32_workspace_boundary/probe.py" "tests/feasibility/windows/test_workspace_boundary_gate.py"
+git add -- "spikes/win32_workspace_boundary/object_probe.py" "tests/feasibility/windows/test_workspace_object_probe.py" "spikes/win32_workspace_boundary/mutex_probe.py" "tests/feasibility/windows/test_workspace_mutex_probe.py" "spikes/win32_workspace_boundary/report.py" "spikes/win32_workspace_boundary/probe.py" "gates/evidence/workspace-boundary-go-v1.json" "tests/feasibility/windows/test_workspace_boundary_gate.py"
 git commit -m "Implement T01.2 Win32 Boundary Probes and GO Decision"
 ```
 
 - [ ] **Step 32: Record T01.2 completion evidence.** In a narrow evidence commit, update only this task's Status/Completion evidence and append `AGENT_LOG.md` with the real implementation SHA, responsible fresh subagent, human edits, exact commands/results, review/re-review verdicts, and PR URL.
 - [ ] **Step 33: Continue or finish WP01.** If another session task remains in this package, hand the same branch/PR to a new fresh subagent. Otherwise use `superpowers:finishing-a-development-branch`, verify the package result, and merge only after all predecessors and gates remain valid.
 
-**Done:** legacy steps 1.C, 1.D, 1.E 的 Target、Domain、适用真实环境和全局 profile 均通过；Critical/Important finding 全部关闭并复审；没有行为被延后到 successor。
+**Done:** legacy steps 1.C, 1.D, 1.E 的 Target、Domain、适用真实环境和全局 profile 均通过；固定 `gates/evidence/workspace-boundary-go-v1.json` 存在、为 digest-valid terminal `GO`、并绑定精确 Task 1.A toolchain identity；Critical/Important finding 全部关闭并复审；没有行为被延后到 successor。
 **Completion evidence:** Not yet executed.
 
 ### Task T02.1: Reference Inputs and Reproducible OCI Build
@@ -1920,7 +1920,7 @@ git commit -m "Implement T03.2 Recovery Classification, Application, and GO Deci
 **Parallelization:** Start only after every task/non-task gate in **Depends** has passed. Same-wave execution is allowed only when expanded writable paths are disjoint; the WP04 branch and PR remain the sole package integration boundary.
 
 **Interfaces:**
-- **Consumes / Produces (4.A):** Consumes the declared PLAN Tech Stack, public Python range `>=3.12,<3.13`, exact Task 1.E terminal `GO` `GateToolchainEvidenceV1.python_version`, and unchanged Task 2.G/3.G identity matrices. `src/vespercode/project/dependency_closure.py` produces `DeclaredDependencySetV1(runtime_direct_names: tuple[str, ...], build_direct_names: tuple[str, ...], development_direct_names: tuple[str, ...])`, `LockedDistributionV1(name: str, version: str, classification: Literal["RUNTIME","BUILD","DEVELOPMENT"], python_marker: str, hashes: tuple[str, ...])`, `DependencyClosureV1(python_range: Literal[">=3.12,<3.13"], python_version: str, runtime_direct_names: tuple[str, ...], build_direct_names: tuple[str, ...], development_direct_names: tuple[str, ...], locked_distributions: tuple[LockedDistributionV1, ...], source_policy_digest: str, closure_digest: str)`, `DependencyClosureValidationReportV1(missing_direct: tuple[str, ...], extra_or_misclassified_direct: tuple[str, ...], missing_transitive_or_hash: tuple[str, ...], marker_or_source_mismatches: tuple[str, ...], gate_tool_version_mismatches: tuple[str, ...], python_version_mismatches: tuple[str, ...])`, `load_dependency_closure(root: Path) -> DependencyClosureV1`, and `validate_dependency_closure(root: Path, reviewed_plan_stack: DeclaredDependencySetV1) -> DependencyClosureValidationReportV1`. `scripts/bootstrap_formal_env.py` produces `bootstrap_formal_environment(root: Path, gate_evidence: GateToolchainEvidenceV1) -> FormalEnvironmentBootstrapResultV1`, where `FormalEnvironmentBootstrapResultV1(python_version: str, lock_sha256: str, installed_distribution_names: tuple[str, ...])`.
+- **Consumes / Produces (4.A):** Consumes the declared Tech Stack, public Python range `>=3.12,<3.13`, the fixed terminal `gates/evidence/workspace-boundary-go-v1.json`, and the unchanged Task 2.G/3.G identity matrices. Produces the complete dependency declaration and lock, the existing `DependencyClosureV1` validation record, and `scripts/bootstrap_formal_env.py`; the bootstrap must validate the terminal GO and exact recorded Python patch before creating `.venv-formal`.
 - **Consumes / Produces (4.F):** Consumes `DependencyClosureV1` from Task 4.A, exact `GateToolchainEvidenceV1` from Task 1.A, unchanged Task 1.E/2.G/3.G terminal GO identity matrices, and the verified `.venv-formal` interpreter materialized only by Task 4.A's bootstrap; produces `FormalToolchainPromotionV1(python_version: str, gate_lock_sha256: str, pytest_version: str, ruff_version: str, mypy_version: str, marker_digest: str, static_rule_digest: str)`, `load_formal_toolchain_promotion(root: Path) -> FormalToolchainPromotionV1`, and the logical exact commands `python -m pytest -q`, `python -m ruff format --check .`, `python -m ruff check .`, and `python -m mypy src tests`, each executed through `.venv-formal\Scripts\python.exe`.
 
 **Implementation points, exact RED, and minimum GREEN contracts:**
@@ -1933,20 +1933,30 @@ git commit -m "Implement T03.2 Recovery Classification, Application, and GO Deci
 
 ```text
 Owned files: - Create: pyproject.toml - Create: requirements/dev.lock - Create: src/vespercode/__init__.py - Create: src/vespercode/project/dependency_closure.py - Create: config/dependency-closure-v1.json - Create: scripts/bootstrap_formal_env.py - Test: tests/unit/process/test_dependency_closure.py
-Interface: Consumes the declared PLAN Tech Stack, public Python range `>=3.12,<3.13`, exact Task 1.E terminal `GO` `GateToolchainEvidenceV1.python_version`, and unchanged Task 2.G/3.G identity matrices. `src/vespercode/project/dependency_closure.py` produces `DeclaredDependencySetV1(runtime_direct_names: tuple[str, ...], build_direct_names: tuple[str, ...], development_direct_names: tuple[str, ...])`, `LockedDistributionV1(name: str, version: str, classification: Literal["RUNTIME","BUILD","DEVELOPMENT"], python_marker: str, hashes: tuple[str, ...])`, `DependencyClosureV1(python_range: Literal[">=3.12,<3.13"], python_version: str, runtime_direct_names: tuple[str, ...], build_direct_names: tuple[str, ...], development_direct_names: tuple[str, ...], locked_distributions: tuple[LockedDistributionV1, ...], source_policy_digest: str, closure_digest: str)`, `DependencyClosureValidationReportV1(missing_direct: tuple[str, ...], extra_or_misclassified_direct: tuple[str, ...], missing_transitive_or_hash: tuple[str, ...], marker_or_source_mismatches: tuple[str, ...], gate_tool_version_mismatches: tuple[str, ...], python_version_mismatches: tuple[str, ...])`, `load_dependency_closure(root: Path) -> DependencyClosureV1`, and `validate_dependency_closure(root: Path, reviewed_plan_stack: DeclaredDependencySetV1) -> DependencyClosureValidationReportV1`. `scripts/bootstrap_formal_env.py` produces `bootstrap_formal_environment(root: Path, gate_evidence: GateToolchainEvidenceV1) -> FormalEnvironmentBootstrapResultV1`, where `FormalEnvironmentBootstrapResultV1(python_version: str, lock_sha256: str, installed_distribution_names: tuple[str, ...])`.
+Interface: Consume the declared dependency families and the fixed Task 1.E terminal GO evidence; produce the complete reviewed/hash-locked dependency closure, its validation record, and the formal-environment bootstrap. The bootstrap must reject a Python patch mismatch before creating or using `.venv-formal`.
 GREEN-1: Own the complete reviewed v1 dependency declaration: exact public Python range, direct runtime/build/development families, classifications, source policy, and minimal project identity.
 GREEN-2: Freeze every direct/transitive distribution, marker, and hash into `requirements/dev.lock` and the unique closure record while preserving exact Task 1 Python/pytest/Ruff/Mypy identities.
-GREEN-3: Make the entry-runnable stdlib bootstrap probe GREEN only after every declared formal-environment bootstrap artifact exists; bootstrap `.venv-formal` only after `py -3.12` proves exact Task 1.E Python equality and perform only hash-locked `--no-deps` materialization through the declared interpreter. Stop before implementing `load_dependency_closure`, `validate_dependency_closure`, or closure-record agreement behavior.
+GREEN-3: Make the entry-runnable stdlib bootstrap probe GREEN only after every declared formal-environment bootstrap artifact exists; bootstrap `.venv-formal` only after the PATH-resolved `python` proves exact Task 1.E Python equality and perform only hash-locked `--no-deps` materialization through the declared interpreter. Stop before implementing `load_dependency_closure`, `validate_dependency_closure`, or closure-record agreement behavior.
 GREEN-4: Only after the displayed post-bootstrap Target test has been added and run as an explicit RED, implement the closure loader, validator, and record-agreement behavior and make that already-RED Target GREEN.
 GREEN-5: Keep dependency ownership separate from build backend, formal pytest/Ruff/Mypy configuration, canonical primitives, scanners, application behavior, and all Task 1–3 or profile locks.
-Boundary: This child is the sole owner of all `pyproject.toml` dependency tables, the public Python range, dependency source/index policy, minimal package identity, `requirements/dev.lock`, `src/vespercode/project/dependency_closure.py`, the unique persistent machine-readable non-secret `config/dependency-closure-v1.json`, and `scripts/bootstrap_formal_env.py`. It declares and classifies every direct runtime, build/distribution, and development/verification family listed by the PLAN; inventories every low-level HTTP/TestClient/template/form/server or typing/test package imported or invoked directly so none is hidden as a transitive; freezes every direct/transitive distribution and hash; preserves exact Task 1 Python/pytest/Ruff/Mypy versions; and writes the closure record only when its `python_version` equals Task 1.E terminal `GO` evidence character-for-character. Before creating, rebuilding, or using `.venv-formal`, the bootstrap locates the candidate only with `py -3.12`, reads that terminal `GO` identity, evaluates `platform.python_version() == gate_evidence.python_version`, and exits nonzero on mismatch. On equality it creates/rebuilds `.venv-formal` and invokes only `.venv-formal\Scripts\python.exe -m pip install --disable-pip-version-check --require-hashes --no-deps -r requirements/dev.lock`; this hash-only materialization is not a dependency change. The bootstrap never reads another worktree's `.venv-gate`, invokes an ambient bare `python`, resolves, upgrades, installs an undeclared distribution, or re-locks. This child does not configure the build backend, pytest markers, Ruff, Mypy, canonical commands, package data/version/distribution metadata/entry point, canonical values, paths, scanning, or application behavior. It never modifies Task 1–3 evidence or the separate gate/reference/Demo locks.
+Boundary: This child alone owns the dependency tables, public Python range, source policy, minimal package identity, `requirements/dev.lock`, the dependency-closure record, and `scripts/bootstrap_formal_env.py`. It freezes every direct/transitive distribution and hash and preserves the exact Task 1 Python/pytest/Ruff/Mypy identities. Before creating or using `.venv-formal`, the bootstrap reads only `gates/evidence/workspace-boundary-go-v1.json`, rejects missing/invalid/non-GO/drifted evidence, and compares the PATH Python patch with the recorded patch. A mismatch exits nonzero and leaves no environment. Equality permits only hash-locked `--no-deps` materialization from `requirements/dev.lock`. This child does not configure the formal toolchain or implement application behavior.
 ```
 
 **Exact RED test code:**
 
 ```python
 import unittest
+import subprocess
+import sys
+from dataclasses import replace
 from pathlib import Path
+from tempfile import TemporaryDirectory
+
+from spikes.win32_workspace_boundary.report import (
+    WORKSPACE_BOUNDARY_GO_EVIDENCE_PATH,
+    load_workspace_boundary_gate_report,
+    write_workspace_boundary_gate_report,
+)
 
 
 class FormalBootstrapContractTest(unittest.TestCase):
@@ -1964,6 +1974,36 @@ class FormalBootstrapContractTest(unittest.TestCase):
             (),
             "MISSING_FORMAL_BOOTSTRAP_ARTIFACTS:" + ",".join(missing),
         )
+
+    def test_formal_bootstrap_rejects_python_patch_mismatch_before_environment_creation(
+        self,
+    ) -> None:
+        root = Path(__file__).resolve().parents[3]
+        report = load_workspace_boundary_gate_report(root)
+        mismatched = replace(
+            report,
+            gate_toolchain=replace(report.gate_toolchain, python_version="0.0.0"),
+        )
+        with TemporaryDirectory() as raw_temp_root:
+            temp_root = Path(raw_temp_root)
+            evidence_path = temp_root / WORKSPACE_BOUNDARY_GO_EVIDENCE_PATH
+            write_workspace_boundary_gate_report(mismatched, evidence_path)
+            completed = subprocess.run(
+                (
+                    sys.executable,
+                    str(root / "scripts/bootstrap_formal_env.py"),
+                    "--root",
+                    str(temp_root),
+                    "--gate-evidence",
+                    str(evidence_path),
+                ),
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+            self.assertNotEqual(completed.returncode, 0)
+            self.assertIn("FORMAL_PYTHON_VERSION_MISMATCH:", completed.stderr)
+            self.assertFalse((temp_root / ".venv-formal").exists())
 ```
 
 **Post-bootstrap Target test code:**
@@ -1984,15 +2024,16 @@ def test_declared_v1_dependency_closure_is_complete(
     assert report.python_version_mismatches == ()
 ```
 
-**Expected RED:** the entry-runnable stdlib test starts without `.venv-formal`, pytest, `pyproject.toml`, `requirements/dev.lock`, or `scripts/bootstrap_formal_env.py` and fails its displayed assertion with `MISSING_FORMAL_BOOTSTRAP_ARTIFACTS:` followed by the exact absent bootstrap paths. Runner/interpreter startup failure, test-module load failure, or any failure other than that exact assertion does not count.
+**Expected RED:** `python -m unittest -v tests.unit.process.test_dependency_closure.FormalBootstrapContractTest` starts without `.venv-formal`, pytest, `pyproject.toml`, `requirements/dev.lock`, or `scripts/bootstrap_formal_env.py`; the artifact test fails with `MISSING_FORMAL_BOOTSTRAP_ARTIFACTS:` and the mismatch test fails because the required `FORMAL_PYTHON_VERSION_MISMATCH:` path/no-environment behavior does not exist. Runner/interpreter startup failure, test-module load failure, already-passing mismatch test, or any other failure does not count.
 
 **Required post-bootstrap Target RED:** `.venv-formal\Scripts\python.exe` must start, pytest must load the declared Target, and the first displayed failure must be either the exact absence of the Task 4.A-owned `load_dependency_closure` or `validate_dependency_closure` symbol used by that test, or the test's first dependency-closure assertion failure. Runner/interpreter startup failure, a missing test target, any other collection/import/dependency failure, environment failure, unrelated failure, or already-failing test does not count.
 
 **Post-bootstrap staged RED boundary:** `GREEN-3` is the sole permitted prerequisite implementation and may create only the declared bootstrap artifacts and verified `.venv-formal`; it must not implement `load_dependency_closure`, `validate_dependency_closure`, or closure-record agreement. The explicit Add and Run post-bootstrap RED checkboxes must both complete after `GREEN-3` and before `GREEN-4`, which is the first action permitted to implement any behavior consumed by the staged Target.
 
 **Atomic verification:**
-- Entry (4.A): `py -3.12 -m unittest -v tests.unit.process.test_dependency_closure.FormalBootstrapContractTest.test_required_formal_bootstrap_artifacts_exist`
-- Bootstrap (4.A): `py -3.12 scripts/bootstrap_formal_env.py`
+- Entry (4.A): `python -m unittest -v tests.unit.process.test_dependency_closure.FormalBootstrapContractTest.test_required_formal_bootstrap_artifacts_exist tests.unit.process.test_dependency_closure.FormalBootstrapContractTest.test_formal_bootstrap_rejects_python_patch_mismatch_before_environment_creation`
+- Mismatch (4.A): `python -m unittest -v tests.unit.process.test_dependency_closure.FormalBootstrapContractTest.test_formal_bootstrap_rejects_python_patch_mismatch_before_environment_creation`
+- Bootstrap (4.A): `python scripts/bootstrap_formal_env.py --root . --gate-evidence gates/evidence/workspace-boundary-go-v1.json`
 - Target (4.A): `.venv-formal\Scripts\python.exe -m pytest -q tests/unit/process/test_dependency_closure.py::test_declared_v1_dependency_closure_is_complete`
 - Domain (4.A): `.venv-formal\Scripts\python.exe -m pytest -q tests/unit/process/test_dependency_closure.py`
 - Expected (4.A, 1): `0`
@@ -2002,17 +2043,17 @@ def test_declared_v1_dependency_closure_is_complete(
 - SPEC (4.A): Spec compliance review checks Task 4.A's Goal, Milestone 4's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent dependency-closure/bootstrap contract.
 - Quality (4.A): Code quality review checks entry-runner independence from task-owned artifacts, exact missing-artifact assertion, dependency-family completeness, classification/source/marker consistency, total hash closure, exact gate identity equality, bootstrap fail-closed behavior, and unique record/lock agreement.
 
-- [ ] **Step 1: Add the exact 4.A entry-runnable RED test.** Copy only the complete displayed stdlib `FormalBootstrapContractTest` into the declared Test file without changing implementation files or adding the post-bootstrap Target test.
-- [ ] **Step 2: Run 4.A RED.** Run `py -3.12 -m unittest -v tests.unit.process.test_dependency_closure.FormalBootstrapContractTest.test_required_formal_bootstrap_artifacts_exist`. Expected: FAIL only at the displayed assertion with `MISSING_FORMAL_BOOTSTRAP_ARTIFACTS:` and the exact absent task-owned formal paths. Runner/interpreter startup failure, test-module load failure, or any other failure does not count.
+- [ ] **Step 1: Add the exact 4.A entry-runnable RED tests.** Copy only the complete displayed stdlib `FormalBootstrapContractTest`, including both methods, into the declared Test file without changing implementation files or adding the post-bootstrap Target test.
+- [ ] **Step 2: Run 4.A RED.** Run `python -m unittest -v tests.unit.process.test_dependency_closure.FormalBootstrapContractTest.test_required_formal_bootstrap_artifacts_exist tests.unit.process.test_dependency_closure.FormalBootstrapContractTest.test_formal_bootstrap_rejects_python_patch_mismatch_before_environment_creation`. Expected: the artifact method fails only with `MISSING_FORMAL_BOOTSTRAP_ARTIFACTS:` and the mismatch method fails because the required `FORMAL_PYTHON_VERSION_MISMATCH:`/zero-environment behavior does not exist. Runner/interpreter startup failure, test-module load failure, an already-passing method, or any other failure does not count.
 - [ ] **Step 3: Implement 4.A GREEN-1.** Own the complete reviewed v1 dependency declaration: exact public Python range, direct runtime/build/development families, classifications, source policy, and minimal project identity.
 - [ ] **Step 4: Implement 4.A GREEN-2.** Freeze every direct/transitive distribution, marker, and hash into `requirements/dev.lock` and the unique closure record while preserving exact Task 1 Python/pytest/Ruff/Mypy identities.
-- [ ] **Step 5: Implement 4.A GREEN-3 bootstrap prerequisite only.** Make the entry-runnable stdlib bootstrap probe GREEN only after every declared formal-environment bootstrap artifact exists; bootstrap `.venv-formal` only after `py -3.12` proves exact Task 1.E Python equality and perform only hash-locked `--no-deps` materialization through the declared interpreter. Do not implement `load_dependency_closure`, `validate_dependency_closure`, or closure-record agreement behavior.
+- [ ] **Step 5: Implement 4.A GREEN-3 bootstrap prerequisite only.** Make both entry-runnable stdlib probes GREEN. `python scripts/bootstrap_formal_env.py --root . --gate-evidence gates/evidence/workspace-boundary-go-v1.json` must strictly load the fixed terminal `GO`, compare the exact Python patch before any `.venv-formal` creation/use, emit `FORMAL_PYTHON_VERSION_MISMATCH:<expected>:<actual>` and leave no environment on mismatch, and perform only hash-locked `--no-deps` materialization on equality. Do not implement `load_dependency_closure`, `validate_dependency_closure`, or closure-record agreement behavior.
 - [ ] **Step 6: Add the exact 4.A post-bootstrap Target RED test.** Copy only the complete displayed `test_declared_v1_dependency_closure_is_complete` into the declared Test file after Step 5 succeeds, without changing implementation files.
 - [ ] **Step 7: Run the 4.A post-bootstrap Target RED.** Run `.venv-formal\Scripts\python.exe -m pytest -q tests/unit/process/test_dependency_closure.py::test_declared_v1_dependency_closure_is_complete`. Expected: FAIL only because the runner reaches the declared Target and the Task 4.A-owned `load_dependency_closure` or `validate_dependency_closure` symbol is absent, or because the first displayed dependency-closure assertion fails. Runner/interpreter startup failure, a missing test target, any other collection/import/dependency failure, environment failure, unrelated failure, or already-failing test does not count.
 - [ ] **Step 8: Implement 4.A GREEN-4.** Only after Step 7 records the required RED, implement the closure loader, validator, and record-agreement behavior and make the already-RED `test_declared_v1_dependency_closure_is_complete` GREEN.
 - [ ] **Step 9: Implement 4.A GREEN-5.** Keep dependency ownership separate from build backend, formal pytest/Ruff/Mypy configuration, canonical primitives, scanners, application behavior, and all Task 1–3 or profile locks.
-- [ ] **Step 10: Run 4.A Entry and Target GREEN.** First re-run `py -3.12 -m unittest -v tests.unit.process.test_dependency_closure.FormalBootstrapContractTest.test_required_formal_bootstrap_artifacts_exist` and require exit 0; then run `.venv-formal\Scripts\python.exe -m pytest -q tests/unit/process/test_dependency_closure.py::test_declared_v1_dependency_closure_is_complete` and require exit 0.
-- [ ] **Step 11: Run 4.A Domain.** Run `.venv-formal\Scripts\python.exe -m pytest -q tests/unit/process/test_dependency_closure.py`; require exit 0 and every displayed Atomic verification expectation to hold.
+- [ ] **Step 10: Run 4.A Entry, Mismatch, and Target GREEN.** First re-run `python -m unittest -v tests.unit.process.test_dependency_closure.FormalBootstrapContractTest.test_required_formal_bootstrap_artifacts_exist tests.unit.process.test_dependency_closure.FormalBootstrapContractTest.test_formal_bootstrap_rejects_python_patch_mismatch_before_environment_creation` and require both methods to exit 0; then run `.venv-formal\Scripts\python.exe -m pytest -q tests/unit/process/test_dependency_closure.py::test_declared_v1_dependency_closure_is_complete` and require exit 0.
+- [ ] **Step 11: Run 4.A Domain.** Run `python -m unittest -v tests.unit.process.test_dependency_closure.FormalBootstrapContractTest`, then `.venv-formal\Scripts\python.exe -m pytest -q tests/unit/process/test_dependency_closure.py`; require both exit 0 and every missing/malformed/non-GO/digest/toolchain/patch-mismatch/equality/materialization expectation to hold.
 
 #### Legacy step 4.F: Formal Toolchain Promotion
 
@@ -2047,7 +2088,7 @@ def test_formal_toolchain_matches_frozen_gate_identity(
 **Expected RED:** import/configuration failure because the promotion loader, unique persisted promotion record, build backend, formal marker/static-rule configuration, and canonical commands do not exist.
 
 **Atomic verification:**
-- Bootstrap (4.F): `py -3.12 scripts/bootstrap_formal_env.py`
+- Bootstrap (4.F): `python scripts/bootstrap_formal_env.py --root . --gate-evidence gates/evidence/workspace-boundary-go-v1.json`
 - Target (4.F): `.venv-formal\Scripts\python.exe -m pytest -q tests/unit/process/test_toolchain_promotion.py::test_formal_toolchain_matches_frozen_gate_identity`
 - Domain (4.F): `.venv-formal\Scripts\python.exe -m pytest -q tests/unit/process/test_dependency_closure.py tests/unit/process/test_toolchain_promotion.py`
 - Closure (4.F, 1): `.venv-formal\Scripts\python.exe -m ruff format --check .`
@@ -2624,7 +2665,7 @@ git commit -m "Implement T05.1 Closed Shared Value, Location, Evidence, and Erro
 **Parallelization:** Start only after every task/non-task gate in **Depends** has passed. Same-wave execution is allowed only when expanded writable paths are disjoint; the WP06 branch and PR remain the sole package integration boundary.
 
 **Interfaces:**
-- **Consumes / Produces (6.A):** Produces `EditableOperationV1 = Literal["CREATE","REPLACE"]`, `EditablePathPolicyV1(policy_digest: str, roots: CanonicalPathSequenceV1, operations: EditableOperationSequenceV1)`, and `EditablePathPolicyV1.matches(path: CanonicalRelativePathV1, operation: EditableOperationV1) -> bool`.
+- **Consumes / Produces (6.A):** Produces `EditableOperationV1 = Literal["CREATE","REPLACE"]`, `EditablePathPolicyV1(schema_version: Literal[1], policy_id: Literal["PYTHON_SRC_ONLY_V1"], editable_directory_roots: tuple[CanonicalRelativePathV1, ...], allowed_operations: tuple[EditableOperationV1, ...], digest: str)`, `load_editable_path_policy(raw: bytes) -> EditablePathPolicyV1`, `digest_editable_path_policy(policy: EditablePathPolicyV1) -> str`, and `EditablePathPolicyV1.matches(path: CanonicalRelativePathV1, operation: EditableOperationV1) -> bool`.
 
 **Implementation points, exact RED, and minimum GREEN contracts:**
 
@@ -2636,9 +2677,9 @@ git commit -m "Implement T05.1 Closed Shared Value, Location, Evidence, and Erro
 
 ```text
 Owned files: - Create: src/vespercode/profiles/editable.py - Test: tests/unit/profiles/test_editable.py
-Interface: Produces `EditableOperationV1 = Literal["CREATE","REPLACE"]`, `EditablePathPolicyV1(policy_digest: str, roots: CanonicalPathSequenceV1, operations: EditableOperationSequenceV1)`, and `EditablePathPolicyV1.matches(path: CanonicalRelativePathV1, operation: EditableOperationV1) -> bool`.
-GREEN-1: Define the sole immutable built-in editable policy over canonical roots and the closed CREATE/REPLACE operation set, with one deterministic policy digest.
-GREEN-2: Match paths only at canonical segment boundaries so `src` descendants qualify while prefix aliases, noncanonical paths, unsupported operations, and mutable overrides reject.
+Interface: Produces `EditableOperationV1 = Literal["CREATE","REPLACE"]`, `EditablePathPolicyV1(schema_version: Literal[1], policy_id: Literal["PYTHON_SRC_ONLY_V1"], editable_directory_roots: tuple[CanonicalRelativePathV1, ...], allowed_operations: tuple[EditableOperationV1, ...], digest: str)`, `load_editable_path_policy(raw: bytes) -> EditablePathPolicyV1`, `digest_editable_path_policy(policy: EditablePathPolicyV1) -> str`, and `EditablePathPolicyV1.matches(path: CanonicalRelativePathV1, operation: EditableOperationV1) -> bool`.
+GREEN-1: Define the sole immutable built-in record with exactly `schema_version=1`, `policy_id="PYTHON_SRC_ONLY_V1"`, `editable_directory_roots=(CanonicalRelativePathV1("src"),)`, `allowed_operations=("CREATE","REPLACE")`, and `digest` computed over every preceding exact field; reject every missing, renamed, or extra field before digest acceptance.
+GREEN-2: Match paths only at canonical segment boundaries so `src` descendants qualify while prefix aliases, noncanonical paths, unsupported operations, and mutable overrides reject; expose only the exact `digest` for unchanged propagation into the reference manifest, Snapshot repository policy, and governance policy identities.
 GREEN-3: Make `test_src_prefix_without_segment_boundary_is_not_editable` GREEN with the smallest false-prefix case; then make the already-RED `test_editable_policy_path_operation_matrix` GREEN against the exact §5.1 matrix.
 GREEN-4: Own built-in path/operation matching and digest only. Profile resolution, endpoints, requests, and mutable policy overrides remain out of scope.
 Boundary: Own only built-in editable path/operation matching and digest. Do not resolve profiles, endpoints, requests, or mutable overrides.
@@ -2648,7 +2689,13 @@ Boundary: Own only built-in editable path/operation matching and digest. Do not 
 
 ```python
 def test_src_prefix_without_segment_boundary_is_not_editable() -> None:
-    assert built_in_editable_policy().matches(path("src_backup/x.py"), "REPLACE") is False
+    policy = built_in_editable_policy()
+    assert policy.schema_version == 1
+    assert policy.policy_id == "PYTHON_SRC_ONLY_V1"
+    assert policy.editable_directory_roots == (path("src"),)
+    assert policy.allowed_operations == ("CREATE", "REPLACE")
+    assert policy.digest == digest_editable_path_policy(policy)
+    assert policy.matches(path("src_backup/x.py"), "REPLACE") is False
 ```
 
 **Expected RED:** the immutable segment-boundary policy does not exist.
@@ -2665,8 +2712,8 @@ def test_src_prefix_without_segment_boundary_is_not_editable() -> None:
 
 - [ ] **Step 1: Add the exact 6.A RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
 - [ ] **Step 2: Run 6.A RED.** Run `python -m pytest -q tests/unit/profiles/test_editable.py::test_src_prefix_without_segment_boundary_is_not_editable`. Expected: FAIL for “the immutable segment-boundary policy does not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
-- [ ] **Step 3: Implement 6.A GREEN-1.** Define the sole immutable built-in editable policy over canonical roots and the closed CREATE/REPLACE operation set, with one deterministic policy digest.
-- [ ] **Step 4: Implement 6.A GREEN-2.** Match paths only at canonical segment boundaries so `src` descendants qualify while prefix aliases, noncanonical paths, unsupported operations, and mutable overrides reject.
+- [ ] **Step 3: Implement 6.A GREEN-1.** Define the sole immutable built-in record with exactly `schema_version=1`, `policy_id="PYTHON_SRC_ONLY_V1"`, `editable_directory_roots=(CanonicalRelativePathV1("src"),)`, `allowed_operations=("CREATE","REPLACE")`, and `digest` computed over every preceding exact field; reject every missing, renamed, or extra field before digest acceptance.
+- [ ] **Step 4: Implement 6.A GREEN-2.** Match paths only at canonical segment boundaries so `src` descendants qualify while prefix aliases, noncanonical paths, unsupported operations, and mutable overrides reject; expose only the exact `digest` for unchanged propagation into the reference manifest, Snapshot repository policy, and governance policy identities.
 - [ ] **Step 5: Implement 6.A GREEN-3.** Make `test_src_prefix_without_segment_boundary_is_not_editable` GREEN with the smallest false-prefix case; then make the already-RED `test_editable_policy_path_operation_matrix` GREEN against the exact §5.1 matrix.
 - [ ] **Step 6: Implement 6.A GREEN-4.** Own built-in path/operation matching and digest only. Profile resolution, endpoints, requests, and mutable policy overrides remain out of scope.
 - [ ] **Step 7: Run 6.A Target GREEN.** Re-run `python -m pytest -q tests/unit/profiles/test_editable.py::test_src_prefix_without_segment_boundary_is_not_editable`; require exit 0 and the displayed RED assertion to pass.
@@ -2802,7 +2849,7 @@ git commit -m "Implement T06.2 Reference Profile Manifest Integrity"
 
 **Interfaces:**
 - **Consumes / Produces (6.C):** Produces `MockLLMProfileV1`, `OpenAILLMProfileV1`, `LLMProfileManifestV1 = MockLLMProfileV1 | OpenAILLMProfileV1`, and `load_llm_profile(raw: bytes) -> LLMProfileManifestV1`.
-- **Consumes / Produces (6.D):** Produces `OpenAIEndpointV1(endpoint_id: Literal["OPENAI_PUBLIC_API_V1"], base_url: Literal["https://api.openai.com:443/v1"])` and `OpenAIEndpointRegistry.resolve(endpoint_id: str) -> OpenAIEndpointV1`.
+- **Consumes / Produces (6.D):** Produces `OpenAIEndpointV1(endpoint_id: Literal["OPENAI_PUBLIC_API_V1"], scheme: Literal["https"], host: Literal["api.openai.com"], effective_port: Literal[443], base_path: Literal["/v1"])` and `OpenAIEndpointRegistry.resolve(endpoint_id: str) -> OpenAIEndpointV1`; transport code derives `https://api.openai.com:443/v1` internally from those trusted components without adding a shared `base_url` field.
 
 **Implementation points, exact RED, and minimum GREEN contracts:**
 
@@ -2858,9 +2905,9 @@ def test_mock_profile_rejects_openai_fields() -> None:
 
 ```text
 Owned files: - Create: src/vespercode/profiles/endpoints.py - Test: tests/unit/profiles/test_endpoints.py
-Interface: Produces `OpenAIEndpointV1(endpoint_id: Literal["OPENAI_PUBLIC_API_V1"], base_url: Literal["https://api.openai.com:443/v1"])` and `OpenAIEndpointRegistry.resolve(endpoint_id: str) -> OpenAIEndpointV1`.
-GREEN-1: Define the immutable `OpenAIEndpointV1` record for the sole `OPENAI_PUBLIC_API_V1` identifier and exact public base URL.
-GREEN-2: Resolve only that built-in identifier; raw user URLs, config overrides, unknown ids, and alternate records reject without network access.
+Interface: Produces `OpenAIEndpointV1(endpoint_id: Literal["OPENAI_PUBLIC_API_V1"], scheme: Literal["https"], host: Literal["api.openai.com"], effective_port: Literal[443], base_path: Literal["/v1"])` and `OpenAIEndpointRegistry.resolve(endpoint_id: str) -> OpenAIEndpointV1`; transport code derives the request URL internally from the five trusted fields without extending the shared record.
+GREEN-1: Define the immutable, closed `OpenAIEndpointV1` record with exactly `endpoint_id="OPENAI_PUBLIC_API_V1"`, `scheme="https"`, `host="api.openai.com"`, `effective_port=443`, and `base_path="/v1"`; reject every missing, unknown, or extra field.
+GREEN-2: Resolve only that built-in identifier; raw user URLs, `base_url`, config overrides, unknown ids, and alternate records reject without network access.
 GREEN-3: Make `test_endpoint_registry_rejects_user_url` GREEN with the smallest raw-URL rejection; then make the already-RED `test_endpoint_resolution_matrix` GREEN against the exact §5.1 matrix.
 GREEN-4: Own endpoint id-to-record resolution only. HTTP request preparation, URL overrides, credential management, and network calls remain out of scope.
 Boundary: Own endpoint ID-to-record resolution only. Do not accept URLs/config overrides, prepare HTTP requests, or manage credentials.
@@ -2871,7 +2918,14 @@ Boundary: Own endpoint ID-to-record resolution only. Do not accept URLs/config o
 ```python
 def test_endpoint_registry_rejects_user_url() -> None:
     endpoint = OpenAIEndpointRegistry.resolve("OPENAI_PUBLIC_API_V1")
-    assert endpoint.base_url.encode("utf-8") == b"https://api.openai.com:443/v1"
+    assert (
+        endpoint.endpoint_id,
+        endpoint.scheme,
+        endpoint.host,
+        endpoint.effective_port,
+        endpoint.base_path,
+    ) == ("OPENAI_PUBLIC_API_V1", "https", "api.openai.com", 443, "/v1")
+    assert not hasattr(endpoint, "base_url")
 
     with pytest.raises(UnknownEndpointError):
         OpenAIEndpointRegistry.resolve("https://proxy.invalid/v1")
@@ -2891,8 +2945,8 @@ def test_endpoint_registry_rejects_user_url() -> None:
 
 - [ ] **Step 9: Add the exact 6.D RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
 - [ ] **Step 10: Run 6.D RED.** Run `python -m pytest -q tests/unit/profiles/test_endpoints.py::test_endpoint_registry_rejects_user_url`. Expected: FAIL for “the closed endpoint map does not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
-- [ ] **Step 11: Implement 6.D GREEN-1.** Define the immutable `OpenAIEndpointV1` record for the sole `OPENAI_PUBLIC_API_V1` identifier and exact public base URL.
-- [ ] **Step 12: Implement 6.D GREEN-2.** Resolve only that built-in identifier; raw user URLs, config overrides, unknown ids, and alternate records reject without network access.
+- [ ] **Step 11: Implement 6.D GREEN-1.** Define the immutable, closed `OpenAIEndpointV1` record with exactly `endpoint_id="OPENAI_PUBLIC_API_V1"`, `scheme="https"`, `host="api.openai.com"`, `effective_port=443`, and `base_path="/v1"`; reject every missing, unknown, or extra field.
+- [ ] **Step 12: Implement 6.D GREEN-2.** Resolve only that built-in identifier; raw user URLs, `base_url`, config overrides, unknown ids, and alternate records reject without network access.
 - [ ] **Step 13: Implement 6.D GREEN-3.** Make `test_endpoint_registry_rejects_user_url` GREEN with the smallest raw-URL rejection; then make the already-RED `test_endpoint_resolution_matrix` GREEN against the exact §5.1 matrix.
 - [ ] **Step 14: Implement 6.D GREEN-4.** Own endpoint id-to-record resolution only. HTTP request preparation, URL overrides, credential management, and network calls remain out of scope.
 - [ ] **Step 15: Run 6.D Target GREEN.** Re-run `python -m pytest -q tests/unit/profiles/test_endpoints.py::test_endpoint_registry_rejects_user_url`; require exit 0 and the displayed RED assertion to pass.
@@ -4923,6 +4977,11 @@ git commit -m "Implement T15.1 Disclosure Sources, Scope, and Grant Subjects"
 - Test: `tests/unit/governance/test_disclosure_decision.py`
 - Create: `src/vespercode/governance/disclosure_revocation.py`
 - Test: `tests/unit/governance/test_disclosure_revocation.py`
+- Create: `src/vespercode/storage/migrations/v0004_disclosure_authorizations.py`
+- Create: `src/vespercode/governance/disclosure_ledger.py`
+- Test: `tests/unit/storage/test_disclosure_authorizations_migration.py`
+- Test: `tests/unit/governance/test_disclosure_ledger.py`
+- Test: `tests/unit/governance/test_disclosure_budget_race.py`
 
 **Depends:** T04.2, T05.1, T07.3, T15.1
 **Parallelization:** Start only after every task/non-task gate in **Depends** has passed. Same-wave execution is allowed only when expanded writable paths are disjoint; the WP15 branch and PR remain the sole package integration boundary.
@@ -5085,7 +5144,7 @@ def test_two_requests_cannot_overdraw_one_grant(ledger: DisclosureLedger) -> Non
 - [ ] **Step 31: Commit T15.2 implementation.** Stage only the task-owned implementation/tests and create one implementation commit after both review stages PASS.
 
 ```bash
-git add -- "src/vespercode/storage/migrations/v0003_disclosure_grants.py" "src/vespercode/governance/disclosure_decision.py" "tests/unit/storage/test_disclosure_grants_migration.py" "tests/unit/governance/test_disclosure_decision.py" "src/vespercode/governance/disclosure_revocation.py" "tests/unit/governance/test_disclosure_revocation.py"
+git add -- "src/vespercode/storage/migrations/v0003_disclosure_grants.py" "src/vespercode/governance/disclosure_decision.py" "tests/unit/storage/test_disclosure_grants_migration.py" "tests/unit/governance/test_disclosure_decision.py" "src/vespercode/governance/disclosure_revocation.py" "tests/unit/governance/test_disclosure_revocation.py" "src/vespercode/storage/migrations/v0004_disclosure_authorizations.py" "src/vespercode/governance/disclosure_ledger.py" "tests/unit/storage/test_disclosure_authorizations_migration.py" "tests/unit/governance/test_disclosure_ledger.py" "tests/unit/governance/test_disclosure_budget_race.py"
 git commit -m "Implement T15.2 Disclosure Decisions, Revocation, and Authorization Ledger"
 ```
 
@@ -5111,6 +5170,10 @@ git commit -m "Implement T15.2 Disclosure Decisions, Revocation, and Authorizati
 - Test: `tests/unit/llm/test_prepared_request.py`
 - Test: `tests/unit/llm/test_mock_adapter.py`
 - Test: `tests/unit/llm/test_call_result.py`
+- Create: `src/vespercode/llm/openai_serializer.py`
+- Create: `src/vespercode/llm/openai_adapter.py`
+- Test: `tests/unit/llm/test_openai_serializer.py`
+- Test: `tests/unit/llm/test_openai_adapter.py`
 
 **Depends:** T06.4, T15.2, T27.1
 **Parallelization:** Start only after every task/non-task gate in **Depends** has passed. Same-wave execution is allowed only when expanded writable paths are disjoint; the WP16 branch and PR remain the sole package integration boundary.
@@ -5229,7 +5292,7 @@ def test_openai_adapter_never_retries_transport(
 - [ ] **Step 23: Commit T16.1 implementation.** Stage only the task-owned implementation/tests and create one implementation commit after both review stages PASS.
 
 ```bash
-git add -- "src/vespercode/llm/base.py" "src/vespercode/llm/prepared_request.py" "src/vespercode/llm/mock_adapter.py" "src/vespercode/llm/call_result.py" "tests/unit/llm/test_prepared_request.py" "tests/unit/llm/test_mock_adapter.py" "tests/unit/llm/test_call_result.py"
+git add -- "src/vespercode/llm/base.py" "src/vespercode/llm/prepared_request.py" "src/vespercode/llm/mock_adapter.py" "src/vespercode/llm/call_result.py" "tests/unit/llm/test_prepared_request.py" "tests/unit/llm/test_mock_adapter.py" "tests/unit/llm/test_call_result.py" "src/vespercode/llm/openai_serializer.py" "src/vespercode/llm/openai_adapter.py" "tests/unit/llm/test_openai_serializer.py" "tests/unit/llm/test_openai_adapter.py"
 git commit -m "Implement T16.1 Closed Prepared Requests and Mock/OpenAI Adapters"
 ```
 
@@ -5522,6 +5585,9 @@ git commit -m "Implement T18.1 Docker Execution Contract and Readiness"
 **SPEC contracts:** SPEC §1.4.1 runtime compatibility; §1.4.5; §4.1 readiness; §4.3 cleanup; §4.5 adapter/check execution; §5.1; §5.5; §8.2; §10.1 AC-04, AC-19, AC-20, AC-24, AC-25, AC-30; §10.3 Docker integration.
 
 **Files:**
+- Create: `src/vespercode/execution/materialization.py`
+- Test: `tests/unit/execution/test_materialization.py`
+- Test: `tests/integration/docker/test_fresh_candidate_materialization.py`
 - Create: `src/vespercode/execution/docker_executor.py`
 - Test: `tests/unit/execution/test_docker_executor.py`
 - Test: `tests/integration/docker/test_execution_isolation.py`
@@ -5687,7 +5753,7 @@ def test_post_execution_candidate_mutation_fails_closed() -> None:
 - [ ] **Step 31: Commit T18.2 implementation.** Stage only the task-owned implementation/tests and create one implementation commit after both review stages PASS.
 
 ```bash
-git add -- "src/vespercode/execution/docker_executor.py" "tests/unit/execution/test_docker_executor.py" "tests/integration/docker/test_execution_isolation.py" "tests/integration/docker/test_execution_output_limits.py" "src/vespercode/execution/cleanup.py" "tests/integration/docker/test_execution_cleanup.py" "tests/integration/docker/test_execution_workspace_integrity.py"
+git add -- "src/vespercode/execution/materialization.py" "tests/unit/execution/test_materialization.py" "tests/integration/docker/test_fresh_candidate_materialization.py" "src/vespercode/execution/docker_executor.py" "tests/unit/execution/test_docker_executor.py" "tests/integration/docker/test_execution_isolation.py" "tests/integration/docker/test_execution_output_limits.py" "src/vespercode/execution/cleanup.py" "tests/integration/docker/test_execution_cleanup.py" "tests/integration/docker/test_execution_workspace_integrity.py"
 git commit -m "Implement T18.2 Candidate Materialization, Execution, and Cleanup"
 ```
 
@@ -6286,6 +6352,7 @@ git commit -m "Implement T21.1 Formal Validation and VerifiedCandidate"
 - Test: `tests/unit/storage/test_memory_migration.py`
 - Test: `tests/unit/memory/test_entry.py`
 - Test: `tests/unit/memory/test_repository.py`
+- Test: `tests/unit/memory/test_authorization.py`
 - Create: `src/vespercode/memory/selection.py`
 - Test: `tests/unit/memory/test_selection.py`
 - Test: `tests/unit/memory/test_workspace_isolation.py`
@@ -6449,7 +6516,7 @@ def test_successful_clear_is_immediately_ineligible_for_selection() -> None:
 - [ ] **Step 31: Commit T22.1 implementation.** Stage only the task-owned implementation/tests and create one implementation commit after both review stages PASS.
 
 ```bash
-git add -- "src/vespercode/storage/migrations/v0005_memory.py" "src/vespercode/memory/entry.py" "src/vespercode/memory/repository.py" "tests/unit/storage/test_memory_migration.py" "tests/unit/memory/test_entry.py" "tests/unit/memory/test_repository.py" "src/vespercode/memory/selection.py" "tests/unit/memory/test_selection.py" "tests/unit/memory/test_workspace_isolation.py" "src/vespercode/memory/clear.py" "tests/unit/memory/test_clear.py"
+git add -- "src/vespercode/storage/migrations/v0005_memory.py" "src/vespercode/memory/entry.py" "src/vespercode/memory/repository.py" "tests/unit/storage/test_memory_migration.py" "tests/unit/memory/test_entry.py" "tests/unit/memory/test_repository.py" "tests/unit/memory/test_authorization.py" "src/vespercode/memory/selection.py" "tests/unit/memory/test_selection.py" "tests/unit/memory/test_workspace_isolation.py" "src/vespercode/memory/clear.py" "tests/unit/memory/test_clear.py"
 git commit -m "Implement T22.1 Workspace-isolated Repository Memory"
 ```
 
@@ -9788,7 +9855,7 @@ git commit -m "Implement T36.1 Closed Delivery Evidence and Commit Alignment"
 **Done:** legacy steps 36.A 的 Target、Domain、适用真实环境和全局 profile 均通过；Critical/Important finding 全部关闭并复审；没有行为被延后到 successor。
 **Completion evidence:** Not yet executed.
 
-### Task T36.2: GitHub Release and GHCR Publication
+### Task T36.2: Release/GHCR Publication Verification Contract
 
 **Status:** Not started
 **Work package:** WP36
@@ -9808,9 +9875,9 @@ git commit -m "Implement T36.1 Closed Delivery Evidence and Commit Alignment"
 
 **Implementation points, exact RED, and minimum GREEN contracts:**
 
-#### Legacy step 36.B: GitHub Release and GHCR Content-addressed Publication
+#### Legacy step 36.B: Release/GHCR Publication Verification Contract
 
-**Atomic goal:** Execute one protected source-aligned release that publishes the exact wheel/checksum and Task 2 reference manifest, then re-download/re-pull and verify both artifacts.
+**Atomic goal:** Define and test the pure zero-I/O verifier consumed by T37.1 for one future protected source-aligned release; perform no publication and produce no live evidence.
 
 **Minimum GREEN patch contract:**
 
@@ -9859,13 +9926,11 @@ def test_release_rejects_ghcr_digest_different_from_frozen_manifest() -> None:
 - Target (36.B): `python -m pytest -q -o addopts='' -m deployment_smoke tests/smoke/release/test_manifest_image_alignment.py::test_release_rejects_ghcr_digest_different_from_frozen_manifest`
 - Domain (36.B): `python -m pytest -q -o addopts='' -m deployment_smoke tests/smoke/release/test_manifest_image_alignment.py`
 - Matrix (36.B): `python -m pytest -q -o addopts='' -m deployment_smoke tests/smoke/release/test_manifest_image_alignment.py::test_release_publication_matrix`
-- External (36.B): only after the implementation commit exists, create/run the protected tag pipeline for that exact commit once; download/re-hash/clean-install the wheel; pull GHCR by RepoDigest and smoke it; convert confirmed terminal facts to `ObservedReleaseResultV1`; require `ACCEPTED` before writing `release-v1.json`.
-- Evidence (36.B): `python scripts/verify_release_evidence.py delivery/evidence`
-- Expected (36.B): fake digest mismatch returns exact `REJECTED/GHCR_DIGEST_MISMATCH/evidence_write_allowed=False` with zero I/O; exact fake alignment returns `ACCEPTED/evidence_write_allowed=True`; the real Task 2 loopback, Task 34 reproduction, built-in manifest, GHCR response, and pulled-image manifest digests are identical; released wheel hash/install pass; rejected or incomplete external results create no `release-v1.json`.
+- Expected (36.B): fake frozen/observed digest mismatch returns exact `REJECTED/GHCR_DIGEST_MISMATCH/evidence_write_allowed=False`; exact fake alignment returns `ACCEPTED/evidence_write_allowed=True`; every closed mismatch variant follows the declared deterministic priority; all tests use only fake values, perform zero external I/O, and write no evidence.
 
 **Atomic review focus:**
-- SPEC (36.B): Spec compliance review checks Task 36.B's Goal, Milestone 36's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent protected content-addressed publication contract.
-- Quality (36.B): Code quality review checks direct RED invocation of the task-owned pure verifier, closed result/error variants, deterministic mismatch priority, zero-I/O fake tests, protected/source/CI preflight, secret-store access, implementation-commit-before-publication ordering, wheel/checksum identity, Task 2/34 manifest continuity, one-shot uncertain-state handling, re-download/re-hash/install, content-addressed RepoDigest pull/smoke, accepted-only evidence writing, terminal evidence freshness, URL/artifact access control, and no invented result.
+- SPEC (36.B): Spec compliance review checks Task 36.B's Goal, Milestone 36's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent pure zero-I/O publication-verification contract consumed by T37.1.
+- Quality (36.B): Code quality review checks direct RED invocation of the task-owned pure verifier, immutable frozen inputs and observed results, closed result/error variants, deterministic mismatch priority, exact wheel/manifest/RepoDigest comparison, zero-I/O fake tests, accepted-only `evidence_write_allowed=True`, rejected-result evidence prohibition, and absence of network, credential, environment, subprocess, publication, filesystem, or other external side effects.
 
 - [ ] **Step 1: Add the exact 36.B RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
 - [ ] **Step 2: Run 36.B RED.** Run `python -m pytest -q -o addopts='' -m deployment_smoke tests/smoke/release/test_manifest_image_alignment.py::test_release_rejects_ghcr_digest_different_from_frozen_manifest`. Expected: the exact task-owned collection/import failure displayed above counts. Runner/interpreter startup failure, a missing test target, any other collection/import or dependency failure, environment or fixture failure, unrelated failure, or already-failing test does not count.
@@ -9888,7 +9953,7 @@ def test_release_rejects_ghcr_digest_different_from_frozen_manifest() -> None:
 
 ```bash
 git add -- "src/vespercode/delivery/publication.py" "tests/smoke/release/test_manifest_image_alignment.py"
-git commit -m "Implement T36.2 GitHub Release and GHCR Publication"
+git commit -m "Define T36.2 Release Publication Verification Contract"
 ```
 
 - [ ] **Step 16: Record T36.2 completion evidence.** In a narrow evidence commit, update only this task's Status/Completion evidence and append `AGENT_LOG.md` with the real implementation SHA, responsible fresh subagent, human edits, exact commands/results, review/re-review verdicts, and PR URL; do not claim a tag, Release, GHCR digest, or `release-v1.json`.
@@ -9897,7 +9962,7 @@ git commit -m "Implement T36.2 GitHub Release and GHCR Publication"
 **Done:** legacy step 36.B 的 offline Target、Matrix、Domain 和全局 profile 均通过；pure publication verifier 已提交且零 I/O；Critical/Important finding 全部关闭并复审；T37.1 是唯一外部 publication/evidence owner，T36.2 不声称任何 live 结果。
 **Completion evidence:** Not yet executed.
 
-### Task T36.3: Render Deployment and Live Demo Evidence
+### Task T36.3: Static Render Deployment Contract
 
 **Status:** Not started
 **Work package:** WP36
@@ -9918,9 +9983,9 @@ git commit -m "Implement T36.2 GitHub Release and GHCR Publication"
 
 **Implementation points, exact RED, and minimum GREEN contracts:**
 
-#### Legacy step 36.C: Render Deployment and Live Public Demo Evidence
+#### Legacy step 36.C: Static Render Deployment Contract
 
-**Atomic goal:** Deploy the exact capability-isolated Demo image/config to Render and freeze verified public health, scenario, isolation, and source-commit evidence.
+**Atomic goal:** Define and test the static capability-isolated Render service contract consumed by T37.1; perform no deployment, public request, or evidence write.
 
 **Minimum GREEN patch contract:**
 
@@ -9953,8 +10018,8 @@ def test_render_contract_has_no_disk_or_real_provider_secret(
 - Expected (36.C): the exact static config/image/PORT/`/healthz`/no-disk/no-secret/capability-absence matrix passes with zero external I/O.
 
 **Atomic review focus:**
-- SPEC (36.C): Spec compliance review checks Task 36.C's Goal, Milestone 36's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent Render live-Demo evidence contract.
-- Quality (36.C): Code quality review checks source/image/config identity, PORT/health contract, disk/secret/socket/repository absence, endpoint isolation, deployment/URL freshness, content-addressed image binding, cold-start/trace/session/capability observations, evidence access control, and no invented live outcome.
+- SPEC (36.C): Spec compliance review checks Task 36.C's Goal, Milestone 36's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent static Render deployment contract consumed by T37.1.
+- Quality (36.C): Code quality review checks source/image/config identity slots, PORT/health contract, disk/secret/socket/repository absence, endpoint isolation, content-addressed image binding, deterministic fake observations, zero network/platform/deployment/evidence I/O, and no external side effect or invented live outcome.
 
 - [ ] **Step 1: Add the exact 36.C RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
 - [ ] **Step 2: Run 36.C RED.** Run `python -m pytest -q -o addopts='' -m deployment_smoke tests/smoke/release/test_render_contract.py::test_render_contract_has_no_disk_or_real_provider_secret`. Expected: FAIL for “the test runner reaches `test_render_contract_has_no_disk_or_real_provider_secret`, but its first task-owned assertion fails because the required no-disk/no-secret static contract has not been implemented; collection, runner startup, unrelated import, or environment failure does not count”. Collection, import, environment, unrelated, or already-failing tests do not count.
@@ -9977,7 +10042,7 @@ def test_render_contract_has_no_disk_or_real_provider_secret(
 
 ```bash
 git add -- "render.yaml" "tests/smoke/release/test_render_contract.py" "tests/smoke/release/test_public_demo_smoke.py"
-git commit -m "Implement T36.3 Render Deployment and Live Demo Evidence"
+git commit -m "Define T36.3 Static Render Deployment Contract"
 ```
 
 - [ ] **Step 16: Record T36.3 completion evidence.** In a narrow evidence commit, update only this task's Status/Completion evidence and append `AGENT_LOG.md` with the real implementation SHA, responsible fresh subagent, human edits, exact commands/results, review/re-review verdicts, and PR URL; do not claim a Render deployment, public URL, or `deployment-v1.json`.
@@ -10002,6 +10067,7 @@ git commit -m "Implement T36.3 Render Deployment and Live Demo Evidence"
 - Create: `scripts/verify_readme_contract.py`
 - Create: `tests/unit/process/test_readme_contract.py`
 - Create: `scripts/verify_process_evidence.py`
+- Read: `process/evidence/admission-v3/`
 - Read: `config/dependency-closure-v1.json`
 - Read: `config/formal-toolchain-promotion-v1.json`
 - Modify: `SPEC_PROCESS.md`
@@ -10013,7 +10079,7 @@ git commit -m "Implement T36.3 Render Deployment and Live Demo Evidence"
 **Interfaces:**
 - **Consumes / Produces (T37.1 live closure):** Consumes the exact current main commit after both WP36 and WP38 are finished and merged as the existing shared `source_commit`, the committed T35/T36 CI/release/Render contracts, the final GitHub three-job and GitLab four-job terminal results for that SHA, the final-source wheel/checksum, Task 2/34 manifest identity, and confirmed Render observations. Produces `delivery/evidence/ci-v1.json`, `delivery/evidence/release-v1.json`, and `delivery/evidence/deployment-v1.json` whose existing `source_commit` values are byte-identical; adds no new evidence-schema field. Before any evidence write, the protected tag equals that SHA, publication verification is `ACCEPTED`, Render reports that SHA and exact image/config, and `git diff` from `source_commit` rejects changes under `src/**`, `.github/**`, `.gitlab-ci.yml`, `containers/**`, `render.yaml`, `pyproject.toml`, or `requirements/**`.
 - **Consumes / Produces (37.A):** Produces `verify_readme_contract(path: Path) -> ReadmeContractResultV1` plus the exact documented commands/URLs/digests and section contract enumerated by Milestone 37.
-- **Consumes / Produces (37.B):** Consumes the Task 1.E terminal `GO` `GateToolchainEvidenceV1`, `load_dependency_closure(root: Path) -> DependencyClosureV1`, `load_formal_toolchain_promotion(root: Path) -> FormalToolchainPromotionV1`, the exact registered `PlanReviewChecklistV1`/`PlanReviewResultV1` records, and the registered Approved-document Baseline Gate record as strict read-only inputs. Produces `verify_independent_plan_review_evidence(root: Path) -> IndependentPlanReviewEvidenceResultV1` and `verify_process_evidence(root: Path) -> ProcessEvidenceResultV1`. `IndependentPlanReviewEvidenceResultV1` has ordered fields `plan_complete_file_sha256`, `spec_sha256`, `plan_semantic_digest_v2`, `verifier_a_result_sha256`, `verifier_b_result_sha256`, `compliance_result_sha256`, `executability_result_sha256`, `overall_decision: Literal["PASS", "FAIL"]`, and `error_codes: tuple[str, ...]`. `ApprovedDocumentBaselineEvidenceV1` has ordered fields `reviewed_candidate_head`, `approved_document_commit_sha`, `admission_evidence_commit_sha`, `committed_spec_sha256`, `committed_spec_git_blob`, `committed_plan_complete_file_sha256`, `committed_plan_semantic_digest_v2`, `clean_formal_base`, and `error_codes: tuple[str, ...]`; `ProcessEvidenceResultV1` exposes both typed results for disjoint Task 37.C aggregation. Both functions execute no repository code and use stable missing/schema/digest/candidate/audit/independence/finding/decision/baseline-containment error codes.
+- **Consumes / Produces (37.B):** Consumes the digest-valid terminal `gates/evidence/workspace-boundary-go-v1.json`, the dependency/toolchain records, and the manifest, PLAN review pairs, and Approved-document Baseline record from the tracked `process/evidence/admission-v3/` child whose directory name exactly equals the human-approved PLAN complete-file SHA-256. Produces the existing independent-review and process-evidence verification results; both remain fail-closed, reject temporary/untracked/repository-external evidence, and execute no repository code.
 
 **Implementation points, exact RED, and minimum GREEN contracts:**
 
@@ -10076,13 +10142,13 @@ def test_readme_fails_when_release_digest_verification_is_missing(
 **Minimum GREEN patch contract:**
 
 ```text
-Owned files: - Create: scripts/verify_process_evidence.py - Read: config/dependency-closure-v1.json - Read: config/formal-toolchain-promotion-v1.json - Read: the exact PLAN_SPEC_COMPLIANCE and PLAN_EXECUTABILITY PlanReviewChecklistV1/PlanReviewResultV1 JSON paths registered in SPEC_PROCESS.md - Modify: SPEC_PROCESS.md (preserve history; add exact final evidence only) - Modify: AGENT_LOG.md (append-only final chronology) - Test: tests/unit/process/test_delivery_evidence.py (process-record cases)
-Interface: Consumes the Task 1.E terminal `GO` `GateToolchainEvidenceV1`, `load_dependency_closure(root: Path) -> DependencyClosureV1`, `load_formal_toolchain_promotion(root: Path) -> FormalToolchainPromotionV1`, the exact registered `PlanReviewChecklistV1`/`PlanReviewResultV1` records, and the registered Approved-document Baseline Gate record as strict read-only inputs. Produces `verify_independent_plan_review_evidence(root: Path) -> IndependentPlanReviewEvidenceResultV1` and `verify_process_evidence(root: Path) -> ProcessEvidenceResultV1`. `IndependentPlanReviewEvidenceResultV1` has ordered fields `plan_complete_file_sha256`, `spec_sha256`, `plan_semantic_digest_v2`, `verifier_a_result_sha256`, `verifier_b_result_sha256`, `compliance_result_sha256`, `executability_result_sha256`, `overall_decision: Literal["PASS", "FAIL"]`, and `error_codes: tuple[str, ...]`. `ApprovedDocumentBaselineEvidenceV1` has ordered fields `reviewed_candidate_head`, `approved_document_commit_sha`, `admission_evidence_commit_sha`, `committed_spec_sha256`, `committed_spec_git_blob`, `committed_plan_complete_file_sha256`, `committed_plan_semantic_digest_v2`, `clean_formal_base`, and `error_codes: tuple[str, ...]`; `ProcessEvidenceResultV1` exposes both typed results for disjoint Task 37.C aggregation. Both functions execute no repository code and use stable missing/schema/digest/candidate/audit/independence/finding/decision/baseline-containment error codes.
+Owned files: - Create: scripts/verify_process_evidence.py - Read: process/evidence/admission-v3/ - Read: config/dependency-closure-v1.json - Read: config/formal-toolchain-promotion-v1.json - Modify: SPEC_PROCESS.md (preserve history; add exact final evidence only) - Modify: AGENT_LOG.md (append-only final chronology) - Test: tests/unit/process/test_delivery_evidence.py (process-record cases)
+Interface: Derive the sole tracked formal admission root from the human-approved PLAN complete-file SHA-256; consume its manifest, both PLAN review pairs, and Approved-document Baseline record plus the fixed terminal Task 1.E GO file and dependency/toolchain records as data; produce the existing independent-review and process-evidence verification results without executing repository code.
 GREEN-1: Append only truthful M0, semantic-approval, typed Independent PLAN Review, cold-start, approved-document baseline, task, review, intervention, commit, PR, failure, and lesson records while preserving every prior `SPEC_PROCESS.md` and `AGENT_LOG.md` entry.
-GREEN-2: Implement `verify_independent_plan_review_evidence` as a read-only, fail-closed parser of both canonical checklist/result pairs and their process registration. Require exact schema/order/digests, distinct valid review kinds, reviewer independence from every recorded author/fixer, matching post-M0 A/B identities, candidate PLAN/SPEC/semantic identities, complete findings and closures, two `PASS` verdicts, and a matching overall `PASS` decision.
-GREEN-3: Implement `verify_process_evidence` to expose both typed results; require the approved-document commit to contain the M0-approved SPEC raw SHA/blob and the human-approved PLAN complete SHA/semantic digest; require its direct admission-evidence child to register the exact external result without changing approved inputs and to be the clean Task 1 formal base; reconcile all executable-task chronology and repository identities; require the final PLAN's recomputed `PlanSemanticDigestV2` to equal the reviewed/approved candidate digest despite permitted tracking-only byte changes; and require both unique dependency/toolchain records to equal the Task 1.E exact Python identity.
+GREEN-2: Implement `verify_independent_plan_review_evidence` as a read-only, fail-closed parser of both canonical checklist/result pairs from the exact manifest-bound tracked admission root and their process registration. Require exact schema/order/digests, distinct valid review kinds, reviewer independence from every recorded author/fixer, matching post-M0 A/B identities, candidate PLAN/SPEC/semantic identities, complete findings and closures, two `PASS` verdicts, and a matching overall `PASS` decision.
+GREEN-3: Implement `verify_process_evidence` to expose both typed results; reject any formal root other than the exact tracked repository path derived from the approved PLAN SHA and verify every manifest entry; require the approved-document commit to contain the M0-approved SPEC raw SHA/blob, human-approved PLAN complete SHA/semantic digest, and approved AGENTS blob/SHA-256; require its direct admission-evidence child to preserve approved bytes and change only the fixed pre-baseline evidence root plus `SPEC_PROCESS.md`/`AGENT_LOG.md`; require that child's direct baseline-record child to add only `baseline.json`; derive that unique baseline-record commit from Git history and prove it was the clean Task 1 formal base; reconcile all executable-task chronology and repository identities; require the final PLAN's recomputed `PlanSemanticDigestV2` to equal the reviewed/approved candidate digest despite permitted tracking-only byte changes; and require both unique dependency/toolchain records to equal the Task 1.E exact Python identity.
 GREEN-4: Own read-only validation and truthful final process-record append only. The pre-implementation reviews, approval, cold-start, baseline materialization, and their registration remain non-task process actions; this task may neither create, repair, reinterpret, or fabricate their evidence nor execute repository code or author reflection content.
-Boundary: Preserve historical failures/revisions; never fabricate approval, cold-start pass, baseline materialization, subagent, review, commit, PR, human edit, or external outcome. Resolve only the exact review/baseline-record paths and identities already registered by the non-task planning gates; parse canonical JSON and committed Git-tree bytes as data without importing or executing repository code. Require both checklist/result pairs to match each other, the registered approved candidate identity, matching A/B results, reviewer-independence evidence, finding/closure records, and overall decision. Require the approved-document commit to exist and contain the exact approved SPEC raw SHA/blob plus approved PLAN complete SHA/semantic digest; require its direct admission-evidence child to change only `SPEC_PROCESS.md`/`AGENT_LOG.md`, register the exact external result, preserve every approved input byte, and be the actual clean Task 1 formal base. A working-file match cannot substitute for committed-tree containment or ancestry. Compare the final PLAN by recomputed `PlanSemanticDigestV2`; permitted Status/checkbox/one-line Completion-evidence updates may change the raw complete-file SHA but no other semantic drift is accepted. Load the two unique toolchain JSON records as data, require `dependency_closure.python_version == formal_toolchain_promotion.python_version == gate_evidence.python_version` by exact string comparison, and validate the public compatibility range `>=3.12,<3.13` independently; range membership never replaces exact equality.
+Boundary: Preserve historical failures/revisions; never fabricate approval, cold-start pass, baseline materialization, subagent, review, commit, PR, human edit, or external outcome. Derive the exact formal admission root from the approved PLAN SHA; accept only canonical JSON tracked beneath that repository path and reject `.worktrees`, absolute, escaped, missing, untracked, or repository-external evidence without importing or executing repository code. Require the manifest-bound checklist/result pairs to match each other, the registered approved candidate identity, matching A/B results, reviewer-independence evidence, finding/closure records, and overall decision. Require the approved-document commit to contain the exact approved SPEC raw SHA/blob, PLAN complete SHA/semantic digest, and AGENTS blob/SHA-256; require its direct admission-evidence child and direct baseline-record grandchild to obey the exact allowed-path diffs; require `baseline.json` to bind the first two commits and all approved identities without embedding its own file hash or commit; and require the uniquely derived baseline-record commit to be the actual clean Task 1 formal base. A working-file match cannot substitute for tracked committed-tree containment or ancestry. Compare the final PLAN by recomputed `PlanSemanticDigestV2`; permitted Status/checkbox/one-line Completion-evidence updates may change the raw complete-file SHA but no other semantic drift is accepted. Load the two unique toolchain JSON records as data, require `dependency_closure.python_version == formal_toolchain_promotion.python_version == gate_evidence.python_version` by exact string comparison, and validate the public compatibility range `>=3.12,<3.13` independently; range membership never replaces exact equality.
 ```
 
 **Exact RED test code:**
@@ -10101,6 +10167,17 @@ def test_process_evidence_rejects_stale_plan_executability_result(
         "PLAN_REVIEW_CANDIDATE_IDENTITY_MISMATCH:PLAN_EXECUTABILITY"
         in result.error_codes
     )
+
+
+def test_process_evidence_rejects_untracked_worktree_admission_root(
+    repository_copy: Path,
+) -> None:
+    register_admission_evidence_root(
+        repository_copy,
+        ".worktrees/_review-packages/admission-v3/" + "a" * 64,
+    )
+    result = verify_process_evidence(repository_copy)
+    assert "ADMISSION_EVIDENCE_ROOT_NOT_TRACKED" in result.error_codes
 
 
 def test_process_evidence_rejects_missing_child_task_review(
@@ -10143,27 +10220,28 @@ def test_process_evidence_rejects_approved_document_commit_with_unapproved_spec_
     )
 ```
 
-**Expected RED:** `rewrite_registered_plan_review_candidate_identity` changes only the executability result's candidate PLAN SHA, recomputes that result's canonical self-digest and registered file SHA, and deliberately leaves the checklist, approval, A/B, and process candidate identities unchanged. The baseline fixture registers an accessible commit whose `SPEC.md` blob is not the M0-approved blob. The fixtures and existing process verifier load successfully, then the new tests fail because no implementation detects the isolated review-candidate disagreement or committed-SPEC mismatch and emits the two declared stable errors. A file/self-digest mismatch, missing fixture/record, collection/import failure, repository-code execution, or unrelated process/toolchain error does not count as RED.
+**Expected RED:** `rewrite_registered_plan_review_candidate_identity` changes only the executability result's candidate PLAN SHA, recomputes that result's canonical self-digest and registered file SHA, and deliberately leaves the checklist, approval, A/B, and process candidate identities unchanged. `register_admission_evidence_root` changes only the formal-root registration to the displayed existing local `.worktrees` tree while preserving its readable JSON bytes/digests. The baseline fixture registers an accessible commit whose `SPEC.md` blob is not the M0-approved blob. The fixtures and existing process verifier load successfully, then the new tests fail because no implementation detects the isolated review-candidate disagreement, untracked temporary evidence root, or committed-SPEC mismatch and emits the three declared stable errors. A file/self-digest mismatch, missing fixture/record, collection/import failure, repository-code execution, or unrelated process/toolchain error does not count as RED.
 
 **Atomic verification:**
-- Target (37.B): `python -m pytest -q tests/unit/process/test_delivery_evidence.py::test_process_evidence_rejects_stale_plan_executability_result tests/unit/process/test_delivery_evidence.py::test_process_evidence_rejects_approved_document_commit_with_unapproved_spec_blob tests/unit/process/test_delivery_evidence.py::test_process_evidence_rejects_missing_child_task_review tests/unit/process/test_delivery_evidence.py::test_process_evidence_rejects_formal_python_identity_drift`
+- Target (37.B): `python -m pytest -q tests/unit/process/test_delivery_evidence.py::test_process_evidence_rejects_stale_plan_executability_result tests/unit/process/test_delivery_evidence.py::test_process_evidence_rejects_untracked_worktree_admission_root tests/unit/process/test_delivery_evidence.py::test_process_evidence_rejects_approved_document_commit_with_unapproved_spec_blob tests/unit/process/test_delivery_evidence.py::test_process_evidence_rejects_missing_child_task_review tests/unit/process/test_delivery_evidence.py::test_process_evidence_rejects_formal_python_identity_drift`
 - Domain (37.B): `python -m pytest -q tests/unit/process/test_delivery_evidence.py`
 - Expected (37.B, 1): `PASS`
 - Expected (37.B, 2): `python_version`
 - Expected (37.B, 3): `GO`
 - Expected (37.B, 4): `FORMAL_PYTHON_IDENTITY_MISMATCH`
+- Expected (37.B, 5): `ADMISSION_EVIDENCE_ROOT_NOT_TRACKED`
 
 **Atomic review focus:**
 - SPEC (37.B): Spec compliance review checks Task 37.B's Goal, Milestone 37 scope, Independent PLAN Review Gate and Approved-document Baseline Gate registration contracts, this Implementation boundary, exact RED, and Verification as one consistent truthful process-evidence contract with an executable typed-evidence owner.
-- Quality (37.B): Code quality review checks append preservation, both complete canonical review pairs, exact candidate/semantic/SPEC/A/B/reviewer identities, reviewer independence, findings/closures and overall decision, committed approved-document containment and clean formal base, complete executable-task chronology, exact M0/toolchain/source identities, character-for-character Python comparison, evidence freshness/content digests/access control, and stable fail-closed errors without fabricated or repaired planning evidence.
+- Quality (37.B): Code quality review checks append preservation, the exact tracked formal root and complete manifest, both complete canonical review pairs, exact candidate/semantic/SPEC/AGENTS/A/B/reviewer identities, reviewer independence, findings/closures and overall decision, the three-commit allowed-path relation and uniquely derived clean formal base, complete executable-task chronology, exact M0/toolchain/source identities, character-for-character Python comparison, evidence freshness/content digests/access control, and stable fail-closed errors without fabricated or repaired planning evidence.
 
 - [ ] **Step 14: Add the exact 37.B RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
-- [ ] **Step 15: Run 37.B RED.** Run `python -m pytest -q tests/unit/process/test_delivery_evidence.py::test_process_evidence_rejects_stale_plan_executability_result tests/unit/process/test_delivery_evidence.py::test_process_evidence_rejects_approved_document_commit_with_unapproved_spec_blob tests/unit/process/test_delivery_evidence.py::test_process_evidence_rejects_missing_child_task_review tests/unit/process/test_delivery_evidence.py::test_process_evidence_rejects_formal_python_identity_drift`. Expected: FAIL for “`rewrite_registered_plan_review_candidate_identity` changes only the executability result's candidate PLAN SHA, recomputes that result's canonical self-digest and registered file SHA, and deliberately leaves the checklist, approval, A/B, and process candidate identities unchanged. The baseline fixture registers an accessible commit whose `SPEC.md` blob is not the M0-approved blob. The fixtures and existing process verifier load successfully, then the new tests fail because no implementation detects the isolated review-candidate disagreement or committed-SPEC mismatch and emits the two declared stable errors. A file/self-digest mismatch, missing fixture/record, collection/import failure, repository-code execution, or unrelated process/toolchain error does not count as RED”. Collection, import, environment, unrelated, or already-failing tests do not count.
+- [ ] **Step 15: Run 37.B RED.** Run `python -m pytest -q tests/unit/process/test_delivery_evidence.py::test_process_evidence_rejects_stale_plan_executability_result tests/unit/process/test_delivery_evidence.py::test_process_evidence_rejects_untracked_worktree_admission_root tests/unit/process/test_delivery_evidence.py::test_process_evidence_rejects_approved_document_commit_with_unapproved_spec_blob tests/unit/process/test_delivery_evidence.py::test_process_evidence_rejects_missing_child_task_review tests/unit/process/test_delivery_evidence.py::test_process_evidence_rejects_formal_python_identity_drift`. Expected: FAIL for “`rewrite_registered_plan_review_candidate_identity` changes only the executability result's candidate PLAN SHA, recomputes that result's canonical self-digest and registered file SHA, and deliberately leaves the checklist, approval, A/B, and process candidate identities unchanged. `register_admission_evidence_root` changes only the formal-root registration to the displayed existing local `.worktrees` tree while preserving its readable JSON bytes/digests. The baseline fixture registers an accessible commit whose `SPEC.md` blob is not the M0-approved blob. The fixtures and existing process verifier load successfully, then the new tests fail because no implementation detects the isolated review-candidate disagreement, untracked temporary evidence root, or committed-SPEC mismatch and emits the three declared stable errors. A file/self-digest mismatch, missing fixture/record, collection/import failure, repository-code execution, or unrelated process/toolchain error does not count as RED”. Collection, import, environment, unrelated, or already-failing tests do not count.
 - [ ] **Step 16: Implement 37.B GREEN-1.** Append only truthful M0, semantic-approval, typed Independent PLAN Review, cold-start, approved-document baseline, task, review, intervention, commit, PR, failure, and lesson records while preserving every prior `SPEC_PROCESS.md` and `AGENT_LOG.md` entry.
-- [ ] **Step 17: Implement 37.B GREEN-2.** Implement `verify_independent_plan_review_evidence` as a read-only, fail-closed parser of both canonical checklist/result pairs and their process registration. Require exact schema/order/digests, distinct valid review kinds, reviewer independence from every recorded author/fixer, matching post-M0 A/B identities, candidate PLAN/SPEC/semantic identities, complete findings and closures, two `PASS` verdicts, and a matching overall `PASS` decision.
-- [ ] **Step 18: Implement 37.B GREEN-3.** Implement `verify_process_evidence` to expose both typed results; require the approved-document commit to contain the M0-approved SPEC raw SHA/blob and the human-approved PLAN complete SHA/semantic digest; require its direct admission-evidence child to register the exact external result without changing approved inputs and to be the clean Task 1 formal base; reconcile all executable-task chronology and repository identities; require the final PLAN's recomputed `PlanSemanticDigestV2` to equal the reviewed/approved candidate digest despite permitted tracking-only byte changes; and require both unique dependency/toolchain records to equal the Task 1.E exact Python identity.
+- [ ] **Step 17: Implement 37.B GREEN-2.** Implement `verify_independent_plan_review_evidence` as a read-only, fail-closed parser of both canonical checklist/result pairs from the exact manifest-bound tracked admission root and their process registration. Require exact schema/order/digests, distinct valid review kinds, reviewer independence from every recorded author/fixer, matching post-M0 A/B identities, candidate PLAN/SPEC/semantic identities, complete findings and closures, two `PASS` verdicts, and a matching overall `PASS` decision.
+- [ ] **Step 18: Implement 37.B GREEN-3.** Implement `verify_process_evidence` to expose both typed results; reject any formal root other than the exact tracked repository path derived from the approved PLAN SHA and verify every manifest entry; require the approved-document commit to contain the M0-approved SPEC raw SHA/blob, human-approved PLAN complete SHA/semantic digest, and approved AGENTS blob/SHA-256; require its direct admission-evidence child to preserve approved bytes and change only the fixed pre-baseline evidence root plus `SPEC_PROCESS.md`/`AGENT_LOG.md`; require that child's direct baseline-record child to add only `baseline.json`; derive that unique baseline-record commit from Git history and prove it was the clean Task 1 formal base; reconcile all executable-task chronology and repository identities; require the final PLAN's recomputed `PlanSemanticDigestV2` to equal the reviewed/approved candidate digest despite permitted tracking-only byte changes; and require both unique dependency/toolchain records to equal the Task 1.E exact Python identity.
 - [ ] **Step 19: Implement 37.B GREEN-4.** Own read-only validation and truthful final process-record append only. The pre-implementation reviews, approval, cold-start, baseline materialization, and their registration remain non-task process actions; this task may neither create, repair, reinterpret, or fabricate their evidence nor execute repository code or author reflection content.
-- [ ] **Step 20: Run 37.B Target GREEN.** Re-run `python -m pytest -q tests/unit/process/test_delivery_evidence.py::test_process_evidence_rejects_stale_plan_executability_result tests/unit/process/test_delivery_evidence.py::test_process_evidence_rejects_approved_document_commit_with_unapproved_spec_blob tests/unit/process/test_delivery_evidence.py::test_process_evidence_rejects_missing_child_task_review tests/unit/process/test_delivery_evidence.py::test_process_evidence_rejects_formal_python_identity_drift`; require exit 0 and the displayed RED assertion to pass.
+- [ ] **Step 20: Run 37.B Target GREEN.** Re-run `python -m pytest -q tests/unit/process/test_delivery_evidence.py::test_process_evidence_rejects_stale_plan_executability_result tests/unit/process/test_delivery_evidence.py::test_process_evidence_rejects_untracked_worktree_admission_root tests/unit/process/test_delivery_evidence.py::test_process_evidence_rejects_approved_document_commit_with_unapproved_spec_blob tests/unit/process/test_delivery_evidence.py::test_process_evidence_rejects_missing_child_task_review tests/unit/process/test_delivery_evidence.py::test_process_evidence_rejects_formal_python_identity_drift`; require exit 0 and every displayed RED assertion to pass.
 - [ ] **Step 21: Run 37.B Domain.** Run `python -m pytest -q tests/unit/process/test_delivery_evidence.py`; require exit 0 and every displayed Atomic verification expectation to hold.
 
 **Task-level verification, review, and completion:**
@@ -10530,6 +10608,8 @@ git commit -m "Implement T38.1 Credential, Memory, and Audit Web Workflows"
 - Create: `src/vespercode/web/routes_operations.py`
 - Create: `src/vespercode/web/local_composition.py`
 - Create: `src/vespercode/cli_composition.py`
+- Test: `tests/web/test_local_composition.py`
+- Test: `tests/unit/test_cli_composition.py`
 
 **Depends:** T07.4, T09.1, T23.1, T26.2, T28.3, T29.3, T38.1
 **Parallelization:** Start only after every task/non-task gate in **Depends** has passed. Same-wave execution is allowed only when expanded writable paths are disjoint; the WP38 branch and PR remain the sole package integration boundary.
@@ -10724,7 +10804,7 @@ def test_installed_recover_binds_complete_database_before_handler(
 - [ ] **Step 31: Commit T38.2 implementation.** Stage only the task-owned implementation/tests and create one implementation commit after both review stages PASS.
 
 ```bash
-git add -- "src/vespercode/web/routes_recovery.py" "src/vespercode/web/templates/recovery_preview.html" "tests/web/test_recovery_workflow.py" "src/vespercode/cli.py" "tests/unit/test_recovery_cli.py" "src/vespercode/web/routes_operations.py" "src/vespercode/web/local_composition.py" "src/vespercode/cli_composition.py"
+git add -- "src/vespercode/web/routes_recovery.py" "src/vespercode/web/templates/recovery_preview.html" "tests/web/test_recovery_workflow.py" "src/vespercode/cli.py" "tests/unit/test_recovery_cli.py" "src/vespercode/web/routes_operations.py" "src/vespercode/web/local_composition.py" "src/vespercode/cli_composition.py" "tests/web/test_local_composition.py" "tests/unit/test_cli_composition.py"
 git commit -m "Implement T38.2 Recovery Operations and Production Route Composition"
 ```
 
@@ -10857,11 +10937,11 @@ Each parameter row stated in the oracle is mandatory. The implementation may cho
 | 5.D | `tests/unit/contracts/test_evidence.py::test_evidence_reference_union_matrix` | each evidence variant requires its declared digest and identity; unbound digest, wrong digest shape, cross-variant fields, secret/body fields, and extra fields are rejected. |
 | 5.B | `tests/unit/contracts/test_run.py::test_run_state_phase_limit_matrix` | each legal status has exactly its declared phase/wait/limit fields; every illegal status-phase, wait, terminal-reopen, or limit combination is rejected. |
 | 5.C | `tests/unit/contracts/test_action.py::test_action_result_union_matrix` | each action variant accepts only its declared payload; the success variant forbids error fields; the error variant requires its declared code/detail; cross-variant and extra fields are rejected. |
-| 5.E | `tests/unit/contracts/test_location.py::test_location_scope_union_matrix` | repository root forbids path; file requires canonical path; directory requires canonical directory path; artifact requires bound artifact identity; cross-scope and extra fields are rejected. |
-| 6.A | `tests/unit/profiles/test_editable.py::test_editable_policy_path_operation_matrix` | exact strict `src/` descendants with CREATE or REPLACE => editable; `src` itself, prefix siblings, DELETE, RENAME, binary, link, and mode changes => denied with zero policy widening. |
+| 5.E | `tests/unit/contracts/test_location.py::test_location_scope_union_matrix` | repository root forbids path; file requires canonical path; directory requires canonical directory path; cross-scope and extra fields are rejected. |
+| 6.A | `tests/unit/profiles/test_editable.py::test_editable_policy_path_operation_matrix` | exact closed fields `schema_version=1`, `policy_id=PYTHON_SRC_ONLY_V1`, `editable_directory_roots=[src]`, `allowed_operations=[CREATE,REPLACE]`, and digest propagation are required; missing, renamed, or extra fields reject; strict `src/` descendants with CREATE or REPLACE => editable; `src` itself, prefix siblings, DELETE, RENAME, binary, link, and mode changes => denied with zero policy widening. |
 | 6.B | `tests/unit/profiles/test_reference.py::test_reference_profile_integrity_matrix` | drift in profile id, lock digest, OCI digest, execution version, tool versions, check plan, or editable policy is rejected; the exact built-in manifest verifies. |
 | 6.C | `tests/unit/profiles/test_llm.py::test_llm_profile_closed_union_matrix` | Mock accepts only mock fields; OpenAI accepts only the frozen endpoint/model fields; cross-mode, custom URL, unknown profile, and extra fields are rejected. |
-| 6.D | `tests/unit/profiles/test_endpoints.py::test_endpoint_resolution_matrix` | OPENAI_PUBLIC_API_V1 resolves exactly to https://api.openai.com:443/v1; raw URLs, aliases, environment overrides, redirects to another origin, and unknown ids are rejected. |
+| 6.D | `tests/unit/profiles/test_endpoints.py::test_endpoint_resolution_matrix` | OPENAI_PUBLIC_API_V1 resolves to exactly `scheme=https`, `host=api.openai.com`, `effective_port=443`, and `base_path=/v1`; missing/extra fields, shared `base_url`, raw URLs, aliases, environment overrides, redirects to another origin, and unknown ids are rejected; transport URL is derived internally. |
 | 6.E | `tests/unit/profiles/test_registry.py::test_profile_registry_resolution_matrix` | duplicate ids and unknown ids are rejected; insertion order does not change resolution; each built-in id resolves to one immutable verified profile. |
 | 7.A | `tests/unit/storage/test_migration_engine.py::test_migration_replay_rollback_matrix` | first application records version/checksum once; exact replay is a no-op; applied-checksum drift fails closed; a migration exception rolls back schema and history together. |
 | 7.B | `tests/unit/storage/test_run_repository.py::test_run_wait_lifecycle_matrix` | every SPEC legal transition succeeds once; stale, wrong-kind, cancelled, expired-commit, duplicate, and terminal-reopen transitions fail without mutation; concurrent decisions yield exactly one APPLIED. |
@@ -10885,7 +10965,7 @@ Each parameter row stated in the oracle is mandatory. The implementation may cho
 | 14.B | `tests/unit/governance/test_writeback_decision.py::test_writeback_decision_state_matrix` | exact pending approval may approve or reject once; expired, stale, wrong-subject, cancelled, duplicate, or replay-conflict input creates no pending/new write authority. |
 | 14.C | `tests/unit/governance/test_writeback_approval_race.py::test_writeback_approval_consumption_matrix` | two exact concurrent consumers produce exactly one CONSUMED success; stale, expired, rejected, subject-mismatched, or already-consumed approval performs zero persistence calls. |
 | 15.A | `tests/unit/governance/test_request_sources.py::test_disclosure_source_segment_matrix` | each source category requires its declared index/digest and canonical path when file-backed; missing, cross-category, out-of-range, body-bearing, or extra fields are rejected. |
-| 15.B | `tests/unit/governance/test_disclosure_scope.py::test_disclosure_scope_match_matrix` | root matches declared root only; file matches exact canonical file; directory matches true descendants but not string-prefix siblings; artifact matches exact bound artifact. |
+| 15.B | `tests/unit/governance/test_disclosure_scope.py::test_disclosure_scope_match_matrix` | root matches declared root only; file matches exact canonical file; directory matches true descendants but not string-prefix siblings. |
 | 15.C | `tests/unit/governance/test_disclosure_subject.py::test_disclosure_subject_drift_matrix` | subject uses frozen endpoint id; any source, scope, label, byte count, endpoint, Run, or expiry drift changes digest; request URL cannot override endpoint. |
 | 15.D | `tests/unit/governance/test_disclosure_decision.py::test_disclosure_decision_state_matrix` | exact pending wait approves or rejects once; expired, stale, wrong-binding, cancelled, duplicate, or replay-conflict input creates no Grant and no resume. |
 | 15.F | `tests/unit/governance/test_disclosure_revocation.py::test_disclosure_revocation_matrix` | exact active subject revokes once; exact replay is stable; mismatched subject or already-exhausted/expired Grant is rejected without changing another Grant. |
@@ -11126,11 +11206,11 @@ SPEC §1.6 and §11.3 remain the complete v1 non-goal/future-work authority; PLA
 
 Verifier A/B independently require the exact `For agentic workers` header, root Goal, Architecture, Tech Stack, Global Constraints, Planned Repository Structure, Global Execution Contract, Work Package Registry, Milestone Registry, 68 Session Task Cards, Unified Traceability, Derived Waves, this audit contract, and Execution Handoff.
 
-`Units and authority` appears exactly once and defines: work package = the `AGENTS.md` independent feature / independent task and sole branch/worktree/PR/finishing/merge unit; session task = the smallest fresh-subagent execution/review/commit slice inside one work package and not an independent PR task; legacy step = one atomic RED → minimum GREEN TDD microcycle inside a session task. The workflow and handoff must preserve one PR per work package and must never assign an independent branch, worktree, PR, finishing pass, or merge to a session task.
+`Units and authority` appears exactly once and defines: work package = the `AGENTS.md` independent feature / independent task and sole branch/worktree/PR/finishing/merge unit; session task = the smallest fresh-subagent execution/review/commit slice inside one work package and not an independent PR task; behavior legacy step = one atomic RED → minimum GREEN TDD microcycle inside a session task; `1.A` alone = the SPEC-required reviewed pre-RED gate bootstrap. The workflow and handoff must preserve one PR per work package and must never assign an independent branch, worktree, PR, finishing pass, or merge to a session task.
 
 Every session task contains Status, Work package, Legacy steps, Goal, SPEC contracts, Files, Depends, Parallelization, Interfaces, Implementation points/exact RED/minimum GREEN contracts, task-level verification/review/completion steps, Done, and one-line Completion evidence. Every task has task-specific checkbox steps and one exact commit command block.
 
-All 141 legacy steps are mapped exactly once. Every legacy subsection contains an Atomic goal, nonempty Minimum GREEN patch contract, exact executable RED test code, stable Expected RED reason, Target and Domain commands, Atomic review focus, and checkbox actions for RED, each displayed GREEN implementation point, Target GREEN, and Domain verification. `DECLARED_RED_TARGETS_V1(L)` is the ordered set of every displayed test function or unittest method whose name starts with `test_` in legacy step L's Exact RED and explicitly named staged RED code blocks. For an ordinary legacy step, every member must be selected by an exact `Run <Legacy> RED` checkbox command before the first GREEN implementation; first selection only by Atomic verification, Target GREEN, or Domain does not count. An explicitly declared staged RED may follow only its named runner/bootstrap prerequisite GREEN, must name the first protected behavior GREEN, and must have separate Add and Run RED checkboxes strictly between those two actions; the prerequisite action may not implement any symbol, behavior, or assertion consumed by the staged test. For every subsection listed in the Exact Boundary Matrix Registry, its effective action sequence also contains exactly one Registry-derived `MATRIX-RED-1` and exactly one `MATRIX-RED-2` after `Run <Legacy> RED` and before the first GREEN implementation. No code step may refer to an undefined "above", "similar" task, later boundary matrix, deferred implementation, or unexpanded placeholder.
+All 141 legacy steps are mapped exactly once. Legacy `1.A` alone contains the SPEC §11.2 pre-RED bootstrap contract, complete ordered bootstrap commands, positive integrity verification, review focus, and checkboxes proving completion before `1.B`. Every other legacy subsection contains an Atomic goal, nonempty Minimum GREEN patch contract, exact executable RED test code, stable Expected RED reason, Target and Domain commands, Atomic review focus, and checkbox actions for RED, each displayed GREEN implementation point, Target GREEN, and Domain verification. `DECLARED_RED_TARGETS_V1(L)` is the ordered set of every displayed test function or unittest method whose name starts with `test_` in a behavior legacy step's Exact RED and explicitly named staged RED code blocks. Every member must be selected by an exact `Run <Legacy> RED` checkbox command before the first GREEN implementation; first selection only by Atomic verification, Target GREEN, or Domain does not count. An explicitly declared staged RED may follow only its named runner/bootstrap prerequisite GREEN, must name the first protected behavior GREEN, and must have separate Add and Run RED checkboxes strictly between those two actions; the prerequisite action may not implement any symbol, behavior, or assertion consumed by the staged test. For every subsection listed in the Exact Boundary Matrix Registry, its effective action sequence also contains exactly one Registry-derived `MATRIX-RED-1` and exactly one `MATRIX-RED-2` after `Run <Legacy> RED` and before the first GREEN implementation. No code step may refer to an undefined "above", "similar" task, later boundary matrix, deferred implementation, or unexpanded placeholder.
 
 The implementation-coordination Interfaces in PLAN bind exact names/signatures for this approved implementation without overriding SPEC semantics. Cross-session observable behavior, fields, serialization, identity, state, errors, and side effects remain governed by SPEC. Any PLAN interface conflict with SPEC fails; any new shared semantic contract requires SPEC revision and renewed M0.
 
@@ -11140,7 +11220,7 @@ Two independently implemented verifiers read strict UTF-8 and fail on BOM, any C
 
 `Authoritative Planning Inputs` appears exactly once and contains every required nonempty field with repository-relative paths. Each declared SHA-256 must equal the current bytes at its declared path. The declared SPEC Git blob must equal both `git hash-object SPEC.md` and the `SPEC.md` blob tracked by the planning input baseline. The baseline commit must exist and be the verifier HEAD or its ancestor. The repository-instructions provenance must state when that working-tree input is not contained in the baseline commit. Both timestamps must be strict, timezone-bearing ISO-8601 values, and the last semantic revision must not precede initial generation. The identity table must not contain the complete PLAN SHA-256, an actual `PlanSemanticDigestV2` value, or a future commit claimed to contain the revision.
 
-`Admission Gate Execution Contract` appears exactly once and contains the seven ordered gates, exact evidence-root derivation and filenames, both ordered review schemas, both six-item checklists, reviewer-independence and PASS predicates, fixed `T01.1`/`T38.2` cold-start retrieval, disposable `T01.1` execution with a two-hour hard limit, approved-document/direct-evidence-child/clean-formal-base relation, and the closed invalidation matrix. Verifier A/B validate only that this executable contract is structurally complete; they never infer that a human decision or an external admission artifact exists or passed.
+`Admission Gate Execution Contract` appears exactly once and contains the seven ordered gates, exact evidence-root derivation and filenames, both ordered review schemas, both six-item checklists, the complete 68-task PEX-04 evidence contract, reviewer-independence and PASS predicates, fixed `T01.1`/`T38.2` cold-start retrieval, disposable `T01.1` execution with a two-hour hard limit, the tracked formal evidence root and approved-document/admission-evidence/baseline-record three-commit relation whose baseline-record commit is the clean formal base, and the closed invalidation matrix. Verifier A/B validate only that this executable contract is structurally complete; they never infer that a human decision or an external admission artifact exists or passed.
 
 The exact retained graph metrics are 68 session tasks, 141 unique legacy steps, 46 work packages, 309 deduplicated session edges, 42 session waves, 263 deduplicated package edges, 26 package waves, zero cycles, and 55 unified trace rows. Requirement coverage remains 9 US, 9 FR, 6 NFR, and 31 AC rows, each with nonempty independent implementation and validation task sets.
 
@@ -11168,7 +11248,7 @@ Task-card Files remain the sole execution mutation ownership source. Planned Rep
 
 Commit-bound delivery ordering is closed. Every `CI_RELEASE_LIVE_V1` action must follow creation and push of its immutable subject commit; T35.1's remote job SHA must equal its Step 31 implementation SHA. T37.1 is the sole exception to task-owned subject creation and may start external work only after both WP36 and WP38 are finished and merged, freezing the exact current main commit as `source_commit`. The three external evidence JSON records are absent from every WP36 implementation/evidence commit and from every pre-T37.1 writer; T37.1 writes them only after terminal observations, and all three `source_commit` values, GitHub/GitLab CI job SHAs, protected tag target, released wheel source, GHCR image source, and Render deployment source equal that one SHA. Any post-source change under `src/**`, `.github/**`, `.gitlab-ci.yml`, `containers/**`, `render.yaml`, `pyproject.toml`, or `requirements/**` is `FAIL` and requires a new source commit plus complete final CI/publication/deployment restart.
 
-Verifier A/B reject missing/duplicate tasks or legacy steps, missing or contradictory execution-unit terminology, a session task described as an independent/executable PR unit, missing fields, missing Interfaces, missing RED or Minimum GREEN blocks, missing checkboxes, missing Target/Domain/Matrix commands, unmapped RED or Matrix node ids, any member of `DECLARED_RED_TARGETS_V1(L)` omitted from the applicable pre-implementation RED command set, any ordinary RED target first selected at or after the first GREEN implementation, any staged RED without an exact prerequisite/protected-GREEN boundary, any staged Add/Run RED action embedded in an implementation checkbox or not strictly between the declared prerequisite and protected GREEN, or any prerequisite GREEN that implements behavior consumed by its staged test, any Registry row whose effective action order is not exactly `Run <Legacy> RED` < `MATRIX-RED-1` < `MATRIX-RED-2` < first GREEN implementation, any `MATRIX-RED-2` command whose pytest node does not equal that row's required node, any GREEN step that still makes a Registry Matrix test RED, an Expected RED/Run RED failure-class contradiction, a RED command that consumes an interpreter, runner, script, lock, module, or artifact produced only by later GREEN in the same legacy step without an entry-runnable bootstrap probe, incomplete or duplicate 114-row boundary coverage, missing/duplicate/malformed Milestone Registry data, non-derived Milestone Goal or SPEC scope, non-bijective task/Milestone mapping, unresolved Milestone reference, generic deferred-case language, malformed commands, clipped reviews, placeholders, undefined task references, unauthorized shared writes, remote-before-commit/push ordering, T35 implementation/job SHA mismatch, final-source freeze before WP36/WP38 merge, external evidence JSON owned or written before T37.1 terminal observations, disagreement among CI/release/deployment source identities, protected tag/wheel/GHCR/Render source mismatch, protected-path drift after final-source freeze, graph drift, coverage drift, incomplete admission contracts, oversized tasks/documents, and any forbidden source or identity mismatch.
+Verifier A/B reject missing/duplicate tasks or legacy steps, missing or contradictory execution-unit terminology, a session task described as an independent/executable PR unit, missing fields or Interfaces, an incomplete 1.A pre-RED bootstrap/review/identity contract, any Task 1 behavior RED ordered before 1.A verification, missing RED or Minimum GREEN blocks for any behavior legacy step, missing checkboxes, missing Target/Domain/Matrix commands, unmapped RED or Matrix node ids, any member of `DECLARED_RED_TARGETS_V1(L)` omitted from the applicable pre-implementation RED command set, any ordinary RED target first selected at or after the first GREEN implementation, any staged RED without an exact prerequisite/protected-GREEN boundary, any staged Add/Run RED action embedded in an implementation checkbox or not strictly between the declared prerequisite and protected GREEN, or any prerequisite GREEN that implements behavior consumed by its staged test, any Registry row whose effective action order is not exactly `Run <Legacy> RED` < `MATRIX-RED-1` < `MATRIX-RED-2` < first GREEN implementation, any `MATRIX-RED-2` command whose pytest node does not equal that row's required node, any GREEN step that still makes a Registry Matrix test RED, an Expected RED/Run RED failure-class contradiction, a behavior RED command that consumes an interpreter, runner, script, lock, module, or artifact produced only by later implementation, incomplete or duplicate 114-row boundary coverage, missing/duplicate/malformed Milestone Registry data, non-derived Milestone Goal or SPEC scope, non-bijective task/Milestone mapping, unresolved Milestone reference, generic deferred-case language, malformed commands, a missing or descriptive-only `GATE_OFFLINE_V1` gate-scan command, missing Task 1 gate-scan ownership/staging or gate-toolchain SHA binding, clipped reviews, placeholders, undefined task references, unauthorized shared writes, a PLAN_EXECUTABILITY contract whose PEX-04 evidence does not enumerate all 68 unique task ids exactly once in Session Task Cards order with every required field or does not explicitly account for T04.2/T05.1/T09.1/T12.1 legacy-step and checkbox loads, a formal admission root outside tracked `process/evidence/admission-v3/` or whose child directory name differs from the approved PLAN complete-file SHA-256, any `.worktrees`, absolute, escaped, untracked, missing, or repository-external formal evidence input, a missing or self-referential manifest, any baseline relation other than the declared three commits, admission-evidence or baseline-record commit path drift, a self-referential `baseline.json`, `formal_base` unequal to the baseline-record commit, an approved AGENTS blob absent from the approved-document commit, remote-before-commit/push ordering, T35 implementation/job SHA mismatch, final-source freeze before WP36/WP38 merge, external evidence JSON owned or written before T37.1 terminal observations, disagreement among CI/release/deployment source identities, protected tag/wheel/GHCR/Render source mismatch, protected-path drift after final-source freeze, graph drift, coverage drift, incomplete admission contracts, oversized tasks/documents, and any forbidden source or identity mismatch.
 
 ### 8.3 PlanSemanticDigestV2
 
@@ -11182,7 +11262,7 @@ All bytes outside that window, including the complete `### 4.1 Milestone Registr
 
 ### 8.4 Independent agreement and identity binding
 
-Verifier A and Verifier B use independent implementations and private negative self-tests for: missing required header; removed or contradictory work-package/session-task/legacy-step terminology; injected one-PR-per-session-task wording; removed Interfaces; removed checkbox; removed RED code; removed Minimum GREEN contract; removed the 7.D schema-owner node from its pre-GREEN RED command; removed the 38.F CLI-production node from its pre-GREEN RED command; embedded either 4.A post-bootstrap Add/Run RED action back inside an implementation checkbox; moved the 4.A post-bootstrap Run RED before its bootstrap prerequisite or at/after its protected closure GREEN; changed the 4.A prerequisite GREEN to implement a staged-test symbol; injected Expected RED/Run RED failure-class contradiction; changed a RED command to consume an interpreter, runner, script, lock, module, or artifact produced only by later GREEN in the same legacy step without an entry-runnable bootstrap probe; injected placeholder; generic deferred-case language; removed, duplicated, or malformed 114-row Boundary Matrix Registry entry; removed, duplicated, moved after the first GREEN, or reordered `MATRIX-RED-1`/`MATRIX-RED-2`; retained a GREEN step that makes a Registry Matrix test RED; removed, duplicated, reordered, remapped, truncated, multiline, unescaped-pipe, abbreviated-task, ranged-task, ellipsis-bearing, or otherwise malformed Milestone Registry entry; changed Milestone Goal or SPEC scope byte; changed Milestone Session tasks order or membership; changed aggregate-completion expression; task omitted from or duplicated across Milestones; mixed legacy prefixes within one task; unresolved or out-of-range Milestone reference; removed Matrix command; Matrix node mismatch; missing exact oracle; leading-quote/truncated command; removed Domain; RED/Target mismatch; clipped review; graph/coverage mutation; remote CI/release/Render action before subject commit or push; T35 remote SHA changed away from its implementation SHA; old-CI/new-tag source mismatch; external evidence JSON inserted into a WP36 implementation/evidence commit or written before T37.1 terminal observations; Render deployment before WP36 and WP38 merge; disagreement among the three evidence `source_commit` values; protected tag, released wheel, GHCR, or Render source mismatch; protected-path drift after `source_commit`; missing or duplicated planning-input identity; changed identity path, SHA-256, SPEC blob, baseline, provenance, or timestamp; forbidden self-referential PLAN identity; missing admission gate/schema/checklist/evidence path; changed cold-start task/time limit; broken baseline relation or invalidation coverage; semantic-digest tracking and non-tracking mutations, including proof that every Milestone Registry semantic mutation changes `PlanSemanticDigestV2`.
+Verifier A and Verifier B use independent implementations and private negative self-tests for: missing required header; removed or contradictory work-package/session-task/legacy-step terminology; injected one-PR-per-session-task wording; removed Interfaces or checkbox; removed or reordered the 1.A pre-RED bootstrap/review/identity steps; moved any Task 1 behavior RED before 1.A verification; removed the exact `GATE_OFFLINE_V1` PowerShell gate-scan command, Task 1 gate-scan ownership/staging, or gate-toolchain gate-scan SHA binding; removed RED code or Minimum GREEN contract from a behavior legacy step; removed the 7.D schema-owner node from its pre-GREEN RED command; removed the 38.F CLI-production node from its pre-GREEN RED command; embedded either 4.A post-bootstrap Add/Run RED action back inside an implementation checkbox; moved the 4.A post-bootstrap Run RED before its bootstrap prerequisite or at/after its protected closure GREEN; changed the 4.A prerequisite GREEN to implement a staged-test symbol; injected Expected RED/Run RED failure-class contradiction; changed a behavior RED command to consume an interpreter, runner, script, lock, module, or artifact produced only by later implementation; injected placeholder; generic deferred-case language; removed, duplicated, or malformed 114-row Boundary Matrix Registry entry; removed, duplicated, moved after the first GREEN, or reordered `MATRIX-RED-1`/`MATRIX-RED-2`; retained a GREEN step that makes a Registry Matrix test RED; removed, duplicated, reordered, remapped, truncated, multiline, unescaped-pipe, abbreviated-task, ranged-task, ellipsis-bearing, or otherwise malformed Milestone Registry entry; changed Milestone Goal or SPEC scope byte; changed Milestone Session tasks order or membership; changed aggregate-completion expression; task omitted from or duplicated across Milestones; mixed legacy prefixes within one task; unresolved or out-of-range Milestone reference; removed Matrix command; Matrix node mismatch; missing exact oracle; leading-quote/truncated command; removed Domain; RED/Target mismatch; clipped review; graph/coverage mutation; removed one task from, duplicated one task in, reordered, removed a required field from, or inserted a nonpositive time estimate into the PEX-04 evidence contract; removed explicit T04.2, T05.1, T09.1, or T12.1 legacy-step/checkbox-load treatment; replaced the tracked formal admission root with `.worktrees`, an absolute path, an escaped path, or an untracked path; removed or self-included a manifest entry; inserted `baseline.json` into the pre-baseline manifest; collapsed or reordered the approved-document/admission-evidence/baseline-record relation; widened either evidence-commit allowed-path diff; embedded the baseline record's own file hash or commit; changed `formal_base` away from the baseline-record commit; removed the approved AGENTS blob from the approved-document commit; removed the T37.B untracked-worktree RED node from its pre-GREEN Target; remote CI/release/Render action before subject commit or push; T35 remote SHA changed away from its implementation SHA; old-CI/new-tag source mismatch; external evidence JSON inserted into a WP36 implementation/evidence commit or written before T37.1 terminal observations; Render deployment before WP36 and WP38 merge; disagreement among the three evidence `source_commit` values; protected tag, released wheel, GHCR, or Render source mismatch; protected-path drift after `source_commit`; missing or duplicated planning-input identity; changed identity path, SHA-256, SPEC blob, baseline, provenance, or timestamp; forbidden self-referential PLAN identity; missing admission gate/schema/checklist/evidence path; changed cold-start task/time limit; broken baseline relation or invalidation coverage; semantic-digest tracking and non-tracking mutations, including proof that every Milestone Registry semantic mutation changes `PlanSemanticDigestV2`.
 
 Each result binds PlanAuditContractV3, PLAN/SPEC/course/AGENTS SHA-256 identities, Git HEAD, verifier source SHA-256, PlanSemanticDigestV2, every metric above, sorted issues, and PASS/FAIL. Results agree field-for-field except verifier source SHA-256 and are evidence only for their exact unchanged inputs.
 
