@@ -1485,3 +1485,11 @@ Reviewer 的总体 recommendation 为 `FAIL`。Reviewer 明确未将“尚未实
 - **Result:** 7 个 check 全部为 `FAIL`，`decision=FAIL`；其中 7 个文档合同存在，但没有一项拥有足以关闭 M0-04 的正式运行/批准证据。
 
 该 artifact 是可追溯的失败尝试记录，不是 PLAN §1.2 所称的 accepted ten-artifact set，不是 `m0.json`，不构成 M0 PASS、人工批准或实现授权。后续若补充真实证据，必须以同一候选身份重新生成并由独立 reviewer 复核；任何身份变化都使本 artifact 失效。
+
+## 25. M0-04 formal artifact 独立复核结果
+
+新的无历史上下文 document-only reviewer `019fc166-b66c-7090-8f07-ddd0a4deda77`（Kuhn）复核了当前候选身份和 §24 的 `M0_04_CLOSURE_MATRIX_V1`。复核确认：candidate freeze 为 `040ad83b98a1a91a48c823aedd7314dada906da4`，复核时 HEAD 为 `766374c`，SPEC/PLAN/AGENTS 字节与冻结提交一致，工作区干净。
+
+复核结果：M0-01 `PASS`、M0-02 `PASS`、M0-03 `PASS`、M0-04 `FAIL`、M0-05 `PASS`、M0-06 `FAIL`，总体 recommendation 为 `FAIL`。M0-04 artifact 的 schema、7 个 check、候选身份绑定和 `closure_pass_count=0` 均通过结构核验，但 artifact 的 `decision=FAIL` 不能被解释成 M0-04 通过；M0-06 仍缺少人工对精确 SPEC path/SHA/blob/candidate Git HEAD 的批准。
+
+本次复核不生成或声称 `m0.json`、`human-approval.json` 的 APPROVE、PLAN A/B PASS、PLAN review PASS、cold-start PASS、`baseline.json` 或任何实现/发布成功证据。M0 全部通过前继续禁止正式实现、CI、发行和部署。

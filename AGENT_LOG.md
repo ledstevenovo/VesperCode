@@ -482,3 +482,18 @@
 - **Implementation/Git boundary:** 未实现代码、运行 CI、启动 Docker、使用凭据、执行 GHCR/Release/Render 或生成任何 admission PASS artifact。
 - **Unfinished gates:** M0-04 仍未关闭；M0-06、M0 总体、PLAN A/B、PLAN_SPEC_COMPLIANCE、PLAN_EXECUTABILITY、人工批准、cold-start 和 baseline 仍未通过。
 - **Lesson learned:** 正式证据记录可以完整表达 FAIL，但不能把缺失的运行/批准事实转换成 PASS；artifact commit 也不能替代 candidate identity approval。
+
+## M0-04-FORMAL-EVIDENCE-INDEPENDENT-REVIEW
+
+- **Timestamp (Asia/Taipei):** `2026-08-02T15:40:46+08:00`
+- **Task ID:** `M0-04-FORMAL-EVIDENCE-INDEPENDENT-REVIEW`
+- **Skills invoked:** 文档规范一致性审查；document-only independent review；未使用实现、code review、CI、Docker 或发布流程。
+- **Key prompt/context:** 用户要求在补齐 M0-04 formal artifact 后重新执行独立 M0；artifact 必须保持缺失证据的 FAIL 语义。
+- **Independent reviewer:** 新 reviewer `019fc166-b66c-7090-8f07-ddd0a4deda77`（Kuhn），无历史上下文，只读，未修改文件。
+- **Identity audit:** candidate freeze=`040ad83b98a1a91a48c823aedd7314dada906da4`；review HEAD=`766374c413008ef4b96bd15cf978a45dbd256c35`；SPEC blob=`23ff5eb32b87f0d48c011a7535094cf7345bb451`；PLAN blob=`c4a1517b0afae1c0891bf2d90054c11b7ceb0944`；PLAN SHA/digest 与候选身份一致；工作区 clean。
+- **M0 result:** M0-01 `PASS`、M0-02 `PASS`、M0-03 `PASS`、M0-04 `FAIL`、M0-05 `PASS`、M0-06 `FAIL`；overall `FAIL`。
+- **M0-04 verification:** formal artifact `process/evidence/admission-v3/8ddb16c96d674d4c9dc0ffd83446992e0fdee18d5b4b2bfd16d269d5d0d4bb94/m0-04-closure-matrix.json` 的 schema/身份绑定/7 个 FAIL/`m0_04_closed=false` 均核验通过；它仍是 failed-attempt record，不是 PASS。
+- **Human intervention:** 用户授权独立复核；人工精确身份批准仍未发生。
+- **Implementation/Git boundary:** 未开始实现、CI、Docker、凭据、发布、部署或 cold-start；没有生成任何 PASS artifact。
+- **Unfinished gates:** M0-04、M0-06、M0 总体、PLAN A/B、PLAN_SPEC_COMPLIANCE、PLAN_EXECUTABILITY、人工 PLAN 批准、cold-start 和 Approved-document Baseline 仍未通过。
+- **Lesson learned:** 将失败证据正式化提高了可追溯性，但不能改变证据结论；下一步必须取得真实关闭事实，或修订当前自定义门禁合同后重新计算身份。
