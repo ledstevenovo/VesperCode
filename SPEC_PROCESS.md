@@ -1440,3 +1440,20 @@ M0-02 确认 SPEC 覆盖用户故事、FR/NFR、架构、数据模型、凭据�
 ### 21.3 矩阵结论
 
 七项中没有一项具备完整、可接受、独立且绑定当前候选身份的正式关闭证据；本矩阵的总体结论为 `M0-04=FAIL`。这不是把“尚未实现”当成产品缺陷，也不是把计划文本当成运行证据；它表示在 SPEC M0、人工批准、PLAN A/B、独立 PLAN 审查、异构 cold-start 和 Approved-document Baseline 之前，正式实现、CI、发行和部署仍被禁止。
+
+## 22. 候选冻结身份登记
+
+候选文档冻结提交为 `040ad83b98a1a91a48c823aedd7314dada906da4`，提交信息为 `docs: freeze VesperCode specification and implementation plan candidate`。该提交是可供后续审查引用的 `candidate_freeze_commit`，不是 `approved_document_commit`；后者只有在全部门禁通过并由人工批准精确身份后才能成立。
+
+冻结提交后的精确身份如下：
+
+| Object | Raw SHA-256 | Git blob / commit |
+| --- | --- | --- |
+| `SPEC.md` | `556fb14ec8dc6c22834d1611f721316559600fd0bc2f6823ee8cfa7812c23ca8` | `23ff5eb32b87f0d48c011a7535094cf7345bb451` |
+| `PLAN.md` | `8ddb16c96d674d4c9dc0ffd83446992e0fdee18d5b4b2bfd16d269d5d0d4bb94` | `c4a1517b0afae1c0891bf2d90054c11b7ceb0944` |
+| `AGENTS.md` | `f4e68e302cfb9cc9f383704ef3be9eb8975277a0715e5357e65070cad2738656` | `2ae9ac8dd10cd1d70ba71fa80458693bba4f4305` |
+| Candidate Git HEAD | — | `040ad83b98a1a91a48c823aedd7314dada906da4` |
+
+两套独立摘要 verifier 均从冻结后的 `PLAN.md` 原始字节计算出 `PlanSemanticDigestV2=0b7b0de39dd7cd618f5957e2ca23130560646260a5b27886d9143424cd81c938`：Verifier A 使用 Node `crypto.createHash` 的行索引投影；Verifier B 使用 Node `webcrypto.subtle.digest` 的行映射投影。两者窗口均为第 687 行（含）至第 11046 行（不含），均确认无 BOM、无裸 CR。
+
+冻结后工作区 `git status --short` 为空。此身份登记只记录候选输入和可重复核验结果；M0-01—M0-06、人工批准、PLAN A/B、独立 PLAN 审查、cold-start 和 Approved-document Baseline 仍未通过。

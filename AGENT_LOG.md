@@ -436,3 +436,18 @@
 - **Implementation/Git boundary:** 没有实现、CI、Docker、凭据调用、外部发布、部署、branch、worktree 或 PR 操作；候选冻结提交尚未创建。
 - **Unfinished gates:** 当前仍需候选冻结提交、独立 M0-01—M0-06 checklist、人工 M0 身份批准、PLAN A/B、PLAN_SPEC_COMPLIANCE、PLAN_EXECUTABILITY、人工 PLAN 批准、异构 cold-start 和 `APPROVED_DOCUMENT_BASELINE_V3`。
 - **Lesson learned:** M0-04 的“关闭”必须由当前候选身份绑定的可观察证据证明；文档中存在任务、命令或接口不能替代执行、reviewer independence 和批准证据。
+
+## CANDIDATE-DOCUMENT-FREEZE-IDENTITY
+
+- **Timestamp (Asia/Taipei):** `2026-08-02T15:08:31+08:00`
+- **Task ID:** `CANDIDATE-DOCUMENT-FREEZE-IDENTITY`
+- **Skills invoked:** 文档准入/身份核验；未使用实现或 code-review 流程。
+- **Key prompt/context:** 用户要求先固定当前候选版本，提交 SPEC/PLAN/AGENTS，并重新计算完整文件身份和两套 `PlanSemanticDigestV2`。
+- **Candidate freeze commit:** `040ad83b98a1a91a48c823aedd7314dada906da4`，message=`docs: freeze VesperCode specification and implementation plan candidate`。该提交不是人工批准，也不是当前 `approved_document_commit`。
+- **Exact identity:** SPEC SHA-256=`556fb14ec8dc6c22834d1611f721316559600fd0bc2f6823ee8cfa7812c23ca8`；SPEC blob=`23ff5eb32b87f0d48c011a7535094cf7345bb451`；PLAN SHA-256=`8ddb16c96d674d4c9dc0ffd83446992e0fdee18d5b4b2bfd16d269d5d0d4bb94`；PLAN blob=`c4a1517b0afae1c0891bf2d90054c11b7ceb0944`；AGENTS SHA-256=`f4e68e302cfb9cc9f383704ef3be9eb8975277a0715e5357e65070cad2738656`；AGENTS blob=`2ae9ac8dd10cd1d70ba71fa80458693bba4f4305`。
+- **PlanSemanticDigestV2:** Verifier A（Node `crypto.createHash`）和 Verifier B（Node `webcrypto.subtle.digest`）均返回 `0b7b0de39dd7cd618f5957e2ca23130560646260a5b27886d9143424cd81c938`；两者均使用第 687 行至第 11046 行的唯一 tracking projection，并确认无 BOM/裸 CR。
+- **Working-tree verification:** 冻结提交后 `git status --short` 为空；`git ls-tree HEAD` 确认 SPEC、PLAN、AGENTS 与过程证据均在提交树中。随后本条登记只追加过程记录，不改变 SPEC/PLAN 内容。
+- **Human intervention:** 用户授权候选冻结；没有人工批准准入身份。
+- **Implementation/Git boundary:** 未开始实现、CI、Docker、凭据调用、发布、部署或 cold-start；候选提交之后尚未生成 formal admission evidence。
+- **Unfinished gates:** M0-01—M0-06、人工 M0 身份批准、PLAN A/B、PLAN_SPEC_COMPLIANCE、PLAN_EXECUTABILITY、人工 PLAN 批准、异构 cold-start 和 `APPROVED_DOCUMENT_BASELINE_V3` 仍未完成。
+- **Lesson learned:** 候选冻结提交提供不可变引用，但不能把 Git commit、文件 hash 或 verifier 一致性误写成人工批准或 admission PASS。
