@@ -1777,3 +1777,17 @@ Dirac 的正向测试和实现把 credential match 的结果写成 `stderr="ERRO
 Agent 指出 `CREDENTIAL_URL` 的通用 token-boundary 句可能被理解为要求匹配在 `@` 后立即结束，而普通 credential URL 的 hostname 会位于其后。独立审阅确认该文字歧义，但当前测试和实现的意图一致：规则只报告包含凭据的 `scheme://user:password@` 前缀，hostname/path 不进入 matched fact。已在 `PLAN.md` 明确该规则只要求 leading boundary、匹配在 `@` 结束且不要求 `@` 后 trailing boundary。
 
 这次仅澄清了已执行合同，没有改变产品范围；为保持冷启动证据与最新文档一致，仍需从新的候选文档提交建立 disposable worktree，并由全新 Agent 重跑一次 Aa。完成前不授权正式实现。
+
+## 39. 最终复验发现 Aa 测试代码与 runner 观测接口未完整下沉（2026-08-02）
+
+### 39.1 最终复验线程结果
+
+- **Agent:** 新线程 `019fc271-a273-7392-8fcf-53c52bb40cde`，`gpt-5.6-terra`，独立 worktree `C:\Users\tongshuo\.codex\worktrees\8732\VesperCode`；初始只提供最新 `SPEC.md` 和 `PLAN.md`，候选提交为 `c86d14a40ad50ea1240676ad0b7efeac6a924888`。
+- **执行:** Agent 成功运行 Python 3.12 probe（`exit=0`），确认 1.Aa Own 文件在干净 worktree 中不存在；未修改文件，未运行 unittest，未进入 `1.Ab/1.Ac/1.B`，未提交或合并。
+- **Finding:** PLAN 给出了六个方法名和若干首断言，但没有给出可直接复制的完整 `AaIntegrityTests` 模块；同时 `run_closed_command` 只返回 `int`，PLAN 没有明确测试如何观察其稳定 stderr 输出。继续实现会要求 Agent 猜测测试代码或额外观测接口，因此 Agent 正确暂停。
+
+### 39.2 修订
+
+已在 `PLAN.md` 下沉一份完整的标准库 `AaIntegrityTests` 测试模块，覆盖四个 runner 错误输出、配置原始字节、match 的 exit/stdout/空 stderr/脱敏和四类 gate-scan fail-closed 注入；并明确通过 `redirect_stdout`/`redirect_stderr` 观察现有 `run_closed_command`/`main`，不新增接口。
+
+该修订改变了选定冷启动 task 的执行细节，必须从新的候选文档提交创建 disposable worktree，并由全新、无历史上下文的不同类型 Agent 重跑 `T01.1/1.Aa`。当前没有 cold-start PASS，也没有正式实现授权。

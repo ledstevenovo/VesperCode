@@ -687,3 +687,17 @@
 - **Verification:** Exact probe and unittest commands independently passed; `git diff --check` is required for the ensuing document revision. No formal source/test implementation, CI, Docker, credential, release, deployment, PR, or merge action occurred.
 - **Unfinished gates:** The current cold-start is not yet the final PASS because the documented contract was revised after it ran; a new candidate document commit and fresh cold-start are required.
 - **Lesson learned:** A successful implementation trial still needs a final semantic read of pattern boundaries; output tests can pass while prose leaves a normal input case open to two interpretations.
+
+## COLD-START-T01.1-FINAL-REVIEW-TEST-CODE-GAP-20260802
+
+- **Timestamp (Asia/Taipei):** `2026-08-02` (exact wall-clock time not captured by the execution tool)
+- **Task ID:** `COLD-START-T01.1-FINAL-REVIEW-TEST-CODE-GAP-20260802`
+- **Skills invoked:** `using-git-worktrees`, `dispatching-parallel-agents`, and `superpowers:subagent-driven-development` were used for the disposable trial boundary; no formal implementation skill was used.
+- **Key prompt/context:** A fresh `gpt-5.6-terra` session with no current-thread history was given only `SPEC.md` and `PLAN.md` in `C:\Users\tongshuo\.codex\worktrees\8732\VesperCode`, based on candidate `c86d14a40ad50ea1240676ad0b7efeac6a924888`; it was assigned only `T01.1/1.Aa` and required to stop before `1.Ab/1.Ac/1.B`.
+- **Agent/result:** The Agent ran the Python 3.12 probe with `exit=0`, then paused before Step 1 because PLAN lacked complete copyable Aa test code and a clear way to observe runner error output from the `int`-returning interface. It changed no files, ran no unittest, and made no commit or merge.
+- **Independent verification:** The host confirmed the task card had names/contract prose but no full test module; the existing runner contract exposes stdout/stderr only as process streams, so tests need an explicit capture pattern. This is a legitimate no-guessing executability finding.
+- **Human intervention:** Classified the result as a BLOCKING document finding. No disposable code was accepted and formal implementation remains prohibited.
+- **Document changes:** `PLAN.md` now includes the complete standard-library `AaIntegrityTests` module and explicitly directs tests to use `redirect_stdout`/`redirect_stderr` around the existing runner interfaces. `SPEC_PROCESS.md` §39 records the finding and required repeat.
+- **Verification:** The probe passed; no formal source/test implementation, CI, Docker, credential, release, deployment, PR, or merge action occurred.
+- **Unfinished gates:** No cold-start PASS; a new candidate document commit, disposable worktree, and fresh different-type cold-start are required.
+- **Lesson learned:** Naming tests and describing expected output is weaker than supplying executable tests. A no-guessing cold start needs both the test body and the observation seam written in the plan.

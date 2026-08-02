@@ -963,6 +963,216 @@ method names, tests only helper functions, or omits the stated exit/stdout/
 stderr/error assertions does not satisfy 1.Aa completion and must be recorded
 as a cold-start finding.
 
+**Exact 1.Aa test file:** Step 1 must create
+`tests/feasibility/gate/test_gate_bootstrap.py` with the following complete
+standard-library-only test module. The runner tests observe the stable error
+lines by capturing the `stdout` and `stderr` streams around the declared
+`run_closed_command`/`main` interfaces; no additional result or logging
+interface may be invented.
+
+```python
+from __future__ import annotations
+
+from contextlib import redirect_stderr, redirect_stdout
+from io import StringIO
+from pathlib import Path
+from tempfile import TemporaryDirectory
+import unittest
+from unittest.mock import patch
+
+from scripts.gate_scan import GateScanHooksV1, run_gate_scan
+from scripts.run_gate_checks import build_closed_argv, main, run_closed_command
+
+
+ROOT = Path(__file__).resolve().parents[3]
+
+
+class AaIntegrityTests(unittest.TestCase):
+    def test_gate_input_lists_exact_direct_requirements(self) -> None:
+        expected = b"pytest>=8,<9\nruff\nmypy\npywin32\ndocker\n"
+        self.assertEqual((ROOT / "requirements/gate.in").read_bytes(), expected)
+        self.assertEqual(
+            (ROOT / "gates/pytest.ini").read_bytes(),
+            b"[pytest]\naddopts =\ntestpaths = tests\npython_files = test_*.py\n",
+        )
+        self.assertEqual(
+            (ROOT / "gates/ruff.toml").read_bytes(),
+            b'target-version = "py312"\nline-length = 88\n\n[format]\n'
+            b'line-ending = "lf"\nquote-style = "double"\nindent-style = "space"\n\n'
+            b'[lint]\nselect = ["E4", "E7", "E9", "F"]\n',
+        )
+        self.assertEqual(
+            (ROOT / "gates/mypy.ini").read_bytes(),
+            b"[mypy]\npython_version = 3.12\nstrict = True\nwarn_unused_configs = True\n",
+        )
+
+    def test_gate_runner_accepts_closed_command_and_separator(self) -> None:
+        calls: list[tuple[str, ...]] = []
+
+        def execute(argv: tuple[str, ...]) -> int:
+            calls.append(argv)
+            return 0
+
+        self.assertEqual(run_closed_command("ruff-format", (".",), execute=execute), 0)
+        self.assertEqual(run_closed_command("ruff-check", (".",), execute=execute), 0)
+        self.assertEqual(
+            run_closed_command(
+                "pytest",
+                ("tests/feasibility/gate/test_gate_bootstrap.py", "-q"),
+                execute=execute,
+            ),
+            0,
+        )
+        self.assertNotIn("--", calls[0])
+        self.assertEqual(calls[0][-1], ".")
+        self.assertEqual(calls[1][-1], ".")
+        self.assertEqual(
+            calls[2][-2:],
+            ("tests/feasibility/gate/test_gate_bootstrap.py", "-q"),
+        )
+        self.assertIn("gates/ruff.toml", calls[0])
+        self.assertIn("gates/pytest.ini", calls[2])
+        self.assertEqual(build_closed_argv("mypy", ("src",))[-1], "src")
+
+    def test_gate_runner_rejects_unknown_command_or_missing_separator(self) -> None:
+        calls: list[tuple[str, ...]] = []
+        stdout = StringIO()
+        stderr = StringIO()
+        with redirect_stdout(stdout), redirect_stderr(stderr):
+            unknown_result = run_closed_command(
+                "shell", (), execute=lambda argv: calls.append(argv) or 0
+            )
+            with patch("scripts.run_gate_checks.run_closed_command") as wrapped:
+                missing_separator_result = main(["pytest", "tests/test_example.py"])
+                self.assertFalse(wrapped.called)
+        self.assertEqual(unknown_result, 2)
+        self.assertEqual(missing_separator_result, 2)
+        self.assertEqual(calls, [])
+        self.assertEqual(stdout.getvalue(), "")
+        self.assertEqual(
+            stderr.getvalue(),
+            "ERROR\tGATE_COMMAND_UNKNOWN\nERROR\tGATE_ARGUMENT_SEPARATOR_MISSING\n",
+        )
+
+    def test_gate_runner_rejects_argument_widening(self) -> None:
+        forbidden = (
+            "--config=other.ini",
+            "--plugin=unsafe",
+            "--python=other.exe",
+            "PYTHONPATH=outside",
+            "--rootdir=outside",
+            "--cache-dir=cache",
+            "--junitxml=report.xml",
+            "--index-url=https://example.invalid",
+            "tests/*.py",
+            "../outside.py",
+            "--maxfail=0",
+        )
+        calls: list[tuple[str, ...]] = []
+        stdout = StringIO()
+        stderr = StringIO()
+        with redirect_stdout(stdout), redirect_stderr(stderr):
+            results = tuple(
+                run_closed_command(
+                    "pytest",
+                    (argument,),
+                    execute=lambda argv: calls.append(argv) or 0,
+                )
+                for argument in forbidden
+            )
+        self.assertEqual(results, (2,) * len(forbidden))
+        self.assertEqual(calls, [])
+        self.assertEqual(stdout.getvalue(), "")
+        self.assertEqual(
+            stderr.getvalue(),
+            "ERROR\tGATE_ARGUMENT_WIDENING\n" * len(forbidden),
+        )
+
+    def test_gate_scan_emits_sorted_redacted_rule_ids(self) -> None:
+        with TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            payloads = {
+                "staged.pem": b"-----BEGIN OPENSSH PRIVATE KEY-----\nsecret\n",
+                "unstaged.txt": b"prefix API_KEY='do-not-print' suffix",
+                "untracked.txt": b"https://user:do-not-print@example.invalid/",
+            }
+            hooks = GateScanHooksV1(
+                enumerate_changed_paths=lambda unused_root: (
+                    "untracked.txt",
+                    "staged.pem",
+                    "unstaged.txt",
+                    "staged.pem",
+                ),
+                resolve_path=lambda active_root, path: active_root / path,
+                is_regular_file=lambda path: True,
+                read_bytes=lambda path: payloads[path.name],
+            )
+            result = run_gate_scan(root, hooks=hooks)
+        self.assertEqual(result.exit_code, 1)
+        self.assertEqual(
+            result.stdout,
+            "MATCH\tstaged.pem\tPRIVATE_KEY_BLOCK\n"
+            "MATCH\tunstaged.txt\tGENERIC_API_KEY\n"
+            "MATCH\tuntracked.txt\tCREDENTIAL_URL\n",
+        )
+        self.assertEqual(result.stderr, "")
+        self.assertNotIn("do-not-print", result.stdout)
+        wrapper = (ROOT / "scripts/scan_gate_changed_files.ps1").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("$args.Count", wrapper)
+        self.assertIn("gate_scan.py", wrapper)
+        self.assertNotIn("PRIVATE_KEY_BLOCK", wrapper)
+        self.assertNotIn("GENERIC_API_KEY", wrapper)
+
+    def test_gate_scan_fails_closed_on_git_path_object_or_read_error(self) -> None:
+        with TemporaryDirectory() as directory, TemporaryDirectory() as outside:
+            root = Path(directory).resolve()
+            outside_path = Path(outside).resolve() / "escaped.txt"
+            base = dict(
+                enumerate_changed_paths=lambda unused_root: ("changed.txt",),
+                resolve_path=lambda active_root, path: active_root / path,
+                is_regular_file=lambda path: True,
+                read_bytes=lambda path: b"API_KEY=must-not-appear",
+            )
+
+            def fail(*unused: object) -> object:
+                raise OSError("injected failure")
+
+            cases = (
+                (
+                    GateScanHooksV1(**{**base, "enumerate_changed_paths": fail}),
+                    "GATE_SCAN_GIT_ENUMERATION_FAILED",
+                ),
+                (
+                    GateScanHooksV1(
+                        **{**base, "resolve_path": lambda active_root, path: outside_path}
+                    ),
+                    "GATE_SCAN_PATH_ESCAPE",
+                ),
+                (
+                    GateScanHooksV1(**{**base, "is_regular_file": lambda path: False}),
+                    "GATE_SCAN_NON_REGULAR_FILE",
+                ),
+                (
+                    GateScanHooksV1(**{**base, "read_bytes": fail}),
+                    "GATE_SCAN_READ_FAILED",
+                ),
+            )
+            results = tuple(run_gate_scan(root, hooks=hooks) for hooks, _ in cases)
+        self.assertEqual(tuple(result.exit_code for result in results), (2, 2, 2, 2))
+        self.assertEqual(tuple(result.stdout for result in results), ("", "", "", ""))
+        self.assertEqual(
+            tuple(result.stderr for result in results),
+            tuple(f"ERROR\t{code}\n" for _, code in cases),
+        )
+        self.assertTrue(all("must-not-appear" not in result.stderr for result in results))
+
+
+if __name__ == "__main__":
+    unittest.main()
+```
+
 **1.Aa command and environment contract:** After Step 1 has created the
 declared modules and test class, first run
 `python -c "import sys; raise SystemExit(0 if sys.version_info[:2] == (3, 12) else 3)"`.
