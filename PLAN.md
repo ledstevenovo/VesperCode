@@ -870,7 +870,10 @@ gates/pytest.ini`, `python -m ruff format --check --config gates/ruff.toml`,
 never shell-parsed. `pytest` may receive only `-q`, `-v`, `-x`, a positive
 `--maxfail=N`, and declared repository-relative test selectors; the two Ruff
 commands may receive only repository-relative paths; `mypy` may receive only
-`src` and `tests` (or their declared descendants). Config/plugin/executable,
+the fixed gate roots `spikes`, `tests/feasibility`, `src`, `tests`, and the two
+declared gate files `scripts/run_gate_checks.py` and
+`scripts/bootstrap_gate_env.py` (with descendants allowed only for directory
+roots). Config/plugin/executable,
 environment, working-directory, cache, report-output, network, and arbitrary
 shell-expansion options are rejected before execution with
 `GATE_ARGUMENT_WIDENING`; an unknown command returns

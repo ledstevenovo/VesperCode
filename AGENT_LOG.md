@@ -550,3 +550,17 @@
 - **Verification:** Patch applied successfully; formal code/tests were not run because implementation remains prohibited. The next verification is a new candidate document commit, a clean disposable worktree from that commit, and a fresh T01.1 cold-start.
 - **Lesson learned:** A readable task card is not executable if its pre-RED artifacts are defined only by successor tasks. Every selected cold-start task must own its complete schema, rules, command boundaries, and fail-closed semantics.
 - **Status:** No cold-start PASS; formal implementation remains blocked by the course sequence until the corrected trial completes.
+
+## COLD-START-T01.1-PROFILE-CONFLICT-20260802
+
+- **Timestamp (Asia/Taipei):** `2026-08-02` (exact wall-clock time not captured by the execution tool)
+- **Task ID:** `COLD-START-T01.1-PROFILE-CONFLICT-20260802`
+- **Skills invoked:** `superpowers:subagent-driven-development` and `superpowers:using-git-worktrees` were read for workflow compliance; no formal implementation skill was used.
+- **Key prompt/context:** Re-run the corrected T01.1 1.A cold-start from candidate commit `e0fba46fb4bf145cc209e83726731251e240e9e1` in a new worktree, using a fresh `gpt-5.4` session with only SPEC/PLAN initial context and a pause-on-uncertainty rule.
+- **Agent/result:** `Einstein` (`019fc1d7-a9a4-7872-9389-79a76c7fbf8f`) ran in `D:\code\VesperCode\.worktrees\_cold-start-trials\cold-start-v4-e0fba46`. It verified Python `3.12.4`, the exact HEAD, and `https://pypi.org/simple` status `200`; it found no 1.A implementation directories, changed no files, and stopped before 1.B.
+- **Finding:** PLAN's new Mypy allowlist permitted only `src`/`tests`, while `GATE_OFFLINE_V1` and T01.1 Step 5 required `spikes tests/feasibility scripts/run_gate_checks.py scripts/bootstrap_gate_env.py`. This is a direct contract contradiction, not an implementation choice.
+- **Human intervention:** Accepted the finding as `BLOCKING`; selected the existing profile command as the source of truth. No placeholder files, lock, evidence, implementation, or RED were authorized.
+- **Document changes:** `PLAN.md` now permits only the fixed gate roots `spikes`, `tests/feasibility`, `src`, `tests` and the two declared gate files, with no arbitrary path/config/environment widening. `SPEC_PROCESS.md` §30 records the finding and the required repeat.
+- **Verification:** Main worktree remained clean before this revision; no formal code/tests were run. The next verification is a new candidate document commit, a clean worktree from that commit, and a fresh T01.1 cold-start.
+- **Lesson learned:** Synchronizing a task-local contract with a named global profile requires checking every exact profile command, not only the task's abstract interface.
+- **Status:** No cold-start PASS; formal implementation remains prohibited.

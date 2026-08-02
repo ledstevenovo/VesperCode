@@ -1568,3 +1568,34 @@ Reviewer 的总体 recommendation 为 `FAIL`。Reviewer 明确未将“尚未实
 - 明确冷启动在真实环境缺失或上述合同仍无法满足时必须暂停报告，不得创建假 lock、占位 evidence 或无效 RED。
 
 这些是 T01.1 的实质合同变更，故文档修订完成后必须从新的候选文档提交建立新的 disposable worktree，并重新进行 T01.1 冷启动。当前仍未获得 cold-start PASS，也未授权正式实现。
+这些是 T01.1 的实质合同变更，故文档修订完成后必须从新的候选文档提交建立新的 disposable worktree，并重新进行 T01.1 冷启动。当前仍未获得 cold-start PASS，也未授权正式实现。
+
+## 30. 第二次 T01.1 冷启动的 profile 参数冲突（2026-08-02）
+
+### 30.1 试作结果
+
+新的陌生 Agent `Einstein`（`019fc1d7-a9a4-7872-9389-79a76c7fbf8f`，`gpt-5.4`）在全新、无历史上下文的 disposable worktree `D:\code\VesperCode\.worktrees\_cold-start-trials\cold-start-v4-e0fba46` 中执行。它只读取 `SPEC.md` 和 `PLAN.md`，没有读取 `SPEC_PROCESS.md`、`AGENT_LOG.md` 或 Git 历史，没有修改或提交任何文件。
+
+它确认：
+
+- PATH Python `3.12.4` 和精确候选 `HEAD=e0fba46fb4bf145cc209e83726731251e240e9e1` 有效；
+- `https://pypi.org/simple` 返回 `200`，因此本次不是 Python 或解析源不可用；
+- `requirements/`、`gates/`、`scripts/`、`tests/feasibility/`、`spikes/` 均不存在，尚未创建任何试作骨架；
+- 1.A 尚未完整通过，故 1.B 没有执行资格。
+
+### 30.2 新的 BLOCKING 发现
+
+`PLAN.md` 同时规定了互相冲突的 Mypy 参数边界：
+
+1. T01.1 的 closed pre-RED contract 只允许 `src`、`tests` 或其后代；
+2. §3.4 的 `GATE_OFFLINE_V1` 明确要求执行
+   `.venv-gate\\Scripts\\python.exe scripts/run_gate_checks.py mypy -- spikes tests/feasibility scripts/run_gate_checks.py scripts/bootstrap_gate_env.py`；
+3. T01.1 Step 5 又要求该 profile 的精确 Mypy 命令通过后才可进入 1.B。
+
+这三条不能同时成立。Agent 按“遇到 material uncertainty 暂停，不得猜测”的要求停止；该结果是 PLAN 内部合同冲突，而不是可通过实现选择解决的细节。
+
+### 30.3 采纳修订与后续
+
+采纳以既有 `GATE_OFFLINE_V1` 固定命令为权威，将 T01.1 runner 的 Mypy 白名单统一为：目录根 `spikes`、`tests/feasibility`、`src`、`tests` 及其后代，另加两个固定 gate 文件 `scripts/run_gate_checks.py` 和 `scripts/bootstrap_gate_env.py`。其他路径和配置/环境扩展仍拒绝。该修订只解决当前已存在的命令冲突，不扩大到任意 repository path。
+
+由于选定 task 的 runner 合同再次发生实质变化，必须建立新的候选文档提交和新的 disposable worktree，并重新执行 T01.1 冷启动。当前仍没有 cold-start PASS，也没有正式实现授权。
