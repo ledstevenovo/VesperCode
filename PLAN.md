@@ -76,6 +76,23 @@ Before the trial, the human checks and records the following in `SPEC_PROCESS.md
 
 This check is a process record, not a product gate. It does not require document hashes, semantic digests, dual audit implementations, formal JSON evidence, or a special baseline commit.
 
+**SPEC/PLAN synchronization rule:** `SPEC.md` is authoritative for product behavior,
+constraints, interfaces, and acceptance criteria. `PLAN.md` is authoritative for
+task execution details: files, implementation points, the intended RED, commands,
+dependencies, boundaries, and completion conditions. `SPEC_PROCESS.md` records why
+an accepted change was made, and `AGENT_LOG.md` records what actually happened.
+
+When a change affects a task's behavior, interface, owned files, RED expectation,
+verification command, dependency, scope, or completion condition, update every
+affected task card in the same document revision and append the reason to
+`SPEC_PROCESS.md`. Progress checkboxes, commit hashes, review results, and
+completion evidence are execution records and do not by themselves require a new
+cold-start. A cold-start finding is classified as `BLOCKING`, `CLARIFY`, or
+`NON-BLOCKING`; a `BLOCKING` finding must be resolved in `SPEC.md` or `PLAN.md`
+before formal implementation, and a material change to the selected task requires
+that task's cold-start to be repeated. Human confirmation is recorded in
+`SPEC_PROCESS.md` and is a process record, not a cryptographic or admission gate.
+
 ### 1.2 Disposable cold-start trial
 
 The selected task IDs are attempted by an Agent whose type differs from the main development Agent. The Agent receives only the current `SPEC.md` and `PLAN.md` in a new session, with no prior conversation, memory, or oral explanation. The prompt must require it to pause and ask whenever the documents are insufficient rather than guessing. The trial lasts approximately one to two hours.
@@ -770,6 +787,104 @@ Gate scan: enumerate the staged, unstaged, and untracked changed-file union rela
 Failure rule: alternate sources, an incomplete or unreviewed lock, wrong interpreter/config, unknown runner commands, incomplete or drifting changed-file enumeration, non-redacted gate-scan output, installation drift, or identity drift stops Task 1 before its first behavior RED.
 Boundary: Resolution may contact only `https://pypi.org/simple` during the explicit lock step. Review must precede installation; every later gate command is offline. This prerequisite does not implement or test Win32/Docker/product behavior.
 ```
+
+**Closed pre-RED contract:** The following definitions are part of T01.1 and may
+not be inferred from a later task.
+
+`GateToolchainEvidenceV1` is the exact non-secret JSON shape written to
+`gates/evidence/gate-toolchain-v1.json`:
+
+```json
+{
+  "schema_version": 1,
+  "evidence_type": "GATE_TOOLCHAIN_EVIDENCE_V1",
+  "python_version": "3.12.<exact-patch>",
+  "pytest_version": "<exact-version>",
+  "ruff_version": "<exact-version>",
+  "mypy_version": "<exact-version>",
+  "gate_input_sha256": "<64 lowercase hex>",
+  "gate_lock_sha256": "<64 lowercase hex>",
+  "pytest_config_sha256": "<64 lowercase hex>",
+  "ruff_config_sha256": "<64 lowercase hex>",
+  "mypy_config_sha256": "<64 lowercase hex>",
+  "runner_sha256": "<64 lowercase hex>",
+  "gate_scan_sha256": "<64 lowercase hex>",
+  "evidence_digest": "<64 lowercase hex>"
+}
+```
+
+All fields are required, no additional fields are accepted, and every digest is
+the lowercase SHA-256 of the raw bytes of the named file. `python_version` is the
+exact `major.minor.patch` reported by the interpreter; the public
+`>=3.12,<3.13` range never substitutes for it. `evidence_digest` is the
+lowercase SHA-256 of the UTF-8 canonical JSON serialization of the same object
+with `evidence_digest` omitted (sorted keys, no insignificant whitespace, and a
+final newline excluded from the digest input). The lock/config/runner/scan
+digests and all four tool versions are compared character-for-character when the
+record is loaded. The evidence file is written only after lock review,
+hash-locked materialization, and the positive integrity checks succeed.
+
+The fixed gate-scan rule set operates on raw bytes, so text decoding or binary
+classification cannot silently skip a credential. It is exactly:
+
+| `rule_id` | Match boundary |
+| --- | --- |
+| `PRIVATE_KEY_BLOCK` | ASCII bytes matching `-----BEGIN [A-Z0-9][A-Z0-9 -]* PRIVATE KEY-----` at a token boundary. |
+| `GENERIC_API_KEY` | A case-insensitive ASCII key name `API_KEY`, `SECRET_KEY`, `ACCESS_TOKEN`, or `AUTH_TOKEN`, followed by optional horizontal whitespace, one of `=`, `:`, or `=>`, optional quote, and at least one non-whitespace value byte. |
+| `CREDENTIAL_URL` | ASCII bytes matching `[A-Za-z][A-Za-z0-9+.-]*://[^/\s:@]+:[^/\s@]+@` at a token boundary. |
+
+For all three rules, a token boundary is the start/end of the byte stream or an
+adjacent byte outside ASCII `[A-Za-z0-9_]`. `GENERIC_API_KEY` accepts either a
+non-empty single- or double-quoted value on the same line (the closing quote is
+required) or an unquoted value ending at whitespace, a comma, semicolon, `}`, or
+`)`; a delimiter without a value is not a match. The key-name comparison for
+`GENERIC_API_KEY` is ASCII case-insensitive; the PEM and URL patterns are
+case-sensitive exactly as written.
+
+The patterns are applied to every existing repository-relative regular file in
+the staged/unstaged/untracked changed-file union relative to `HEAD`. Deleted
+paths with no working-tree object are omitted; an unmerged/ambiguous Git entry,
+path escaping the repository after final resolution, non-regular existing object,
+or required-file read failure is an operational error. Matching output never
+contains the matched bytes, value, or surrounding context.
+
+On a clean scan, stdout is empty and the exit code is `0`. On a match, stdout
+contains only sorted unique lines of the form
+`MATCH<TAB><forward-slash-relative-path><TAB><rule_id>`, stderr is empty, and the
+exit code is `1`. On an operational or invocation error, stdout is empty, stderr
+contains exactly `ERROR<TAB><stable-code>` followed by one newline, and the exit
+code is `2`; the stable codes are `GATE_SCAN_INVALID_ARGUMENT`,
+`GATE_SCAN_GIT_ENUMERATION_FAILED`, `GATE_SCAN_PATH_ESCAPE`,
+`GATE_SCAN_NON_REGULAR_FILE`, and `GATE_SCAN_READ_FAILED`. Path sorting is
+ordinal over the normalized forward-slash path, then ordinal over `rule_id`.
+An operational error wins over all match facts, so no partial match result is
+reported.
+
+`scripts/run_gate_checks.py` accepts exactly the command tokens `pytest`,
+`ruff-format`, `ruff-check`, and `mypy`, followed by one required `--` separator.
+The wrapper owns the interpreter, working directory, environment, configuration,
+and report options and invokes, respectively, `python -m pytest -c
+gates/pytest.ini`, `python -m ruff format --check --config gates/ruff.toml`,
+`python -m ruff check --config gates/ruff.toml`, and `python -m mypy
+--config-file gates/mypy.ini`. Each token after `--` is one argv element and is
+never shell-parsed. `pytest` may receive only `-q`, `-v`, `-x`, a positive
+`--maxfail=N`, and declared repository-relative test selectors; the two Ruff
+commands may receive only repository-relative paths; `mypy` may receive only
+`src` and `tests` (or their declared descendants). Config/plugin/executable,
+environment, working-directory, cache, report-output, network, and arbitrary
+shell-expansion options are rejected before execution with
+`GATE_ARGUMENT_WIDENING`; an unknown command returns
+`GATE_COMMAND_UNKNOWN`, and a missing separator returns
+`GATE_ARGUMENT_SEPARATOR_MISSING`. These wrapper errors use exit code `2` and a
+single stable error line; otherwise the wrapped tool's exit code is propagated
+without rewriting its report bytes.
+
+If a disposable cold-start cannot resolve the declared lock, materialize the
+environment, or verify one of these definitions because of a real environment
+failure, it must stop and report that blocker. It must not invent a lock, schema,
+rule, placeholder evidence file, or first behavior RED. The first behavior RED
+remains T01.1's 1.B test and is valid only after all of the above 1.A checks have
+passed.
 
 **Bootstrap verification:**
 - Resolve: `python scripts/bootstrap_gate_env.py resolve-lock --input requirements/gate.in --lock requirements/gate.lock --index-url https://pypi.org/simple`

@@ -1536,3 +1536,35 @@ Reviewer 的总体 recommendation 为 `FAIL`。Reviewer 明确未将“尚未实
 修订提示后的第三次冷启动 Agent `Dalton`（`gpt-5.6-terra`，全新无历史 session）只读取了当前 `SPEC.md` 和 `PLAN.md`，随后正确暂停：当前候选文档仍是工作区未提交修改，原生 Git disposable worktree 从 `HEAD` 建立会得到旧版 SPEC/PLAN，无法证明试作依据当前文档。它未运行 1.A、1.B、依赖物化或测试，也未修改任何文件。
 
 该暂停是有效的过程反馈，不是 T01.1 可执行性 FAIL。为解决它，先建立一个只含当前文档和过程记录的候选提交（不含实现代码），再从该精确提交创建干净 disposable worktree，重新启动只选 `T01.1` bounded bootstrap 的冷启动。候选提交不是人工批准、不是正式实现提交，也不把任何试作代码合入主线。
+
+## 29. 冷启动 T01.1 合同缺口反馈（2026-08-02）
+
+### 29.1 试作身份与执行范围
+
+- **Agent:** `Wegener`（`019fc1bf-2211-7a13-84da-c104a6230117`），类型为 `gpt-5.4`，与主开发 Agent 类型不同。
+- **Session:** 全新、无历史上下文、`fork_context=false`；初始规范只提供当前 `SPEC.md` 和 `PLAN.md`。
+- **Worktree:** `D:\code\VesperCode\.worktrees\_cold-start-trials\cold-start-v3-3b68389`，从候选文档提交创建的 disposable worktree。
+- **范围:** 只尝试 `T01.1` 的 1.A bounded gate bootstrap，并在满足前置条件时进入 1.B；不读取 `SPEC_PROCESS.md`、`AGENT_LOG.md` 或 Git 历史，不执行正式实现流程。
+- **代码边界:** 没有修改文件、创建试作提交或生成正式证据。
+
+### 29.2 实际检查结果
+
+1. PATH Python probe 通过：`C:\ProgramData\anaconda3\python.exe`，Python `3.12.4`，`sys.version_info[:2] == (3, 12)`。
+2. 候选 worktree 中 `requirements/`、`scripts/`、`gates/`、`tests/`、`spikes/`、`src/` 和 `pyproject.toml` 均不存在；因此不能把缺少实现骨架误报为行为 RED。
+3. `T01.1` 的 1.A/1.B 顺序可理解：1.A 是 pre-RED prerequisite，1.B 才是第一个行为 RED。
+4. `T01.1` 要求固定 gate-scan 规则和 stable `rule_id`，但当前 `SPEC.md` 和 T01.1 没有规则表、命名集合、匹配边界或错误优先级。后续 `4.E` 中出现的 `GENERIC_API_KEY` 不能作为 T01.1 的隐式输入。
+5. `GateToolchainEvidenceV1` 没有在 `SPEC.md` 或 T01.1 中闭合定义，却被后续 `1.E`、`2.G`、`4.F` 和 `4.A` 消费；因此 1.A 不能无猜测创建 `gates/evidence/gate-toolchain-v1.json`。
+6. `scripts/run_gate_checks.py` 的命令集合存在概述，但参数转发、固定配置不可覆盖边界和稳定错误/输出语义仍不完整。
+
+### 29.3 结论与文档修订
+
+结论为 **T01.1 1.A 合同不自足，不能合法进入 1.B RED**。这不是环境失败，也不是要求 Agent 编写占位代码；它是对 SPEC/PLAN 隐含假设的有效冷启动发现。问题的主要性质不是任务数量过大，而是 pre-RED contract 缺少两个核心产物的精确定义。
+
+已接受以下修订：
+
+- 在 T01.1 内联 `GateToolchainEvidenceV1` 的完整字段、额外字段拒绝规则、原始文件 digest 绑定、canonical `evidence_digest` 和 exact `python_version` 语义；
+- 在 T01.1 内联 gate-scan 的固定 `rule_id` 集合、原始字节匹配边界、文本/二进制处理、路径/对象/读取失败语义、输出排序、退出码和无值输出规则；
+- 明确 `run_gate_checks.py` 的四个命令 token、固定解释器/配置、`--` 分隔符、可转发参数范围和禁止配置/执行环境扩展的稳定错误；
+- 明确冷启动在真实环境缺失或上述合同仍无法满足时必须暂停报告，不得创建假 lock、占位 evidence 或无效 RED。
+
+这些是 T01.1 的实质合同变更，故文档修订完成后必须从新的候选文档提交建立新的 disposable worktree，并重新进行 T01.1 冷启动。当前仍未获得 cold-start PASS，也未授权正式实现。

@@ -536,3 +536,17 @@
 - **Implementation/Git boundary:** No implementation code, tests, CI, Docker, credentials, release, deployment, PR, or cold-start code was created.
 - **Unfinished gates:** Candidate baseline commit and corrected T01.1 cold-start remain pending; no formal implementation is authorized.
 - **Lesson learned:** A cold-start experiment must pin the exact current document bytes in a clean, disposable baseline; otherwise the Agent may be testing a stale PLAN while appearing isolated.
+
+## COLD-START-T01.1-CONTRACT-GAP-20260802
+
+- **Timestamp (Asia/Taipei):** `2026-08-02` (exact wall-clock time not captured by the execution tool)
+- **Task ID:** `COLD-START-T01.1-CONTRACT-GAP-20260802`
+- **Skills invoked:** `superpowers:subagent-driven-development` and `superpowers:using-git-worktrees` were read for workflow compliance; no formal implementation skill was used.
+- **Key prompt/context:** Start a fresh, no-history, different-type cold-start in the exact disposable candidate worktree. Initial context was only `SPEC.md` and `PLAN.md`; the Agent was instructed to attempt only the bounded `T01.1` 1.A scope, explore the repository normally, and pause rather than guess.
+- **Agent/result:** `Wegener` (`019fc1bf-2211-7a13-84da-c104a6230117`, `gpt-5.4`) ran in `D:\code\VesperCode\.worktrees\_cold-start-trials\cold-start-v3-3b68389`. The Python 3.12 probe passed (`C:\ProgramData\anaconda3\python.exe`, `3.12.4`), but `requirements/`, `scripts/`, `gates/`, `tests/`, `spikes/`, `src/`, and `pyproject.toml` were absent. The Agent correctly stopped before 1.B and changed no files.
+- **Finding:** T01.1 1.A was not self-contained. The fixed gate-scan rule set/stable `rule_id` semantics were missing; `GateToolchainEvidenceV1` was consumed by later tasks but not defined in SPEC/T01.1; and runner command/argument-boundary/error semantics were incomplete. Entering 1.B would have required guessing.
+- **Human intervention:** Accepted the finding as a `BLOCKING` cold-start contract issue. No placeholder lock, evidence, implementation, or RED was authorized.
+- **Document changes:** `PLAN.md` now defines the synchronization rule, exact `GateToolchainEvidenceV1` shape/digest binding, fixed raw-byte gate-scan rules and output/error semantics, closed runner commands and argument restrictions, and the mandatory pause behavior. `SPEC_PROCESS.md` §29 records the full finding and re-run requirement.
+- **Verification:** Patch applied successfully; formal code/tests were not run because implementation remains prohibited. The next verification is a new candidate document commit, a clean disposable worktree from that commit, and a fresh T01.1 cold-start.
+- **Lesson learned:** A readable task card is not executable if its pre-RED artifacts are defined only by successor tasks. Every selected cold-start task must own its complete schema, rules, command boundaries, and fail-closed semantics.
+- **Status:** No cold-start PASS; formal implementation remains blocked by the course sequence until the corrected trial completes.
