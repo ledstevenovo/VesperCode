@@ -1656,3 +1656,35 @@ Agent 未猜测、未创建占位文件、未修改或提交任何代码，正�
 已采纳现有 `GATE_OFFLINE_V1` 精确命令为权威，并在 `PLAN.md` T01.1 runner 合同中明确：两个 Ruff 命令可以接收精确的 `.` 仓库根哨兵或 repository-relative paths；`.` 是唯一允许的非路径根哨兵，并作为一个 argv 元素转发。最小完整性测试同步要求验证 `ruff-format -- .` 和 `ruff-check -- .` 均被接受；其他参数关闭边界不变。
 
 这是选定冷启动 task 的 runner 接口和测试合同的实质变化。必须从该修订后的候选文档提交创建新的 disposable worktree，并用全新、无历史上下文的不同类型 Agent 重跑 `T01.1` bounded `1.Aa`。当前仍没有 cold-start PASS，也没有正式实现授权；本次修订不引入 M0、双审计、语义摘要审批、JSON admission evidence 或 baseline 要求。
+
+## 33. 第五次 T01.1 冷启动的 1.Aa 执行边界反馈（2026-08-02）
+
+### 33.1 试作身份与执行范围
+
+- **Agent:** `Carver`（`019fc201-8f38-7ad0-8abe-cf639eaa147d`，`gpt-5.6-luna`），全新 session、`fork_context=false`、无历史上下文。
+- **Worktree:** `D:\code\VesperCode\.worktrees\_cold-start-trials\cold-start-v7-cc12380`，精确绑定候选提交 `cc123806a3620788ddc98960af8bdeab60bd8c01`。
+- **Initial context:** 只读取 `SPEC.md` 和 `PLAN.md`；未读取 `SPEC_PROCESS.md`、`AGENT_LOG.md`、其他 worktree、父工作区文件、Git 历史或本对话内容。
+- **范围:** 只尝试 `T01.1` bounded `1.Aa`；未进入 `1.Ab`、`1.Ac` 或 `1.B`，未修改或提交任何文件。
+
+### 33.2 新的 BLOCKING 反馈
+
+Carver 实际核对并暂停，结论为 `BLOCKING`：
+
+1. `1.Aa` 只有完整 1.A bootstrap 的 `.venv-gate` integrity 命令，没有一个在“不物化环境”边界内运行前六个测试的专用命令；
+2. 测试要求注入 Git enumeration、path、object、read failure，但没有定义可观察的函数、模块或测试替身接口；
+3. 当前候选工作树中没有 `1.Aa` 声明的实现/测试文件，不能把缺失文件当成既有 fixture 或偷偷依赖后续任务；
+4. PATH 环境为 Python `3.12.4`、pytest `7.4.4`、Mypy `1.10.0` 且未安装 Ruff，不满足 gate profile；但 `1.Aa` 又没有说明是否允许使用标准库路径来验证其自身合同。
+
+Carver 运行了 Python/Git/工具版本和工作树状态检查，发现工作树干净，未猜测接口、未创建占位 lock/evidence、未进入 `1.B`。这些是 `1.Aa` 合同和环境边界的文档问题，不是可由实现者自行选择解决的环境问题。
+
+### 33.3 采纳修订与后续
+
+已在 `PLAN.md` 中采纳以下最小修订：
+
+- 将 `1.Aa` 明确为 PATH Python `3.12` 的标准库-only `unittest` slice；新增精确 Python probe 和 `AaIntegrityTests` 命令。该 slice 不接触 PyPI、不调用第三方 test runner/Ruff/Mypy、不创建 `.venv-gate`、不解析 lock、不写 evidence；
+- 为 `run_gate_checks.py` 定义 `build_closed_argv`/`run_closed_command` 的可注入 subprocess seam；
+- 新增 Task 1-owned `scripts/gate_scan.py`，定义 `GateScanHooksV1`、`GateScanRunResultV1` 和 `run_gate_scan` seam；`scan_gate_changed_files.ps1` 仅作为无参数入口委托给默认 hooks；同时在 `GateToolchainEvidenceV1` 中分别绑定 PowerShell 入口和 Python 核心的 raw-file SHA-256；
+- 将前六个完整性测试归入 `AaIntegrityTests`，后两个归入 `AbAcIntegrityTests`，并把完整 gate integrity 命令保留到 `1.Ac`；
+- 将新增 helper 纳入文件所有权和 T01.1 提交清单。
+
+这是选定冷启动 task 的测试运行边界、环境前提和测试接口的实质变化，必须从修订后的新候选提交建立 disposable worktree，并用全新、无历史上下文的不同类型 Agent 重跑 `T01.1` bounded `1.Aa`。当前仍没有 cold-start PASS，也没有正式实现授权；本次修订不引入 M0、双审计、语义摘要审批、JSON admission evidence 或 baseline 要求。
