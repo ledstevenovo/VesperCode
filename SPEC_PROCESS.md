@@ -1708,3 +1708,23 @@ Carver 运行了 Python/Git/工具版本和工作树状态检查，发现工作�
 已在 `PLAN.md` 中明确：声明文件在冷启动初始状态可以不存在；Step 1 负责创建它们，Step 1.Aa 命令只在 Step 1 后运行；只有 Step 1 后仍缺文件、seam 不可用、Python probe 失败或出现未定义歧义才是 `BLOCKING`。下一轮提示将明确要求 Agent 先执行 Step 1，再运行 1.Aa 命令。
 
 该修订仍属于选定 task 的执行顺序合同变化，必须从新候选文档提交创建 disposable worktree，并由全新、无历史上下文的不同类型 Agent 重跑 `T01.1` bounded `1.Aa`。当前没有 cold-start PASS，也没有正式实现授权；Russell 的服务失败不计入成功尝试。
+
+## 35. 第七次 T01.1 冷启动的 PASS 复核与 gate-scan 输出偏差（2026-08-02）
+
+### 35.1 Dirac 试作结果
+
+- **Agent:** `Dirac`（`019fc21d-3756-7f90-8d95-19bcdab1ae43`，`gpt-5.4-mini`），全新、无历史上下文 session；候选提交为 `82af24150dd1da5f8a6ccb6ecdcc3c03f6a6c697`，worktree 为 `D:\code\VesperCode\.worktrees\_cold-start-trials\cold-start-v9-82af241`。
+- **执行:** Agent 先按 Step 1 创建了 1.Aa 验证性文件，再运行 Python 3.12 probe 和 `python -m unittest -v tests.feasibility.gate.test_gate_bootstrap.AaIntegrityTests`。第一次测试因自身 runner 对 Ruff `--config` 的判断过宽而失败，修正后报告 6/6 通过；未进入 `1.Ab/1.Ac/1.B`，未提交。
+- **独立复核:** 主 Agent 在同一 disposable worktree 重跑两个约定命令，probe exit `0`，`AaIntegrityTests` 显示 6 tests、`OK`；确认 `requirements/gate.lock`、gate evidence 和 1.B evaluator/test 文件均不存在。该复核证明命令可运行和任务边界可执行，但不自动证明试作实现符合所有 PLAN 输出合同。
+
+### 35.2 新的 BLOCKING 偏差
+
+Dirac 的正向测试和实现把 credential match 的结果写成 `stderr="ERROR\\tGATE_SCAN_CREDENTIAL_MATCH\\n"`。但当前 `PLAN.md` 的 gate-scan contract 明确规定：match 时退出码为 `1`，stdout 只包含 `MATCH<TAB>path<TAB>rule_id` 行，stderr 必须为空；稳定 `ERROR<TAB>...` 只属于退出码 `2` 的 operational/invocation error。该偏差不是规范允许的另一种命名，而是实现和正向测试遗漏了既有 output contract。
+
+因此本次 Dirac 报告不能作为最终 cold-start PASS。它有效证明了：Agent 能找到 Step 1、创建 1.Aa 文件并运行命令；同时暴露了 1.Aa 最小正向测试没有把 match 的空 stderr 断言写成明确完成条件，允许错误理解通过。
+
+### 35.3 采纳修订与后续
+
+已将 `test_gate_scan_emits_sorted_redacted_rule_ids` 的首断言边界补强为：match exit `1`、仅有精确 `MATCH<TAB>path<TAB>rule_id` stdout、stderr 精确为空、不得泄露值。保留现有 operational error 的稳定 `ERROR` 断言。Dirac 的代码和测试均为 disposable 验证性试作，不合并、不采纳。
+
+这是选定冷启动 task 的完成条件实质修订，必须从新候选文档提交创建 disposable worktree，并以全新、无历史上下文的不同类型 Agent 重跑 `T01.1` bounded `1.Aa`。当前仍没有 cold-start PASS，也没有正式实现授权。

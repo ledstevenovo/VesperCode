@@ -894,7 +894,8 @@ behavior is needed to close 1.Aa:
   environment, working-directory, cache, report, network, and shell-expansion
   options return `GATE_ARGUMENT_WIDENING` before execution;
 - `test_gate_scan_emits_sorted_redacted_rule_ids`: staged, unstaged, and
-  untracked fixtures produce only sorted unique path/rule-id lines and no value;
+  untracked fixtures produce exit `1`, only sorted unique `MATCH<TAB>path<TAB>rule_id`
+  stdout lines, exactly empty stderr, and no matched value;
 - `test_gate_scan_fails_closed_on_git_path_object_or_read_error`: each injected
   failure returns exit `2`, the named stable code, empty stdout, and no partial
   match result;

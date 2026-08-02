@@ -595,6 +595,23 @@
 - **Lesson learned:** A global profile's exact command is part of the task contract. When a root sentinel is required by that command, the runner prose and its positive test must name the sentinel explicitly rather than relying on an ambiguous “relative path” phrase.
 - **Status:** BLOCKING document revision recorded; repeat cold-start required.
 
+## COLD-START-T01.1-AAA-EXECUTION-BOUNDARY-20260802
+
+- **Timestamp (Asia/Taipei):** `2026-08-02T18:36:20+08:00`
+- **Task ID:** `COLD-START-T01.1-AAA-EXECUTION-BOUNDARY-20260802`
+- **Skills invoked:** `dispatching-parallel-agents`, `using-git-worktrees`, and `superpowers:subagent-driven-development` were read for workflow compliance; no formal implementation skill was used.
+- **Key prompt/context:** Run a fresh, no-history, different-type cold-start from candidate `cc123806a3620788ddc98960af8bdeab60bd8c01` in a new disposable worktree. Initial context was only `SPEC.md` and `PLAN.md`; normal repository exploration was allowed, and uncertainty required pausing rather than guessing.
+- **Agent/result:** `Carver` (`019fc201-8f38-7ad0-8abe-cf639eaa147d`, `gpt-5.6-luna`) ran in `D:\code\VesperCode\.worktrees\_cold-start-trials\cold-start-v7-cc12380`. It read only the two documents, found the worktree clean, and made no file or commit changes.
+- **Observed environment:** PATH Python `3.12.4`; PATH pytest `7.4.4` (outside `pytest>=8,<9`); PATH Mypy `1.10.0`; Ruff unavailable. The declared 1.Aa files/directories were absent, as expected for a fresh candidate with no formal implementation.
+- **Finding:** 1.Aa had no dedicated command that could run before `.venv-gate` materialization, and the requested Git/path/object/read failure cases had no defined injection seam. Treating the missing files as existing fixtures or using the mismatched PATH tools would require guessing or bypassing the documented boundary. Carver stopped with `BLOCKING` and did not enter 1.Ab/1.Ac/1.B.
+- **Human intervention:** Accepted the finding as a `BLOCKING` task-contract issue. No placeholder lock/evidence, implementation, RED, tool installation, or formal artifact was authorized.
+- **Document changes:** `PLAN.md` now defines a stdlib-only PATH Python 3.12 `AaIntegrityTests` command/probe; separates `AaIntegrityTests` from `AbAcIntegrityTests`; defines `build_closed_argv`/`run_closed_command` and `GateScanHooksV1`/`GateScanRunResultV1`/`run_gate_scan`; adds `scripts/gate_scan.py`; binds both the PowerShell entrypoint and Python scan core in `GateToolchainEvidenceV1`; and binds the helper in the task file/commit lists. `SPEC_PROCESS.md` §33 records the finding and repeat requirement.
+- **Verification:** No formal code/tests were run; the document patch remains to be diff-checked and committed. A new candidate document commit, disposable worktree, and fresh T01.1 cold-start are required.
+- **Implementation/Git boundary:** No formal source/test implementation, CI, Docker, credential operation, release, deployment, PR, or merge was performed. Cold-start code/commits remain disposable and are never merged.
+- **Unfinished gates:** No cold-start PASS; formal implementation remains prohibited until the corrected trial completes and its findings are recorded.
+- **Lesson learned:** A pre-RED slice is only independently testable when its environment, exact command, failure-injection seam, and relationship to later toolchain materialization are all explicit. Naming positive tests alone is insufficient.
+- **Status:** BLOCKING document revision recorded; repeat cold-start required.
+
 ## COLD-START-T01.1-SERVICE-DISCONNECT-AND-INITIAL-STATE-20260802
 
 - **Timestamp (Asia/Taipei):** `2026-08-02T18:51:39+08:00`
@@ -612,19 +629,17 @@
 - **Lesson learned:** In a plan whose task owns file creation, “file absent” is a normal initial state. Completion checks must distinguish pre-step starting state from post-step missing output, or a fresh Agent will stop before attempting the task.
 - **Status:** BLOCKING wording revision recorded; repeat cold-start required.
 
-## COLD-START-T01.1-AAA-EXECUTION-BOUNDARY-20260802
+## COLD-START-T01.1-GATE-SCAN-OUTPUT-CONTRACT-20260802
 
-- **Timestamp (Asia/Taipei):** `2026-08-02T18:36:20+08:00`
-- **Task ID:** `COLD-START-T01.1-AAA-EXECUTION-BOUNDARY-20260802`
+- **Timestamp (Asia/Taipei):** `2026-08-02` (exact wall-clock time not captured by the execution tool)
+- **Task ID:** `COLD-START-T01.1-GATE-SCAN-OUTPUT-CONTRACT-20260802`
 - **Skills invoked:** `dispatching-parallel-agents`, `using-git-worktrees`, and `superpowers:subagent-driven-development` were read for workflow compliance; no formal implementation skill was used.
-- **Key prompt/context:** Run a fresh, no-history, different-type cold-start from candidate `cc123806a3620788ddc98960af8bdeab60bd8c01` in a new disposable worktree. Initial context was only `SPEC.md` and `PLAN.md`; normal repository exploration was allowed, and uncertainty required pausing rather than guessing.
-- **Agent/result:** `Carver` (`019fc201-8f38-7ad0-8abe-cf639eaa147d`, `gpt-5.6-luna`) ran in `D:\code\VesperCode\.worktrees\_cold-start-trials\cold-start-v7-cc12380`. It read only the two documents, found the worktree clean, and made no file or commit changes.
-- **Observed environment:** PATH Python `3.12.4`; PATH pytest `7.4.4` (outside `pytest>=8,<9`); PATH Mypy `1.10.0`; Ruff unavailable. The declared 1.Aa files/directories were absent, as expected for a fresh candidate with no formal implementation.
-- **Finding:** 1.Aa had no dedicated command that could run before `.venv-gate` materialization, and the requested Git/path/object/read failure cases had no defined injection seam. Treating the missing files as existing fixtures or using the mismatched PATH tools would require guessing or bypassing the documented boundary. Carver stopped with `BLOCKING` and did not enter 1.Ab/1.Ac/1.B.
-- **Human intervention:** Accepted the finding as a `BLOCKING` task-contract issue. No placeholder lock/evidence, implementation, RED, tool installation, or formal artifact was authorized.
-- **Document changes:** `PLAN.md` now defines a stdlib-only PATH Python 3.12 `AaIntegrityTests` command/probe; separates `AaIntegrityTests` from `AbAcIntegrityTests`; defines `build_closed_argv`/`run_closed_command` and `GateScanHooksV1`/`GateScanRunResultV1`/`run_gate_scan`; adds `scripts/gate_scan.py`; binds both the PowerShell entrypoint and Python scan core in `GateToolchainEvidenceV1`; and binds the helper in the task file/commit lists. `SPEC_PROCESS.md` §33 records the finding and repeat requirement.
-- **Verification:** No formal code/tests were run; the document patch remains to be diff-checked and committed. A new candidate document commit, disposable worktree, and fresh T01.1 cold-start are required.
-- **Implementation/Git boundary:** No formal source/test implementation, CI, Docker, credential operation, release, deployment, PR, or merge was performed. Cold-start code/commits remain disposable and are never merged.
-- **Unfinished gates:** No cold-start PASS; formal implementation remains prohibited until the corrected trial completes and its findings are recorded.
-- **Lesson learned:** A pre-RED slice is only independently testable when its environment, exact command, failure-injection seam, and relationship to later toolchain materialization are all explicit. Naming positive tests alone is insufficient.
-- **Status:** BLOCKING document revision recorded; repeat cold-start required.
+- **Key prompt/context:** Run the bounded `T01.1/1.Aa` cold-start from the current candidate documents in a fresh disposable worktree. Initial context was only `SPEC.md` and `PLAN.md`; the Agent was told to execute Step 1 before the Aa command, stop before `1.Ab/1.Ac/1.B`, and pause rather than guess.
+- **Agent/result:** `Dirac` (`019fc21d-3756-7f90-8d95-19bcdab1ae43`, `gpt-5.4-mini`) ran in `D:\code\VesperCode\.worktrees\_cold-start-trials\cold-start-v9-82af241`, based on candidate commit `82af24150dd1da5f8a6ccb6ecdcc3c03f6a6c697`. It created the disposable 1.Aa validation files, ran the Python 3.12 probe successfully, and ran `python -m unittest -v tests.feasibility.gate.test_gate_bootstrap.AaIntegrityTests`; after correcting its own Ruff-config assertion, the suite reported 6/6 tests passing. It did not enter `1.Ab`, `1.Ac`, or `1.B`, and did not commit.
+- **Finding:** The disposable implementation and its positive test emitted `ERROR<TAB>GATE_SCAN_CREDENTIAL_MATCH` on stderr for a credential match. The current PLAN contract requires match exit `1`, stdout containing only sorted `MATCH<TAB>path<TAB>rule_id` lines, exactly empty stderr, and no matched value. `ERROR<TAB>...` is reserved for exit `2` operational or invocation errors.
+- **Human intervention:** Classified the result as useful execution feedback but not a cold-start PASS. The disposable files and any uncommitted trial state remain excluded from formal implementation.
+- **Document changes:** `PLAN.md` now states the exact match exit/stdout/stderr contract for `test_gate_scan_emits_sorted_redacted_rule_ids`; `SPEC_PROCESS.md` §35 records the finding, decision, and required repeat.
+- **Verification:** The host independently re-ran the Python probe and Aa suite in the same disposable worktree with probe exit `0` and 6/6 tests passing. This verifies task ordering and command executability, but not compliance with the corrected output contract.
+- **Implementation/Git boundary:** No formal source/test implementation, CI, Docker, credential operation, release, deployment, PR, merge, or accepted trial commit was created.
+- **Unfinished gates:** No cold-start PASS; the corrected candidate document commit and a new fresh cold-start are still required before formal implementation.
+- **Lesson learned:** A positive integrity suite can pass while omitting a key output-channel invariant. Selected cold-start tests must assert every externally visible field that determines task completion, especially exit code, stdout, stderr, and redaction behavior.
