@@ -911,6 +911,12 @@ The first six tests are the 1.Aa completion boundary; the last two belong to
 pre-RED integrity tests, not the T01.1 behavior RED. The first behavior RED
 remains the displayed 1.B test below.
 
+The six `AaIntegrityTests` method names and first assertions above are
+normative task contracts, not examples. A green suite that substitutes other
+method names, tests only helper functions, or omits the stated exit/stdout/
+stderr/error assertions does not satisfy 1.Aa completion and must be recorded
+as a cold-start finding.
+
 **1.Aa command and environment contract:** After Step 1 has created the
 declared modules and test class, first run
 `python -c "import sys; raise SystemExit(0 if sys.version_info[:2] == (3, 12) else 3)"`.

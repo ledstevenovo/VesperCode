@@ -643,3 +643,18 @@
 - **Implementation/Git boundary:** No formal source/test implementation, CI, Docker, credential operation, release, deployment, PR, merge, or accepted trial commit was created.
 - **Unfinished gates:** No cold-start PASS; the corrected candidate document commit and a new fresh cold-start are still required before formal implementation.
 - **Lesson learned:** A positive integrity suite can pass while omitting a key output-channel invariant. Selected cold-start tests must assert every externally visible field that determines task completion, especially exit code, stdout, stderr, and redaction behavior.
+
+## COLD-START-T01.1-V10-CONTRACT-MISMATCH-20260802
+
+- **Timestamp (Asia/Taipei):** `2026-08-02` (exact wall-clock time not captured by the execution tool)
+- **Task ID:** `COLD-START-T01.1-V10-CONTRACT-MISMATCH-20260802`
+- **Skills invoked:** `using-git-worktrees`, `dispatching-parallel-agents`, and `superpowers:subagent-driven-development` were used for the disposable trial boundary; no formal implementation skill was used.
+- **Key prompt/context:** From candidate document commit `93f2fb7d030385c1f0729b727f47bd58c9dc1519`, run a fresh no-history different-type Agent against only the bounded `T01.1/1.Aa` scope in `D:\code\VesperCode\.worktrees\_cold-start-trials\cold-start-v10-93f2fb7`; execute Step 1, then the exact Python probe and Aa command; stop before `1.Ab/1.Ac/1.B`; pause rather than guess.
+- **Lagrange attempt:** `Lagrange` (`019fc241-c894-7082-b3b8-cf0a1ce474d2`, `gpt-5.6-luna`) could not start because its read-only command execution returned `CreateProcessAsUserW failed: 5` in both the worktree and repository root. It read no documents, changed no files, and produced no trial result. This is an environment failure, not PASS or a document finding.
+- **Aquinas attempt:** `Aquinas` (`019fc243-5135-7fb1-b309-4f91d8503e87`, `gpt-5.4-mini`) created the disposable `requirements/gate.in`, gate configs, gate scripts, and `tests/feasibility/gate/test_gate_bootstrap.py`; it ran the Python probe with `exit=0` and `python -m unittest -v tests.feasibility.gate.test_gate_bootstrap.AaIntegrityTests` with 6 tests and `OK`. It did not enter `1.Ab/1.Ac/1.B`, commit, or merge.
+- **Independent verification:** The host reran both exact commands with the same results. Inspection showed that the six methods were substituted helper tests (`test_changed_file_enumeration_is_deterministic`, `test_format_match_is_exact_and_ordered`, and others), not the six normative names in PLAN; `test_gate_scan_emits_sorted_redacted_rule_ids` was absent, and match exit/stdout/empty-stderr assertions were absent.
+- **Human intervention:** Classified the result as command-executable but contract-mismatched; the cold-start is not PASS. All v10 files remain disposable and are excluded from formal implementation.
+- **Document changes:** `PLAN.md` now explicitly states that the six Aa method names and first assertions are normative, not examples. `SPEC_PROCESS.md` §36 records both attempts, the independent evidence, and the required repeat.
+- **Verification:** `git diff --check` passed for the document revision; the exact cold-start probe and Aa command passed in v10, but the required method/contract coverage failed review. No credential, CI, Docker, release, deployment, PR, or formal implementation action was performed.
+- **Unfinished gates:** No cold-start PASS; a new candidate document commit, disposable worktree, and fresh different-type cold-start are required before formal implementation.
+- **Lesson learned:** A passing test count is insufficient evidence when the plan names exact tests and first assertions. The validation must inspect the test identities and externally visible output channels, not only the runner exit code.

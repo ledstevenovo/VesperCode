@@ -1728,3 +1728,22 @@ Dirac 的正向测试和实现把 credential match 的结果写成 `stderr="ERRO
 已将 `test_gate_scan_emits_sorted_redacted_rule_ids` 的首断言边界补强为：match exit `1`、仅有精确 `MATCH<TAB>path<TAB>rule_id` stdout、stderr 精确为空、不得泄露值。保留现有 operational error 的稳定 `ERROR` 断言。Dirac 的代码和测试均为 disposable 验证性试作，不合并、不采纳。
 
 这是选定冷启动 task 的完成条件实质修订，必须从新候选文档提交创建 disposable worktree，并以全新、无历史上下文的不同类型 Agent 重跑 `T01.1` bounded `1.Aa`。当前仍没有 cold-start PASS，也没有正式实现授权。
+
+## 36. 第八次 T01.1 冷启动的命令可执行但 Aa 合同未满足（2026-08-02）
+
+### 36.1 Lagrange 执行环境失败
+
+- **Agent:** `Lagrange`（`019fc241-c894-7082-b3b8-cf0a1ce474d2`，`gpt-5.6-luna`），全新、无历史上下文 session；worktree 为 `D:\code\VesperCode\.worktrees\_cold-start-trials\cold-start-v10-93f2fb7`。
+- **结果:** Agent 在指定 worktree 和仓库根目录执行只读命令时均遇到 `CreateProcessAsUserW failed: 5`，未读取 `SPEC.md`/`PLAN.md`，未创建文件，未运行验证命令，也未修改文件。
+- **分类:** 环境失败，不是 SPEC/PLAN 发现，也不计为 PASS。主 Agent 随后确认 v10 worktree 可读、HEAD 为候选文档提交 `93f2fb7d030385c1f0729b727f47bd58c9dc1519`；该次 session 的代码没有留下。
+
+### 36.2 Aquinas 试作与独立复核
+
+- **Agent:** `Aquinas`（`019fc243-5135-7fb1-b309-4f91d8503e87`，`gpt-5.4-mini`），全新、无历史上下文 session；初始只提供 `SPEC.md` 和 `PLAN.md`，worktree 为同一 v10 disposable worktree。
+- **执行:** Agent 按 Step 1 创建了 gate 输入、配置、runner、gate-scan 和 `AaIntegrityTests` 文件；未进入 `1.Ab/1.Ac/1.B`，未提交、未合并。Python 3.12 probe 为 `exit=0`；`python -m unittest -v tests.feasibility.gate.test_gate_bootstrap.AaIntegrityTests` 报告 6 tests、`OK`。
+- **独立复核:** 主 Agent 使用同两条精确命令得到 probe `exit=0` 和 6 tests `OK`。但实际测试方法为 `test_changed_file_enumeration_is_deterministic`、`test_format_match_is_exact_and_ordered` 等，缺少 PLAN 要求的六个规范方法，包括 `test_gate_scan_emits_sorted_redacted_rule_ids`；测试也未断言 match 的 `exit=1`、精确 stdout 和空 stderr。
+- **结论:** 这是“命令可执行但验证性实现未遵守已明确的 Aa 完成合同”，不是允许 Agent 猜测的文档歧义，因此 Aquinas 轮不能作为 cold-start PASS。disposable 文件和修改均不采纳。
+
+### 36.3 修订与后续
+
+已在 `PLAN.md` 明确：六个 `AaIntegrityTests` 方法名及其首断言是规范合同，不是示例；替换方法名、只测试 helper 或遗漏 exit/stdout/stderr/error 断言均不满足 1.Aa。该修订仍需从新的候选文档提交创建 disposable worktree，并用全新、无历史上下文的不同类型 Agent 重跑；当前没有正式实现授权。
