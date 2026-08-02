@@ -1688,3 +1688,23 @@ Carver 运行了 Python/Git/工具版本和工作树状态检查，发现工作�
 - 将新增 helper 纳入文件所有权和 T01.1 提交清单。
 
 这是选定冷启动 task 的测试运行边界、环境前提和测试接口的实质变化，必须从修订后的新候选提交建立 disposable worktree，并用全新、无历史上下文的不同类型 Agent 重跑 `T01.1` bounded `1.Aa`。当前仍没有 cold-start PASS，也没有正式实现授权；本次修订不引入 M0、双审计、语义摘要审批、JSON admission evidence 或 baseline 要求。
+
+## 34. 第六次 T01.1 冷启动尝试：服务断开与初始文件状态边界（2026-08-02）
+
+### 34.1 Russell 尝试
+
+- **Agent:** `Russell`（`019fc211-cecd-7340-ae84-2d470a0513eb`，`gpt-5.4`），在候选提交 `820f32fe195b3f6a840e6cd2a13cc285f2c98df0` 的 disposable worktree `cold-start-v8-820f32f` 中以全新、无历史上下文 session 启动。
+- **结果:** session 在返回报告前发生 `stream disconnected before completion`。没有可用的任务判断、测试结果或代码提交；只读检查确认 worktree 没有未提交改动。该尝试不构成 PASS、BLOCKING 文档结论或正式证据。
+
+### 34.2 Laplace 反馈
+
+- **Agent:** `Laplace`（`019fc217-1abd-7ce0-b3ec-8df1d728efac`，`gpt-5.6-terra`），同一候选提交和 worktree 上的全新、无历史上下文 session；只读取 `SPEC.md` 和 `PLAN.md`，未修改或提交文件。
+- **已验证:** PATH Python `3.12.4` probe 通过；`1.Aa` 的标准库限制、精确命令、runner seam、gate-scan seam 和不进入 `1.Ab/1.Ac/1.B` 的边界均可定位。
+- **观察:** 在干净候选中直接运行 `python -m unittest -v tests.feasibility.gate.test_gate_bootstrap.AaIntegrityTests` 得到 `ModuleNotFoundError: No module named 'tests.feasibility'`，因为 `1.Aa` 声明的测试和实现文件尚未由 Step 1 创建。Laplace 依据 PLAN 中过宽的“missing declared file is BLOCKING”措辞停止，没有猜测或补写文件。
+- **结论:** 这是 `PLAN.md` 执行顺序措辞问题：冷启动应先执行 Step 1 的 pre-RED 文件创建和 seam 实现，再执行 Step 1.Aa；干净候选在 Step 1 之前缺少这些文件是预期状态，不应直接判为阻塞。`1.Aa` 的 task 范围本身没有因此变大，也没有进入后续切片。
+
+### 34.3 采纳修订与后续
+
+已在 `PLAN.md` 中明确：声明文件在冷启动初始状态可以不存在；Step 1 负责创建它们，Step 1.Aa 命令只在 Step 1 后运行；只有 Step 1 后仍缺文件、seam 不可用、Python probe 失败或出现未定义歧义才是 `BLOCKING`。下一轮提示将明确要求 Agent 先执行 Step 1，再运行 1.Aa 命令。
+
+该修订仍属于选定 task 的执行顺序合同变化，必须从新候选文档提交创建 disposable worktree，并由全新、无历史上下文的不同类型 Agent 重跑 `T01.1` bounded `1.Aa`。当前没有 cold-start PASS，也没有正式实现授权；Russell 的服务失败不计入成功尝试。

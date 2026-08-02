@@ -595,6 +595,23 @@
 - **Lesson learned:** A global profile's exact command is part of the task contract. When a root sentinel is required by that command, the runner prose and its positive test must name the sentinel explicitly rather than relying on an ambiguous “relative path” phrase.
 - **Status:** BLOCKING document revision recorded; repeat cold-start required.
 
+## COLD-START-T01.1-SERVICE-DISCONNECT-AND-INITIAL-STATE-20260802
+
+- **Timestamp (Asia/Taipei):** `2026-08-02T18:51:39+08:00`
+- **Task ID:** `COLD-START-T01.1-SERVICE-DISCONNECT-AND-INITIAL-STATE-20260802`
+- **Skills invoked:** `dispatching-parallel-agents`, `using-git-worktrees`, and `superpowers:subagent-driven-development` were read for workflow compliance; no formal implementation skill was used.
+- **Candidate/worktree:** Candidate `820f32fe195b3f6a840e6cd2a13cc285f2c98df0`; disposable worktree `D:\code\VesperCode\.worktrees\_cold-start-trials\cold-start-v8-820f32f`.
+- **Russell attempt:** Fresh `gpt-5.4` session `019fc211-cecd-7340-ae84-2d470a0513eb` disconnected before completion while running the cold-start prompt. No usable result was returned; a read-only status check found no worktree changes. This is neither PASS nor a document finding.
+- **Laplace attempt:** Fresh `gpt-5.6-terra` session `019fc217-1abd-7ce0-b3ec-8df1d728efac` read only `SPEC.md`/`PLAN.md`. The Python 3.12 probe passed, but the exact Aa command failed with `ModuleNotFoundError: No module named 'tests.feasibility'` because the clean candidate had not yet executed Step 1 to create the declared files. Laplace made no changes or commit and did not enter 1.Ab/1.Ac/1.B.
+- **Finding:** The plan's wording made initial absence of task-owned files look like a BLOCKING result, although Step 1 is the pre-RED construction step that creates those files. Initial absence in a clean candidate is expected; post-Step-1 absence is blocking.
+- **Human intervention:** Accepted the execution-order finding. No placeholder files, lock/evidence, implementation, tool installation, or formal artifact was authorized.
+- **Document changes:** `PLAN.md` now states that Step 1 creates the declared files and that Step 1.Aa runs afterward; only a missing file after Step 1 is blocking. `SPEC_PROCESS.md` §34 records both attempts and the required repeat.
+- **Verification:** No formal code/tests were run; the document patch remains to be diff-checked and committed. A new candidate document commit, disposable worktree, and fresh cold-start that follows Step 1 before Aa verification are required.
+- **Implementation/Git boundary:** No formal source/test implementation, CI, Docker, credentials, release, deployment, PR, merge, or accepted trial commit was created.
+- **Unfinished gates:** No cold-start PASS; formal implementation remains prohibited.
+- **Lesson learned:** In a plan whose task owns file creation, “file absent” is a normal initial state. Completion checks must distinguish pre-step starting state from post-step missing output, or a fresh Agent will stop before attempting the task.
+- **Status:** BLOCKING wording revision recorded; repeat cold-start required.
+
 ## COLD-START-T01.1-AAA-EXECUTION-BOUNDARY-20260802
 
 - **Timestamp (Asia/Taipei):** `2026-08-02T18:36:20+08:00`

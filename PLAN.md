@@ -808,7 +808,9 @@ sub-slices of T01.1, not additional approval gates or product tasks:
   named `AaIntegrityTests` set below passing with the fixed command/output
   contracts. It uses only the standard library and the PATH-resolved Python
   3.12 probe; the installed versions of pytest, Ruff, Mypy, pywin32, and Docker
-  are not 1.Aa prerequisites.
+  are not 1.Aa prerequisites. These declared files are expected to be absent
+  in the clean candidate at trial start; Step 1 creates them before the 1.Aa
+  command is run, so initial absence is not itself a failure.
 - **1.Ab — resolve and review:** Consume only the fixed 1.Aa inputs, resolve
   `requirements/gate.lock` from the one allowed index, write it atomically, and
   review its complete graph, markers, source, normalized names, versions, and
@@ -908,7 +910,8 @@ The first six tests are the 1.Aa completion boundary; the last two belong to
 pre-RED integrity tests, not the T01.1 behavior RED. The first behavior RED
 remains the displayed 1.B test below.
 
-**1.Aa command and environment contract:** First run
+**1.Aa command and environment contract:** After Step 1 has created the
+declared modules and test class, first run
 `python -c "import sys; raise SystemExit(0 if sys.version_info[:2] == (3, 12) else 3)"`.
 Then run exactly
 `python -m unittest -v tests.feasibility.gate.test_gate_bootstrap.AaIntegrityTests`.
@@ -1039,8 +1042,8 @@ passed.
 - SPEC (1.A): Spec compliance review checks that the full bootstrap and review complete before Task 1.B adds or runs the first Task 1 RED, exactly as required by SPEC §11.2.
 - Quality (1.A): Code quality review checks closed command exhaustiveness, immutable argument handling, complete changed-file enumeration, value-free gate-scan output, identity/digest binding, deterministic exit propagation, and rejection before execution.
 
-- [ ] **Step 1: Establish the Task 1 pre-RED gate files.** Validate PATH Python 3.12 and create only the declared gate input, configs, bootstrap command, runner, stdlib gate-scan core, fixed changed-file gate scan, and positive integrity tests. The integrity tests cover staged/unstaged/untracked enumeration, deterministic path/rule-id output, match rejection, redaction, fail-closed Git/path/object/read cases, and gate-scan identity without adding a Task 1 behavior RED. The runner and scan tests use only the exact 1.Aa seams; they do not require a pre-existing gate environment.
-- [ ] **Step 1.Aa: Run the bounded pre-RED slice.** Run the displayed 1.Aa Python probe and `python -m unittest -v tests.feasibility.gate.test_gate_bootstrap.AaIntegrityTests`. Expected: the probe succeeds and exactly the six `AaIntegrityTests` methods pass using PATH Python 3.12, with no PyPI access, third-party test runner, `.venv-gate`, lock resolution, evidence write, or 1.B test addition. A missing declared file, unavailable seam, unsupported PATH interpreter, or any need to guess a failure injection boundary is a BLOCKING cold-start result.
+- [ ] **Step 1: Establish the Task 1 pre-RED gate files.** Validate PATH Python 3.12 and create only the declared gate input, configs, bootstrap command, runner, stdlib gate-scan core, fixed changed-file gate scan, and positive integrity tests. The integrity tests cover staged/unstaged/untracked enumeration, deterministic path/rule-id output, match rejection, redaction, fail-closed Git/path/object/read cases, and gate-scan identity without adding a Task 1 behavior RED. The runner and scan tests use only the exact 1.Aa seams; they do not require a pre-existing gate environment. The declared files are expected to be absent before this step and are created by this step; this is pre-RED construction, not a behavior RED.
+- [ ] **Step 1.Aa: Run the bounded pre-RED slice after Step 1.** Run the displayed 1.Aa Python probe and `python -m unittest -v tests.feasibility.gate.test_gate_bootstrap.AaIntegrityTests`. Expected: the probe succeeds and exactly the six `AaIntegrityTests` methods pass using PATH Python 3.12, with no PyPI access, third-party test runner, `.venv-gate`, lock resolution, evidence write, or 1.B test addition. Initial absence of the declared files before Step 1 is expected; a file still missing after Step 1, an unavailable seam, an unsupported PATH interpreter, or any need to guess a failure injection boundary is a BLOCKING cold-start result.
 - [ ] **Step 2: Resolve the gate lock.** Run the displayed Resolve command. Require exact direct/transitive versions and compatible distribution SHA-256 hashes, with no editable, VCS, local, path, or alternate-index source.
 - [ ] **Step 3: Review and freeze the gate lock.** Review the input and generated lock together; verify the complete dependency graph, exact versions, markers, source, normalized names, and hashes. Stop on every unexplained entry. Installation before this review is prohibited.
 - [ ] **Step 4: Materialize and freeze the gate toolchain.** Run the displayed Materialize command. Create `.venv-gate` only from the reviewed lock with `--require-hashes --no-deps`, then write the exact toolchain and lock/config/runner/gate-scan identities to the fixed evidence file.
