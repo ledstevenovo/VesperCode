@@ -497,3 +497,42 @@
 - **Implementation/Git boundary:** 未开始实现、CI、Docker、凭据、发布、部署或 cold-start；没有生成任何 PASS artifact。
 - **Unfinished gates:** M0-04、M0-06、M0 总体、PLAN A/B、PLAN_SPEC_COMPLIANCE、PLAN_EXECUTABILITY、人工 PLAN 批准、cold-start 和 Approved-document Baseline 仍未通过。
 - **Lesson learned:** 将失败证据正式化提高了可追溯性，但不能改变证据结论；下一步必须取得真实关闭事实，或修订当前自定义门禁合同后重新计算身份。
+
+## COLD-START-FEEDBACK-20260802
+
+- **Timestamp (Asia/Taipei):** `2026-08-02T17:01:45+08:00`
+- **Task ID:** `COLD-START-FEEDBACK-20260802`
+- **Skills invoked:** `dispatching-parallel-agents` inspected for agent delegation; no formal implementation skill invoked.
+- **Cold-start attempts:** `Hubble` (`gpt-5.6-luna`, fresh/no history) disconnected before completion and produced no result; `Raman` (`gpt-5.4-mini`, fresh/no history) completed a document-only/limited execution review.
+- **Raman output:** T01.1's 1.A pre-RED bootstrap versus 1.B first behavior RED is clear; T37.2 is a large final-readiness task with unmet T37.1 dependency and is unsuitable as a first cold-start target; the current and historical T37.2 cards can be confused.
+- **Prompt defect:** The Raman prompt incorrectly prohibited reading source/tests/configuration. This preserved the “initial context only SPEC/PLAN” condition but prevented the intended repository discovery and command/RED executability test. No code, test, config, or formal artifact was modified by either agent.
+- **Accepted revision:** Add explicit T01.1 1.A/1.B boundary, mark T37.2 as final-readiness/not a cold-start candidate, select only T01.1 bounded bootstrap for the corrected trial, and allow normal repository exploration in the disposable worktree while providing no history/memory/oral context beyond SPEC/PLAN.
+- **Implementation/Git boundary:** Formal implementation remains prohibited; current worktree changes are limited to SPEC/PLAN and append-only process records. No branch, PR, CI, Docker, release, or deployment was created.
+- **Unfinished gates:** Corrected cold-start trial, its findings, and resulting document revisions remain incomplete; no cold-start PASS is claimed.
+- **Lesson learned:** “只提供 SPEC/PLAN” constrains initial context, not the agent's ability to discover the repository during an isolated trial. Over-constraining exploration invalidates the executability experiment.
+
+## COLD-START-DOCUMENT-CHECK-20260802
+
+- **Timestamp (Asia/Taipei):** `2026-08-02T16:51:07+08:00`
+- **Task ID:** `COLD-START-DOCUMENT-CHECK-20260802`
+- **Skills invoked:** `dispatching-parallel-agents` inspected for delegation constraints; no formal implementation skill invoked.
+- **Key prompt/context:** 用户要求执行两阶段方案；当前规范已将旧 M0/admission 设计降为历史，要求先做轻量文档检查，再执行不同类型、无历史上下文的冷启动试作。
+- **Document check:** 当前 SPEC 覆盖课程/Harness 必需章节；选定的 `T01.1` Gate bootstrap 子范围和当前 `T37.2` task card 均包含目标、文件、实现点、RED、验证、依赖、并行化、评审和完成条件。
+- **Selected cold-start scope:** `T01.1` bounded Gate bootstrap 子范围（probe、gate environment/config/runner/gate-scan identity，直到首个行为 RED 前）及 `T37.2` 当前 task card；不执行正式 T37.1 发布，也不把下游正式依赖伪装成已满足。
+- **Known ambiguities:** 当前没有正式 Windows/Python/Docker/gate environment；T37.2 依赖的部分 fixture/helper 和 T37.1 evidence 输入尚不存在；PLAN 的历史附录可能造成误读。冷启动 Agent 必须暂停提问，不得猜测、伪造或绕过。
+- **Human intervention:** 用户当前指令“执行两阶段方案”作为人工启动确认；没有据此推断 M0、PLAN approval、identity approval 或正式实现授权。
+- **Implementation/Git boundary:** 仅追加本过程记录；未修改实现代码，未创建正式实现分支/PR，未运行 CI、发布或部署。冷启动试作代码必须保持 disposable，禁止合并。
+- **Next action:** 启动 model type `gpt-5.6-luna` 的 fresh session，`fork_context=false`，只向 Agent 提供当前 `SPEC.md` 和 `PLAN.md`，要求约 1—2 小时内尝试上述范围并在不确定时暂停提问。
+- **Lesson learned:** 旧门禁失败记录不能阻塞当前课程要求的轻量冷启动，但也不能被删除或改写；当前流程必须用显式新记录覆盖其规范地位，而不是伪造旧门禁通过。
+
+## COLD-START-CANDIDATE-BASELINE-BLOCK-20260802
+
+- **Timestamp (Asia/Taipei):** `2026-08-02T17:08:00+08:00`
+- **Task ID:** `COLD-START-CANDIDATE-BASELINE-BLOCK-20260802`
+- **Skills invoked:** `dispatching-parallel-agents` inspected for delegation constraints; no implementation skill invoked.
+- **Agent:** `Dalton` (`gpt-5.6-terra`), fresh session with `fork_context=false`; initial project context was only current SPEC.md and PLAN.md.
+- **Result:** Agent correctly paused before T01.1 because the current SPEC/PLAN were uncommitted. A native worktree from HEAD would contain the older document baseline, so it could not honestly claim to test the current candidate. It did not read process logs/history, run commands beyond document inspection, or modify files.
+- **Accepted action:** Create a clean candidate document commit containing the current SPEC/PLAN and append-only process records, then create the disposable cold-start worktree from that exact commit. The commit is a candidate baseline only, not human approval, formal implementation, or cold-start PASS.
+- **Implementation/Git boundary:** No implementation code, tests, CI, Docker, credentials, release, deployment, PR, or cold-start code was created.
+- **Unfinished gates:** Candidate baseline commit and corrected T01.1 cold-start remain pending; no formal implementation is authorized.
+- **Lesson learned:** A cold-start experiment must pin the exact current document bytes in a clean, disposable baseline; otherwise the Agent may be testing a stale PLAN while appearing isolated.

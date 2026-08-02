@@ -35,12 +35,12 @@
 - LangChain `AgentExecutor`, AutoGen, CrewAI, LlamaIndex Agent, OpenAI Agents SDK runner, and host coding-agent runners must not implement the delivered main loop.
 - The repository implements context assembly, exactly one LLM call per turn, action parsing, policy, dispatch, result feedback, and stop evaluation. Replacing the real LLM with Mock/Stub must leave tool dispatch, governance, feedback correction, memory, and stopping deterministically testable offline.
 - All behavior changes use strict TDD: write and run the intended RED test, make the smallest GREEN change, then refactor without changing behavior.
-- Task 1.A is the SPEC §11.2 pre-RED execution prerequisite, not a product behavior change. It must establish, review, and freeze the gate lock/config/runner/gate-scan set before any Task 1 failing behavior test is added or run. Its positive integrity checks prove that the prerequisite is usable; they are not represented as a TDD RED. Task 1.B is the first Task 1 behavior RED.
+- The course cold-start is completed in a disposable worktree before formal implementation. It is a process experiment, not a product task, and its code and commits are never merged. After its findings are recorded and the SPEC/PLAN are revised as needed, formal task execution follows the task-local dependencies below. Task 1.A remains a task-local pre-RED prerequisite for the formal Task 1 behavior cycle; it must establish, review, and freeze the gate lock/config/runner/gate-scan set before any Task 1 failing behavior test is added or run. Its positive integrity checks prove that the prerequisite is usable; they are not represented as a TDD RED. Task 1.B is the first Task 1 behavior RED.
 - Tasks 1–3 use one Task 1-owned feasibility-gate bootstrap: an isolated `.venv-gate`, `requirements/gate.lock` with exact direct/transitive versions and distribution hashes, explicit gate pytest/Ruff/Mypy configs, `scripts/run_gate_checks.py`, and `scripts/scan_gate_changed_files.ps1`. The sole pre-gate exception is the PATH-resolved `python` used to run the entry-runnable Task 1.A stdlib probe and create `.venv-gate`; that probe requires `sys.version_info[:2] == (3, 12)` before any gate artifact can be accepted. Every later gate command must use the frozen environment and configuration; global tools and Task 4 project configuration are invalid inputs.
 - Task 1 selects, reviews, and freezes the exact Python/pytest/Ruff/Mypy versions and the gate lock/config/runner/gate-scan SHA-256 values in `gates/evidence/gate-toolchain-v1.json`; Tasks 2–3 consume that record without re-resolution. Task 1.E embeds the same identity in the terminal `gates/evidence/workspace-boundary-go-v1.json`. Task 4.A, Task 4.F, and Task 37.B read that fixed terminal file and compare its exact `python_version` character-for-character. The public range `>=3.12,<3.13` never substitutes for exact patch equality.
 - Task 4.A is the sole complete v1 project dependency-closure owner. It creates the dependency tables, Python range, reviewed source/index policy, minimal package identity, and hash-complete `requirements/dev.lock`; the closure includes every declared direct runtime, build/distribution, and development/verification dependency plus every transitive distribution and hash. Runtime families include FastAPI, Pydantic v2, pywin32, keyring with Windows Credential Manager verification support, Docker SDK for Python, and every low-level HTTP, test-client, template/form, or serving package imported or invoked directly by project code. Build/distribution families include Hatchling and `build`; development/verification families include pytest 8.x, Ruff, Mypy, and every directly used typing/test support package. Vendored HTMX remains package data, not a Python dependency. `requirements/gate.lock`, `requirements/reference.lock`, and `requirements/demo.lock` remain separate immutable profiles under Tasks 1.A, 2.A, and 34.B respectively and never merge into `requirements/dev.lock`.
 - Task 4.A selects the reviewed exact patch versions, transitive distributions, markers, and hashes at execution time without inventing them in this PLAN. The exact Task 1 Python patch and every overlapping pytest/Ruff/Mypy version are preserved. Task 4.F alone promotes those frozen interpreter/tool identities, marker definitions, static rules, build backend, and canonical formal commands into the non-dependency sections of `pyproject.toml`.
-- After Task 4.A completes, no task may add, remove, resolve, upgrade, downgrade, or install an undeclared project package. Discovery of a missing package stops the current task. Any dependency-closure change requires a non-tracking PLAN semantic revision, dependency review, recomputation of every affected mechanical structure and digest, renewed human PLAN approval, and a repeated heterogeneous cold-start; M0 also repeats if the authoritative SPEC identity or requirements change. Ad-hoc installation and silent regeneration of `requirements/dev.lock` are prohibited. Rebuilding `.venv-formal` from the unchanged `requirements/dev.lock` with `--require-hashes --no-deps` is only materialization of the already-declared exact/hash-verified closure and is not a dependency change; resolution, upgrade, extra installation, or re-locking remains prohibited and triggers this fail-closed amendment rule.
+- After Task 4.A completes, no task may add, remove, resolve, upgrade, downgrade, or install an undeclared project package. Discovery of a missing package stops the current task. Any dependency-closure change requires updating the affected task contracts and verification records; if it changes the selected cold-start task or its completion conditions, record the change in `SPEC_PROCESS.md` and repeat the cold-start trial. Ad-hoc installation and silent regeneration of `requirements/dev.lock` are prohibited. Rebuilding `.venv-formal` from the unchanged `requirements/dev.lock` with `--require-hashes --no-deps` is only materialization of the already-declared exact/hash-verified closure and is not a dependency change; resolution, upgrade, extra installation, or re-locking remains prohibited and triggers this fail-closed amendment rule.
 - Task 4.A solely owns `scripts/bootstrap_formal_env.py`. Before creating or using `.venv-formal`, it reads only `gates/evidence/workspace-boundary-go-v1.json`, requires a digest-valid terminal `GO`, and compares the PATH-resolved Python patch with the recorded `python_version`. Missing, invalid, non-GO, drifted, or mismatched evidence stops before environment creation. On equality it materializes only `requirements/dev.lock` with `--require-hashes --no-deps`; it never reads another worktree's `.venv-gate`, resolves packages, upgrades, or rewrites the lock.
 - The canonical offline suite is logically `python -m pytest -q`, executed in formal worktrees as `.venv-formal\Scripts\python.exe -m pytest -q`. Before those task-owned formal artifacts exist, Task 4.A runs only its displayed entry-runnable bootstrap RED through `python -m unittest`; after the bootstrap verifies exact Task 1.E Python equality and materializes `.venv-formal`, Task 4.A runs every dependency-closure Target, Domain, and lock/config consistency check through that exact formal interpreter. Task 4.F establishes the canonical offline and closure commands through the same interpreter. Every later task also runs the logical commands `python -m ruff format --check .`, `python -m ruff check .`, and `python -m mypy src tests` from the verified `.venv-formal` environment.
 - The five standard closure commands referenced by Tasks 5–38 are exactly `python -m ruff format --check .`, `python -m ruff check .`, `python -m mypy src tests`, `python scripts/scan_credentials.py --changed --redact --fail-on-match`, and `git diff --check`.
@@ -49,7 +49,7 @@
 - After both review stages pass, the session task's implementation step creates the implementation commit. If that task owns a `CI_RELEASE_LIVE_V1` subject, its commit-bound live action occurs only after that implementation commit is pushed and before its completion-evidence commit. T37.1 is the sole final-delivery exception: it performs live actions only against the exact current main `source_commit` frozen after both WP36 and WP38 are finished and merged, owns no product/CI/image/deployment subject path, and then records external JSON/documentation in its implementation commit. Every completion-evidence step records the applicable existing implementation SHA and evidence/PR metadata in a separate narrow evidence commit before invoking `superpowers:finishing-a-development-branch`. The evidence commit's own SHA is derived mechanically from Git history after commit creation and must not be embedded in the commit that creates it. The narrow evidence diff may change only that task's `Status`, executed task-step checkbox states, and one-line `Completion evidence` in `PLAN.md`, plus one append-only `AGENT_LOG.md` entry; no other task, PLAN content, or file may change. No package branch is merged, deleted, or reused before its tests, both reviews, credential scan, implementation/evidence commits, evidence record, and PR metadata are complete.
 - In every task card, `Status/Completion evidence` is shorthand for that task's `Status`, executed task-step checkbox states, and one-line `Completion evidence`; it does not authorize changes to other PLAN content or files.
 - Every session-task completion appends truthful evidence to `AGENT_LOG.md`, records the real implementation SHA in this PLAN, and identifies the responsible subagent, human edits, tests, review results, and PR URL. Milestone status is mechanically derived from child evidence.
-- PLAN semantic approval follows SPEC §11.2 exactly: normalize no-BOM UTF-8/LF, exclude only enumerated task tracking fields, prepend the declared domain, and hash with SHA-256. Any other PLAN byte change requires renewed semantic approval and cold-start validation.
+- The current PLAN text is the task handoff for both the disposable cold-start trial and later formal implementation. A substantive change to a selected task after the trial must be recorded in `SPEC_PROCESS.md`, and the affected task must be rechecked before formal implementation; task status and completion evidence are ordinary process records, not cryptographic approval inputs.
 - Parallel tasks may implement in separate worktrees, but their PR merges and append-only edits to `PLAN.md` and `AGENT_LOG.md` are serialized in task-number order within a wave.
 - Before every implementation commit, run `python scripts/scan_credentials.py --changed --redact --fail-on-match` after Task 4 creates it. Tasks 1–3 use their explicit filename-only PowerShell scan. No scan may print a matched value.
 - In T01.2 and every T02/T03 fresh worktree, run `python scripts/bootstrap_gate_env.py materialize --lock requirements/gate.lock --evidence gates/evidence/gate-toolchain-v1.json --require-existing-evidence` before the first RED. This may create only the local untracked `.venv-gate` from the existing hash lock, must verify the recorded interpreter/tool/config/runner/gate-scan identities, and must not resolve dependencies, rewrite evidence, or contact an index. T01.1 uses the first-resolution sequence stated in its own steps.
@@ -58,7 +58,43 @@
 
 ---
 
-## 1. Document Status and Admission Gates
+## 1. Document Status and Cold-start Readiness
+
+**Document status:** Candidate — formal implementation begins only after the lightweight document check, a disposable cold-start trial, and any required SPEC/PLAN revisions are complete.
+
+This PLAN is the task handoff for the exact current SPEC. The 141 legacy child IDs remain atomic TDD trace identifiers, the 68 `TNN.X` entries remain fresh-subagent execution slices, and the 46 `WP...` entries remain work-package boundaries. These identifiers organize implementation; they are not independent approval or admission gates.
+
+### 1.1 Pre-cold-start document check
+
+Before the trial, the human checks and records the following in `SPEC_PROCESS.md`:
+
+1. `SPEC.md` covers the course-required problem statement, at least five INVEST user stories, functional and non-functional requirements, credential threat model, architecture, data model, credential/distribution design, technology choices, acceptance criteria, risks, and Coding Agent Harness domain/mechanism design.
+2. Each candidate task in `PLAN.md` states its goal, files, implementation points, intended failing test, verification commands, dependencies, and parallelization notes, and is small enough for one subagent session.
+3. One or two task IDs are selected for the trial, with their completion conditions and verification commands stated explicitly.
+4. Any known ambiguity, assumption, missing interface, or environment question is recorded in `SPEC_PROCESS.md`; the trial agent must not be expected to guess it.
+5. The human explicitly confirms that the trial may start.
+
+This check is a process record, not a product gate. It does not require document hashes, semantic digests, dual audit implementations, formal JSON evidence, or a special baseline commit.
+
+### 1.2 Disposable cold-start trial
+
+The selected task IDs are attempted by an Agent whose type differs from the main development Agent. The Agent receives only the current `SPEC.md` and `PLAN.md` in a new session, with no prior conversation, memory, or oral explanation. The prompt must require it to pause and ask whenever the documents are insufficient rather than guessing. The trial lasts approximately one to two hours.
+
+For the current corrected trial, select only the bounded Gate bootstrap sub-scope of `T01.1`. `T01.1` §1.A is a pre-RED bootstrap prerequisite; `T01.1` §1.B is the first behavior RED. `T37.2` is a final-readiness gate dependent on `T37.1`, so it is not a suitable first cold-start candidate.
+
+The trial runs in an isolated, disposable worktree. Its code, commits, and branch are validation artifacts only and must not be merged or treated as formal completion. The trial record must capture questions, blocking points, incorrect interpretations, actual outputs, verification results, task-size problems, and any divergence from the author's intent.
+
+For trial mode only, a selected task's formal downstream dependency chain may be observed rather than satisfied when satisfying it would require unrelated later implementation. The task card must still provide enough local context and commands for the Agent to make a meaningful attempt. No formal implementation task may claim completion from this exception.
+
+### 1.3 Feedback and formal handoff
+
+After the trial, update `SPEC.md`, `PLAN.md`, and `SPEC_PROCESS.md` for every material ambiguity or task-scope problem. If a selected task's contract, files, interface, RED, or completion condition changes materially, repeat the trial for that task before formal implementation.
+
+Only after the trial findings are recorded and the documents are revised does the formal workflow begin: isolated worktree, one fresh subagent per task, TDD RED → GREEN → refactor, spec-compliance review, code-quality review, and `finishing-a-development-branch`. The trial itself is never a substitute for those stages.
+
+## Appendix A. Superseded admission-gate design (historical, non-normative)
+
+> The retired admission-gate paragraphs in this appendix record an earlier project-specific design. They are retained for process history only and are not requirements, prerequisites, acceptance criteria, or instructions for the cold-start Agent. The current normative process is §1, the current task-card contract in §8, and the execution handoff in §9; subsequent non-appendix sections remain current unless explicitly marked historical.
 
 **Document status:** Candidate — this line records no admission decision; formal approval exists only when every §1.2 artifact passes for the exact unchanged identities.
 
@@ -188,7 +224,7 @@ The paths below lock file ownership before task decomposition. Files are small, 
 | `requirements/dev.lock` | Exact hash-complete environment closure used by formal local/CI verification, including all declared runtime, build/distribution, and development/verification packages plus every transitive distribution |
 | `requirements/reference.lock` | Exact dependency set accepted by `python-src-py312-v1` and hashed by its manifest |
 | `requirements/demo.lock` | Exact hash-locked public Demo runtime dependencies with no formal capability extras |
-| `PLAN.md` | Content-addressed implementation tasks, dependencies, status, and real completion evidence |
+| `PLAN.md` | Implementation tasks, dependencies, status, verification, and real completion evidence |
 | `AGENT_LOG.md` | Append-only chronological task, subagent, review, human-intervention, and verification evidence |
 | `SPEC_PROCESS.md` | Brainstorming history plus cold-start findings and resulting approved SPEC/PLAN revisions |
 | `README.md` | Installation, usage, layout, credential setup, distribution, deployment, threat boundary, and limitations |
@@ -212,7 +248,6 @@ The paths below lock file ownership before task decomposition. Files are small, 
 | `delivery/evidence/ci-v1.json` | Real last-passing GitHub workflow/job and GitLab pipeline/job identities with categorized evidence |
 | `delivery/evidence/release-v1.json` | Real source commit, GitHub Release, wheel, and GHCR immutable identity evidence |
 | `delivery/evidence/deployment-v1.json` | Real Render deployment, public URL, health, and fixed-scenario smoke evidence |
-| `process/evidence/admission-v3/` | Parent of immutable Git-tracked formal evidence directories; each sole child name is one exact approved PLAN complete-file SHA-256 and contains its M0, PLAN audit/review, human approval, cold-start, manifest, and non-self-referential baseline evidence |
 
 ### Project foundation records
 
@@ -412,7 +447,7 @@ The paths below lock file ownership before task decomposition. Files are small, 
 | `src/vespercode/delivery/evidence.py` | Closed non-secret CI, release, and deployment evidence schemas |
 | `src/vespercode/delivery/publication.py` | Pure frozen-input/observed-result release-publication alignment verifier with zero external side effects |
 | `scripts/verify_readme_contract.py` | Read-only README section/command/link/digest contract verifier |
-| `scripts/verify_process_evidence.py` | Read-only M0/cold-start/typed independent-PLAN-review/task/review/commit/PR process-evidence verifier |
+| `scripts/verify_process_evidence.py` | Read-only checker for truthful SPEC/PLAN, cold-start, task, review, commit, PR, and human-intervention process records |
 
 ### Fixtures, images, and test environments
 
@@ -692,7 +727,7 @@ Every session task appears in exactly one row. All legacy steps within one task 
 **Work package:** WP01
 **Legacy steps:** 1.A, 1.B
 **Goal:** Create the sole Python 3.12 feasibility environment, frozen configs, and closed command runner used by every Task 1–3 proof.；Evaluate closed lexical/final-object/ACL observations without touching the filesystem and return stable pass/fail codes.
-**SPEC contracts:** SPEC §0.1 `CanonicalRelativePathV1`; §1.4.3; §4.1 behavior 6–10; §4.3 behavior 4–5; §5.2; §5.5; §10.1 AC-01, AC-15, AC-21, AC-26, AC-31; §10.3 Windows integration; §11.2 item 1.
+**SPEC contracts:** SPEC §0.1 `CanonicalRelativePathV1`; §1.4.3; §4.1 behavior 6–10; §4.3 behavior 4–5; §5.2; §5.5; §10.1 AC-01, AC-15, AC-21, AC-26, AC-31; §10.3 Windows integration; §11.2 document check and cold-start trial process.
 
 **Files:**
 - Create: `requirements/gate.in`
@@ -708,8 +743,12 @@ Every session task appears in exactly one row. All legacy steps within one task 
 - Create: `spikes/win32_workspace_boundary/evaluator.py`
 - Test: `tests/feasibility/windows/test_workspace_boundary_evaluator.py`
 
-**Depends:** APPROVED_DOCUMENT_BASELINE_V3
-**Parallelization:** Start only after every task/non-task gate in **Depends** has passed. Same-wave execution is allowed only when expanded writable paths are disjoint; the WP01 branch and PR remain the sole package integration boundary.
+**Depends:** None for the disposable cold-start trial. Formal execution requires the cold-start findings to be recorded and the required SPEC/PLAN revisions to be complete; task-local dependencies then apply normally.
+**Parallelization:** The disposable trial runs alone in a throwaway worktree and produces no formal completion claim. Formal execution follows the work-package boundary and same-wave disjoint-path rule; the WP01 branch and PR remain the sole package integration boundary.
+
+**Cold-start trial scope:** The human selects one bounded T01.1 sub-scope or one other selected task before the trial. The Agent may attempt the declared RED/GREEN/verification steps for that scope for up to two hours; time-outs, questions, and task-size findings are valid trial results. The trial may create temporary commits for inspection, but no trial commit or evidence is a formal implementation or merge candidate.
+
+**Cold-start boundary:** In §1.A the Agent may inspect and establish the gate bootstrap inputs and integrity checks, but those positive checks are not a behavior RED. §1.B is the first behavior RED. The initial context supplied to the Agent is only `SPEC.md` and `PLAN.md`; during the disposable attempt it may normally discover repository files and run declared commands, and must pause only when the documents or discovered environment leave a material question unresolved.
 
 **Interfaces:**
 - **Consumes / Produces (1.A):** Consumes the reviewed direct gate requirements (`pytest>=8,<9`, Ruff, Mypy, pywin32, and Docker SDK) from `https://pypi.org/simple`. Produces the complete hash-locked `requirements/gate.lock`, an isolated `.venv-gate`, one closed toolchain evidence record at `gates/evidence/gate-toolchain-v1.json`, the existing closed runner commands `pytest`, `ruff-format`, `ruff-check`, and `mypy`, and the fixed `scripts/scan_gate_changed_files.ps1` gate scan. Runner syntax is `<runner> <closed-command> -- <tool-arguments>`: `--` is the command-line separator, is consumed during runner parsing, and is not part of the forwarded tuple; the runner forwards every argument after it unchanged and must not require the consumed literal to remain in parsed arguments. The gate scan takes no caller-supplied path, rule, regex, or output-mode argument; it deterministically enumerates the repository-relative staged, unstaged, and untracked changed-file union, scans only regular files inside the repository, emits only sorted unique `(path, rule_id)` facts, and exits nonzero on a credential match, Git enumeration failure, path escape, non-regular object, or required-file read failure without printing any matched value or context.
@@ -10057,12 +10096,84 @@ git commit -m "Define T36.3 Static Render Deployment Contract"
 **Done:** legacy step 36.C 的 offline Target、Matrix、Domain 和全局 profile 均通过；`render.yaml` 与 static contract 已提交且零外部 I/O；Critical/Important finding 全部关闭并复审；T37.1 是唯一 Render/live-evidence owner，T36.3 不声称任何 deployment 结果。
 **Completion evidence:** Not yet executed.
 
-### Task T37.1: README and Final Process Evidence
+### Task T37.1: Final delivery, README, and process records
 
 **Status:** Not started
 **Work package:** WP37
 **Legacy steps:** 37.A, 37.B
-**Goal:** Execute one final source-aligned live delivery closure against the exact current main `source_commit` frozen after both WP36 and WP38 are finished and merged: require complete GitHub/GitLab CI for that SHA, publish the protected tag/Release/GHCR artifacts, deploy the same source/image/config to Render, and write the three external evidence JSON records only from terminal aligned facts.；Write an accurate user-facing README for installation, operation, security, recovery, distribution, CI/release/deployment, limitations, and non-goals using only verified current evidence.；Complete truthful append-preserving `SPEC_PROCESS.md` and `AGENT_LOG.md` records and fail-closed verification for M0, semantic approval, both typed Independent PLAN Review passes, cold-start, approved-document baseline materialization, every executable task, review, intervention, commit, PR, failure, and lesson.
+**Goal:** Freeze the final source commit after WP36 and WP38 merge, verify the final CI/release/deployment evidence, publish the required delivery artifacts, write an evidence-backed README, and append truthful process records for the document check, disposable cold-start, formal tasks, reviews, commits, PRs, failures, and lessons.
+**SPEC contracts:** SPEC §1.6; §5.3–§5.6; §8.1–§8.4; §10.1 AC-01–AC-31; §10.3; §11.3; course required artifacts, process evidence, README, CI/CD, WebUI URL, and reflection rules; `AGENTS.md` final-report rules.
+
+**Files:**
+- Create: `delivery/evidence/ci-v1.json`
+- Create: `delivery/evidence/release-v1.json`
+- Create: `delivery/evidence/deployment-v1.json`
+- Create: `README.md`
+- Create: `scripts/verify_readme_contract.py`
+- Create: `scripts/verify_process_evidence.py`
+- Create: `tests/unit/process/test_readme_contract.py`
+- Modify: `SPEC_PROCESS.md` (append-only process evidence)
+- Modify: `AGENT_LOG.md` (append-only chronology)
+- Test: `tests/unit/process/test_delivery_evidence.py`
+- Read: `SPEC.md`, `PLAN.md`, `SPEC_PROCESS.md`, `AGENT_LOG.md`
+
+**Depends:** T01.1, T01.2, T02.3, T02.4, T03.1, T03.2, T04.1, T04.2, T05.1, T06.4, T07.3, T07.4, T08.1, T09.1, T10.1, T10.2, T11.1, T12.1, T13.1, T14.1, T15.1, T15.2, T16.1, T17.1, T18.1, T18.2, T19.1, T20.1, T20.2, T21.1, T22.1, T23.1, T24.1, T25.1, T25.2, T25.3, T26.1, T26.2, T27.1, T28.3, T29.3, T30.1, T30.2, T31.1, T32.1, T33.1, T34.1, T34.2, T35.1, T36.3, T38.1, T38.2, T38.3
+**Parallelization:** Start only after every task/non-task gate in **Depends** has passed. The WP37 branch and PR remain the sole package integration boundary.
+
+**Interfaces:**
+- `verify_readme_contract(path: Path) -> ReadmeContractResultV1`
+- `verify_process_evidence(root: Path) -> ProcessEvidenceResultV1`
+- The final delivery records use the existing `source_commit` fields and are written only from terminal CI, release, and deployment observations. No new admission, approval, digest, or baseline schema is introduced.
+
+**Implementation points, exact RED, and minimum GREEN contracts:**
+
+```text
+RED-1: test_readme_fails_when_release_digest_verification_is_missing reaches the assertion and fails because the README contract checker is absent or does not require actionable digest instructions.
+RED-2: test_process_evidence_requires_cold_start_record reaches the assertion and fails because the process checker is absent or does not require the document-check and cold-start findings record.
+GREEN-1: Write README.md from verified package, security, recovery, distribution, CI/release, deployment, limitation, and non-goal facts; verify it deterministically.
+GREEN-2: Implement verify_process_evidence as a read-only, fail-closed checker for append-preserving SPEC_PROCESS.md and AGENT_LOG.md records, task/review/commit/PR chronology, and truthful human interventions.
+GREEN-3: After WP36 and WP38 merge, freeze one clean source_commit, run the final CI jobs, publish the protected release/GHCR artifacts, deploy the exact Render configuration, and write the three existing delivery evidence records only from terminal facts.
+GREEN-4: Own final delivery documentation and process evidence only. Do not invent external results, rewrite history, author the student's reflection, or add product capability.
+```
+
+**Exact RED test code:**
+
+```python
+def test_readme_fails_when_release_digest_verification_is_missing(repository_copy: Path) -> None:
+    write_readme_without_section(repository_copy, "Reference image digest verification")
+    result = verify_readme_contract(repository_copy / "README.md")
+    assert "README_REFERENCE_DIGEST_INSTRUCTIONS_MISSING" in result.error_codes
+
+
+def test_process_evidence_requires_cold_start_record(repository_copy: Path) -> None:
+    remove_cold_start_record(repository_copy / "SPEC_PROCESS.md")
+    result = verify_process_evidence(repository_copy)
+    assert "COLD_START_RECORD_MISSING" in result.error_codes
+```
+
+**Atomic verification:**
+- Target (37.A/37.B): `python -m pytest -q tests/unit/process/test_readme_contract.py::test_readme_fails_when_release_digest_verification_is_missing tests/unit/process/test_delivery_evidence.py::test_process_evidence_requires_cold_start_record`
+- Domain (37.A/37.B): `python -m pytest -q tests/unit/process/test_readme_contract.py tests/unit/process/test_delivery_evidence.py`
+- Final delivery: verify terminal CI, release, GHCR, Render, source-commit alignment, credential scan, and the public WebUI URL only after the source commit is frozen.
+
+**Task-level verification, review, and completion:**
+- [ ] Add and run both displayed RED tests before GREEN.
+- [ ] Implement the four GREEN contracts and run Target and Domain.
+- [ ] Request and pass SPEC-compliance review, then code-quality review; close Critical/Important findings and re-review.
+- [ ] Commit implementation, append the real evidence to `AGENT_LOG.md`, and run the final delivery checks.
+- [ ] Finish WP37 only after all evidence is truthful and the student-owned reflection remains student-authored.
+
+**Done:** README, process records, final delivery evidence, CI/release/deployment alignment, and applicable reviews pass; no external result or student reflection content is fabricated.
+**Completion evidence:** Not yet executed.
+
+## Appendix C. Superseded Task T37.1 (historical, non-normative)
+
+> The following former T37.1 card is retained only as process history. It is not a current task contract and its admission, review, identity, or baseline requirements must not be followed.
+
+**Status:** Not started
+**Work package:** WP37
+**Legacy steps:** 37.A, 37.B
+**Goal:** Execute one final source-aligned live delivery closure against the exact current main `source_commit` frozen after both WP36 and WP38 are finished and merged: require complete GitHub/GitLab CI for that SHA, publish the protected tag/Release/GHCR artifacts, deploy the same source/image/config to Render, and write the three external evidence JSON records only from terminal-aligned facts.；Write an accurate user-facing README for installation, operation, security, recovery, distribution, CI/release/deployment, limitations, and non-goals using only verified current evidence.；Complete truthful append-preserving `SPEC_PROCESS.md` and `AGENT_LOG.md` records and fail-closed verification for the course document check, disposable cold-start trial and findings/revisions, every executable task, review, intervention, commit, PR, failure, and lesson.
 **SPEC contracts:** SPEC §1.6; §5.3–§5.6; §8.1–§8.4; §10.1 AC-01–AC-31; §10.3; §11.3; course required artifacts, process evidence, README, CI/CD, WebUI URL, and reflection rules; `AGENTS.md` final-report rules.
 
 **Files:**
@@ -10073,7 +10184,10 @@ git commit -m "Define T36.3 Static Render Deployment Contract"
 - Create: `scripts/verify_readme_contract.py`
 - Create: `tests/unit/process/test_readme_contract.py`
 - Create: `scripts/verify_process_evidence.py`
-- Read: `process/evidence/admission-v3/`
+- Read: `SPEC.md`
+- Read: `PLAN.md`
+- Read: `SPEC_PROCESS.md`
+- Read: `AGENT_LOG.md`
 - Read: `config/dependency-closure-v1.json`
 - Read: `config/formal-toolchain-promotion-v1.json`
 - Modify: `SPEC_PROCESS.md`
@@ -10085,7 +10199,7 @@ git commit -m "Define T36.3 Static Render Deployment Contract"
 **Interfaces:**
 - **Consumes / Produces (T37.1 live closure):** Consumes the exact current main commit after both WP36 and WP38 are finished and merged as the existing shared `source_commit`, the committed T35/T36 CI/release/Render contracts, the final GitHub three-job and GitLab four-job terminal results for that SHA, the final-source wheel/checksum, Task 2/34 manifest identity, and confirmed Render observations. Produces `delivery/evidence/ci-v1.json`, `delivery/evidence/release-v1.json`, and `delivery/evidence/deployment-v1.json` whose existing `source_commit` values are byte-identical; adds no new evidence-schema field. Before any evidence write, the protected tag equals that SHA, publication verification is `ACCEPTED`, Render reports that SHA and exact image/config, and `git diff` from `source_commit` rejects changes under `src/**`, `.github/**`, `.gitlab-ci.yml`, `containers/**`, `render.yaml`, `pyproject.toml`, or `requirements/**`.
 - **Consumes / Produces (37.A):** Produces `verify_readme_contract(path: Path) -> ReadmeContractResultV1` plus the exact documented commands/URLs/digests and section contract enumerated by Milestone 37.
-- **Consumes / Produces (37.B):** Consumes the digest-valid terminal `gates/evidence/workspace-boundary-go-v1.json`, the dependency/toolchain records, and the manifest, PLAN review pairs, and Approved-document Baseline record from the tracked `process/evidence/admission-v3/` child whose directory name exactly equals the human-approved PLAN complete-file SHA-256. Produces the existing independent-review and process-evidence verification results; both remain fail-closed, reject temporary/untracked/repository-external evidence, and execute no repository code.
+- **Consumes / Produces (37.B):** Consumes the current `SPEC.md` and `PLAN.md`, `SPEC_PROCESS.md`, `AGENT_LOG.md`, the terminal `gates/evidence/workspace-boundary-go-v1.json`, dependency/toolchain records, and task/review/commit/PR evidence. Produces `ProcessEvidenceResultV1` through a read-only, fail-closed process-record checker; it executes no repository code and does not create a separate admission or approval artifact.
 
 **Implementation points, exact RED, and minimum GREEN contracts:**
 
@@ -10143,18 +10257,18 @@ def test_readme_fails_when_release_digest_verification_is_missing(
 
 #### Legacy step 37.B: Final Process and Agent Evidence Record
 
-**Atomic goal:** Complete truthful append-preserving `SPEC_PROCESS.md` and `AGENT_LOG.md` records and fail-closed verification for M0, semantic approval, both typed Independent PLAN Review passes, cold-start, approved-document baseline materialization, every executable task, review, intervention, commit, PR, failure, and lesson.
+**Atomic goal:** Complete truthful append-preserving `SPEC_PROCESS.md` and `AGENT_LOG.md` records and fail-closed verification for the lightweight document check, disposable cold-start findings and revisions, every executable task, review, intervention, commit, PR, failure, and lesson.
 
 **Minimum GREEN patch contract:**
 
 ```text
-Owned files: - Create: scripts/verify_process_evidence.py - Read: process/evidence/admission-v3/ - Read: config/dependency-closure-v1.json - Read: config/formal-toolchain-promotion-v1.json - Modify: SPEC_PROCESS.md (preserve history; add exact final evidence only) - Modify: AGENT_LOG.md (append-only final chronology) - Test: tests/unit/process/test_delivery_evidence.py (process-record cases)
-Interface: Derive the sole tracked formal admission root from the human-approved PLAN complete-file SHA-256; consume its manifest, both PLAN review pairs, and Approved-document Baseline record plus the fixed terminal Task 1.E GO file and dependency/toolchain records as data; produce the existing independent-review and process-evidence verification results without executing repository code.
-GREEN-1: Append only truthful M0, semantic-approval, typed Independent PLAN Review, cold-start, approved-document baseline, task, review, intervention, commit, PR, failure, and lesson records while preserving every prior `SPEC_PROCESS.md` and `AGENT_LOG.md` entry.
-GREEN-2: Implement `verify_independent_plan_review_evidence` as a read-only, fail-closed parser of both canonical checklist/result pairs from the exact manifest-bound tracked admission root and their process registration. Require exact schema/order/digests, distinct valid review kinds, reviewer independence from every recorded author/fixer, matching post-M0 A/B identities, candidate PLAN/SPEC/semantic identities, complete findings and closures, two `PASS` verdicts, and a matching overall `PASS` decision.
-GREEN-3: Implement `verify_process_evidence` to expose both typed results; reject any formal root other than the exact tracked repository path derived from the approved PLAN SHA and verify every manifest entry; require the approved-document commit to contain the M0-approved SPEC raw SHA/blob, human-approved PLAN complete SHA/semantic digest, and approved AGENTS blob/SHA-256; require its direct admission-evidence child to preserve approved bytes and change only the fixed pre-baseline evidence root plus `SPEC_PROCESS.md`/`AGENT_LOG.md`; require that child's direct baseline-record child to add only `baseline.json`; derive that unique baseline-record commit from Git history and prove it was the clean Task 1 formal base; reconcile all executable-task chronology and repository identities; require the final PLAN's recomputed `PlanSemanticDigestV2` to equal the reviewed/approved candidate digest despite permitted tracking-only byte changes; and require both unique dependency/toolchain records to equal the Task 1.E exact Python identity.
+Owned files: - Create: scripts/verify_process_evidence.py - Read: SPEC.md - Read: PLAN.md - Read: SPEC_PROCESS.md - Read: AGENT_LOG.md - Read: config/dependency-closure-v1.json - Read: config/formal-toolchain-promotion-v1.json - Modify: SPEC_PROCESS.md (preserve history; append exact final evidence only) - Modify: AGENT_LOG.md (append-only final chronology) - Test: tests/unit/process/test_delivery_evidence.py (process-record cases)
+Interface: Read the current document and process records plus the fixed terminal Task 1.E GO file and dependency/toolchain records as data; produce `ProcessEvidenceResultV1` from truthful, read-only checks without executing repository code.
+GREEN-1: Append only truthful document-check, cold-start, task, review, intervention, commit, PR, failure, and lesson records while preserving every prior `SPEC_PROCESS.md` and `AGENT_LOG.md` entry.
+GREEN-2: Implement the process-record checker as a read-only, fail-closed parser of the current `SPEC_PROCESS.md` and `AGENT_LOG.md`; require the document-check result, selected cold-start task IDs, Agent/session constraints, questions, blocking points, outputs, verification results, human confirmation, resulting revisions, and formal handoff to be recorded when those stages occur.
+GREEN-3: Implement `verify_process_evidence` to reject missing, contradictory, fabricated, or non-append-preserving process records, missing task/review/commit/PR chronology, false completion claims, and evidence that belongs to a temporary or unrelated worktree; accept ordinary repository-root process records without a cryptographic admission root or semantic digest.
 EVIDENCE_COMMIT_DERIVATION_V1: For each executable session task, derive one unique evidence commit from Git history as the direct child of that task's implementation commit. Require its diff to contain only that task's `Status`, executed task-step checkbox states, one-line `Completion evidence` in `PLAN.md`, and one append-only `AGENT_LOG.md` entry; reconcile task order and PR metadata; expose the derived evidence commit SHA in the verifier result; and never require that SHA inside the evidence commit itself.
-GREEN-4: Own read-only validation and truthful final process-record append only. The pre-implementation reviews, approval, cold-start, baseline materialization, and their registration remain non-task process actions; this task may neither create, repair, reinterpret, or fabricate their evidence nor execute repository code or author reflection content.
+GREEN-4: Own readiness aggregation, reflection structure checks, truthful final PLAN status/evidence updates, and explicitly requested disclosed language polishing only. Human decisions, student authorship, external outcomes, and missing evidence remain outside automation.
 Boundary: Preserve historical failures/revisions; never fabricate approval, cold-start pass, baseline materialization, subagent, review, commit, PR, human edit, or external outcome. Derive the exact formal admission root from the approved PLAN SHA; accept only canonical JSON tracked beneath that repository path and reject `.worktrees`, absolute, escaped, missing, untracked, or repository-external evidence without importing or executing repository code. Require the manifest-bound checklist/result pairs to match each other, the registered approved candidate identity, matching A/B results, reviewer-independence evidence, finding/closure records, and overall decision. Require the approved-document commit to contain the exact approved SPEC raw SHA/blob, PLAN complete SHA/semantic digest, and AGENTS blob/SHA-256; require its direct admission-evidence child and direct baseline-record grandchild to obey the exact allowed-path diffs; require `baseline.json` to bind the first two commits and all approved identities without embedding its own file hash or commit; and require the uniquely derived baseline-record commit to be the actual clean Task 1 formal base. A working-file match cannot substitute for tracked committed-tree containment or ancestry. Compare the final PLAN by recomputed `PlanSemanticDigestV2`; permitted Status/checkbox/one-line Completion-evidence updates may change the raw complete-file SHA but no other semantic drift is accepted. Load the two unique toolchain JSON records as data, require `dependency_closure.python_version == formal_toolchain_promotion.python_version == gate_evidence.python_version` by exact string comparison, and validate the public compatibility range `>=3.12,<3.13` independently; range membership never replaces exact equality.
 ```
 
@@ -10272,12 +10386,85 @@ git commit -m "Implement T37.1 README and Final Process Evidence"
 **Done:** the exact current main `source_commit` frozen after both WP36 and WP38 are finished and merged has complete same-SHA GitHub/GitLab CI, protected tag/Release/GHCR, Render deployment, three verified external JSON records, and zero protected-subject drift；legacy steps 37.A, 37.B 的 Target、Domain、适用真实环境和全局 profile 均通过；Critical/Important finding 全部关闭并复审。
 **Completion evidence:** Not yet executed.
 
-### Task T37.2: Independent Delivery and Reflection Readiness Gate
+### Task T37.2: Delivery and reflection readiness
 
 **Status:** Not started
 **Work package:** WP37
 **Legacy steps:** 37.C
-**Goal:** Aggregate every local/external/process/documentation check, including independently validated typed Independent PLAN Review and Approved-document Baseline evidence results, and report ready only when all 68 session tasks cover all 141 legacy steps and a valid student-authored reflection exists.
+**Goal:** Aggregate truthful process, task, review, CI/release/deployment, documentation, and reflection records; report ready only when all 68 session tasks cover all 141 legacy steps and the student-authored reflection satisfies its structural requirements.
+**Cold-start suitability:** Final readiness gate only; not a cold-start candidate. Start only after T37.1, all declared predecessors, and the student-owned reflection inputs are available.
+**SPEC contracts:** SPEC §1.6; §5.3–§5.6; §8.1–§8.4; §10.1 AC-01–AC-31; §10.3; §11.3; course required artifacts, process evidence, README, CI/CD, WebUI URL, and reflection rules; `AGENTS.md` final-report rules.
+
+**Files:**
+- Create: `scripts/verify_delivery.py`
+- Create: `scripts/verify_reflection.py`
+- Create: `tests/unit/process/test_reflection_contract.py`
+- Modify: `tests/unit/process/test_delivery_evidence.py` (aggregate readiness cases only)
+- Modify: `PLAN.md` (final truthful status/evidence fields only)
+- Modify: `REFLECTION.md` only after an explicit language-polish request; the student owns substantive text
+
+**Depends:** T37.1
+**Parallelization:** Start only after T37.1 is complete. The WP37 branch and PR remain the sole package integration boundary.
+
+**Interfaces:**
+- `verify_delivery(root: Path, require_live: bool, *, process_evidence_loader: ProcessEvidenceLoader = verify_process_evidence) -> DeliveryReadinessResultV1`
+- `verify_reflection(path: Path) -> ReflectionContractResultV1`
+- `verify_delivery` consumes the truthful `ProcessEvidenceResultV1` from T37.1 and rejects protected-source drift; it does not duplicate a separate review or admission parser.
+
+**Implementation points, exact RED, and minimum GREEN contracts:**
+
+```text
+RED-1: test_delivery_rejects_failed_process_evidence reaches the assertion and fails because a failed T37.1 process result is not rejected.
+RED-2: test_delivery_rejects_incomplete_executable_child reaches the assertion and fails because an incomplete legacy step is not rejected.
+GREEN-1: Aggregate process, task, review, artifact, document, and live-evidence results fail-closed; require every task and legacy step to be terminal and identity-aligned.
+GREEN-2: Check only the student-authored reflection's required disclosure, structure, parseability, and 1,500–2,500-word range; never generate or score substantive personal content.
+GREEN-3: Reject protected-source drift and mismatched CI/release/deployment source identities before readiness success.
+GREEN-4: Own readiness aggregation and structural reflection checks only; do not fabricate missing evidence or human decisions.
+```
+
+**Exact RED test code:**
+
+```python
+def test_delivery_rejects_failed_process_evidence(
+    repository_copy: Path,
+    failed_process_evidence: ProcessEvidenceResultV1,
+) -> None:
+    result = verify_delivery(
+        repository_copy,
+        require_live=False,
+        process_evidence_loader=lambda _: failed_process_evidence,
+    )
+    assert "PROCESS_EVIDENCE_INVALID" in result.error_codes
+
+
+def test_delivery_rejects_incomplete_executable_child(repository_copy: Path) -> None:
+    mark_child_incomplete(repository_copy, "38.G")
+    result = verify_delivery(repository_copy, require_live=False)
+    assert "LEGACY_STEP_INCOMPLETE:38.G" in result.error_codes
+```
+
+**Atomic verification:**
+- Target (37.C): `python -m pytest -q tests/unit/process/test_delivery_evidence.py::test_delivery_rejects_failed_process_evidence tests/unit/process/test_delivery_evidence.py::test_delivery_rejects_incomplete_executable_child`
+- Domain (37.C): `python -m pytest -q tests/unit/process/test_readme_contract.py tests/unit/process/test_delivery_evidence.py tests/unit/process/test_reflection_contract.py`
+- Final delivery: run `verify_delivery(..., require_live=True)` only after WP37 is merged and the final source-aligned external observations are complete.
+
+**Task-level verification, review, and completion:**
+- [ ] Add and run both displayed RED tests before GREEN.
+- [ ] Implement the four GREEN contracts and run Target and Domain.
+- [ ] Request and pass SPEC-compliance review, then code-quality review; close Critical/Important findings and re-review.
+- [ ] Commit implementation, record truthful evidence, and finish WP37.
+
+**Done:** readiness, delivery, reflection-structure, task-coverage, and protected-source checks pass without fabricated evidence or generated student content.
+**Completion evidence:** Not yet executed.
+
+## Appendix D. Superseded Task T37.2 (historical, non-normative)
+
+> The following former T37.2 card is retained only as process history. It is not a current task contract and its admission, review, identity, or baseline requirements must not be followed.
+
+**Status:** Not started
+**Work package:** WP37
+**Legacy steps:** 37.C
+**Goal:** Aggregate the local/external/process/documentation checks and report ready only when all 68 session tasks cover all 141 legacy steps and a valid student-authored reflection exists.
 **SPEC contracts:** SPEC §1.6; §5.3–§5.6; §8.1–§8.4; §10.1 AC-01–AC-31; §10.3; §11.3; course required artifacts, process evidence, README, CI/CD, WebUI URL, and reflection rules; `AGENTS.md` final-report rules.
 
 **Files:**
@@ -10291,51 +10478,51 @@ git commit -m "Implement T37.1 README and Final Process Evidence"
 **Parallelization:** Start only after every task/non-task gate in **Depends** has passed. Same-wave execution is allowed only when expanded writable paths are disjoint; the WP37 branch and PR remain the sole package integration boundary.
 
 **Interfaces:**
-- **Consumes / Produces (37.C):** Consumes Task 37.B's `verify_process_evidence(root: Path) -> ProcessEvidenceResultV1`, including its disjoint `IndependentPlanReviewEvidenceResultV1` and `ApprovedDocumentBaselineEvidenceV1`, through `ProcessEvidenceLoader = Callable[[Path], ProcessEvidenceResultV1]`, plus T37.1's three live evidence records and their common existing-schema `source_commit`. Produces `verify_delivery(root: Path, require_live: bool, *, process_evidence_loader: ProcessEvidenceLoader = verify_process_evidence) -> DeliveryReadinessResultV1` and `verify_reflection(path: Path) -> ReflectionContractResultV1`. The injected loader exists only to test this aggregate gate independently of Task 37.B's parser; delivery readiness also rejects any post-source change under `src/**`, `.github/**`, `.gitlab-ci.yml`, `containers/**`, `render.yaml`, `pyproject.toml`, or `requirements/**`. The final `require_live=True` delivery and reflection invocations are deferred to `FINAL_DELIVERY_POST_MERGE_V1` after WP37 merge.
+- **Consumes / Produces (37.C):** Consumes Task 37.B's `verify_process_evidence(root: Path) -> ProcessEvidenceResultV1` through `ProcessEvidenceLoader = Callable[[Path], ProcessEvidenceResultV1]`, plus T37.1's three live evidence records and their common existing-schema `source_commit`. Produces `verify_delivery(root: Path, require_live: bool, *, process_evidence_loader: ProcessEvidenceLoader = verify_process_evidence) -> DeliveryReadinessResultV1` and `verify_reflection(path: Path) -> ReflectionContractResultV1`. The injected loader exists only to test this aggregate checker independently of Task 37.B; delivery readiness also rejects any post-source change under `src/**`, `.github/**`, `.gitlab-ci.yml`, `containers/**`, `render.yaml`, `pyproject.toml`, or `requirements/**`. The final `require_live=True` delivery and reflection invocations are deferred to `FINAL_DELIVERY_POST_MERGE_V1` after WP37 merge.
 
 **Implementation points, exact RED, and minimum GREEN contracts:**
 
 #### Legacy step 37.C: Delivery and Reflection Readiness Gate
 
-**Atomic goal:** Aggregate every local/external/process/documentation check, including independently validated typed Independent PLAN Review and Approved-document Baseline evidence results, and report ready only when all 68 session tasks are terminal and identity-aligned, all 141 legacy TDD steps are mapped exactly once, their required Target/Domain/profile evidence is PASS, and a valid student-authored reflection exists.
+**Atomic goal:** Aggregate every local, external, process, and documentation check, and report ready only when all 68 session tasks are terminal and identity-aligned, all 141 legacy TDD steps are mapped exactly once, their required Target/Domain/profile evidence is PASS, and a valid student-authored reflection exists.
 
 **Minimum GREEN patch contract:**
 
 ```text
 Owned files: - Create: scripts/verify_delivery.py - Create: scripts/verify_reflection.py - Create: tests/unit/process/test_reflection_contract.py - Modify: tests/unit/process/test_delivery_evidence.py (aggregate readiness cases only) - Modify: PLAN.md (final truthful statuses/evidence only) - Modify: REFLECTION.md only after explicit language-polish request; student owns substantive text
-Interface: Consumes Task 37.B's `verify_process_evidence(root: Path) -> ProcessEvidenceResultV1`, including its disjoint `IndependentPlanReviewEvidenceResultV1` and `ApprovedDocumentBaselineEvidenceV1`, through `ProcessEvidenceLoader = Callable[[Path], ProcessEvidenceResultV1]`, plus T37.1's three live evidence records and their common existing-schema `source_commit`. Produces `verify_delivery(root: Path, require_live: bool, *, process_evidence_loader: ProcessEvidenceLoader = verify_process_evidence) -> DeliveryReadinessResultV1` and `verify_reflection(path: Path) -> ReflectionContractResultV1`. The injected loader exists only to test this aggregate gate independently of Task 37.B's parser; delivery readiness also rejects any post-source change under `src/**`, `.github/**`, `.gitlab-ci.yml`, `containers/**`, `render.yaml`, `pyproject.toml`, or `requirements/**`.
-GREEN-1: Implement `verify_delivery` as a fail-closed aggregate over real task, Task 37.B process/typed-review/baseline results, environment, artifact, document, and live-evidence schemas, requiring an empty Task 37.B error set, `overall_decision == "PASS"`, an error-free Approved-document Baseline result bound to the exact approved-document commit, registration-only admission-evidence commit, clean Task 1 formal base, approved SPEC/PLAN identities, exact current approved semantic/SPEC/A/B/review-result identities, all 68 session tasks terminal and identity-aligned, with all 141 legacy TDD steps mapped exactly once and their required Target/Domain/profile evidence PASS, one common CI/release/deployment `source_commit`, exact CI/tag/wheel/GHCR/Render binding to that commit, and zero protected-subject path drift from it to delivery HEAD. The task-local Target/Domain tests may use `require_live=False` and injected evidence; the live invocation is a final-gate action only after T37.2 is terminal and WP37 is merged.
+Interface: Consumes Task 37.B's `verify_process_evidence(root: Path) -> ProcessEvidenceResultV1` through `ProcessEvidenceLoader`, plus T37.1's three live evidence records and their common existing-schema `source_commit`. Produces `verify_delivery(root: Path, require_live: bool, *, process_evidence_loader: ProcessEvidenceLoader = verify_process_evidence) -> DeliveryReadinessResultV1` and `verify_reflection(path: Path) -> ReflectionContractResultV1`. Delivery readiness also rejects any post-source change under `src/**`, `.github/**`, `.gitlab-ci.yml`, `containers/**`, `render.yaml`, `pyproject.toml`, or `requirements/**`.
+GREEN-1: Implement `verify_delivery` as a fail-closed aggregate over real task, process, environment, artifact, document, and live-evidence records, requiring a truthful process-record result, all 68 session tasks terminal and identity-aligned, all 141 legacy TDD steps mapped exactly once with their required Target/Domain/profile evidence PASS, one common CI/release/deployment `source_commit`, exact CI/tag/wheel/GHCR/Render binding to that commit, and zero protected-subject path drift from it to delivery HEAD. The task-local Target/Domain tests may use `require_live=False` and injected process evidence; the live invocation is a final-gate action only after T37.2 is terminal and WP37 is merged.
 GREEN-2: Implement `verify_reflection` to check only the student-authored 1500–2500-word range, required disclosure, file structure, and parseability; substantive personal content is neither generated nor scored.
-GREEN-3: Make the declared typed-evidence RED probes GREEN by returning `INDEPENDENT_PLAN_REVIEW_EVIDENCE_INVALID` or `APPROVED_DOCUMENT_BASELINE_INVALID` before any readiness success when the corresponding injected Task 37.B sub-result is failed, even if every executable child and other delivery input is valid.
+GREEN-3: Make the declared process-evidence RED probes GREEN by returning a stable process-record error before any readiness success when the injected Task 37.B result is failed, even if every executable child and other delivery input is valid.
 GREEN-4: Own readiness aggregation, reflection structure checks, truthful final PLAN status/evidence updates, and explicitly requested disclosed language polishing only. Human decisions, student authorship, external outcomes, and missing evidence remain outside automation.
-Boundary: Aggregate the typed Task 37.B result as a disjoint dependency; do not duplicate or weaken its review checklist/result schema, digest, reviewer-independence, finding/closure, candidate validation, or approved-document committed-tree/registration-commit ancestry checks. Rebind the accepted review and baseline sub-results to the final approved semantic/SPEC/A/B/review-result, approved-document, admission-evidence, and Task 1 formal-base identities and fail closed on every error, `FAIL`, or mismatch. Parse real schemas/history/task records rather than success words. `source_commit` is the immutable product identity for wheel, release, GHCR, Render, and the three existing external evidence records. `delivery_head` is the later final-main SHA after WP37 merge and is the identity for final PLAN tracking, README/process/reflection state, and `FINAL_DELIVERY_POST_MERGE_V1`; it may contain only delivery-only changes allowed after source freeze. Require byte-identical existing `source_commit` values across CI/release/deployment records and reject any later change under `src/**`, `.github/**`, `.gitlab-ci.yml`, `containers/**`, `render.yaml`, `pyproject.toml`, or `requirements/**`; evidence, documentation, tests, delivery-only scripts, PLAN tracking, and append-only logs do not become a new release source. Reflection checks word count, disclosure, and student-specific structure but never generates or scores substantive personal content.
+Boundary: Aggregate the Task 37.B process result without duplicating its parser or treating success words as evidence. Fail closed on every missing, contradictory, fabricated, or non-terminal record. `source_commit` is the immutable product identity for wheel, release, GHCR, Render, and the three existing external evidence records. `delivery_head` is the later final-main SHA after WP37 merge and is the identity for final PLAN tracking, README/process/reflection state, and `FINAL_DELIVERY_POST_MERGE_V1`; it may contain only delivery-only changes allowed after source freeze. Require byte-identical existing `source_commit` values across CI/release/deployment records and reject any later change under `src/**`, `.github/**`, `.gitlab-ci.yml`, `containers/**`, `render.yaml`, `pyproject.toml`, or `requirements/**`; evidence, documentation, tests, delivery-only scripts, PLAN tracking, and append-only logs do not become a new release source. Reflection checks word count, disclosure, and student-specific structure but never generates or scores substantive personal content.
 ```
 
 **Exact RED test code:**
 
 ```python
-def test_delivery_rejects_failed_independent_plan_review_evidence(
+def test_delivery_rejects_failed_process_evidence(
     repository_copy: Path,
-    process_evidence_with_failed_plan_review: ProcessEvidenceResultV1,
+    failed_process_evidence: ProcessEvidenceResultV1,
 ) -> None:
     result = verify_delivery(
         repository_copy,
         require_live=False,
-        process_evidence_loader=lambda _: process_evidence_with_failed_plan_review,
+        process_evidence_loader=lambda _: failed_process_evidence,
     )
-    assert "INDEPENDENT_PLAN_REVIEW_EVIDENCE_INVALID" in result.error_codes
+    assert "PROCESS_EVIDENCE_INVALID" in result.error_codes
 
 
-def test_delivery_rejects_failed_approved_document_baseline_evidence(
+def test_delivery_rejects_contradictory_process_evidence(
     repository_copy: Path,
-    process_evidence_with_failed_baseline: ProcessEvidenceResultV1,
+    contradictory_process_evidence: ProcessEvidenceResultV1,
 ) -> None:
     result = verify_delivery(
         repository_copy,
         require_live=False,
-        process_evidence_loader=lambda _: process_evidence_with_failed_baseline,
+        process_evidence_loader=lambda _: contradictory_process_evidence,
     )
-    assert "APPROVED_DOCUMENT_BASELINE_INVALID" in result.error_codes
+    assert "PROCESS_EVIDENCE_INVALID" in result.error_codes
 
 
 def test_delivery_rejects_incomplete_executable_child(
@@ -10354,28 +10541,28 @@ def test_delivery_rejects_protected_path_drift_after_source_commit(
     assert "DELIVERY_SOURCE_DRIFT:src/vespercode/demo/app.py" in result.error_codes
 ```
 
-**Expected RED:** the readiness verifier and injected fixtures load successfully, then the new tests fail because `verify_delivery` does not inspect the typed review/baseline sub-results, emit `INDEPENDENT_PLAN_REVIEW_EVIDENCE_INVALID`/`APPROVED_DOCUMENT_BASELINE_INVALID`, or reject the isolated protected-path mutation with `DELIVERY_SOURCE_DRIFT:src/vespercode/demo/app.py`. A Task 37.B parsing failure, missing fixture/record, incomplete child, absent reflection, collection/import failure, or unavailable unrelated live evidence does not count as RED.
+**Expected RED:** the readiness verifier and injected fixtures load successfully, then the new tests fail because `verify_delivery` does not reject failed or contradictory process evidence, emit `PROCESS_EVIDENCE_INVALID`, or reject the isolated protected-path mutation with `DELIVERY_SOURCE_DRIFT:src/vespercode/demo/app.py`. A Task 37.B parsing failure, missing fixture/record, incomplete child, absent reflection, collection/import failure, or unavailable unrelated live evidence does not count as RED.
 
 **Atomic verification:**
-- Target (37.C): `python -m pytest -q tests/unit/process/test_delivery_evidence.py::test_delivery_rejects_failed_independent_plan_review_evidence tests/unit/process/test_delivery_evidence.py::test_delivery_rejects_failed_approved_document_baseline_evidence tests/unit/process/test_delivery_evidence.py::test_delivery_rejects_incomplete_executable_child tests/unit/process/test_delivery_evidence.py::test_delivery_rejects_protected_path_drift_after_source_commit`
+- Target (37.C): `python -m pytest -q tests/unit/process/test_delivery_evidence.py::test_delivery_rejects_failed_process_evidence tests/unit/process/test_delivery_evidence.py::test_delivery_rejects_contradictory_process_evidence tests/unit/process/test_delivery_evidence.py::test_delivery_rejects_incomplete_executable_child tests/unit/process/test_delivery_evidence.py::test_delivery_rejects_protected_path_drift_after_source_commit`
 - Domain (37.C): `python -m pytest -q tests/unit/process/test_readme_contract.py tests/unit/process/test_delivery_evidence.py tests/unit/process/test_reflection_contract.py`
 - Expected (37.C, 1): the displayed Target and Domain commands exit `0`; final live delivery/reflection verification is deferred to `FINAL_DELIVERY_POST_MERGE_V1`.
-- Expected (37.C, 2): `INDEPENDENT_PLAN_REVIEW_EVIDENCE_INVALID`
-- Expected (37.C, 3): `APPROVED_DOCUMENT_BASELINE_INVALID`
+- Expected (37.C, 2): `PROCESS_EVIDENCE_INVALID`
+- Expected (37.C, 3): `PROCESS_EVIDENCE_INVALID`
 - Expected (37.C, 4): `LEGACY_STEP_INCOMPLETE:38.G`
 - Expected (37.C, 5): `DELIVERY_SOURCE_DRIFT:src/vespercode/demo/app.py`
 
 **Atomic review focus:**
-- SPEC (37.C): Spec compliance review checks Task 37.C's Goal, Milestone 37, Independent PLAN Review, and Approved-document Baseline contracts, this Implementation boundary, exact RED, and Verification as one consistent final readiness contract with disjoint typed-evidence aggregation.
-- Quality (37.C): Code quality review checks injected-loader isolation, Task 37.B review/baseline error/decision/identity aggregation without duplicate parsing, committed-tree containment binding, complete session-task and legacy-step aggregation, common source/CI/tag/wheel/GHCR/Render identity, protected-path drift rejection, freshness/content digests/access control, fail-closed non-terminal handling, reflection word-count/disclosure/structure checks, student authorship protection, and absence of generated personal content or invented readiness.
+- SPEC (37.C): Spec compliance review checks Task 37.C's Goal, Milestone 37, process-record and final-delivery contracts, this Implementation boundary, exact RED, and Verification as one consistent final readiness contract.
+- Quality (37.C): Code quality review checks injected-loader isolation, Task 37.B process-result aggregation without duplicate parsing, complete session-task and legacy-step aggregation, common source/CI/tag/wheel/GHCR/Render identity, protected-path drift rejection, freshness/content digests/access control, fail-closed non-terminal handling, reflection word-count/disclosure/structure checks, student authorship protection, and absence of generated personal content or invented readiness.
 
-- [ ] **Step 1: Add the exact 37.C RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
-- [ ] **Step 2: Run 37.C RED.** Run `python -m pytest -q tests/unit/process/test_delivery_evidence.py::test_delivery_rejects_failed_independent_plan_review_evidence tests/unit/process/test_delivery_evidence.py::test_delivery_rejects_failed_approved_document_baseline_evidence tests/unit/process/test_delivery_evidence.py::test_delivery_rejects_incomplete_executable_child tests/unit/process/test_delivery_evidence.py::test_delivery_rejects_protected_path_drift_after_source_commit`. Expected: FAIL for “the readiness verifier and injected fixtures load successfully, then the new tests fail because `verify_delivery` does not inspect the typed review/baseline sub-results, emit `INDEPENDENT_PLAN_REVIEW_EVIDENCE_INVALID`/`APPROVED_DOCUMENT_BASELINE_INVALID`, or reject the isolated protected-path mutation with `DELIVERY_SOURCE_DRIFT:src/vespercode/demo/app.py`. A Task 37.B parsing failure, missing fixture/record, incomplete child, absent reflection, collection/import failure, or unavailable unrelated live evidence does not count as RED”. Collection, import, environment, unrelated, or already-failing tests do not count.
-- [ ] **Step 3: Implement 37.C GREEN-1.** Implement `verify_delivery` as a fail-closed aggregate over real task, Task 37.B process/typed-review/baseline results, environment, artifact, document, and live-evidence schemas, requiring an empty Task 37.B error set, `overall_decision == "PASS"`, an error-free Approved-document Baseline result bound to the exact approved-document commit, registration-only admission-evidence commit, clean Task 1 formal base, approved SPEC/PLAN identities, exact current approved semantic/SPEC/A/B/review-result identities, all 68 session tasks terminal and identity-aligned, with all 141 legacy TDD steps mapped exactly once and their required Target/Domain/profile evidence PASS, one common CI/release/deployment `source_commit`, exact CI/tag/wheel/GHCR/Render binding to that commit, and zero protected-subject path drift from it to delivery HEAD.
+- [ ] **Step 1: Add the exact 37.C RED tests.** Copy the complete displayed tests into the declared Test file without changing implementation files.
+- [ ] **Step 2: Run 37.C RED.** Run `python -m pytest -q tests/unit/process/test_delivery_evidence.py::test_delivery_rejects_failed_process_evidence tests/unit/process/test_delivery_evidence.py::test_delivery_rejects_contradictory_process_evidence tests/unit/process/test_delivery_evidence.py::test_delivery_rejects_incomplete_executable_child tests/unit/process/test_delivery_evidence.py::test_delivery_rejects_protected_path_drift_after_source_commit`. Expected: FAIL for “the readiness verifier and injected fixtures load successfully, then the new tests fail because `verify_delivery` does not reject failed or contradictory process evidence, emit `PROCESS_EVIDENCE_INVALID`, or reject the isolated protected-path mutation with `DELIVERY_SOURCE_DRIFT:src/vespercode/demo/app.py`. A Task 37.B parsing failure, missing fixture/record, incomplete child, absent reflection, collection/import failure, or unavailable unrelated live evidence does not count as RED”. Collection, import, environment, unrelated, or already-failing tests do not count.
+- [ ] **Step 3: Implement 37.C GREEN-1.** Implement `verify_delivery` as a fail-closed aggregate over real task, process, environment, artifact, document, and live-evidence records, requiring a truthful process-record result, all 68 session tasks terminal and identity-aligned, all 141 legacy TDD steps mapped exactly once with their required Target/Domain/profile evidence PASS, one common CI/release/deployment `source_commit`, exact CI/tag/wheel/GHCR/Render binding to that commit, and zero protected-subject path drift from it to delivery HEAD.
 - [ ] **Step 4: Implement 37.C GREEN-2.** Implement `verify_reflection` to check only the student-authored 1500–2500-word range, required disclosure, file structure, and parseability; substantive personal content is neither generated nor scored.
-- [ ] **Step 5: Implement 37.C GREEN-3.** Make the declared typed-evidence RED probes GREEN by returning `INDEPENDENT_PLAN_REVIEW_EVIDENCE_INVALID` or `APPROVED_DOCUMENT_BASELINE_INVALID` before any readiness success when the corresponding injected Task 37.B sub-result is failed, even if every executable child and other delivery input is valid.
+- [ ] **Step 5: Implement 37.C GREEN-3.** Make the declared process-evidence RED probes GREEN by returning `PROCESS_EVIDENCE_INVALID` before any readiness success when the injected Task 37.B result is failed or contradictory, even if every executable child and other delivery input is valid.
 - [ ] **Step 6: Implement 37.C GREEN-4.** Own readiness aggregation, reflection structure checks, truthful final PLAN status/evidence updates, and explicitly requested disclosed language polishing only. Human decisions, student authorship, external outcomes, and missing evidence remain outside automation.
-- [ ] **Step 7: Run 37.C Target GREEN.** Re-run `python -m pytest -q tests/unit/process/test_delivery_evidence.py::test_delivery_rejects_failed_independent_plan_review_evidence tests/unit/process/test_delivery_evidence.py::test_delivery_rejects_failed_approved_document_baseline_evidence tests/unit/process/test_delivery_evidence.py::test_delivery_rejects_incomplete_executable_child tests/unit/process/test_delivery_evidence.py::test_delivery_rejects_protected_path_drift_after_source_commit`; require exit 0 and every displayed RED assertion to pass.
+- [ ] **Step 7: Run 37.C Target GREEN.** Re-run `python -m pytest -q tests/unit/process/test_delivery_evidence.py::test_delivery_rejects_failed_process_evidence tests/unit/process/test_delivery_evidence.py::test_delivery_rejects_contradictory_process_evidence tests/unit/process/test_delivery_evidence.py::test_delivery_rejects_incomplete_executable_child tests/unit/process/test_delivery_evidence.py::test_delivery_rejects_protected_path_drift_after_source_commit`; require exit 0 and every displayed RED assertion to pass.
 - [ ] **Step 8: Run 37.C Domain.** Run `python -m pytest -q tests/unit/process/test_readme_contract.py tests/unit/process/test_delivery_evidence.py tests/unit/process/test_reflection_contract.py`; require exit 0 and every displayed Atomic verification expectation to hold.
 
 **Task-level verification, review, and completion:**
@@ -11221,7 +11408,29 @@ The exact order is:
 5. Require all 68 session tasks, 141 legacy steps, and 46 work packages to be terminal/merged, and require no repository-byte modification after the frozen `delivery_head`.
 6. Store `delivery_head`, the unchanged `source_commit`, CI run/pipeline URLs and terminal outcomes, verifier outputs/digests, clean-tree result, and the final observation time as a CI artifact, job URL, or repository-external approval record. Do not create a repository commit to record this gate.
 
-## 8. PlanAuditContractV3
+## 8. Task-card conformance and verification
+
+This section is the current, lightweight conformance contract for the implementation handoff. It checks that the plan is usable by a fresh Agent and that formal task execution remains traceable; it does not create an additional admission system.
+
+### 8.1 Required task-card fields
+
+Each selected task card must state its goal, SPEC contracts, files and ownership, dependencies, parallelization notes, interfaces, implementation points, an intentionally failing RED test, GREEN steps, verification commands, review steps, completion condition, and completion-evidence field. The files and interfaces named by a task must be concrete enough for a fresh Agent to locate the work and run the displayed checks without guessing.
+
+### 8.2 Execution-order checks
+
+For every behavior legacy step, the task card must show the exact RED test and expected task-owned failure before the first GREEN implementation point. The card must then show the Target and Domain verification commands, refactoring, SPEC-compliance review, code-quality review, implementation commit, evidence record, and work-package handoff in that order. A task may not claim success from a missing, deselected, unrelated, or already-passing RED test.
+
+The dependency graph must be acyclic and every dependency must name an existing task or an explicitly documented process prerequisite. Files listed in a task card are the ownership boundary; shared `PLAN.md` and `AGENT_LOG.md` updates are serialized process records. Work packages remain the branch/worktree/PR/finishing units, while session tasks remain fresh-subagent execution slices inside a work package.
+
+### 8.3 Verification scope
+
+The human document check in §1.1 records whether the selected task cards are complete, small enough for one session, and executable with the displayed commands. During formal execution, the responsible Agent records actual RED/GREEN, verification, review, human-edit, commit, and PR results in `AGENT_LOG.md`, and updates only the task's status and completion evidence. The final delivery checks continue to cover CI, release, deployment, credentials, README, reflection, and the required WebUI URL.
+
+No task-card check requires a PLAN hash, semantic digest, dual independent audit implementation, formal JSON admission evidence, human identity approval, or a special baseline commit. Those mechanisms are retained below only as historical process context.
+
+## Appendix B. Superseded PlanAuditContractV3 (historical, non-normative)
+
+> The following text records an earlier project-specific admission and audit design. It is retained for process history only. It is not a requirement, prerequisite, acceptance criterion, or instruction for the cold-start Agent. The current normative contract is §1, §8, and §9.
 
 ### 8.1 Writing-plans conformance
 
@@ -11294,9 +11503,13 @@ Each result binds PlanAuditContractV3, PLAN/SPEC/course/AGENTS SHA-256 identitie
 
 This PLAN candidate is saved at the user-required repository-root `PLAN.md`; that location overrides the default dated-plan path in `superpowers:writing-plans`.
 
-After SPEC M0, PlanAuditContractV3 A/B, independent PLAN_SPEC_COMPLIANCE, independent PLAN_EXECUTABILITY, human identity approval, heterogeneous no-history cold-start, and APPROVED_DOCUMENT_BASELINE_V3 all pass for the exact unchanged identities:
+The current handoff order is:
 
-1. **Subagent-Driven (selected):** Use `superpowers:subagent-driven-development`. Dispatch one fresh implementation subagent per session task, then perform the displayed SPEC and quality review stages. One work package retains one branch/worktree/PR because the work package—not the session task—is the `AGENTS.md` independent task.
-2. **Inline execution (only if the human changes the selected workflow):** Use `superpowers:executing-plans` with explicit checkpoints and the same task/review/package boundaries.
+1. Complete the lightweight document check in §1.1 and record any unresolved key ambiguity in `SPEC_PROCESS.md`.
+2. Obtain the human confirmation to start the disposable cold-start trial.
+3. Give only the current `SPEC.md` and `PLAN.md` to a different-type Agent in a new session, with no history or memory; select one or two task cards, require questions instead of guesses, and allow approximately one to two hours.
+4. Record the trial questions, blocking points, outputs, verification results, task-size findings, and interpretation gaps; revise `SPEC.md`, `PLAN.md`, and `SPEC_PROCESS.md` where needed. Repeat the trial for a materially changed selected task.
+5. **Subagent-Driven (selected):** after the trial handoff, use `superpowers:subagent-driven-development` in isolated worktrees, with one fresh implementation subagent per session task, strict TDD, the displayed SPEC-compliance review, the code-quality review, and one work-package branch/PR/finishing pass.
+6. **Inline execution (only if the human changes the selected workflow):** use `superpowers:executing-plans` with explicit checkpoints and the same task, review, and work-package boundaries.
 
-No implementation starts from this draft or from an unapproved digest.
+No formal implementation starts before the disposable cold-start findings are recorded and the resulting SPEC/PLAN revisions are complete. Cold-start code and commits remain disposable validation artifacts and are never merged as formal implementation.

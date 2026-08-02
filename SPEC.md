@@ -1,7 +1,7 @@
 # VesperCode v1 规格说明
 
 > 版本：SPEC v3  
-> 状态：SPEC v3 内容冻结。正式准入状态仅由绑定本文件精确 SHA-256、Git blob 及对应 PLAN 身份的外部 M0、PLAN 审查、人工批准、异构冷启动和 Approved-document Baseline 证据确定；本文不内嵌或推断这些门禁当前是否通过。除课程允许的隔离、可丢弃且不得合入的冷启动试作外，在全部门禁通过前不得开始或继续正式实现、CI、发行或部署；§10 的实现与发布证据不能替代门禁。
+> 状态：SPEC v3 候选。正式实现前必须完成 §11.2 的冷启动前文档检查，执行隔离、可丢弃且不得合入的陌生 Agent 冷启动试作，并记录试作反馈；本文不声明这些过程是否已经完成。冷启动反馈处理并完成必要的 SPEC/PLAN 修订后，才进入 worktree、subagent、TDD、两阶段评审和分支完成流程。
 
 ## 0. 文档约定
 
@@ -2162,60 +2162,27 @@ GitHub Release 与 GHCR 使用彼此独立的最小权限发布凭据：前者�
 | SPEC 再次扩张 | 中/高 | 新增自然语言测试、多 Agent、通用恢复或大量兼容分支 | 所有新增先修改 §1.5/1.6 并经独立审查；PLAN 不得暗增 |
 | 公网 Demo 被误认为正式验证 | 低/中 | UI 或审计缺少模拟标识 | 独立状态、持续标识、独立能力注册表 |
 
-## 11.2 M0：SPEC Readiness Gate 与进入 PLAN 的关闭清单
+## 11.2 冷启动前文档检查与试作流程
 
-M0 是 PLAN 人工批准、冻结为实施基线、冷启动和 Task 1 之前的人工准入门禁，不是实现 Task，也不产生实现 commit。为给 M0 和 PLAN 审查提供可哈希、可审查的输入，允许在 M0 前生成仅用于这两项审查的未获准 Candidate PLAN；该文件的存在不构成人工批准、冻结为实施基线、冷启动或 Task 1 授权。执行者必须从用户本次指定、文件状态声明和当前 Git/文件系统事实中唯一解析正式 SPEC 路径；若存在内容不同且无法唯一判定的候选，M0 失败并返回 SPEC/文件身份澄清。
+本节落实课程要求的“陌生 Agent 冷启动”验证。它是轻量的文档就绪检查和可丢弃试作流程，不是实现任务、产品功能验收、哈希身份审批或发布门禁；不要求 M0、双重 PLAN 审计器、`PlanSemanticDigest`、formal JSON 证据集或三提交 baseline。
 
-M0 必须在运行时对唯一正式 SPEC 执行并记录：
+正式实现前，先完成以下五项检查：
 
-1. 以无 BOM UTF-8 原始文件计算 SHA-256；
-2. 执行 `git hash-object --no-filters <正式 SPEC 路径>` 计算 Git blob；
-3. 执行 `git rev-parse HEAD` 记录当前 Git commit；
-4. 对照 `AI4SE_Final_Project_通用要求.md`、`AI4SE_Final_Project_A_Coding_Agent_Harness(1).md` 和适用 `AGENTS.md`，逐项确认课程与 Harness 强制要求没有被 SPEC 降级或遗漏；
-5. 明确核对已知阻断项已经关闭：GitHub Actions 与 GitLab CI 双平台闭环；List/Search canonical cursor；每次真实调用前凭据复验；下述 `PlanSemanticDigestV2` 执行跟踪排除规则；前三项技术门禁可从仅有获准 SPEC/PLAN 的冷启动环境建立并复现同一锁定 gate toolchain；Task 2 以无凭据 loopback registry 证明 OCI digest round-trip 和无自引用流程，而 GHCR 凭据与真实发布仍只属于受保护 release gate；
-6. 由人类批准上述精确 SPEC 路径、SHA-256、Git blob 和基线 commit。
+1. **SPEC 覆盖课程要求。** `SPEC.md` 必须覆盖问题陈述、至少五个 INVEST 用户故事、功能规约、非功能需求与凭据威胁模型、系统架构、数据模型、凭据与分发设计、技术选型、验收标准、风险，以及 Coding Agent Harness 所需的领域与机制设计。
+2. **PLAN 任务可执行。** `PLAN.md` 中每个候选 task 必须写明目标、涉及文件、实现要点、预期失败测试、验证步骤、依赖和可并行部分，并且颗粒度适合一个 subagent 在一次会话内完成。
+3. **选定冷启动范围。** 从 PLAN 中选定 1—2 个 task 作为试作目标，明确试作的预计时间、完成条件和验证命令；未选中的 task 不属于本次试作范围。
+4. **登记未决歧义。** 将启动前发现的关键不确定项、假设和待确认接口记录在 `SPEC_PROCESS.md`；不能通过猜测掩盖缺口。
+5. **人工确认启动。** 人工检查上述检查结果，并明确确认可以启动冷启动；确认记录写入 `SPEC_PROCESS.md`，不需要额外的身份摘要或 formal JSON 审批文件。
 
-M0 的摘要和批准记录必须写入外部批准记录及随后生成或重新生成的 PLAN 元数据，不得把摘要写回被摘要的 `SPEC.md`。任何命令失败、内容冲突、阻断项未关闭或人类未批准都使 M0 失败：任何现有 Candidate PLAN 立即失效；流程必须先返回修改/澄清 SPEC，再针对修正后的 SPEC 重新生成 Candidate PLAN。失败状态下不得批准或冻结 PLAN 为实施基线，不得开始冷启动或 Task 1。
+检查通过后，启动一个与主开发 Agent 类型不同的全新 session：
 
-本版供 M0 核对的关闭合同包括：
+- 不提供此前对话、memory 或口头补充，只提供当前的 `SPEC.md` 和 `PLAN.md`；
+- 指定 Agent 自主执行选定的 1—2 个 task，遇到不确定内容必须暂停提问，不得自行猜测；
+- 试作时间约为 1—2 小时；
+- 试作必须在隔离、可丢弃的 worktree 中进行，产生的验证性代码、提交和分支不得直接合入正式实现；
+- 记录 Agent 的提问、阻塞点、错误解读、实际输出、验证结果，以及与原意的偏差。
 
-- 准入、profiles、Snapshot 与生命周期：§4.1—§4.2，AC-15、AC-16、AC-21、AC-28、AC-30；
-- 动作、路径、List/Search cursor、Candidate identity 与 editable policy：§4.2—§4.3，AC-01、AC-17、AC-18、AC-26、AC-31；
-- 批准、披露、Prepared requests、逐调用凭据复验与调用结果：§4.4、§4.8，AC-02、AC-03、AC-08、AC-13、AC-27、AC-28；
-- 项目验证、证据与受控持久化恢复：§4.5—§4.6，AC-04、AC-07、AC-19—AC-22、AC-25、AC-29；
-- 凭据、记忆和 UI 权限边界：§4.7—§4.9，AC-08、AC-09、AC-14、AC-23；
-- GitHub Actions、GitLab CI、分发与验证矩阵：§8—§10，AC-10—AC-12、AC-24、AC-30。
-- 可行性门禁启动环境：Task 1 拥有精确版本、完整传递依赖和 hash 锁定的 gate dependency lock、独立 pytest marker/config、Ruff/Mypy config 与唯一 gate runner；Task 2/3 只能消费 Task 1 冻结的同一工具链，不得依赖全局 pytest/Ruff/Mypy 或 Task 4 文件。
-
-因此，PLAN 不得再让实现者自行选择上述语义。精确依赖 patch 版本、OpenAI model、镜像摘要和部署 URL 由发布 manifest、lock file、README 与流水线证据记录，并通过 digest 绑定到运行。
-
-获准的 PLAN 使用 `PlanSemanticDigestV2` 区分语义合同与执行跟踪。该摘要不得写入 `PLAN.md` 自身，必须存入外部批准记录，并按以下唯一投影计算：
-
-1. 输入必须是无 BOM UTF-8；所有 CRLF 先规范为 LF，裸 CR 拒绝。
-2. 正式 Task 区域精确定义为从完整行 `## 5. Session Task Cards` 起，到下一完整行 `## 6. Unified Traceability` 之前。只在该区域执行三种替换：
-   - 每个完整行前缀为 `**Status:** ` 的行统一替换为 `**Status:** TRACKING_STATUS_EXCLUDED_V2`；
-   - 所有 checkbox token `[ ]` 与 `[x]` 统一为 `[ ]`，步骤正文仍参与摘要；
-   - 每个完整单行前缀为 `**Completion evidence:** ` 的行统一替换为 `**Completion evidence:** TRACKING_EVIDENCE_EXCLUDED_V2`。
-3. 除上述精确替换外，PLAN 的其他全部字节都参与摘要；不得排除 task 标题、Goal、依赖、文件、接口、实现点、测试、命令、review gate、矩阵、门禁或人工动作。
-4. 对投影后的无 BOM UTF-8 字节计算 `SHA-256(b"VesperCode\0PLAN_SEMANTIC_CONTRACT_V2\0" + projected_plan_bytes)`。
-5. 仅 task 状态、checkbox 勾选和单行 completion evidence 的变化不要求重新进行 PLAN 语义批准或冷启动；任何其他字节变化都必须生成新的 `PlanSemanticDigestV2`、重新人工批准并重新通过冷启动门禁。
-6. 完整 PLAN 文件 SHA-256 始终作为每次证据更新的审计身份记录，但不取代 `PlanSemanticDigestV2`，也不因合法执行跟踪更新使既有语义批准失效。
-
-通过 M0 和 PLAN 人工批准后，PLAN 的最前部仍必须安排三项技术验证任务，并采用失败关闭而不是放宽设计：
-
-1. Win32 最终对象身份、hard link/reparse/ADS 与 named mutex 集成验证；
-2. `ReferenceProfileManifestV1`/reference fixture 映射、固定单平台 OCI manifest 构建、无凭据 loopback registry push → RepoDigest → digest pull → smoke、无最终 manifest 自引用、Docker 只读候选树、tmpfs、缓存、资源限制、完整报告和失败指纹集成验证；真实 GHCR 交付保留给 §8.4 受保护 release gate；
-3. 1—3 文件持久化的逐故障点恢复验证。
-
-三项门禁必须共享同一可复现的最小启动合同。Task 1 在其首次 RED 前建立并审查 gate lock、独立 pytest marker/config、Ruff/Mypy config 和唯一 runner；lock 必须冻结所有直接/传递依赖的精确版本与分发 hash，GO 报告必须记录 Python、pytest、Ruff、Mypy、lock/config/runner 摘要。Task 2 和 Task 3 必须通过该 runner 显式选择 gate config 执行，禁止读取全局工具配置或等待 Task 4 创建 `pyproject.toml`、`requirements/dev.lock`、marker 和静态检查配置。
-
-Task 2 还必须拥有可通过显式 pytest `-p` 或等价封闭入口加载的 gate 专用机器报告器，以及只负责构造、规范化和比较稳定 `CALL/FAIL` 输入的 gate 指纹探针。Docker gate 报告必须把 reporter/probe 的版本与摘要、gate lock/config 摘要、固定 builder/output 参数、实际镜像身份和临时 registry 身份绑定为同一 GO 证据；缺失、截断、摘要不一致或隐式插件加载均为 NO-GO。该 reporter/probe 只证明 Task 2 可行性，不得提前声明或替代 Task 19 的正式 `PytestEvidenceV1`、`FailureFingerprintV1` 和生产验证模块。
-
-Task 2 的临时 registry 必须使用 digest-pinned registry image，只监听 `127.0.0.1` 的动态空闲端口，不接受凭据、不暴露到 LAN/公网、不复用 Docker Desktop 已登录状态，并在成功、失败、取消和异常路径删除容器与数据。推送前生成的本地 OCI manifest digest、registry 返回 RepoDigest 和按 digest 重拉后的 RepoDigest 必须完全一致；检查容器在重拉后仍以 `--network none` 执行。最终 `ReferenceProfileManifestV1` 只能在三方一致后生成，且不得作为其绑定镜像的构建输入。任何 digest 转换、自引用、临时 registry 残留或外部 registry 尝试均为 NO-GO；Task 34 只能复现该已证明流程；受保护凭据仅可在 §8.4 的受保护 release gate 中，在最终源提交 SHA 冻结且同一 SHA 的 CI 通过后使用，以执行真实 GHCR 交付。
-
-Task 4 必须把 Task 1—3 已验证的 Python/tool 版本、marker 和静态检查规则提升为正式 `pyproject.toml`、`requirements/dev.lock` 和统一开发命令，而不是首次建立测试环境。正式配置与冻结 gate 配置如有任何有意差异，必须明确记录、重新执行受影响的 Task 1—3 并取得新 GO；未解释或未复验的漂移失败关闭。gate lock、config、runner、报告器、指纹探针和三项 GO 摘要必须保留到最终交付，以便从门禁证据独立复现。
-
-若第三项无法证明 3 文件事务安全，必须停止后续实现和发布；不得在 PLAN 或代码中把正式范围隐式改为单文件。改变 3 文件/1 新文件范围前，必须正式修订本 SPEC、相关用户故事、AC、验证矩阵和 PLAN，并重新审查；不得删除恢复语义或把未知状态视为成功。
+冷启动完成后，先根据试作反馈修订 `SPEC.md`、`PLAN.md` 和 `SPEC_PROCESS.md`，再进入正式的 worktree、subagent、TDD、两阶段评审和 `finishing-a-development-branch` 流程。冷启动未完成或暴露的关键歧义尚未修订前，不得开始正式实现。
 
 ## 11.3 未来工作
 

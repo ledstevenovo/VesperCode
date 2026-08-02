@@ -1493,3 +1493,46 @@ Reviewer 的总体 recommendation 为 `FAIL`。Reviewer 明确未将“尚未实
 复核结果：M0-01 `PASS`、M0-02 `PASS`、M0-03 `PASS`、M0-04 `FAIL`、M0-05 `PASS`、M0-06 `FAIL`，总体 recommendation 为 `FAIL`。M0-04 artifact 的 schema、7 个 check、候选身份绑定和 `closure_pass_count=0` 均通过结构核验，但 artifact 的 `decision=FAIL` 不能被解释成 M0-04 通过；M0-06 仍缺少人工对精确 SPEC path/SHA/blob/candidate Git HEAD 的批准。
 
 本次复核不生成或声称 `m0.json`、`human-approval.json` 的 APPROVE、PLAN A/B PASS、PLAN review PASS、cold-start PASS、`baseline.json` 或任何实现/发布成功证据。M0 全部通过前继续禁止正式实现、CI、发行和部署。
+
+## 26. 当前轻量冷启动前文档检查（2026-08-02）
+
+### 26.1 当前流程取代旧 admission 设计
+
+本条依据当前 `SPEC.md` §11.2 和 `PLAN.md` §1、§8、§9 记录。前文旧 M0、双审计、语义摘要审批、formal JSON admission evidence 和三提交 baseline 记录均属于历史过程，不是当前冷启动前置条件；本条不重新执行或认可那些旧门槛。
+
+### 26.2 检查结果
+
+1. **SPEC 覆盖：通过。** 当前 `SPEC.md` 可定位问题范围、9 个用户故事、FR/NFR、架构、数据模型、凭据威胁模型、分发/部署、技术选型、验收标准、风险，以及 Coding Agent Harness 的 domain/mechanism design。
+2. **选定 task 卡：通过（针对本次试作范围）。** `PLAN.md` 当前 `T01.1` 卡包含目标、SPEC contracts、Files、Depends、Parallelization、Interfaces、RED/GREEN、Atomic verification、review/completion steps；当前 `T37.2` 卡同样包含这些字段，并明确了 `PROCESS_EVIDENCE_INVALID` 和 `LEGACY_STEP_INCOMPLETE:38.G` 的 RED 断言与验证命令。
+3. **试作范围：已选定。** 选择 `T01.1` 的 bounded Gate bootstrap 子范围（std-lib probe、gate environment/config/runner/gate-scan identity 检查，直到确认能否进入首个行为 RED），以及 `T37.2` 当前 task card。试作不承担完整正式依赖链，也不执行 T37.1 的真实发布。
+4. **未决歧义：已登记。** `T01.1` 的 Windows 11/Python 3.12/Docker 与锁定依赖环境尚未在当前工作区建立；`T37.2` 的部分 fixture/helper 和 T37.1 process-evidence 输入尚不存在；PLAN 中保留的历史附录可能造成误读。陌生 Agent 必须对这些问题暂停提问，不得猜测、伪造 fixture、绕过依赖或把计划文本当成运行证据。
+5. **人工启动确认：已记录。** 用户当前指令“执行两阶段方案”明确要求继续执行冷启动验证。本记录只把该指令作为冷启动启动确认，不推断任何 M0、身份批准或正式实现授权。
+
+### 26.3 冷启动执行约束
+
+当前结论为 **可以启动 disposable cold-start，不能开始正式实现**。冷启动 Agent 将使用与主 Agent 不同的模型类型 `gpt-5.6-luna`，`fork_context=false` 开启全新 session；提示中只提供 `SPEC.md`、`PLAN.md` 和上述两个选定范围，要求它遇到不确定内容立即暂停提问。试作上限约 1—2 小时，运行在可丢弃隔离环境；其代码、提交和分支不进入正式实现。
+
+## 27. 冷启动反馈与提示修正（2026-08-02）
+
+### 27.1 试作结果
+
+- 第一次 session `Hubble`（`gpt-5.6-luna`）在返回结论前发生服务流断开；没有可用试作结果，也没有工作区改动。
+- 第二次 session `Raman`（`gpt-5.4-mini`）为全新、无历史上下文 session，成功返回文档审阅结果，但由于启动提示错误地禁止读取源码、测试、配置和其他仓库文件，它只能验证文档可读性，不能完成真正的实现/命令发现/RED 验证。因此该次结果是**受提示限制的部分冷启动反馈**，不是完整 cold-start PASS。
+- `Raman` 确认 `T01.1` 的 1.A bootstrap 与 1.B 首个行为 RED 顺序清楚；确认当前 `T37.2` 是依赖 `T37.1` 的 final readiness gate，范围过大且不适合作为陌生 Agent 首次试作；确认现行 T37.2 与历史附录卡片的并存会增加误选风险。
+
+### 27.2 已采纳修正
+
+1. `PLAN.md` 明确 `T01.1`：1.A 只验证 pre-RED bootstrap 完整性，1.B 才是第一个行为 RED。
+2. `PLAN.md` 明确 `T37.2` 是 final readiness gate，不是 cold-start candidate；下一次试作只选 `T01.1` bounded bootstrap 子范围。
+3. 下一次冷启动提示只提供当前 `SPEC.md`/`PLAN.md` 作为初始规范和上下文，但允许 Agent 在隔离试作 worktree 中自行搜索仓库文件、定位接口、运行 PLAN 声明的命令并尝试实现；“遇到不确定内容暂停提问”不等于禁止正常仓库探索。
+4. 下一次试作仍必须是不同模型类型、全新 session、无历史/memory、约 1—2 小时、可丢弃，代码/提交/分支不得进入正式实现。
+
+### 27.3 当前状态
+
+当前没有 cold-start PASS，也没有正式实现授权。因试作提示设计导致执行性验证不足，必须按修订后的 T01.1 范围重新启动一次冷启动；在该反馈记录和文档修订完成前不进入正式 worktree/subagent/TDD 实现流程。
+
+## 28. 冷启动候选基线阻塞（2026-08-02）
+
+修订提示后的第三次冷启动 Agent `Dalton`（`gpt-5.6-terra`，全新无历史 session）只读取了当前 `SPEC.md` 和 `PLAN.md`，随后正确暂停：当前候选文档仍是工作区未提交修改，原生 Git disposable worktree 从 `HEAD` 建立会得到旧版 SPEC/PLAN，无法证明试作依据当前文档。它未运行 1.A、1.B、依赖物化或测试，也未修改任何文件。
+
+该暂停是有效的过程反馈，不是 T01.1 可执行性 FAIL。为解决它，先建立一个只含当前文档和过程记录的候选提交（不含实现代码），再从该精确提交创建干净 disposable worktree，重新启动只选 `T01.1` bounded bootstrap 的冷启动。候选提交不是人工批准、不是正式实现提交，也不把任何试作代码合入主线。
