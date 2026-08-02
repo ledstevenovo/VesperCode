@@ -763,9 +763,13 @@ Every session task appears in exactly one row. All legacy steps within one task 
 **Depends:** None for the disposable cold-start trial. Formal execution requires the cold-start findings to be recorded and the required SPEC/PLAN revisions to be complete; task-local dependencies then apply normally.
 **Parallelization:** The disposable trial runs alone in a throwaway worktree and produces no formal completion claim. Formal execution follows the work-package boundary and same-wave disjoint-path rule; the WP01 branch and PR remain the sole package integration boundary.
 
-**Cold-start trial scope:** The human selects one bounded T01.1 sub-scope or one other selected task before the trial. The Agent may attempt the declared RED/GREEN/verification steps for that scope for up to two hours; time-outs, questions, and task-size findings are valid trial results. The trial may create temporary commits for inspection, but no trial commit or evidence is a formal implementation or merge candidate.
+**Cold-start trial scope:** The human selects one bounded T01.1 sub-scope or one other selected task before the trial. For the next trial, select only the small `T01.1/1.Aa` contract-and-runner slice defined below; do not ask a cold-start Agent to resolve the lock, materialize `.venv-gate`, or freeze evidence in the same attempt. The Agent may attempt the declared RED/GREEN/verification steps for that slice for up to two hours; time-outs, questions, and task-size findings are valid trial results. The trial may create temporary commits for inspection, but no trial commit or evidence is a formal implementation or merge candidate.
 
 **Cold-start boundary:** In §1.A the Agent may inspect and establish the gate bootstrap inputs and integrity checks, but those positive checks are not a behavior RED. §1.B is the first behavior RED. The initial context supplied to the Agent is only `SPEC.md` and `PLAN.md`; during the disposable attempt it may normally discover repository files and run declared commands, and must pause only when the documents or discovered environment leave a material question unresolved.
+
+For the current trial, the selected boundary is the 1.Aa slice only. It ends
+after the first six named integrity tests and before any lock resolution,
+environment materialization, evidence writing, or 1.B test addition.
 
 **Interfaces:**
 - **Consumes / Produces (1.A):** Consumes the reviewed direct gate requirements (`pytest>=8,<9`, Ruff, Mypy, pywin32, and Docker SDK) from `https://pypi.org/simple`. Produces the complete hash-locked `requirements/gate.lock`, an isolated `.venv-gate`, one closed toolchain evidence record at `gates/evidence/gate-toolchain-v1.json`, the existing closed runner commands `pytest`, `ruff-format`, `ruff-check`, and `mypy`, and the fixed `scripts/scan_gate_changed_files.ps1` gate scan. Runner syntax is `<runner> <closed-command> -- <tool-arguments>`: `--` is the command-line separator, is consumed during runner parsing, and is not part of the forwarded tuple; the runner forwards every argument after it unchanged and must not require the consumed literal to remain in parsed arguments. The gate scan takes no caller-supplied path, rule, regex, or output-mode argument; it deterministically enumerates the repository-relative staged, unstaged, and untracked changed-file union, scans only regular files inside the repository, emits only sorted unique `(path, rule_id)` facts, and exits nonzero on a credential match, Git enumeration failure, path escape, non-regular object, or required-file read failure without printing any matched value or context.
@@ -787,6 +791,112 @@ Gate scan: enumerate the staged, unstaged, and untracked changed-file union rela
 Failure rule: alternate sources, an incomplete or unreviewed lock, wrong interpreter/config, unknown runner commands, incomplete or drifting changed-file enumeration, non-redacted gate-scan output, installation drift, or identity drift stops Task 1 before its first behavior RED.
 Boundary: Resolution may contact only `https://pypi.org/simple` during the explicit lock step. Review must precede installation; every later gate command is offline. This prerequisite does not implement or test Win32/Docker/product behavior.
 ```
+
+**1.A slice boundary:** The pre-RED prerequisite is executed in three ordered
+sub-slices so that each handoff has a concrete completion boundary. These are
+sub-slices of T01.1, not additional approval gates or product tasks:
+
+- **1.Aa — contract, fixed inputs, runner, and scan:** Own the exact
+  `requirements/gate.in` direct list, `gates/pytest.ini`, `gates/ruff.toml`,
+  `gates/mypy.ini`, `scripts/run_gate_checks.py`,
+  `scripts/scan_gate_changed_files.ps1`, and their positive integrity tests.
+  This slice does not contact PyPI, create `.venv-gate`, resolve or write
+  `requirements/gate.lock`, write evidence, or begin 1.B. Its completion is the
+  named test set below passing with the fixed command/output contracts.
+- **1.Ab — resolve and review:** Consume only the fixed 1.Aa inputs, resolve
+  `requirements/gate.lock` from the one allowed index, write it atomically, and
+  review its complete graph, markers, source, normalized names, versions, and
+  hashes. This slice does not install packages or begin 1.B.
+- **1.Ac — materialize and freeze:** After 1.Ab review acceptance, create the
+  isolated `.venv-gate`, compare installed identities, write the exact
+  `GateToolchainEvidenceV1`, and run the frozen integrity/profile commands.
+  Only a successful 1.Ac permits the 1.B RED test to be added or run.
+
+The current cold-start candidate is 1.Aa only. A cold-start Agent must stop at
+the selected slice boundary and report a blocker rather than silently continuing
+into 1.Ab/1.Ac.
+
+**Gate input and lock format:** `requirements/gate.in` is UTF-8 with a final
+newline and contains exactly these direct requirement lines, in this order:
+`pytest>=8,<9`, `ruff`, `mypy`, `pywin32`, and `docker`. It contains no index,
+hash, VCS, editable, local-path, or extra options. `requirements/gate.lock` is a
+pip requirements-format file encoded as UTF-8 with a final newline. Its first
+line is exactly `--index-url https://pypi.org/simple`; every remaining non-empty
+line is one normalized distribution entry sorted by normalized name and has the
+form `name==version [; marker] --hash=sha256:<64 lowercase hex>...`. A name
+appears exactly once; all hashes on a line are lowercase SHA-256 hashes for
+compatible files of that exact version; markers, when present, are canonical
+PEP 508 markers for the supported Windows/Python 3.12 profile. No line may use
+`--extra-index-url`, `--find-links`, `--trusted-host`, editable/VCS/path/local
+sources, a direct URL, an unpinned version, or a non-SHA-256 hash. The lock must
+contain every direct and transitive distribution selected for the supported
+profile and no unreviewed extra distribution. `pip install` consumes this file
+with `--require-hashes --no-deps`; it must not resolve or upgrade dependencies.
+
+`resolve-lock` is the only subcommand that may perform dependency resolution and
+may contact only the exact PyPI URL above while resolving and checking the lock.
+It writes a temporary
+same-directory lock and atomically replaces the destination only after complete
+resolution; a failure leaves the previous destination unchanged. The explicit
+review step then accepts the exact raw lock bytes and records the review in the
+process log before `materialize` is invoked. First-run `materialize` may fetch
+only the exact hashes from that fixed index and may not perform dependency
+resolution; later `--require-existing-evidence` materialization is offline and
+must not contact an index, rewrite the lock, or rewrite evidence.
+
+**`bootstrap_gate_env.py` CLI contract:** The only accepted subcommands and
+options are:
+
+- `resolve-lock --input requirements/gate.in --lock requirements/gate.lock --index-url https://pypi.org/simple`;
+- `materialize --lock requirements/gate.lock --evidence gates/evidence/gate-toolchain-v1.json`, with the optional terminal flag `--require-existing-evidence` for later worktrees.
+
+There is no caller-selected interpreter, alternate index, cache, package,
+dependency, environment, or output path; the `--index-url` value must equal the
+fixed literal shown above. Success writes no secret and returns stdout exactly
+`OK<TAB><subcommand>` plus one newline with empty stderr. Invalid invocation
+returns exit `2` and `ERROR<TAB>GATE_ARGUMENT_INVALID`; unsupported Python returns
+exit `3` and `ERROR<TAB>GATE_PYTHON_VERSION_MISMATCH`; malformed or incomplete
+lock/source/hash data returns exit `4` and `ERROR<TAB>GATE_LOCK_INVALID`; network
+resolution failure returns exit `5` and `ERROR<TAB>GATE_RESOLUTION_FAILED`;
+materialization or tool-identity failure returns exit `6` and
+`ERROR<TAB>GATE_MATERIALIZE_FAILED`; evidence identity/digest failure returns
+exit `7` and `ERROR<TAB>GATE_EVIDENCE_INVALID`. Failure stdout is empty, stderr
+contains only the one stable error line, and no failure path creates a partial
+lock or evidence file; a failed first materialization removes only a newly
+created `.venv-gate` and leaves any pre-existing environment untouched.
+`--require-existing-evidence` additionally
+rejects missing/drifted lock or evidence before any installation or network.
+
+**Minimum 1.A integrity test set:** `tests/feasibility/gate/test_gate_bootstrap.py`
+must contain at least these named tests and first assertions; no unnamed positive
+behavior is needed to close 1.Aa:
+
+- `test_gate_input_lists_exact_direct_requirements`: the five direct lines and
+  their order are exact;
+- `test_gate_runner_accepts_closed_command_and_separator`: the consumed `--`
+  does not reach the wrapped argv, fixed config remains present, and forwarded
+  values remain separate argv elements;
+- `test_gate_runner_rejects_unknown_command_or_missing_separator`: the wrapper
+  returns the exact stable error and never starts a subprocess;
+- `test_gate_runner_rejects_argument_widening`: config/plugin/executable,
+  environment, working-directory, cache, report, network, and shell-expansion
+  options return `GATE_ARGUMENT_WIDENING` before execution;
+- `test_gate_scan_emits_sorted_redacted_rule_ids`: staged, unstaged, and
+  untracked fixtures produce only sorted unique path/rule-id lines and no value;
+- `test_gate_scan_fails_closed_on_git_path_object_or_read_error`: each injected
+  failure returns exit `2`, the named stable code, empty stdout, and no partial
+  match result;
+- `test_gate_lock_is_pip_hash_locked_and_complete`: after 1.Ab, every direct and
+  transitive supported-profile distribution is present once with valid hashes
+  and no forbidden source or option;
+- `test_gate_evidence_round_trip_binds_all_identities`: after 1.Ac, the exact
+  `GateToolchainEvidenceV1` fields, raw-file digests, tool versions, and
+  `evidence_digest` round-trip and reject drift.
+
+The first six tests are the 1.Aa completion boundary; the last two belong to
+1.Ab/1.Ac and are not required of the next cold-start slice. All eight are
+pre-RED integrity tests, not the T01.1 behavior RED. The first behavior RED
+remains the displayed 1.B test below.
 
 **Closed pre-RED contract:** The following definitions are part of T01.1 and may
 not be inferred from a later task.

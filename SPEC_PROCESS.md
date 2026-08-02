@@ -1599,3 +1599,35 @@ Reviewer 的总体 recommendation 为 `FAIL`。Reviewer 明确未将“尚未实
 采纳以既有 `GATE_OFFLINE_V1` 固定命令为权威，将 T01.1 runner 的 Mypy 白名单统一为：目录根 `spikes`、`tests/feasibility`、`src`、`tests` 及其后代，另加两个固定 gate 文件 `scripts/run_gate_checks.py` 和 `scripts/bootstrap_gate_env.py`。其他路径和配置/环境扩展仍拒绝。该修订只解决当前已存在的命令冲突，不扩大到任意 repository path。
 
 由于选定 task 的 runner 合同再次发生实质变化，必须建立新的候选文档提交和新的 disposable worktree，并重新执行 T01.1 冷启动。当前仍没有 cold-start PASS，也没有正式实现授权。
+
+## 31. 第三次 T01.1 冷启动的 lock、CLI 与任务粒度反馈（2026-08-02）
+
+### 31.1 试作身份与已验证事实
+
+- **Agent:** `Popper`（`019fc1e0-7c54-7f02-860c-e10073c40e4c`），`gpt-5.4`，全新 session、无历史上下文。
+- **Worktree:** `D:\code\VesperCode\.worktrees\_cold-start-trials\cold-start-v5-82ae8ba`，精确绑定候选提交 `82ae8ba110d1ff80a1e6dffb3e8d5cb36ce9f9ec`。
+- **Initial context:** 只读取 `SPEC.md` 和 `PLAN.md`；没有读取 `SPEC_PROCESS.md`、`AGENT_LOG.md`、Git 历史或其他过程证据。
+- **Environment:** Python `3.12.4`、PyPI `https://pypi.org/simple/` 可达、worktree 干净；`requirements/`、`gates/`、`scripts/`、`tests/feasibility/`、`spikes/` 尚不存在。
+- **Boundary:** 未创建、修改或提交任何文件；没有进入 1.B 或正式实现。
+
+### 31.2 新的 BLOCKING 反馈
+
+Popper 确认上一轮 Mypy profile 冲突已经消失，但发现 T01.1 仍有三类执行性缺口：
+
+1. `requirements/gate.lock` 只规定了“完整版本、marker、source、normalized names 和 hashes”，没有说明 pip requirements 落盘格式、支持 profile 的 hash 范围、依赖图完整性如何映射到文件，或禁止哪些 source/options。
+2. `scripts/bootstrap_gate_env.py` 没有闭合每个子命令的输入/输出、成功/失败退出码、stdout/stderr、是否允许 pip、lock 原子写入和失败保留策略。
+3. 1.A 把输入/配置、runner、gate-scan、lock resolve/review、environment materialization、evidence freeze 和完整性验证绑在一个冷启动范围；正向完整性测试只有覆盖目标，没有最小测试名称和首断言边界。Agent 判断该范围对陌生 Agent 偏大。
+
+这些问题均属于文档合同缺口，不能靠实现者自行选择；Agent 按要求暂停，1.A 未通过，1.B 没有资格开始。
+
+### 31.3 已采纳修订
+
+已在 `PLAN.md` 中：
+
+- 将 1.A 明确拆为 `1.Aa`（固定输入、runner、scan 和最小完整性测试）、`1.Ab`（lock resolve/review）和 `1.Ac`（materialize/evidence/profile closure）三个有明确边界的顺序子切片；下一轮 cold-start 只选择 `1.Aa`；
+- 冻结 `requirements/gate.in` 五条 direct requirements 及 `requirements/gate.lock` 的 pip requirements/hash/source/marker/排序/原子写入格式；
+- 冻结 `resolve-lock`、首次 `materialize` 和后续 `--require-existing-evidence` 的网络、安装、失败关闭和 stdout/stderr/exit-code 语义；
+- 为 `tests/feasibility/gate/test_gate_bootstrap.py` 指定八个最小稳定测试名及首断言边界，区分 1.Aa 的前六个测试与 1.Ab/1.Ac 的后两个测试；
+- 保留“1.A 全部成功后才可添加/运行 1.B RED”的顺序，且不把这些子切片变成新的 M0、独立 admission 或产品任务。
+
+由于这次修订改变了选定 cold-start 的 task contract 和范围，必须从新的候选文档提交建立新的 disposable worktree，再以全新 session 重跑。当前没有 cold-start PASS，也没有正式实现授权。

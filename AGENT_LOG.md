@@ -564,3 +564,17 @@
 - **Verification:** Main worktree remained clean before this revision; no formal code/tests were run. The next verification is a new candidate document commit, a clean worktree from that commit, and a fresh T01.1 cold-start.
 - **Lesson learned:** Synchronizing a task-local contract with a named global profile requires checking every exact profile command, not only the task's abstract interface.
 - **Status:** No cold-start PASS; formal implementation remains prohibited.
+
+## COLD-START-T01.1-LOCK-CLI-SIZE-20260802
+
+- **Timestamp (Asia/Taipei):** `2026-08-02` (exact wall-clock time not captured by the execution tool)
+- **Task ID:** `COLD-START-T01.1-LOCK-CLI-SIZE-20260802`
+- **Skills invoked:** `superpowers:subagent-driven-development` and `superpowers:using-git-worktrees` were read for workflow compliance; no formal implementation skill was used.
+- **Key prompt/context:** Re-run T01.1 from candidate `82ae8ba110d1ff80a1e6dffb3e8d5cb36ce9f9ec` using a fresh `gpt-5.4` session in a new disposable worktree, with only SPEC/PLAN initial context and pause-on-uncertainty instructions.
+- **Agent/result:** `Popper` (`019fc1e0-7c54-7f02-860c-e10073c40e4c`) ran in `D:\code\VesperCode\.worktrees\_cold-start-trials\cold-start-v5-82ae8ba`. It verified Python `3.12.4`, PyPI reachability (`200`), clean HEAD/worktree, and absence of 1.A implementation directories. It changed no files and did not enter 1.B.
+- **Finding:** The prior Mypy conflict was resolved. Remaining blockers were unspecified pip lock serialization/review semantics, incomplete `bootstrap_gate_env.py` CLI and failure/output contract, unspecified minimum 1.A integrity test names/assertions, and an oversized combined 1.A cold-start scope.
+- **Human intervention:** Accepted all four as `BLOCKING` document findings. No implementation, placeholder lock/evidence, or RED was authorized.
+- **Document changes:** `PLAN.md` now splits 1.A into 1.Aa/1.Ab/1.Ac sub-slices, selects only 1.Aa for the next cold-start, defines the five direct gate inputs and pip hash-locked format, closes CLI/network/atomicity/exit/output semantics, and names the minimum eight integrity tests. `SPEC_PROCESS.md` §31 records the full feedback and repeat requirement.
+- **Verification:** No formal code/tests were run; document diff and next candidate baseline remain to be checked. Main formal implementation remains prohibited.
+- **Lesson learned:** A task can be internally consistent yet still be too large and under-specified for a cold-start. Lock file syntax, CLI failure behavior, and minimum test boundaries must be explicit before asking a fresh Agent to implement a bootstrap.
+- **Status:** No cold-start PASS; a new candidate worktree and fresh session are required.
