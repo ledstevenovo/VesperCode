@@ -1472,3 +1472,16 @@ M0-02 确认 SPEC 覆盖用户故事、FR/NFR、架构、数据模型、凭据�
 | M0-06 human approval | `FAIL` | 未找到人工批准精确 SPEC path、SPEC SHA-256、SPEC blob 和候选 Git HEAD 的记录；候选登记和 agent reviewer 不能代替人工批准。 |
 
 Reviewer 的总体 recommendation 为 `FAIL`。Reviewer 明确未将“尚未实现”当作 SPEC 内容缺陷；M0-04 的 FAIL 是正式关闭证据缺失，M0-06 的 FAIL 是人工决策缺失。由于六项未全部 PASS，本轮不进入人工 M0 批准、PLAN A/B、PLAN_SPEC_COMPLIANCE、PLAN_EXECUTABILITY、cold-start 或 baseline，也不创建 `m0.json`、任何 admission PASS artifact 或其他 formal evidence。
+
+## 24. M0-04 formal fail-closed artifact 登记
+
+已将当前候选的 M0-04 逐项矩阵写入并提交：
+
+- **Artifact:** `process/evidence/admission-v3/8ddb16c96d674d4c9dc0ffd83446992e0fdee18d5b4b2bfd16d269d5d0d4bb94/m0-04-closure-matrix.json`
+- **Artifact commit:** `c11932c`（`docs: record fail-closed M0-04 evidence`）
+- **Artifact SHA-256:** `32fd9c58bdb4fa9a13faa77abf5f3e76cd8fcf208bdd9371b8111877859d938`
+- **Schema:** `M0_04_CLOSURE_MATRIX_V1`
+- **Bound candidate:** SPEC SHA/blob、PLAN SHA/blob、`PlanSemanticDigestV2`、AGENTS SHA 和 candidate freeze commit 均与 §22/§23 相同。
+- **Result:** 7 个 check 全部为 `FAIL`，`decision=FAIL`；其中 7 个文档合同存在，但没有一项拥有足以关闭 M0-04 的正式运行/批准证据。
+
+该 artifact 是可追溯的失败尝试记录，不是 PLAN §1.2 所称的 accepted ten-artifact set，不是 `m0.json`，不构成 M0 PASS、人工批准或实现授权。后续若补充真实证据，必须以同一候选身份重新生成并由独立 reviewer 复核；任何身份变化都使本 artifact 失效。

@@ -467,3 +467,18 @@
 - **Verification:** reviewer 核对当前工作区 clean、candidate freeze 与 identity-registration 提交关系、SPEC-only baseline blob、当前完整身份和 §21 矩阵；没有实现或发布操作。
 - **Unfinished gates:** M0 总体、M0-04、M0-06、PLAN_AUDIT_V3_A/B、PLAN_SPEC_COMPLIANCE、PLAN_EXECUTABILITY、人工批准、异构 cold-start 和 `APPROVED_DOCUMENT_BASELINE_V3` 仍未通过；正式实现、CI、发行和部署继续禁止。
 - **Lesson learned:** baseline 身份修复后 M0-01 已关闭，但没有可观察的技术/执行证据不能把 M0-04 推断为 PASS；agent 的 checklist 结果也不能代替 M0-06 人工决定。
+
+## M0-04-FORMAL-FAIL-CLOSED-EVIDENCE
+
+- **Timestamp (Asia/Taipei):** `2026-08-02T15:32:32+08:00`
+- **Task ID:** `M0-04-FORMAL-FAIL-CLOSED-EVIDENCE`
+- **Skills invoked:** 文档准入证据整理；document-only verification；未使用实现或 code-review 流程。
+- **Key prompt/context:** 用户要求先补齐 M0-04 的正式证据；SPEC §11.2 与 PLAN §1.2 要求缺少证据时 fail-closed，不能以“后续实现”替代。
+- **Artifact:** `process/evidence/admission-v3/8ddb16c96d674d4c9dc0ffd83446992e0fdee18d5b4b2bfd16d269d5d0d4bb94/m0-04-closure-matrix.json`，artifact commit=`c11932c`，SHA-256=`32fd9c58bdb4fa9a13faa77abf5f3e76cd8fcf208bdd9371b8111877859d938`。
+- **Artifact content:** `M0_04_CLOSURE_MATRIX_V1` 绑定 candidate freeze `040ad83b98a1a91a48c823aedd7314dada906da4`、SPEC/PLAN/AGENTS identities 和 `PlanSemanticDigestV2`；7 个 M0-04 checks 全部 `FAIL`，`decision=FAIL`；JSON 无 BOM/CR，解析和字段核对通过。
+- **Evidence semantics:** 该文件是正式路径下的 fail-closed failed-attempt record，不是 accepted ten-artifact set、`m0.json`、admission PASS 或 implementation authorization。它明确记录双平台 CI、cursor、逐调用凭据、A/B digest、T01–T03 cold-start/toolchain、Task 2 loopback/OCI 和 GHCR protected gate 的缺失证据。
+- **Human intervention:** 用户授权补齐 M0-04 evidence；没有人工批准或外部发布授权。
+- **Verification:** staged diff 仅包含目标 JSON；`git diff --cached --check` 通过；JSON `checks=7` 且 all status=`FAIL`；candidate PLAN SHA/digest 与冻结身份一致。
+- **Implementation/Git boundary:** 未实现代码、运行 CI、启动 Docker、使用凭据、执行 GHCR/Release/Render 或生成任何 admission PASS artifact。
+- **Unfinished gates:** M0-04 仍未关闭；M0-06、M0 总体、PLAN A/B、PLAN_SPEC_COMPLIANCE、PLAN_EXECUTABILITY、人工批准、cold-start 和 baseline 仍未通过。
+- **Lesson learned:** 正式证据记录可以完整表达 FAIL，但不能把缺失的运行/批准事实转换成 PASS；artifact commit 也不能替代 candidate identity approval。
