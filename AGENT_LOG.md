@@ -658,3 +658,17 @@
 - **Verification:** `git diff --check` passed for the document revision; the exact cold-start probe and Aa command passed in v10, but the required method/contract coverage failed review. No credential, CI, Docker, release, deployment, PR, or formal implementation action was performed.
 - **Unfinished gates:** No cold-start PASS; a new candidate document commit, disposable worktree, and fresh different-type cold-start are required before formal implementation.
 - **Lesson learned:** A passing test count is insufficient evidence when the plan names exact tests and first assertions. The validation must inspect the test identities and externally visible output channels, not only the runner exit code.
+
+## COLD-START-T01.1-V11-BOUNDARY-CONFIG-AMBIGUITY-20260802
+
+- **Timestamp (Asia/Taipei):** `2026-08-02` (exact wall-clock time not captured by the execution tool)
+- **Task ID:** `COLD-START-T01.1-V11-BOUNDARY-CONFIG-AMBIGUITY-20260802`
+- **Skills invoked:** `using-git-worktrees`, `dispatching-parallel-agents`, and `superpowers:subagent-driven-development` were used for the disposable trial boundary; no formal implementation skill was used.
+- **Key prompt/context:** From candidate document commit `f33c04be8a7a0e005e9fcd989911b6dbf6d87fbc`, run a fresh no-history different-type Agent against only `T01.1/1.Aa` in `D:\code\VesperCode\.worktrees\_cold-start-trials\cold-start-v11-f33c04b`; read only `SPEC.md` and `PLAN.md`, pause rather than guess, and stop before `1.Ab/1.Ac/1.B`.
+- **Agent/result:** `Kuhn` (`019fc24e-a352-7350-a35b-b8f42269650d`, `gpt-5.6-terra`) inspected the task cards and correctly paused without creating files or running tests. It identified that the 1.Aa Own list excluded `scripts/bootstrap_gate_env.py` while Step 1 required a bootstrap command, and that the three gate config files had responsibilities but no concrete contents.
+- **Independent verification:** The host located both contradictions in PLAN: the 1.Aa bullet excluded bootstrap/lock/evidence while the global Step 1 wording included bootstrap, and the config table gave only one-line responsibilities. The v11 worktree remained unchanged.
+- **Human intervention:** Classified both as BLOCKING document findings rather than implementation choices. No disposable code was accepted and no formal implementation action was performed.
+- **Document changes:** `PLAN.md` now assigns bootstrap/lock/evidence to 1.Ab/1.Ac, limits Aa Step 1 to its owned input/config/runner/scan set, and supplies complete minimal byte/config contracts for `gates/pytest.ini`, `gates/ruff.toml`, and `gates/mypy.ini`. `SPEC_PROCESS.md` §37 records the findings and required repeat.
+- **Verification:** The PLAN source was independently re-read after the finding; no formal code/tests, CI, Docker, credentials, release, deployment, PR, or merge action was performed.
+- **Unfinished gates:** No cold-start PASS; a new candidate document commit, disposable worktree, and fresh different-type cold-start are required before formal implementation.
+- **Lesson learned:** A task boundary must agree with both its Own list and its step order, and named configuration files need executable contents before a no-guessing cold start can begin.

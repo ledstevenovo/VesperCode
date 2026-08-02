@@ -1747,3 +1747,18 @@ Dirac 的正向测试和实现把 credential match 的结果写成 `stderr="ERRO
 ### 36.3 修订与后续
 
 已在 `PLAN.md` 明确：六个 `AaIntegrityTests` 方法名及其首断言是规范合同，不是示例；替换方法名、只测试 helper 或遗漏 exit/stdout/stderr/error 断言均不满足 1.Aa。该修订仍需从新的候选文档提交创建 disposable worktree，并用全新、无历史上下文的不同类型 Agent 重跑；当前没有正式实现授权。
+
+## 37. 第九次 T01.1 冷启动的 1.Aa 文件边界与配置内容歧义（2026-08-02）
+
+### 37.1 Kuhn 独立冷启动结果
+
+- **Agent:** `Kuhn`（`019fc24e-a352-7350-a35b-b8f42269650d`，`gpt-5.6-terra`），全新、无历史上下文 session；候选提交为 `f33c04be8a7a0e005e9fcd989911b6dbf6d87fbc`，worktree 为 `D:\code\VesperCode\.worktrees\_cold-start-trials\cold-start-v11-f33c04b`。
+- **执行:** Agent 仅读取 `SPEC.md`/`PLAN.md`，定位到 T01.1 和 1.Aa 步骤；未修改文件，未运行 Python probe 或 unittest，未进入 `1.Ab/1.Ac/1.B`，未提交或合并。
+- **Finding 1:** 1.Aa 的 Own 文件清单排除了 `scripts/bootstrap_gate_env.py`，但 Step 1 的文字要求创建 bootstrap command；同时 bootstrap 又包含 1.Ab/1.Ac 的 lock/materialize 接口，无法在不猜测的情况下决定 Aa 是否应创建完整文件。
+- **Finding 2:** `gates/pytest.ini`、`gates/ruff.toml`、`gates/mypy.ini` 只定义了职责和文件名，没有定义可直接执行的具体配置内容；Agent 若自行选择配置会违反暂停而不猜测的规则。
+
+### 37.2 独立复核与修订
+
+主 Agent 对照 v11 PLAN 原文确认两点均成立。已将 `1.Aa` 明确限定为 gate input/config/runner/scan 文件；`scripts/bootstrap_gate_env.py`、`requirements/gate.lock` 和 gate evidence 明确归入 `1.Ab/1.Ac`。同时在 `PLAN.md` 写入三个配置文件的完整最小内容、编码/换行/禁止额外设置合同，并要求 Aa 完整性测试验证其原始字节。
+
+该修订改变了选定冷启动 task 的文件边界和可执行合同，必须从新的候选文档提交创建 disposable worktree，并由全新、无历史上下文的不同类型 Agent 重跑 `T01.1/1.Aa`。当前没有 cold-start PASS，也没有正式实现授权。
