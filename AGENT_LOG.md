@@ -578,3 +578,19 @@
 - **Verification:** No formal code/tests were run; document diff and next candidate baseline remain to be checked. Main formal implementation remains prohibited.
 - **Lesson learned:** A task can be internally consistent yet still be too large and under-specified for a cold-start. Lock file syntax, CLI failure behavior, and minimum test boundaries must be explicit before asking a fresh Agent to implement a bootstrap.
 - **Status:** No cold-start PASS; a new candidate worktree and fresh session are required.
+
+## COLD-START-T01.1-RUFF-ROOT-SENTINEL-20260802
+
+- **Timestamp (Asia/Taipei):** `2026-08-02T18:19:36+08:00`
+- **Task ID:** `COLD-START-T01.1-RUFF-ROOT-SENTINEL-20260802`
+- **Skills invoked:** `superpowers:subagent-driven-development` and `superpowers:using-git-worktrees` were read for workflow compliance; no formal implementation skill was used.
+- **Key prompt/context:** Re-run T01.1 from candidate `a9595108e2a6d508d67be9e312a008f132e95a2f` using a fresh, no-history, different-type Agent in a new disposable worktree. Initial context was only `SPEC.md` and `PLAN.md`; normal repository exploration was allowed and uncertainty required pausing rather than guessing.
+- **Agent/result:** `Beauvoir` (`019fc1ed-b92d-7341-af00-848f866d9a11`, `gpt-5.4`) ran in `D:\code\VesperCode\.worktrees\_cold-start-trials\cold-start-v6-a959510`. It found no implementation change and did not enter `1.B` or formal implementation.
+- **Finding:** PLAN's runner prose said the two Ruff commands accepted only repository-relative paths, while the authoritative `GATE_OFFLINE_V1` commands pass `.` after `ruff-format --` and `ruff-check --`. The meaning of `.` therefore affected both runner acceptance and the minimum integrity-test assertion. Beauvoir correctly stopped instead of choosing silently.
+- **Human intervention:** Accepted the finding as a `BLOCKING` contract ambiguity and selected the existing exact profile commands as the source of truth. No placeholder lock, evidence, implementation, RED, or formal artifact was authorized.
+- **Document changes:** `PLAN.md` now explicitly permits only the exact `.` repository-root sentinel or repository-relative paths for Ruff, treats `.` as one forwarded argv element, and requires both Ruff root-command cases in `test_gate_runner_accepts_closed_command_and_separator`. `SPEC_PROCESS.md` §32 records the finding and repeat requirement.
+- **Verification:** The document patch was applied; formal code/tests were not run because implementation remains prohibited. A new candidate document commit, disposable worktree, and fresh T01.1 cold-start are still required.
+- **Implementation/Git boundary:** No formal source/test implementation, CI, Docker, credential operation, release, deployment, PR, or merge was performed. Cold-start artifacts remain disposable and are never merged.
+- **Unfinished gates:** No cold-start PASS; formal implementation remains prohibited until the corrected trial completes and its findings are recorded.
+- **Lesson learned:** A global profile's exact command is part of the task contract. When a root sentinel is required by that command, the runner prose and its positive test must name the sentinel explicitly rather than relying on an ambiguous “relative path” phrase.
+- **Status:** BLOCKING document revision recorded; repeat cold-start required.

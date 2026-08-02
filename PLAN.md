@@ -874,8 +874,9 @@ behavior is needed to close 1.Aa:
 - `test_gate_input_lists_exact_direct_requirements`: the five direct lines and
   their order are exact;
 - `test_gate_runner_accepts_closed_command_and_separator`: the consumed `--`
-  does not reach the wrapped argv, fixed config remains present, and forwarded
-  values remain separate argv elements;
+  does not reach the wrapped argv, fixed config remains present, forwarded
+  values remain separate argv elements, and both `ruff-format -- .` and
+  `ruff-check -- .` accept `.` as the exact repository-root sentinel;
 - `test_gate_runner_rejects_unknown_command_or_missing_separator`: the wrapper
   returns the exact stable error and never starts a subprocess;
 - `test_gate_runner_rejects_argument_widening`: config/plugin/executable,
@@ -979,7 +980,9 @@ gates/pytest.ini`, `python -m ruff format --check --config gates/ruff.toml`,
 --config-file gates/mypy.ini`. Each token after `--` is one argv element and is
 never shell-parsed. `pytest` may receive only `-q`, `-v`, `-x`, a positive
 `--maxfail=N`, and declared repository-relative test selectors; the two Ruff
-commands may receive only repository-relative paths; `mypy` may receive only
+commands may receive either the exact `.` repository-root sentinel or
+repository-relative paths; `.` is the only permitted non-path root sentinel
+and is forwarded as one path argument; `mypy` may receive only
 the fixed gate roots `spikes`, `tests/feasibility`, `src`, `tests`, and the two
 declared gate files `scripts/run_gate_checks.py` and
 `scripts/bootstrap_gate_env.py` (with descendants allowed only for directory

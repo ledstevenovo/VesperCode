@@ -1631,3 +1631,28 @@ Popper 确认上一轮 Mypy profile 冲突已经消失，但发现 T01.1 仍有�
 - 保留“1.A 全部成功后才可添加/运行 1.B RED”的顺序，且不把这些子切片变成新的 M0、独立 admission 或产品任务。
 
 由于这次修订改变了选定 cold-start 的 task contract 和范围，必须从新的候选文档提交建立新的 disposable worktree，再以全新 session 重跑。当前没有 cold-start PASS，也没有正式实现授权。
+
+## 32. 第四次 T01.1 冷启动的 Ruff 根路径边界反馈（2026-08-02）
+
+### 32.1 试作身份与执行范围
+
+- **Agent:** `Beauvoir`（`019fc1ed-b92d-7341-af00-848f866d9a11`，`gpt-5.4`），全新 session、无历史上下文。
+- **Worktree:** `D:\code\VesperCode\.worktrees\_cold-start-trials\cold-start-v6-a959510`，从候选文档提交 `a9595108e2a6d508d67be9e312a008f132e95a2f` 创建的 disposable worktree。
+- **Initial context:** 只向 Agent 提供当前 `SPEC.md` 和 `PLAN.md`；未提供 `SPEC_PROCESS.md`、`AGENT_LOG.md`、先前对话或 memory。
+- **范围:** 仅尝试 `T01.1` 的 bounded `1.Aa` gate bootstrap；未进入 `1.B`，未进入正式实现流程。
+
+### 32.2 新的执行性歧义
+
+Beauvoir 对照了 T01.1 runner 合同和 `GATE_OFFLINE_V1` 的精确命令，发现：
+
+1. runner 文字原先规定两个 Ruff 命令只能接收 repository-relative paths；
+2. `GATE_OFFLINE_V1` 的权威命令明确要求 `ruff-format -- .` 和 `ruff-check -- .`；
+3. 因而陌生 Agent 无法确定 `.` 是应被拒绝的非路径 token，还是必须支持的仓库根输入。该选择会直接改变 runner 行为和最小完整性测试的断言。
+
+Agent 未猜测、未创建占位文件、未修改或提交任何代码，正确暂停在 `1.Aa` 合同核对阶段。该问题属于 `BLOCKING` 文档合同歧义，不是环境失败。
+
+### 32.3 采纳修订与后续
+
+已采纳现有 `GATE_OFFLINE_V1` 精确命令为权威，并在 `PLAN.md` T01.1 runner 合同中明确：两个 Ruff 命令可以接收精确的 `.` 仓库根哨兵或 repository-relative paths；`.` 是唯一允许的非路径根哨兵，并作为一个 argv 元素转发。最小完整性测试同步要求验证 `ruff-format -- .` 和 `ruff-check -- .` 均被接受；其他参数关闭边界不变。
+
+这是选定冷启动 task 的 runner 接口和测试合同的实质变化。必须从该修订后的候选文档提交创建新的 disposable worktree，并用全新、无历史上下文的不同类型 Agent 重跑 `T01.1` bounded `1.Aa`。当前仍没有 cold-start PASS，也没有正式实现授权；本次修订不引入 M0、双审计、语义摘要审批、JSON admission evidence 或 baseline 要求。
