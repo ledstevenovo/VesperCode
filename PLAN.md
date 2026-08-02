@@ -1024,8 +1024,12 @@ classification cannot silently skip a credential. It is exactly:
 | `GENERIC_API_KEY` | A case-insensitive ASCII key name `API_KEY`, `SECRET_KEY`, `ACCESS_TOKEN`, or `AUTH_TOKEN`, followed by optional horizontal whitespace, one of `=`, `:`, or `=>`, optional quote, and at least one non-whitespace value byte. |
 | `CREDENTIAL_URL` | ASCII bytes matching `[A-Za-z][A-Za-z0-9+.-]*://[^/\s:@]+:[^/\s@]+@` at a token boundary. |
 
-For all three rules, a token boundary is the start/end of the byte stream or an
-adjacent byte outside ASCII `[A-Za-z0-9_]`. `GENERIC_API_KEY` accepts either a
+For `PRIVATE_KEY_BLOCK` and `GENERIC_API_KEY`, a token boundary is the
+start/end of the byte stream or an adjacent byte outside ASCII
+`[A-Za-z0-9_]` on both sides of the matched token. `CREDENTIAL_URL` uses only
+the leading boundary: its matched credential-bearing prefix intentionally ends
+at `@`, the following hostname/path is not part of the matched fact, and no
+trailing boundary is required immediately after `@`. `GENERIC_API_KEY` accepts either a
 non-empty single- or double-quoted value on the same line (the closing quote is
 required) or an unquoted value ending at whitespace, a comma, semicolon, `}`, or
 `)`; a delimiter without a value is not a match. The key-name comparison for

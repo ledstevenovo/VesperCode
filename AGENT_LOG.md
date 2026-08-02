@@ -672,3 +672,18 @@
 - **Verification:** The PLAN source was independently re-read after the finding; no formal code/tests, CI, Docker, credentials, release, deployment, PR, or merge action was performed.
 - **Unfinished gates:** No cold-start PASS; a new candidate document commit, disposable worktree, and fresh different-type cold-start are required before formal implementation.
 - **Lesson learned:** A task boundary must agree with both its Own list and its step order, and named configuration files need executable contents before a no-guessing cold start can begin.
+
+## COLD-START-T01.1-INDEPENDENT-WORKTREE-BOUNDARY-20260802
+
+- **Timestamp (Asia/Taipei):** `2026-08-02` (exact wall-clock time not captured by the execution tool)
+- **Task ID:** `COLD-START-T01.1-INDEPENDENT-WORKTREE-BOUNDARY-20260802`
+- **Skills invoked:** `using-git-worktrees`, `dispatching-parallel-agents`, and `superpowers:subagent-driven-development` were used for the disposable trial boundary; no formal implementation skill was used.
+- **Key prompt/context:** A fresh `gpt-5.6-sol` session with no current-thread history was given only `SPEC.md` and `PLAN.md` in worktree `C:\Users\tongshuo\.codex\worktrees\820d\VesperCode`, based on candidate `55a0bebc9965b6768e57bbc1da0f35d385d293ea`; it was assigned only `T01.1/1.Aa` and required to stop before `1.Ab/1.Ac/1.B`.
+- **Agent/result:** The Agent created the 1.Aa Own files, ran the Python probe with `exit=0`, and initially got 5/6 tests because its `CREDENTIAL_URL` regex had a tail-boundary bug. It applied a minimal disposable fix, reran the exact unittest command with `exit=0`, and all six normative tests passed. It did not create `.venv-gate`, lock/evidence/bootstrap/1.B files, commit, merge, or use network/third-party runners.
+- **Independent verification:** The host read the resulting gate-scan core and six-test module and reran both exact commands in the same worktree; probe `exit=0`, six named tests `OK`, match result `exit=1`, exact sorted `MATCH` stdout, empty stderr, and no matched value. Worktree status showed only disposable Own directories plus generated `__pycache__` files.
+- **Finding:** The Agent reported and the host confirmed a wording ambiguity in the generic token-boundary sentence for `CREDENTIAL_URL`: the rule intentionally matches only the credential-bearing prefix through `@`, while a normal hostname follows. This is not an implementation failure after the fix, but the contract needed to state the leading-only boundary explicitly.
+- **Human intervention:** Classified the bounded execution as operationally successful but kept formal implementation prohibited pending the document sync and one rerun from the revised candidate. The disposable worktree and code are not accepted or merged.
+- **Document changes:** `PLAN.md` now states that `CREDENTIAL_URL` uses only a leading boundary, ends its matched prefix at `@`, and requires no trailing boundary after `@`; `SPEC_PROCESS.md` §38 records the evidence and repeat requirement.
+- **Verification:** Exact probe and unittest commands independently passed; `git diff --check` is required for the ensuing document revision. No formal source/test implementation, CI, Docker, credential, release, deployment, PR, or merge action occurred.
+- **Unfinished gates:** The current cold-start is not yet the final PASS because the documented contract was revised after it ran; a new candidate document commit and fresh cold-start are required.
+- **Lesson learned:** A successful implementation trial still needs a final semantic read of pattern boundaries; output tests can pass while prose leaves a normal input case open to two interpretations.

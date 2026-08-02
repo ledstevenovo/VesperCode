@@ -1762,3 +1762,18 @@ Dirac 的正向测试和实现把 credential match 的结果写成 `stderr="ERRO
 主 Agent 对照 v11 PLAN 原文确认两点均成立。已将 `1.Aa` 明确限定为 gate input/config/runner/scan 文件；`scripts/bootstrap_gate_env.py`、`requirements/gate.lock` 和 gate evidence 明确归入 `1.Ab/1.Ac`。同时在 `PLAN.md` 写入三个配置文件的完整最小内容、编码/换行/禁止额外设置合同，并要求 Aa 完整性测试验证其原始字节。
 
 该修订改变了选定冷启动 task 的文件边界和可执行合同，必须从新的候选文档提交创建 disposable worktree，并由全新、无历史上下文的不同类型 Agent 重跑 `T01.1/1.Aa`。当前没有 cold-start PASS，也没有正式实现授权。
+
+## 38. 独立 worktree 冷启动完成与 CREDENTIAL_URL 边界澄清（2026-08-02）
+
+### 38.1 独立线程结果
+
+- **Agent:** 新线程 `019fc262-f40d-7aa2-a3a2-762b7ea9d225`，`gpt-5.6-sol`，独立 worktree `C:\Users\tongshuo\.codex\worktrees\820d\VesperCode`；初始只提供 `SPEC.md` 和 `PLAN.md`，基于候选文档提交 `55a0bebc9965b6768e57bbc1da0f35d385d293ea`。
+- **执行:** Agent 创建了完整的 1.Aa Own 文件，未创建 `.venv-gate`、`requirements/gate.lock`、gate evidence、`scripts/bootstrap_gate_env.py` 或任何 1.B 文件；未提交、未合并、未联网、未调用第三方测试器。
+- **验证:** Python 3.12 probe `exit=0`；首次 Aa unittest 因自身 `CREDENTIAL_URL` 正则尾部处理失败而为 `5/6`，Agent 修复后精确命令 `exit=0`，六个规范 `AaIntegrityTests` 全部通过。主 Agent 在同一 worktree 独立复跑两条命令，得到相同结果。
+- **副作用:** worktree 仅留下 Own 文件及测试产生的未跟踪 `__pycache__/*.pyc`；这些 disposable 产物不进入正式成果。
+
+### 38.2 剩余文档歧义与处理
+
+Agent 指出 `CREDENTIAL_URL` 的通用 token-boundary 句可能被理解为要求匹配在 `@` 后立即结束，而普通 credential URL 的 hostname 会位于其后。独立审阅确认该文字歧义，但当前测试和实现的意图一致：规则只报告包含凭据的 `scheme://user:password@` 前缀，hostname/path 不进入 matched fact。已在 `PLAN.md` 明确该规则只要求 leading boundary、匹配在 `@` 结束且不要求 `@` 后 trailing boundary。
+
+这次仅澄清了已执行合同，没有改变产品范围；为保持冷启动证据与最新文档一致，仍需从新的候选文档提交建立 disposable worktree，并由全新 Agent 重跑一次 Aa。完成前不授权正式实现。
