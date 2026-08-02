@@ -1,7 +1,7 @@
 # VesperCode v1 规格说明
 
 > 版本：SPEC v3  
-> 状态：SPEC v3 冻结候选，等待与其内容寻址绑定的 `PLAN.md` 获批，并完成不同 Agent 类型、无先前对话或记忆上下文的冷启动试验。除课程要求的隔离、可丢弃且不得合入的冷启动试作外，在该精确 SPEC/PLAN 对获批并通过冷启动门禁前，不得开始或继续正式实现、CI、发行或部署；§10 的实现与发布证据只能在门禁通过后生成，不能替代该门禁。
+> 状态：SPEC v3 内容冻结。正式准入状态仅由绑定本文件精确 SHA-256、Git blob 及对应 PLAN 身份的外部 M0、PLAN 审查、人工批准、异构冷启动和 Approved-document Baseline 证据确定；本文不内嵌或推断这些门禁当前是否通过。除课程允许的隔离、可丢弃且不得合入的冷启动试作外，在全部门禁通过前不得开始或继续正式实现、CI、发行或部署；§10 的实现与发布证据不能替代门禁。
 
 ## 0. 文档约定
 
@@ -2211,7 +2211,7 @@ M0 的摘要和批准记录必须写入外部批准记录及随后生成或重�
 
 Task 2 还必须拥有可通过显式 pytest `-p` 或等价封闭入口加载的 gate 专用机器报告器，以及只负责构造、规范化和比较稳定 `CALL/FAIL` 输入的 gate 指纹探针。Docker gate 报告必须把 reporter/probe 的版本与摘要、gate lock/config 摘要、固定 builder/output 参数、实际镜像身份和临时 registry 身份绑定为同一 GO 证据；缺失、截断、摘要不一致或隐式插件加载均为 NO-GO。该 reporter/probe 只证明 Task 2 可行性，不得提前声明或替代 Task 19 的正式 `PytestEvidenceV1`、`FailureFingerprintV1` 和生产验证模块。
 
-Task 2 的临时 registry 必须使用 digest-pinned registry image，只监听 `127.0.0.1` 的动态空闲端口，不接受凭据、不暴露到 LAN/公网、不复用 Docker Desktop 已登录状态，并在成功、失败、取消和异常路径删除容器与数据。推送前生成的本地 OCI manifest digest、registry 返回 RepoDigest 和按 digest 重拉后的 RepoDigest 必须完全一致；检查容器在重拉后仍以 `--network none` 执行。最终 `ReferenceProfileManifestV1` 只能在三方一致后生成，且不得作为其绑定镜像的构建输入。任何 digest 转换、自引用、临时 registry 残留或外部 registry 尝试均为 NO-GO；Task 34 只能复现该已证明流程，Task 36 才能使用受保护凭据执行真实 GHCR 交付。
+Task 2 的临时 registry 必须使用 digest-pinned registry image，只监听 `127.0.0.1` 的动态空闲端口，不接受凭据、不暴露到 LAN/公网、不复用 Docker Desktop 已登录状态，并在成功、失败、取消和异常路径删除容器与数据。推送前生成的本地 OCI manifest digest、registry 返回 RepoDigest 和按 digest 重拉后的 RepoDigest 必须完全一致；检查容器在重拉后仍以 `--network none` 执行。最终 `ReferenceProfileManifestV1` 只能在三方一致后生成，且不得作为其绑定镜像的构建输入。任何 digest 转换、自引用、临时 registry 残留或外部 registry 尝试均为 NO-GO；Task 34 只能复现该已证明流程；受保护凭据仅可在 §8.4 的受保护 release gate 中，在最终源提交 SHA 冻结且同一 SHA 的 CI 通过后使用，以执行真实 GHCR 交付。
 
 Task 4 必须把 Task 1—3 已验证的 Python/tool 版本、marker 和静态检查规则提升为正式 `pyproject.toml`、`requirements/dev.lock` 和统一开发命令，而不是首次建立测试环境。正式配置与冻结 gate 配置如有任何有意差异，必须明确记录、重新执行受影响的 Task 1—3 并取得新 GO；未解释或未复验的漂移失败关闭。gate lock、config、runner、报告器、指纹探针和三项 GO 摘要必须保留到最终交付，以便从门禁证据独立复现。
 
