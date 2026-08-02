@@ -701,3 +701,18 @@
 - **Verification:** The probe passed; no formal source/test implementation, CI, Docker, credential, release, deployment, PR, or merge action occurred.
 - **Unfinished gates:** No cold-start PASS; a new candidate document commit, disposable worktree, and fresh different-type cold-start are required.
 - **Lesson learned:** Naming tests and describing expected output is weaker than supplying executable tests. A no-guessing cold start needs both the test body and the observation seam written in the plan.
+
+## COLD-START-T01.1-FINAL-PASS-20260802
+
+- **Timestamp (Asia/Taipei):** `2026-08-02T20:53:28+08:00`
+- **Task ID:** `COLD-START-T01.1-FINAL-PASS-20260802`
+- **Skills invoked:** `using-git-worktrees`, `dispatching-parallel-agents`, and `superpowers:subagent-driven-development` were used for the disposable trial boundary; no formal implementation skill was used.
+- **Key prompt/context:** From candidate document commit `3f87813457052dc569386b9fc4b72c15468d057d`, run a fresh, no-history, different-type Agent in a new disposable worktree. Initial context was only `SPEC.md` and `PLAN.md`; execute T01.1 bounded `1.Aa`, perform Step 1 before the Aa commands, stop before `1.Ab/1.Ac/1.B`, pause rather than guess, and do not commit or merge.
+- **Agent/result:** `gpt-5.6-luna` session `019fc279-f31a-7191-8502-481960459a19` ran in `C:\Users\tongshuo\.codex\worktrees\e7e6\VesperCode`. It created only the eight declared `1.Aa` files, corrected local implementation issues encountered during its own verification, ran the Python 3.12 probe and the exact Aa unittest command, and reported six normative tests passing. It did not enter `1.Ab`, `1.Ac`, or `1.B`, and did not create a commit.
+- **Independent verification:** The host reran `python -c "import sys; raise SystemExit(0 if sys.version_info[:2] == (3, 12) else 3)"` with exit `0` and `python -m unittest -v tests.feasibility.gate.test_gate_bootstrap.AaIntegrityTests` with 6/6 tests `OK`. The host inspected the worktree and confirmed no `.venv-gate`, lock, evidence, bootstrap, or `1.B` files; only the eight disposable Own files remained after clearing three generated `.pyc` files.
+- **Human intervention:** Classified this bounded trial as PASS for task executability and document alignment. No trial code was accepted, staged, committed, merged, or copied into the main worktree. No additional SPEC/PLAN revision was needed because the final candidate already contained the tested contracts.
+- **Document changes:** Appended the final result to `SPEC_PROCESS.md` and this chronological log. `SPEC.md` and `PLAN.md` remain unchanged after the candidate used for the trial.
+- **Verification:** Main worktree remained free of formal implementation files; the disposable worktree had no prohibited outputs after cleanup. The trial completed when the bounded task was done rather than being artificially extended to exhaust the time window.
+- **Implementation/Git boundary:** No formal source/test implementation, CI, Docker, credentials, release, deployment, PR, merge, or accepted trial commit was created. The disposable worktree and its code remain excluded from the product.
+- **Next gate:** The cold-start phase is complete. Formal work may now begin only through the PLAN-defined isolated worktree, fresh subagent, strict TDD, two-stage review, and branch-finishing workflow.
+- **Lesson learned:** After the last document revision, the strongest cold-start evidence is an independent rerun of the exact commands plus an explicit prohibited-output scan; passing test counts alone are insufficient.

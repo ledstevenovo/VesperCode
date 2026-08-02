@@ -1791,3 +1791,25 @@ Agent 指出 `CREDENTIAL_URL` 的通用 token-boundary 句可能被理解为要�
 已在 `PLAN.md` 下沉一份完整的标准库 `AaIntegrityTests` 测试模块，覆盖四个 runner 错误输出、配置原始字节、match 的 exit/stdout/空 stderr/脱敏和四类 gate-scan fail-closed 注入；并明确通过 `redirect_stdout`/`redirect_stderr` 观察现有 `run_closed_command`/`main`，不新增接口。
 
 该修订改变了选定冷启动 task 的执行细节，必须从新的候选文档提交创建 disposable worktree，并由全新、无历史上下文的不同类型 Agent 重跑 `T01.1/1.Aa`。当前没有 cold-start PASS，也没有正式实现授权。
+
+## 40. 最终 bounded 1.Aa 冷启动通过与文档同步（2026-08-02）
+
+### 40.1 最终复验结果
+
+- **Agent/session:** `gpt-5.6-luna`，线程 `019fc279-f31a-7191-8502-481960459a19`；全新、无历史上下文 session，运行于 `C:\Users\tongshuo\.codex\worktrees\e7e6\VesperCode`，候选文档提交为 `3f87813457052dc569386b9fc4b72c15468d057d`。
+- **输入边界:** 初始只提供 `SPEC.md` 和 `PLAN.md`；明确要求只执行 T01.1 bounded `1.Aa`，先执行 Step 1，再运行两条精确验证命令；遇到不确定内容必须暂停，不得猜测；不得进入 `1.Ab`、`1.Ac` 或 `1.B`，不得提交或合并。
+- **Agent 执行:** 按 PLAN 创建了 8 个 `1.Aa` Own 文件：`requirements/gate.in`、三个 `gates/*.ini|toml` 配置、`scripts/run_gate_checks.py`、`scripts/gate_scan.py`、`scripts/scan_gate_changed_files.ps1` 和 `tests/feasibility/gate/test_gate_bootstrap.py`。Agent 在自身实现复验中修正了配置路径和 PowerShell 错误输出中的局部问题，未提出新的 SPEC/PLAN 歧义。
+- **范围边界:** 未创建 `.venv-gate`、`requirements/gate.lock`、`gates/evidence`、`scripts/bootstrap_gate_env.py` 或任何 `1.B` 文件；未访问 PyPI、未运行第三方 gate runner、未提交、未合并。
+
+### 40.2 主 Agent 独立复验
+
+- `python -c "import sys; raise SystemExit(0 if sys.version_info[:2] == (3, 12) else 3)"`：退出码 `0`。
+- `python -m unittest -v tests.feasibility.gate.test_gate_bootstrap.AaIntegrityTests`：6 个规范方法全部 `OK`，退出码 `0`。
+- 独立检查确认冷启动 worktree 的未跟踪文件只包含上述 8 个 `1.Aa` Own 文件；复验产生的 3 个 `.pyc` 已从 disposable worktree 清理。
+- 独立检查确认禁止路径全部不存在：`.venv-gate`、`requirements/gate.lock`、`gates/evidence`、`scripts/bootstrap_gate_env.py`、`spikes/win32_workspace_boundary/evaluator.py` 和对应 `1.B` 测试。
+
+该轮视为选定 `T01.1/1.Aa` 的冷启动可执行性验证 **PASS**。Agent 在目标完成后提前结束 bounded session，未人为延长时间窗；没有未解决的关键歧义，因此不需要新的 SPEC/PLAN 修订。所有试作文件仍是 disposable 验证产物，不进入正式实现。
+
+### 40.3 阶段切换
+
+至此，SPEC/PLAN 的轻量文档检查、选定 task 的陌生 Agent 冷启动、冷启动反馈记录和独立复验均已完成。正式实现仍未开始；下一阶段才可按 PLAN 进入隔离 worktree、fresh subagent、TDD、SPEC 合规评审、代码质量评审和分支完成流程。
