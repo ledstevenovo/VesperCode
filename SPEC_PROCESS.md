@@ -1321,3 +1321,122 @@ SPEC 身份未因本轮变化；旧 PLAN SHA-256 `f713f5885482dd38ef66fa23998677
 ### 17.4 机械自审
 
 修改后共有 38 个连续正式 Task、494 个步骤 checkbox、38/38 direct dependency rows、38/38 ownership rows、22 个 waves 和 12 个 parallel waves（4、5、6、8、9、10、11、12、14、15、16、18）。`DemoExecutor.advance`、Task 30 仅依赖 Tasks 4–5、`T5 --> T30`、旧 Waves 4/15 分配以及 label-only reuse 表述均为 0；新增 runner、shared-core tests、Task 25 → Task 30 DAG edge、Task 30 direct dependencies 和 curated image assertions 均存在。PLAN placeholder 和四文档高置信凭据格式扫描均为 0；tracked `git diff --check` 退出 0，未跟踪 PLAN 的 no-index check 仅因内容差异退出 1并产生一条 LF→CRLF warning，whitespace error 为 0。三份本轮修改文档均为严格 UTF-8、无 BOM、无裸 CR、无尾空格。本轮未创建实现代码、测试、镜像、CI、branch、worktree、commit、PR、发布或部署工件。
+
+## 18. PLAN 执行合同与证据闭环收口（2026-08-01—2026-08-02）
+
+### 18.1 触发与范围
+
+用户带回的 PLAN 审查指出 T04.1 Python mismatch fixture、T37.2 post-merge delivery、evidence commit SHA、Atomic verification 绑定及少量 authoring wording 存在可执行性或内部一致性缺口。Codex 对照 PLAN、AGENT_LOG.md 和现有课程流程合同逐项核对后，用户授权执行最小修复。
+
+本轮 PLAN 修复只修改 `PLAN.md` 和 `AGENT_LOG.md`，不新增产品任务、Work Package、实现代码、验证器、依赖或发布流程。逐次执行记录保留在 `AGENT_LOG.md` 的对应条目中，本节只记录规划决策和结果。
+
+### 18.2 采纳的最小修复
+
+| 审查主题 | 决策 | PLAN 修订 |
+| --- | --- | --- |
+| T04.1 Python mismatch | 采纳 | 使用完整、自洽、digest-valid 的 synthetic terminal GO fixture；loader 校验后再进入 exact Python patch mismatch 分支，且优先于 lock 检查和环境创建。 |
+| T37.2 delivery | 采纳 | 增加非任务门禁 `FINAL_DELIVERY_POST_MERGE_V1`，区分 `source_commit` 与 `delivery_head`，并将最终 CI、delivery verifier 和 reflection verifier 放到 WP37 merge 之后。 |
+| evidence commit SHA | 采纳 | evidence commit 只记录既有 implementation SHA；自身 evidence-commit SHA 在提交后由 Git 历史机械派生，不嵌入自身内容。 |
+| PEX-06 Atomic binding | 采纳 | 每条非 `Expected` 命令必须唯一绑定到逐字 checkbox、明确 profile command 或中央 derived action；32 条缺失命令补入 23 个已有 session task 的 canonical checkbox。 |
+| authoring/order wording | 采纳 | 增加 `superpowers:writing-plans` provenance，并将 WP05 registry 顺序改为 `5.A, 5.D, 5.B, 5.C, 5.E`。 |
+| evidence workflow 残留措辞 | 采纳 | Step 10 明确允许 executed task-step checkbox states；证据定义明确区分 commit 内记录与提交后派生的 SHA。 |
+
+### 18.3 未采纳的扩大方案
+
+本轮没有新增产品 task 或 Work Package，没有把 430 条 Atomic 命令拆成新任务，没有把 evidence SHA 写入自身 commit，也没有使用“适用真实环境检查”作为隐含绑定。最终交付和 Delivery/Reflection 使用显式 final gate 承接。
+
+### 18.4 机械结果与门禁状态
+
+Atomic verification 复算结果为：430 条非 `Expected` 命令、114 条 Matrix derived binding、316 条非 Matrix 命令，其中新增 32 条 canonical checkbox，缺失绑定为 0。`git diff --check -- PLAN.md AGENT_LOG.md` 通过；本轮没有可运行实现，因此未执行 runtime tests。
+
+这些 PLAN 非 tracking 语义修改使旧 PLAN semantic digest、approval、A/B review、cold-start 和 baseline 结果失效；后续必须重新计算并重新执行相应门禁。详细命令、文件差异和执行边界见 `AGENT_LOG.md` 对应条目。
+
+## 19. T37.2 session task 与 legacy step 术语收口（2026-08-02）
+
+### 19.1 触发与核对
+
+PLAN 审查发现 T37.2 多处把 141 个 legacy TDD steps 称为 `executable Tasks`，并用 `EXECUTABLE_TASK_INCOMPLETE:38.G` 表示一个 legacy step。该表述与 PLAN 的执行单元定义冲突：68 个 `TNN.X` 才是具有 Status、completion evidence 和 session-level execution identity 的 session tasks；141 个 legacy IDs 是其内部原子 TDD microcycles，不是独立 task、subagent、commit 或 evidence 单元。
+
+### 19.2 采纳的最小修复
+
+采纳该术语一致性问题，不新增 Task、Work Package 或独立 legacy 状态。T37.2 改为要求全部 68 个 session tasks terminal and identity-aligned，同时要求全部 141 个 legacy TDD steps 精确映射一次且其 Target/Domain/profile evidence PASS。`EXECUTABLE_TASK_INCOMPLETE:38.G` 改为 `LEGACY_STEP_INCOMPLETE:38.G`，并同步更新 RED 断言、Expected、GREEN 合同、质量审查焦点和执行 checkbox。
+
+### 19.3 验证与门禁状态
+
+本轮只修改 PLAN 术语和对应过程证据，没有实现代码或运行时测试。`git diff --check -- PLAN.md AGENT_LOG.md SPEC_PROCESS.md` 通过；本次 PLAN 非 tracking 语义修改使旧 PLAN semantic digest、approval、A/B review、cold-start 和 baseline 结果失效，后续必须重新计算并重新执行相应门禁。详细执行记录见 `AGENT_LOG.md` 的 `PLAN-T37-2-SESSION-LEGACY-TERM-CLOSURE` 条目。
+
+## 20. SPEC/PLAN 发布所有权与 4.F Bootstrap 最小修复（2026-08-02）
+
+### 20.1 触发与核对
+
+本轮核对发现两项确定问题。第一，SPEC §11.2 仍把真实 GHCR 交付归给 Task 36，而当前 PLAN 已将 WP36/T36.2 限定为 zero-I/O verifier，并将 GitHub Release、GHCR、Render 和终态证据归给 T37.1。第二，PEX-06 的绑定键是 `(task_id, legacy_id, atomic_label)`；`Bootstrap (4.F)` 虽存在于 T04.1 Atomic verification，但只有 4.A Step 5 包含相同 raw command，不能跨 `legacy_id` 借用。
+
+### 20.2 采纳的最小修复
+
+不把 `T37.1` 写入 SPEC。SPEC §11.2 改为任务无关的 §8.4 受保护 release-gate 约束：最终源提交 SHA 冻结且同一 SHA CI 通过后，才可使用受保护凭据执行真实 GHCR 交付。PLAN 不新增任务或重编号，只把 T04.1 Step 13 改为 named remaining-Atomic checkbox，逐字执行 `python scripts/bootstrap_formal_env.py --root . --gate-evidence gates/evidence/workspace-boundary-go-v1.json`，确认 Task 1.E toolchain identity 后再运行 4.F RED。
+
+### 20.3 被拒绝的方案与验证状态
+
+拒绝把 `T37.1` 任务编号写入 SPEC，也拒绝把 Bootstrap 加入全局 `FORMAL_OFFLINE_V1` 或新增任务；这些方案会扩大跨文档绑定或产生重复 binding。核心文本修复在 SPEC/PLAN 各只有一处目标语义行变化，随后仅刷新 PLAN 的当前 SPEC SHA、Git blob 和最后语义修订时间三项 provenance 字段。4.F Bootstrap 逐字命令在 Step 13 中且先于 RED，T36.2 zero-I/O 与 T37.1 发布所有权未被削弱，`git diff --check` 通过。该修复尚未重新计算 PLAN semantic digest，也未重新执行 M0、approval、独立 A/B review、cold-start 或 baseline。
+
+### 20.4 身份刷新与独立 fresh reviewer 结果
+
+为避免 PLAN 自身身份审计继续读取旧 SPEC，刷新了 `Authoritative SPEC SHA-256`、`Authoritative SPEC Git blob` 和最后语义修订时间。当前候选身份为：SPEC SHA-256 `712619a07b9bcfc02bb9835c17c0123dd2079d9cbf8f18276b39d1f1ec0bf250`、SPEC Git blob `e1a79152bde8ff7578e74e6e6a3b2b3bfd9b1ef8`、PLAN 完整 SHA-256 `684b657eb1dfb8f44d057768d193904504995f1aef1087aa17d58153f4cb8f73`、`PlanSemanticDigestV2` `397944858819aedcf634cbe4bd46aeb07dbf245ffecc674557c1eb2834acf93e`、Git HEAD `7b4ea480cb724484f40f380b3c64f600a1c2f4ea`。
+
+一个无历史上下文的 fresh reviewer 复核了两处目标修复并返回文档一致性 `PASS/PASS`，同时对正式准入总门禁返回 `FAIL`：当前文档仍是 Candidate，且没有 M0、PLAN A/B、独立审查、人类批准、cold-start 或 baseline formal evidence。该 reviewer 结果只证明目标修复的文本一致性，不替代任何正式门禁；本轮没有伪造或写入 approval/baseline 结果。
+
+### 20.5 稳定状态行后的身份刷新
+
+用户随后要求先完成稳定 SPEC 顶部状态行，再继续刷新身份。SPEC 顶部已改为不内嵌或推断当前准入状态的外部证据驱动表述；本轮据此将 `PLAN.md` 的 Authoritative SPEC SHA-256 更新为 `556fb14ec8dc6c22834d1611f721316559600fd0bc2f6823ee8cfa7812c23ca8`，Git blob 更新为 `23ff5eb32b87f0d48c011a7535094cf7345bb451`，最后语义修订时间更新为 `2026-08-02T11:39:36+08:00`。
+
+按 PLAN §8.3 / SPEC §11.2 的唯一投影规则重新计算：候选 `PLAN.md` 完整 SHA-256 为 `95559c42b500aa7ff6a413f210ecf01ee1ea835c4175f9973e4c23594de362f1`，`PlanSemanticDigestV2` 为 `90e6a2f9df91d680a844cbbd91dd0863cf0f65cc2ac895f39a04ecfd3d73688f`，Git HEAD 为 `7b4ea480cb724484f40f380b3c64f600a1c2f4ea`。旧身份记录保留为历史记录，不覆盖；本轮没有 M0、PLAN A/B、独立审查、人类批准、cold-start 或 baseline formal evidence，因此不能据此声称准入通过。
+
+### 20.6 外部候选身份重算记录
+
+按用户要求重新从当前 `PLAN.md` 原始字节计算候选身份，不读取旧记录中的摘要作为输入。当前 SPEC SHA-256 为 `556fb14ec8dc6c22834d1611f721316559600fd0bc2f6823ee8cfa7812c23ca8`，SPEC Git blob 为 `23ff5eb32b87f0d48c011a7535094cf7345bb451`；当前候选 PLAN 完整 SHA-256 为 `95559c42b500aa7ff6a413f210ecf01ee1ea835c4175f9973e4c23594de362f1`，`PlanSemanticDigestV2` 为 `90e6a2f9df91d680a844cbbd91dd0863cf0f65cc2ac895f39a04ecfd3d73688f`，Git HEAD 为 `7b4ea480cb724484f40f380b3c64f600a1c2f4ea`。
+
+计算拒绝 BOM 和裸 CR，按正式 Task 区域归一化 68 条 Status、68 条 Completion evidence 与 1750 个 checkbox token；Node crypto 与 WebCrypto 的语义摘要结果一致。该记录只证明当前候选身份，不能替代任何正式 admission 门禁。
+
+### 20.7 文档一致性审查复核
+
+按用户要求重新运行了 document-only consistency review，而不是 code review。无历史上下文的独立 reviewer 确认：SPEC 顶部稳定状态行、SPEC §11.2 的任务无关 release-gate 语义、T36.2/WP36 的 zero-I/O verifier 边界和 T37.1 的最终发布所有权没有发现冲突。Reviewer 未能在其定点读取中独立证明 4.F PEX-06 绑定和四项摘要，因此按 fail-closed 原则没有把这两项判为 PASS；定点核对随后确认 4.F Bootstrap 命令在 PLAN 第 2097 行，并由第 2111 行专属 remaining-Atomic checkbox 在 RED 前执行，当前候选摘要也已由本地两种 SHA-256 实现交叉一致。
+
+该复核不等于 formal `PLAN_SPEC_COMPLIANCE`、`PLAN_EXECUTABILITY`、M0、PLAN A/B、人工批准、异构 cold-start 或 `APPROVED_DOCUMENT_BASELINE_V3`。正式 evidence 未出现前，继续禁止正式实现、CI、发行和部署；人工仍必须审核并批准精确 SPEC/PLAN 候选身份及文档内容。
+
+### 20.8 M0 readiness review 尝试
+
+用户授权执行 SPEC §11.2 M0。独立、无历史上下文的 document-only reviewer `019fc0b8-ef88-72f1-b627-ca7bc21f282c`（Confucius）只读检查后返回 fail-closed `FAIL`，原因是它未完成原始 SPEC SHA-256、PLAN provenance、课程/Harness 逐项覆盖、SPEC 内部一致性和 §11.2 关闭清单；它没有修改文件，也没有声称发现 SPEC 内容缺陷。
+
+本地只读预检确认：正式 SPEC 为 `SPEC.md`，SHA-256 为 `556fb14ec8dc6c22834d1611f721316559600fd0bc2f6823ee8cfa7812c23ca8`，Git blob 为 `23ff5eb32b87f0d48c011a7535094cf7345bb451`，Git HEAD 为 `7b4ea480cb724484f40f380b3c64f600a1c2f4ea`，且 PLAN provenance 与 SPEC SHA/blob 一致；SPEC 具备 9 个用户故事及 FR、NFR、架构、数据模型、威胁模型、分发、技术选型、验收、风险和 Harness 机制章节。但由于独立 M0 checklist 未完成且人类尚未批准精确身份，M0 总体不能判 PASS。
+
+本次不创建或登记伪造的 `m0.json`/admission PASS。M0 需要重新完成独立 checklist，并由人类批准上述精确 SPEC path/SHA/blob/HEAD；在 M0 及其余 formal gates 通过前不得开始正式实现、CI、发行或部署。
+
+### 20.9 M0 独立 checklist 重试结果
+
+新的无历史上下文 document-only reviewer `019fc12c-624e-70f0-a9b4-52e22abba059`（Einstein）完整返回 M0-01 至 M0-06：M0-01 `FAIL`、M0-02 `PASS`、M0-03 `PASS`、M0-04 `FAIL`、M0-05 `PASS`、M0-06 `FAIL`，总体 reviewer recommendation 为 `FAIL`。
+
+M0-01 的实际阻断已独立核实：PLAN 声明的 planning baseline `2521bd2e09874bad308545883d83e43224433594` 中 `SPEC.md` Git blob 为 `27bba78767edf69826e62dbff0e2d2eb11b7a580`，而当前正式 SPEC `D:\code\VesperCode\SPEC.md` 的 SHA-256 为 `556fb14ec8dc6c22834d1611f721316559600fd0bc2f6823ee8cfa7812c23ca8`、Git blob 为 `23ff5eb32b87f0d48c011a7535094cf7345bb451`。当前 PLAN provenance 虽与工作树 SPEC 一致，但与其声明 baseline 的 SPEC blob 不一致，违反 PLAN §8.2 的 planning-input identity 要求。
+
+M0-02 确认 SPEC 覆盖用户故事、FR/NFR、架构、数据模型、凭据威胁模型、分发、技术选型、验收、风险和 Harness 机制；M0-03 未发现已读取语义冲突；M0-05 确认 Task 34 只复现、T36/WP36 zero-I/O、T37.1 独占外部发布和受保护凭据边界。M0-04 的独立技术门禁/冷启动/loopback 关闭证据和 M0-06 的人工批准仍缺失，因此不能生成 M0 PASS 或 admission evidence。
+
+## 21. M0-04 关闭矩阵（当前候选）
+
+### 21.1 绑定身份与审查规则
+
+本矩阵绑定当前未批准的候选身份：SPEC SHA-256 `556fb14ec8dc6c22834d1611f721316559600fd0bc2f6823ee8cfa7812c23ca8`、SPEC Git blob `23ff5eb32b87f0d48c011a7535094cf7345bb451`、PLAN 完整 SHA-256 `8ddb16c96d674d4c9dc0ffd83446992e0fdee18d5b4b2bfd16d269d5d0d4bb94`、`PlanSemanticDigestV2` `0b7b0de39dd7cd618f5957e2ca23130560646260a5b27886d9143424cd81c938`、AGENTS SHA-256 `f4e68e302cfb9cc9f383704ef3be9eb8975277a0715e5357e65070cad2738656`。矩阵只记录 M0-04 所需的可观察关闭证据；“计划已规定”不等于“证据已出现”。正式 evidence root 当前不存在，因此缺失、未运行或未批准均保持 `FAIL`，不创建伪造的 `m0.json` 或 admission PASS。
+
+### 21.2 逐项关闭矩阵
+
+| M0-04 项目 | SPEC 章节/AC | PLAN 所有者 | 可观察关闭约束 | 预期正式证据路径 | 当前证据与状态 | Reviewer 结论 |
+| --- | --- | --- | --- | --- | --- | --- |
+| 双平台 CI 闭环 | §8—§10；AC-10、AC-11、AC-24、AC-30 | T35.1 / T37.1 | GitHub Actions 与 GitLab CI 的 unit-test、reference-image-build、demo-image-build 和最终 source-aligned 记录必须绑定精确提交；普通 CI 无发布凭据，最终发布只在受保护 gate 中发生。 | `process/evidence/admission-v3/8ddb16c96d674d4c9dc0ffd83446992e0fdee18d5b4b2bfd16d269d5d0d4bb94/m0.json`；`delivery/evidence/ci-v1.json` | `.github/workflows/ci.yml`、`.gitlab-ci.yml`、真实 job/pipeline 记录和 delivery evidence 均不存在；当前未运行。`FAIL` | M0-04 `FAIL`：只有 PLAN 设计合同，没有双平台运行闭环证据。 |
+| List/Search canonical cursor | §4.3；AC-17 | T11.1 | 分页与不分页结果必须一致；cursor 必须绑定可见树摘要、无 cursor 查询摘要、稳定扫描位置和自身摘要；过期/无效 cursor 返回零部分结果。 | `process/evidence/admission-v3/8ddb16c96d674d4c9dc0ffd83446992e0fdee18d5b4b2bfd16d269d5d0d4bb94/m0.json`；T11.1 completion/target evidence | `src/`、`tests/` 和 T11.1 evidence 尚不存在；没有可运行的 cursor round-trip/stale/invalid 证据。`FAIL` | M0-04 `FAIL`：合同可追踪，但行为关闭证据缺失。 |
+| 每次真实调用前凭据复验 | §4.4.4、§4.8；AC-13、AC-27 | T25.2 / T27.1 | 每次真实 OpenAI 调用在 Grant、authorization record、turn/call 计数和网络副作用前重新探测安全后端并执行 `get_for_call("OPENAI")`；缺失或不安全时零增量、无自动重试。 | `process/evidence/admission-v3/8ddb16c96d674d4c9dc0ffd83446992e0fdee18d5b4b2bfd16d269d5d0d4bb94/m0.json`；T25.2/T27.1 test and review evidence | Credential Manager adapter、调用门和对应测试尚不存在；没有真实调用前序列断言或 Windows evidence。`FAIL` | M0-04 `FAIL`：安全语义已写入 SPEC/PLAN，但未有独立执行证据。 |
+| PlanSemanticDigestV2 规则 | SPEC §11.2；PLAN §8.3–§8.4 | PLAN_AUDIT_V3_A / PLAN_AUDIT_V3_B | 两套独立 verifier 必须对完整 PLAN、身份、指标、问题列表和 `PlanSemanticDigestV2` 达成字段级一致；私有负测试必须通过；结果必须绑定当前候选身份。 | `process/evidence/admission-v3/8ddb16c96d674d4c9dc0ffd83446992e0fdee18d5b4b2bfd16d269d5d0d4bb94/plan-audit-a.json`；`plan-audit-b.json` | 本地 Node 摘要核算得到 `0b7b0de3…c938`，但独立 A/B verifier、私有负测试和正式 JSON 均不存在。候选身份核对不构成 A/B 关闭。`FAIL` | M0-04 `FAIL`：摘要数值可复算，正式双 verifier 证据缺失。 |
+| 前三项技术门禁与锁定 toolchain 可由获准文档 cold-start | SPEC §11.2；AC-24 | T01.1–T03.2 | 冷启动 agent 必须从精确批准的 SPEC/PLAN 身份检索 T01.1/T38.2；T01.1 先完成 1.A bootstrap、锁定 toolchain 和 identity，再执行 1.B RED；不得依赖历史上下文，且只能在隔离丢弃 worktree 试作。 | `process/evidence/admission-v3/8ddb16c96d674d4c9dc0ffd83446992e0fdee18d5b4b2bfd16d269d5d0d4bb94/cold-start-retrieval.json`；`cold-start-execution.json`；`gates/evidence/gate-toolchain-v1.json` | 无 formal cold-start artifact、gate lock/config/runner evidence 或可接受的异构试作；正式实现前置条件仍未满足。`FAIL` | M0-04 `FAIL`：未有无历史上下文 cold-start 和锁定 toolchain 证据。 |
+| Task 2 无凭据 loopback registry 与 OCI digest round-trip | SPEC §8.2、§8.4；AC-24、AC-30 | T02.1–T02.4；Task 34 仅复现 | registry 必须只绑定 `127.0.0.1` 动态端口、不接收凭据、不向检查容器供网；本地 OCI manifest、registry RepoDigest 和 digest pull 的原始 manifest bytes 必须三方相同，并在所有路径清理容器/数据。 | `process/evidence/admission-v3/8ddb16c96d674d4c9dc0ffd83446992e0fdee18d5b4b2bfd16d269d5d0d4bb94/m0.json`；T02.2/T02.4 feasibility and GO evidence | `spikes/`、Docker probe、reference profile 和 `gates/evidence` 均不存在；没有 loopback/OCI round-trip 运行记录。`FAIL` | M0-04 `FAIL`：设计约束存在，但无独立可观察关闭证据。 |
+| GHCR 仅属于受保护 release gate | §8.4、§11.2；AC-10、AC-11、AC-24、AC-30 | T35.1 / T37.1；WP36/T36.2 为 pure zero-I/O verifier | 普通 CI、WP36/T36.2 和 Task 34 不得发布；最终 source commit 冻结、同 SHA CI 通过且受保护 release gate 放行后，才可使用受保护凭据执行真实 GHCR；T37.1 独占外部操作与终态证据。 | `process/evidence/admission-v3/8ddb16c96d674d4c9dc0ffd83446992e0fdee18d5b4b2bfd16d269d5d0d4bb94/m0.json`；未来 `delivery/evidence/release-v1.json` | 当前文本交叉核对未发现所有权冲突，但没有 T35/T37 implementation、protected gate、同 SHA CI、release 或 GHCR evidence；不得进行外部发布。`FAIL` | M0-04 `FAIL`：语义边界已确认，受保护发布关闭证据仍缺失。 |
+
+### 21.3 矩阵结论
+
+七项中没有一项具备完整、可接受、独立且绑定当前候选身份的正式关闭证据；本矩阵的总体结论为 `M0-04=FAIL`。这不是把“尚未实现”当成产品缺陷，也不是把计划文本当成运行证据；它表示在 SPEC M0、人工批准、PLAN A/B、独立 PLAN 审查、异构 cold-start 和 Approved-document Baseline 之前，正式实现、CI、发行和部署仍被禁止。

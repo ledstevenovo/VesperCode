@@ -220,3 +220,219 @@
 - **Implementation/Git boundary:** 未开始 Task 1/30/32/34 或其他实现，未安装依赖，未创建/切换 branch/worktree，未 commit、push、开 PR、tag、release 或 deployment。
 - **Unfinished gates:** 本轮语义修改使旧 PLAN 批准候选失效；M0 人工批准、新 PLAN 语义批准和异构 Agent 冷启动试作仍未执行，正式实现继续被阻断。
 - **Lesson learned:** 共享行为标签不等于共享实现。能力适配器隔离应通过注入端口实现，而 parser、policy、feedback 和 stopping 等纯核心必须有运行时复用证据。
+
+## PLAN-T04-1-PYTHON-MISMATCH-FIX
+
+- **Timestamp (Asia/Taipei):** `2026-08-01T23:32:23+08:00`
+- **Task ID:** `PLAN-T04-1-PYTHON-MISMATCH-FIX`
+- **Skills invoked:** 无；本轮是计划文档的定点修复，没有调用实现、TDD、worktree 或发布类 skill。
+- **Key prompt/context:** 用户要求执行 T04.1 Python patch mismatch RED 测试的最小修复。审查已确认浅层 `dataclasses.replace` 会留下失效的 Task 1.E report/toolchain identity，导致 writer 或 loader 先失败，无法稳定到达 `FORMAL_PYTHON_VERSION_MISMATCH:`。
+- **Contract changes:** T04.1 新增 test-only temporary-root synthetic terminal GO fixture 文件；fixture 必须使用 T01.2 public assembler/writer/loader APIs、重算嵌套与最终 digest，并先通过 loader。bootstrap 顺序冻结为 report schema/digest/GO/toolchain 校验 → exact Python patch 比较 → lock 检查 → `.venv-formal` 创建/materialization；Python mismatch 优先于 lock 缺失且不得创建环境。T04.1 RED、Expected、Atomic verification、Steps 及 git add 清单已同步。
+- **Agents/subagents:** 无；未执行冷启动或子代理审查。
+- **Files changed:** `PLAN.md`、`AGENT_LOG.md`。没有创建实现代码、测试运行时工件、依赖、CI、Docker、发布或部署文件。
+- **Human intervention:** 用户直接授权执行最小修复；没有其他人工编辑。
+- **Verification:** `git diff --check -- PLAN.md` 退出 0；定点检索确认旧 `gate_toolchain=replace`、`python_version="0.0.0"` 和 T01.2 公共 helper 引用均已移除/收敛到 T04.1 test-only fixture；当前仓库无对应实现文件，因此未执行运行时测试。
+- **Implementation/Git boundary:** 未创建/切换 branch 或 worktree，未 commit、push、开 PR、发布或部署。
+- **Unfinished gates:** 本次 PLAN 语义修改使旧 PLAN 完整文件身份和语义批准失效；新的 PLAN 语义审批、独立审查和异构 no-history cold-start 仍需重新执行，正式实现继续受其阻断。
+- **Lesson learned:** 负面测试 fixture 必须同时满足“输入证据自洽”和“被测环境故意不匹配”；只改一个嵌套字段不能证明 fail-closed 错误优先级。
+
+## PLAN-T37-2-FINAL-DELIVERY-GATE
+
+- **Timestamp (Asia/Taipei):** `2026-08-01T23:45:15+08:00`
+- **Task ID:** `PLAN-T37-2-FINAL-DELIVERY-GATE`
+- **Skills invoked:** 无；本轮是计划文档的定点修复，没有调用实现、TDD、worktree 或发布类 skill。
+- **Key prompt/context:** 用户要求执行 T37.2 最终交付验证自引用与 post-merge CI 缺口的最小修复。审查确认 task-local `verify_delivery --require-live` 不能在 37.C 尚未 terminal 时证明完整交付，且 WP37 合并后的最终 HEAD 与最后 CI PASS 没有被 PLAN 闭合。
+- **Contract changes:** 新增非实现最终门禁 `FINAL_DELIVERY_POST_MERGE_V1`；要求 WP37 合并后冻结 `delivery_head`，等待 GitHub/GitLab 针对该 SHA 的全部流水线 terminal PASS，再在干净 checkout 上运行 `verify_delivery --require-live`、`verify_reflection` 和 `git status --short`，并将结果保存为外部/CI 证据，不产生新的仓库字节修改。T37.2 的 task-local verification 保留本地测试，移除会形成自引用的 live delivery/reflection 命令。新增 `source_commit` 与 `delivery_head` 的职责边界，分别覆盖产品发布身份与课程交付身份。
+- **Agents/subagents:** 无；未执行冷启动或子代理审查。
+- **Files changed:** `PLAN.md`、`AGENT_LOG.md`。没有创建实现代码、测试运行时工件、依赖、CI、Docker、发布或部署文件。
+- **Human intervention:** 用户直接授权执行最小修复；没有其他人工编辑。
+- **Verification:** `git diff --check -- PLAN.md` 已通过；最终门禁、`delivery_head`、`source_commit` 和 T37.2 本地/live 分界已写入 PLAN。当前仓库仅包含课程规格与计划文档，没有可运行的实现或 `scripts/verify_delivery.py`、`scripts/verify_reflection.py`，因此未执行 runtime tests 或 live delivery verification。
+- **Implementation/Git boundary:** 未创建/切换 branch 或 worktree，未 commit、push、开 PR、发布或部署。
+- **Unfinished gates:** 本次 PLAN 语义修改使旧 PLAN 完整文件身份和语义批准失效；新的 PLAN 语义审批、独立审查和异构 no-history cold-start 仍需重新执行，正式实现继续受其阻断。
+- **Lesson learned:** 完整交付验证必须位于所有实现与合并动作之后；最终 CI 只能绑定冻结的最终 HEAD，不能用会改变该 HEAD 的 completion-evidence commit 自身证明最终交付。
+
+## PLAN-TASK-EVIDENCE-COMMIT-ID-CLOSURE
+
+- **Timestamp (Asia/Taipei):** `2026-08-02T00:01:13+08:00`
+- **Task ID:** `PLAN-TASK-EVIDENCE-COMMIT-ID-CLOSURE`
+- **Skills invoked:** 无；本轮是计划文档的定点修复，没有调用实现、TDD、worktree 或发布类 skill。
+- **Key prompt/context:** 用户要求执行 task evidence SHA 自引用与窄 evidence commit 允许路径的最小修复。审查确认 implementation SHA 可以在 evidence commit 中记录，但 evidence commit 自身 SHA 必须在创建后由 Git 历史推导；同时 task completion step 的既有 shorthand 没有明确覆盖已执行 checkbox 状态。
+- **Contract changes:** 全局执行合同现在明确记录既有 implementation SHA、禁止把自身 evidence commit SHA 写入该 commit，并将窄 diff 限定为本 task 的 Status、已执行 task-step checkbox、单行 Completion evidence 和 append-only `AGENT_LOG.md`。全局新增 `Status/Completion evidence` shorthand 定义，统一覆盖现有 task cards。Task 37.B 的 `verify_process_evidence` 合同新增 `EVIDENCE_COMMIT_DERIVATION_V1`：要求每个 task evidence commit 是 implementation commit 的唯一直接子 commit，严格验证允许路径、task 顺序和 PR metadata，并在 verifier 结果中暴露推导出的 evidence SHA。
+- **Files changed:** `PLAN.md`、`AGENT_LOG.md`。没有创建或修改实现代码、测试运行时工件、依赖、CI、Docker、发布或部署文件。
+- **Human intervention:** 用户直接授权执行最小修复；没有其他人工编辑。
+- **Verification:** 已核对全局合同、task completion shorthand 和 Task 37.B process-verifier contract；随后执行 `git diff --check -- PLAN.md AGENT_LOG.md`，要求无 whitespace error。当前仓库没有实现代码或 `scripts/verify_process_evidence.py`，因此未运行 runtime tests 或 process verifier。
+- **Implementation/Git boundary:** 未创建/切换 branch 或 worktree，未 commit、push、开 PR、发布或部署。
+- **Unfinished gates:** 本次 PLAN 语义修改使旧 PLAN 完整文件身份和语义批准失效；新的 PLAN 语义审批、独立审查和异构 no-history cold-start 仍需重新执行，正式实现继续受其阻断。
+- **Lesson learned:** evidence commit 的内容身份和 commit 对象身份必须分离；允许路径需要显式包含 tracking checkbox，否则“只能更新 tracking”与实际 completion workflow 不闭合。
+
+## PLAN-AUTHORING-PROVENANCE-WP05-ORDER-CLOSURE
+
+- **Timestamp (Asia/Taipei):** `2026-08-02T00:12:03+08:00`
+- **Task ID:** `PLAN-AUTHORING-PROVENANCE-WP05-ORDER-CLOSURE`
+- **Skills invoked:** `superpowers:writing-plans`（补充 authoring provenance 声明）；本轮未调用实现、TDD、worktree 或发布类 skill。
+- **Key prompt/context:** 用户要求关闭两个小型 PLAN 一致性问题：缺少明确的 `superpowers:writing-plans` 生成来源声明，以及 Work Package Registry 的 WP05 legacy-step 顺序与 T05.1 task card 不一致。
+- **Technical evaluation:** 两项问题均成立。标题说明区只有 agentic-worker skill 要求，没有 authoring provenance；WP05 Registry 原为 `5.A, 5.B, 5.C, 5.E, 5.D`，而 T05.1 task card 和 legacy headings 为 `5.A, 5.D, 5.B, 5.C, 5.E`。
+- **Contract changes:** 在 PLAN 标题说明后增加一行 authoring provenance，并将 WP05 Registry 顺序改为与 T05.1 task card 一致。没有改变任务数量、依赖图、ownership、wave、SPEC 或实现边界。
+- **Files changed:** `PLAN.md`、`AGENT_LOG.md`。没有创建或修改实现代码、测试运行时工件、依赖、CI、Docker、发布或部署文件。
+- **Human intervention:** 用户直接授权执行最小修复；没有其他人工编辑。
+- **Verification:** 只读检索确认修改前两处目标文本；修改后执行 `git diff --check -- PLAN.md AGENT_LOG.md`，要求无 whitespace error，并复查 provenance 与 WP05 顺序。
+- **Implementation/Git boundary:** 未创建/切换 branch 或 worktree，未 commit、push、开 PR、发布或部署。
+- **Unfinished gates:** 本次 PLAN 非 tracking 语义修改使旧 PLAN 完整文件身份、`PlanSemanticDigestV2` 和相关 approval/cold-start/baseline 结果失效；需要重新计算并重新执行相应门禁，正式实现继续受其阻断。
+- **Lesson learned:** Work Package Registry 是执行摘要，必须保持与 task card 的 legacy-step 顺序一致；skill 使用事实也必须在文档头部显式声明，不能只依赖 conformance 或 path override 文字。
+
+## PLAN-ATOMIC-VERIFICATION-COMMAND-BINDING
+
+- **Timestamp (Asia/Taipei):** `2026-08-02T00:26:41+08:00`
+- **Task ID:** `PLAN-ATOMIC-VERIFICATION-COMMAND-BINDING`
+- **Skills invoked:** 无；本轮是计划文档的定点修复，没有调用实现、TDD、worktree 或发布类 skill。
+- **Key prompt/context:** 用户要求判断并关闭 `Atomic verification` 中非 `Expected` 命令没有独立执行点的机械可审计性缺口。审查重点是 Build、Driver、Contract、Windows/Docker 以及 T37.2 Delivery/Reflection 等命令不能只停留在验证列表中。
+- **Contract changes:** `PEX-06` 现在要求每条非 `Expected` Atomic verification 命令逐字、按顺序绑定到恰好一个可执行 checkbox、明确命名的 global verification profile 或集中声明的 derived action；缺失、重复、歧义、非逐字匹配或无法解析均为 `FAIL`。`PlanAuditContractV3 §8.1` 要求 Verifier A/B 枚举并验证这些绑定，并覆盖删除、重复、重排、歧义和弱化绑定的负向测试。`MATRIX-RED-1/2` 与 `FINAL_DELIVERY_POST_MERGE_V1` 等命名的非 task final gate 作为 derived action，不要求在 task card 中重复伪造 checkbox；T37.2 的 Delivery/Reflection 由该最终门禁显式承接。
+- **Files changed:** `PLAN.md`、`AGENT_LOG.md`。没有创建或修改实现代码、测试运行时工件、依赖、CI、Docker、发布或部署文件。
+- **Human intervention:** 用户直接授权执行最小修复；没有其他人工编辑。
+- **Verification:** 已完成定点文本核对，确认 `PEX-06` 与 `PlanAuditContractV3 §8.1` 均包含唯一绑定、失败条件和 derived-action 例外；确认 `FINAL_DELIVERY_POST_MERGE_V1` 仍显式承接 Delivery/Reflection。随后执行 `git diff --check -- PLAN.md AGENT_LOG.md`，要求无 whitespace error。当前仓库没有实现代码或可运行 verifier，因此未运行 runtime tests、delivery verifier 或 process verifier。
+- **Implementation/Git boundary:** 未创建/切换 branch 或 worktree，未 commit、push、开 PR、发布或部署。
+- **Unfinished gates:** 本次 PLAN 语义修改使旧 PLAN 完整文件身份、`PlanSemanticDigestV2` 以及相关 approval/cold-start/baseline 结果失效；需要重新计算并重新执行相应门禁，正式实现继续受其阻断。
+- **Lesson learned:** 验证命令只有在计划结构中拥有唯一、可解析的执行绑定时才可被 fresh agent 可靠执行；集中式 final gate 应作为显式 derived action 建模，而不是依赖 task-local 隐含规则。
+
+## PLAN-ATOMIC-VERIFICATION-BINDING-CLOSURE
+
+- **Timestamp (Asia/Taipei):** `2026-08-02T09:34:57+08:00`
+- **Task ID:** `PLAN-ATOMIC-VERIFICATION-BINDING-CLOSURE`
+- **Skills invoked:** `superpowers:writing-plans`；本轮未调用实现、TDD、worktree 或发布类 skill。
+- **Key prompt/context:** 用户要求执行 `PEX-06` Atomic verification 绑定缺口的最小修复。前一轮审计复算出 430 条非 `Expected` 命令实例，其中 114 条由 Matrix 派生动作承接、284 条已有逐字 checkbox、32 条缺少逐字 checkbox 或明确 profile 映射。
+- **Contract changes:** 在 23 个已有 session task 的 task-level profile checkbox 中逐字加入全部 32 条剩余命令，并将这些 checkbox 标题明确为“remaining Atomic verification commands and the FORMAL_OFFLINE_V1 closure”，没有新增 Task、Work Package 或步骤编号。PEX-06 与 `PlanAuditContractV3 §8.1` 补充绑定身份 `(task_id, legacy_id, atomic_label)`、角色匹配的 canonical checkbox，以及 RED/GREEN/refactor/review/evidence 复跑不构成额外 binding 的规则；duplicate canonical target 或 unresolved role match 仍为 `FAIL`。
+- **Files changed:** `PLAN.md`、`AGENT_LOG.md`。没有创建或修改实现代码、测试运行时工件、依赖、CI、Docker、发布或部署文件。
+- **Human intervention:** 用户直接授权执行最小修复；没有其他人工编辑。
+- **Verification:** 只读机械审计复算 `command_like_total=430`、`matrix_derived=114`、`non_matrix=316`、`missing_checkbox_or_profile=0`；新增 32 条命令均逐字出现在唯一的 remaining-Atomic checkbox 中。随后执行 `git diff --check -- PLAN.md AGENT_LOG.md`，要求无 whitespace error。当前仓库没有实现代码或可运行 verifier，因此未运行 runtime tests、delivery verifier 或 process verifier。
+- **Implementation/Git boundary:** 未创建/切换 branch 或 worktree，未 commit、push、开 PR、发布或部署。
+- **Unfinished gates:** 本次 PLAN 非 tracking 语义修改使旧 PLAN 完整文件身份、`PlanSemanticDigestV2` 以及相关 approval/cold-start/baseline 结果失效；需要重新计算并重新执行相应门禁，正式实现继续受其阻断。
+- **Lesson learned:** 对 Atomic 命令做绑定时必须区分“同一命令的 RED/GREEN 复跑证据”和“唯一 canonical binding”；新增命令应逐字进入明确命名的 checkbox，而不能依赖适用环境的隐含约定。
+
+## PLAN-EVIDENCE-WORKFLOW-WORDING-CLOSURE
+
+- **Timestamp (Asia/Taipei):** `2026-08-02T09:47:41+08:00`
+- **Task ID:** `PLAN-EVIDENCE-WORKFLOW-WORDING-CLOSURE`
+- **Skills invoked:** `superpowers:writing-plans`；本轮仅执行 PLAN 证据流程措辞的定点修复，未调用实现、TDD、worktree 或发布类 skill。
+- **Key prompt/context:** 用户要求执行 evidence workflow 两处旧措辞残留的最小修复。审查确认 §3.2 Step 10 未直接允许 executed task-step checkbox states，且紧邻的 evidence 定义未明确区分 evidence commit 内部记录与提交后派生的 evidence-commit SHA。
+- **Contract changes:** Step 10 现在明确允许更新 task `Status`、executed task-step checkbox states、one-line `Completion evidence` 和一个 append-only `AGENT_LOG.md` entry；task evidence 定义现在记录既有 implementation SHA，并明确 evidence-commit SHA 只能在 commit 创建后由 Git 历史机械派生、不得嵌入创建该 commit 的内容。没有新增 task、验证器或产品架构。
+- **Files changed:** `PLAN.md`、`AGENT_LOG.md`。没有创建或修改实现代码、测试运行时工件、依赖、CI、Docker、发布或部署文件。
+- **Human intervention:** 用户直接授权执行最小修复；没有其他人工编辑。
+- **Verification:** 修改后运行 `git diff --check -- PLAN.md AGENT_LOG.md`，并复查 Step 10 与 evidence 定义的目标措辞。
+- **Implementation/Git boundary:** 未创建/切换 branch 或 worktree，未 commit、push、开 PR、发布或部署。
+- **Unfinished gates:** 本次 PLAN 非 tracking 语义修改使旧 PLAN 完整文件身份、`PlanSemanticDigestV2` 以及相关 approval/cold-start/baseline 结果失效；需要重新计算并重新执行相应门禁，正式实现继续受其阻断。
+- **Lesson learned:** 证据流程必须同时明确允许哪些 tracking 字段以及哪些身份只能在提交后派生，不能让全局合同与 task-local 步骤依赖解释性补全。
+
+## PLAN-T37-2-SESSION-LEGACY-TERM-CLOSURE
+
+- **Timestamp (Asia/Taipei):** `2026-08-02T10:08:23+08:00`
+- **Task ID:** `PLAN-T37-2-SESSION-LEGACY-TERM-CLOSURE`
+- **Skills invoked:** `superpowers:writing-plans`；本轮仅执行 PLAN 术语与错误码的定点修复，未调用实现、TDD、worktree 或发布类 skill。
+- **Key prompt/context:** 用户指出 T37.2 把 141 个 legacy TDD steps 称为 `executable Tasks`，并把 legacy step `38.G` 绑定到 `EXECUTABLE_TASK_INCOMPLETE`，与 PLAN 已定义的 68 session tasks / 141 legacy steps 数据模型不一致。
+- **Contract changes:** T37.2 现在要求 all 68 session tasks terminal and identity-aligned，并要求 141 个 legacy TDD steps 逐一映射且其 Target/Domain/profile evidence PASS；`EXECUTABLE_TASK_INCOMPLETE:38.G` 改为 `LEGACY_STEP_INCOMPLETE:38.G`。同步更新 Atomic goal、GREEN-1、RED 断言、Expected、质量审查焦点和 GREEN checkbox。没有新增 task、Work Package、Status 字段、evidence commit 或产品架构。
+- **Files changed:** `PLAN.md`、`AGENT_LOG.md`、`SPEC_PROCESS.md`。没有创建或修改实现代码、测试运行时工件、依赖、CI、Docker、发布或部署文件。
+- **Human intervention:** 用户直接授权执行最小修复；没有其他人工编辑。
+- **Verification:** 修改后运行 `git diff --check -- PLAN.md AGENT_LOG.md SPEC_PROCESS.md`；复查 T37.2 的 68/141 术语、`LEGACY_STEP_INCOMPLETE:38.G` 和既有 `source_commit`/`delivery_head` 约定。当前仓库没有实现代码，因此未运行 runtime tests。
+- **Implementation/Git boundary:** 未创建/切换 branch 或 worktree，未 commit、push、开 PR、发布或部署。
+- **Unfinished gates:** 本次 PLAN 非 tracking 语义修改使旧 PLAN 完整文件身份、`PlanSemanticDigestV2` 以及相关 approval/cold-start/baseline 结果失效；需要重新计算并重新执行相应门禁，正式实现继续受其阻断。
+- **Lesson learned:** 任务数量、legacy step 数量和执行证据粒度必须使用不同术语；聚合 verifier 可以检查 legacy coverage，但不能把没有独立状态的 legacy step建模为 session task。
+
+## PLAN-SPEC-RELEASE-BOOTSTRAP-MIN-FIX
+
+- **Timestamp (Asia/Taipei):** `2026-08-02T11:05:29+08:00`
+- **Task ID:** `PLAN-SPEC-RELEASE-BOOTSTRAP-MIN-FIX`
+- **Skills invoked:** 无；本轮仅执行 SPEC/PLAN 文档定点修复和只读校验。
+- **Key prompt/context:** 用户要求执行已确认的两项最小修复：解除 SPEC §11.2 对 Task 36 真实 GHCR 发布所有权的错误表述，并为 `(T04.1, 4.F, Bootstrap)` 增加 PEX-06 的唯一绑定。
+- **Contract changes:** `SPEC.md` §11.2 改为仅允许在 §8.4 受保护 release gate、最终源提交 SHA 冻结且同一 SHA CI 通过后使用受保护凭据执行真实 GHCR 交付；`PLAN.md` T04.1 Step 13 改为先逐字执行 4.F Bootstrap，再运行 4.F RED。没有新增 task、Work Package、编号或全局 profile。
+- **Files changed:** `SPEC.md`、`PLAN.md`，以及本条 append-only `AGENT_LOG.md` 和 `SPEC_PROCESS.md`。既有 PLAN 未提交改动已保留。
+- **Human intervention:** 用户直接授权执行最小修复；没有其他人工编辑。
+- **Subagent output/commit:** 未使用 subagent；未创建 commit、branch、worktree、PR、发布或部署。
+- **Verification:** 核心修复相对本轮修复前快照各只有一处目标语义行变化；随后为保持候选 PLAN 的 Authoritative Planning Inputs 一致，更新了当前 SPEC SHA-256、SPEC Git blob 和最后语义修订时间三项 provenance 字段。`git diff --check` 通过；确认旧 Task 36 GHCR ownership 句已移除，T36.2 仍为 zero-I/O，T37.1 仍为 Release/GHCR owner；确认 `(T04.1, 4.F, Bootstrap)` 逐字命令唯一出现在 named remaining-Atomic Step 13 且位于 RED 前。当前仓库没有实现代码，因此未运行 runtime tests。
+- **Unfinished gates:** SPEC/PLAN semantic identity、PlanSemanticDigestV2、M0/PLAN approval、独立 A/B review、cold-start 和 baseline 尚未重新计算或执行；本条不声称这些门禁通过。
+- **Lesson learned:** PEX-06 不能只按 raw command string 绑定；相同命令在不同 `legacy_id` 下必须分别闭合，发布所有权也应由 SPEC 的稳定 release-gate 语义约束，而不是绑定具体 PLAN task 编号。
+
+## PLAN-SPEC-RELEASE-BOOTSTRAP-IDENTITY-REVIEW
+
+- **Timestamp (Asia/Taipei):** `2026-08-02T11:15:03+08:00`
+- **Task ID:** `PLAN-SPEC-RELEASE-BOOTSTRAP-IDENTITY-REVIEW`
+- **Skills invoked:** 无；本轮执行候选身份复算和 fresh reviewer 结果登记。
+- **Key prompt/context:** 前一轮 SPEC 修改后，PLAN 的 Authoritative Planning Inputs 仍保留旧 SPEC SHA/blob；本轮刷新这两项及最后语义修订时间，并复核正式准入证据入口。
+- **Identity results:** `SPEC.md` SHA-256=`712619a07b9bcfc02bb9835c17c0123dd2079d9cbf8f18276b39d1f1ec0bf250`，Git blob=`e1a79152bde8ff7578e74e6e6a3b2b3bfd9b1ef8`；候选 `PLAN.md` 完整 SHA-256=`684b657eb1dfb8f44d057768d193904504995f1aef1087aa17d58153f4cb8f73`；`PlanSemanticDigestV2`=`397944858819aedcf634cbe4bd46aeb07dbf245ffecc674557c1eb2834acf93e`；Git HEAD=`7b4ea480cb724484f40f380b3c64f600a1c2f4ea`。
+- **Fresh reviewer output:** 无历史上下文的 reviewer `019fc071-1bf1-7d22-a078-258cdca76d7f` 返回两处目标修复文档一致性 `PASS`，并明确正式 admission 总门禁 `FAIL`；reviewer 未修改文件。该结果不是 M0、A/B、独立 PLAN review、human approval 或 cold-start 通过证据。
+- **Verification:** PLAN 的 SPEC SHA/blob 与当前 SPEC 一致，planning baseline `2521bd2e09874bad308545883d83e43224433594` 是当前 HEAD 祖先；正式 `process/evidence/admission-v3`、`m0.json`、PLAN result evidence 均不存在。未创建 commit、branch、worktree、PR、发布或部署。
+- **Unfinished gates:** 以上身份仅为候选输入；M0、PLAN_AUDIT A/B、PLAN_SPEC_COMPLIANCE、PLAN_EXECUTABILITY、人类 approval、异质 cold-start 和 APPROVED_DOCUMENT_BASELINE_V3 仍未通过，不能开始实现。
+
+## PLAN-SPEC-RELEASE-BOOTSTRAP-STATUS-IDENTITY-REFRESH
+
+- **Timestamp (Asia/Taipei):** `2026-08-02T11:43:31+08:00`
+- **Task ID:** `PLAN-SPEC-RELEASE-BOOTSTRAP-STATUS-IDENTITY-REFRESH`
+- **Skills invoked:** 无；本轮仅执行 SPEC 顶部状态稳定化后的身份刷新和文档校验。
+- **Key prompt/context:** 用户要求继续完成第 2 步：重新计算 SPEC/PLAN 身份并更新 PLAN provenance。上一轮已将 SPEC 顶部状态改为稳定的外部证据驱动表述。
+- **Contract changes:** 刷新 `PLAN.md` 的 Authoritative SPEC SHA-256、SPEC Git blob 和最后语义修订时间；未改变任务、命令、接口、依赖或追踪语义。
+- **Files changed:** `PLAN.md`，以及本条 append-only `AGENT_LOG.md` 和 `SPEC_PROCESS.md`。没有修改实现代码或运行时工件。
+- **Human intervention:** 用户直接授权继续执行最小修复；没有其他人工编辑。
+- **Subagent output/commit:** 未使用 subagent；未创建 commit、branch、worktree、PR、发布或部署。
+- **Identity results:** `SPEC.md` SHA-256=`556fb14ec8dc6c22834d1611f721316559600fd0bc2f6823ee8cfa7812c23ca8`，Git blob=`23ff5eb32b87f0d48c011a7535094cf7345bb451`；候选 `PLAN.md` 完整 SHA-256=`95559c42b500aa7ff6a413f210ecf01ee1ea835c4175f9973e4c23594de362f1`；按 §8.3 规则计算的 `PlanSemanticDigestV2`=`90e6a2f9df91d680a844cbbd91dd0863cf0f65cc2ac895f39a04ecfd3d73688f`；Git HEAD=`7b4ea480cb724484f40f380b3c64f600a1c2f4ea`。
+- **Verification:** 已核对 PLAN provenance 与当前 SPEC 身份一致；摘要输入为无 BOM UTF-8、LF，Task 区域包含 68 条 Status 和 68 条 Completion evidence 归一化；后续执行 `git diff --check`。
+- **Unfinished gates:** M0、PLAN_AUDIT A/B、PLAN_SPEC_COMPLIANCE、PLAN_EXECUTABILITY、人类 approval、异质 cold-start 和 APPROVED_DOCUMENT_BASELINE_V3 仍未通过；本条不声称正式准入通过。
+- **Lesson learned:** SPEC 内容冻结后，任何顶部状态变化都会使 SPEC raw SHA/blob 变化；必须先刷新 PLAN authoritative provenance，再重新计算 PLAN 完整身份和语义摘要。
+
+## PLAN-CANDIDATE-IDENTITY-RECOMPUTE
+
+- **Timestamp (Asia/Taipei):** `2026-08-02T11:59:10+08:00`
+- **Task ID:** `PLAN-CANDIDATE-IDENTITY-RECOMPUTE`
+- **Skills invoked:** 无；本轮仅按 SPEC §11.2 / PLAN §8.3 重算候选身份并登记外部记录。
+- **Key prompt/context:** 用户要求重新计算 PLAN 完整 SHA-256 和 `PlanSemanticDigestV2`，并记录到外部候选身份记录。
+- **Identity results:** `SPEC.md` SHA-256=`556fb14ec8dc6c22834d1611f721316559600fd0bc2f6823ee8cfa7812c23ca8`，Git blob=`23ff5eb32b87f0d48c011a7535094cf7345bb451`；候选 `PLAN.md` 完整 SHA-256=`95559c42b500aa7ff6a413f210ecf01ee1ea835c4175f9973e4c23594de362f1`；`PlanSemanticDigestV2`=`90e6a2f9df91d680a844cbbd91dd0863cf0f65cc2ac895f39a04ecfd3d73688f`；Git HEAD=`7b4ea480cb724484f40f380b3c64f600a1c2f4ea`。
+- **Computation evidence:** 输入 PLAN 为无 BOM UTF-8、无裸 CR；投影窗口为第 687 行起至第 11046 行前，归一化 68 条 Status、68 条 Completion evidence 和 1750 个 checkbox token；两种 SHA-256 实现结果一致。
+- **Admission status:** 以上仅是外部候选身份记录，不是 M0、PLAN A/B、独立审查、人类批准、cold-start 或 Approved-document Baseline 通过证据。
+
+## DOCUMENT-CONSISTENCY-REVIEW-RECHECK
+
+- **Timestamp (Asia/Taipei):** `2026-08-02T12:08:56+08:00`
+- **Task ID:** `DOCUMENT-CONSISTENCY-REVIEW-RECHECK`
+- **Skills invoked:** 文档规范一致性审查；未使用 code-review 流程。
+- **Key prompt/context:** 用户要求重新运行文档一致性审查，并明确在 M0、人工批准、cold-start、baseline 等 formal evidence 出现前不得实现或发布。
+- **Independent reviewer:** 无历史上下文的 document-only reviewer `019fc0a5-91b7-7280-9713-3214e3afe4dc`（Kierkegaard），只读检查，无文件修改。
+- **Review result:** `SPEC.md:4` 稳定状态行、`SPEC.md:2165–2214` 的 §11.2 发布语义、以及 PLAN 中 T36.2/T37.1 的发布所有权获得 `PASS`。Reviewer 对 4.F PEX-06 绑定和候选摘要只报告“本次未能独立证明”，没有发现命令缺失或所有权冲突。
+- **Local documentary cross-check:** `PLAN.md:2097` 的 4.F Bootstrap Atomic 命令由 `PLAN.md:2111` 的专属“Run 4.F remaining Atomic Bootstrap, then RED”checkbox 承接，且位于 4.F RED 前；当前候选身份为 SPEC SHA-256=`556fb14ec8dc6c22834d1611f721316559600fd0bc2f6823ee8cfa7812c23ca8`、SPEC blob=`23ff5eb32b87f0d48c011a7535094cf7345bb451`、PLAN SHA-256=`95559c42b500aa7ff6a413f210ecf01ee1ea835c4175f9973e4c23594de362f1`、`PlanSemanticDigestV2`=`90e6a2f9df91d680a844cbbd91dd0863cf0f65cc2ac895f39a04ecfd3d73688f`。
+- **Formal status:** formal `PLAN_SPEC_COMPLIANCE` / `PLAN_EXECUTABILITY`、M0、PLAN A/B、human approval、heterogeneous cold-start 和 `APPROVED_DOCUMENT_BASELINE_V3` 仍没有可确认的正式 evidence；本次文档复核不是这些门禁的替代品。正式实现、CI、发行和部署继续禁止。
+
+## SPEC-M0-READINESS-REVIEW
+
+- **Timestamp (Asia/Taipei):** `2026-08-02T12:31:08+08:00`
+- **Task ID:** `SPEC-M0-READINESS-REVIEW`
+- **Skills invoked:** 文档规范一致性审查；未使用 code-review 流程。
+- **Key prompt/context:** 用户授权执行 SPEC §11.2 M0。M0 要求独立 readiness review、精确身份核对、课程/Harness 覆盖核对、已知阻断项核对和人类批准；它不授权实现或发布。
+- **Independent reviewer:** 无历史上下文的 document-only reviewer `019fc0b8-ef88-72f1-b627-ca7bc21f282c`（Confucius），只读；未修改文件。
+- **Identity precheck:** 正式 SPEC path=`D:\code\VesperCode\SPEC.md`；SPEC SHA-256=`556fb14ec8dc6c22834d1611f721316559600fd0bc2f6823ee8cfa7812c23ca8`；Git blob=`23ff5eb32b87f0d48c011a7535094cf7345bb451`；Git HEAD=`7b4ea480cb724484f40f380b3c64f600a1c2f4ea`；PLAN provenance 与 SPEC SHA/blob 一致。
+- **Local precheck:** SPEC 章节包含 9 个用户故事、FR、NFR/威胁模型、架构、数据模型、凭据/分发/部署、技术选型、验收、风险和 Coding Agent Harness 机制设计；`process/evidence/admission-v3/` 当前不存在。
+- **Reviewer result:** reviewer 未完成原始 SPEC SHA-256、课程/Harness 逐项覆盖、内部一致性和 §11.2 关闭清单，按 fail-closed 返回 `FAIL`。该结果证明 M0 review attempt 未完成，不证明 SPEC 已存在所列内容缺陷；不能生成 M0 PASS 或批准记录。
+- **Human approval:** 尚未发生。M0 仍需要人类批准精确 SPEC path/SHA/blob/HEAD；agent 不代签。
+- **Unfinished gates:** M0、PLAN A/B、正式 PLAN_SPEC_COMPLIANCE、PLAN_EXECUTABILITY、human approval、heterogeneous cold-start 和 `APPROVED_DOCUMENT_BASELINE_V3` 均未通过。正式实现、CI、发行和部署继续禁止。
+
+## SPEC-M0-READINESS-REVIEW-RETRY
+
+- **Timestamp (Asia/Taipei):** `2026-08-02T14:39:06+08:00`
+- **Task ID:** `SPEC-M0-READINESS-REVIEW-RETRY`
+- **Skills invoked:** 文档规范一致性审查；未使用 code-review 流程。
+- **Key prompt/context:** 用户要求重新完成独立 M0 checklist。新的无历史上下文 document-only reviewer `019fc12c-624e-70f0-a9b4-52e22abba059`（Einstein）完整返回 M0-01 至 M0-06。
+- **Identity:** formal SPEC path=`D:\code\VesperCode\SPEC.md`；current SPEC SHA-256=`556fb14ec8dc6c22834d1611f721316559600fd0bc2f6823ee8cfa7812c23ca8`；current Git blob=`23ff5eb32b87f0d48c011a7535094cf7345bb451`；Git HEAD=`7b4ea480cb724484f40f380b3c64f600a1c2f4ea`；PLAN provenance 与当前 SPEC SHA/blob 一致。
+- **M0 checklist:** M0-01 `FAIL`（planning baseline `2521bd2e09874bad308545883d83e43224433594` 中 SPEC blob=`27bba78767edf69826e62dbff0e2d2eb11b7a580`，不等于当前 SPEC blob）；M0-02 `PASS`（课程/Harness 强制内容覆盖）；M0-03 `PASS`（范围、契约、安全、发布语义未发现内部冲突）；M0-04 `FAIL`（双平台 CI、技术门禁、cold-start、loopback/发布关闭项缺少可接受的独立运行/批准证据）；M0-05 `PASS`（Task 34、T36/WP36、T37.1 和受保护凭据边界一致）；M0-06 `FAIL`（尚无人类批准精确 SPEC path/SHA/blob/HEAD）。
+- **Independent verification:** Node Git read-only check confirmed `git ls-tree 2521bd2e09874bad308545883d83e43224433594 -- SPEC.md` returns blob `27bba78767edf69826e62dbff0e2d2eb11b7a580`, while current `git hash-object --no-filters SPEC.md` returns `23ff5eb32b87f0d48c011a7535094cf7345bb451`.
+- **Reviewer recommendation:** `FAIL`; M0 is not passed. No `m0.json` or admission PASS was fabricated.
+- **Unfinished gates:** PLAN A/B、正式 PLAN_SPEC_COMPLIANCE、PLAN_EXECUTABILITY、human approval、heterogeneous cold-start 和 `APPROVED_DOCUMENT_BASELINE_V3` 仍未通过；正式实现、CI、发行和部署继续禁止。
+
+## M0-04-CLOSURE-MATRIX-CANDIDATE
+
+- **Timestamp (Asia/Taipei):** `2026-08-02T14:59:55+08:00`
+- **Task ID:** `M0-04-CLOSURE-MATRIX-CANDIDATE`
+- **Skills invoked:** 文档规范一致性审查；未使用 code review 或实现类流程。
+- **Key prompt/context:** 用户要求按既定准入顺序继续执行：先修复身份并建立 M0-04 关闭证据，再重新执行独立 M0；缺少证据的项目必须保持 `FAIL`。
+- **Candidate identity:** SPEC SHA-256=`556fb14ec8dc6c22834d1611f721316559600fd0bc2f6823ee8cfa7812c23ca8`；SPEC Git blob=`23ff5eb32b87f0d48c011a7535094cf7345bb451`；PLAN SHA-256=`8ddb16c96d674d4c9dc0ffd83446992e0fdee18d5b4b2bfd16d269d5d0d4bb94`；`PlanSemanticDigestV2`=`0b7b0de39dd7cd618f5957e2ca23130560646260a5b27886d9143424cd81c938`；AGENTS SHA-256=`f4e68e302cfb9cc9f383704ef3be9eb8975277a0715e5357e65070cad2738656`。
+- **Closure matrix:** `SPEC_PROCESS.md` §21 逐项记录双平台 CI、canonical cursor、逐调用凭据复验、PlanSemanticDigestV2、T01–T03/toolchain cold-start、Task 2 loopback OCI round-trip、以及 GHCR protected release gate 的 SPEC 章节、PLAN 所有者、可观察约束、预期路径、当前状态和 reviewer 结论。
+- **Evidence status:** 当前 `process/evidence/admission-v3/`、CI/delivery evidence、gate evidence、实现代码和测试均不存在；七项均按 fail-closed 记为 `M0-04=FAIL`。本次没有创建 `m0.json`、admission PASS、cold-start PASS 或发布 evidence。
+- **Human intervention:** 用户授权执行既定文档准入方案；没有其他人工编辑。
+- **Verification:** 从当前原始字节重新计算 SPEC/PLAN/AGENTS 身份；PLAN 语义窗口核对为 68 条 Status、68 条 Completion evidence、1750 个 checkbox；未修改 SPEC.md 或 PLAN.md 语义内容。
+- **Implementation/Git boundary:** 没有实现、CI、Docker、凭据调用、外部发布、部署、branch、worktree 或 PR 操作；候选冻结提交尚未创建。
+- **Unfinished gates:** 当前仍需候选冻结提交、独立 M0-01—M0-06 checklist、人工 M0 身份批准、PLAN A/B、PLAN_SPEC_COMPLIANCE、PLAN_EXECUTABILITY、人工 PLAN 批准、异构 cold-start 和 `APPROVED_DOCUMENT_BASELINE_V3`。
+- **Lesson learned:** M0-04 的“关闭”必须由当前候选身份绑定的可观察证据证明；文档中存在任务、命令或接口不能替代执行、reviewer independence 和批准证据。
