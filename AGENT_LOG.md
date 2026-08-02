@@ -451,3 +451,19 @@
 - **Implementation/Git boundary:** 未开始实现、CI、Docker、凭据调用、发布、部署或 cold-start；候选提交之后尚未生成 formal admission evidence。
 - **Unfinished gates:** M0-01—M0-06、人工 M0 身份批准、PLAN A/B、PLAN_SPEC_COMPLIANCE、PLAN_EXECUTABILITY、人工 PLAN 批准、异构 cold-start 和 `APPROVED_DOCUMENT_BASELINE_V3` 仍未完成。
 - **Lesson learned:** 候选冻结提交提供不可变引用，但不能把 Git commit、文件 hash 或 verifier 一致性误写成人工批准或 admission PASS。
+
+## SPEC-M0-INDEPENDENT-REVIEW-RETRY-CANDIDATE-FREEZE
+
+- **Timestamp (Asia/Taipei):** `2026-08-02T15:20:03+08:00`
+- **Task ID:** `SPEC-M0-INDEPENDENT-REVIEW-RETRY-CANDIDATE-FREEZE`
+- **Skills invoked:** 文档规范一致性审查；document-only reviewer；未使用 code review、实现、CI、Docker 或发布流程。
+- **Key prompt/context:** 用户要求在修复 SPEC baseline 身份并建立 M0-04 关闭矩阵后，重新执行独立 M0 checklist；缺失正式证据必须 fail-closed。
+- **Independent reviewer:** 新的无历史上下文 reviewer `019fc14f-5d02-7543-9bde-5860c0c5ed93`（Singer），只读检查，未修改文件。
+- **Candidate identity:** candidate freeze=`040ad83b98a1a91a48c823aedd7314dada906da4`；identity-registration HEAD=`e5bb452cdc44c63b1819d6e4abcae448ea9027ca`；SPEC SHA-256=`556fb14ec8dc6c22834d1611f721316559600fd0bc2f6823ee8cfa7812c23ca8`；SPEC blob=`23ff5eb32b87f0d48c011a7535094cf7345bb451`；PLAN SHA-256=`8ddb16c96d674d4c9dc0ffd83446992e0fdee18d5b4b2bfd16d269d5d0d4bb94`；PLAN blob=`c4a1517b0afae1c0891bf2d90054c11b7ceb0944`；PlanSemanticDigestV2=`0b7b0de39dd7cd618f5957e2ca23130560646260a5b27886d9143424cd81c938`。
+- **M0 checklist:** M0-01 `PASS`（SPEC-only baseline and provenance agree）；M0-02 `PASS`（课程/Harness coverage）；M0-03 `PASS`（SPEC internal consistency）；M0-04 `FAIL`（§21 七项 formal closure evidence all missing）；M0-05 `PASS`（Task 34/T36/T37.1 publication ownership consistent）；M0-06 `FAIL`（human approval not found）。
+- **Reviewer recommendation:** `FAIL`。Reviewer 明确没有把“尚未实现”判为 SPEC 内容缺陷，但没有将计划文本、本地 digest 或候选登记当作 formal execution/approval evidence。
+- **Formal artifact boundary:** 不创建或登记 `m0.json`、admission PASS、PLAN A/B、独立 PLAN review、human approval、cold-start 或 baseline artifact；这些均不满足前置条件。
+- **Human intervention:** 用户授权重新执行 M0；没有人工批准精确身份。
+- **Verification:** reviewer 核对当前工作区 clean、candidate freeze 与 identity-registration 提交关系、SPEC-only baseline blob、当前完整身份和 §21 矩阵；没有实现或发布操作。
+- **Unfinished gates:** M0 总体、M0-04、M0-06、PLAN_AUDIT_V3_A/B、PLAN_SPEC_COMPLIANCE、PLAN_EXECUTABILITY、人工批准、异构 cold-start 和 `APPROVED_DOCUMENT_BASELINE_V3` 仍未通过；正式实现、CI、发行和部署继续禁止。
+- **Lesson learned:** baseline 身份修复后 M0-01 已关闭，但没有可观察的技术/执行证据不能把 M0-04 推断为 PASS；agent 的 checklist 结果也不能代替 M0-06 人工决定。

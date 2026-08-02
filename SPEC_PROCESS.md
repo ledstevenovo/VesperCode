@@ -1457,3 +1457,18 @@ M0-02 确认 SPEC 覆盖用户故事、FR/NFR、架构、数据模型、凭据�
 两套独立摘要 verifier 均从冻结后的 `PLAN.md` 原始字节计算出 `PlanSemanticDigestV2=0b7b0de39dd7cd618f5957e2ca23130560646260a5b27886d9143424cd81c938`：Verifier A 使用 Node `crypto.createHash` 的行索引投影；Verifier B 使用 Node `webcrypto.subtle.digest` 的行映射投影。两者窗口均为第 687 行（含）至第 11046 行（不含），均确认无 BOM、无裸 CR。
 
 冻结后工作区 `git status --short` 为空。此身份登记只记录候选输入和可重复核验结果；M0-01—M0-06、人工批准、PLAN A/B、独立 PLAN 审查、cold-start 和 Approved-document Baseline 仍未通过。
+
+## 23. 独立 M0 checklist 重跑结果
+
+本轮由新的无历史上下文 document-only reviewer `019fc14f-5d02-7543-9bde-5860c0c5ed93`（Singer）针对候选冻结提交 `040ad83b98a1a91a48c823aedd7314dada906da4` 执行完整 M0-01—M0-06。身份登记提交 `e5bb452cdc44c63b1819d6e4abcae448ea9027ca` 仅追加 `AGENT_LOG.md`/`SPEC_PROCESS.md`，不改变候选 SPEC/PLAN/AGENTS 字节。
+
+| M0 项目 | 结论 | 依据 |
+| --- | --- | --- |
+| M0-01 identity/provenance | `PASS` | SPEC-only planning baseline `cf4bcab...` 的 SPEC blob 为 `23ff5eb32b87f0d48c011a7535094cf7345bb451`；PLAN provenance、课程文件和 AGENTS 身份与候选一致。 |
+| M0-02 course/Harness coverage | `PASS` | SPEC 覆盖问题/范围、9 个用户故事、FR/NFR、Harness 机制、架构/数据模型、凭据威胁模型、分发、验收、风险和机制演示。 |
+| M0-03 SPEC internal consistency | `PASS` | 未发现范围、架构、数据、安全、凭据、验证、非目标或验收之间的内部冲突。 |
+| M0-04 known closure evidence | `FAIL` | §21 七项矩阵逐项为 FAIL：双平台 CI、cursor、逐调用凭据复验、正式双 verifier、T01–T03/toolchain cold-start、Task 2 loopback/OCI round-trip、GHCR protected gate 均无正式绑定证据。 |
+| M0-05 publication ownership | `PASS` | Task 34 只复现，T36/T36.2/WP36 为 pure zero-I/O verifier，T37.1 独占 GitHub Release/GHCR/Render 和终态外部操作。 |
+| M0-06 human approval | `FAIL` | 未找到人工批准精确 SPEC path、SPEC SHA-256、SPEC blob 和候选 Git HEAD 的记录；候选登记和 agent reviewer 不能代替人工批准。 |
+
+Reviewer 的总体 recommendation 为 `FAIL`。Reviewer 明确未将“尚未实现”当作 SPEC 内容缺陷；M0-04 的 FAIL 是正式关闭证据缺失，M0-06 的 FAIL 是人工决策缺失。由于六项未全部 PASS，本轮不进入人工 M0 批准、PLAN A/B、PLAN_SPEC_COMPLIANCE、PLAN_EXECUTABILITY、cold-start 或 baseline，也不创建 `m0.json`、任何 admission PASS artifact 或其他 formal evidence。
