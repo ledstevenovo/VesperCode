@@ -1901,3 +1901,44 @@ Agent 指出 `CREDENTIAL_URL` 的通用 token-boundary 句可能被理解为要�
 本次冷启动过程有效，但未通过。已据此对 `PLAN.md` 做最小合同修订：将测试凭据样本改为运行时字节拼接，令 T01.1 明确拥有 `.gitignore` 的 `.venv-gate/` 条目，给 Ruff 增加 `.venv-gate` 排除，新增只针对已存在路径的 `GATE_BOOTSTRAP_OFFLINE_V1`，将完整 `GATE_OFFLINE_V1` 延后到 `1.B` 文件存在后，并要求 wrapper 使用冻结 `.venv-gate\Scripts\python.exe`。该修订不改变 `SPEC.md` 产品语义。
 
 下一步必须从修订后的候选文档、新的 disposable worktree 和全新无历史上下文的 Claude Code session 重新尝试 `T01.1`；在重新冷启动结果记录完成前，不得开始正式实现。
+
+## 45. CS-02 Claude Code 冷启动结果与最小规则修订（2026-08-03）
+
+### 45.1 试作范围与过程裁决
+
+- **报告：** `CS-02`，任务 `T01.1`，从 `1.Aa` 开始。
+- **Agent 与环境：** Claude Code；试作目录为 `D:\coldstarts\VesperCode-claude-t01-1-r2`，分支为 `coldstart/claude-t01-1-20260803-r2`；报告记录 PATH Python 3.12.4。
+- **时间：** 报告记录开始 `2026-08-03T18:07:32+08:00`，停止 `2026-08-03T19:05:54+08:00`，约 59 分钟。
+- **试作边界：** 无提交、无合并；试作文件、分支和 evidence 不得作为正式实现或完成证据。
+- **过程结论：** `TRIAL_COMPLETE`。Agent 在出现实质性阻断后停止是允许的；这不等同于 `COLD_START_PASS`。
+- **证据补充：** 报告正文没有独立列出“全新 session、无历史 memory、初始只提供 `SPEC.md`/`PLAN.md`”三项启动事实；正式过程证据应保留启动提示或 session 记录，不能只由试作结果反推。
+
+### 45.2 实际进度与发现分级
+
+- `1.Aa`：probe、预期 RED、GREEN 后 6/6 `AaIntegrityTests` 通过。
+- `1.Ab`：lock 解析、21 条目审查通过。
+- `1.Ac`：materialize、evidence、pytest、Ruff check、gate scan 和 `git diff --check` 通过；Ruff format/Mypy 未通过。
+- `1.B`：预期 RED 和 Target GREEN 通过；Domain 未完成。
+
+本次发现按新的冷启动规则分级：
+
+1. **F1：`NON-BLOCKING`/`CLARIFY`。** Ab/Ac 测试需要规定覆盖和通过条件，但不需要把所有辅助测试源码逐行预写；Agent 可在不改变契约的前提下完成 typed/formatted 测试。
+2. **F2：`BLOCKING`。** PLAN 原先要求的精确测试源码与 Ruff format closure 不相容，属于不可通过的文档组合。
+3. **F3：`BLOCKING`。** 同一精确测试源码与 strict Mypy closure 不相容，属于不可通过的文档组合。
+4. **F4：`BLOCKING`。** 1.B 要求六类稳定结果，但只定义了一个稳定码；Agent 不能自行发明其余公开或 task-local taxonomy。
+5. **F5：`NON-BLOCKING`。** Mypy 的重复模块发现是本地模块输入选择问题，已通过唯一 Mypy 源路径规则处理。
+6. **F6：`NON-BLOCKING`。** 字节码污染是运行环境实现细节；已明确直接 Python 命令和 wrapper 使用 `PYTHONDONTWRITEBYTECODE=1`。
+7. **F7：`NON-BLOCKING`。** 未跟踪目录聚合是 Git 枚举实现细节；已明确使用文件级未跟踪输出并解析嵌套路径。
+
+### 45.3 采用的最小 PLAN 修订
+
+- 增加 `BLOCKING`、`CLARIFY`、`NON-BLOCKING` 的判定边界，以及 `TRIAL_COMPLETE`、`COLD_START_PASS`、`FORMAL_READY` 的区别。
+- 保留六个 Aa 测试的精确源代码；将 Ab/Ac 改为名称、覆盖和通过条件合同，并明确添加时点。
+- 修正 Aa 测试中的回调类型和 fixture 构造，使精确测试块可满足 Ruff/Mypy closure；Mypy 不再重复传入 `scripts/gate_scan.py`。
+- 增加 task-local 的六行 1.B 稳定 taxonomy、固定优先级和 Domain 覆盖要求；未扩展 SPEC 的公开错误接口。
+- 增加字节码防止和文件级 Git 未跟踪枚举的实现备注；这些备注不是额外审批门禁。
+- 本轮未修改 `SPEC.md`，未创建、接受或合并正式实现代码。
+
+### 45.4 下一步
+
+CS-02 的试作记录有效，但不能作为冷启动 PASS。完成本轮文档提交后，必须由全新无历史上下文的 Claude Code session 按预先记录的 cold-start boundary 重试；在 `COLD_START_PASS` 和人工确认之前，正式实现仍禁止开始。

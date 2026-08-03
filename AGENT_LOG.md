@@ -755,3 +755,16 @@
 - **Timebox caveat:** The report states approximately 40 minutes of active work while wall-clock time spans about 3 hours 42 minutes; possible machine sleep means strict 1–2 hour compliance is not claimed.
 - **Next gate:** A new candidate document revision and a new fresh, no-history Claude Code cold-start of `T01.1` are required. Formal implementation remains prohibited until the revised trial findings are recorded. Trial artifacts are disposable and must not be reused.
 - **Lesson learned:** A passing utility suite is insufficient when the scan sees its own fixtures or when a pre-RED profile names paths that a later behavior step has not created; executable path, source payload, ignore, and profile scope must all be explicit.
+
+## CS-02-T01.1-CLAUDE-20260803
+
+- **Timestamp (Asia/Taipei):** `2026-08-03T19:28:15+08:00` (recorded during document review; trial report records `18:07:32`–`19:05:54`).
+- **Task ID:** `CS-02-T01.1-CLAUDE-20260803`.
+- **Skills invoked:** None for the document-only repair; no formal implementation skill was used.
+- **Key prompt/context:** Review the supplied CS-02 Claude Code cold-start report and execute the minimum process repair without creating formal implementation code.
+- **Agent and boundary:** Claude Code trial in `D:\coldstarts\VesperCode-claude-t01-1-r2` on `coldstart/claude-t01-1-20260803-r2`; no trial commit or merge was accepted. The report records `1.Aa` complete, `1.Ab` complete, `1.Ac` partial, and `1.B` Target GREEN with Domain blocked.
+- **Subagent output:** The report identified F1–F7. F2/F3 were confirmed document/closure contradictions; F4 was a missing task-local stable taxonomy. F1 was downgraded to `NON-BLOCKING`/`CLARIFY`; F5–F7 were downgraded to `NON-BLOCKING` implementation findings.
+- **Human intervention:** Applied the minimum PLAN correction; formal implementation authorization remains **NO** until a fresh trial reaches its recorded boundary without a `BLOCKING` finding.
+- **Document changes:** Added the cold-start blocking rubric and outcome vocabulary; separated task ID from cold-start boundary; made only Aa tests raw-source exact; made Ab/Ac tests Agent-authored coverage contracts; made the exact Aa callbacks/fixtures typed and formatter-compatible; removed the duplicate explicit Mypy source path; defined six task-local 1.B failure codes and Domain coverage; documented bytecode prevention and file-level Git enumeration as local implementation notes.
+- **Verification:** No formal source/test implementation was created or changed. Document consistency and `git diff --check` remain to be run before commit.
+- **Lesson learned:** A cold-start trial can be complete while still blocked. The PLAN must specify public contracts and completion conditions, but must not turn every local implementation choice into a stop condition.
