@@ -1838,3 +1838,66 @@ Agent 指出 `CREDENTIAL_URL` 的通用 token-boundary 句可能被理解为要�
 - PLAN 中旧 admission gate、PlanAuditContractV3、前版 T37.1 和前版 T37.2 四个历史附录已从当前 handoff 移出，原文归档于 `docs/process/superseded-plan-history.md`。
 - 归档内容仅用于过程历史，不属于冷启动 Agent 的输入、当前 task contract、验收标准或正式实现前置条件。
 - 本轮没有修改 SPEC 的产品、接口、安全或验收语义，也没有创建或接受正式实现代码；冷启动启动仍需人工确认。
+
+## 43. Claude Code 冷启动前确认（2026-08-03）
+
+- **主开发 Agent：** OpenAI Codex
+- **冷启动 Agent：** Claude Code
+- **选定任务：** `T01.1`
+- **起始 checkpoint：** `1.Aa`
+- **时间限制：** 约 1—2 小时
+- **试作目录：** `D:\coldstarts\VesperCode-claude-t01-1`
+- **试作分支：** `coldstart/claude-t01-1-20260803`
+- **试作结果：** 不得合并或作为正式任务完成证据
+- **已知未解决歧义：** 无
+- **人工确认：** 允许开始冷启动
+
+## 44. CS-01 Claude Code 冷启动结果：过程有效但阻断（2026-08-03）
+
+### 44.1 结论与范围
+
+- **结果：** `BLOCKING`；`T01.1` 正式实现授权仍为 **NO**。
+- **Agent：** Claude Code；与主开发 Agent OpenAI Codex 类型不同，使用全新 session，无历史对话或 memory；初始输入仅为 `SPEC.md` 和 `PLAN.md`。
+- **任务与边界：** 选定 `T01.1`，从 `1.Aa` 开始；试作目录为 `D:\coldstarts\VesperCode-claude-t01-1`，试作分支为 `coldstart/claude-t01-1-20260803`。试作代码、提交和分支均为验证性产物，不得合并或作为正式完成证据。
+- **实际进度：** `1.Aa` 完成，`1.Ab` 完成，`1.Ac` 部分完成，`1.B` 未开始。
+
+### 44.2 实际验证结果
+
+- Python 3.12 probe：通过。
+- `1.Aa` RED/GREEN：通过。
+- `resolve-lock`：首次因 Agent 自身的直接依赖名称归一化错误失败，修正后通过。
+- materialize：通过。
+- `1.Ac` integrity：8/8 通过。
+- changed-file Gate scan：失败，20 个匹配。
+- Ruff 根目录扫描：失败。
+- Mypy：因 `spikes` 尚未创建而失败。
+- `git diff --check`：通过。
+
+### 44.3 阻断与非阻断发现
+
+阻断发现如下：
+
+1. **B1：** `AaIntegrityTests` 源码本身包含完整凭据样本，Gate scan 扫描自身会命中。
+2. **B2：** `.gitignore` 为空，仓库内 `.venv-gate` 因而进入 changed-file union。
+3. **B3：** Ruff 使用 `-- .`，PLAN 未明确排除 `.venv-gate`，导致扫描第三方虚拟环境文件。
+4. **C1：** `1.Ac` 在 `1.B` 创建 `spikes` 前要求执行包含 `spikes` 的 Mypy 命令。
+5. **C2：** PowerShell wrapper 使用 PATH Python，与后续 Gate 命令必须使用冻结 `.venv-gate` 解释器的合同冲突。
+
+非阻断发现如下：
+
+- Agent 曾将 direct dependency 名称归一化错误，之后已自行修正。
+- Agent 曾修正 Ab/Ac 测试断言错误；这不改变上述文档阻断。
+
+### 44.4 时间、环境与裁决
+
+- 开始时间：`2026-08-03 11:45:33 +08:00`。
+- 停止时间：`2026-08-03 15:27:36 +08:00`。
+- 报告称活跃执行时间约 40 分钟；墙钟时长与活跃时间不一致，可能受到机器休眠影响，因此不宣称严格满足完整 1–2 小时时间窗。
+- 环境本身没有造成此次结果的阻断；阻断来自任务合同、扫描范围和验证顺序。
+- 主仓库未接受试作代码，未创建正式实现提交、合并或 PR；试作产物不复用。
+
+### 44.5 处理决定
+
+本次冷启动过程有效，但未通过。已据此对 `PLAN.md` 做最小合同修订：将测试凭据样本改为运行时字节拼接，令 T01.1 明确拥有 `.gitignore` 的 `.venv-gate/` 条目，给 Ruff 增加 `.venv-gate` 排除，新增只针对已存在路径的 `GATE_BOOTSTRAP_OFFLINE_V1`，将完整 `GATE_OFFLINE_V1` 延后到 `1.B` 文件存在后，并要求 wrapper 使用冻结 `.venv-gate\Scripts\python.exe`。该修订不改变 `SPEC.md` 产品语义。
+
+下一步必须从修订后的候选文档、新的 disposable worktree 和全新无历史上下文的 Claude Code session 重新尝试 `T01.1`；在重新冷启动结果记录完成前，不得开始正式实现。

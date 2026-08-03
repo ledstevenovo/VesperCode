@@ -135,6 +135,7 @@ The paths below lock file ownership before task decomposition. Files are small, 
 | `SPEC_PROCESS.md` | Brainstorming history plus cold-start findings and resulting approved SPEC/PLAN revisions |
 | `README.md` | Installation, usage, layout, credential setup, distribution, deployment, threat boundary, and limitations |
 | `REFLECTION.md` | Student-authored reflection; implementation agents do not author the body |
+| `.gitignore` | Task 1-owned ignore rule for the disposable `.venv-gate/` feasibility environment |
 | `scripts/scan_credentials.py` | Redacted filename-only credential-pattern gate over an explicit changed-file set |
 | `scripts/bootstrap_gate_env.py` | Task 1-only resolver/materializer that creates the reviewed hash lock, isolated `.venv-gate`, and frozen gate-toolchain evidence |
 | `scripts/run_gate_checks.py` | Sole Task 1–3 command adapter that verifies the gate environment/lock identities and supplies explicit pytest/Ruff/Mypy configuration |
@@ -515,7 +516,8 @@ The following is the complete shared-modifier exception table. `Read` never gran
 
 | Profile | Required once per session task | Additional scope |
 |---|---|---|
-| `GATE_OFFLINE_V1` | Run the displayed Target and Domain commands, then exactly `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py ruff-format -- .`, `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py ruff-check -- .`, `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py mypy -- spikes tests/feasibility scripts/run_gate_checks.py scripts/bootstrap_gate_env.py`, `powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File scripts\scan_gate_changed_files.ps1`, and `git diff --check`. | Tasks 1–3 use only the reviewed, hash-locked feasibility environment; the gate scan consumes only the staged, unstaged, and untracked changed-file union and may emit normalized repository-relative paths plus stable rule ids, never matched values or context. |
+| `GATE_BOOTSTRAP_OFFLINE_V1` | After 1.Ac materialization, run exactly `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py ruff-format -- scripts tests/feasibility`, `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py ruff-check -- scripts tests/feasibility`, `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py mypy -- tests/feasibility/gate scripts/run_gate_checks.py scripts/bootstrap_gate_env.py scripts/gate_scan.py`, `powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File scripts\scan_gate_changed_files.ps1`, and `git diff --check`. | This is the 1.Ac closure. It uses only paths already created by T01.1, the frozen `.venv-gate\Scripts\python.exe` interpreter, the gate configuration, and the task-owned `.gitignore`; it does not require or create `spikes`, does not use PATH Python, and does not perform network resolution. |
+| `GATE_OFFLINE_V1` | Run the displayed Target and Domain commands, then exactly `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py ruff-format -- .`, `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py ruff-check -- .`, `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py mypy -- spikes tests/feasibility scripts/run_gate_checks.py scripts/bootstrap_gate_env.py scripts/gate_scan.py`, `powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File scripts\scan_gate_changed_files.ps1`, and `git diff --check`. | Tasks 1–3 use only the reviewed, hash-locked feasibility environment; the gate scan consumes only the staged, unstaged, and untracked changed-file union and may emit normalized repository-relative paths plus stable rule ids, never matched values or context. The full profile remains applicable after the required `spikes` paths exist. |
 | `GATE_WORKTREE_BOOTSTRAP_V1` | `python scripts/bootstrap_gate_env.py materialize --lock requirements/gate.lock --evidence gates/evidence/gate-toolchain-v1.json --require-existing-evidence` before any T01.2/T02/T03 RED in a fresh agent/worktree. | Creates only local `.venv-gate`; requires existing exact lock/evidence and performs no resolution, evidence rewrite, or network. |
 | `FORMAL_OFFLINE_V1` | task Target/Domain; `python -m pytest -q`; `python -m ruff format --check .`; `python -m ruff check .`; `python -m mypy src tests`; `python scripts/scan_credentials.py --changed --redact --fail-on-match`; `git diff --check` | No network, credential, external publication, or undeclared environment use. |
 | `WINDOWS_REAL_V1` | exact task-specific Windows/NTFS/WinCred/pipx/browser command and redacted evidence | Required when the task Verification names Windows, Win32, NTFS, WinCred, installed package, or local browser evidence. |
@@ -637,6 +639,7 @@ Every session task appears in exactly one row. All legacy steps within one task 
 **SPEC contracts:** SPEC §0.1 `CanonicalRelativePathV1`; §1.4.3; §4.1 behavior 6–10; §4.3 behavior 4–5; §5.2; §5.5; §10.1 AC-01, AC-15, AC-21, AC-26, AC-31; §10.3 Windows integration.
 
 **Files:**
+- Modify: `.gitignore`
 - Create: `requirements/gate.in`
 - Create: `requirements/gate.lock`
 - Create: `gates/pytest.ini`
@@ -656,7 +659,7 @@ Every session task appears in exactly one row. All legacy steps within one task 
 
 **Cold-start trial scope:** The selected cold-start task is `T01.1`. The trial starts at the `1.Aa` checkpoint and may continue into `1.Ab`, `1.Ac`, and `1.B` until the Agent reaches a material uncertainty, the approximately two-hour timebox, or a declared task boundary. `1.Aa` is a checkpoint, not a separate task or a completion claim. The Agent may stop and report questions, blockers, task-size findings, or environment failures instead of guessing or forcing an implementation. The prior bounded `1.Aa` run remains sub-scope evidence only; it is not upgraded to a full `T01.1` cold-start result. The trial may create temporary commits for inspection, but no trial commit or evidence is a formal implementation or merge candidate.
 
-**Cold-start boundary:** In §1.A the Agent may inspect and establish the gate bootstrap inputs and integrity checks. The 1.Aa runner and gate-scan utility tests must use test-first RED/GREEN, but they are prerequisite utility tests rather than a Task 1 product-behavior RED. §1.B is the first Task 1 behavior RED. The initial context supplied to the Agent is only `SPEC.md` and `PLAN.md`; during the disposable attempt it may normally discover repository files and run declared commands, and must pause only when the documents or discovered environment leave a material question unresolved.
+**Cold-start boundary:** In §1.A the Agent may inspect and establish the gate bootstrap inputs and integrity checks. The 1.Aa runner and gate-scan utility tests must use test-first RED/GREEN, but they are prerequisite utility tests rather than a Task 1 product-behavior RED. §1.B is the first Task 1 behavior RED. The initial context supplied to the Agent is only `SPEC.md` and `PLAN.md`; during the disposable attempt it may normally discover repository files and run declared commands, and must pause only when the documents or discovered environment leave a material question unresolved. The task-owned `.gitignore` must contain exactly `.venv-gate/` so the disposable gate environment cannot enter changed-file scans.
 
 For the next trial, the selected task is `T01.1` and the expected first
 checkpoint is `1.Aa`. Reaching the first six named integrity tests is recorded
@@ -665,7 +668,7 @@ T01.1 steps or stop with a truthful blocker before the timebox expires.
 
 **Interfaces:**
 - **Consumes / Produces (1.A):** Consumes the reviewed direct gate requirements (`pytest>=8,<9`, Ruff, Mypy, pywin32, and Docker SDK) from `https://pypi.org/simple`. Produces the complete hash-locked `requirements/gate.lock`, an isolated `.venv-gate`, one closed toolchain evidence record at `gates/evidence/gate-toolchain-v1.json`, the existing closed runner commands `pytest`, `ruff-format`, `ruff-check`, and `mypy`, and the fixed `scripts/scan_gate_changed_files.ps1` gate scan. Runner syntax is `<runner> <closed-command> -- <tool-arguments>`: `--` is the command-line separator, is consumed during runner parsing, and is not part of the forwarded tuple; the runner forwards every argument after it unchanged and must not require the consumed literal to remain in parsed arguments. The gate scan takes no caller-supplied path, rule, regex, or output-mode argument; it deterministically enumerates the repository-relative staged, unstaged, and untracked changed-file union, scans only regular files inside the repository, emits only sorted unique `(path, rule_id)` facts, and exits nonzero on a credential match, Git enumeration failure, path escape, non-regular object, or required-file read failure without printing any matched value or context.
-- **1.Aa test seams (not product interfaces):** `scripts/run_gate_checks.py` exposes `build_closed_argv(command: str, forwarded_args: tuple[str, ...]) -> tuple[str, ...]` and `run_closed_command(command: str, forwarded_args: tuple[str, ...], *, execute: Callable[[tuple[str, ...]], int] | None = None) -> int`; the optional `execute` callback is the only subprocess seam used by 1.Aa tests and the default path owns the fixed working directory, environment, configuration, and subprocess call. `scripts/gate_scan.py` exposes `GateScanHooksV1(enumerate_changed_paths: Callable[[Path], tuple[str, ...]], resolve_path: Callable[[Path, str], Path], is_regular_file: Callable[[Path], bool], read_bytes: Callable[[Path], bytes])`, `GateScanRunResultV1(exit_code: int, stdout: str, stderr: str)`, and `run_gate_scan(root: Path, *, hooks: GateScanHooksV1 | None = None) -> GateScanRunResultV1`; the default hooks perform the real Git/path/object/read operations, while 1.Aa injects each hook to test the closed failure vocabulary. `scripts/scan_gate_changed_files.ps1` accepts no arguments, resolves the repository root from its own location, delegates to `run_gate_scan` with default hooks, writes the returned stdout/stderr, and exits with the returned code; it contains no separate scan logic. These seams are task-local testability interfaces and do not widen the command-line or product API.
+- **1.Aa test seams (not product interfaces):** `scripts/run_gate_checks.py` exposes `build_closed_argv(command: str, forwarded_args: tuple[str, ...]) -> tuple[str, ...]` and `run_closed_command(command: str, forwarded_args: tuple[str, ...], *, execute: Callable[[tuple[str, ...]], int] | None = None) -> int`; the optional `execute` callback is the only subprocess seam used by 1.Aa tests and the default path owns the fixed working directory, environment, configuration, and subprocess call. `scripts/gate_scan.py` exposes `GateScanHooksV1(enumerate_changed_paths: Callable[[Path], tuple[str, ...]], resolve_path: Callable[[Path, str], Path], is_regular_file: Callable[[Path], bool], read_bytes: Callable[[Path], bytes])`, `GateScanRunResultV1(exit_code: int, stdout: str, stderr: str)`, and `run_gate_scan(root: Path, *, hooks: GateScanHooksV1 | None = None) -> GateScanRunResultV1`; the default hooks perform the real Git/path/object/read operations, while 1.Aa injects each hook to test the closed failure vocabulary. `scripts/scan_gate_changed_files.ps1` accepts no arguments, resolves the repository root from its own location, requires `.venv-gate\Scripts\python.exe` to exist, invokes that exact interpreter to execute `scripts/gate_scan.py`, writes the returned stdout/stderr, and exits with the returned code; it must not fall back to PATH Python and contains no separate scan logic. These seams are task-local testability interfaces and do not widen the command-line or product API.
 - **Consumes / Produces (1.B):** Produces `BoundaryObservationV1(code: str, lexical_path: str, final_path: str, expected_volume_serial: int, observed_volume_serial: int, expected_file_id_128: bytes, observed_file_id_128: bytes, object_kind: Literal["FILE","DIRECTORY"], link_count: int, reparse_tag: int, acl_observable: bool)`, `BoundaryObservationSequenceV1`, an immutable ordered tuple of one or more observations, `BoundaryEvaluationV1(passed: bool, failed_codes: StableCodeSequenceV1)`, and pure `evaluate_workspace_observations(observations: BoundaryObservationSequenceV1) -> BoundaryEvaluationV1`.
 
 **Implementation points, exact RED, and minimum GREEN contracts:**
@@ -677,7 +680,7 @@ T01.1 steps or stop with a truthful blocker before the timebox expires.
 **Pre-RED bootstrap contract:**
 
 ```text
-Owned files: - Create: requirements/gate.in - Create: requirements/gate.lock - Create: gates/pytest.ini - Create: gates/ruff.toml - Create: gates/mypy.ini - Create: gates/evidence/gate-toolchain-v1.json - Create: scripts/bootstrap_gate_env.py - Create: scripts/run_gate_checks.py - Create: scripts/gate_scan.py - Create: scripts/scan_gate_changed_files.ps1 - Test: tests/feasibility/gate/test_gate_bootstrap.py
+Owned files: - Modify: .gitignore - Create: requirements/gate.in - Create: requirements/gate.lock - Create: gates/pytest.ini - Create: gates/ruff.toml - Create: gates/mypy.ini - Create: gates/evidence/gate-toolchain-v1.json - Create: scripts/bootstrap_gate_env.py - Create: scripts/run_gate_checks.py - Create: scripts/gate_scan.py - Create: scripts/scan_gate_changed_files.ps1 - Test: tests/feasibility/gate/test_gate_bootstrap.py
 Interface: Consume the reviewed direct gate requirements from `https://pypi.org/simple`; produce the complete hash lock, isolated gate environment, closed toolchain identity record, four declared runner commands, and the fixed changed-file gate scan.
 Required order: validate PATH Python 3.12; create the 1.Aa gate input/config and exact tests; run the 1.Aa utility RED; implement the 1.Aa runner, gate-scan core, and PowerShell wrapper until the exact tests are GREEN; resolve the complete direct/transitive hash lock; review and accept every version, marker, source, and hash; create or use the 1.Ab/1.Ac bootstrap command to materialize `.venv-gate` with `--require-hashes --no-deps`; freeze Python/pytest/Ruff/Mypy and lock/config/runner/gate-scan identities; run the positive gate integrity checks and the exact gate-scan command. Only then may Task 1.B add or run its RED.
 Gate scan: enumerate the staged, unstaged, and untracked changed-file union relative to `HEAD`; accept only repository-contained regular files; scan the fixed task-owned high-confidence credential rules; emit only sorted unique normalized relative paths and stable rule ids; never emit a matched value or context; fail closed on a match, Git/path/object/read error, or caller-supplied widening input.
@@ -689,9 +692,10 @@ Boundary: Resolution may contact only `https://pypi.org/simple` during the expli
 sub-slices so that each handoff has a concrete completion boundary. These are
 sub-slices of T01.1, not additional approval gates or product tasks:
 
-- **1.Aa — contract, fixed inputs, runner, and scan:** Own the exact
-  `requirements/gate.in` direct list, `gates/pytest.ini`, `gates/ruff.toml`,
-  `gates/mypy.ini`, `scripts/run_gate_checks.py`, `scripts/gate_scan.py`,
+- **1.Aa — contract, fixed inputs, runner, and scan:** Own `.gitignore` with
+  the exact `.venv-gate/` entry, the exact `requirements/gate.in` direct list,
+  `gates/pytest.ini`, `gates/ruff.toml`, `gates/mypy.ini`,
+  `scripts/run_gate_checks.py`, `scripts/gate_scan.py`,
   `scripts/scan_gate_changed_files.ps1`, and their positive integrity tests.
   `scripts/bootstrap_gate_env.py`, `requirements/gate.lock`, and
   `gates/evidence/gate-toolchain-v1.json` belong to 1.Ab/1.Ac and are not
@@ -703,7 +707,7 @@ sub-slices of T01.1, not additional approval gates or product tasks:
   3.12 probe; the installed versions of pytest, Ruff, Mypy, pywin32, and Docker
   are not 1.Aa prerequisites. These declared files are expected to be absent
   in the clean candidate at trial start. Step 1 creates only these 1.Aa input,
-  configuration, and test files; the runner, scan core, and PowerShell wrapper
+  `.gitignore` plus the input, configuration, and test files; the runner, scan core, and PowerShell wrapper
   remain absent until the intended utility RED has been observed.
 - **1.Ab — resolve and review:** Consume only the fixed 1.Aa inputs, resolve
   `requirements/gate.lock` from the one allowed index, write it atomically, and
@@ -766,6 +770,7 @@ python_files = test_*.py
 ```toml
 target-version = "py312"
 line-length = 88
+extend-exclude = [".venv-gate"]
 
 [format]
 line-ending = "lf"
@@ -785,7 +790,8 @@ strict = True
 warn_unused_configs = True
 ```
 
-The 1.Aa setup creates only `requirements/gate.in`, the three gate
+The 1.Aa setup writes `.gitignore` with exactly the single line
+`.venv-gate/`, and creates only `requirements/gate.in`, the three gate
 configuration files, and `tests/feasibility/gate/test_gate_bootstrap.py`.
 Their raw-byte SHA-256 identities are bound only when the 1.Ac evidence is
 written. `scripts/run_gate_checks.py`, `scripts/gate_scan.py`, and
@@ -886,13 +892,15 @@ class AaIntegrityTests(unittest.TestCase):
     def test_gate_input_lists_exact_direct_requirements(self) -> None:
         expected = b"pytest>=8,<9\nruff\nmypy\npywin32\ndocker\n"
         self.assertEqual((ROOT / "requirements/gate.in").read_bytes(), expected)
+        self.assertEqual((ROOT / ".gitignore").read_bytes(), b".venv-gate/\n")
         self.assertEqual(
             (ROOT / "gates/pytest.ini").read_bytes(),
             b"[pytest]\naddopts =\ntestpaths = tests\npython_files = test_*.py\n",
         )
         self.assertEqual(
             (ROOT / "gates/ruff.toml").read_bytes(),
-            b'target-version = "py312"\nline-length = 88\n\n[format]\n'
+            b'target-version = "py312"\nline-length = 88\n'
+            b'extend-exclude = [".venv-gate"]\n\n[format]\n'
             b'line-ending = "lf"\nquote-style = "double"\nindent-style = "space"\n\n'
             b'[lint]\nselect = ["E4", "E7", "E9", "F"]\n',
         )
@@ -987,9 +995,13 @@ class AaIntegrityTests(unittest.TestCase):
         with TemporaryDirectory() as directory:
             root = Path(directory).resolve()
             payloads = {
-                "staged.pem": b"-----BEGIN OPENSSH PRIVATE KEY-----\nsecret\n",
-                "unstaged.txt": b"prefix API_KEY='do-not-print' suffix",
-                "untracked.txt": b"https://user:do-not-print@example.invalid/",
+                "staged.pem": (
+                    b"-----BEGIN " + b"OPENSSH PRIVATE KEY-----\n" + b"secret\n"
+                ),
+                "unstaged.txt": b"prefix " + b"API_" + b"KEY='do-not-print' suffix",
+                "untracked.txt": (
+                    b"https://user:" + b"do-not-print" + b"@example.invalid/"
+                ),
             }
             hooks = GateScanHooksV1(
                 enumerate_changed_paths=lambda unused_root: (
@@ -1016,6 +1028,9 @@ class AaIntegrityTests(unittest.TestCase):
             encoding="utf-8"
         )
         self.assertIn("$args.Count", wrapper)
+        self.assertIn(".venv-gate", wrapper)
+        self.assertIn("Scripts", wrapper)
+        self.assertIn("python.exe", wrapper)
         self.assertIn("gate_scan.py", wrapper)
         self.assertNotIn("PRIVATE_KEY_BLOCK", wrapper)
         self.assertNotIn("GENERIC_API_KEY", wrapper)
@@ -1028,7 +1043,7 @@ class AaIntegrityTests(unittest.TestCase):
                 enumerate_changed_paths=lambda unused_root: ("changed.txt",),
                 resolve_path=lambda active_root, path: active_root / path,
                 is_regular_file=lambda path: True,
-                read_bytes=lambda path: b"API_KEY=must-not-appear",
+                read_bytes=lambda path: b"API_" + b"KEY=must-not-appear",
             )
 
             def fail(*unused: object) -> object:
@@ -1175,8 +1190,8 @@ repository-relative paths; `.` is the only permitted non-path root sentinel
 and is forwarded as one path argument; `mypy` may receive only
 the fixed gate roots `spikes`, `tests/feasibility`, `src`, `tests`, and the two
 declared gate files `scripts/run_gate_checks.py` and
-`scripts/bootstrap_gate_env.py` (with descendants allowed only for directory
-roots). Config/plugin/executable,
+`scripts/bootstrap_gate_env.py` and `scripts/gate_scan.py` (with descendants
+allowed only for directory roots). Config/plugin/executable,
 environment, working-directory, cache, report-output, network, and arbitrary
 shell-expansion options are rejected before execution with
 `GATE_ARGUMENT_WIDENING`; an unknown command returns
@@ -1199,13 +1214,14 @@ passed.
 - 1.Ac Materialize: `python scripts/bootstrap_gate_env.py materialize --lock requirements/gate.lock --evidence gates/evidence/gate-toolchain-v1.json`
 - 1.Ac Integrity: `.venv-gate\Scripts\python.exe scripts/run_gate_checks.py pytest -- tests/feasibility/gate/test_gate_bootstrap.py -q`
 - 1.Ac Gate scan: `powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File scripts\scan_gate_changed_files.ps1`
-- Expected: the initial Python probe exits `0`; the initial `AaIntegrityTests` run produces only the declared task-owned import RED; after GREEN-1 and GREEN-2, the same probe and six-test command exit `0` before any lock resolution, environment materialization, or evidence write. After 1.Ab/1.Ac, the four 1.Ac commands exit `0`, the full integrity suite proves staged, unstaged, and untracked coverage, deterministic `(path, rule_id)` output, match rejection, redaction, and fail-closed Git/path/object/read handling, and the evidence matches the reviewed lock/config/runner/gate-scan and installed Python/pytest/Ruff/Mypy identities exactly.
+- 1.Ac Offline closure: execute every command in the exact `GATE_BOOTSTRAP_OFFLINE_V1` profile.
+- **Expected:** the initial Python probe exits `0`; the initial `AaIntegrityTests` run produces only the declared task-owned import RED; after GREEN-1 and GREEN-2, the same probe and six-test command exit `0` before any lock resolution, environment materialization, or evidence write. After 1.Ab/1.Ac, the 1.Ac integrity command and every command in `GATE_BOOTSTRAP_OFFLINE_V1` exit `0`; the full integrity suite proves staged, unstaged, and untracked coverage, deterministic `(path, rule_id)` output, match rejection, redaction, and fail-closed Git/path/object/read handling, and the evidence matches the reviewed lock/config/runner/gate-scan and installed Python/pytest/Ruff/Mypy identities exactly.
 
 **Atomic review focus:**
 - SPEC (1.A): Spec compliance review checks that the full task-local bootstrap and review complete before Task 1.B adds or runs the first Task 1 product-behavior RED, as required by this PLAN's prerequisite order and the SPEC §10.3 validation matrix.
 - Quality (1.A): Code quality review checks closed command exhaustiveness, immutable argument handling, complete changed-file enumeration, value-free gate-scan output, identity/digest binding, deterministic exit propagation, and rejection before execution.
 
-- [ ] **Step 1: Establish the Task 1.Aa test inputs.** Validate PATH Python 3.12 and create only the 1.Aa-owned gate input, configs, and exact `AaIntegrityTests` file. Do not create the task-owned runner, gate-scan core, PowerShell wrapper, `scripts/bootstrap_gate_env.py`, `requirements/gate.lock`, or gate evidence in this step; the latter three belong to 1.Ab/1.Ac. The tests cover the declared runner and scan seams, staged/unstaged/untracked enumeration, deterministic path/rule-id output, match rejection, redaction, and fail-closed Git/path/object/read cases. Initial absence of all 1.Aa implementation files is expected; this step creates tests before their implementation.
+- [ ] **Step 1: Establish the Task 1.Aa test inputs.** Validate PATH Python 3.12, write `.gitignore` with exactly `.venv-gate/`, and create only the 1.Aa-owned gate input, configs, and exact `AaIntegrityTests` file. Do not create the task-owned runner, gate-scan core, PowerShell wrapper, `scripts/bootstrap_gate_env.py`, `requirements/gate.lock`, or gate evidence in this step; the latter three belong to 1.Ab/1.Ac. The tests cover the declared runner and scan seams, staged/unstaged/untracked enumeration, deterministic path/rule-id output, match rejection, redaction, and fail-closed Git/path/object/read cases. Initial absence of all 1.Aa implementation files is expected; this step creates tests before their implementation and does not create an empty `spikes` placeholder.
 - [ ] **Step 1.Aa RED: Run the bounded utility RED.** Run `python -m unittest -v tests.feasibility.gate.test_gate_bootstrap.AaIntegrityTests`. Expected: collection/import fails only because the task-owned `scripts.run_gate_checks` or `scripts.gate_scan` implementation is absent. A missing test file, unrelated import/environment failure, or an already-passing suite does not count as the intended RED.
 - [ ] **Step 1.Aa GREEN-1: Implement the closed runner.** Add `scripts/run_gate_checks.py` with the exact `build_closed_argv` and `run_closed_command` seams, closed command/argument handling, and deterministic error/output behavior required by the preceding tests.
 - [ ] **Step 1.Aa GREEN-2: Implement the scan core and wrapper.** Add `scripts/gate_scan.py` and `scripts/scan_gate_changed_files.ps1` with the exact hook seams, fixed changed-file enumeration, redaction, fail-closed result contract, and no caller-supplied widening inputs.
@@ -1213,7 +1229,7 @@ passed.
 - [ ] **Step 2: Resolve the gate lock.** Run the displayed Resolve command. Require exact direct/transitive versions and compatible distribution SHA-256 hashes, with no editable, VCS, local, path, or alternate-index source.
 - [ ] **Step 3: Review and freeze the gate lock.** Review the input and generated lock together; verify the complete dependency graph, exact versions, markers, source, normalized names, and hashes. Stop on every unexplained entry. Installation before this review is prohibited.
 - [ ] **Step 4: Materialize and freeze the gate toolchain.** Run the displayed Materialize command. Create `.venv-gate` only from the reviewed lock with `--require-hashes --no-deps`, then write the exact toolchain and lock/config/runner/gate-scan identities to the fixed evidence file.
-- [ ] **Step 5: Verify the pre-RED gate.** Run the displayed Integrity and Gate scan commands plus the exact `GATE_OFFLINE_V1` Ruff-format, Ruff-check, and Mypy commands. All must pass before Task 1.B begins; any mismatch stops Task 1.
+- [ ] **Step 5: Verify the pre-RED gate.** Run the displayed Integrity and Gate scan commands plus every exact command in `GATE_BOOTSTRAP_OFFLINE_V1`. All must pass before Task 1.B begins; any mismatch stops Task 1.
 
 #### Legacy step 1.B: Pure Workspace Boundary Observation Evaluator
 
@@ -1262,7 +1278,7 @@ def test_unprovable_final_identity_fails_closed() -> None:
 **Task-level verification, review, and completion:**
 
 - [ ] **Step 14: Refactor only inside T01.1.** Improve names and local structure in declared writable Files without changing the displayed interfaces, observable behavior, or successor scope; rerun the 1.B Target and Domain after the refactor.
-- [ ] **Step 15: Run the GATE_OFFLINE_V1 closure.** Execute every exact command defined for `GATE_OFFLINE_V1`, including all four frozen runner commands, the filename-only credential scan, and `git diff --check`; record actual results in `AGENT_LOG.md`.
+- [ ] **Step 15: Run the GATE_OFFLINE_V1 closure.** After the 1.B spike files exist, execute every exact command defined for `GATE_OFFLINE_V1`, including all four frozen runner commands, the filename-only credential scan, and `git diff --check`; record actual results in `AGENT_LOG.md`.
 - [ ] **Step 16: Request T01.1 SPEC review.** Review the pre-RED gate order, the 1.B RED/GREEN evidence, and the task diff. Require an explicit verdict.
 - [ ] **Step 17: Close T01.1 SPEC findings.** Fix every Critical/Important finding, rerun affected checks, and obtain same-stage re-review PASS.
 - [ ] **Step 18: Request T01.1 quality review.** Run only after SPEC review PASS; review the task diff against the Atomic review focus.
@@ -1270,14 +1286,14 @@ def test_unprovable_final_identity_fails_closed() -> None:
 - [ ] **Step 20: Commit T01.1 implementation.** Stage only the task-owned files and create one implementation commit after both review stages PASS.
 
 ```bash
-git add -- "requirements/gate.in" "requirements/gate.lock" "gates/pytest.ini" "gates/ruff.toml" "gates/mypy.ini" "gates/evidence/gate-toolchain-v1.json" "scripts/bootstrap_gate_env.py" "scripts/run_gate_checks.py" "scripts/gate_scan.py" "scripts/scan_gate_changed_files.ps1" "tests/feasibility/gate/test_gate_bootstrap.py" "spikes/win32_workspace_boundary/evaluator.py" "tests/feasibility/windows/test_workspace_boundary_evaluator.py"
+git add -- ".gitignore" "requirements/gate.in" "requirements/gate.lock" "gates/pytest.ini" "gates/ruff.toml" "gates/mypy.ini" "gates/evidence/gate-toolchain-v1.json" "scripts/bootstrap_gate_env.py" "scripts/run_gate_checks.py" "scripts/gate_scan.py" "scripts/scan_gate_changed_files.ps1" "tests/feasibility/gate/test_gate_bootstrap.py" "spikes/win32_workspace_boundary/evaluator.py" "tests/feasibility/windows/test_workspace_boundary_evaluator.py"
 git commit -m "Implement T01.1 Workspace Gate Bootstrap and Pure Boundary Evaluation"
 ```
 
 - [ ] **Step 21: Record T01.1 completion evidence.** In a narrow evidence commit, update only this task's Status/Completion evidence and append `AGENT_LOG.md` with the real implementation SHA, responsible fresh subagent, human edits, exact commands/results, review/re-review verdicts, and PR URL.
 - [ ] **Step 22: Continue or finish WP01.** If another session task remains in this package, hand the same branch/PR to a new fresh subagent. Otherwise finish and merge only after all predecessors and gates remain valid.
 
-**Done:** 1.A 的 pre-RED bootstrap、人工 lock 审查、身份冻结和完整性验证全部通过；随后 1.B 的 RED、Target、Domain、适用真实环境和全局 profile 均通过；Critical/Important finding 全部关闭并复审；没有行为被延后到 successor。
+**Done:** 1.A 的 pre-RED bootstrap、精确 `.gitignore` 条目、人工 lock 审查、身份冻结和完整性验证全部通过；随后 1.B 的 RED、Target、Domain、适用真实环境和完整 `GATE_OFFLINE_V1` profile 均通过；Critical/Important finding 全部关闭并复审；没有行为被延后到 successor。
 **Completion evidence:** Not yet executed.
 
 ### Task T01.2: Win32 Boundary Probes and GO Decision
