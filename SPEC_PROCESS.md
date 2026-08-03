@@ -1813,3 +1813,28 @@ Agent 指出 `CREDENTIAL_URL` 的通用 token-boundary 句可能被理解为要�
 ### 40.3 阶段切换
 
 至此，SPEC/PLAN 的轻量文档检查、选定 task 的陌生 Agent 冷启动、冷启动反馈记录和独立复验均已完成。正式实现仍未开始；下一阶段才可按 PLAN 进入隔离 worktree、fresh subagent、TDD、SPEC 合规评审、代码质量评审和分支完成流程。
+
+## 41. 最小流程同步修订（2026-08-02）
+
+### 41.1 修订范围
+
+- 根据复审结论，`SPEC.md` §7.1 删除旧的 M0 重试要求，改为记录 SPEC 变更，并仅在变更影响已选冷启动 task 时重试该 task 的冷启动。
+- `PLAN.md` 规范正文删除旧的 `§11.2 item` 技术门禁归因和 `renewed admission`，并同步 Milestone 1、2、3、37 与当前 task card。
+- `T01.1/1.Aa` 明确采用测试先行的 utility RED/GREEN；`1.B` 仍是第一个 Task 1 产品行为 RED。
+- 冷启动目标改为选择完整 `T01.1`，`1.Aa` 仅是起始 checkpoint。第 40 节的结果保留为 bounded `1.Aa` 子范围证据，不升级为完整 `T01.1` 冷启动 PASS。
+- 历史 Appendix A–D 未删除；其历史、非规范性质保持不变，以避免扩大本次最小修订范围。
+
+### 41.2 边界与后续
+
+- 本次只修改规格、计划和过程记录，未创建或接受任何正式实现代码、测试代码、提交、PR 或合并。
+- 文档修订完成后，若要取得课程层面的 task 冷启动结论，必须从新候选文档和全新不同类型 session 重新尝试 `T01.1`，不得复用第 40 节的 bounded 结果作为完整 task 证据。
+
+## 42. 冷启动前历史附录迁移修订（2026-08-03）
+
+本轮复审对当前 handoff 做了最小范围收口：
+
+- 冷启动范围统一为完整 task `T01.1`，`1.Aa` 仍只是起始 checkpoint；这一点已在 PLAN §1.2 和 T01.1 task card 中一致表达。
+- `1.Aa` 已保持 test-first 的 utility RED → runner/scan GREEN 顺序；初始缺少 task-owned runner/scan 模块是预期 RED，不是成功状态。
+- PLAN 中旧 admission gate、PlanAuditContractV3、前版 T37.1 和前版 T37.2 四个历史附录已从当前 handoff 移出，原文归档于 `docs/process/superseded-plan-history.md`。
+- 归档内容仅用于过程历史，不属于冷启动 Agent 的输入、当前 task contract、验收标准或正式实现前置条件。
+- 本轮没有修改 SPEC 的产品、接口、安全或验收语义，也没有创建或接受正式实现代码；冷启动启动仍需人工确认。

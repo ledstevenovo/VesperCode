@@ -716,3 +716,27 @@
 - **Implementation/Git boundary:** No formal source/test implementation, CI, Docker, credentials, release, deployment, PR, merge, or accepted trial commit was created. The disposable worktree and its code remain excluded from the product.
 - **Next gate:** The cold-start phase is complete. Formal work may now begin only through the PLAN-defined isolated worktree, fresh subagent, strict TDD, two-stage review, and branch-finishing workflow.
 - **Lesson learned:** After the last document revision, the strongest cold-start evidence is an independent rerun of the exact commands plus an explicit prohibited-output scan; passing test counts alone are insufficient.
+
+## DOC-REPAIR-APPENDIX-20260803
+
+- **Timestamp (Asia/Taipei):** `2026-08-03T09:41:10+08:00`
+- **Task ID:** `DOC-REPAIR-APPENDIX-20260803`
+- **Skills invoked:** `doc-coauthoring`; no implementation or formal execution skill was used.
+- **Key prompt/context:** Execute the previously identified minimal repair. Move the four historical PLAN appendices out of the cold-start handoff, preserve their history, and do not write formal implementation code.
+- **Subagent output or commit:** None. This was a document-only edit; no subagent, commit, PR, or merge was created.
+- **Human intervention:** The user requested execution of the minimal repair scheme. No human approval of the next cold-start run is inferred by this entry.
+- **Document changes:** Added `docs/process/superseded-plan-history.md` with the four appendix bodies unchanged; removed Appendix A–D from `PLAN.md`; added one non-normative archive pointer; left SPEC and implementation paths unchanged.
+- **Verification:** Confirmed that `PLAN.md` has no `Appendix A–D` headings, retains the current §2, T37.2/T38.1 task cards, §6, §8, and §9, and contains the archive pointer. Formal source/test implementation was not touched.
+- **Lesson learned:** Historical labels alone do not prevent a fresh Agent from reading retired imperative instructions; cold-start inputs must contain only the current normative handoff.
+
+## DOC-REPAIR-MINIMAL-20260802
+
+- **Timestamp (Asia/Taipei):** `2026-08-02T22:29:49+08:00`
+- **Task ID:** `DOC-REPAIR-MINIMAL-20260802`
+- **Skills invoked:** None; this was a document-only synchronization task. No formal implementation skill was used.
+- **Key prompt/context:** Execute the minimal repair plan after reviewing the SPEC/PLAN process contradictions. Do not write formal implementation code.
+- **Human intervention:** The user authorized execution of the minimal document repair. Historical admission appendices remain retained as non-normative history.
+- **Document changes:** Removed the active SPEC §7.1 M0 reference; removed active PLAN `§11.2 item` technical references and `renewed admission`; synchronized Milestone 1/2/3/37; added explicit T01.1/1.Aa test-first RED/GREEN ordering; and redefined the next cold-start selection as task `T01.1` beginning at the `1.Aa` checkpoint.
+- **Verification:** `git diff --check` passed during the edit; the worktree contained only `SPEC.md` and `PLAN.md` document changes before this append-only record. Formal source/test implementation, CI, Docker, credentials, release, deployment, PR, and merge actions were not performed.
+- **Cold-start status:** The prior final bounded `T01.1/1.Aa` result remains valid only as sub-scope evidence. Because the selected-task boundary was materially clarified, a new fresh different-type `T01.1` cold-start is required before claiming full task-level course compliance.
+- **Lesson learned:** A pre-RED prerequisite may contain utility behavior that still needs test-first ordering; separating “not the first product behavior RED” from “no TDD RED” prevents the plan from silently allowing implementation before tests.
