@@ -1942,3 +1942,53 @@ Agent 指出 `CREDENTIAL_URL` 的通用 token-boundary 句可能被理解为要�
 ### 45.4 下一步
 
 CS-02 的试作记录有效，但不能作为冷启动 PASS。完成本轮文档提交后，必须由全新无历史上下文的 Claude Code session 按预先记录的 cold-start boundary 重试；在 `COLD_START_PASS` 和人工确认之前，正式实现仍禁止开始。
+
+## 46. CS-03 Claude Code 冷启动验证完成（2026-08-03）
+
+### 46.1 试作范围与过程裁决
+
+- **报告：** `CS-03 Cold-Start Verification Report — T01.1, Boundary 1.Aa → 1.B Domain`。
+- **Agent 与隔离环境：** Claude Code；试作目录为 `D:\coldstarts\VesperCode-claude-t01-1-r3`，分支为 `coldstart/claude-t01-1-20260803-r3`；主分支为 `main`。试作代码、分支、虚拟环境和 evidence 均为验证性产物，不得合并或作为正式任务完成证据。
+- **选定范围：** `T01.1`，从 `1.Aa` 开始，声明边界为 `1.Aa → 1.B Domain`。本节只裁决该预先声明的边界，不把它升级为完成整个 T01.1 正式任务。
+- **环境：** Python `3.12.4`；报告称所有验证命令均设置 `PYTHONDONTWRITEBYTECODE=1`。
+- **过程结果：** 试作达到声明边界；边界裁决为 `COLD_START_PASS`。主仓库未接受试作代码，未创建正式实现提交、PR 或合并。
+
+### 46.2 边界验证结果
+
+- Python 3.12 probe：退出码 `0`。
+- `AaIntegrityTests`：`6/6` 通过。
+- 1.Ac integrity：`8/8` 通过。
+- Ruff format、Ruff check、Mypy：均退出码 `0`；Mypy 使用 PLAN 规定的 `.venv-gate` runner 命令，检查 `tests/feasibility/gate` 和 `scripts/bootstrap_gate_env.py`，无重复传入 `scripts/gate_scan.py`。
+- Gate scan：退出码 `0`，stdout/stderr 为空，凭据匹配数为 `0`。
+- `git diff --check`：退出码 `0`；报告中的 LF/CRLF 提示不构成失败。
+- 1.B Target：`1/1` 通过。
+- 1.B Domain：`3/3` 通过，覆盖六项 task-local taxonomy 和 combined-observation precedence。
+- `requirements/gate.lock`：20 条 hash-locked 条目，包含 5 个直接依赖；报告记录的 lock digest 与 evidence 一致。
+- 清理后，试作目录中没有项目树 `.pyc` 或 `__pycache__`；`.venv-gate` 内部缓存属于隔离环境，不进入 changed-file union。
+
+主 Agent 对试作目录做了只读复核：`.gitignore` 的 `.venv-gate/` 条目存在，lock/evidence 文件存在，Git 状态仅包含本次试作的预期文件集合；未发现正式仓库被修改。
+
+### 46.3 Findings 与处理
+
+1. **F1：`NON-BLOCKING`。** `scripts/__init__.py`、`tests/__init__.py`、`tests/feasibility/__init__.py` 和 `tests/feasibility/gate/__init__.py` 为 0 字节包发现辅助文件。它们未导出接口、未添加行为、未改变安全边界。它们不是正式完成证据；正式任务仍以 T01.1 声明的文件所有权和提交范围为准。
+2. **F2：`NON-BLOCKING`。** `git diff --check` 报告的 LF/CRLF advisory 是 Windows Git 换行配置提示，命令退出码为 `0`，不构成任务阻断。
+
+本轮没有发现 `BLOCKING` 或 `CLARIFY` finding；没有改变 SPEC 的产品语义，也没有需要同步到 PLAN 的行为、接口、依赖、验证命令或完成条件变更。
+
+### 46.4 启动证据与阶段切换
+
+- §43 已记录主开发 Agent、冷启动 Agent、任务、起始 checkpoint、试作目录/分支、禁止合并和人工允许启动等 pre-flight 信息。
+- CS-03 收尾报告本身主要记录验证结果，没有重复附上完整启动提示、session/memory 状态和初始输入 transcript。正式过程归档时仍应保留该启动记录，以证明“全新 session、无历史 memory、初始仅提供 `SPEC.md`/`PLAN.md`”，不能仅由测试结果反推。
+- 当前阶段裁决为：选定冷启动边界已通过；`FORMAL_READY` 尚未确认。正式实现仍需人工明确确认，之后才可进入正式 worktree、fresh subagent、TDD、两阶段评审和分支完成流程。
+
+### 46.5 CS-03 启动证据
+
+- **Session:** `6aeab697-6b09-4e05-afdc-8ab0199e5086`；Claude Code `2.1.220`；启动时间 `2026-08-03T12:11:53.656Z`（本地时间 `2026-08-03 20:11:53 CST`）。
+- **运行身份：** PID `21356`；工作目录 `D:\coldstarts\VesperCode-claude-t01-1-r3`；分支 `coldstart/claude-t01-1-20260803-r3`。
+- **新 session：** 是；session metadata 与 transcript 首条用户消息均被列为证据来源。
+- **历史上下文与 memory：** transcript 首条用户消息明确声明未提供 prior conversation 或 memory。
+- **初始项目输入：** transcript 首条用户消息明确声明初始 planning inputs 仅为当前 `SPEC.md` 和 `PLAN.md`。
+- **任务与边界：** `T01.1`，从 `1.Aa` 开始，边界为 `1.Aa → 1.B Domain`。
+- **不确定性规则：** transcript 首条用户消息要求遇到 material behavior、safety rule、interface、stable taxonomy、command 或 completion condition 不清楚/矛盾时暂停提问，不得猜测。
+- **证据来源：** `C:\Users\tongshuo\.claude\sessions\21356.json`；`C:\Users\tongshuo\.claude\projects\D--coldstarts-VesperCode-claude-t01-1-r3\6aeab697-6b09-4e05-afdc-8ab0199e5086.jsonl`。本仓库只记录元数据和关键事实，不复制完整 transcript。
+- **证据性质：** 这是 CS-03 启动过程的可追溯记录，不是产品实现或测试证据；试作代码、提交、分支和环境仍不得合并或作为正式任务完成证据。
