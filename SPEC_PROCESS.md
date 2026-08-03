@@ -1992,3 +1992,12 @@ CS-02 的试作记录有效，但不能作为冷启动 PASS。完成本轮文档
 - **不确定性规则：** transcript 首条用户消息要求遇到 material behavior、safety rule、interface、stable taxonomy、command 或 completion condition 不清楚/矛盾时暂停提问，不得猜测。
 - **证据来源：** `C:\Users\tongshuo\.claude\sessions\21356.json`；`C:\Users\tongshuo\.claude\projects\D--coldstarts-VesperCode-claude-t01-1-r3\6aeab697-6b09-4e05-afdc-8ab0199e5086.jsonl`。本仓库只记录元数据和关键事实，不复制完整 transcript。
 - **证据性质：** 这是 CS-03 启动过程的可追溯记录，不是产品实现或测试证据；试作代码、提交、分支和环境仍不得合并或作为正式任务完成证据。
+
+## 47. FORMAL_READY 人工确认（2026-08-03）
+
+- **确认时间（Asia/Taipei）：** `2026-08-03T23:01:06+08:00`。
+- **人工决定：** 用户明确确认 `FORMAL_READY`，并要求同步记录 CS-03 与正式授权、更新 README、将旧 TASK_HANDOFF 标为历史；用户同时明确要求本次不要启动 T01.1、隔离 worktree、TDD 或两阶段评审。
+- **准入复核：** §43 已记录冷启动启动确认；§46 记录 CS-03 在预先声明的 `T01.1: 1.Aa → 1.B Domain` 边界达到 `COLD_START_PASS`，且没有未解决的 `BLOCKING` 或 `CLARIFY` finding，也没有需要再次试作的 SPEC/PLAN 合同修订。
+- **阶段裁决：** `FORMAL_READY = CONFIRMED`。正式实现现在获准按当前 `SPEC.md` 与 `PLAN.md` 的工作流开始；冷启动 worktree、代码、分支、提交和环境仍是不可合入的验证性产物，不得作为正式任务完成证据。
+- **当前执行边界：** 本次确认只完成文档和过程闭环。T01.1 仍为 `Not started`，没有创建正式实现 worktree、实现/测试代码、提交、PR、合并、CI、凭据、发布或部署；开始 T01.1 必须等待后续单独指令。
+- **权威输入：** 课程原文、当前 `SPEC.md` 与当前 `PLAN.md` 继续定义正式实现；`SPEC_PROCESS.md` 与 `AGENT_LOG.md` 记录过程事实。旧 `TASK_HANDOFF.md` 仅保留为历史材料，不得作为当前实施输入。

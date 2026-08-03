@@ -60,7 +60,7 @@
 
 ## 1. Document Status and Cold-start Readiness
 
-**Document status:** Candidate — formal implementation begins only after the lightweight document check, a disposable cold-start trial, and any required SPEC/PLAN revisions are complete.
+**Document status:** `FORMAL_READY` — the lightweight document check, disposable cold-start trial, and required SPEC/PLAN revisions are complete; the human explicitly authorized formal implementation on 2026-08-03. Formal execution must follow the worktree, fresh-subagent, TDD, two-stage review, and branch-completion workflow below. No formal task has started yet; T01.1 remains the first task.
 
 This PLAN is the task handoff for the exact current SPEC. The 141 legacy child IDs remain atomic TDD trace identifiers, the 68 `TNN.X` entries remain fresh-subagent execution slices, and the 46 `WP...` entries remain work-package boundaries. These identifiers organize implementation; they are not independent approval or admission gates.
 

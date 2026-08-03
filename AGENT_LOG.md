@@ -768,3 +768,27 @@
 - **Document changes:** Added the cold-start blocking rubric and outcome vocabulary; separated task ID from cold-start boundary; made only Aa tests raw-source exact; made Ab/Ac tests Agent-authored coverage contracts; made the exact Aa callbacks/fixtures typed and formatter-compatible; removed the duplicate explicit Mypy source path; defined six task-local 1.B failure codes and Domain coverage; documented bytecode prevention and file-level Git enumeration as local implementation notes.
 - **Verification:** No formal source/test implementation was created or changed. Document consistency and `git diff --check` remain to be run before commit.
 - **Lesson learned:** A cold-start trial can be complete while still blocked. The PLAN must specify public contracts and completion conditions, but must not turn every local implementation choice into a stop condition.
+
+## CS-03-T01.1-CLAUDE-20260803
+
+- **Timestamp (Asia/Taipei):** `2026-08-03T23:01:06+08:00` (log synchronization time; the Claude Code session began at `2026-08-03T20:11:53+08:00`).
+- **Task ID:** `CS-03-T01.1-CLAUDE-20260803`.
+- **Skills invoked:** The supplied cold-start report does not list skills. This synchronization uses `doc-coauthoring`; no formal implementation skill was invoked.
+- **Key prompt/context:** A fresh Claude Code session with no prior conversation or memory received only current `SPEC.md` and `PLAN.md`, selected T01.1, started at 1.Aa, and used the pre-recorded boundary `1.Aa → 1.B Domain`; it had to pause rather than guess.
+- **Subagent output or commit:** The disposable trial reached `COLD_START_PASS`: Python 3.12 probe, 6/6 Aa integrity tests, 8/8 1.Ac integrity checks, Ruff format/check, Mypy, gate scan, and `git diff --check` passed; 1.B Target passed 1/1 and Domain passed 3/3. The report recorded no `BLOCKING` or `CLARIFY` finding. Trial code, branch, commits, virtual environment, and evidence remain non-mergeable validation artifacts. Commit `536474e` records the CS-03 process evidence in `SPEC_PROCESS.md` only.
+- **Human intervention:** The CS-03 result was accepted as cold-start evidence only. It did not itself authorize formal implementation or accept any trial artifact.
+- **Document changes:** This append-only entry synchronizes the missing CS-03 process evidence into `AGENT_LOG.md`; product source, tests, CI, credentials, release, deployment, PR, and merge state remain unchanged.
+- **Verification:** The reported command outcomes and startup evidence are recorded in `SPEC_PROCESS.md` §46. The main worktree was clean before this document-only synchronization.
+- **Lesson learned:** A cold-start PASS validates only its declared boundary and documents; it never converts disposable code into formal implementation evidence.
+
+## FORMAL-READY-20260803
+
+- **Timestamp (Asia/Taipei):** `2026-08-03T23:01:06+08:00`.
+- **Task ID:** `FORMAL-READY-20260803`.
+- **Skills invoked:** `doc-coauthoring` for process-document synchronization; no implementation, worktree, TDD, review, or branch-completion skill was invoked.
+- **Key prompt/context:** After the document-readiness review identified an unrecorded CS-03 result, stale README status, and an obsolete TASK_HANDOFF, the user explicitly instructed: confirm formal development, synchronize CS-03 and FORMAL_READY into SPEC_PROCESS.md and AGENT_LOG.md, update README, mark TASK_HANDOFF historical, and do not start T01.1 or any implementation workflow.
+- **Subagent output or commit:** No subagent, source/test artifact, worktree, commit, PR, merge, CI run, credential operation, release, or deployment was created.
+- **Human intervention:** The user explicitly confirmed `FORMAL_READY`. This authorizes later formal task execution under the current SPEC/PLAN workflow; it does not authorize beginning T01.1 in this documentation-only turn.
+- **Document changes:** Updated SPEC.md and PLAN.md to state the authorized implementation phase; appended the CS-03 evidence and the formal decision to SPEC_PROCESS.md and AGENT_LOG.md; synchronized README scope/status; and marked TASK_HANDOFF.md as historical, non-normative material.
+- **Verification:** `git diff --check` exited 0 (only existing Git LF/CRLF conversion advisories); status contains only AGENT_LOG.md, PLAN.md, README.md, SPEC.md, SPEC_PROCESS.md, and TASK_HANDOFF.md. The authorization, CS-03, README status, and archival banner were each located by targeted read-only checks.
+- **Lesson learned:** Formal readiness needs both a passing disposable trial and an explicit human decision; the process record and the user-facing entry points must agree before a fresh implementation Agent begins.
