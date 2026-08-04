@@ -2046,3 +2046,26 @@ T02.1 执行与两阶段评审发现：GREEN-3 引用的 "the exact §5.1 matrix
 应修正。driver 决定：不改动已执行卡片的规范文本（避免事后篡改执行契约），
 在 T02.2 派遣指令中显式说明该引用非操作性（沿用 T02.1 的操作行），并在
 晨报中提请人工决定卡片文本修订。
+
+## 50. WP02 收官与两处记录（2026-08-05）
+
+### 50.1 WP02 包级 finishing
+
+T02.1–T02.4 全部通过（两阶段评审 PASS、driver 独立验证全绿），合并
+`codex/wp02` → `main`。driver 在 tip `4c82067` 独立复跑：全量 feasibility
+**127 passed**（agent GATE_OFFLINE 闭包记录的 125 为评审补 matrix 行前的
+快照；driver 以实际为准）、ruff-format/check、mypy 26 files、credential
+scan、git diff --check 全 exit 0。
+
+### 50.2 NB-3：冻结 fixture 的 pyproject.toml 非法 TOML 行
+
+`reference/fixture/pyproject.toml:15` 含 `strict = True`（pytest 配置解析
+不接受），2.E 容器内 pytest 以 `-c /dev/null` 最小机制绕过配置搜索。
+fixture 字节是 T02.1 冻结证据、Dockerfile 未改，未变更任何冻结字节。
+记录待人工决策：是否在后续修订中修正该行（需同步重算相关 digest）。
+
+### 50.3 完成谓词注记
+
+T02.4 Step 33（finishing）由执行 agent 在 evidence commit 中勾选，实际
+包级 finishing（验证/合并/推送）由 driver 执行；PR URL pending WP02
+closure（延续 WP01 的本地分支决策）。

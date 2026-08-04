@@ -1063,3 +1063,16 @@
 - **Human intervention:** none.
 - **Implementation commit:** `55483b6` (8 files, 3437 insertions) via the card's exact `git add` list. Evidence commit: PLAN.md T02.4 Status/checkboxes/Done/Completion evidence + this append-only entry.
 - **Lesson learned:** (1) a frozen fixture's TOML can be silently invalid (`strict = True` instead of `true`) and only surfaces when a later task actually runs the toolchain against it — the fail-closed response is a minimal bypass that touches no frozen byte, recorded for the wave owner; (2) `docker cp` never traverses mount points, so a report channel on a tmpfs must be extracted from `docker logs` with a fixed structured prefix — and pytest's own stdout bytes can interleave into the same lines, so extraction must partition on the prefix rather than require line-start alignment; (3) an honest RED for an assembler that "does not check identities" is best re-established by temporarily bypassing the predicate and observing the mismatched input wrongly pass, exactly as the T01.2 missing-field precedent did.
+
+## WP02-DRIVER-FINISHING-20260805
+
+- **Timestamp (Asia/Taipei):** `2026-08-05T06:17:00+0800` (system-observed; append-only driver record).
+- **Task ID:** WP02 包级 finishing（T02.1–T02.4 全部完成）。
+- **Skills invoked:** `verification-before-completion`、`finishing-a-development-branch`。
+- **Key prompt/context:** T02.4 历经 4 次环境中断（API 证书/DNS/watchdog）后凭转录续跑完成：实现 55483b6、evidence 4c82067。driver 在 tip 独立验证全绿。
+- **Independent verification (driver, exact order, all exit 0):** pytest `127 passed`（agent 闭包记录 125 为评审补 matrix 行前快照，以实际为准）；ruff-format 30 files；ruff-check All checks passed!；mypy 26 files Success；credential scan exit 0；git diff --check exit 0。
+- **GO 判定：** T02.4 组装 GO 仅当 build/registry/isolation/pytest/fingerprint 五项证据完整且身份一致（manifest digest 385ffc69… 三方一致、§0.1 digest 896416f1… 复审复算一致）——driver 复核认可。
+- **记录项：** NB-3 fixture pyproject 非法 TOML（冻结字节未动、`-c /dev/null` 绕过，SPEC_PROCESS §50.2 待人工决策）；报告通道改经 stdout `GATEEV1:` 前缀提取（docker cp 无法穿越 tmpfs）；T02.4 Step 33 由 agent 预勾、实际 finishing 由 driver 执行。
+- **Git / evidence boundary:** 本记录 + SPEC_PROCESS §50 提交于 codex/wp02，随后 FF 合并 → main，push origin main。无任务卡文本改动。
+- **Human intervention:** 无；夜间自主执行授权有效。
+- **Lesson learned:** 环境性 agent 中断（证书/DNS/看门狗）不丢工作——产物在磁盘、上下文在转录，续跑即可；driver 的 gate 数字以独立复跑为准，不沿用 agent 闭包快照。
