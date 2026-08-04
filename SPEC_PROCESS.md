@@ -2026,3 +2026,23 @@ worktree 检出即为 LF，字节冻结契约跨 worktree 可复现。
 不修改任务卡文件所有权；`*.json` 规则不变；无二进制文件受影响（仅显式
 文本文件族）。此修复是仓库级过程基础设施变更，不归属于任何任务卡，
 已同步记录于 `AGENT_LOG.md`。
+
+### 48.4 同类缺口补丁：Dockerfile 无扩展名文件族（2026-08-04）
+
+T02.1 执行 agent 报告：`containers/reference/Dockerfile`（无扩展名）未被
+`.gitattributes` 的 `text eol=lf` 规则覆盖，`core.autocrlf=true` 下新检出为
+CRLF（实测 23 CRLF/23 LF），其 `recipe_digest` 将跨检出漂移。已提交 blob 与
+当前 worktree 均为 LF（镜像 manifest digest 不受影响，Dockerfile 不进镜像
+层）。按 §48 先例追加 `Dockerfile text eol=lf`。教训：凡字节被证据 digest
+绑定的文件必须在提交前纳入 EOL 规则；后续 WP 新增此类文件族时应在创建时
+补规则。
+
+## 49. PLAN 悬空引用发现：T02.1/T02.2 卡片的 "exact §5.1 matrix"（2026-08-04）
+
+T02.1 执行与两阶段评审发现：GREEN-3 引用的 "the exact §5.1 matrix" 在
+`SPEC.md`（§5.1 为 NFR-PERF，无矩阵）、`PLAN.md`、`SPEC_legacy.md` 均无
+定义；T02.2 卡片存在同样引用。评审判定：按卡片唯一可操作的
+"Expected (2.A)" 行实施 matrix 测试是可辩护的、非阻塞，但 PLAN 卡片文本
+应修正。driver 决定：不改动已执行卡片的规范文本（避免事后篡改执行契约），
+在 T02.2 派遣指令中显式说明该引用非操作性（沿用 T02.1 的操作行），并在
+晨报中提请人工决定卡片文本修订。

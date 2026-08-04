@@ -1,5 +1,6 @@
 .gitattributes text eol=lf
 .gitignore text eol=lf
+Dockerfile text eol=lf
 PLAN.md text eol=lf
 SPEC.md text eol=lf
 SPEC_PROCESS.md text eol=lf
