@@ -582,7 +582,7 @@ def test_loader_rejects_unknown_root_bound_toolchain_field(
 def test_loader_rejects_missing_nested_json_fields(
     tmp_path: Path, field_path: str
 ) -> None:
-    """Closed nested evidence objects reject every missing required field."""
+    """Closed nested evidence objects reject representative missing fields."""
     path = _write_go_evidence(tmp_path)
     data = json.loads(path.read_bytes().decode("utf-8"))
     _delete(data, field_path)
@@ -624,6 +624,28 @@ def test_loader_rejects_missing_root_bound_toolchain_field(
         ).encode("utf-8")
     )
     with pytest.raises(ValueError, match="missing JSON fields"):
+        load_workspace_boundary_gate_report(tmp_path)
+
+
+def test_loader_rejects_unknown_toolchain_schema_version(tmp_path: Path) -> None:
+    """A V1 loader rejects a root-bound toolchain with another version."""
+    path = _write_go_evidence(tmp_path)
+    data = json.loads(path.read_bytes().decode("utf-8"))
+    tc = data["gate_toolchain"]
+    assert isinstance(tc, dict)
+    tc["schema_version"] = 2
+    _recompute_digest_and_write(data, path)
+
+    root_toolchain_path = tmp_path / _ROUTE_TOOLCHAIN
+    root_toolchain_path.write_bytes(
+        json.dumps(
+            tc,
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+        ).encode("utf-8")
+    )
+    with pytest.raises(ValueError, match="schema_version must equal 1"):
         load_workspace_boundary_gate_report(tmp_path)
 
 

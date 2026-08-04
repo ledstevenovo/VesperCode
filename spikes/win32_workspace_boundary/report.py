@@ -253,7 +253,7 @@ def _validate_toolchain_digest(tc: dict[str, object]) -> None:
     """
     stored = tc.get("evidence_digest")
     if not isinstance(stored, str) or len(stored) != 64:
-        raise ValueError("toolchain evidence_digest must be a 64-char hex string")
+        raise ValueError("toolchain evidence_digest must be a 64-character string")
     computed = _compute_toolchain_digest(tc)
     if computed != stored:
         raise ValueError(
@@ -349,6 +349,7 @@ def _read_and_validate_root_toolchain(root: Path) -> dict[str, object]:
     _require_exact_keys(root_tc, _TOOLCHAIN_FIELDS, "root gate_toolchain")
     if root_tc.get("evidence_type") != "GATE_TOOLCHAIN_EVIDENCE_V1":
         raise ValueError("root toolchain evidence has wrong type")
+    _require_schema_version(root_tc, "root gate_toolchain")
     _validate_toolchain_digest(root_tc)
     return root_tc
 
@@ -377,6 +378,14 @@ def _require_int(obj: dict[str, object], key: str) -> int:
     if not isinstance(value, int) or isinstance(value, bool):
         raise ValueError(f"{key} must be a JSON integer")
     return value
+
+
+def _require_schema_version(obj: dict[str, object], path: str) -> int:
+    """Require the exact closed schema version understood by this V1 loader."""
+    version = _require_int(obj, f"{path}.schema_version")
+    if version != 1:
+        raise ValueError(f"{path}.schema_version must equal 1")
+    return version
 
 
 def _require_str(obj: dict[str, object], key: str) -> str:
@@ -412,7 +421,7 @@ def _deserialize_report(
     # as binding failures and bool values can never slip past ``tc != root_tc``
     # via Python's ``True == 1`` equality.
     toolchain = GateToolchainEvidenceV1(
-        schema_version=_require_int(tc, "gate_toolchain.schema_version"),
+        schema_version=_require_schema_version(tc, "gate_toolchain"),
         evidence_type=_require_str(tc, "gate_toolchain.evidence_type"),
         python_version=_require_str(tc, "gate_toolchain.python_version"),
         pytest_version=_require_str(tc, "gate_toolchain.pytest_version"),
@@ -451,7 +460,7 @@ def _deserialize_report(
     _require_exact_keys(ev, _EVALUATION_FIELDS, "evaluation")
     stored_digest = data.get("evidence_digest")
     if not isinstance(stored_digest, str) or len(stored_digest) != 64:
-        raise ValueError("evidence_digest must be a 64-char hex string")
+        raise ValueError("evidence_digest must be a 64-character string")
 
     obs_list = op.get("observations")
     if not isinstance(obs_list, list) or not obs_list:
