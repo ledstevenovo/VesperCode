@@ -481,6 +481,14 @@ class AbAcIntegrityTests(unittest.TestCase):
         with TemporaryDirectory() as directory:
             root = Path(directory).resolve()
             _create_conflicted_git_repo(root)
+            unmerged = subprocess.run(
+                ("git", "ls-files", "--unmerged"),
+                cwd=str(root),
+                check=True,
+                capture_output=True,
+                text=True,
+            ).stdout
+            self.assertTrue(unmerged, "merge conflict was not created")
             result = run_gate_scan(root)
         self.assertEqual(result.exit_code, 2)
         self.assertEqual(result.stdout, "")
