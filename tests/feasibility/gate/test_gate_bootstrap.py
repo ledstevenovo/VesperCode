@@ -5,6 +5,7 @@ import hashlib
 from io import StringIO
 import json
 from pathlib import Path
+import subprocess
 from tempfile import TemporaryDirectory
 import unittest
 from unittest.mock import patch
@@ -475,6 +476,43 @@ class AbAcIntegrityTests(unittest.TestCase):
             drifted["gate_scan_core_sha256"] = "0" * 64
             with self.assertRaises(EvidenceInvalid):
                 verify_evidence(drifted, ROOT / "requirements/gate.lock", ROOT)
+
+    def test_gate_scan_fails_closed_on_unmerged_git_entries(self) -> None:
+        with TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            _create_conflicted_git_repo(root)
+            result = run_gate_scan(root)
+        self.assertEqual(result.exit_code, 2)
+        self.assertEqual(result.stdout, "")
+        self.assertEqual(result.stderr, "ERROR\tGATE_SCAN_GIT_ENUMERATION_FAILED\n")
+
+
+def _create_conflicted_git_repo(root: Path) -> None:
+    def git(*args: str) -> None:
+        subprocess.run(
+            ("git", *args),
+            cwd=str(root),
+            check=True,
+            capture_output=True,
+        )
+
+    git("init", "-b", "main")
+    git("config", "user.name", "gate-test")
+    git("config", "user.email", "gate-test@example.invalid")
+    (root / "a.txt").write_text("base\n", encoding="utf-8")
+    git("add", "a.txt")
+    git("commit", "-m", "base")
+    git("checkout", "-b", "side")
+    (root / "a.txt").write_text("side\n", encoding="utf-8")
+    git("commit", "-am", "side change")
+    git("checkout", "main")
+    (root / "a.txt").write_text("main\n", encoding="utf-8")
+    git("commit", "-am", "main change")
+    subprocess.run(
+        ("git", "merge", "side"),
+        cwd=str(root),
+        capture_output=True,
+    )
 
 
 if __name__ == "__main__":

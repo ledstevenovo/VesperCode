@@ -2,7 +2,8 @@
 
 Scans the staged/unstaged/untracked changed-file union relative to HEAD for
 fixed credential patterns. Operates on raw bytes only and never emits matched
-bytes, values, or surrounding context.
+bytes, values, or surrounding context. Unmerged/ambiguous Git entries fail
+closed as an enumeration error before any file is scanned.
 """
 
 from __future__ import annotations
@@ -80,6 +81,8 @@ def _expand_untracked_directory(root: Path, directory: str) -> tuple[str, ...]:
 
 
 def _enumerate_changed_paths(root: Path) -> tuple[str, ...]:
+    if _git_list(root, "ls-files", "--unmerged"):
+        raise OSError("unmerged git entries present")
     tracked = _git_list(root, "diff", "--name-only", "HEAD")
     untracked: list[str] = []
     for entry in _git_list(root, "ls-files", "--others", "--exclude-standard"):
