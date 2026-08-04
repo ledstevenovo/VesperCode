@@ -1,0 +1,5 @@
+pytest>=8,<9
+ruff
+mypy
+pywin32
+docker
