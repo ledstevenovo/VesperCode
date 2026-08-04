@@ -971,3 +971,14 @@
 - **Verification:** 修复后 `.worktrees/wp02` 重新检出 LF，`materialize --require-existing-evidence` 成功，基线 pytest 通过。
 - **Human intervention:** 无；用户已授权夜间自主执行与默认决策。
 - **Lesson learned:** 字节冻结契约必须配套仓库级 EOL 归一化，否则同一提交在不同 worktree 检出的字节不同，证据哈希跨环境不可复现。
+
+## WP02-DRIVER-T021-FINISH-20260804
+
+- **Timestamp (Asia/Taipei):** `2026-08-04T23:29:23+0800` (system-observed; append-only driver record).
+- **Task ID:** WP02 T02.1 driver 验证与仓库级修复（非任务卡归属）。
+- **Skills invoked:** `verification-before-completion`。
+- **Key prompt/context:** T02.1 执行完成（实现 23e58fc、evidence 468b2e6）。driver 独立复核：95 passed（16.77s）、ruff-format/check、mypy 15 files、scan、diff-check 全 exit 0；完成谓词满足（Status Complete、24/25、AGENT_LOG 记录）。执行 agent 报告两个仓库级发现。
+- **Applied fix (minimum):** `.gitattributes` 追加 `Dockerfile text eol=lf`（§48.4）；§5.1 matrix 悬空引用记录于 SPEC_PROCESS §49，不改卡片文本，T02.2 派遣指令中显式说明。
+- **Verification:** 修复不改变任何已提交字节；wp02 worktree Dockerfile 保持 LF。
+- **Human intervention:** 无；夜间自主执行授权有效。
+- **Lesson learned:** driver 验证层必须独立重跑全部 gate 而非信任 agent 报告；无扩展名文件族的 EOL 规则缺口只能靠"提交前逐字节核验"捕获。
