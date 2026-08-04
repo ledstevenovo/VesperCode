@@ -376,6 +376,140 @@ def test_loader_rejects_internally_inconsistent_evaluation(
         load_workspace_boundary_gate_report(tmp_path)
 
 
+# P1 regression tests — strict JSON type checks (no implicit coercion)
+
+
+def _tamper(data: dict[str, object], path: str, value: object) -> None:
+    """Replace the nested field at *path* (dot-separated) with *value*.
+
+    Numeric segments index into lists, e.g. ``object_probe.observations.0``.
+    """
+    target: object = data
+    parts = path.split(".")
+    for part in parts[:-1]:
+        if isinstance(target, list):
+            target = target[int(part)]
+        elif isinstance(target, dict):
+            target = target[part]
+        else:
+            raise AssertionError(f"tamper path crosses a non-container at {part!r}")
+    if isinstance(target, list):
+        target[int(parts[-1])] = value
+    elif isinstance(target, dict):
+        target[parts[-1]] = value
+    else:
+        raise AssertionError(f"tamper path ends at a non-container {path!r}")
+
+
+def _write_go_evidence(tmp_path: Path) -> Path:
+    """Seed the root toolchain and write valid terminal GO evidence."""
+    _seed_root_toolchain(tmp_path)
+    report = assemble_workspace_boundary_report(
+        toolchain(), object_probe(), mutex_probe()
+    )
+    path = tmp_path / WORKSPACE_BOUNDARY_GO_EVIDENCE_PATH
+    write_workspace_boundary_gate_report(report, path)
+    return path
+
+
+def _recompute_digest_and_write(data: dict[str, object], path: Path) -> None:
+    """Recompute every digest over the tampered body and write it.
+
+    This is what a determined attacker does: the toolchain self-digest and
+    the report-level evidence digest are both recomputed, so every
+    integrity check below passes and only the strict field type checks can
+    reject the malformed evidence.
+    """
+    from spikes.win32_workspace_boundary.report import (
+        _canonical_json_bytes,
+        _compute_evidence_digest,
+    )
+
+    tc = data["gate_toolchain"]
+    assert isinstance(tc, dict)
+    tc_body = {k: v for k, v in tc.items() if k != "evidence_digest"}
+    tc["evidence_digest"] = hashlib.sha256(
+        json.dumps(
+            tc_body,
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+        ).encode("utf-8")
+    ).hexdigest()
+    body = {
+        k: data[k]
+        for k in (
+            "outcome",
+            "gate_toolchain",
+            "object_probe",
+            "mutex_probe",
+            "evaluation",
+        )
+    }
+    data["evidence_digest"] = _compute_evidence_digest(body)
+    path.write_bytes(_canonical_json_bytes(data))
+
+
+@pytest.mark.parametrize(
+    ("field_path", "bad_value"),
+    [
+        # bool("false") == True — string booleans must not count as proof
+        ("object_probe.cleanup_verified", "false"),
+        ("object_probe.cleanup_verified", "true"),
+        ("mutex_probe.cleanup_verified", "false"),
+        ("mutex_probe.cleanup_verified", "true"),
+        ("evaluation.passed", "false"),
+        ("evaluation.passed", "true"),
+        ("object_probe.observations.0.acl_observable", "false"),
+        ("object_probe.observations.0.acl_observable", "true"),
+        ("object_probe.observations.0.acl_observable", 1),
+        ("object_probe.observations.0.acl_observable", None),
+        # int(...) must not accept strings, floats, or bools
+        ("gate_toolchain.schema_version", "1"),
+        ("gate_toolchain.schema_version", 1.5),
+        ("gate_toolchain.schema_version", True),
+        ("object_probe.observations.0.expected_volume_serial", "1"),
+        ("object_probe.observations.0.link_count", 2.0),
+        ("object_probe.observations.0.reparse_tag", False),
+        ("mutex_probe.contender_count", "2"),
+        ("mutex_probe.maximum_concurrent_holders", True),
+        ("mutex_probe.timeout_count", 1.0),
+        # str(...) must not accept numbers or missing values
+        ("gate_toolchain.python_version", 3.12),
+        ("object_probe.observations.0.code", 42),
+        ("object_probe.observations.0.lexical_path", None),
+        ("object_probe.observations.0.expected_file_id_128", 4369),
+        ("mutex_probe.workspace_identity_digest", 123),
+        ("evaluation.failed_codes", ["IDENTITY_UNPROVEN", 7]),
+    ],
+)
+def test_loader_rejects_coerced_json_types(
+    tmp_path: Path, field_path: str, bad_value: object
+) -> None:
+    """P1 regression: implicit bool/int/str coercion must not rescue
+    malformed evidence, even when the digest is recomputed."""
+    path = _write_go_evidence(tmp_path)
+    data = json.loads(path.read_bytes().decode("utf-8"))
+    _tamper(data, field_path, bad_value)
+    _recompute_digest_and_write(data, path)
+    with pytest.raises(ValueError, match="must be a JSON"):
+        load_workspace_boundary_gate_report(tmp_path)
+
+
+def test_loader_rejects_string_false_cleanup_verified(tmp_path: Path) -> None:
+    """P1 regression: the concrete ``bool("false") == True`` bypass.
+
+    A cleanup claim expressed as the string ``"false"`` must not become a
+    terminal GO even when the evidence digest is recomputed.
+    """
+    path = _write_go_evidence(tmp_path)
+    data = json.loads(path.read_bytes().decode("utf-8"))
+    data["object_probe"]["cleanup_verified"] = "false"
+    _recompute_digest_and_write(data, path)
+    with pytest.raises(ValueError, match="cleanup_verified"):
+        load_workspace_boundary_gate_report(tmp_path)
+
+
 def test_loader_rejects_root_toolchain_mismatch(tmp_path: Path) -> None:
     _seed_root_toolchain(tmp_path)
 

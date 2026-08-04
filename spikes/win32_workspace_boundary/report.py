@@ -283,6 +283,45 @@ def _read_and_validate_root_toolchain(root: Path) -> dict[str, object]:
     return root_tc
 
 
+def _require_bool(obj: dict[str, object], key: str) -> bool:
+    """Return the JSON boolean at *key*, rejecting every other JSON type.
+
+    *key* may be a dotted path used only for error messages; the field is
+    looked up by its final segment.
+    """
+    field = key.rsplit(".", 1)[-1]
+    value = obj.get(field)
+    if not isinstance(value, bool):
+        raise ValueError(f"{key} must be a JSON boolean")
+    return value
+
+
+def _require_int(obj: dict[str, object], key: str) -> int:
+    """Return the JSON integer at *key*, rejecting bools, floats, strings.
+
+    *key* may be a dotted path used only for error messages; the field is
+    looked up by its final segment.
+    """
+    field = key.rsplit(".", 1)[-1]
+    value = obj.get(field)
+    if not isinstance(value, int) or isinstance(value, bool):
+        raise ValueError(f"{key} must be a JSON integer")
+    return value
+
+
+def _require_str(obj: dict[str, object], key: str) -> str:
+    """Return the JSON string at *key*, rejecting every other JSON type.
+
+    *key* may be a dotted path used only for error messages; the field is
+    looked up by its final segment.
+    """
+    field = key.rsplit(".", 1)[-1]
+    value = obj.get(field)
+    if not isinstance(value, str):
+        raise ValueError(f"{key} must be a JSON string")
+    return value
+
+
 def _deserialize_report(
     data: object,
     root: Path,
@@ -296,6 +335,27 @@ def _deserialize_report(
     if not isinstance(tc, dict):
         raise ValueError("gate_toolchain must be a JSON object")
     _validate_toolchain_digest(tc)
+
+    # Strict field type checks first, so type errors are never misreported
+    # as binding failures and bool values can never slip past ``tc != root_tc``
+    # via Python's ``True == 1`` equality.
+    toolchain = GateToolchainEvidenceV1(
+        schema_version=_require_int(tc, "gate_toolchain.schema_version"),
+        evidence_type=_require_str(tc, "gate_toolchain.evidence_type"),
+        python_version=_require_str(tc, "gate_toolchain.python_version"),
+        pytest_version=_require_str(tc, "gate_toolchain.pytest_version"),
+        ruff_version=_require_str(tc, "gate_toolchain.ruff_version"),
+        mypy_version=_require_str(tc, "gate_toolchain.mypy_version"),
+        gate_input_sha256=_require_str(tc, "gate_toolchain.gate_input_sha256"),
+        gate_lock_sha256=_require_str(tc, "gate_toolchain.gate_lock_sha256"),
+        gate_scan_sha256=_require_str(tc, "gate_toolchain.gate_scan_sha256"),
+        gate_scan_core_sha256=_require_str(tc, "gate_toolchain.gate_scan_core_sha256"),
+        runner_sha256=_require_str(tc, "gate_toolchain.runner_sha256"),
+        pytest_config_sha256=_require_str(tc, "gate_toolchain.pytest_config_sha256"),
+        ruff_config_sha256=_require_str(tc, "gate_toolchain.ruff_config_sha256"),
+        mypy_config_sha256=_require_str(tc, "gate_toolchain.mypy_config_sha256"),
+        evidence_digest=_require_str(tc, "gate_toolchain.evidence_digest"),
+    )
 
     # P1-2: bind embedded toolchain to the root fixed evidence file
     root_tc = _read_and_validate_root_toolchain(root)
@@ -318,70 +378,64 @@ def _deserialize_report(
     if not isinstance(stored_digest, str) or len(stored_digest) != 64:
         raise ValueError("evidence_digest must be a 64-char hex string")
 
-    toolchain = GateToolchainEvidenceV1(
-        schema_version=int(tc.get("schema_version", 0)),
-        evidence_type=str(tc.get("evidence_type", "")),
-        python_version=str(tc.get("python_version", "")),
-        pytest_version=str(tc.get("pytest_version", "")),
-        ruff_version=str(tc.get("ruff_version", "")),
-        mypy_version=str(tc.get("mypy_version", "")),
-        gate_input_sha256=str(tc.get("gate_input_sha256", "")),
-        gate_lock_sha256=str(tc.get("gate_lock_sha256", "")),
-        gate_scan_sha256=str(tc.get("gate_scan_sha256", "")),
-        gate_scan_core_sha256=str(tc.get("gate_scan_core_sha256", "")),
-        runner_sha256=str(tc.get("runner_sha256", "")),
-        pytest_config_sha256=str(tc.get("pytest_config_sha256", "")),
-        ruff_config_sha256=str(tc.get("ruff_config_sha256", "")),
-        mypy_config_sha256=str(tc.get("mypy_config_sha256", "")),
-        evidence_digest=str(tc.get("evidence_digest", "")),
-    )
-
     obs_list = op.get("observations")
     if not isinstance(obs_list, list) or not obs_list:
         raise ValueError("object_probe.observations must be a non-empty list")
     observations: list[BoundaryObservationV1] = []
-    for obs_data in obs_list:
+    for i, obs_data in enumerate(obs_list):
         if not isinstance(obs_data, dict):
             raise ValueError("each observation must be a JSON object")
+        obs_key = f"object_probe.observations[{i}]"
         observations.append(
             BoundaryObservationV1(
-                code=str(obs_data.get("code", "")),
-                lexical_path=str(obs_data.get("lexical_path", "")),
-                final_path=str(obs_data.get("final_path", "")),
-                expected_volume_serial=int(obs_data.get("expected_volume_serial", 0)),
-                observed_volume_serial=int(obs_data.get("observed_volume_serial", 0)),
+                code=_require_str(obs_data, f"{obs_key}.code"),
+                lexical_path=_require_str(obs_data, f"{obs_key}.lexical_path"),
+                final_path=_require_str(obs_data, f"{obs_key}.final_path"),
+                expected_volume_serial=_require_int(
+                    obs_data, f"{obs_key}.expected_volume_serial"
+                ),
+                observed_volume_serial=_require_int(
+                    obs_data, f"{obs_key}.observed_volume_serial"
+                ),
                 expected_file_id_128=bytes.fromhex(
-                    str(obs_data.get("expected_file_id_128", ""))
+                    _require_str(obs_data, f"{obs_key}.expected_file_id_128")
                 ),
                 observed_file_id_128=bytes.fromhex(
-                    str(obs_data.get("observed_file_id_128", ""))
+                    _require_str(obs_data, f"{obs_key}.observed_file_id_128")
                 ),
-                object_kind=_ensure_object_kind(obs_data.get("object_kind", "FILE")),
-                link_count=int(obs_data.get("link_count", 0)),
-                reparse_tag=int(obs_data.get("reparse_tag", 0)),
-                acl_observable=bool(obs_data.get("acl_observable", False)),
+                object_kind=_ensure_object_kind(obs_data.get("object_kind")),
+                link_count=_require_int(obs_data, f"{obs_key}.link_count"),
+                reparse_tag=_require_int(obs_data, f"{obs_key}.reparse_tag"),
+                acl_observable=_require_bool(obs_data, f"{obs_key}.acl_observable"),
             )
         )
     object_probe = WorkspaceObjectProbeResultV1(
         observations=tuple(observations),
-        cleanup_verified=bool(op.get("cleanup_verified", False)),
+        cleanup_verified=_require_bool(op, "object_probe.cleanup_verified"),
     )
     mutex_probe = WorkspaceMutexProbeResultV1(
-        workspace_identity_digest=str(mp.get("workspace_identity_digest", "")),
-        contender_count=int(mp.get("contender_count", 0)),
-        maximum_concurrent_holders=int(mp.get("maximum_concurrent_holders", 0)),
-        timeout_count=int(mp.get("timeout_count", 0)),
-        cleanup_verified=bool(mp.get("cleanup_verified", False)),
+        workspace_identity_digest=_require_str(
+            mp, "mutex_probe.workspace_identity_digest"
+        ),
+        contender_count=_require_int(mp, "mutex_probe.contender_count"),
+        maximum_concurrent_holders=_require_int(
+            mp, "mutex_probe.maximum_concurrent_holders"
+        ),
+        timeout_count=_require_int(mp, "mutex_probe.timeout_count"),
+        cleanup_verified=_require_bool(mp, "mutex_probe.cleanup_verified"),
     )
 
     # P1-1: recompute evaluation from observations and require equality
     recomputed_evaluation = evaluate_workspace_observations(tuple(observations))
-    stored_passed = bool(ev.get("passed", False))
-    stored_codes: list[str] = (
-        [str(c) for c in ev.get("failed_codes", [])]
-        if isinstance(ev.get("failed_codes"), list)
-        else []
-    )
+    stored_passed = _require_bool(ev, "evaluation.passed")
+    failed_codes_raw = ev.get("failed_codes")
+    if not isinstance(failed_codes_raw, list):
+        raise ValueError("evaluation.failed_codes must be a JSON array")
+    stored_codes: list[str] = []
+    for i, code in enumerate(failed_codes_raw):
+        if not isinstance(code, str):
+            raise ValueError(f"evaluation.failed_codes[{i}] must be a JSON string")
+        stored_codes.append(code)
     if (
         recomputed_evaluation.passed != stored_passed
         or recomputed_evaluation.failed_codes != tuple(stored_codes)
