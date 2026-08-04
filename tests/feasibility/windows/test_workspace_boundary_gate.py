@@ -433,8 +433,8 @@ def _recompute_digest_and_write(data: dict[str, object], path: Path) -> None:
 
     This is what a determined attacker does: the toolchain self-digest and
     the report-level evidence digest are both recomputed, so every
-    integrity check below passes and only the strict field type checks can
-    reject the malformed evidence.
+    integrity check below passes and only the strict schema and field type
+    checks can reject the malformed evidence.
     """
     from spikes.win32_workspace_boundary.report import (
         _canonical_json_bytes,
