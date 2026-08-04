@@ -401,6 +401,22 @@ def _tamper(data: dict[str, object], path: str, value: object) -> None:
         raise AssertionError(f"tamper path ends at a non-container {path!r}")
 
 
+def _delete(data: dict[str, object], path: str) -> None:
+    """Delete the nested field at *path* (dot-separated)."""
+    target: object = data
+    parts = path.split(".")
+    for part in parts[:-1]:
+        if isinstance(target, list):
+            target = target[int(part)]
+        elif isinstance(target, dict):
+            target = target[part]
+        else:
+            raise AssertionError(f"delete path crosses a non-container at {part!r}")
+    if not isinstance(target, dict):
+        raise AssertionError(f"delete path ends at a non-object {path!r}")
+    del target[parts[-1]]
+
+
 def _write_go_evidence(tmp_path: Path) -> Path:
     """Seed the root toolchain and write valid terminal GO evidence."""
     _seed_root_toolchain(tmp_path)
@@ -551,6 +567,63 @@ def test_loader_rejects_unknown_root_bound_toolchain_field(
         ).encode("utf-8")
     )
     with pytest.raises(ValueError, match="unknown JSON fields"):
+        load_workspace_boundary_gate_report(tmp_path)
+
+
+@pytest.mark.parametrize(
+    "field_path",
+    [
+        "object_probe.cleanup_verified",
+        "object_probe.observations.0.code",
+        "mutex_probe.contender_count",
+        "evaluation.failed_codes",
+    ],
+)
+def test_loader_rejects_missing_nested_json_fields(
+    tmp_path: Path, field_path: str
+) -> None:
+    """Closed nested evidence objects reject every missing required field."""
+    path = _write_go_evidence(tmp_path)
+    data = json.loads(path.read_bytes().decode("utf-8"))
+    _delete(data, field_path)
+    _recompute_digest_and_write(data, path)
+    with pytest.raises(ValueError, match="missing JSON fields"):
+        load_workspace_boundary_gate_report(tmp_path)
+
+
+def test_loader_rejects_missing_top_level_json_field(tmp_path: Path) -> None:
+    """The closed report envelope rejects a missing required field."""
+    from spikes.win32_workspace_boundary.report import _canonical_json_bytes
+
+    path = _write_go_evidence(tmp_path)
+    data = json.loads(path.read_bytes().decode("utf-8"))
+    del data["evidence_digest"]
+    path.write_bytes(_canonical_json_bytes(data))
+    with pytest.raises(ValueError, match="missing JSON fields"):
+        load_workspace_boundary_gate_report(tmp_path)
+
+
+def test_loader_rejects_missing_root_bound_toolchain_field(
+    tmp_path: Path,
+) -> None:
+    """Missing toolchain fields reject when both bound copies omit them."""
+    path = _write_go_evidence(tmp_path)
+    data = json.loads(path.read_bytes().decode("utf-8"))
+    tc = data["gate_toolchain"]
+    assert isinstance(tc, dict)
+    del tc["runner_sha256"]
+    _recompute_digest_and_write(data, path)
+
+    root_toolchain_path = tmp_path / _ROUTE_TOOLCHAIN
+    root_toolchain_path.write_bytes(
+        json.dumps(
+            tc,
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+        ).encode("utf-8")
+    )
+    with pytest.raises(ValueError, match="missing JSON fields"):
         load_workspace_boundary_gate_report(tmp_path)
 
 
