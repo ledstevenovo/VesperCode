@@ -666,7 +666,7 @@ Every session task appears in exactly one row. All legacy steps within one task 
 
 ### Task T01.1: Workspace Gate Bootstrap and Pure Boundary Evaluation
 
-**Status:** Not started
+**Status:** Complete
 **Work package:** WP01
 **Legacy steps:** 1.A, 1.B
 **Goal:** Create the sole Python 3.12 feasibility environment, frozen configs, and closed command runner used by every Task 1–3 proof.；Evaluate closed lexical/final-object/ACL observations without touching the filesystem and return stable pass/fail codes.
@@ -817,7 +817,7 @@ python_files = test_*.py
 ```toml
 target-version = "py312"
 line-length = 88
-extend-exclude = [".venv-gate"]
+extend-exclude = [".venv-gate", "*.md"]
 
 [format]
 line-ending = "lf"
@@ -953,7 +953,7 @@ class AaIntegrityTests(unittest.TestCase):
         self.assertEqual(
             (ROOT / "gates/ruff.toml").read_bytes(),
             b'target-version = "py312"\nline-length = 88\n'
-            b'extend-exclude = [".venv-gate"]\n\n[format]\n'
+            b'extend-exclude = [".venv-gate", "*.md"]\n\n[format]\n'
             b'line-ending = "lf"\nquote-style = "double"\nindent-style = "space"\n\n'
             b'[lint]\nselect = ["E4", "E7", "E9", "F"]\n',
         )
@@ -1428,7 +1428,7 @@ git commit -m "Implement T01.1 Workspace Gate Bootstrap and Pure Boundary Evalua
 - [ ] **Step 22: Continue or finish WP01.** If another session task remains in this package, hand the same branch/PR to a new fresh subagent. Otherwise finish and merge only after all predecessors and gates remain valid.
 
 **Done:** 1.A 的 pre-RED bootstrap、精确 `.gitignore` 条目、人工 lock 审查、身份冻结和完整性验证全部通过；随后 1.B 的 RED、Target、Domain、适用真实环境和完整 `GATE_OFFLINE_V1` profile 均通过；Critical/Important finding 全部关闭并复审；没有行为被延后到 successor。
-**Completion evidence:** Not yet executed.
+**Completion evidence:** Implementation commit `20e207f` on branch `codex/wp01` (worktree `.worktrees/wp01`), 2026-08-04. Pre-RED gate: PATH Python 3.12 probe exit 0; 1.Aa RED (`ModuleNotFoundError: No module named 'scripts.gate_scan'`, exit 1) → six exact `AaIntegrityTests` GREEN; bootstrap CLI RED → GREEN; `requirements/gate.lock` resolved from the sole fixed PyPI index, reviewed and ACCEPTED (deterministic re-resolution; independent pip `--dry-run --report` closure cross-check), 20 entries; `.venv-gate` materialized hash-locked (`--require-hashes --no-deps`); `GateToolchainEvidenceV1` written and round-trip verified (Python 3.12.4, pytest 8.4.2, ruff 0.16.1, mypy 2.3.0); 1.Ac integrity `11 passed`; `GATE_BOOTSTRAP_OFFLINE_V1` all exit 0. 1.B RED (collection failure caused solely by the missing evaluator, exit 4 with the declared node-id command) → Target GREEN → Domain `4 passed` (six-row taxonomy matrix, combined precedence/order, empty-sequence rejection). Step 14 refactor: no changes needed; Step 15 `GATE_OFFLINE_V1` all exit 0 (Target, Domain, `ruff-format -- .`, `ruff-check -- .`, mypy, gate scan clean, `git diff --check`). Two-stage review: SPEC review `SPEC_REVIEW_FAIL` → fixes (AGENT_LOG fixture escape, cache hygiene, RED exit-code rationale, Aa-block format record, wrapper diagnostic record) → same-stage re-review `SPEC_REVIEW_PASS`; quality review `QUALITY_REVIEW_FAIL` → fix (GENERIC_API_KEY unquoted-value `(` divergence and atomic `=>` delimiter in `scripts/gate_scan.py`; evidence re-bound) → same-stage re-review `QUALITY_REVIEW_PASS`. Human-approved plan revisions (2026-08-04): `gates/ruff.toml` `extend-exclude` gains `"*.md"` (ruff 0.16.1 formats Markdown code fences; plan display + exact test bytes updated, evidence re-bound); PLAN 4.E fixture split by concatenation (scan-cleanliness). Responsible fresh subagents: gate runner/scan/wrapper, bootstrap CLI (with mypy rework), and 1.B evaluator; controller observed all REDs/GREENS and ran all profile commands. Details in `AGENT_LOG.md` (`T01.1-LOCK-REVIEW-20260804`, `T01.1-GATE-FORMAT-MARKDOWN-FINDING-20260804`, `T01.1-GATE-OFFLINE-V1-CLOSURE-20260804`, `T01.1-COMPLETION-20260804`). PR URL: <pending branch handover — WP01 keeps one PR; T01.2 remains>.
 
 ### Task T01.2: Win32 Boundary Probes and GO Decision
 
@@ -2945,7 +2945,7 @@ Boundary: This child reads only an explicit path list, treats binary input as no
 ```python
 def test_scanner_reports_rule_without_matched_value(tmp_path: Path) -> None:
     candidate = tmp_path / "sample.txt"
-    candidate.write_text("api_key=test-sentinel-value", encoding="utf-8")
+    candidate.write_text("api_key" + "=" + "test-sentinel-value", encoding="utf-8")
     report = scan_changed_files((candidate,))
     rendered = report.model_dump_json()
     assert report.findings[0].rule_id == "GENERIC_API_KEY"
