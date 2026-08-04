@@ -1001,9 +1001,7 @@ class AaIntegrityTests(unittest.TestCase):
             return 0
 
         with redirect_stdout(stdout), redirect_stderr(stderr):
-            unknown_result = run_closed_command(
-                "shell", (), execute=record_unknown
-            )
+            unknown_result = run_closed_command("shell", (), execute=record_unknown)
             with patch("scripts.run_gate_checks.run_closed_command") as wrapped:
                 missing_separator_result = main(["pytest", "tests/test_example.py"])
                 self.assertFalse(wrapped.called)
@@ -1163,12 +1161,8 @@ class AaIntegrityTests(unittest.TestCase):
                     "GATE_SCAN_READ_FAILED",
                 ),
             )
-            results = tuple(
-                run_gate_scan(root, hooks=hooks) for hooks, _ in cases
-            )
-        self.assertEqual(
-            tuple(result.exit_code for result in results), (2, 2, 2, 2)
-        )
+            results = tuple(run_gate_scan(root, hooks=hooks) for hooks, _ in cases)
+        self.assertEqual(tuple(result.exit_code for result in results), (2, 2, 2, 2))
         self.assertEqual(tuple(result.stdout for result in results), ("", "", "", ""))
         self.assertEqual(
             tuple(result.stderr for result in results),
