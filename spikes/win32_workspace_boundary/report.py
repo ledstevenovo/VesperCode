@@ -15,6 +15,7 @@ from typing import Literal
 
 from spikes.win32_workspace_boundary.evaluator import (
     BoundaryEvaluationV1,
+    BoundaryObservationV1,
     evaluate_workspace_observations,
 )
 from spikes.win32_workspace_boundary.object_probe import (
@@ -170,6 +171,23 @@ def _assemble_report_body(
     )
 
 
+def _go_predicate(
+    evaluation: BoundaryEvaluationV1,
+    object_probe: WorkspaceObjectProbeResultV1,
+    mutex_probe: WorkspaceMutexProbeResultV1,
+) -> bool:
+    """Return True when every required evidence item signals GO.
+
+    Shared by the assembler and the loader so the two can never diverge.
+    """
+    return (
+        evaluation.passed
+        and object_probe.cleanup_verified
+        and mutex_probe.cleanup_verified
+        and mutex_probe.maximum_concurrent_holders == 1
+    )
+
+
 def assemble_workspace_boundary_report(
     toolchain: GateToolchainEvidenceV1,
     object_probe: WorkspaceObjectProbeResultV1,
@@ -184,12 +202,7 @@ def assemble_workspace_boundary_report(
     if not object_probe.observations:
         raise ValueError("object probe observations must not be empty")
     evaluation = evaluate_workspace_observations(object_probe.observations)
-    go = (
-        evaluation.passed
-        and object_probe.cleanup_verified
-        and mutex_probe.cleanup_verified
-        and mutex_probe.maximum_concurrent_holders == 1
-    )
+    go = _go_predicate(evaluation, object_probe, mutex_probe)
     outcome: Literal["GO", "NO_GO"] = "GO" if go else "NO_GO"
     return _assemble_report_body(
         toolchain, object_probe, mutex_probe, evaluation, outcome
@@ -248,7 +261,32 @@ def _validate_toolchain_digest(tc: dict[str, object]) -> None:
         )
 
 
-def _deserialize_report(data: object) -> WorkspaceBoundaryGateReportV1:
+_ROOT_TOOLCHAIN_PATH = Path("gates/evidence/gate-toolchain-v1.json")
+
+
+def _read_and_validate_root_toolchain(root: Path) -> dict[str, object]:
+    """Read the root gate-toolchain evidence, validate its self-digest, and
+    return the parsed dict."""
+    path = root / _ROOT_TOOLCHAIN_PATH
+    if not path.is_file():
+        raise ValueError(f"root toolchain evidence file not found: {path}")
+    raw = path.read_bytes()
+    try:
+        root_tc: dict[str, object] = json.loads(raw.decode("utf-8"))
+    except (json.JSONDecodeError, UnicodeDecodeError) as exc:
+        raise ValueError(f"invalid JSON in root toolchain evidence: {exc}") from exc
+    if not isinstance(root_tc, dict):
+        raise ValueError("root toolchain evidence must be a JSON object")
+    if root_tc.get("evidence_type") != "GATE_TOOLCHAIN_EVIDENCE_V1":
+        raise ValueError("root toolchain evidence has wrong type")
+    _validate_toolchain_digest(root_tc)
+    return root_tc
+
+
+def _deserialize_report(
+    data: object,
+    root: Path,
+) -> WorkspaceBoundaryGateReportV1:
     if not isinstance(data, dict):
         raise ValueError("report must be a JSON object")
     outcome = data.get("outcome")
@@ -258,6 +296,15 @@ def _deserialize_report(data: object) -> WorkspaceBoundaryGateReportV1:
     if not isinstance(tc, dict):
         raise ValueError("gate_toolchain must be a JSON object")
     _validate_toolchain_digest(tc)
+
+    # P1-2: bind embedded toolchain to the root fixed evidence file
+    root_tc = _read_and_validate_root_toolchain(root)
+    if tc != root_tc:
+        raise ValueError(
+            "toolchain evidence does not bind root evidence — embedded record "
+            "differs from root gate-toolchain evidence"
+        )
+
     op = data.get("object_probe")
     if not isinstance(op, dict):
         raise ValueError("object_probe must be a JSON object")
@@ -289,14 +336,10 @@ def _deserialize_report(data: object) -> WorkspaceBoundaryGateReportV1:
         evidence_digest=str(tc.get("evidence_digest", "")),
     )
 
-    from spikes.win32_workspace_boundary.evaluator import (
-        BoundaryObservationV1,
-    )
-
     obs_list = op.get("observations")
     if not isinstance(obs_list, list) or not obs_list:
         raise ValueError("object_probe.observations must be a non-empty list")
-    observations = []
+    observations: list[BoundaryObservationV1] = []
     for obs_data in obs_list:
         if not isinstance(obs_data, dict):
             raise ValueError("each observation must be a JSON object")
@@ -330,12 +373,36 @@ def _deserialize_report(data: object) -> WorkspaceBoundaryGateReportV1:
         timeout_count=int(mp.get("timeout_count", 0)),
         cleanup_verified=bool(mp.get("cleanup_verified", False)),
     )
-    evaluation = BoundaryEvaluationV1(
-        passed=bool(ev.get("passed", False)),
-        failed_codes=tuple(str(c) for c in ev.get("failed_codes", [])),
-    )
 
-    body = {
+    # P1-1: recompute evaluation from observations and require equality
+    recomputed_evaluation = evaluate_workspace_observations(tuple(observations))
+    stored_passed = bool(ev.get("passed", False))
+    stored_codes: list[str] = (
+        [str(c) for c in ev.get("failed_codes", [])]
+        if isinstance(ev.get("failed_codes"), list)
+        else []
+    )
+    if (
+        recomputed_evaluation.passed != stored_passed
+        or recomputed_evaluation.failed_codes != tuple(stored_codes)
+    ):
+        raise ValueError(
+            "evaluation inconsistent with observations — stored evaluation "
+            "does not match recomputed evaluation"
+        )
+
+    evaluation = recomputed_evaluation
+
+    # P1-1: re-derive outcome from evidence using the shared predicate
+    derived_go = _go_predicate(evaluation, object_probe, mutex_probe)
+    derived_outcome: Literal["GO", "NO_GO"] = "GO" if derived_go else "NO_GO"
+    if outcome != derived_outcome:
+        raise ValueError(
+            "outcome inconsistent with evidence — stored outcome does not "
+            "match derived outcome from observations"
+        )
+
+    body: dict[str, object] = {
         "outcome": outcome,
         "gate_toolchain": tc,
         "object_probe": op,
@@ -397,7 +464,7 @@ def load_workspace_boundary_gate_report(
         data = json.loads(raw.decode("utf-8"))
     except (json.JSONDecodeError, UnicodeDecodeError) as exc:
         raise ValueError(f"invalid JSON in terminal evidence: {exc}") from exc
-    report = _deserialize_report(data)
+    report = _deserialize_report(data, root)
     if report.outcome != "GO":
         raise ValueError("terminal evidence file must record a GO outcome")
     return report

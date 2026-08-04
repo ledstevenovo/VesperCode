@@ -20,6 +20,7 @@ from spikes.win32_workspace_boundary.report import (
     write_workspace_boundary_gate_report,
 )
 
+_ROUTE_TOOLCHAIN = Path("gates") / "evidence" / "gate-toolchain-v1.json"
 
 _TOOLCHAIN_BODY = {
     "schema_version": 1,
@@ -45,6 +46,19 @@ def _compute_toolchain_digest_from_body(body: dict[str, object]) -> str:
             body, sort_keys=True, separators=(",", ":"), ensure_ascii=False
         ).encode("utf-8")
     ).hexdigest()
+
+
+def _seed_root_toolchain(root: Path) -> None:
+    """Write the fixture toolchain to the root evidence path."""
+    digest = _compute_toolchain_digest_from_body(_TOOLCHAIN_BODY)
+    tc_data = dict(_TOOLCHAIN_BODY, evidence_digest=digest)
+    path = root / _ROUTE_TOOLCHAIN
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(
+        json.dumps(
+            tc_data, sort_keys=True, separators=(",", ":"), ensure_ascii=False
+        ).encode("utf-8")
+    )
 
 
 def toolchain() -> GateToolchainEvidenceV1:
@@ -184,6 +198,7 @@ def test_gate_refuses_go_when_mutex_evidence_is_missing() -> None:
 
 
 def test_terminal_go_evidence_round_trips_at_fixed_path(tmp_path: Path) -> None:
+    _seed_root_toolchain(tmp_path)
     report = assemble_workspace_boundary_report(
         toolchain(), object_probe(), mutex_probe()
     )
@@ -231,6 +246,7 @@ def test_loader_rejects_missing_terminal_file(tmp_path: Path) -> None:
 
 
 def test_loader_rejects_malformed_json(tmp_path: Path) -> None:
+    _seed_root_toolchain(tmp_path)
     path = tmp_path / WORKSPACE_BOUNDARY_GO_EVIDENCE_PATH
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text("not json", encoding="utf-8")
@@ -239,6 +255,7 @@ def test_loader_rejects_malformed_json(tmp_path: Path) -> None:
 
 
 def test_loader_rejects_digest_drifted_evidence(tmp_path: Path) -> None:
+    _seed_root_toolchain(tmp_path)
     report = assemble_workspace_boundary_report(
         toolchain(), object_probe(), mutex_probe()
     )
@@ -267,6 +284,7 @@ def test_complete_evidence_yields_go_with_all_fields_populated() -> None:
 
 
 def test_loader_rejects_non_go_evidence_at_fixed_path(tmp_path: Path) -> None:
+    _seed_root_toolchain(tmp_path)
     from spikes.win32_workspace_boundary.report import (
         _canonical_json_bytes,
         _report_to_serializable,
@@ -294,7 +312,7 @@ def test_assemble_rejects_empty_object_observations() -> None:
 
 
 def test_loader_rejects_toolchain_drifted_evidence(tmp_path: Path) -> None:
-    import json
+    _seed_root_toolchain(tmp_path)
 
     from spikes.win32_workspace_boundary.report import (
         _canonical_json_bytes,
@@ -320,4 +338,82 @@ def test_loader_rejects_toolchain_drifted_evidence(tmp_path: Path) -> None:
     data["evidence_digest"] = _compute_evidence_digest(body)
     path.write_bytes(_canonical_json_bytes(data))
     with pytest.raises(ValueError, match="toolchain evidence"):
+        load_workspace_boundary_gate_report(tmp_path)
+
+
+# P1 regression tests
+
+
+def test_loader_rejects_internally_inconsistent_evaluation(
+    tmp_path: Path,
+) -> None:
+    _seed_root_toolchain(tmp_path)
+    report = assemble_workspace_boundary_report(
+        toolchain(), object_probe(), mutex_probe()
+    )
+    path = tmp_path / WORKSPACE_BOUNDARY_GO_EVIDENCE_PATH
+    write_workspace_boundary_gate_report(report, path)
+    raw = path.read_bytes()
+    data = json.loads(raw.decode("utf-8"))
+
+    # Tamper evaluation.passed to False
+    data["evaluation"]["passed"] = False
+    body = {
+        "outcome": data["outcome"],
+        "gate_toolchain": data["gate_toolchain"],
+        "object_probe": data["object_probe"],
+        "mutex_probe": data["mutex_probe"],
+        "evaluation": data["evaluation"],
+    }
+    from spikes.win32_workspace_boundary.report import (
+        _canonical_json_bytes,
+        _compute_evidence_digest,
+    )
+
+    data["evidence_digest"] = _compute_evidence_digest(body)
+    path.write_bytes(_canonical_json_bytes(data))
+    with pytest.raises(ValueError, match="evaluation inconsistent"):
+        load_workspace_boundary_gate_report(tmp_path)
+
+
+def test_loader_rejects_root_toolchain_mismatch(tmp_path: Path) -> None:
+    _seed_root_toolchain(tmp_path)
+
+    from spikes.win32_workspace_boundary.report import (
+        _canonical_json_bytes,
+        _compute_evidence_digest,
+    )
+
+    report = assemble_workspace_boundary_report(
+        toolchain(), object_probe(), mutex_probe()
+    )
+    path = tmp_path / WORKSPACE_BOUNDARY_GO_EVIDENCE_PATH
+    write_workspace_boundary_gate_report(report, path)
+    raw = path.read_bytes()
+    data = json.loads(raw.decode("utf-8"))
+
+    # Tamper embedded toolchain AND recompute its self-digest
+    tc = data["gate_toolchain"]
+    tc["python_version"] = "3.12.999"
+    compact_body = {k: v for k, v in tc.items() if k != "evidence_digest"}
+    tc["evidence_digest"] = hashlib.sha256(
+        json.dumps(
+            compact_body,
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+        ).encode("utf-8")
+    ).hexdigest()
+
+    # Recompute report-level digest
+    body = {
+        "outcome": data["outcome"],
+        "gate_toolchain": tc,
+        "object_probe": data["object_probe"],
+        "mutex_probe": data["mutex_probe"],
+        "evaluation": data["evaluation"],
+    }
+    data["evidence_digest"] = _compute_evidence_digest(body)
+    path.write_bytes(_canonical_json_bytes(data))
+    with pytest.raises(ValueError, match="does not bind root evidence"):
         load_workspace_boundary_gate_report(tmp_path)
