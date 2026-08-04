@@ -960,3 +960,14 @@
 - **Git / evidence boundary:** narrow evidence commit checks T01.2 Step 33 and appends this entry only. Merge `codex/wp01` → `main` (fast-forward), push `origin main`. No product source or fixed evidence file changed in this turn.
 - **Human intervention:** user authorized overnight autonomous run with default decisions; no human edits in this turn.
 - **Lesson learned:** wave gating must not fork a downstream WP from an unmerged branch; each merge requires a fresh full gate pass and fresh review at the exact tip being merged.
+
+## WP01-DRIVER-EOL-FIX-20260804
+
+- **Timestamp (Asia/Taipei):** `2026-08-04T22:12:18+0800` (system-observed).
+- **Task ID:** 仓库级过程修复（非任务卡归属）：`.gitattributes` 行尾规则。
+- **Skills invoked:** `verification-before-completion`（先复现失败再修复）。
+- **Key prompt/context:** WP01 合入后新建 WP02 worktree 物化 gate 环境失败 `GATE_LOCK_INVALID`；root cause 为 `core.autocrlf=true` 新检出 CRLF 与按 LF 计算的证据哈希失配。该缺陷会级联影响后续所有 WP 的证据冻结。
+- **Applied fix (minimum):** `.gitattributes` 追加 `*.py/*.ps1/*.toml/*.ini/*.lock/*.in` 为 `text eol=lf`；索引 blob 未变（未 renormalize），证据哈希保持有效。
+- **Verification:** 修复后 `.worktrees/wp02` 重新检出 LF，`materialize --require-existing-evidence` 成功，基线 pytest 通过。
+- **Human intervention:** 无；用户已授权夜间自主执行与默认决策。
+- **Lesson learned:** 字节冻结契约必须配套仓库级 EOL 归一化，否则同一提交在不同 worktree 检出的字节不同，证据哈希跨环境不可复现。

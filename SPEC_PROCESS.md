@@ -2001,3 +2001,28 @@ CS-02 的试作记录有效，但不能作为冷启动 PASS。完成本轮文档
 - **阶段裁决：** `FORMAL_READY = CONFIRMED`。正式实现现在获准按当前 `SPEC.md` 与 `PLAN.md` 的工作流开始；冷启动 worktree、代码、分支、提交和环境仍是不可合入的验证性产物，不得作为正式任务完成证据。
 - **当前执行边界：** 本次确认只完成文档和过程闭环。T01.1 仍为 `Not started`，没有创建正式实现 worktree、实现/测试代码、提交、PR、合并、CI、凭据、发布或部署；开始 T01.1 必须等待后续单独指令。
 - **权威输入：** 课程原文、当前 `SPEC.md` 与当前 `PLAN.md` 继续定义正式实现；`SPEC_PROCESS.md` 与 `AGENT_LOG.md` 记录过程事实。旧 `TASK_HANDOFF.md` 仅保留为历史材料，不得作为当前实施输入。
+
+## 48. 行尾归一化缺陷修复：冻结证据文件的 LF 一致性（2026-08-04）
+
+### 48.1 触发与事实核对
+
+WP01 合入 main（4465a7a）后，driver 在新建 `.worktrees/wp02` 时执行
+`bootstrap_gate_env.py materialize --require-existing-evidence` 失败，错误码
+`GATE_LOCK_INVALID`。核对结果：`core.autocrlf=true` 使新 worktree 检出
+`requirements/gate.lock`（以及 `gates/*.ini|toml`、`scripts/*.py|ps1`）为 CRLF；
+而 T01.1 证据 `gate-toolchain-v1.json` 中的 `gate_lock_sha256`（
+585f7bcd…）按 WP01 worktree 的 LF 字节计算（独立复核一致）。既有
+`.gitattributes` 只覆盖 `*.json` 与根文档，未覆盖冻结的 gate/lock/script 文件族。
+
+### 48.2 采纳的最小修复
+
+`.gitattributes` 追加 `*.py`、`*.ps1`、`*.toml`、`*.ini`、`*.lock`、`*.in`
+为 `text eol=lf`。索引 blob 本就是 LF（`git ls-files --eol` 显示 i/lf），
+未做 `--renormalize`，不改变任何已提交字节，证据哈希保持有效。修复后新
+worktree 检出即为 LF，字节冻结契约跨 worktree 可复现。
+
+### 48.3 边界与影响
+
+不修改任务卡文件所有权；`*.json` 规则不变；无二进制文件受影响（仅显式
+文本文件族）。此修复是仓库级过程基础设施变更，不归属于任何任务卡，
+已同步记录于 `AGENT_LOG.md`。
