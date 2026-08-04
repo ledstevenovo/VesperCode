@@ -510,6 +510,50 @@ def test_loader_rejects_string_false_cleanup_verified(tmp_path: Path) -> None:
         load_workspace_boundary_gate_report(tmp_path)
 
 
+@pytest.mark.parametrize(
+    "field_path",
+    [
+        "unexpected_top_level",
+        "object_probe.unexpected_field",
+        "object_probe.observations.0.unexpected_field",
+        "mutex_probe.unexpected_field",
+        "evaluation.unexpected_field",
+    ],
+)
+def test_loader_rejects_unknown_json_fields(tmp_path: Path, field_path: str) -> None:
+    """Closed report objects reject extra fields at every nesting level."""
+    path = _write_go_evidence(tmp_path)
+    data = json.loads(path.read_bytes().decode("utf-8"))
+    _tamper(data, field_path, "unexpected")
+    _recompute_digest_and_write(data, path)
+    with pytest.raises(ValueError, match="unknown JSON fields"):
+        load_workspace_boundary_gate_report(tmp_path)
+
+
+def test_loader_rejects_unknown_root_bound_toolchain_field(
+    tmp_path: Path,
+) -> None:
+    """Unknown toolchain fields reject even when both bound copies match."""
+    path = _write_go_evidence(tmp_path)
+    data = json.loads(path.read_bytes().decode("utf-8"))
+    tc = data["gate_toolchain"]
+    assert isinstance(tc, dict)
+    tc["unexpected_field"] = "unexpected"
+    _recompute_digest_and_write(data, path)
+
+    root_toolchain_path = tmp_path / _ROUTE_TOOLCHAIN
+    root_toolchain_path.write_bytes(
+        json.dumps(
+            tc,
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+        ).encode("utf-8")
+    )
+    with pytest.raises(ValueError, match="unknown JSON fields"):
+        load_workspace_boundary_gate_report(tmp_path)
+
+
 def test_loader_rejects_root_toolchain_mismatch(tmp_path: Path) -> None:
     _seed_root_toolchain(tmp_path)
 

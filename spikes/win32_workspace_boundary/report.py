@@ -263,6 +263,75 @@ def _validate_toolchain_digest(tc: dict[str, object]) -> None:
 
 _ROOT_TOOLCHAIN_PATH = Path("gates/evidence/gate-toolchain-v1.json")
 
+_REPORT_FIELDS = frozenset(
+    {
+        "outcome",
+        "gate_toolchain",
+        "object_probe",
+        "mutex_probe",
+        "evaluation",
+        "evidence_digest",
+    }
+)
+_TOOLCHAIN_FIELDS = frozenset(
+    {
+        "schema_version",
+        "evidence_type",
+        "python_version",
+        "pytest_version",
+        "ruff_version",
+        "mypy_version",
+        "gate_input_sha256",
+        "gate_lock_sha256",
+        "gate_scan_sha256",
+        "gate_scan_core_sha256",
+        "runner_sha256",
+        "pytest_config_sha256",
+        "ruff_config_sha256",
+        "mypy_config_sha256",
+        "evidence_digest",
+    }
+)
+_OBJECT_PROBE_FIELDS = frozenset({"observations", "cleanup_verified"})
+_OBSERVATION_FIELDS = frozenset(
+    {
+        "code",
+        "lexical_path",
+        "final_path",
+        "expected_volume_serial",
+        "observed_volume_serial",
+        "expected_file_id_128",
+        "observed_file_id_128",
+        "object_kind",
+        "link_count",
+        "reparse_tag",
+        "acl_observable",
+    }
+)
+_MUTEX_PROBE_FIELDS = frozenset(
+    {
+        "workspace_identity_digest",
+        "contender_count",
+        "maximum_concurrent_holders",
+        "timeout_count",
+        "cleanup_verified",
+    }
+)
+_EVALUATION_FIELDS = frozenset({"passed", "failed_codes"})
+
+
+def _require_exact_keys(
+    obj: dict[str, object], expected: frozenset[str], path: str
+) -> None:
+    """Reject missing or unknown fields in one closed JSON object."""
+    actual = frozenset(obj)
+    missing = sorted(expected - actual)
+    if missing:
+        raise ValueError(f"{path} missing JSON fields: {', '.join(missing)}")
+    unknown = sorted(actual - expected)
+    if unknown:
+        raise ValueError(f"{path} contains unknown JSON fields: {', '.join(unknown)}")
+
 
 def _read_and_validate_root_toolchain(root: Path) -> dict[str, object]:
     """Read the root gate-toolchain evidence, validate its self-digest, and
@@ -277,6 +346,7 @@ def _read_and_validate_root_toolchain(root: Path) -> dict[str, object]:
         raise ValueError(f"invalid JSON in root toolchain evidence: {exc}") from exc
     if not isinstance(root_tc, dict):
         raise ValueError("root toolchain evidence must be a JSON object")
+    _require_exact_keys(root_tc, _TOOLCHAIN_FIELDS, "root gate_toolchain")
     if root_tc.get("evidence_type") != "GATE_TOOLCHAIN_EVIDENCE_V1":
         raise ValueError("root toolchain evidence has wrong type")
     _validate_toolchain_digest(root_tc)
@@ -328,12 +398,14 @@ def _deserialize_report(
 ) -> WorkspaceBoundaryGateReportV1:
     if not isinstance(data, dict):
         raise ValueError("report must be a JSON object")
+    _require_exact_keys(data, _REPORT_FIELDS, "report")
     outcome = data.get("outcome")
     if outcome not in ("GO", "NO_GO"):
         raise ValueError("report outcome must be GO or NO_GO")
     tc = data.get("gate_toolchain")
     if not isinstance(tc, dict):
         raise ValueError("gate_toolchain must be a JSON object")
+    _require_exact_keys(tc, _TOOLCHAIN_FIELDS, "gate_toolchain")
     _validate_toolchain_digest(tc)
 
     # Strict field type checks first, so type errors are never misreported
@@ -374,6 +446,9 @@ def _deserialize_report(
     ev = data.get("evaluation")
     if not isinstance(ev, dict):
         raise ValueError("evaluation must be a JSON object")
+    _require_exact_keys(op, _OBJECT_PROBE_FIELDS, "object_probe")
+    _require_exact_keys(mp, _MUTEX_PROBE_FIELDS, "mutex_probe")
+    _require_exact_keys(ev, _EVALUATION_FIELDS, "evaluation")
     stored_digest = data.get("evidence_digest")
     if not isinstance(stored_digest, str) or len(stored_digest) != 64:
         raise ValueError("evidence_digest must be a 64-char hex string")
@@ -386,6 +461,7 @@ def _deserialize_report(
         if not isinstance(obs_data, dict):
             raise ValueError("each observation must be a JSON object")
         obs_key = f"object_probe.observations[{i}]"
+        _require_exact_keys(obs_data, _OBSERVATION_FIELDS, obs_key)
         observations.append(
             BoundaryObservationV1(
                 code=_require_str(obs_data, f"{obs_key}.code"),
