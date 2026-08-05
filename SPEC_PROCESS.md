@@ -2078,3 +2078,20 @@ PASS（T03.2 质量评审的 2 个 Minor 关闭记录不实问题已修：delete
 矩阵行接入、`_kernel32()` 单 helper 合并）。合并 `codex/wp03` → `main`。
 T03.2 的 3.G GO 仅当完整故障/deadline/外部变化/preview/apply 矩阵在一次性
 NTFS 对象上全部通过且身份一致时发出——driver 复核认可。
+
+## 52. 计划修订：.gitignore 纳入 .venv-formal（2026-08-05）
+
+T04.1 引入正式环境 `.venv-formal` 后，changed-file credential scan 退出 1：
+8 条 MATCH 全部位于 `.venv-formal/Lib/site-packages` 第三方源码（fastapi
+skill md、httpx/pip/urllib3/pydantic），任务文件零命中。根因：T01.1 将
+`.gitignore` 冻结为精确 `.venv-gate/`（含逐字节测试），新声明环境无法以
+提交级 ignore 排除。经 git 本地 exclude（`--exclude-standard` 语义，与
+T01.1 卡 rationale "disposable environment cannot enter changed-file
+scans" 一致）验证同一命令 exit 0。
+
+**采纳修订（CS-01 先例）**：`.gitignore` 追加 `.venv-formal/` 一行；
+`tests/feasibility/gate/test_gate_bootstrap.py:28` 的字节断言同步更新为
+`b".venv-gate/\n.venv-formal/\n"`。`.venv-formal` 与 `.venv-gate` 同为
+一次性/正式的可丢弃环境，纳入扫描排除符合卡的原始意图。T04.1 证据中
+记录的 scan exit 1 及 8 条第三方 MATCH 保持原样（诚实记录先行），本修订
+使后续闭包（含 T04.2）恢复正常 exit 0。
