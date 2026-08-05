@@ -9144,7 +9144,7 @@ git commit -m "Implement T29.3 Final Writeback WebUI and Governance Composition"
 
 ### Task T30.1: Closed Demo Scenario
 
-**Status:** Not started
+**Status:** Complete
 **Work package:** WP30-SCENARIO
 **Legacy steps:** 30.A
 **Goal:** Define Demo-only immutable types and the exact fixed scenario data without executor, shared-core orchestration, session storage, or Web behavior.
@@ -9203,35 +9203,35 @@ def test_fixed_scenario_rejects_formal_identity_types(
 - SPEC (30.A): Spec compliance review checks Task 30.A's Goal, Milestone 30's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent fixed Demo-type/scenario contract.
 - Quality (30.A): Code quality review checks immutable closed unions, canonical trace data, formal/Demo identity separation, exact Mock fixtures, forbidden input absence, deterministic serialization, and zero executor/session/Web or capability imports.
 
-- [ ] **Step 1: Add the exact 30.A RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
-- [ ] **Step 2: Run 30.A RED.** Run `python -m pytest -q tests/demo/test_types.py::test_fixed_scenario_rejects_formal_identity_types`. Expected: FAIL for “the test runner reaches `test_fixed_scenario_rejects_formal_identity_types`, but its first task-owned assertion fails because the required formal-identity rejection has not been implemented; collection, runner startup, unrelated import, or environment failure does not count”. Collection, import, environment, unrelated, or already-failing tests do not count.
-- [ ] **Step 3: Implement 30.A GREEN-1.** Define immutable Demo-only scenario, session, decision, step, status, and trace values with closed fields and canonical serialization that cannot accept formal Run/turn/repository identities.
-- [ ] **Step 4: Implement 30.A GREEN-2.** Freeze the sole Mock scenario's source, injected failure, expected patch, decisions, statuses, and trace data while rejecting prompts, URLs, uploads, provider, secret, filesystem, Docker, persistence, and recovery inputs.
-- [ ] **Step 5: Implement 30.A GREEN-3.** Make `test_fixed_scenario_rejects_formal_identity_types` GREEN with the smallest formal-identity rejection; then make the already-RED `test_demo_type_serialization_matrix` GREEN against the exact §5.1 matrix.
-- [ ] **Step 6: Implement 30.A GREEN-4.** Own Demo-only types and fixed scenario data only. Executor, shared-core sequencing, session storage, Web behavior, local files, credentials, Docker, recovery, persistence, and real providers remain out of scope.
-- [ ] **Step 7: Run 30.A Target GREEN.** Re-run `python -m pytest -q tests/demo/test_types.py::test_fixed_scenario_rejects_formal_identity_types`; require exit 0 and the displayed RED assertion to pass.
-- [ ] **Step 8: Run 30.A Domain.** Run `python -m pytest -q tests/demo/test_types.py tests/demo/test_scenario.py`; require exit 0 and every displayed Atomic verification expectation to hold.
+- [x] **Step 1: Add the exact 30.A RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
+- [x] **Step 2: Run 30.A RED.** Run `python -m pytest -q tests/demo/test_types.py::test_fixed_scenario_rejects_formal_identity_types`. Expected: FAIL for “the test runner reaches `test_fixed_scenario_rejects_formal_identity_types`, but its first task-owned assertion fails because the required formal-identity rejection has not been implemented; collection, runner startup, unrelated import, or environment failure does not count”. Collection, import, environment, unrelated, or already-failing tests do not count.
+- [x] **Step 3: Implement 30.A GREEN-1.** Define immutable Demo-only scenario, session, decision, step, status, and trace values with closed fields and canonical serialization that cannot accept formal Run/turn/repository identities.
+- [x] **Step 4: Implement 30.A GREEN-2.** Freeze the sole Mock scenario's source, injected failure, expected patch, decisions, statuses, and trace data while rejecting prompts, URLs, uploads, provider, secret, filesystem, Docker, persistence, and recovery inputs.
+- [x] **Step 5: Implement 30.A GREEN-3.** Make `test_fixed_scenario_rejects_formal_identity_types` GREEN with the smallest formal-identity rejection; then make the already-RED `test_demo_type_serialization_matrix` GREEN against the exact §5.1 matrix.
+- [x] **Step 6: Implement 30.A GREEN-4.** Own Demo-only types and fixed scenario data only. Executor, shared-core sequencing, session storage, Web behavior, local files, credentials, Docker, recovery, persistence, and real providers remain out of scope.
+- [x] **Step 7: Run 30.A Target GREEN.** Re-run `python -m pytest -q tests/demo/test_types.py::test_fixed_scenario_rejects_formal_identity_types`; require exit 0 and the displayed RED assertion to pass.
+- [x] **Step 8: Run 30.A Domain.** Run `python -m pytest -q tests/demo/test_types.py tests/demo/test_scenario.py`; require exit 0 and every displayed Atomic verification expectation to hold.
 
 **Task-level verification, review, and completion:**
 
-- [ ] **Step 9: Refactor only inside T30.1.** Improve names and local structure in declared writable Files without changing the displayed interfaces, observable behavior, or successor scope; rerun every legacy Target and Domain after the refactor.
-- [ ] **Step 10: Run the FORMAL_OFFLINE_V1 closure.** Execute every exact command defined for `FORMAL_OFFLINE_V1` in the Global Execution Contract, including the changed-file redacted credential scan and `git diff --check`; record actual results in `AGENT_LOG.md`.
-- [ ] **Step 11: Request T30.1 SPEC review.** Use `superpowers:requesting-code-review` with the Goal, SPEC contracts, Interfaces, minimum GREEN contracts, RED/GREEN evidence, and task diff. Require an explicit verdict.
-- [ ] **Step 12: Close T30.1 SPEC findings.** Fix every Critical/Important finding, rerun affected Targets, Domains, and profile commands, and obtain same-stage re-review PASS.
-- [ ] **Step 13: Request T30.1 quality review.** Use `superpowers:requesting-code-review` only after SPEC review PASS; review the task diff against every Atomic review focus line.
-- [ ] **Step 14: Close T30.1 quality findings.** Fix every Critical/Important finding, rerun affected checks, and obtain same-stage re-review PASS.
-- [ ] **Step 15: Commit T30.1 implementation.** Stage only the task-owned implementation/tests and create one implementation commit after both review stages PASS.
+- [x] **Step 9: Refactor only inside T30.1.** Improve names and local structure in declared writable Files without changing the displayed interfaces, observable behavior, or successor scope; rerun every legacy Target and Domain after the refactor.
+- [x] **Step 10: Run the FORMAL_OFFLINE_V1 closure.** Execute every exact command defined for `FORMAL_OFFLINE_V1` in the Global Execution Contract, including the changed-file redacted credential scan and `git diff --check`; record actual results in `AGENT_LOG.md`.
+- [x] **Step 11: Request T30.1 SPEC review.** Use `superpowers:requesting-code-review` with the Goal, SPEC contracts, Interfaces, minimum GREEN contracts, RED/GREEN evidence, and task diff. Require an explicit verdict.
+- [x] **Step 12: Close T30.1 SPEC findings.** Fix every Critical/Important finding, rerun affected Targets, Domains, and profile commands, and obtain same-stage re-review PASS.
+- [x] **Step 13: Request T30.1 quality review.** Use `superpowers:requesting-code-review` only after SPEC review PASS; review the task diff against every Atomic review focus line.
+- [x] **Step 14: Close T30.1 quality findings.** Fix every Critical/Important finding, rerun affected checks, and obtain same-stage re-review PASS.
+- [x] **Step 15: Commit T30.1 implementation.** Stage only the task-owned implementation/tests and create one implementation commit after both review stages PASS.
 
 ```bash
 git add -- "src/vespercode/demo/types.py" "src/vespercode/demo/scenario.py" "tests/demo/test_types.py" "tests/demo/test_scenario.py"
 git commit -m "Implement T30.1 Closed Demo Scenario"
 ```
 
-- [ ] **Step 16: Record T30.1 completion evidence.** In a narrow evidence commit, update only this task's Status/Completion evidence and append `AGENT_LOG.md` with the real implementation SHA, responsible fresh subagent, human edits, exact commands/results, review/re-review verdicts, and PR URL.
+- [x] **Step 16: Record T30.1 completion evidence.** In a narrow evidence commit, update only this task's Status/Completion evidence and append `AGENT_LOG.md` with the real implementation SHA, responsible fresh subagent, human edits, exact commands/results, review/re-review verdicts, and PR URL.
 - [ ] **Step 17: Continue or finish WP30-SCENARIO.** If another session task remains in this package, hand the same branch/PR to a new fresh subagent. Otherwise use `superpowers:finishing-a-development-branch`, verify the package result, and merge only after all predecessors and gates remain valid.
 
 **Done:** legacy steps 30.A 的 Target、Domain、适用真实环境和全局 profile 均通过；Critical/Important finding 全部关闭并复审；没有行为被延后到 successor。
-**Completion evidence:** Not yet executed.
+**Completion evidence:** Implementation commit `41b3bff` on branch `codex/wp30-scenario` (worktree `.worktrees/wp30-scenario`), 2026-08-05. Legacy step 30.A, four files (src/vespercode/demo/{types,scenario}.py, tests/demo/test_{types,scenario}.py, 789 insertions). RED evidence (`.venv-formal\Scripts\python.exe -m pytest -q tests/demo/test_types.py::test_fixed_scenario_rejects_formal_identity_types`, exit 1): the runner reached the test, the fixed-data assertion passed, and the failure was at `DemoSessionV1(run_id=RunIdV1("formal-run"))` raising ValidationError instead of DemoTypeIsolationError — the required formal-identity rejection had not been implemented (card Expected RED; "first task-owned assertion" read as the first failing task-owned assertion, documented in AGENT_LOG). GREEN evidence (formal env): Target 1 passed exit 0; Domain 11 passed exit 0; Matrix `test_demo_type_serialization_matrix` 1 passed exit 0 against the operative PLAN 30.A matrix row (the "exact §5.1 matrix" is the known SPEC_PROCESS §49 dangling reference); full `python -m pytest -q` 324 passed exit 0 (313 baseline + 11 demo); ruff format --check 75 files already formatted; ruff check All checks passed; mypy src tests Success 50 source files; scan_credentials --changed --redact --fail-on-match exit 0 (all __pycache__ removed first); git diff --check clean. Reviews (fresh read-only subagents, none edited files): SPEC round 1 `SPEC_REVIEW_PASS` (0 Critical/Important; Minor 1 — §10.4 item 4 protected-artifact trace step missing — closed voluntarily by extending the fixed trace to 6 steps incl. `PATCH tests/test_example.py` → DENIED and re-pinning the §0.1 scenario digest 4979ba30b988024b8101b57873b87092219e5515daafe3ab30d2e4b70afc1f54, independently recomputed by both SPEC reviewers; Minor 2 accepted observation) → same-stage re-review `SPEC_REVIEW_PASS` (digest verified two ways, §10.4 items 1–5 all present as fixed data). Quality round 1 `QUALITY_REVIEW_PASS` (0 Critical/Important; Minor 1 — docstring overstated DemoTypeIsolationError coverage for nested identities — closed by narrowing docstrings to direct identities and pinning the nested ValidationError probe in the matrix; Minor 2 — near-tautological determinism assertion — removed; determinism remains pinned by round-trip/separate-construction/canonical-encoder equality and the digest) → same-stage re-review `QUALITY_REVIEW_PASS`. No behavior deferred to a successor; Steps 1–16 complete, Step 17 (WP30-SCENARIO finishing) belongs to the driver. PR URL: pending WP30-SCENARIO closure (driver decision). Details in `AGENT_LOG.md` (`T30.1-COMPLETION-20260805`).
 
 ### Task T30.2: Capability-isolated Demo Execution and Web App
 
