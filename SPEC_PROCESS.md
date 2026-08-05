@@ -2132,3 +2132,16 @@ ruff/mypy（46 files）全绿、credential scan exit 0、git diff --check clean�
    作为 8.9 前的检查点。
 3. Stage B 课程硬性交付不可省略：WebUI（E1–E3）、CI（E6）、wheel（E5）、
    E2E（E4）、README/REFLECTION（E8）——重排不改变截止数学。
+
+## 56. 波次 6（首个 4-WP 并行波）收官（2026-08-05）
+
+WP06（T06.1–T06.4：可编辑路径策略/reference manifest 完整性/LLM profile 契约/
+内置注册表解析）、WP07-CORE（T07.1–T07.3：迁移引擎/Run-wait 转换/幂等 ledger）、
+WP10-TEXT（T10.1：文本分类）、WP30-SCENARIO（T30.1：Demo 场景数据）全部完成，
+两阶段评审 PASS。driver 逐一独立验证：formal 323（WP06）/346（WP07-CORE）/
+318（T10.1）/324（T30.1）、gate 基线 219 全保、ruff/mypy/scan/diff-check 全绿。
+按任务号序合并 codex/wp06 → codex/wp07-core → codex/wp10-text →
+codex/wp30-scenario → main。
+
+操作学习：4 套件并发全量回归跑 Docker 测试资源竞争（首次基线 10–15 失败），
+串行后全绿——全量回归须串行化；定向 Target/Domain 无此问题。

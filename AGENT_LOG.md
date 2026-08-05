@@ -1225,3 +1225,13 @@
 - **Git / evidence boundary:** 本记录 + SPEC_PROCESS §54 提交于 codex/wp05，FF 合并 → main，push origin main。无任务卡文本改动。
 - **Human intervention:** 无；夜间自主执行授权有效。
 - **Lesson learned:** 共享词汇层是后续所有 WP 的地基——本轮 11 条设计解释（闭式泛型、digest 绑定、state/phase 一致性）都须在 AGENT_LOG 留存，供 WP06+ 执行 agent 直接引用。
+
+## WAVE06-DRIVER-FINISHING-20260805
+
+- **Timestamp (Asia/Taipei):** `2026-08-05T19:28:18+0800` (system-observed; append-only driver record).
+- **Task ID:** 波次 6 包级 finishing（WP06/WP07-CORE/WP10-TEXT/WP30-SCENARIO）。
+- **Skills invoked:** `verification-before-completion`、`finishing-a-development-branch`、`dispatching-parallel-agents`。
+- **Key prompt/context:** 首个 4-WP 并行波。4 个 agent 并行执行全部完成；driver 逐一独立验证（formal 323/346/318/324、gate 219 基线、mypy 56/61/48/50 files 全绿、scan/diff-check 全 0）。首日基线 4 并发跑 Docker 测试资源竞争失败（10–15 failed），串行后全绿。
+- **Git / evidence boundary:** 按任务号序合并 4 分支 → main，push origin main。SPEC_PROCESS §56。无任务卡文本改动。
+- **Human intervention:** 无；夜间自主执行授权有效。
+- **Lesson learned:** 并行波的全量回归必须串行化（Docker 资源竞争），driver 验证按 worktree 逐个跑；同波 WP 合入按任务号序串行。
