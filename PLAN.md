@@ -5399,7 +5399,7 @@ git commit -m "Implement T14.1 FinalWritebackSubject and One-time Approval"
 
 ### Task T15.1: Disclosure Sources, Scope, and Grant Subjects
 
-**Status:** Not started
+**Status:** Complete
 **Work package:** WP15
 **Legacy steps:** 15.A, 15.B, 15.C
 **Goal:** Validate exact request message/segment source categories, paths, content digests, indexes, and byte counts before subject construction.；Canonicalize disclosure scopes and match ROOT/FILE/DIRECTORY only at exact path-segment boundaries.；Build the immutable disclosure Grant subject from validated sources, canonical scopes/categories, frozen profile, endpoint, serializer, and expiry.
@@ -5459,14 +5459,14 @@ def test_file_segment_requires_canonical_path() -> None:
 - SPEC (15.A): Spec compliance review checks Task 15.A's Goal, Milestone 15's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent request source/segment validation contract.
 - Quality (15.A): Code quality review checks category closure, canonical path requirements, segment indexing/order, digest/byte-count binding, duplicate detection, deterministic projection, and mutation-free rejection.
 
-- [ ] **Step 1: Add the exact 15.A RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
-- [ ] **Step 2: Run 15.A RED.** Run `python -m pytest -q tests/unit/governance/test_request_sources.py::test_file_segment_requires_canonical_path`. Expected: FAIL for “the closed source/segment validator does not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
-- [ ] **Step 3: Implement 15.A GREEN-1.** Define closed request message, segment, source-category, and immutable message-sequence values with exact source path, digest, index, and byte-count identities.
-- [ ] **Step 4: Implement 15.A GREEN-2.** Validate category-specific path rules and one-to-one segment/source projection; missing, duplicate, reordered, mismatched, or ambiguous content identities reject before mutation.
-- [ ] **Step 5: Implement 15.A GREEN-3.** Make `test_file_segment_requires_canonical_path` GREEN with the smallest file-source path rejection; then make the already-RED `test_disclosure_source_segment_matrix` GREEN against the exact §5.1 matrix.
-- [ ] **Step 6: Implement 15.A GREEN-4.** Own source/category/path/index/digest/byte validation only. Grant scope matching, subject construction, wait decisions, byte charging, and request-body persistence remain out of scope.
-- [ ] **Step 7: Run 15.A Target GREEN.** Re-run `python -m pytest -q tests/unit/governance/test_request_sources.py::test_file_segment_requires_canonical_path`; require exit 0 and the displayed RED assertion to pass.
-- [ ] **Step 8: Run 15.A Domain.** Run `python -m pytest -q tests/unit/governance/test_request_sources.py`; require exit 0 and every displayed Atomic verification expectation to hold.
+- [x] **Step 1: Add the exact 15.A RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
+- [x] **Step 2: Run 15.A RED.** Run `python -m pytest -q tests/unit/governance/test_request_sources.py::test_file_segment_requires_canonical_path`. Expected: FAIL for “the closed source/segment validator does not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
+- [x] **Step 3: Implement 15.A GREEN-1.** Define closed request message, segment, source-category, and immutable message-sequence values with exact source path, digest, index, and byte-count identities.
+- [x] **Step 4: Implement 15.A GREEN-2.** Validate category-specific path rules and one-to-one segment/source projection; missing, duplicate, reordered, mismatched, or ambiguous content identities reject before mutation.
+- [x] **Step 5: Implement 15.A GREEN-3.** Make `test_file_segment_requires_canonical_path` GREEN with the smallest file-source path rejection; then make the already-RED `test_disclosure_source_segment_matrix` GREEN against the exact §5.1 matrix.
+- [x] **Step 6: Implement 15.A GREEN-4.** Own source/category/path/index/digest/byte validation only. Grant scope matching, subject construction, wait decisions, byte charging, and request-body persistence remain out of scope.
+- [x] **Step 7: Run 15.A Target GREEN.** Re-run `python -m pytest -q tests/unit/governance/test_request_sources.py::test_file_segment_requires_canonical_path`; require exit 0 and the displayed RED assertion to pass.
+- [x] **Step 8: Run 15.A Domain.** Run `python -m pytest -q tests/unit/governance/test_request_sources.py`; require exit 0 and every displayed Atomic verification expectation to hold.
 
 #### Legacy step 15.B: Pure Disclosure Scope Matching
 
@@ -5503,14 +5503,14 @@ def test_directory_scope_does_not_match_string_prefix_sibling() -> None:
 - SPEC (15.B): Spec compliance review checks Task 15.B's Goal, Milestone 15's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent canonical disclosure scope matching contract.
 - Quality (15.B): Code quality review checks deterministic scope order, segment-boundary correctness, ROOT/FILE/DIRECTORY closure, alias/duplicate handling, empty-scope semantics, and pure evaluation.
 
-- [ ] **Step 9: Add the exact 15.B RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
-- [ ] **Step 10: Run 15.B RED.** Run `python -m pytest -q tests/unit/governance/test_disclosure_scope.py::test_directory_scope_does_not_match_string_prefix_sibling`. Expected: FAIL for “the canonical segment-boundary matcher does not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
-- [ ] **Step 11: Implement 15.B GREEN-1.** Canonicalize immutable ROOT/FILE/DIRECTORY disclosure scopes into one deterministic ordered sequence and match only canonical relative paths.
-- [ ] **Step 12: Implement 15.B GREEN-2.** Apply exact segment-boundary semantics so directory string-prefix siblings, aliases, duplicates, and empty or ambiguous scope sets fail closed.
-- [ ] **Step 13: Implement 15.B GREEN-3.** Make `test_directory_scope_does_not_match_string_prefix_sibling` GREEN with the smallest sibling-prefix false match; then make the already-RED `test_disclosure_scope_match_matrix` GREEN against the exact §5.1 matrix.
-- [ ] **Step 14: Implement 15.B GREEN-4.** Own pure scope canonicalization and matching only. Message-body inspection, Grant construction, decision persistence, request authorization, and charging remain out of scope.
-- [ ] **Step 15: Run 15.B Target GREEN.** Re-run `python -m pytest -q tests/unit/governance/test_disclosure_scope.py::test_directory_scope_does_not_match_string_prefix_sibling`; require exit 0 and the displayed RED assertion to pass.
-- [ ] **Step 16: Run 15.B Domain.** Run `python -m pytest -q tests/unit/governance/test_disclosure_scope.py`; require exit 0 and every displayed Atomic verification expectation to hold.
+- [x] **Step 9: Add the exact 15.B RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
+- [x] **Step 10: Run 15.B RED.** Run `python -m pytest -q tests/unit/governance/test_disclosure_scope.py::test_directory_scope_does_not_match_string_prefix_sibling`. Expected: FAIL for “the canonical segment-boundary matcher does not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
+- [x] **Step 11: Implement 15.B GREEN-1.** Canonicalize immutable ROOT/FILE/DIRECTORY disclosure scopes into one deterministic ordered sequence and match only canonical relative paths.
+- [x] **Step 12: Implement 15.B GREEN-2.** Apply exact segment-boundary semantics so directory string-prefix siblings, aliases, duplicates, and empty or ambiguous scope sets fail closed.
+- [x] **Step 13: Implement 15.B GREEN-3.** Make `test_directory_scope_does_not_match_string_prefix_sibling` GREEN with the smallest sibling-prefix false match; then make the already-RED `test_disclosure_scope_match_matrix` GREEN against the exact §5.1 matrix.
+- [x] **Step 14: Implement 15.B GREEN-4.** Own pure scope canonicalization and matching only. Message-body inspection, Grant construction, decision persistence, request authorization, and charging remain out of scope.
+- [x] **Step 15: Run 15.B Target GREEN.** Re-run `python -m pytest -q tests/unit/governance/test_disclosure_scope.py::test_directory_scope_does_not_match_string_prefix_sibling`; require exit 0 and the displayed RED assertion to pass.
+- [x] **Step 16: Run 15.B Domain.** Run `python -m pytest -q tests/unit/governance/test_disclosure_scope.py`; require exit 0 and every displayed Atomic verification expectation to hold.
 
 #### Legacy step 15.C: Pure Disclosure Grant Subject
 
@@ -5548,35 +5548,35 @@ def test_subject_uses_frozen_endpoint_not_request_url() -> None:
 - SPEC (15.C): Spec compliance review checks Task 15.C's Goal, Milestone 15's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent immutable disclosure Grant subject contract.
 - Quality (15.C): Code quality review checks complete source/scope/profile/endpoint/serializer/expiry binding, trusted endpoint use, canonical digest determinism, override rejection, and side-effect freedom.
 
-- [ ] **Step 17: Add the exact 15.C RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
-- [ ] **Step 18: Run 15.C RED.** Run `python -m pytest -q tests/unit/governance/test_disclosure_subject.py::test_subject_uses_frozen_endpoint_not_request_url`. Expected: FAIL for “no immutable Grant subject builder binds the frozen sources/profile/endpoint”. Collection, import, environment, unrelated, or already-failing tests do not count.
-- [ ] **Step 19: Implement 15.C GREEN-1.** Build one pure `DisclosureGrantSubjectV1` from validated source projection, canonical scopes/categories, frozen OpenAI profile, trusted endpoint, serializer identity, and expiry.
-- [ ] **Step 20: Implement 15.C GREEN-2.** Bind every immutable authorization fact into canonical subject bytes/digest and reject request-supplied endpoint/model/source/scope/expiry overrides.
-- [ ] **Step 21: Implement 15.C GREEN-3.** Make `test_subject_uses_frozen_endpoint_not_request_url` GREEN with the smallest request-URL override rejection; then make the already-RED `test_disclosure_subject_drift_matrix` GREEN against the exact §5.1 matrix.
-- [ ] **Step 22: Implement 15.C GREEN-4.** Own subject bytes and digest only. Wait/Grant creation, revocation, budget charging, authorization records, and adapter calls remain out of scope.
-- [ ] **Step 23: Run 15.C Target GREEN.** Re-run `python -m pytest -q tests/unit/governance/test_disclosure_subject.py::test_subject_uses_frozen_endpoint_not_request_url`; require exit 0 and the displayed RED assertion to pass.
-- [ ] **Step 24: Run 15.C Domain.** Run `python -m pytest -q tests/unit/governance/test_disclosure_subject.py`; require exit 0 and every displayed Atomic verification expectation to hold.
+- [x] **Step 17: Add the exact 15.C RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
+- [x] **Step 18: Run 15.C RED.** Run `python -m pytest -q tests/unit/governance/test_disclosure_subject.py::test_subject_uses_frozen_endpoint_not_request_url`. Expected: FAIL for “no immutable Grant subject builder binds the frozen sources/profile/endpoint”. Collection, import, environment, unrelated, or already-failing tests do not count.
+- [x] **Step 19: Implement 15.C GREEN-1.** Build one pure `DisclosureGrantSubjectV1` from validated source projection, canonical scopes/categories, frozen OpenAI profile, trusted endpoint, serializer identity, and expiry.
+- [x] **Step 20: Implement 15.C GREEN-2.** Bind every immutable authorization fact into canonical subject bytes/digest and reject request-supplied endpoint/model/source/scope/expiry overrides.
+- [x] **Step 21: Implement 15.C GREEN-3.** Make `test_subject_uses_frozen_endpoint_not_request_url` GREEN with the smallest request-URL override rejection; then make the already-RED `test_disclosure_subject_drift_matrix` GREEN against the exact §5.1 matrix.
+- [x] **Step 22: Implement 15.C GREEN-4.** Own subject bytes and digest only. Wait/Grant creation, revocation, budget charging, authorization records, and adapter calls remain out of scope.
+- [x] **Step 23: Run 15.C Target GREEN.** Re-run `python -m pytest -q tests/unit/governance/test_disclosure_subject.py::test_subject_uses_frozen_endpoint_not_request_url`; require exit 0 and the displayed RED assertion to pass.
+- [x] **Step 24: Run 15.C Domain.** Run `python -m pytest -q tests/unit/governance/test_disclosure_subject.py`; require exit 0 and every displayed Atomic verification expectation to hold.
 
 **Task-level verification, review, and completion:**
 
-- [ ] **Step 25: Refactor only inside T15.1.** Improve names and local structure in declared writable Files without changing the displayed interfaces, observable behavior, or successor scope; rerun every legacy Target and Domain after the refactor.
-- [ ] **Step 26: Run the FORMAL_OFFLINE_V1 closure.** Execute every exact command defined for `FORMAL_OFFLINE_V1` in the Global Execution Contract, including the changed-file redacted credential scan and `git diff --check`; record actual results in `AGENT_LOG.md`.
-- [ ] **Step 27: Request T15.1 SPEC review.** Use `superpowers:requesting-code-review` with the Goal, SPEC contracts, Interfaces, minimum GREEN contracts, RED/GREEN evidence, and task diff. Require an explicit verdict.
-- [ ] **Step 28: Close T15.1 SPEC findings.** Fix every Critical/Important finding, rerun affected Targets, Domains, and profile commands, and obtain same-stage re-review PASS.
-- [ ] **Step 29: Request T15.1 quality review.** Use `superpowers:requesting-code-review` only after SPEC review PASS; review the task diff against every Atomic review focus line.
-- [ ] **Step 30: Close T15.1 quality findings.** Fix every Critical/Important finding, rerun affected checks, and obtain same-stage re-review PASS.
-- [ ] **Step 31: Commit T15.1 implementation.** Stage only the task-owned implementation/tests and create one implementation commit after both review stages PASS.
+- [x] **Step 25: Refactor only inside T15.1.** Improve names and local structure in declared writable Files without changing the displayed interfaces, observable behavior, or successor scope; rerun every legacy Target and Domain after the refactor.
+- [x] **Step 26: Run the FORMAL_OFFLINE_V1 closure.** Execute every exact command defined for `FORMAL_OFFLINE_V1` in the Global Execution Contract, including the changed-file redacted credential scan and `git diff --check`; record actual results in `AGENT_LOG.md`.
+- [x] **Step 27: Request T15.1 SPEC review.** Use `superpowers:requesting-code-review` with the Goal, SPEC contracts, Interfaces, minimum GREEN contracts, RED/GREEN evidence, and task diff. Require an explicit verdict.
+- [x] **Step 28: Close T15.1 SPEC findings.** Fix every Critical/Important finding, rerun affected Targets, Domains, and profile commands, and obtain same-stage re-review PASS.
+- [x] **Step 29: Request T15.1 quality review.** Use `superpowers:requesting-code-review` only after SPEC review PASS; review the task diff against every Atomic review focus line.
+- [x] **Step 30: Close T15.1 quality findings.** Fix every Critical/Important finding, rerun affected checks, and obtain same-stage re-review PASS.
+- [x] **Step 31: Commit T15.1 implementation.** Stage only the task-owned implementation/tests and create one implementation commit after both review stages PASS.
 
 ```bash
 git add -- "src/vespercode/governance/request_sources.py" "tests/unit/governance/test_request_sources.py" "src/vespercode/governance/disclosure_scope.py" "tests/unit/governance/test_disclosure_scope.py" "src/vespercode/governance/disclosure_subject.py" "tests/unit/governance/test_disclosure_subject.py"
 git commit -m "Implement T15.1 Disclosure Sources, Scope, and Grant Subjects"
 ```
 
-- [ ] **Step 32: Record T15.1 completion evidence.** In a narrow evidence commit, update only this task's Status/Completion evidence and append `AGENT_LOG.md` with the real implementation SHA, responsible fresh subagent, human edits, exact commands/results, review/re-review verdicts, and PR URL.
-- [ ] **Step 33: Continue or finish WP15.** If another session task remains in this package, hand the same branch/PR to a new fresh subagent. Otherwise use `superpowers:finishing-a-development-branch`, verify the package result, and merge only after all predecessors and gates remain valid.
+- [x] **Step 32: Record T15.1 completion evidence.** In a narrow evidence commit, update only this task's Status/Completion evidence and append `AGENT_LOG.md` with the real implementation SHA, responsible fresh subagent, human edits, exact commands/results, review/re-review verdicts, and PR URL.
+- [x] **Step 33: Continue or finish WP15.** If another session task remains in this package, hand the same branch/PR to a new fresh subagent. Otherwise use `superpowers:finishing-a-development-branch`, verify the package result, and merge only after all predecessors and gates remain valid.
 
 **Done:** legacy steps 15.A, 15.B, 15.C 的 Target、Domain、适用真实环境和全局 profile 均通过；Critical/Important finding 全部关闭并复审；没有行为被延后到 successor。
-**Completion evidence:** Not yet executed.
+**Completion evidence:** Implementation commit `e03c8ba` on branch `codex/wp15` (worktree `.worktrees/wp15`), 2026-08-05. Legacy steps 15.A, 15.B, 15.C, six files (src/vespercode/governance/{request_sources,disclosure_scope,disclosure_subject}.py, tests/unit/governance/test_{request_sources,disclosure_scope,disclosure_subject}.py, 1707 insertions). RED evidence (`.venv-formal\Scripts\python.exe -m pytest -q <target>`, all exit 4, collection-time import failure reproduced in an isolated replica for the node-ID invocation shape): 15.A Target `test_file_segment_requires_canonical_path`, 15.B Target `test_directory_scope_does_not_match_string_prefix_sibling`, 15.C Target `test_subject_uses_frozen_endpoint_not_request_url` - all `ModuleNotFoundError: No module named 'src.vespercode.governance'`, matching the card Expected RED lines (the closed source/segment validator, the canonical segment-boundary matcher, and the immutable Grant subject builder do not exist). GREEN evidence (formal env): 15.A Target `1 passed` / Domain `16 passed` / Matrix `test_disclosure_source_segment_matrix` `1 passed`; 15.B Target `1 passed` / Domain `14 passed` / Matrix `test_disclosure_scope_match_matrix` `1 passed`; 15.C Target `1 passed` / Domain `18 passed` / Matrix `test_disclosure_subject_drift_matrix` `1 passed`; all exit 0; full suite `.venv-formal\Scripts\python.exe -m pytest -q` `420 passed` (372 baseline + 48 new; 219 feasibility + 201 unit), exit 0, no Docker-resource contention. FORMAL_OFFLINE_V1 closure (all exit 0): `ruff format --check .` 108 files already formatted; `ruff check .` All checks passed; `mypy src tests` Success 83 source files; `scripts/scan_credentials.py --changed --redact --fail-on-match` exit 0 (all `__pycache__` removed first); `git diff --check` clean. Reviews: SPEC round 1 `SPEC_REVIEW_FAIL` -> 1 Important closed (request-wide segment total must be 1..1024 per SPEC 4.4.4 line 1270: `TOTAL_SEGMENT_COUNT_EXCEEDED` check plus domain test and matrix row) and 2 Minor closed (RED exit-code record verified truthful via replica: node-ID invocation exits 4, bare-path exits 2 - both collection errors; `DisclosureSubjectError.error_code` now a closed `DisclosureSubjectCodeV1` Literal) -> same-stage re-review `SPEC_REVIEW_PASS`; quality round 1 `QUALITY_REVIEW_PASS` (0 Critical/Important; 3 Minor all closed voluntarily before commit: shared `_DIGEST_RE` private import from contracts.evidence, direct pydantic construction probes instead of test-helper probes, same-kind-only cross-scope alias decision documented) -> same-stage re-review `QUALITY_REVIEW_PASS`. Recorded design interpretations: (1) the `exact 5.1 matrix` is the SPEC_PROCESS 49 dangling reference - PLAN Registry rows 15.A/15.B/15.C (PLAN.md:11383-11385) are the operative matrix authorities; (2) 15.A `missing, duplicate, reordered, mismatched, or ambiguous content identities` is enforced structurally (one-to-one tuple projection makes duplicate/reordered projection rows impossible; the reachable rejections are the closed path-presence, digest, byte-count, and cardinality codes); (3) the empty disclosure scope sequence is legal (SPEC 4.4.3: `allowed_source_paths=[]` authorizes no path-bearing source) and matches nothing - fail closed means deny-all, not reject-input; (4) 15.C `allowed_source_categories` derive from the validated projection in SPEC enum order, and the closed subject request declares only run_id/expires_at/cumulative_byte_budget/url - model/source/scope/expiry override attempts are undeclared fields rejected by the closed schema, and any PRESENT url rejects with `ENDPOINT_OVERRIDE`; (5) `ENDPOINT_MISMATCH` is a defensive check - both `endpoint_id` fields are closed literals so it is unreachable via the typed API; (6) the subject self-digest binds every other field (model validator), and the mutable Grant state never enters the subject. No behavior deferred to a successor; Steps 1-32 complete, Step 33 (continue/finish WP15) belongs to the WP15 driver. PR URL: pending WP15 closure (driver decision). Details in `AGENT_LOG.md` (`T15.1-COMPLETION-20260805`).
 
 ### Task T15.2: Disclosure Decisions, Revocation, and Authorization Ledger
 
