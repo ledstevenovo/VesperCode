@@ -2095,3 +2095,15 @@ scans" 一致）验证同一命令 exit 0。
 一次性/正式的可丢弃环境，纳入扫描排除符合卡的原始意图。T04.1 证据中
 记录的 scan exit 1 及 8 条第三方 MATCH 保持原样（诚实记录先行），本修订
 使后续闭包（含 T04.2）恢复正常 exit 0。
+
+## 53. WP04 收官（2026-08-05）
+
+T04.1（依赖闭包与正式工具链）与 T04.2（规范字节/时间/路径/凭据扫描）全部
+完成，两阶段评审 PASS。driver 在 tip `0c030ea` 独立复跑：formal 全量
+**289 passed**、gate 基线 219 passed、ruff/mypy（36 files）全绿、credential
+scan exit 0（清 `__pycache__` 后；pyc 为未忽略未跟踪文件进入 changed-file
+union 属既有卫生惯例，不修订冻结 .gitignore——候选改进记入晨报）、
+git diff --check clean。合并 `codex/wp04` → `main`。
+
+记录：4.E 经 private import 复用 T01.1 `gate_scan.py` 冻结规则表（gate_scan
+零改动）；gate 环境无 pydantic 致 4.E 模块 importorskip（formal 全量运行）。

@@ -1185,3 +1185,14 @@
 - **Human intervention:** none.
 - **Implementation commit:** `c07cea4` (12 files, 1279 insertions) via the card's exact `git add` list. Evidence commit: PLAN.md T04.2 Status/checkboxes/Done/Completion evidence + this append-only entry. Step 41 (WP04 finishing) is the WP04 driver's responsibility.
 - **Lesson learned:** a schema-agnostic canonical encoder cannot enforce closed-schema field closure — the correct split is type-level rejection in the encoder and field-level closure in the schema consumers, recorded explicitly so AC-26's CTV-04 row is not silently dropped; also, gate-toolchain runs of runtime-dependent modules should skip cleanly (importorskip) instead of erroring at collection, and credential test fixtures must be built by runtime concatenation so the test files themselves stay scan-clean.
+
+## WP04-DRIVER-FINISHING-20260805
+
+- **Timestamp (Asia/Taipei):** `2026-08-05T15:47:55+0800` (system-observed; append-only driver record).
+- **Task ID:** WP04 包级 finishing（T04.1 + T04.2）。
+- **Skills invoked:** `verification-before-completion`、`finishing-a-development-branch`。
+- **Key prompt/context:** T04.2 完成（实现 c07cea4、evidence 0c030ea）。driver 独立验证：formal 289 passed（agent 记录 287 为评审补测前快照）、gate 219 基线、mypy 36 files、scan exit 0（首跑 1 系 driver 验证自身未设 PYTHONDONTWRITEBYTECODE 所致 pyc 命中，清缓存后 0）、diff-check clean。
+- **记录项：** 4.E 复用 gate_scan 冻结规则（零改动）；importorskip 因 gate 环境无 pydantic；`__pycache__/` 未忽略属既有卫生惯例（候选 .gitignore 修订记入晨报，未在本夜执行第三次冻结契约修订）。
+- **Git / evidence boundary:** 勾选 T04.2 Step 41 + 本记录 + SPEC_PROCESS §53 提交于 codex/wp04，FF 合并 → main，push origin main。无任务卡文本改动。
+- **Human intervention:** 无；夜间自主执行授权有效。
+- **Lesson learned:** driver 验证运行同样必须遵守 pycache 卫生（PYTHONDONTWRITEBYTECODE=1 或扫描前清理），否则自身产生误报。
