@@ -4720,7 +4720,7 @@ git commit -m "Implement T10.2 Content Objects and Snapshot Construction"
 
 ### Task T11.1: Read-only List, Read, and Literal Search Tools
 
-**Status:** Not started
+**Status:** Complete
 **Work package:** WP11
 **Legacy steps:** 11.A, 11.B
 **Goal:** Freeze the common file action/result contracts and implement bounded text reads that can observe only the bound immutable tree.；Implement stable List/Search discovery whose distinct canonical cursors reproduce unpaged results exactly and fail closed on tampering or tree drift.
@@ -4786,14 +4786,14 @@ def test_read_uses_only_bound_snapshot_bytes(
 - SPEC (11.A): Spec compliance review checks Task 11.A's Goal, Milestone 11's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent bounded immutable-tree read contract.
 - Quality (11.A): Code quality review checks closed action/result schemas, protocol-only tree binding, absence of concrete Candidate imports, text metadata preservation, line/byte bounds, deterministic truncation, zero filesystem reads, and stable errors.
 
-- [ ] **Step 1: Add the exact 11.A RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
-- [ ] **Step 2: Run 11.A RED.** Run `python -m pytest -q tests/unit/tools/test_read_file.py::test_read_uses_only_bound_snapshot_bytes`. Expected: FAIL for “the exact assertion fails because the task-owned bounded immutable-tree read behavior does not exist. Record the task-owned failing assertion and exit code; collection, import, runner, environment startup, or unrelated failure does not count as RED”. Collection, import, environment, unrelated, or already-failing tests do not count.
-- [ ] **Step 3: Implement 11.A GREEN-1.** Define the closed common file action/result unions and implement `read_file` only through the bound `ReadableTreeV1` protocol, without importing any concrete Candidate type.
-- [ ] **Step 4: Implement 11.A GREEN-2.** Validate supported-text classification, line/byte bounds, BOM/newline metadata, and artifact truncation so mutable workspace state and arbitrary paths cannot affect results.
-- [ ] **Step 5: Implement 11.A GREEN-3.** Make `test_read_uses_only_bound_snapshot_bytes` GREEN with the smallest workspace-drift scenario; then make the already-RED `test_read_file_bounds_schema_matrix` GREEN against the exact §5.1 matrix.
-- [ ] **Step 6: Implement 11.A GREEN-4.** Own bounded immutable-tree reads and contracts only. Filesystem access, cursors, policy, shell, arbitrary path dispatch, and tool dispatch remain out of scope.
-- [ ] **Step 7: Run 11.A Target GREEN.** Re-run `python -m pytest -q tests/unit/tools/test_read_file.py::test_read_uses_only_bound_snapshot_bytes`; require exit 0 and the displayed RED assertion to pass.
-- [ ] **Step 8: Run 11.A Domain.** Run `python -m pytest -q tests/unit/tools/test_file_actions.py tests/unit/tools/test_read_file.py`; require exit 0 and every displayed Atomic verification expectation to hold.
+- [x] **Step 1: Add the exact 11.A RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
+- [x] **Step 2: Run 11.A RED.** Run `python -m pytest -q tests/unit/tools/test_read_file.py::test_read_uses_only_bound_snapshot_bytes`. Expected: FAIL for “the exact assertion fails because the task-owned bounded immutable-tree read behavior does not exist. Record the task-owned failing assertion and exit code; collection, import, runner, environment startup, or unrelated failure does not count as RED”. Collection, import, environment, unrelated, or already-failing tests do not count.
+- [x] **Step 3: Implement 11.A GREEN-1.** Define the closed common file action/result unions and implement `read_file` only through the bound `ReadableTreeV1` protocol, without importing any concrete Candidate type.
+- [x] **Step 4: Implement 11.A GREEN-2.** Validate supported-text classification, line/byte bounds, BOM/newline metadata, and artifact truncation so mutable workspace state and arbitrary paths cannot affect results.
+- [x] **Step 5: Implement 11.A GREEN-3.** Make `test_read_uses_only_bound_snapshot_bytes` GREEN with the smallest workspace-drift scenario; then make the already-RED `test_read_file_bounds_schema_matrix` GREEN against the exact §5.1 matrix.
+- [x] **Step 6: Implement 11.A GREEN-4.** Own bounded immutable-tree reads and contracts only. Filesystem access, cursors, policy, shell, arbitrary path dispatch, and tool dispatch remain out of scope.
+- [x] **Step 7: Run 11.A Target GREEN.** Re-run `python -m pytest -q tests/unit/tools/test_read_file.py::test_read_uses_only_bound_snapshot_bytes`; require exit 0 and the displayed RED assertion to pass.
+- [x] **Step 8: Run 11.A Domain.** Run `python -m pytest -q tests/unit/tools/test_file_actions.py tests/unit/tools/test_read_file.py`; require exit 0 and every displayed Atomic verification expectation to hold.
 
 #### Legacy step 11.B: Canonically Paged List and Literal Search
 
@@ -4833,35 +4833,35 @@ def test_paged_discovery_equals_unpaged_without_duplicates(
 - SPEC (11.B): Spec compliance review checks Task 11.B's Goal, Milestone 11's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent stable paged List/Search contract.
 - Quality (11.B): Code quality review checks protocol-only tree access, absence of concrete Candidate imports, stable ordering, paged/unpaged equivalence, distinct cursor schemas, tree/query/position/self binding, zero-payload failures, non-text accounting, and purity.
 
-- [ ] **Step 9: Add the exact 11.B RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
-- [ ] **Step 10: Run 11.B RED.** Run `python -m pytest -q tests/unit/tools/test_list_files.py::test_paged_discovery_equals_unpaged_without_duplicates`. Expected: FAIL for “the exact assertion fails because the task-owned stable paged List/Search behavior does not exist. Record the task-owned failing assertion and exit code; collection, import, runner, environment startup, or unrelated failure does not count as RED”. Collection, import, environment, unrelated, or already-failing tests do not count.
-- [ ] **Step 11: Implement 11.B GREEN-1.** Implement pure `ReadableTreeV1` List and Search with stable sorting and distinct canonical cursor types for the two query families, without importing any concrete Candidate type.
-- [ ] **Step 12: Implement 11.B GREEN-2.** Bind each cursor to visible-tree digest, cursor-free query digest, next scan position, and self-digest; invalid or stale continuations return zero rows and artifacts.
-- [ ] **Step 13: Implement 11.B GREEN-3.** Make `test_paged_discovery_equals_unpaged_without_duplicates` GREEN with the smallest multi-page traversal; then make the already-RED `test_list_search_cursor_integrity_matrix` GREEN against the exact §5.1 matrix.
-- [ ] **Step 14: Implement 11.B GREEN-4.** Own stable discovery and continuation only. Filesystem access, arbitrary paths, shell execution, policy mutation, and cross-tool cursor reuse remain out of scope.
-- [ ] **Step 15: Run 11.B Target GREEN.** Re-run `python -m pytest -q tests/unit/tools/test_list_files.py::test_paged_discovery_equals_unpaged_without_duplicates`; require exit 0 and the displayed RED assertion to pass.
-- [ ] **Step 16: Run 11.B Domain.** Run `python -m pytest -q tests/unit/tools/test_list_files.py tests/unit/tools/test_search_text.py`; require exit 0 and every displayed Atomic verification expectation to hold.
+- [x] **Step 9: Add the exact 11.B RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
+- [x] **Step 10: Run 11.B RED.** Run `python -m pytest -q tests/unit/tools/test_list_files.py::test_paged_discovery_equals_unpaged_without_duplicates`. Expected: FAIL for “the exact assertion fails because the task-owned stable paged List/Search behavior does not exist. Record the task-owned failing assertion and exit code; collection, import, runner, environment startup, or unrelated failure does not count as RED”. Collection, import, environment, unrelated, or already-failing tests do not count.
+- [x] **Step 11: Implement 11.B GREEN-1.** Implement pure `ReadableTreeV1` List and Search with stable sorting and distinct canonical cursor types for the two query families, without importing any concrete Candidate type.
+- [x] **Step 12: Implement 11.B GREEN-2.** Bind each cursor to visible-tree digest, cursor-free query digest, next scan position, and self-digest; invalid or stale continuations return zero rows and artifacts.
+- [x] **Step 13: Implement 11.B GREEN-3.** Make `test_paged_discovery_equals_unpaged_without_duplicates` GREEN with the smallest multi-page traversal; then make the already-RED `test_list_search_cursor_integrity_matrix` GREEN against the exact §5.1 matrix.
+- [x] **Step 14: Implement 11.B GREEN-4.** Own stable discovery and continuation only. Filesystem access, arbitrary paths, shell execution, policy mutation, and cross-tool cursor reuse remain out of scope.
+- [x] **Step 15: Run 11.B Target GREEN.** Re-run `python -m pytest -q tests/unit/tools/test_list_files.py::test_paged_discovery_equals_unpaged_without_duplicates`; require exit 0 and the displayed RED assertion to pass.
+- [x] **Step 16: Run 11.B Domain.** Run `python -m pytest -q tests/unit/tools/test_list_files.py tests/unit/tools/test_search_text.py`; require exit 0 and every displayed Atomic verification expectation to hold.
 
 **Task-level verification, review, and completion:**
 
-- [ ] **Step 17: Refactor only inside T11.1.** Improve names and local structure in declared writable Files without changing the displayed interfaces, observable behavior, or successor scope; rerun every legacy Target and Domain after the refactor.
-- [ ] **Step 18: Run the FORMAL_OFFLINE_V1 closure.** Execute every exact command defined for `FORMAL_OFFLINE_V1` in the Global Execution Contract, including the changed-file redacted credential scan and `git diff --check`; record actual results in `AGENT_LOG.md`.
-- [ ] **Step 19: Request T11.1 SPEC review.** Use `superpowers:requesting-code-review` with the Goal, SPEC contracts, Interfaces, minimum GREEN contracts, RED/GREEN evidence, and task diff. Require an explicit verdict.
-- [ ] **Step 20: Close T11.1 SPEC findings.** Fix every Critical/Important finding, rerun affected Targets, Domains, and profile commands, and obtain same-stage re-review PASS.
-- [ ] **Step 21: Request T11.1 quality review.** Use `superpowers:requesting-code-review` only after SPEC review PASS; review the task diff against every Atomic review focus line.
-- [ ] **Step 22: Close T11.1 quality findings.** Fix every Critical/Important finding, rerun affected checks, and obtain same-stage re-review PASS.
-- [ ] **Step 23: Commit T11.1 implementation.** Stage only the task-owned implementation/tests and create one implementation commit after both review stages PASS.
+- [x] **Step 17: Refactor only inside T11.1.** Improve names and local structure in declared writable Files without changing the displayed interfaces, observable behavior, or successor scope; rerun every legacy Target and Domain after the refactor.
+- [x] **Step 18: Run the FORMAL_OFFLINE_V1 closure.** Execute every exact command defined for `FORMAL_OFFLINE_V1` in the Global Execution Contract, including the changed-file redacted credential scan and `git diff --check`; record actual results in `AGENT_LOG.md`.
+- [x] **Step 19: Request T11.1 SPEC review.** Use `superpowers:requesting-code-review` with the Goal, SPEC contracts, Interfaces, minimum GREEN contracts, RED/GREEN evidence, and task diff. Require an explicit verdict.
+- [x] **Step 20: Close T11.1 SPEC findings.** Fix every Critical/Important finding, rerun affected Targets, Domains, and profile commands, and obtain same-stage re-review PASS.
+- [x] **Step 21: Request T11.1 quality review.** Use `superpowers:requesting-code-review` only after SPEC review PASS; review the task diff against every Atomic review focus line.
+- [x] **Step 22: Close T11.1 quality findings.** Fix every Critical/Important finding, rerun affected checks, and obtain same-stage re-review PASS.
+- [x] **Step 23: Commit T11.1 implementation.** Stage only the task-owned implementation/tests and create one implementation commit after both review stages PASS.
 
 ```bash
 git add -- "src/vespercode/tools/file_actions.py" "src/vespercode/tools/file_results.py" "src/vespercode/tools/read_file.py" "tests/unit/tools/test_file_actions.py" "tests/unit/tools/test_read_file.py" "src/vespercode/tools/list_files.py" "src/vespercode/tools/search_text.py" "tests/unit/tools/test_list_files.py" "tests/unit/tools/test_search_text.py"
 git commit -m "Implement T11.1 Read-only List, Read, and Literal Search Tools"
 ```
 
-- [ ] **Step 24: Record T11.1 completion evidence.** In a narrow evidence commit, update only this task's Status/Completion evidence and append `AGENT_LOG.md` with the real implementation SHA, responsible fresh subagent, human edits, exact commands/results, review/re-review verdicts, and PR URL.
+- [x] **Step 24: Record T11.1 completion evidence.** In a narrow evidence commit, update only this task's Status/Completion evidence and append `AGENT_LOG.md` with the real implementation SHA, responsible fresh subagent, human edits, exact commands/results, review/re-review verdicts, and PR URL.
 - [ ] **Step 25: Continue or finish WP11.** If another session task remains in this package, hand the same branch/PR to a new fresh subagent. Otherwise use `superpowers:finishing-a-development-branch`, verify the package result, and merge only after all predecessors and gates remain valid.
 
 **Done:** legacy steps 11.A, 11.B 的 Target、Domain、适用真实环境和全局 profile 均通过；Critical/Important finding 全部关闭并复审；没有行为被延后到 successor。
-**Completion evidence:** Not yet executed.
+**Completion evidence:** Implementation commit `1a6e56f` on branch `codex/wp11` (worktree `.worktrees/wp11`), 2026-08-06. 11.A `FileToolActionV1`/`FileToolResultV1` 封闭动作/结果契约 + `ReadFileActionV1`/`ReadFileResultV1`/`read_file`（仅经 T10.2 `ReadableTreeV1` 协议、零工作区/文件系统访问、T10.1 共享分类器、行/字节界、BOM/换行元数据、scalar 边界确定性截断、`FILE_NOT_FOUND`/`FILE_NOT_TEXT`/`READ_RANGE_OUT_OF_BOUNDS` 闭式错误、EOF 语义）；11.B `list_files`/`search_text` 稳定排序、`(directory_rank, canonical_path)` 顺序、非文本一次计数、excerpt≤1024 无 BOM 字节、32 KiB 结果体界、List/Search 各自 canonical cursor（visible-tree digest + cursor-free query digest + 下一扫描位置 + self digest，域分离）、篡改→`CONTINUATION_INVALID`/树漂移→`CONTINUATION_STALE` 零部分结果。RED 证据（`.venv-formal` runner，T05.1/T10.2 先例）：11.A/11.B Target 均 exit 4 `ModuleNotFoundError: No module named 'src.vespercode.tools'`（Expected RED 命名缺失行为，traceback 精确识别缺失任务模块）。GREEN 证据（全部 exit 0）：11.A Target/Matrix/Domain `1/1/18 passed`；11.B Target/Matrix/Domain `1/1/23 passed`；全量 `634 passed, 25 deselected`；`ruff format --check .`/`ruff check .` clean；`mypy src tests` Success（149 files）；`scan_credentials.py --changed --redact --fail-on-match` exit 0（先清全部 `__pycache__`）；`git diff --check` clean；9 文件 0 CR/no BOM/trailing LF。Reviews（fresh 只读 subagent，均未改文件）：SPEC round 1 `SPEC_REVIEW_PASS`（0 Critical/Important，4 Minor 均接受/记录：私有 `_DIGEST_RE` 跨模块引用、RED 断言行 `# type: ignore[union-attr]`（mypy strict 必需，repo 先例）、EOF+截断组合语义、casefold 列映射）；quality round 1 `QUALITY_REVIEW_PASS`（0 Critical/Important，4 Minor：NFC∘casefold 组合别名缺口、casefold 列空间、续接重扫二次性、EOF 文档——前两项已闭：roots 校验新增 composed fold 通道 + 矩阵行、read docstring 澄清 + 新增 eof+截断固定测试，后两项记录为接口固有的已披露解读）。Step 25（WP11 finishing）归 driver。Details in `AGENT_LOG.md` (`T11.1-COMPLETION-20260806`).
 
 ### Task T12.1: CandidateTree, Strict Patch Engine, and FinalDiffV1
 
