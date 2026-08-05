@@ -1492,3 +1492,13 @@
 - **Human intervention:** none.
 - **Implementation commit:** `cfb1c39` (9 files, 2095 insertions) via the card's exact `git add` list. Evidence commit: PLAN.md T27.1 Status/24 checkboxes/Completion evidence + this append-only entry. Step 25 (WP27 finishing) is the WP27 driver's responsibility.
 - **Lesson learned:** the "non-serializable, non-comparable" wrapper contract needs enforcement beyond pydantic paths — pickle/copy/deepcopy and hashability are separate Python mechanisms that each leak or compare unless explicitly blocked, and pydantic's lax scalar coercion (True → Literal[1]) plus `model_validate({})` on a field-less model are both real parse-boundary holes that only surface when you probe every construction path; also, real-WinCred proofs need a value-identity guard in the test fixture so the suite can never clobber a genuine user key, and the definitive LF check on Windows is byte counting (`tr -cd '\r' | wc -c`), not grep.
+
+## WAVE08-DRIVER-FINISHING-20260805
+
+- **Timestamp (Asia/Taipei):** `2026-08-06T01:44:33+0800` (system-observed; append-only driver record).
+- **Task ID:** 波次 8 包级 finishing（WP09/WP16）。
+- **Skills invoked:** `verification-before-completion`、`finishing-a-development-branch`。
+- **Key prompt/context:** 2-WP 并行波完成。driver 独立验证（formal 538/563、gate 219、mypy 123/122 files 全绿、scan/diff-check 全 0）。WP09 质量评审抓出并修复 9.B fixture 非生成器缺陷（工作区 setup 期被删、变异证据落空）；WP16 五 Minor 全关。
+- **Git / evidence boundary:** 按任务号序合并 2 分支 → main，push origin main。SPEC_PROCESS §58。无任务卡文本改动。
+- **Human intervention:** 无；夜间自主执行授权有效。
+- **Lesson learned:** 真实 Windows 观测任务（句柄/ACL/互斥/凭据）的 fixture 生命周期直接决定证据有效性——非生成器 fixture 会在 setup 期销毁被测状态。

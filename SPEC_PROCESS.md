@@ -2157,3 +2157,13 @@ sentinel 模式）、WP18-CONTRACT（T18.1：可执行请求契约 + 参考镜�
 formal 387/470/383/408（+7 deselected windows_integration）、gate 基线
 219 全保、mypy 82/94/80/86 files 全绿。按任务号序合并 codex/wp08 →
 codex/wp15 → codex/wp18-contract → codex/wp27 → main。
+
+## 58. 波次 8（2-WP 并行）收官（2026-08-05）
+
+WP09（T09.1：生产 Win32 工作区身份与 Git preflight——真实 handle/ACL/互斥
+观测零残留、gitignore 匹配器对照真实 git check-ignore 零 fail-open、28 行
+Git 状态拒绝矩阵）、WP16（T16.1：闭式备妥请求 + 确定性 Mock/OpenAI 适配器——
+至多一次非重试传输调用逐失败行钉死、AST import 守卫零真实能力 import）全部
+完成，两阶段评审 PASS（WP09 质量评审抓出 9.B fixture 非生成器致变异证据
+落空的重要缺陷并修复）。driver 独立验证：formal 538/563、gate 219 基线、
+mypy 123/122 files 全绿。按任务号序合并 codex/wp09 → codex/wp16 → main。
