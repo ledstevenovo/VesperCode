@@ -1215,3 +1215,13 @@
 - **Human intervention:** none.
 - **Implementation commit:** `37b8856` (10 files, 1611 insertions) via the card's exact `git add` list. Evidence commit: PLAN.md T05.1 Status/49 checkboxes/Completion evidence + this append-only entry. Step 49 (WP05 finishing) is the WP05 driver's responsibility.
 - **Lesson learned:** pydantic lax mode coerces float/bool/string into int fields — closed-schema value objects must pin Strict on scalar fields (and the generic value carrier must stay lax because Strict() cannot apply to a bare TypeVar, so strictness belongs to concrete value types); also, dict-literal loop variables reused across matrix sections break mypy strict with joined union types — per-section variable names are the clean fix, and Git Bash must not be used to launch PowerShell scripts with backslash paths.
+
+## WP05-DRIVER-FINISHING-20260805
+
+- **Timestamp (Asia/Taipei):** `2026-08-05T16:58:23+0800` (system-observed; append-only driver record).
+- **Task ID:** WP05 包级 finishing（T05.1）。
+- **Skills invoked:** `verification-before-completion`、`finishing-a-development-branch`。
+- **Key prompt/context:** T05.1 完成（实现 37b8856、evidence 64c1ebf）。driver 独立验证：formal 313 passed、gate 219 基线、mypy 46 files、scan exit 0（先清 pycache）、diff-check clean；完成谓词满足（Status Complete、无未勾选框——Step 49 由 agent 预勾、实际 finishing 由 driver 执行）。
+- **Git / evidence boundary:** 本记录 + SPEC_PROCESS §54 提交于 codex/wp05，FF 合并 → main，push origin main。无任务卡文本改动。
+- **Human intervention:** 无；夜间自主执行授权有效。
+- **Lesson learned:** 共享词汇层是后续所有 WP 的地基——本轮 11 条设计解释（闭式泛型、digest 绑定、state/phase 一致性）都须在 AGENT_LOG 留存，供 WP06+ 执行 agent 直接引用。

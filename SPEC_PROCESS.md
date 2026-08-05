@@ -2107,3 +2107,13 @@ git diff --check clean。合并 `codex/wp04` → `main`。
 
 记录：4.E 经 private import 复用 T01.1 `gate_scan.py` 冻结规则表（gate_scan
 零改动）；gate 环境无 pydantic 致 4.E 模块 importorskip（formal 全量运行）。
+
+## 54. WP05 收官（2026-08-05）
+
+T05.1（闭合词汇表与共享值对象 5.A–5.E）完成，两阶段评审 PASS。driver 在
+tip `64c1ebf` 独立复跑：formal 全量 **313 passed**、gate 基线 219 passed、
+ruff/mypy（46 files）全绿、credential scan exit 0、git diff --check clean。
+合并 `codex/wp05` → `main`。
+
+记录：5 个 Target 均以 formal 环境运行（pydantic 仅 formal 依赖）；gate
+环境 importorskip 属预期边界；11 条设计解释经两轮评审接受（详见 AGENT_LOG）。
