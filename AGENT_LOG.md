@@ -1536,3 +1536,13 @@
 - **Human intervention:** none.
 - **Implementation commit:** `86cadc4` (11 files, 3286 insertions) via the card's exact `git add` list. Evidence commit: PLAN.md T16.1 Status/24 checkboxes/Completion evidence + this append-only entry. Step 25 (finish WP16) is the WP16 driver's responsibility.
 - **Lesson learned:** pydantic's lazy annotation evaluation with `from __future__ import annotations` needs every annotation name importable in the module namespace — a missing `Annotated` import surfaces as the cryptic "class-not-fully-defined" error at first use, not at class definition; and raw-dict validation cannot coerce plain strings into dataclass value types (`CanonicalRelativePathV1`), so request fixtures must carry typed message objects — the control plane constructs requests from typed segments, not from JSON dicts. Also: pytest collects any `test_*` function as a test even when it is a helper the displayed RED calls by name — `__test__ = False` keeps the card's verbatim call site.
+
+## WAVE09-DRIVER-FINISHING-20260806
+
+- **Timestamp (Asia/Taipei):** `2026-08-06T03:16:57+0800` (system-observed; append-only driver record).
+- **Task ID:** 波次 9 包级 finishing（WP10-SNAPSHOT）。
+- **Skills invoked:** `verification-before-completion`、`finishing-a-development-branch`。
+- **Key prompt/context:** T10.2 完成（实现 83c45ec、evidence 76c9384）。driver 独立验证：formal 592、gate 219、mypy 140 files、windows_integration 25、scan/diff-check 全 0。一次环境 API 证书中断凭转录续跑零丢失。
+- **Git / evidence boundary:** 合并 codex/wp10-snapshot → main，push origin main。SPEC_PROCESS §59。无任务卡文本改动。
+- **Human intervention:** 无；夜间自主执行授权有效。
+- **Lesson learned:** dict 折叠可掩盖重复行——验证侧必须先于集合覆盖检查比较原始元组；结构不可能输入（同路径文件+目录）须在创建侧拒绝以保 create/verify 对称。

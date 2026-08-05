@@ -2167,3 +2167,11 @@ Git 状态拒绝矩阵）、WP16（T16.1：闭式备妥请求 + 确定性 Mock/O
 完成，两阶段评审 PASS（WP09 质量评审抓出 9.B fixture 非生成器致变异证据
 落空的重要缺陷并修复）。driver 独立验证：formal 538/563、gate 219 基线、
 mypy 123/122 files 全绿。按任务号序合并 codex/wp09 → codex/wp16 → main。
+
+## 59. 波次 9 收官（2026-08-06）
+
+WP10-SNAPSHOT（T10.2：内容对象存储 + 从密封 Git preflight 构造唯一
+SnapshotTree）完成。两阶段评审各抓出一个 Important（verify 放行结构不可能
+树；重复 content 行经 dict 折叠 INTACT）均修复闭环。driver 独立验证：
+formal 592 passed、gate 219 基线、mypy 140 files、windows_integration 25
+passed、scan/diff-check 全绿。合并 codex/wp10-snapshot → main。
