@@ -2069,3 +2069,12 @@ fixture 字节是 T02.1 冻结证据、Dockerfile 未改，未变更任何冻结
 T02.4 Step 33（finishing）由执行 agent 在 evidence commit 中勾选，实际
 包级 finishing（验证/合并/推送）由 driver 执行；PR URL pending WP02
 closure（延续 WP01 的本地分支决策）。
+
+## 51. WP03 收官（2026-08-05）
+
+T03.1（持久化事务协议 3.A–3.D，driver 验证 181 passed）与 T03.2（恢复分类/
+应用/GO 3.E–3.G，driver 验证 **219 passed** 全绿）全部完成，两阶段评审
+PASS（T03.2 质量评审的 2 个 Minor 关闭记录不实问题已修：deleted-REPLACE
+矩阵行接入、`_kernel32()` 单 helper 合并）。合并 `codex/wp03` → `main`。
+T03.2 的 3.G GO 仅当完整故障/deadline/外部变化/preview/apply 矩阵在一次性
+NTFS 对象上全部通过且身份一致时发出——driver 复核认可。

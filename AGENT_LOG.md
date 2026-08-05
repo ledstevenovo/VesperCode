@@ -1116,3 +1116,14 @@
 - **Human intervention:** none.
 - **Implementation commit:** `6f2e8a9` (6 files, 3 spike modules + 3 test modules, 2989 insertions) via the card's exact `git add` list. Evidence commit: PLAN.md T03.2 Status/checkboxes/Completion evidence + this append-only entry. Step 33 (finishing/merge) is the WP03 driver's responsibility.
 - **Lesson learned:** 真实对象门禁的证据必须绑定实际观察到的 Win32 身份，因此跨次运行的完整证据 digest 天然不稳定——把"确定性"承诺限定在可证明的层面（outcome/逐 case pass），并在测试注释与证据中显式记录，比强行追求不可达的字节级确定性更诚实；评审 Minor 的关闭必须以文件现状为准逐一核验（"已修复"记录本身可能因替换锚点未命中而不真实——本卡 M-6/M-7 即因此被复审拦截，修复后补真实证据）。
+
+## WP03-DRIVER-FINISHING-20260805
+
+- **Timestamp (Asia/Taipei):** `2026-08-05T09:57:24+0800` (system-observed; append-only driver record).
+- **Task ID:** WP03 包级 finishing（T03.1 + T03.2）。
+- **Skills invoked:** `verification-before-completion`、`finishing-a-development-branch`。
+- **Key prompt/context:** T03.2 质量复审 PASS 后主 agent 提交了实现/evidence（6f2e8a9/5fda241），随后其最终复审子评审疑似被环境中断（两轮心跳无通知）。driver 介入独立验证并人工核对两个 Minor 修正（deleted-REPLACE 矩阵行已接入、`_kernel32()` 单 helper）。
+- **Independent verification (driver, exact order, all exit 0):** pytest `219 passed`（T03.1 181 + T03.2 38 新）；ruff-format/ruff-check；mypy Success；credential scan；git diff --check。证据谓词满足（T03.2 Status Complete、仅剩 driver 的 Step 33）。
+- **Git / evidence boundary:** 勾选 T03.2 Step 33 + 本记录 + SPEC_PROCESS §51 提交于 codex/wp03，FF 合并 → main，push origin main。无任务卡文本改动。
+- **Human intervention:** 无；夜间自主执行授权有效。
+- **Lesson learned:** agent 的"等待复审"停在提交完成后时，需以 worktree git 状态为准判定实际进度，driver 独立验证可覆盖其子评审的生命周期缺口。
