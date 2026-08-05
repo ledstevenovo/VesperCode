@@ -1152,3 +1152,13 @@
 - **Human intervention:** none.
 - **Implementation commit:** `b880344` (11 files, 1987 insertions) via the card's exact `git add` list. Evidence commit: PLAN.md T04.1 Status/checkboxes/Done/Completion evidence + this append-only entry. Step 28 (T04.2 hand-off/finishing) is the WP04 driver's responsibility.
 - **Lesson learned:** a disposable environment that the plan's frozen ignore file cannot exclude will surface in changed-file credential scans as third-party source matches — the correct response is to record the exact scan result truthfully, prove the project-file union is clean (local exclude demonstration), and report the plan-level gap rather than silently patching the frozen file; also, working-copy line endings can drift from LF even for python-written files on Windows (trailing CRLF) — byte-verify with a CR count over the raw bytes (not grep) immediately before staging.
+## WP04-DRIVER-GITIGNORE-REVISION-20260805
+
+- **Timestamp (Asia/Taipei):** `2026-08-05T12:28:24+0800` (system-observed; append-only driver record).
+- **Task ID:** 计划级修订（非任务卡归属）：`.gitignore` 纳入 `.venv-formal`（CS-01 先例）。
+- **Skills invoked:** `verification-before-completion`、`receiving-code-review`（裁决 agent 上报的 gap）。
+- **Key prompt/context:** T04.1 完成报告披露：`.venv-formal` 无法被 T01.1 冻结的 `.gitignore`（精确一行 + 字节测试）排除，凭据扫描把 site-packages 第三方源码计入（8 MATCH 全在第三方，任务文件零命中），scan exit 1。agent 建议计划修订或接受记录在案解读；T04.2 将遇到同一问题。
+- **Applied fix (minimum):** `.gitignore` 追加 `.venv-formal/`；T01.1 字节断言测试更新为两行内容；SPEC_PROCESS §52 记录。T04.1 已记录的证据保持原样。
+- **Verification:** 修订后 wp04 worktree（合并 main 后）scan exit 0；T01.1 测试随修订通过（字节断言更新后一致性成立）。
+- **Human intervention:** 无；夜间自主执行授权有效（含计划级修订的默认决策）。
+- **Lesson learned:** 冻结的字节级契约（.gitignore 精确内容）与后续新增的可丢弃环境直接冲突时，按契约卡自身的 rationale 修订并记录，比接受"记录在案的解读"更能避免级联失败。
