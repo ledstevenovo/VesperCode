@@ -1563,3 +1563,13 @@
 - **Human intervention:** none.
 - **Implementation commit:** `83c45ec` (6 files, 1976 insertions) via the card's exact `git add` list. Evidence commit: PLAN.md T10.2 Status/24 checkboxes/Completion evidence + this append-only entry. Step 25 (finish WP10-SNAPSHOT) is the WP10-SNAPSHOT driver's responsibility.
 - **Lesson learned:** a sealed verifier is only as good as its structurally-impossible-input coverage — the SPEC reviewer's recomputed-digest probe (duplicate paths with a self-consistent root digest) and the quality reviewer's dict-collapse probe (duplicate `file_bytes` rows where `read_bytes` serves the first row while `dict()` keeps the last) were both real fail-open holes that only matrix rows built from the reviewers' exact probes can pin; and pydantic dataclass fields (`CanonicalRelativePathV1`) reject plain strings in `model_validate` (require `{"value": ...}` or typed objects — T16.1 lesson re-confirmed), while `Path.write_text` on Windows translates LF to CRLF (text-mode universal newlines), which matters for any integration fixture asserting byte-level text metadata.
+
+## WAVE10-DRIVER-FINISHING-20260806
+
+- **Timestamp (Asia/Taipei):** `2026-08-06T06:35:35+0800` (system-observed; append-only driver record).
+- **Task ID:** 波次 10 包级 finishing（WP11/WP12/WP20-DETECTION）。
+- **Skills invoked:** `verification-before-completion`、`finishing-a-development-branch`。
+- **Key prompt/context:** 3-WP 并行波完成。三路 agent 曾同时被 DNS 故障中断（凭转录续跑零丢失）。driver 独立验证（formal 634/628/658、gate 219、mypy 149/150/143 files 全绿、scan/diff-check 全 0）。
+- **Git / evidence boundary:** 按任务号序合并 3 分支 → main，push origin main。SPEC_PROCESS §60。无任务卡文本改动。
+- **Human intervention:** 无；夜间自主执行授权有效。
+- **Lesson learned:** 并行波的 DNS/API 故障会同时命中所有 agent——续跑指令要批量下发；评审 verdict 通知先到 driver 的模式已稳定，agent 派遣指令应预告此流程避免空等。

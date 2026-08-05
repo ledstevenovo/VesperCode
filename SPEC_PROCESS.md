@@ -2175,3 +2175,16 @@ SnapshotTree）完成。两阶段评审各抓出一个 Important（verify 放行
 树；重复 content 行经 dict 折叠 INTACT）均修复闭环。driver 独立验证：
 formal 592 passed、gate 219 基线、mypy 140 files、windows_integration 25
 passed、scan/diff-check 全绿。合并 codex/wp10-snapshot → main。
+
+## 60. 波次 10（3-WP 并行）收官（2026-08-06）
+
+WP11（T11.1：只读 List/Read/Literal Search 工具——有界读取字节级、游标
+完整性矩阵）、WP12（T12.1：严格补丁引擎与候选树——语法拒绝矩阵、父树
+不变证明、CREATE 碰撞含 casefold-NFC 别名全拒、diff digest 三重根绑定）、
+WP20-DETECTION（T20.1：静态 Python 支持检测与闭式检查计划）全部完成，
+两阶段评审 PASS（SPEC/Quality 首轮共 3 个 Important 全部修复闭环）。driver
+独立验证：formal 634/628/658、gate 219 基线、mypy 149/150/143 files 全绿。
+按任务号序合并 codex/wp11 → codex/wp12 → codex/wp20-detection → main。
+
+环境记录：波次 10 三路 agent 同时遭 DNS 中断（ENOTFOUND），凭转录续跑
+零丢失——并行波的环境故障呈系统性特征，需串行重试预案。
