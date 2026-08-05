@@ -6579,7 +6579,7 @@ git commit -m "Implement T19.1 Pytest Evidence, Check Results, and Failure Finge
 
 ### Task T20.1: Static Python Support Detection
 
-**Status:** Not started
+**Status:** Complete
 **Work package:** WP20-DETECTION
 **Legacy steps:** 20.A
 **Goal:** Determine support from one sealed Snapshot without execution and generate the complete closed Python check plan.
@@ -6638,35 +6638,35 @@ def test_static_unsupported_result_performs_no_execution(
 - SPEC (20.A): Spec compliance review checks Task 20.A's Goal, Milestone 20's four-field aggregate and SPEC scope, this Implementation boundary, exact RED probe, and Verification as one consistent Snapshot-only detection and frozen-plan contract.
 - Quality (20.A): Code quality review checks sealed-Snapshot access, zero-execution detection, support exhaustiveness, collect/full/target identity, exact argv/order, immutable target bindings, and deterministic unsupported reasons.
 
-- [ ] **Step 1: Add the exact 20.A RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
-- [ ] **Step 2: Run 20.A RED.** Run `python -m pytest -q tests/unit/validation/test_python_adapter_static.py::test_static_unsupported_result_performs_no_execution`. Expected: FAIL for “the test runner reaches `test_static_unsupported_result_performs_no_execution`, but its first task-owned assertion fails because the required Snapshot-only unsupported path has not been implemented; collection, runner startup, unrelated import, or environment failure does not count”. Collection, import, environment, unrelated, or already-failing tests do not count.
-- [ ] **Step 3: Implement 20.A GREEN-1.** Detect supported Python project facts exclusively from the sealed `SnapshotTreeV1` and frozen reference manifest, with zero filesystem probes, imports, subprocesses, or executor calls.
-- [ ] **Step 4: Implement 20.A GREEN-2.** Build immutable exact collect, full-suite, target-test, Ruff, and Mypy identities, argv vectors, ordering, and target bindings for Baseline and formal validation plans.
-- [ ] **Step 5: Implement 20.A GREEN-3.** Make `test_static_unsupported_result_performs_no_execution` GREEN with the smallest Snapshot-only unsupported path; then make the already-RED `test_check_plan_classification_matrix` GREEN against the exact §5.1 matrix.
-- [ ] **Step 6: Implement 20.A GREEN-4.** Own static support classification and frozen plan generation only. Runtime compatibility, execution, result parsing, and Manifest publication remain out of scope.
-- [ ] **Step 7: Run 20.A Target GREEN.** Re-run `python -m pytest -q tests/unit/validation/test_python_adapter_static.py::test_static_unsupported_result_performs_no_execution`; require exit 0 and the displayed RED assertion to pass.
-- [ ] **Step 8: Run 20.A Domain.** Run `python -m pytest -q tests/unit/validation/test_python_adapter_static.py tests/unit/validation/test_check_plan.py`; require exit 0 and every displayed Atomic verification expectation to hold.
+- [x] **Step 1: Add the exact 20.A RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
+- [x] **Step 2: Run 20.A RED.** Run `python -m pytest -q tests/unit/validation/test_python_adapter_static.py::test_static_unsupported_result_performs_no_execution`. Expected: FAIL for “the test runner reaches `test_static_unsupported_result_performs_no_execution`, but its first task-owned assertion fails because the required Snapshot-only unsupported path has not been implemented; collection, runner startup, unrelated import, or environment failure does not count”. Collection, import, environment, unrelated, or already-failing tests do not count.
+- [x] **Step 3: Implement 20.A GREEN-1.** Detect supported Python project facts exclusively from the sealed `SnapshotTreeV1` and frozen reference manifest, with zero filesystem probes, imports, subprocesses, or executor calls.
+- [x] **Step 4: Implement 20.A GREEN-2.** Build immutable exact collect, full-suite, target-test, Ruff, and Mypy identities, argv vectors, ordering, and target bindings for Baseline and formal validation plans.
+- [x] **Step 5: Implement 20.A GREEN-3.** Make `test_static_unsupported_result_performs_no_execution` GREEN with the smallest Snapshot-only unsupported path; then make the already-RED `test_check_plan_classification_matrix` GREEN against the exact §5.1 matrix.
+- [x] **Step 6: Implement 20.A GREEN-4.** Own static support classification and frozen plan generation only. Runtime compatibility, execution, result parsing, and Manifest publication remain out of scope.
+- [x] **Step 7: Run 20.A Target GREEN.** Re-run `python -m pytest -q tests/unit/validation/test_python_adapter_static.py::test_static_unsupported_result_performs_no_execution`; require exit 0 and the displayed RED assertion to pass.
+- [x] **Step 8: Run 20.A Domain.** Run `python -m pytest -q tests/unit/validation/test_python_adapter_static.py tests/unit/validation/test_check_plan.py`; require exit 0 and every displayed Atomic verification expectation to hold.
 
 **Task-level verification, review, and completion:**
 
-- [ ] **Step 9: Refactor only inside T20.1.** Improve names and local structure in declared writable Files without changing the displayed interfaces, observable behavior, or successor scope; rerun every legacy Target and Domain after the refactor.
-- [ ] **Step 10: Run the FORMAL_OFFLINE_V1 closure.** Execute every exact command defined for `FORMAL_OFFLINE_V1` in the Global Execution Contract, including the changed-file redacted credential scan and `git diff --check`; record actual results in `AGENT_LOG.md`.
-- [ ] **Step 11: Request T20.1 SPEC review.** Use `superpowers:requesting-code-review` with the Goal, SPEC contracts, Interfaces, minimum GREEN contracts, RED/GREEN evidence, and task diff. Require an explicit verdict.
-- [ ] **Step 12: Close T20.1 SPEC findings.** Fix every Critical/Important finding, rerun affected Targets, Domains, and profile commands, and obtain same-stage re-review PASS.
-- [ ] **Step 13: Request T20.1 quality review.** Use `superpowers:requesting-code-review` only after SPEC review PASS; review the task diff against every Atomic review focus line.
-- [ ] **Step 14: Close T20.1 quality findings.** Fix every Critical/Important finding, rerun affected checks, and obtain same-stage re-review PASS.
-- [ ] **Step 15: Commit T20.1 implementation.** Stage only the task-owned implementation/tests and create one implementation commit after both review stages PASS.
+- [x] **Step 9: Refactor only inside T20.1.** Improve names and local structure in declared writable Files without changing the displayed interfaces, observable behavior, or successor scope; rerun every legacy Target and Domain after the refactor.
+- [x] **Step 10: Run the FORMAL_OFFLINE_V1 closure.** Execute every exact command defined for `FORMAL_OFFLINE_V1` in the Global Execution Contract, including the changed-file redacted credential scan and `git diff --check`; record actual results in `AGENT_LOG.md`.
+- [x] **Step 11: Request T20.1 SPEC review.** Use `superpowers:requesting-code-review` with the Goal, SPEC contracts, Interfaces, minimum GREEN contracts, RED/GREEN evidence, and task diff. Require an explicit verdict.
+- [x] **Step 12: Close T20.1 SPEC findings.** Fix every Critical/Important finding, rerun affected Targets, Domains, and profile commands, and obtain same-stage re-review PASS.
+- [x] **Step 13: Request T20.1 quality review.** Use `superpowers:requesting-code-review` only after SPEC review PASS; review the task diff against every Atomic review focus line.
+- [x] **Step 14: Close T20.1 quality findings.** Fix every Critical/Important finding, rerun affected checks, and obtain same-stage re-review PASS.
+- [x] **Step 15: Commit T20.1 implementation.** Stage only the task-owned implementation/tests and create one implementation commit after both review stages PASS.
 
 ```bash
 git add -- "src/vespercode/validation/python_adapter.py" "tests/unit/validation/test_python_adapter_static.py" "tests/unit/validation/test_check_plan.py"
 git commit -m "Implement T20.1 Static Python Support Detection"
 ```
 
-- [ ] **Step 16: Record T20.1 completion evidence.** In a narrow evidence commit, update only this task's Status/Completion evidence and append `AGENT_LOG.md` with the real implementation SHA, responsible fresh subagent, human edits, exact commands/results, review/re-review verdicts, and PR URL.
+- [x] **Step 16: Record T20.1 completion evidence.** In a narrow evidence commit, update only this task's Status/Completion evidence and append `AGENT_LOG.md` with the real implementation SHA, responsible fresh subagent, human edits, exact commands/results, review/re-review verdicts, and PR URL.
 - [ ] **Step 17: Continue or finish WP20-DETECTION.** If another session task remains in this package, hand the same branch/PR to a new fresh subagent. Otherwise use `superpowers:finishing-a-development-branch`, verify the package result, and merge only after all predecessors and gates remain valid.
 
 **Done:** legacy steps 20.A 的 Target、Domain、适用真实环境和全局 profile 均通过；Critical/Important finding 全部关闭并复审；没有行为被延后到 successor。
-**Completion evidence:** Not yet executed.
+**Completion evidence:** Implementation commit `645b0e2` on branch `codex/wp20-detection` (worktree `.worktrees/wp20-detection`), 2026-08-06. 20.A `PythonProjectAdapterV1`/`TargetTestIdSequenceV1`/`StaticProjectProfileResultV1`(SUPPORTED|UNSUPPORTED)/`BaselineCheckPlanV1`/`FormalValidationCheckPlanV1` 完整实现，`ValidationManifestV1`/`CandidateIdentityV1` 为只读结构 Protocol（T20.2/T12.1 拥有闭式 Schema）：`detect_static` 只消费密封 Snapshot 与冻结 manifest（§1.4.1 静态检查矩阵全行、确定性 ordered reasons、digest 原样绑定、零执行），`build_baseline_plan`/`build_formal_plan` 冻结精确 collect/full/target/Ruff/Mypy 身份、argv、顺序与 target 绑定（§4.5 固定顺序、§0.1 自绑定 digest、闭式 `CheckPlanError` 通道）。RED 证据（`.venv-formal` runner；RED-state 脚手架 = 完整闭式类型词汇但刻意无 Snapshot-only unsupported 路径，T30.1 先例，因卡片 Expected RED 排除 collection failure）：Target exit 1 `AssertionError: assert 'SUPPORTED' == 'UNSUPPORTED'`（runner 到达精确 RED 测试，首个任务自有断言因 unsupported 路径未实现而失败，与卡片 Expected RED 逐字一致）；Matrix 同批 RED（32 failed）。GREEN 证据（全部 exit 0）：Target `1 passed`（精确 RED 逐字）；Matrix `test_check_plan_classification_matrix` `41 passed`（registry 20.A：supported 输入映射唯一闭式 Baseline 计划（6 检查/精确 argv/固定顺序/PRESENT target 绑定/摘要确定性），unsupported marker/config/plugin/collector/path/tool 状态返回 UNSUPPORTED 零执行且分类确定性；覆盖 `-p`/`-m`/`--markexpr` 的 `=`/拼接拼写、`-k`/`--ignore`/`--deselect`/`--lf`/`--ff`/`--co` 选择类 addopts、`required_plugins`、conftest.py/sitecustomize/usercustomize、`requirements*.txt`、policy/manifest digest 绑定等）；Domain `66 passed`；全量 `658 passed, 25 deselected`。FORMAL_OFFLINE_V1 闭包（全部 exit 0）：`ruff format --check .` 168 files already formatted；`ruff check .` All checks passed!；`mypy src tests` Success: no issues found in 143 source files；`scripts/scan_credentials.py --changed --redact --fail-on-match` exit 0（scan 前清全部 `__pycache__`）；`git diff --check` clean。Gate 边界：`.venv-gate` 下两新 unit 模块 `2 skipped` exit 5（`pytest.importorskip("pydantic")` 边界，T04.2/T05.1 先例）。Reviews（fresh 只读 subagent，均未改文件）：SPEC round 1 `SPEC_REVIEW_PASS`（2 Minor 自愿关闭：addopts `-m=`/`-p=`/`--markexpr=` argparse `=` 值拼写检出（`_contains_flag`），`build_formal_plan` target ids 全约束闭式 `TARGET_IDS_INVALID` 通道（`_require_exact_target_ids`），各补矩阵/参数化测试）→ same-stage re-review `SPEC_REVIEW_PASS`；quality round 1 `QUALITY_REVIEW_PASS`（3 Minor 自愿关闭：`-pp`/`-mnot` argparse 拼接短选项检出（已对照 pytest 8.4.2 实证）、`_SELECTION_ADDOPTS_FLAGS` 闭式常量 + `SELECTION_ADDOPTS` reason（SPEC §1.4.2 收集行为入口）、PROFILE_NOT_SUPPORTED/formal 顺序 validator/`required_plugins` 覆盖补行）→ same-stage re-review `QUALITY_REVIEW_PASS`（无剩余 Critical/Important/Minor）。环境中断：一次 DNS 故障中断 SPEC 评审 subagent（未产出任何结果），按 driver 指令凭转录重新派遣，零工作丢失。Step 17（finishing WP20-DETECTION）归 driver。Details in `AGENT_LOG.md` (`T20.1-COMPLETION-20260806`).
 
 ### Task T20.2: Stable Baseline and Validation Manifest
 
