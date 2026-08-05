@@ -2117,3 +2117,18 @@ ruff/mypy（46 files）全绿、credential scan exit 0、git diff --check clean�
 
 记录：5 个 Target 均以 formal 环境运行（pydantic 仅 formal 依赖）；gate
 环境 importorskip 属预期边界；11 条设计解释经两轮评审接受（详见 AGENT_LOG）。
+
+## 55. Core-first 执行 overlay：主干/扩展两阶段调度（2026-08-05）
+
+用户要求优先完成可运行主干、再完成扩展交付，防止截止前无最小原型。外部
+会话提出 C01–C21（35 WP）/ E01–E08（11 WP）两阶段重排。driver 独立校验：
+覆盖 46/46、依赖违规 0、Stage A 自洽闭包（无 A→B 任务依赖）、新同波对
+（E1/E2）文件无冲突。**裁决：采纳为执行 overlay（过程记录，不改 task card）**。
+
+执行细节（driver 决策）：
+1. 波次 6 起按 A 顺序推进；C07a/C07b、C10a/C10b 等无依赖子波**合并为并行波**
+   （保留原波次并行度，合入按任务号序），等于原波次表 + 阶段标注。
+2. 主干里程碑 = C21（WP32）完成：届时产生可运行 mock-LLM harness + 机制演示，
+   作为 8.9 前的检查点。
+3. Stage B 课程硬性交付不可省略：WebUI（E1–E3）、CI（E6）、wheel（E5）、
+   E2E（E4）、README/REFLECTION（E8）——重排不改变截止数学。
