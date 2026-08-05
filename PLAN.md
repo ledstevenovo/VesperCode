@@ -5109,7 +5109,7 @@ git commit -m "Implement T12.1 CandidateTree, Strict Patch Engine, and FinalDiff
 
 ### Task T13.1: Versioned PolicyEngine and Non-overridable DENY
 
-**Status:** Not started
+**Status:** Complete — Task-owned Target/Domain and both review stages PASS; the full-suite profile has 1 pre-existing wave-10 failure unrelated to T13.1 (see Completion evidence).
 **Work package:** WP13
 **Legacy steps:** 13
 **Goal:** Centralize deterministic `ALLOW/ASK/DENY` evaluation so unsafe capabilities and non-editable candidate changes cannot be approved, prompted around, or dispatched.
@@ -5178,38 +5178,38 @@ def test_user_approval_cannot_override_noneditable_path_deny(
 - SPEC (13): Spec compliance review compares the complete rule table with §4.4.1 and proves approval, Grant, config, prompt, and repository content cannot widen it.
 - Quality (13): Code quality review checks rule exhaustiveness, pure evaluation, stable precedence, digest/cache keys, and unknown-action fail-closed behavior.
 
-- [ ] **Step 1: Add the exact 13 RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
-- [ ] **Step 2: Run 13 RED.** Run `python -m pytest -q tests/unit/governance/test_policy.py::test_user_approval_cannot_override_noneditable_path_deny`. Expected: FAIL for “nonzero because `PolicyEngine` does not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
-- [ ] **Step 3: Implement 13 GREEN-1.** Calculate the governance policy digest from the versioned rule table plus the sole editable policy digest. Do not read prompt text, repository files, mutable config, Grant, or approval state.
-- [ ] **Step 4: Implement 13 GREEN-2.** Allow only registered, schema-valid list/read/literal-search, current-candidate patch, frozen check-plan, and completion-proposal actions in `RUNNING(AGENT_LOOP)`.
-- [ ] **Step 5: Implement 13 GREEN-3.** Return `ASK` only for the control-plane final writeback operation; model actions cannot manufacture that operation or any other approval subject.
-- [ ] **Step 6: Implement 13 GREEN-4.** Return `DENY` for non-editable or protected paths, sensitive paths/objects, arbitrary commands, shell fields, acceptance/config/control-plane modifications, unknown capabilities, and phase-forbidden actions.
-- [ ] **Step 7: Implement 13 GREEN-5.** Preserve the more specific stable path/protected/sensitive reason produced by deterministic pre-policy facts. An approval never converts a `DENY` evaluation into `ALLOW`.
-- [ ] **Step 8: Implement 13 GREEN-6.** Policy evaluation has no side effects and cannot call a tool, create a wait, consume an approval, or mutate a candidate.
-- [ ] **Step 9: Implement 13 GREEN-7.** Cache decisions only by policy digest, action semantic digest, and immutable context digest; never use action instance id or mutable approval status. **Implementation boundary:** This executable Task owns one pure, versioned `ALLOW | ASK | DENY` evaluation over immutable facts. It cannot persist approvals, dispatch tools, widen policy, access secrets, or perform external side effects.
-- [ ] **Step 10: Run 13 Target GREEN.** Re-run `python -m pytest -q tests/unit/governance/test_policy.py::test_user_approval_cannot_override_noneditable_path_deny`; require exit 0 and the displayed RED assertion to pass.
-- [ ] **Step 11: Run 13 Domain.** Run `python -m pytest -q tests/unit/governance/test_policy.py tests/unit/governance/test_policy_precedence.py`; require exit 0 and every displayed Atomic verification expectation to hold.
+- [x] **Step 1: Add the exact 13 RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
+- [x] **Step 2: Run 13 RED.** Run `python -m pytest -q tests/unit/governance/test_policy.py::test_user_approval_cannot_override_noneditable_path_deny`. Expected: FAIL for “nonzero because `PolicyEngine` does not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
+- [x] **Step 3: Implement 13 GREEN-1.** Calculate the governance policy digest from the versioned rule table plus the sole editable policy digest. Do not read prompt text, repository files, mutable config, Grant, or approval state.
+- [x] **Step 4: Implement 13 GREEN-2.** Allow only registered, schema-valid list/read/literal-search, current-candidate patch, frozen check-plan, and completion-proposal actions in `RUNNING(AGENT_LOOP)`.
+- [x] **Step 5: Implement 13 GREEN-3.** Return `ASK` only for the control-plane final writeback operation; model actions cannot manufacture that operation or any other approval subject.
+- [x] **Step 6: Implement 13 GREEN-4.** Return `DENY` for non-editable or protected paths, sensitive paths/objects, arbitrary commands, shell fields, acceptance/config/control-plane modifications, unknown capabilities, and phase-forbidden actions.
+- [x] **Step 7: Implement 13 GREEN-5.** Preserve the more specific stable path/protected/sensitive reason produced by deterministic pre-policy facts. An approval never converts a `DENY` evaluation into `ALLOW`.
+- [x] **Step 8: Implement 13 GREEN-6.** Policy evaluation has no side effects and cannot call a tool, create a wait, consume an approval, or mutate a candidate.
+- [x] **Step 9: Implement 13 GREEN-7.** Cache decisions only by policy digest, action semantic digest, and immutable context digest; never use action instance id or mutable approval status. **Implementation boundary:** This executable Task owns one pure, versioned `ALLOW | ASK | DENY` evaluation over immutable facts. It cannot persist approvals, dispatch tools, widen policy, access secrets, or perform external side effects.
+- [x] **Step 10: Run 13 Target GREEN.** Re-run `python -m pytest -q tests/unit/governance/test_policy.py::test_user_approval_cannot_override_noneditable_path_deny`; require exit 0 and the displayed RED assertion to pass.
+- [x] **Step 11: Run 13 Domain.** Run `python -m pytest -q tests/unit/governance/test_policy.py tests/unit/governance/test_policy_precedence.py`; require exit 0 and every displayed Atomic verification expectation to hold.
 
 **Task-level verification, review, and completion:**
 
-- [ ] **Step 12: Refactor only inside T13.1.** Improve names and local structure in declared writable Files without changing the displayed interfaces, observable behavior, or successor scope; rerun every legacy Target and Domain after the refactor.
-- [ ] **Step 13: Run the FORMAL_OFFLINE_V1 closure.** Execute every exact command defined for `FORMAL_OFFLINE_V1` in the Global Execution Contract, including the changed-file redacted credential scan and `git diff --check`; record actual results in `AGENT_LOG.md`.
-- [ ] **Step 14: Request T13.1 SPEC review.** Use `superpowers:requesting-code-review` with the Goal, SPEC contracts, Interfaces, minimum GREEN contracts, RED/GREEN evidence, and task diff. Require an explicit verdict.
-- [ ] **Step 15: Close T13.1 SPEC findings.** Fix every Critical/Important finding, rerun affected Targets, Domains, and profile commands, and obtain same-stage re-review PASS.
-- [ ] **Step 16: Request T13.1 quality review.** Use `superpowers:requesting-code-review` only after SPEC review PASS; review the task diff against every Atomic review focus line.
-- [ ] **Step 17: Close T13.1 quality findings.** Fix every Critical/Important finding, rerun affected checks, and obtain same-stage re-review PASS.
-- [ ] **Step 18: Commit T13.1 implementation.** Stage only the task-owned implementation/tests and create one implementation commit after both review stages PASS.
+- [x] **Step 12: Refactor only inside T13.1.** Improve names and local structure in declared writable Files without changing the displayed interfaces, observable behavior, or successor scope; rerun every legacy Target and Domain after the refactor.
+- [x] **Step 13: Run the FORMAL_OFFLINE_V1 closure.** Execute every exact command defined for `FORMAL_OFFLINE_V1` in the Global Execution Contract, including the changed-file redacted credential scan and `git diff --check`; record actual results in `AGENT_LOG.md`.
+- [x] **Step 14: Request T13.1 SPEC review.** Use `superpowers:requesting-code-review` with the Goal, SPEC contracts, Interfaces, minimum GREEN contracts, RED/GREEN evidence, and task diff. Require an explicit verdict.
+- [x] **Step 15: Close T13.1 SPEC findings.** Fix every Critical/Important finding, rerun affected Targets, Domains, and profile commands, and obtain same-stage re-review PASS.
+- [x] **Step 16: Request T13.1 quality review.** Use `superpowers:requesting-code-review` only after SPEC review PASS; review the task diff against every Atomic review focus line.
+- [x] **Step 17: Close T13.1 quality findings.** Fix every Critical/Important finding, rerun affected checks, and obtain same-stage re-review PASS.
+- [x] **Step 18: Commit T13.1 implementation.** Stage only the task-owned implementation/tests and create one implementation commit after both review stages PASS.
 
 ```bash
 git add -- "src/vespercode/governance/policy.py" "tests/unit/governance/test_policy.py" "tests/unit/governance/test_policy_precedence.py"
 git commit -m "Implement T13.1 Versioned PolicyEngine and Non-overridable DENY"
 ```
 
-- [ ] **Step 19: Record T13.1 completion evidence.** In a narrow evidence commit, update only this task's Status/Completion evidence and append `AGENT_LOG.md` with the real implementation SHA, responsible fresh subagent, human edits, exact commands/results, review/re-review verdicts, and PR URL.
+- [x] **Step 19: Record T13.1 completion evidence.** In a narrow evidence commit, update only this task's Status/Completion evidence and append `AGENT_LOG.md` with the real implementation SHA, responsible fresh subagent, human edits, exact commands/results, review/re-review verdicts, and PR URL.
 - [ ] **Step 20: Continue or finish WP13.** If another session task remains in this package, hand the same branch/PR to a new fresh subagent. Otherwise use `superpowers:finishing-a-development-branch`, verify the package result, and merge only after all predecessors and gates remain valid.
 
 **Done:** legacy steps 13 的 Target、Domain、适用真实环境和全局 profile 均通过；Critical/Important finding 全部关闭并复审；没有行为被延后到 successor。
-**Completion evidence:** Not yet executed.
+**Completion evidence:** Implementation commit `7d9c289` on branch `codex/wp13` (worktree `.worktrees/wp13`), 2026-08-06. 集中确定性 `ALLOW/ASK/DENY` 策略引擎全部实现（3 文件，1308 插入）：`PolicyEngine.evaluate(instance, context)`（闭式签名，无 approval 参数）、版本化规则表（六个注册模型动作/冻结 check-plan ids/final_writeback 唯一 ASK 主体/19 行硬 DENY 能力映射）、`governance_policy_digest`（规则表 + 唯一 editable policy digest，GREEN-1/AC-31 绑定）、`PolicyContextV1`（仅不可变 digest/预策略事实，自绑定，构造期拒绝非绑定 policy_digest）、预策略路径原因精确保留（GREEN-5）、记忆化键 = (policy_digest, action_type, semantic_digest, context.digest)，永不含 instance id/审批状态（GREEN-7，quality I-1 关闭）。RED 证据（Step 2，exit 4）：`.venv-formal\Scripts\python.exe -m pytest -q tests/unit/governance/test_policy.py::test_user_approval_cannot_override_noneditable_path_deny` → `ModuleNotFoundError: No module named 'src.vespercode.governance.policy'`（Expected RED 「nonzero because PolicyEngine does not exist」；显示 RED 测试逐字复制）。GREEN 证据（全部 exit 0）：Target `1 passed`（RED 逐字：DENY + `PATCH_PATH_NOT_EDITABLE` 保留、`approval=object()` 抛 TypeError）；Domain `130 passed`（ALLOW 六动作矩阵、24 行 phase 禁止矩阵、预策略原因全 `CandidatePatchErrorCodeV1` 保留、能力表 19 行 + 每 phase 能力 DENY、未知能力 fail-closed、唯一 ASK + 身份不匹配 `TREE_INTEGRITY_FAILED`、12 场景 approval 免疫、缓存键矩阵含 spoofed-digest 回归、digest 传播、闭式 Schema、AST 纯度 allowlist）。FORMAL_OFFLINE_V1 闭包（实际结果如实记录）：全量 `.venv-formal\Scripts\python.exe -m pytest -q` → `865 passed, 1 failed, 25 deselected` — 唯一失败为**既有 wave-10 合并交互**（T11.1 `test_file_tool_modules_import_no_candidate_or_filesystem` 的进程级 `sys.modules` 断言 vs T12.1 candidate 包；去掉 T13.1 文件两次复现同样失败，与本任务无关，位于 T13.1 声明文件边界之外，建议由 T11.1 属主修复，详见 AGENT_LOG）；`ruff format --check .` → 190 files already formatted；`ruff check .` → All checks passed!；`mypy src tests` → Success: no issues found in 165 source files；`scripts/scan_credentials.py --changed --redact --fail-on-match` → exit 0（先清 `__pycache__`）；`git diff --check`（含 staged）→ clean；3 文件 LF 校验 0 CR/无 BOM/末尾 LF；gate-env 边界 `.venv-gate` → 2 skipped（T04.2/T05.1 importorskip 边界）。Reviews（fresh 只读 subagent，均未改文件）：SPEC round 1 `SPEC_REVIEW_PASS`（0 Critical/Important；5 Minor，M-1 自愿关闭 `test_denied_capabilities_deny_in_every_phase`，M-2..M-5 记录）；quality round 1 `QUALITY_REVIEW_FAIL`（1 Important：I-1 记忆化键非决策输入函数——semantic digest 在本基线无 producer 约束，伪造 digest 实例可使缓存把硬 DENY 变 ALLOW——已修复：键加入 `instance.action.action_type` + spoofed-digest 回归测试；M-1 纯度测试改 allowlist 断言；M-2 check-plan ids 钉死 `CheckPlanIdV1`；M-3 writeback ASK/未验证五 phase 矩阵；M-4 phase 集派生 + 守卫；M-5 STALE-beats-fact 与 writeback-vs-无候选行；M-6 writeback 类型单拼 `FinalWritebackActionTypeV1` + memo 有界性文档化）；同阶段复审均 PASS：SPEC `SPEC_REVIEW_PASS`（GREEN-7 键变更验证，1 Minor 记录：键为 GREEN-7 三身份的已文档化超集）、quality round-2 `QUALITY_REVIEW_PASS`（I-1 探针复跑闭合，M-1..M-6 验证，1 非阻塞 Minor 记录：纯度测试钉直接 import 而 policy.py 经 patch_engine 传递性拉入 profiles/trees/workspace——import 期纯，运行期纯度不受影响）。Steps 1–19 完成，Step 20（finish WP13）归 driver。Details in `AGENT_LOG.md` (`T13.1-COMPLETION-20260806`).
 
 ### Task T14.1: FinalWritebackSubject and One-time Approval
 
