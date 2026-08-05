@@ -1,0 +1,56 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "vespercode"
+version = "0.1.0"
+description = "VesperCode coding agent harness (v1)"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "docker",
+    "fastapi",
+    "httpx",
+    "jinja2",
+    "keyring",
+    "pydantic>=2,<3",
+    "python-multipart",
+    "pywin32",
+    "uvicorn",
+]
+
+[project.optional-dependencies]
+build = ["build", "hatchling"]
+development = ["mypy==2.3.0", "pytest==8.4.2", "ruff==0.16.1"]
+
+[tool.pytest.ini_options]
+addopts = "-m 'not (windows_integration or docker_integration or reference_e2e or package_smoke or oci_smoke or deployment_smoke)'"
+testpaths = ["tests"]
+markers = [
+    "windows_integration: dedicated Windows integration environment",
+    "docker_integration: dedicated Docker integration environment",
+    "reference_e2e: dedicated reference end-to-end environment",
+    "package_smoke: dedicated wheel package smoke environment",
+    "oci_smoke: dedicated OCI image smoke environment",
+    "deployment_smoke: dedicated deployment smoke environment",
+]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 88
+extend-exclude = [".venv-gate", ".venv-formal", "*.md", "reference/fixture"]
+
+[tool.ruff.format]
+line-ending = "lf"
+quote-style = "double"
+indent-style = "space"
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_unused_configs = true
+explicit_package_bases = true
+mypy_path = ["."]
