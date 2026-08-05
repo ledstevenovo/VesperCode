@@ -2145,3 +2145,15 @@ codex/wp30-scenario → main。
 
 操作学习：4 套件并发全量回归跑 Docker 测试资源竞争（首次基线 10–15 失败），
 串行后全绿——全量回归须串行化；定向 Target/Domain 无此问题。
+
+## 57. 波次 7（4-WP 并行）收官（2026-08-05）
+
+WP08（T08.1：Run 严格请求与有序准入协调，PREFLIGHT 端口序 10 失败点精确停止）、
+WP15（T15.1/T15.2：披露来源/作用域/Grant subject 与决策/撤销/授权 ledger，
+发现并修复 BEGIN IMMEDIATE 内返回式失败会 COMMIT 的真实缺陷——rollback
+sentinel 模式）、WP18-CONTRACT（T18.1：可执行请求契约 + 参考镜像本地就绪
+逐字节证明）、WP27（T27.1：真实 WinCred 生命周期，最终清理多次独立枚举
+零残留、无 fallback）全部完成，两阶段评审 PASS。driver 逐一独立验证：
+formal 387/470/383/408（+7 deselected windows_integration）、gate 基线
+219 全保、mypy 82/94/80/86 files 全绿。按任务号序合并 codex/wp08 →
+codex/wp15 → codex/wp18-contract → codex/wp27 → main。

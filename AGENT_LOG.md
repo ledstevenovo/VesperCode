@@ -1396,3 +1396,13 @@
 - **Human intervention:** none.
 - **Implementation commit:** `41b3bff` (4 files, 789 insertions) via the card's exact `git add` list. Evidence commit: PLAN.md T30.1 Status/16 checkboxes/Completion evidence + this append-only entry. Step 17 (WP30-SCENARIO finishing) is the WP30-SCENARIO driver's responsibility.
 - **Lesson learned:** when a card's Expected RED explicitly excludes collection failure, the RED-state scaffolding must already satisfy imports/collection AND the fixture-data assertions that precede the missing behavior — the failing assertion then isolates exactly the missing mechanism (here: the formal-identity rejection), which keeps the RED evidence honest and the GREEN diff minimal (one validator); also, mypy's dataclass-transform view of pydantic models flags intentional unknown-kwarg rejection probes, so test modules probing runtime rejection need a documented module-level error-code disable rather than per-line ignores that would alter the card's exact displayed test.
+
+## WAVE07-DRIVER-FINISHING-20260805
+
+- **Timestamp (Asia/Taipei):** `2026-08-05T23:14:32+0800` (system-observed; append-only driver record).
+- **Task ID:** 波次 7 包级 finishing（WP08/WP15/WP18-CONTRACT/WP27）。
+- **Skills invoked:** `verification-before-completion`、`finishing-a-development-branch`、`dispatching-parallel-agents`。
+- **Key prompt/context:** 第二个 4-WP 并行波全部完成。driver 逐一独立验证（formal 387/470/383/408、gate 219 基线、mypy 82/94/80/86 files 全绿、scan/diff-check 全 0）。WP15 发现并修复真实缺陷（事务内返回式失败 COMMIT 问题）；WP27 真实 WinCred 生命周期含最终清理证明。
+- **Git / evidence boundary:** 按任务号序合并 4 分支 → main，push origin main。SPEC_PROCESS §57。无任务卡文本改动。
+- **Human intervention:** 无；夜间自主执行授权有效。
+- **Lesson learned:** WinCred 真实凭据任务耗时显著（ctypes/凭据管理器探索），零提交数小时属正常；用轻量探询确认活性优于过早干预。
