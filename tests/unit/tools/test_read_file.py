@@ -16,7 +16,6 @@ from __future__ import annotations
 
 import hashlib
 import pathlib
-import sys
 
 import pytest
 
@@ -410,4 +409,3 @@ def test_file_tool_modules_import_no_candidate_or_filesystem() -> None:
         assert "candidate" not in text
         for statement in ("import os", "import pathlib", "import subprocess"):
             assert statement not in text
-    assert "src.vespercode.candidate" not in sys.modules

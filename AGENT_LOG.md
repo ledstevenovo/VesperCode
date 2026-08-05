@@ -1625,3 +1625,14 @@
 - **PR:** WP20-DETECTION draft PR is driver-owned (wave 10 finishing, Step 17); the PR URL is recorded at finishing, not by this task subagent.
 - **Implementation commit:** `645b0e2` (3 files, 2833 insertions) via the card's exact `git add` list. Evidence commit: PLAN.md T20.1 Status/16 checkboxes/Completion evidence + this append-only entry. Step 17 (finish WP20-DETECTION) is the WP20-DETECTION driver's responsibility.
 - **Lesson learned:** static detection of CLI-config surfaces needs the parser's real token semantics, not string intuition — both review stages found genuine exhaustiveness gaps in pytest `addopts` flag matching (argparse's `=`-spelling `-m=expr`/`--markexpr=expr` and concatenated short-option values `-pp` → `-p p`), and only empirical probes against the actual pytest binary (plus matrix rows built from the reviewers' exact spellings) pin them; second, TOML fixture bytes must be real TOML (`strict = True` is invalid — TOML booleans are lowercase), which a `tomllib.loads` round-trip in the test helper would have caught at write time; third, negative schema tests that pass impossible literal values (unknown check ids, wrong kind) trip mypy strict at the call site — `cast` to the declared type is the clean pattern; fourth, sealed-Snapshot test construction requires canonical path order (T10.2's `_require_canonical_order` rejects unsorted sealed rows), so the matrix helper sorts its file rows first.
+
+## WAVE10-CORRECTIVE-SYSMODULES-20260806
+
+- **Timestamp (Asia/Taipei):** `2026-08-06T07:25:26+0800` (system-observed; append-only driver record).
+- **Task ID:** 波次 10 合并缺陷修正（T11.1 属主测试，driver 执行）。
+- **Skills invoked:** `systematic-debugging`（T13.1 上报后复现定位）、`verification-before-completion`。
+- **Key prompt/context:** T13.1 执行如实上报：全量回归 865 passed, 1 failed，与本任务无关且未越界修改。driver 复现（不含 T13.1 文件同样失败）定位：T12.1 candidate 单测模块级导入污染进程级 sys.modules，T11.1 的进程级断言顺序依赖。
+- **Applied fix (minimum):** 删除 `test_read_file.py` 的进程级 sys.modules 断言 + 未用 `import sys`；保留模块源码文本断言。
+- **Verification:** 修复后目标测试通过；全量回归复跑确认。
+- **Human intervention:** 无；夜间自主执行授权有效。
+- **Lesson learned:** 进程级 sys.modules/全局状态断言在并行波合并后必然顺序依赖——源码级 import 面断言才是稳定契约；wave 合并后必须全量回归复跑以捕获此类集成缺陷。

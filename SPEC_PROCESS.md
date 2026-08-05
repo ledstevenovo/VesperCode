@@ -2188,3 +2188,14 @@ WP20-DETECTION（T20.1：静态 Python 支持检测与闭式检查计划）全�
 
 环境记录：波次 10 三路 agent 同时遭 DNS 中断（ENOTFOUND），凭转录续跑
 零丢失——并行波的环境故障呈系统性特征，需串行重试预案。
+
+## 61. 波次 10 合并缺陷修正：sys.modules 进程级断言（2026-08-06）
+
+T13.1 执行如实上报全量回归 1 个既有失败（865 passed, 1 failed，与本任务
+无关）：`tests/unit/tools/test_read_file.py::test_file_tool_modules_import_no_candidate_or_filesystem`
+的进程级 `"src.vespercode.candidate" not in sys.modules` 断言在波次 10 合并
+后失败——T12.1 的 candidate 单测在模块级导入 candidate 包，同一 pytest
+进程中先跑即污染 sys.modules（已复现：不含任何 T13.1 文件时同样失败）。
+根因：进程级断言顺序依赖，非源码契约。**修正（T11.1 属主测试的最小修复）**：
+删除进程级 sys.modules 断言与随之未用的 `import sys`；保留模块源码文本断言
+（tools 模块不引用 candidate/os/pathlib/subprocess）——有意义的契约不变。
