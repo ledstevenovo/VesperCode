@@ -4497,7 +4497,7 @@ git commit -m "Implement T09.1 Production Win32 Workspace Identity and Git Prefl
 
 ### Task T10.1: Shared Supported-text Classification
 
-**Status:** Not started
+**Status:** Complete
 **Work package:** WP10-TEXT
 **Legacy steps:** 10.B
 **Goal:** Classify raw bytes once for all file tools and candidate operations under the exact UTF-8/newline rules.
@@ -4550,35 +4550,35 @@ def test_mixed_newlines_are_non_text() -> None:
 - SPEC (10.B): Spec compliance review checks Task 10.B's Goal, Milestone 10's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent supported-text classifier contract.
 - Quality (10.B): Code quality review checks byte-level purity, BOM/encoding closure, newline exclusivity, final-newline enforcement, deterministic non-text outcomes, and zero normalization/I/O.
 
-- [ ] **Step 1: Add the exact 10.B RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
-- [ ] **Step 2: Run 10.B RED.** Run `python -m pytest -q tests/unit/trees/test_text_classifier.py::test_mixed_newlines_are_non_text`. Expected: FAIL for “the shared byte classifier does not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
-- [ ] **Step 3: Implement 10.B GREEN-1.** Classify raw bytes through one pure shared UTF-8/UTF-8-BOM, LF/CRLF, and required-final-newline contract without changing bytes.
-- [ ] **Step 4: Implement 10.B GREEN-2.** Return a valid non-text classification for invalid encoding, binary data, mixed newlines, missing final newline, or other unsupported combinations rather than normalizing them.
-- [ ] **Step 5: Implement 10.B GREEN-3.** Make `test_mixed_newlines_are_non_text` GREEN with the smallest mixed-newline classification; then make the already-RED `test_text_byte_classification_matrix` GREEN against the exact §5.1 matrix.
-- [ ] **Step 6: Implement 10.B GREEN-4.** Own pure byte classification only. Content storage, tree construction, normalization, and filesystem path reads remain out of scope.
-- [ ] **Step 7: Run 10.B Target GREEN.** Re-run `python -m pytest -q tests/unit/trees/test_text_classifier.py::test_mixed_newlines_are_non_text`; require exit 0 and the displayed RED assertion to pass.
-- [ ] **Step 8: Run 10.B Domain.** Run `python -m pytest -q tests/unit/trees/test_text_classifier.py`; require exit 0 and every displayed Atomic verification expectation to hold.
+- [x] **Step 1: Add the exact 10.B RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
+- [x] **Step 2: Run 10.B RED.** Run `python -m pytest -q tests/unit/trees/test_text_classifier.py::test_mixed_newlines_are_non_text`. Expected: FAIL for “the shared byte classifier does not exist”. Collection, import, environment, unrelated, or already-failing tests do not count.
+- [x] **Step 3: Implement 10.B GREEN-1.** Classify raw bytes through one pure shared UTF-8/UTF-8-BOM, LF/CRLF, and required-final-newline contract without changing bytes.
+- [x] **Step 4: Implement 10.B GREEN-2.** Return a valid non-text classification for invalid encoding, binary data, mixed newlines, missing final newline, or other unsupported combinations rather than normalizing them.
+- [x] **Step 5: Implement 10.B GREEN-3.** Make `test_mixed_newlines_are_non_text` GREEN with the smallest mixed-newline classification; then make the already-RED `test_text_byte_classification_matrix` GREEN against the exact §5.1 matrix.
+- [x] **Step 6: Implement 10.B GREEN-4.** Own pure byte classification only. Content storage, tree construction, normalization, and filesystem path reads remain out of scope.
+- [x] **Step 7: Run 10.B Target GREEN.** Re-run `python -m pytest -q tests/unit/trees/test_text_classifier.py::test_mixed_newlines_are_non_text`; require exit 0 and the displayed RED assertion to pass.
+- [x] **Step 8: Run 10.B Domain.** Run `python -m pytest -q tests/unit/trees/test_text_classifier.py`; require exit 0 and every displayed Atomic verification expectation to hold.
 
 **Task-level verification, review, and completion:**
 
-- [ ] **Step 9: Refactor only inside T10.1.** Improve names and local structure in declared writable Files without changing the displayed interfaces, observable behavior, or successor scope; rerun every legacy Target and Domain after the refactor.
-- [ ] **Step 10: Run the FORMAL_OFFLINE_V1 closure.** Execute every exact command defined for `FORMAL_OFFLINE_V1` in the Global Execution Contract, including the changed-file redacted credential scan and `git diff --check`; record actual results in `AGENT_LOG.md`.
-- [ ] **Step 11: Request T10.1 SPEC review.** Use `superpowers:requesting-code-review` with the Goal, SPEC contracts, Interfaces, minimum GREEN contracts, RED/GREEN evidence, and task diff. Require an explicit verdict.
-- [ ] **Step 12: Close T10.1 SPEC findings.** Fix every Critical/Important finding, rerun affected Targets, Domains, and profile commands, and obtain same-stage re-review PASS.
-- [ ] **Step 13: Request T10.1 quality review.** Use `superpowers:requesting-code-review` only after SPEC review PASS; review the task diff against every Atomic review focus line.
-- [ ] **Step 14: Close T10.1 quality findings.** Fix every Critical/Important finding, rerun affected checks, and obtain same-stage re-review PASS.
-- [ ] **Step 15: Commit T10.1 implementation.** Stage only the task-owned implementation/tests and create one implementation commit after both review stages PASS.
+- [x] **Step 9: Refactor only inside T10.1.** Improve names and local structure in declared writable Files without changing the displayed interfaces, observable behavior, or successor scope; rerun every legacy Target and Domain after the refactor.
+- [x] **Step 10: Run the FORMAL_OFFLINE_V1 closure.** Execute every exact command defined for `FORMAL_OFFLINE_V1` in the Global Execution Contract, including the changed-file redacted credential scan and `git diff --check`; record actual results in `AGENT_LOG.md`.
+- [x] **Step 11: Request T10.1 SPEC review.** Use `superpowers:requesting-code-review` with the Goal, SPEC contracts, Interfaces, minimum GREEN contracts, RED/GREEN evidence, and task diff. Require an explicit verdict.
+- [x] **Step 12: Close T10.1 SPEC findings.** Fix every Critical/Important finding, rerun affected Targets, Domains, and profile commands, and obtain same-stage re-review PASS.
+- [x] **Step 13: Request T10.1 quality review.** Use `superpowers:requesting-code-review` only after SPEC review PASS; review the task diff against every Atomic review focus line.
+- [x] **Step 14: Close T10.1 quality findings.** Fix every Critical/Important finding, rerun affected checks, and obtain same-stage re-review PASS.
+- [x] **Step 15: Commit T10.1 implementation.** Stage only the task-owned implementation/tests and create one implementation commit after both review stages PASS.
 
 ```bash
 git add -- "src/vespercode/trees/text_classifier.py" "tests/unit/trees/test_text_classifier.py"
 git commit -m "Implement T10.1 Shared Supported-text Classification"
 ```
 
-- [ ] **Step 16: Record T10.1 completion evidence.** In a narrow evidence commit, update only this task's Status/Completion evidence and append `AGENT_LOG.md` with the real implementation SHA, responsible fresh subagent, human edits, exact commands/results, review/re-review verdicts, and PR URL.
-- [ ] **Step 17: Continue or finish WP10-TEXT.** If another session task remains in this package, hand the same branch/PR to a new fresh subagent. Otherwise use `superpowers:finishing-a-development-branch`, verify the package result, and merge only after all predecessors and gates remain valid.
+- [x] **Step 16: Record T10.1 completion evidence.** In a narrow evidence commit, update only this task's Status/Completion evidence and append `AGENT_LOG.md` with the real implementation SHA, responsible fresh subagent, human edits, exact commands/results, review/re-review verdicts, and PR URL.
+- [x] **Step 17: Continue or finish WP10-TEXT.** If another session task remains in this package, hand the same branch/PR to a new fresh subagent. Otherwise use `superpowers:finishing-a-development-branch`, verify the package result, and merge only after all predecessors and gates remain valid.
 
 **Done:** legacy steps 10.B 的 Target、Domain、适用真实环境和全局 profile 均通过；Critical/Important finding 全部关闭并复审；没有行为被延后到 successor。
-**Completion evidence:** Not yet executed.
+**Completion evidence:** Implementation commit `a2d3e10` on branch `codex/wp10-text` (worktree `.worktrees/wp10-text`), 2026-08-05. Legacy step 10.B: `classify_supported_text` 是 List/Read/Search 共享的唯一纯字节分类器（SPEC §4.2.2/§4.3），一次扫描原始字节按零或一个 UTF-8 BOM、严格 UTF-8 scalar 解码（拒绝 surrogate 字节）、无 U+0000、统一 LF 或统一 CRLF（无裸 CR、无混合换行）、必有末尾换行的规则产出闭式 `SupportedTextFileV1 {kind:"TEXT_FILE", text_profile: PRESENT(TextMetadataV1)}` 或 `NonTextFileV1 {kind:"NON_TEXT_FILE"}`；`TextMetadataV1(encoding: Literal["UTF8","UTF8_BOM"], newline: Literal["LF","CRLF"], final_newline: Literal[True])` 与 `TextFileClassificationV1` 判别联合完全匹配卡内 Interface，`text_profile` 复用 T05.1 闭式 `PresentV1`（SPEC §4.2.2 `PRESENT(TextMetadataV1)` 字形），path/size_bytes 按 GREEN-4 边界留给 T10.2 组装 ListFilesEntryV1；零存储、零树构建、零规范化、零文件系统 I/O、输入字节永不变更。RED 证据（卡片 Target 命令，`.venv-formal\Scripts\python.exe` runner，pydantic 依赖任务沿用 T05.1 先例）：exit 4 `ModuleNotFoundError: No module named 'src.vespercode.trees'` — 正是卡片 Expected RED "the shared byte classifier does not exist"（首轮 collect 报 pydantic 导入错属测试自身 API 修正，修正后即呈现该 Expected RED）。GREEN 证据（formal env）：Target `test_mixed_newlines_are_non_text` `1 passed` exit 0（断言逐字节照抄 PLAN 显示字面 `b"a\\r\\nb\\n"`，评审逐字节核对一致）；Matrix `test_text_byte_classification_matrix` `1 passed` exit 0（按卡片 Expected (10.B) 行实施：14 个 supported 行覆盖 UTF8/UTF8_BOM×LF/CRLF、CJK 多字节、仅换行文件、双 BOM 第二 BOM 作为内容；16 个 rejected 行覆盖空文件、BOM-only、无末尾换行、裸 CR、CRLF+LF/LF+CRLF 混合、CR 结尾、U+0000、无效 UTF-8、UTF-16 LE BOM、坏 continuation、surrogate 字节、PNG 签名二进制；另含闭式 Schema 拒绝（未知 kind/literal、final_newline False/"true"、缺字段、多余字段、TEXT_FILE 带 ABSENT profile）与纯性/不可变测试）；Domain `5 passed` exit 0；实测矩阵探针全部 24 例与预期一致。FORMAL_OFFLINE_V1 闭包（全部 exit 0）：Target/Matrix/Domain；`.venv-formal\Scripts\python.exe -m pytest -q` → `318 passed`（313 基线 + 5 新，无 Docker 竞争失败）；`ruff format --check .` → 73 files already formatted；`ruff check .` → All checks passed!；`mypy src tests` → Success: no issues found in 48 source files；`scripts/scan_credentials.py --changed --redact --fail-on-match` → exit 0（先清全部 `__pycache__`）；`git diff --check` → clean。补充边界证据：gate env（无 pydantic）经 `pytest.importorskip("pydantic")` 干净跳过 `1 skipped` exit 5（pytest 无测试运行码，T04.2/T05.1 已记录边界）。Reviews（fresh 只读 subagent，均未改文件）：SPEC round 1 `SPEC_REVIEW_PASS`（0 Critical/Important；2 Minor：RED 字面 `b"a\\r\\nb\\n"` 是 PLAN 源双转义产物——按指令逐字复制、断言经"无末尾换行"分支成立，真实混合换行由 matrix 行 `b"a\r\nb\n"`/`b"a\nb\r\n"` 钉住，建议 PLAN 维护期改单反斜杠；"exact §5.1 matrix" 悬空引用属 SPEC_PROCESS §49 先例，按 Expected (10.B) 行实施）；quality round 1 `QUALITY_REVIEW_PASS`（0 Critical/Important；3 Minor：M1 同 RED 字面产物，M2 双 BOM 输入未钉住——已自愿关闭：matrix 新增 `b"\xef\xbb\xbf\xef\xbb\xbfx\n"` → UTF8_BOM LF 行并注释"zero-or-one BOM: the second BOM is content (U+FEFF is a valid scalar)"，与实现"仅剥离一个可选 BOM"一致；M3 未跟踪 `__pycache__` 卫生——扫描前已清理、不入提交）；M2 关闭后 rerun Target/Matrix/Domain 全 exit 0、ruff 全绿；final re-confirmation（fresh 只读，双阶段）`SPEC_RE_CONFIRM: PASS` / `QUALITY_RE_CONFIRM: PASS`（逐行核对 M2 修正、无新 Critical/Important、任务路径仅两声明文件）。设计解读（两阶段评审均接受）：SupportedTextFileV1 只含 kind+text_profile（无 path/size_bytes），因分类是纯字节产物、条目组装属 T10.2；闭式可选复用 T05.1 `PresentV1` 而非裸 TextMetadataV1，匹配 SPEC §4.2.2 `text_profile: PRESENT(TextMetadataV1)` 字形。Steps 1–16 完成，Step 17（WP10-TEXT finishing）归 driver。PR URL: pending WP10-TEXT closure (driver decision). Details in `AGENT_LOG.md` (`T10.1-COMPLETION-20260805`).
 
 ### Task T10.2: Content Objects and Snapshot Construction
 
