@@ -1644,3 +1644,13 @@
 - **PR:** WP13 draft PR is driver-owned (wave 11 finishing); the PR URL is recorded at finishing, not by this task subagent.
 - **Implementation commit:** `7d9c289` (3 files, 1308 insertions) via the card's exact `git add` list. Evidence commit: PLAN.md T13.1 Status/19 checkboxes/Completion evidence + this append-only entry. Step 20 (finish WP13) is the WP13 driver's responsibility.
 - **Lesson learned:** a decision memo key must be a function of the DECISION INPUTS, not of identities nothing binds — the semantic digest is an unconstrained 64-hex `StrictStr` in this baseline, so keying the memo on it let a contract-valid spoofed instance turn a hard DENY into a cached ALLOW (the exact bypass T13.1 exists to prevent); the quality reviewer's live probe caught it, and the fix (action type in the key) plus a spoofed-digest regression test pins it; second, process-global `sys.modules` assertions in one task's tests silently break when a later task's modules share the pytest process — the wave-10 merge left exactly this latent interaction (T11.1's assertion vs T12.1's candidate package), which surfaced as the only full-suite failure during this task's closure despite being unrelated to it; third, `Literal[FinalVar]` is rejected by mypy even with `Final[Literal[...]]` — the clean single-spelling pattern is a closed type alias (`FinalWritebackActionTypeV1 = Literal["final_writeback"]`) typed into the `Final` constant.
+## WAVE10-CORRECTIVE-SYSMODULES-20260806
+
+- **Timestamp (Asia/Taipei):** `2026-08-06T07:25:26+0800` (system-observed; append-only driver record).
+- **Task ID:** 波次 10 合并缺陷修正（T11.1 属主测试，driver 执行）。
+- **Skills invoked:** `systematic-debugging`（T13.1 上报后复现定位）、`verification-before-completion`。
+- **Key prompt/context:** T13.1 执行如实上报：全量回归 865 passed, 1 failed，与本任务无关且未越界修改。driver 复现（不含 T13.1 文件同样失败）定位：T12.1 candidate 单测模块级导入污染进程级 sys.modules，T11.1 的进程级断言顺序依赖。
+- **Applied fix (minimum):** 删除 `test_read_file.py` 的进程级 sys.modules 断言 + 未用 `import sys`；保留模块源码文本断言。
+- **Verification:** 修复后目标测试通过；全量回归复跑确认。
+- **Human intervention:** 无；夜间自主执行授权有效。
+- **Lesson learned:** 进程级 sys.modules/全局状态断言在并行波合并后必然顺序依赖——源码级 import 面断言才是稳定契约；wave 合并后必须全量回归复跑以捕获此类集成缺陷。
