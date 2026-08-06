@@ -2125,3 +2125,13 @@
 - **Human intervention:** none.
 - **Implementation commit:** `1c4115a` via the card's exact `git add` list and the exact message "Implement T28.3 Loopback Serve CLI Composition". Evidence commit: PLAN.md T28.3 Status/16 checkboxes/Completion evidence + this append-only entry. Step 17 (finish WP28) is the WP28 driver's responsibility.
 - **Lesson learned:** (1) argparse `type=int` silently accepts non-literal forms (signs, whitespace, underscores, full-width digits) — a closed parser must validate the literal form before conversion when the card demands closed parsing; (2) `parse_args` never runs the installed handler — a runner fixture over argparse must dispatch `_serve_handler` itself after a successful parse; (3) `uvicorn.run` typing wants an ASGI-compatible value — the injected launcher boundary uses `Any` for the app so tests never need a real server.
+
+## DRIVER-DECISION-T341-PROHIBITED-CORRECTION-20260807
+
+- **Timestamp (Asia/Taipei):** `2026-08-07T07:03:46+0800` (system-observed; append-only driver record).
+- **Task ID:** T34.1 BLOCKER 裁决（计划级修正授权）。
+- **Skills invoked:** `receiving-code-review`（裁决 agent 上报的契约冲突）、`verification-before-completion`（独立核实引导闭包与导入点）。
+- **Key prompt/context:** T34.1 卡 PROHIBITED 整包前缀与冻结共享核心接线冲突（可引导镜像 RED 永不可绿）。driver 独立核实（导入点逐处 + T30.2 evidence 自身记录）后裁决：选项 A——storage/workspace 收窄为精确能力形式、execution 删除改行为证明；T30.1 精确前缀先例。
+- **Verification:** runner/feedback_consumption/dispatcher/snapshot/check_result 导入点逐处确认。
+- **Human intervention:** 无；夜间自主执行授权有效（含计划级修正的默认决策）。
+- **Lesson learned:** 整包前缀的禁止集必然与共享核心接线的传递依赖冲突——能力隔离的禁止集必须用"精确能力形式前缀 + 行为证明"，T30.2 evidence 的"故意排除布线模块"记录就是此原则的早期体现。

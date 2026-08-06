@@ -2347,3 +2347,29 @@ htmx 2.0.4 打包资产零网络、vespercode serve CLI；质量评审抓到 liv
 hook 整页替换失效真实缺陷已修复）全部完成。driver 独立验证：formal 1392/
 1396、gate 219 基线、mypy 318/325 files 全绿。按任务号序合并
 codex/wp07-registry → codex/wp28 → main。
+
+## 75. 计划级修正：T34.1 PROHIBITED 集与冻结共享核心接线冲突（2026-08-07）
+
+T34.1 执行 agent 按 §3.3 在写任何文件前诚实停下报告 BLOCKER：卡片要求的
+16 前缀 PROHIBITED_DEMO_MODULE_PREFIXES_V1 含整包 `vespercode.storage`、
+`vespercode.workspace`、`vespercode.execution`，但冻结的 T30.2 demo 运行时
+引导闭包必然含这 3 包下 19 个模块（共享核心接线：storage.connection/
+migration_engine/migrations 为 :memory: 布线、idempotency 经
+feedback_consumption、workspace.path_guard/git_preflight 经 dispatcher/
+snapshot 传递依赖、execution.* 经 check_result 模块级类型导入）——可引导
+镜像 RED 永不可绿、排除则无法引导（无 /healthz/固定 trace）。driver 独立
+核实：导入点逐处确认（runner.py:101-115、feedback_consumption.py:38/165、
+dispatcher.py:92、snapshot.py:42-43、check_result.py:41）；T30.2 evidence
+自身记录"PROHIBITED 集故意排除 storage.connection/migration 模块"。
+
+**裁决（选项 A，T30.1 精确前缀先例）**：
+1. `vespercode.storage` → `vespercode.storage.run_repository`（run 仓库为
+   精确能力形式；connection/migration 为布线非能力）；
+2. `vespercode.workspace` → `vespercode.workspace.mutex_win32`（引导闭包中
+   唯一非必需的 workspace 模块——命名互斥工作区租约，真实能力）；
+3. `vespercode.execution` 从集合**删除**（三模块全为引导必需）；Docker 不
+   存在性改行为/依赖证明：零正式适配器构造或调用（GREEN-2 既有要求）+
+   demo.lock 无 docker SDK + 引导闭包无 `import docker`。
+
+其余 13 前缀不变。卡片文本修正由执行 agent 在分支内完成（T07.4 §73 先例），
+测试体其余部分逐字节一致；不改任何冻结 T30.x/T19.x/T07.x 源码。
