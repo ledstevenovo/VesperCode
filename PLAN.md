@@ -6769,7 +6769,7 @@ git commit -m "Implement T20.2 Stable Baseline and Validation Manifest"
 
 ### Task T21.1: Formal Validation and VerifiedCandidate
 
-**Status:** Not started
+**Status:** Complete
 **Work package:** WP21
 **Legacy steps:** 21.A, 21.B, 21.C
 **Goal:** Recompute current candidate/policy/environment bindings and freeze the complete collect/full pytest/Ruff/Mypy formal plan before any container call.；Execute every request in the frozen formal plan with a fresh Task 18 boundary and collect complete ordered check evidence.；Evaluate the complete formal predicate and create `VerifiedCandidateV1` only for exact current complete passing evidence.
@@ -6833,14 +6833,14 @@ def test_stale_candidate_produces_zero_execution_requests() -> None:
 - SPEC (21.A): Spec compliance review checks Task 21.A's Goal, Milestone 21's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent formal preflight and frozen-plan contract.
 - Quality (21.A): Code quality review checks candidate/policy/environment/Manifest binding completeness, protected-path revalidation, zero-request failure atomicity, exact check identities/order, immutable plan data, and deterministic drift errors.
 
-- [ ] **Step 1: Add the exact 21.A RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
-- [ ] **Step 2: Run 21.A RED.** Run `python -m pytest -q tests/unit/validation/test_formal_preflight.py::test_stale_candidate_produces_zero_execution_requests`. Expected: FAIL for “no pre-execution integrity/plan builder exists”. Collection, import, environment, unrelated, or already-failing tests do not count.
-- [ ] **Step 3: Implement 21.A GREEN-1.** Recompute exact current candidate bytes, final-diff/protected-path state, policy identity, environment/reference profile, Manifest, target, and collection bindings before any execution request exists.
-- [ ] **Step 4: Implement 21.A GREEN-2.** Freeze the complete ordered collect, full pytest, Ruff, and Mypy request plan with immutable request identities, candidate identity, bounds, argv, and expected evidence.
-- [ ] **Step 5: Implement 21.A GREEN-3.** Make `test_stale_candidate_produces_zero_execution_requests` GREEN with the smallest stale-candidate rejection; then make the already-RED `test_formal_preflight_matrix` GREEN against the exact §5.1 matrix.
-- [ ] **Step 6: Implement 21.A GREEN-4.** Own pure preflight binding validation and full formal-plan construction only. Docker calls, evidence interpretation, lifecycle mutation, and `VerifiedCandidateV1` creation remain out of scope.
-- [ ] **Step 7: Run 21.A Target GREEN.** Re-run `python -m pytest -q tests/unit/validation/test_formal_preflight.py::test_stale_candidate_produces_zero_execution_requests`; require exit 0 and the displayed RED assertion to pass.
-- [ ] **Step 8: Run 21.A Domain.** Run `python -m pytest -q tests/unit/validation/test_formal_plan.py tests/unit/validation/test_formal_preflight.py`; require exit 0 and every displayed Atomic verification expectation to hold.
+- [x] **Step 1: Add the exact 21.A RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
+- [x] **Step 2: Run 21.A RED.** Run `python -m pytest -q tests/unit/validation/test_formal_preflight.py::test_stale_candidate_produces_zero_execution_requests`. Expected: FAIL for “no pre-execution integrity/plan builder exists”. Collection, import, environment, unrelated, or already-failing tests do not count.
+- [x] **Step 3: Implement 21.A GREEN-1.** Recompute exact current candidate bytes, final-diff/protected-path state, policy identity, environment/reference profile, Manifest, target, and collection bindings before any execution request exists.
+- [x] **Step 4: Implement 21.A GREEN-2.** Freeze the complete ordered collect, full pytest, Ruff, and Mypy request plan with immutable request identities, candidate identity, bounds, argv, and expected evidence.
+- [x] **Step 5: Implement 21.A GREEN-3.** Make `test_stale_candidate_produces_zero_execution_requests` GREEN with the smallest stale-candidate rejection; then make the already-RED `test_formal_preflight_matrix` GREEN against the exact §5.1 matrix.
+- [x] **Step 6: Implement 21.A GREEN-4.** Own pure preflight binding validation and full formal-plan construction only. Docker calls, evidence interpretation, lifecycle mutation, and `VerifiedCandidateV1` creation remain out of scope.
+- [x] **Step 7: Run 21.A Target GREEN.** Re-run `python -m pytest -q tests/unit/validation/test_formal_preflight.py::test_stale_candidate_produces_zero_execution_requests`; require exit 0 and the displayed RED assertion to pass.
+- [x] **Step 8: Run 21.A Domain.** Run `python -m pytest -q tests/unit/validation/test_formal_plan.py tests/unit/validation/test_formal_preflight.py`; require exit 0 and every displayed Atomic verification expectation to hold.
 
 #### Legacy step 21.B: Complete Formal Check Execution
 
@@ -6878,14 +6878,14 @@ def test_executor_must_run_every_frozen_request_once(executor: SpyDockerExecutio
 - SPEC (21.B): Spec compliance review checks Task 21.B's Goal, Milestone 21's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent complete formal-execution contract.
 - Quality (21.B): Code quality review checks exact request identity/order/cardinality, fresh-boundary isolation, evidence completeness, cleanup/teardown visibility, timeout handling, no implicit retries, and deterministic partial-execution records.
 
-- [ ] **Step 9: Add the exact 21.B RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
-- [ ] **Step 10: Run 21.B RED.** Run `python -m pytest -q -o addopts='' -m docker_integration tests/integration/docker/test_formal_execution_completeness.py::test_executor_must_run_every_frozen_request_once`. Expected: FAIL for “no formal execution coordinator exists”. Collection, import, environment, unrelated, or already-failing tests do not count.
-- [ ] **Step 11: Implement 21.B GREEN-1.** Invoke every frozen request exactly once in plan order through a fresh Task 18 execution boundary without skipping, inserting, replacing, or retrying requests implicitly.
-- [ ] **Step 12: Implement 21.B GREEN-2.** Collect ordered request identities and complete raw/check, teardown, cleanup, timeout, and residual evidence so missing, duplicate, or partial execution remains explicit and non-success.
-- [ ] **Step 13: Implement 21.B GREEN-3.** Make `test_executor_must_run_every_frozen_request_once` GREEN with the smallest exact-order coordinator; then make the already-RED `test_formal_execution_completeness_matrix` GREEN against the exact §5.1 matrix.
-- [ ] **Step 14: Implement 21.B GREEN-4.** Own formal request invocation and evidence collection only. Check selection, plan mutation, success evaluation, loop return, and approval creation remain out of scope.
-- [ ] **Step 15: Run 21.B Target GREEN.** Re-run `python -m pytest -q -o addopts='' -m docker_integration tests/integration/docker/test_formal_execution_completeness.py::test_executor_must_run_every_frozen_request_once`; require exit 0 and the displayed RED assertion to pass.
-- [ ] **Step 16: Run 21.B Domain.** Run `python -m pytest -q -o addopts='' -m docker_integration tests/integration/docker/test_reference_formal_validation.py tests/integration/docker/test_formal_execution_completeness.py`; require exit 0 and every displayed Atomic verification expectation to hold.
+- [x] **Step 9: Add the exact 21.B RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
+- [x] **Step 10: Run 21.B RED.** Run `python -m pytest -q -o addopts='' -m docker_integration tests/integration/docker/test_formal_execution_completeness.py::test_executor_must_run_every_frozen_request_once`. Expected: FAIL for “no formal execution coordinator exists”. Collection, import, environment, unrelated, or already-failing tests do not count.
+- [x] **Step 11: Implement 21.B GREEN-1.** Invoke every frozen request exactly once in plan order through a fresh Task 18 execution boundary without skipping, inserting, replacing, or retrying requests implicitly.
+- [x] **Step 12: Implement 21.B GREEN-2.** Collect ordered request identities and complete raw/check, teardown, cleanup, timeout, and residual evidence so missing, duplicate, or partial execution remains explicit and non-success.
+- [x] **Step 13: Implement 21.B GREEN-3.** Make `test_executor_must_run_every_frozen_request_once` GREEN with the smallest exact-order coordinator; then make the already-RED `test_formal_execution_completeness_matrix` GREEN against the exact §5.1 matrix.
+- [x] **Step 14: Implement 21.B GREEN-4.** Own formal request invocation and evidence collection only. Check selection, plan mutation, success evaluation, loop return, and approval creation remain out of scope.
+- [x] **Step 15: Run 21.B Target GREEN.** Re-run `python -m pytest -q -o addopts='' -m docker_integration tests/integration/docker/test_formal_execution_completeness.py::test_executor_must_run_every_frozen_request_once`; require exit 0 and the displayed RED assertion to pass.
+- [x] **Step 16: Run 21.B Domain.** Run `python -m pytest -q -o addopts='' -m docker_integration tests/integration/docker/test_reference_formal_validation.py tests/integration/docker/test_formal_execution_completeness.py`; require exit 0 and every displayed Atomic verification expectation to hold.
 
 #### Legacy step 21.C: Pure Formal Success and VerifiedCandidate
 
@@ -6923,35 +6923,35 @@ def test_missing_teardown_evidence_cannot_verify_candidate() -> None:
 - SPEC (21.C): Spec compliance review checks Task 21.C's Goal, Milestone 21's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent complete formal-success predicate.
 - Quality (21.C): Code quality review checks exact candidate/policy/environment binding, plan/evidence cardinality, authoritative PASS gating, teardown/cleanup completeness, drift/fingerprint comparison, deterministic digesting, and typed fail-closed outcomes.
 
-- [ ] **Step 17: Add the exact 21.C RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
-- [ ] **Step 18: Run 21.C RED.** Run `python -m pytest -q tests/unit/validation/test_formal_predicate.py::test_missing_teardown_evidence_cannot_verify_candidate`. Expected: FAIL for “no pure closed formal predicate/VerifiedCandidate builder exists”. Collection, import, environment, unrelated, or already-failing tests do not count.
-- [ ] **Step 19: Implement 21.C GREEN-1.** Revalidate exact Manifest, candidate revision and bytes, policy/environment, target fingerprint, plan digest, request identities, and evidence bindings without reading ambient state.
-- [ ] **Step 20: Implement 21.C GREEN-2.** Require the complete formal plan to have one authoritative passing result and successful teardown/cleanup for every request; skip, error, timeout, missing, duplicate, drift, or mismatch fails closed.
-- [ ] **Step 21: Implement 21.C GREEN-3.** Make `test_missing_teardown_evidence_cannot_verify_candidate` GREEN with the smallest typed failure; then make the already-RED `test_formal_verification_predicate_matrix` GREEN against the exact §5.1 matrix.
-- [ ] **Step 22: Implement 21.C GREEN-4.** Own pure formal predicate evaluation and `VerifiedCandidateV1` construction only. Planning, execution, lifecycle mutation, candidate writes, and approval decisions remain out of scope.
-- [ ] **Step 23: Run 21.C Target GREEN.** Re-run `python -m pytest -q tests/unit/validation/test_formal_predicate.py::test_missing_teardown_evidence_cannot_verify_candidate`; require exit 0 and the displayed RED assertion to pass.
-- [ ] **Step 24: Run 21.C Domain.** Run `python -m pytest -q tests/unit/validation/test_formal_predicate.py tests/unit/validation/test_verified_candidate.py`; require exit 0 and every displayed Atomic verification expectation to hold.
+- [x] **Step 17: Add the exact 21.C RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
+- [x] **Step 18: Run 21.C RED.** Run `python -m pytest -q tests/unit/validation/test_formal_predicate.py::test_missing_teardown_evidence_cannot_verify_candidate`. Expected: FAIL for “no pure closed formal predicate/VerifiedCandidate builder exists”. Collection, import, environment, unrelated, or already-failing tests do not count.
+- [x] **Step 19: Implement 21.C GREEN-1.** Revalidate exact Manifest, candidate revision and bytes, policy/environment, target fingerprint, plan digest, request identities, and evidence bindings without reading ambient state.
+- [x] **Step 20: Implement 21.C GREEN-2.** Require the complete formal plan to have one authoritative passing result and successful teardown/cleanup for every request; skip, error, timeout, missing, duplicate, drift, or mismatch fails closed.
+- [x] **Step 21: Implement 21.C GREEN-3.** Make `test_missing_teardown_evidence_cannot_verify_candidate` GREEN with the smallest typed failure; then make the already-RED `test_formal_verification_predicate_matrix` GREEN against the exact §5.1 matrix.
+- [x] **Step 22: Implement 21.C GREEN-4.** Own pure formal predicate evaluation and `VerifiedCandidateV1` construction only. Planning, execution, lifecycle mutation, candidate writes, and approval decisions remain out of scope.
+- [x] **Step 23: Run 21.C Target GREEN.** Re-run `python -m pytest -q tests/unit/validation/test_formal_predicate.py::test_missing_teardown_evidence_cannot_verify_candidate`; require exit 0 and the displayed RED assertion to pass.
+- [x] **Step 24: Run 21.C Domain.** Run `python -m pytest -q tests/unit/validation/test_formal_predicate.py tests/unit/validation/test_verified_candidate.py`; require exit 0 and every displayed Atomic verification expectation to hold.
 
 **Task-level verification, review, and completion:**
 
-- [ ] **Step 25: Refactor only inside T21.1.** Improve names and local structure in declared writable Files without changing the displayed interfaces, observable behavior, or successor scope; rerun every legacy Target and Domain after the refactor.
-- [ ] **Step 26: Run the FORMAL_OFFLINE_V1 closure.** Execute every exact command defined for `FORMAL_OFFLINE_V1` in the Global Execution Contract, including the changed-file redacted credential scan and `git diff --check`; record actual results in `AGENT_LOG.md`.
-- [ ] **Step 27: Request T21.1 SPEC review.** Use `superpowers:requesting-code-review` with the Goal, SPEC contracts, Interfaces, minimum GREEN contracts, RED/GREEN evidence, and task diff. Require an explicit verdict.
-- [ ] **Step 28: Close T21.1 SPEC findings.** Fix every Critical/Important finding, rerun affected Targets, Domains, and profile commands, and obtain same-stage re-review PASS.
-- [ ] **Step 29: Request T21.1 quality review.** Use `superpowers:requesting-code-review` only after SPEC review PASS; review the task diff against every Atomic review focus line.
-- [ ] **Step 30: Close T21.1 quality findings.** Fix every Critical/Important finding, rerun affected checks, and obtain same-stage re-review PASS.
-- [ ] **Step 31: Commit T21.1 implementation.** Stage only the task-owned implementation/tests and create one implementation commit after both review stages PASS.
+- [x] **Step 25: Refactor only inside T21.1.** Improve names and local structure in declared writable Files without changing the displayed interfaces, observable behavior, or successor scope; rerun every legacy Target and Domain after the refactor.
+- [x] **Step 26: Run the FORMAL_OFFLINE_V1 closure.** Execute every exact command defined for `FORMAL_OFFLINE_V1` in the Global Execution Contract, including the changed-file redacted credential scan and `git diff --check`; record actual results in `AGENT_LOG.md`.
+- [x] **Step 27: Request T21.1 SPEC review.** Use `superpowers:requesting-code-review` with the Goal, SPEC contracts, Interfaces, minimum GREEN contracts, RED/GREEN evidence, and task diff. Require an explicit verdict.
+- [x] **Step 28: Close T21.1 SPEC findings.** Fix every Critical/Important finding, rerun affected Targets, Domains, and profile commands, and obtain same-stage re-review PASS.
+- [x] **Step 29: Request T21.1 quality review.** Use `superpowers:requesting-code-review` only after SPEC review PASS; review the task diff against every Atomic review focus line.
+- [x] **Step 30: Close T21.1 quality findings.** Fix every Critical/Important finding, rerun affected checks, and obtain same-stage re-review PASS.
+- [x] **Step 31: Commit T21.1 implementation.** Stage only the task-owned implementation/tests and create one implementation commit after both review stages PASS.
 
 ```bash
 git add -- "src/vespercode/validation/formal_plan.py" "tests/unit/validation/test_formal_plan.py" "tests/unit/validation/test_formal_preflight.py" "src/vespercode/validation/formal_execution.py" "tests/integration/docker/test_reference_formal_validation.py" "tests/integration/docker/test_formal_execution_completeness.py" "src/vespercode/validation/formal.py" "tests/unit/validation/test_formal_predicate.py" "tests/unit/validation/test_verified_candidate.py"
 git commit -m "Implement T21.1 Formal Validation and VerifiedCandidate"
 ```
 
-- [ ] **Step 32: Record T21.1 completion evidence.** In a narrow evidence commit, update only this task's Status/Completion evidence and append `AGENT_LOG.md` with the real implementation SHA, responsible fresh subagent, human edits, exact commands/results, review/re-review verdicts, and PR URL.
+- [x] **Step 32: Record T21.1 completion evidence.** In a narrow evidence commit, update only this task's Status/Completion evidence and append `AGENT_LOG.md` with the real implementation SHA, responsible fresh subagent, human edits, exact commands/results, review/re-review verdicts, and PR URL.
 - [ ] **Step 33: Continue or finish WP21.** If another session task remains in this package, hand the same branch/PR to a new fresh subagent. Otherwise use `superpowers:finishing-a-development-branch`, verify the package result, and merge only after all predecessors and gates remain valid.
 
 **Done:** legacy steps 21.A, 21.B, 21.C 的 Target、Domain、适用真实环境和全局 profile 均通过；Critical/Important finding 全部关闭并复审；没有行为被延后到 successor。
-**Completion evidence:** Not yet executed.
+**Completion evidence:** d2e3257 (implementation commit). 21.A/21.B/21.C Targets, Matrices, Domains, and the real-container Domain all pass (formal env + docker env); full suite 1134 passed, 46 deselected; SPEC review round 1 FAIL (2 Important + 3 Minor) closed, same-stage re-review SPEC_REVIEW_PASS; quality review round 1 PASS (2 Minor) closed voluntarily, same-stage re-review QUALITY_REVIEW_PASS. Evidence in AGENT_LOG.md T21.1-COMPLETION-20260806.
 
 ### Task T22.1: Workspace-isolated Repository Memory
 
