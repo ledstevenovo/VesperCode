@@ -2002,3 +2002,13 @@
 - **Human intervention:** none.
 - **Implementation commit:** `9e0dade` (12 files, 3232 insertions) via the card's exact `git add` list and the exact message "Implement T30.2 Capability-isolated Demo Execution and Web App". Evidence commit: PLAN.md T30.2 Status/32 checkboxes/Completion evidence + this append-only entry. Step 33 (WP30-DEMO finishing) is the WP30-DEMO driver's responsibility.
 - **Lesson learned:** (1) an atomic-verification item without an exact command (Browser (30.B)) still requires evidence — a real browser on the host (Edge headless) plus the real server closed the gap without violating the offline contract, and the reviewer accepted the documented substitution once it was executed rather than asserted; (2) a vacuous verification (a wrong scan root returning an empty glob) passes forever until a reviewer probes the scan itself — a scan must assert its own non-emptiness; (3) the runner's own module-global imports (build_feedback/select_feedback/consume_feedback) are bound at import time, so provenance spies must patch the runner module's globals in addition to the pipeline's; (4) the card's Interface line and its exact RED can conflict (DemoStepResultV1 vs executor_kind) — the exact RED is the operative contract and the envelope resolution must be documented; (5) a RED run against an already-finished implementation is not valid evidence — when a RED attempt hits a test-code error instead of the missing behavior, restore the shell and rerun honestly before GREEN.
+
+## WAVE21-DRIVER-FINISHING-20260807
+
+- **Timestamp (Asia/Taipei):** `2026-08-07T03:03:22+0800` (system-observed; append-only driver record).
+- **Task ID:** 波次 21 包级 finishing（WP32）——主干里程碑。
+- **Skills invoked:** `verification-before-completion`、`finishing-a-development-branch`。
+- **Key prompt/context:** 机制演示完成（T32.1），主干阶段 A（35 WP）全部合入。driver 独立验证：formal 1376、gate 219、mypy 316 files、scan/diff-check 全 0。机制证明五组全部实证。
+- **Git / evidence boundary:** 合并 codex/wp32 → main，push origin main。SPEC_PROCESS §72。无任务卡文本改动。
+- **Human intervention:** 无；夜间自主执行授权有效。
+- **Lesson learned:** 主干里程碑 = 全部前置 WP 的组装证明——其价值在"证据链闭合"（每项机制声明都有真实子组件 + 探针），而非新机制本身。

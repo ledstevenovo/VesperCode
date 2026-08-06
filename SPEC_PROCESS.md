@@ -2301,3 +2301,18 @@ WP30-DEMO（T30.2：能力隔离 Demo 执行与 Web 应用）完成。确定性�
 浏览器证据（真实 Edge headless DOM 8118 字节全项验证）。SPEC/Quality 各
 1 个 Important 闭环。driver 独立验证：formal 1346、gate 219 基线、mypy
 305 files 全绿。合并 codex/wp30-demo → main。
+
+## 72. 波次 21 收官 + 主干里程碑达成（2026-08-07）
+
+WP32（T32.1：可重复治理与反馈机制演示——主干阶段 A 最后一个 WP）完成。
+机制证明全套：硬 DENY（PATCH_PATH_NOT_EDITABLE）与保护工件
+（PROTECTED_ARTIFACT_CHANGED）全在 dispatch/publish/approval 前；最终审批
+NOT_FOUND/STALE 零消费零写且精确 PENDING 审批为唯一写入口；注入检查失败
+反馈恰一次改变下一动作；分页 List/Search == 未分页且篡改/漂移零 payload；
+正式与 Demo 经同一九个共享纯核心调用点（callable 身份非标签）。driver
+独立验证：formal 1376、gate 219 基线、mypy 316 files 全绿。合并
+codex/wp32 → main。
+
+**主干里程碑：Core-first overlay 阶段 A（35 WP）全部合入**——可运行
+mock-LLM harness + 机制演示 + Demo 呈现就绪。进入扩展阶段 B（11 WP：
+WebUI 完整工作流、E2E、打包/镜像、CI、发布、最终交付）。
