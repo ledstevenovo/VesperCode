@@ -2211,3 +2211,12 @@ mypy 全绿、零容器残留。合并 codex/wp13 → codex/wp18-execution → m
 
 波次 10 合并缺陷修正（§61：进程级 sys.modules 断言）由 T13.1 执行如实
 上报，driver 修复并全量回归确认 866 passed。
+
+## 63. 波次 12 收官（2026-08-06）
+
+WP17（T17.1：模型动作解析/身份绑定/派发——解析拒绝矩阵、门禁序证明、
+非文件端口返回文件载荷 KeyError 逃逸修复）、WP19（T19.1：Ruff/Mypy 闭式
+解析、pytest 事件报告与指纹——断言 diff 误绑修复经 3 轮质量评审闭环：
+帧遍历跳过表漏 installed 包名 "vespercode" 的尖锐发现）全部完成。driver
+独立验证：formal 907/996、gate 219 基线、mypy 184/185 files 全绿。合并
+codex/wp17 → codex/wp19 → main。

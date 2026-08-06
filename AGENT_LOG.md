@@ -1681,3 +1681,13 @@
 - **Human intervention:** none.
 - **Implementation commit:** `cfc3984` (10 files, 4404 insertions) via the card's exact `git add` list. Evidence commit: PLAN.md T18.2 Status/32 checkboxes/Completion evidence + this append-only entry. Step 33 (finish WP18-EXECUTION) is the WP18-EXECUTION driver's responsibility.
 - **Lesson learned:** real-Docker collection on the Windows npipe transport is full of empirically-discovered traps: the SDK's blocking attach iterator hangs, backlog replay on a late attach is not deterministic, plain `recv` ignores the pipe timeout while the overlapped `recv_into` honors it, `os.path.islink` misses NTFS junctions (only the `st_file_attributes` reparse bit is reliable), `os.walk(followlinks=False)` can descend into junctions, and a recursive rmdir must never be called twice on the same directory; each of these was only pinned by a real-container or real-junction probe, and each became a closed code path with a matrix row. Also: the sealed-evidence schema must bind the EXACT stored representation (raw bytes), never a lossy re-encode; and a file-wide `str.replace` can silently land on the wrong card's line — always target the edit by the surrounding card's unique markers.
+
+## WAVE12-DRIVER-FINISHING-20260806
+
+- **Timestamp (Asia/Taipei):** `2026-08-06T11:17:30+0800` (system-observed; append-only driver record).
+- **Task ID:** 波次 12 包级 finishing（WP17/WP19）。
+- **Skills invoked:** `verification-before-completion`、`finishing-a-development-branch`。
+- **Key prompt/context:** 2-WP 并行波完成。driver 独立验证（formal 907/996、gate 219、mypy 184/185 files 全绿、scan/diff-check 全 0）。两任务质量评审各经多轮闭环（T17.1 KeyError 逃逸、T19.1 断言 diff 误绑/包名前缀）。
+- **Git / evidence boundary:** 按任务号序合并 2 分支 → main，push origin main。SPEC_PROCESS §63。无任务卡文本改动。
+- **Human intervention:** 无；夜间自主执行授权有效。
+- **Lesson learned:** 插件/生产代码的 installed 包名（vespercode vs src.vespercode）在帧遍历/路径匹配类逻辑中是经典陷阱——评审的 skip 前缀核对抓出真实缺陷；此类"真实调用路径与单测路径不一致"的验证应在集成/容器层补盲区。
