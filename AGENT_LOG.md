@@ -1768,3 +1768,13 @@
 - **PR:** WP22 draft PR is driver-owned (wave 13 finishing, Step 33); the PR URL is recorded at finishing, not by this task subagent.
 - **Implementation commit:** `ec4e2ca` (12 files, 3096 insertions) via the card's exact `git add` list. Evidence commit: PLAN.md T22.1 Status/33 checkboxes/Completion evidence + this append-only entry. Step 33 (finish WP22) is the WP22 driver's responsibility.
 - **Lesson learned:** (1) a "transactional zero-row rejection" contract must also cover encoding failures: pydantic `StrictStr` accepts lone surrogates, and the first UTF-8 encode of user-visible text can raise outside the try block — the quality reviewer caught exactly this; a closed rejection vocabulary is only closed when every input byte sequence maps to a result; (2) validation-before-transaction reads create two failure modes the ledger cannot fix: a later clear makes an exact replay unreachable (scope short-circuit), and a TOCTOU clear between the read and `BEGIN IMMEDIATE` produces a phantom NEW ledger record for a mutation that never happened — the T15.2 `_DecisionRollback` sentinel pattern (ledger first, scope check in-transaction, rollback on rejection) is the established fix; (3) helper/assertion tests that construct commands must vary the unique key per iteration (a loop reusing `entry_id="mem-1"` failed on iteration 2 with a misleading FAILED outcome); (4) ruff reformatting can detach `# type: ignore` comments from the line mypy attributes the error to — re-run mypy after `ruff format`; (5) the T18.2/T19.1 recurring accident class (file-wide edits landing on the wrong region) was avoided this time by asserting the exact card line indices in the one-shot evidence script before writing.
+
+## WAVE14-DRIVER-FINISHING-20260806
+
+- **Timestamp (Asia/Taipei):** `2026-08-06T15:36:09+0800` (system-observed; append-only driver record).
+- **Task ID:** 波次 14 包级 finishing（WP21/WP23）。
+- **Skills invoked:** `verification-before-completion`、`finishing-a-development-branch`。
+- **Key prompt/context:** 2-WP 并行波完成。driver 独立验证（formal 1134/1112、gate 219、mypy 221/224 files 全绿、scan/diff-check 全 0）。
+- **Git / evidence boundary:** 按任务号序合并 2 分支 → main，push origin main。SPEC_PROCESS §65。无任务卡文本改动。
+- **Human intervention:** 无；夜间自主执行授权有效。
+- **Lesson learned:** 正式验证谓词（T21.1）与审计（T23.1）是 harness 正确性的两个关键支柱——两者评审都抓出"真实路径不可达/泄漏"类问题并闭环；主循环（T25.x）将消费这两者，其契约边界已在 evidence 中记录。

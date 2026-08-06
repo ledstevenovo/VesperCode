@@ -2236,3 +2236,12 @@ evidence 字节，与 §50.2 NB-3 同类），真实 fixture 在冻结容器内�
 REPORTER_INVALID——影响 fixture 走基线/正式验证演示路径；docker 测试改用
 支持型 normal-form 工作区验证了基线机制本身。建议在后续修订中处理（需
 同步重算相关 digest）。
+
+## 65. 波次 14 收官（2026-08-06）
+
+WP21（T21.1：正式验证与 VerifiedCandidate——SPEC 首轮 2 Important 闭环：
+SESSION_ERROR 双 pytest 行扫描、错误词汇表映射到 SPEC §4.5 闭集；真实容器
+参考测试 + Ruff/Mypy 已知缺口 fail-closed）、WP23（T23.1：脱敏审计与状态
+投影——surrogate 泄漏与 evidence_refs digest 两个 Important 闭环）全部
+完成。driver 独立验证：formal 1134/1112、gate 219 基线、mypy 221/224
+files 全绿。合并 codex/wp21 → codex/wp23 → main。
