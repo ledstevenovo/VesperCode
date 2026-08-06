@@ -2270,3 +2270,13 @@ WP25-CALL（T25.2：调用/派发/重启边界——LLM 调用编排核心）完
 经两阶段评审（评审由 driver 按卡 Step 27/29 派遣）。driver 独立验证：
 formal 1214、gate 219 基线、mypy 256 files 全绿。合并 codex/wp25-call
 → main。
+
+## 69. 波次 18 收官（2026-08-06）
+
+WP14（T14.1：FinalWritebackSubject 与一次性审批——治理心脏）完成。subject
+绑定矩阵（11 事实漂移全旋转 digest）、决策矩阵（approve/reject 一次 +
+replay/conflict/expired/stale 全闭）、消费矩阵（并发恰好一 CONSUMED +
+stale/expired/rejected/mismatch 零持久化）。SPEC/Quality 各抓出 1 个
+Important（EXPIRED 结算违规零持久化、carried subject digest 未交叉校验）
+均已闭环。driver 独立验证：formal 1253、gate 219 基线、mypy 265 files
+全绿。合并 codex/wp14 → main。

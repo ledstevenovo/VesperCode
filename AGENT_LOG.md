@@ -1890,3 +1890,13 @@
 - **PR:** WP25-CALL draft PR is driver-owned (wave 17 finishing, Step 33); the PR URL is recorded at finishing, not by this task subagent.
 - **Implementation commit:** `660b19b` (9 files, 4381 insertions) via the card's exact `git add` list. Evidence commit: PLAN.md T25.2 Status/32 checkboxes/Completion evidence + this append-only entry (Step 33 is untouched and belongs to the WP25-CALL driver).
 - **Lesson learned:** (1) the WP25 call-orchestration card's RED contract (`result.error_code`) forces the orchestrator's own closed envelope even though Task 16.A already owns the SPEC-named type — the T17.1 same-name precedent (dispatcher `ActionResultV1`) is the honest resolution, and the honest NOT_ATTEMPTED extension (ABSENT ref for pre-charge aborts, PRESENT for post-charge stops) is the only truthful representation of the two stop families — both reviewers accepted it once the matrix pinned both; (2) when a command model carries mode-specific facts, the orchestrator's consistency gates are meaningful only if the test can inject drifted FACTS (strings), not drifted requests (the closed pydantic request schemas self-validate) — the drift rows pin each gate before any side effect; (3) reviewer-suggested robustness fixes (exception-type detection instead of message matching, guarded adapter-bind, cross-task invariant asserts at the boundary) should be closed with their own pins so the re-review can verify at file:line; (4) a module-level TypeAlias without a value binding is not importable (`RestartStopReasonV1: Literal[...]` -> ImportError) — the shell must use `TypeAlias = Literal[...]`; (5) the consume-once trace's second identical command returns the T07.3 REPLAY, not ALREADY_CONSUMED (that outcome needs a different turn) — the two outcomes are pinned in two different files deliberately; (6) ruff reformatting after a review fix requires re-running the full Domain + mypy + format check before re-review dispatch.
+
+## WAVE18-DRIVER-FINISHING-20260806
+
+- **Timestamp (Asia/Taipei):** `2026-08-06T20:05:35+0800` (system-observed; append-only driver record).
+- **Task ID:** 波次 18 包级 finishing（WP14）。
+- **Skills invoked:** `verification-before-completion`、`finishing-a-development-branch`。
+- **Key prompt/context:** 写回审批核心完成（T14.1）。driver 独立验证：formal 1253、gate 219、mypy 265 files、scan/diff-check 全 0。两 Important（EXPIRED 零持久化、subject digest 交叉校验）闭环。
+- **Git / evidence boundary:** 合并 codex/wp14 → main，push origin main。SPEC_PROCESS §69。无任务卡文本改动。
+- **Human intervention:** 无；夜间自主执行授权有效。
+- **Lesson learned:** 审批 wait 的"零持久化"失败路径是注册表级契约——任何状态卫生结算（如 EXPIRED settle）都必须对照注册表文本逐字核对，先例（15.E）不自动适用。
