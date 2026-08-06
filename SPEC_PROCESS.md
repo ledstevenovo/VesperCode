@@ -2220,3 +2220,19 @@ WP17（T17.1：模型动作解析/身份绑定/派发——解析拒绝矩阵、
 帧遍历跳过表漏 installed 包名 "vespercode" 的尖锐发现）全部完成。driver
 独立验证：formal 907/996、gate 219 基线、mypy 184/185 files 全绿。合并
 codex/wp17 → codex/wp19 → main。
+
+## 64. 波次 13 收官与冻结 fixture 缺口记录（2026-08-06）
+
+WP20-BASELINE（T20.2：稳定基线 + ValidationManifest——质量评审抓出 Critical：
+非目标谓词与生产报告器 TEST_PHASE 事件形状不兼容致 passing 路径真实不可达，
+已修复；ruff/mypy 镜像缺失按契约 fail-closed CHECK_ERROR 零发布）、WP22
+（T22.1：结构化记忆——surrogate 异常逃逸与 confirm TOCTOU 两个 Important
+修复闭环）全部完成。driver 独立验证：formal 1057/1053、gate 219 基线、
+mypy 200/206 files 全绿。合并 codex/wp20-baseline → codex/wp22 → main。
+
+**新增环境发现（T20.2 如实上报，driver 记录待决策）**：冻结 fixture 的
+`reference/fixture/pyproject.toml` 含无效 TOML 行（`strict = True`，T02.1
+evidence 字节，与 §50.2 NB-3 同类），真实 fixture 在冻结容器内首收集即
+REPORTER_INVALID——影响 fixture 走基线/正式验证演示路径；docker 测试改用
+支持型 normal-form 工作区验证了基线机制本身。建议在后续修订中处理（需
+同步重算相关 digest）。

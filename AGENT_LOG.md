@@ -1724,3 +1724,13 @@
 - **Human intervention:** none.
 - **Implementation commit:** `b409c5e` (10 files, 5167 insertions) via the card's exact `git add` list. Evidence commit: PLAN.md T19.1 Status/33 checkboxes/Completion evidence + this append-only entry. Step 33 (finish WP19) is the WP19 driver's responsibility.
 - **Lesson learned:** three recurrences this task: (1) an exact RED test's annotation is part of the contract but so is mypy strictness — the T05.1 "minimal mypy-required adjustments" precedent is the right resolution when the displayed annotation forces an `object` index (comment-only, documented); (2) the canonical JSON encoder rejects `None` and `list` — every optional field in a digest body must be an ABSENT/PRESENT wrapper and every array a tuple; and pydantic serializes dataclass fields as `{"value": …}` while the document form is a plain string, so the digest body must be built from the document form explicitly, never from `model_dump()`; (3) "fix the line pairing" is only real when the skip list matches the actual installed module name (`vespercode`, not `src.vespercode`) and the fallback cannot attach stale content to failures that never fired the capture hook — the reviewer's two-round rejection each caught a half-fix; verify a mechanism fix by the environment it runs in (subprocess + container), not by the unit test that passes either way. Plus the T18.2 precedent recurrence: a file-wide `str.replace` landed on the wrong card's line — always bound the edit to the card's region.
+
+## WAVE13-DRIVER-FINISHING-20260806
+
+- **Timestamp (Asia/Taipei):** `2026-08-06T14:08:15+0800` (system-observed; append-only driver record).
+- **Task ID:** 波次 13 包级 finishing（WP20-BASELINE/WP22）。
+- **Skills invoked:** `verification-before-completion`、`finishing-a-development-branch`。
+- **Key prompt/context:** 2-WP 并行波完成。driver 独立验证（formal 1057/1053、gate 219、mypy 200/206 files 全绿、scan/diff-check 全 0）。T20.2 质量评审抓出 Critical（报告器事件形状不兼容）已闭环；ruff/mypy 镜像缺失 fail-closed；冻结 fixture 无效 TOML 缺口记录（§64，与 NB-3 同类，待人工决策）。
+- **Git / evidence boundary:** 按任务号序合并 2 分支 → main，push origin main。SPEC_PROCESS §64。无任务卡文本改动。
+- **Human intervention:** 无；夜间自主执行授权有效。
+- **Lesson learned:** 真实容器演示路径（fixture 基线/正式验证）被冻结 fixture 的无效 TOML 阻断——冻结字节的契约缺陷会延迟暴露到演示层；记录并提请人工决策，不自行改冻结 evidence。
