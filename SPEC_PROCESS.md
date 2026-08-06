@@ -2292,3 +2292,12 @@ FINAL_WRITEBACK 恢复移交 DEFERRED）、WP26（T26.1/T26.2：持久化 v0011 
 评审时报告的 14 个 test_baseline 失败确认为瞬时环境（双 worktree 复跑
 19 passed、agent 多轮全量 1278 passed）。按任务号序合并 codex/wp25-loop
 → codex/wp26 → main。
+
+## 71. 波次 20 收官（2026-08-07）
+
+WP30-DEMO（T30.2：能力隔离 Demo 执行与 Web 应用）完成。确定性固定 trace
+逐字节等于 T30.1 场景、模拟端口隔离证明（AST 87-import 面零正式能力）、
+共享纯核心薄组合（真实 pipeline/policy/dispatcher 一次构造仅注入 Demo 端口）、
+浏览器证据（真实 Edge headless DOM 8118 字节全项验证）。SPEC/Quality 各
+1 个 Important 闭环。driver 独立验证：formal 1346、gate 219 基线、mypy
+305 files 全绿。合并 codex/wp30-demo → main。

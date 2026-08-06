@@ -1974,3 +1974,13 @@
 - **PR:** WP26 draft PR is driver-owned (wave 19 finishing); the PR URL is recorded at finishing, not by this task subagent.
 - **Implementation commit:** `e6a11e5` via the card's exact `git add` list (9 files, 4785 insertions). Evidence commit: PLAN.md T26.2 Status/24 checkboxes/Completion evidence + this append-only entry (Step 25 is untouched and belongs to the WP26 driver).
 - **Lesson learned:** (1) the review-driven matrix growth pattern held again: each closed finding got a pin row in the same Atomic verification command; (2) a "closed" claim needs re-verification in the tree — the M-7 docstring gap was caught by the driver relay, so every fix must be checked before claiming closure; (3) a spy `replace` must model the real port's new-object identity (a replaced file provably carries a new identity) or recovery observations of replaced paths become unprovable; (4) the classification field on observations was decorative from day one — the pure classifier recomputes, so the field was dropped rather than maintained as a second authority; (5) dropping a model field requires updating every observer/spy construction — the first mypy run caught the missed call sites.
+
+## WAVE20-DRIVER-FINISHING-20260807
+
+- **Timestamp (Asia/Taipei):** `2026-08-07T00:58:05+0800` (system-observed; append-only driver record).
+- **Task ID:** 波次 20 包级 finishing（WP30-DEMO）。
+- **Skills invoked:** `verification-before-completion`、`finishing-a-development-branch`。
+- **Key prompt/context:** Demo 执行器完成（T30.2）。driver 独立验证：formal 1346、gate 219、mypy 305 files、scan/diff-check 全 0。浏览器证据以真实 Edge headless 达成（无自动化库环境）。
+- **Git / evidence boundary:** 合并 codex/wp30-demo → main，push origin main。SPEC_PROCESS §71。无任务卡文本改动。
+- **Human intervention:** 无；夜间自主执行授权有效。
+- **Lesson learned:** 浏览器类验收证据在离线环境可用真实 headless 浏览器 + 真实服务器 + 渲染 HTML pin 达成——"无自动化库"不豁免证据，只改变证据形态。
