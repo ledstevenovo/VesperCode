@@ -2253,3 +2253,12 @@ WP25-TURN（T25.1：Agent Turn 建立与计数边界——主循环第一块）�
 abort_before_call 零副作用、close_turn revision CAS 恰好关闭一次；并发
 begin 双线程恰好一个 APPLIED。driver 独立验证：formal 1165、gate 219
 基线、mypy 237 files 全绿。合并 codex/wp25-turn → main。
+
+## 67. 波次 16 收官（2026-08-06）
+
+WP24（T24.1：ContextProjection 与结构化反馈——harness 纠错环核心）完成。
+失败→反馈记录（仅规范化类型化失败、界全部闭式）、选择最相关（最新必保
+失败锚定末位）、投影预算裁剪（仅按 §4.2.4 顺序裁声明可选类、mandatory 永不
+可裁）、原子消费（compare-and-consume 并发恰好一胜）。SPEC 抓出 I-1
+（source 归因无界 vs DDL 256 字符）已闭环。driver 独立验证：formal 1197、
+gate 219 基线、mypy 247 files 全绿。合并 codex/wp24 → main。
