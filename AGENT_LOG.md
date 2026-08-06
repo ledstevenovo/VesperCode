@@ -2028,3 +2028,13 @@
 - **PR:** WP32 draft PR is driver-owned (wave 21 finishing); the PR URL is recorded at finishing, not by this task subagent.
 - **Implementation commit:** `f72666f` via the card's exact `git add` list plus the two recorded `__init__.py` files (12 files; exact message "Implement T32.1 Repeatable Governance and Feedback Mechanism Demo"). Evidence commit: PLAN.md T32.1 Status/32 checkboxes/Completion evidence + this append-only entry. Step 33 (finish WP32) is the WP32 driver's responsibility.
 - **Lesson learned:** (1) a card RED whose assertion reads class attributes AND module-level names forces a mixed spy identity — the recorded value must be the object the RED resolves at assert time (the patched class attribute for class-method stages, the import-time module value for module-function stages), and the real-implementation pin belongs in a separate delegated property against import-time constants; (2) a wrapper that appends itself via a closure name inside a loop records the LAST wrapper (shared closure cell) — per-stage wrappers need a factory with fresh cells; (3) `git stash`-based RED-shell capture is a legitimate honest RED only when the shell is restored and the GREEN re-verified immediately; (4) a plan-level file addition forced by a pytest module-name collision (two `test_trace_determinism.py` files) is resolvable with the repo's own partial-package `__init__.py` convention and must be recorded as a deviation; (5) `model_dump()` self-comparisons are vacuous pins — a quality reviewer will catch them; cross-run comparisons are the honest form; (6) writing a report file with an appended newline silently breaks the declared byte count and digest — the CLI must write exactly the bound bytes; (7) the production CallOrchestrator maps a missing grant to INTERNAL_ERROR (control-plane consistency) — a mechanism trace must record the production code honestly rather than invent a friendlier one.
+
+## DRIVER-DECISION-T074-MAP-CORRECTION-20260807
+
+- **Timestamp (Asia/Taipei):** `2026-08-07T03:13:24+0800` (system-observed; append-only driver record).
+- **Task ID:** T07.4 BLOCKER 裁决（计划级修正授权）。
+- **Skills invoked:** `receiving-code-review`（裁决 agent 上报的契约冲突）、`verification-before-completion`（独立核实事实）。
+- **Key prompt/context:** T07.4 agent 报告卡 RED map 与不可变 DDL 事实冲突（v7/v10 表名、最终表数），Steps 1+7 不可满足。driver 独立核实（main 既有测试 pin 同一事实）后裁决：选项 A 计划级修正（卡片 map + 注册表行更新为实测事实，改 DDL 的选项 B 被否——破坏不可变性与 checksum；终止的选项 C 被否——任务本身有效）。
+- **Verification:** 卡片 map（PLAN.md:4013-4018）与实测 DDL 差异逐项确认；main 测试 pin 事实确认。
+- **Human intervention:** 无；夜间自主执行授权有效（含计划级修正的默认决策）。
+- **Lesson learned:** 注册表文本与实现 DDL 的历史偏差由"首个全量组合验证任务"暴露——此类 BLOCKER 的正确处置是事实核实 + 计划级修正授权，而非改不可变实现或终止任务。

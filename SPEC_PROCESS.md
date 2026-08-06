@@ -2316,3 +2316,24 @@ codex/wp32 → main。
 **主干里程碑：Core-first overlay 阶段 A（35 WP）全部合入**——可运行
 mock-LLM harness + 机制演示 + Demo 呈现就绪。进入扩展阶段 B（11 WP：
 WebUI 完整工作流、E2E、打包/镜像、CI、发布、最终交付）。
+
+## 73. 计划级修正：T07.4 迁移注册表卡片 map 与实现 DDL 偏差（2026-08-07）
+
+T07.4 执行 agent 按诚实原则报告 BLOCKER：卡片显示的 Exact RED map
+（PLAN.md:4013-4018）与已合入 main 的不可变迁移 DDL 事实不符，Steps 1+7
+（逐字节 RED → 必须 exit 0）联合不可满足：
+- v7：卡片 `{"agent_turns"}` vs 实际 v0007 `{"agent_turns", "run_turn_call_counters"}`；
+- v10：卡片 `{"final_writeback_subjects", "final_writeback_approvals"}` vs 实际
+  `{"writeback_approval_subjects", "writeback_approvals"}`；
+- 最终表数：卡片 18 vs 实测 19（18 domain + schema_migrations）。
+
+driver 独立核实：main 既有测试已 pin 同一事实（test_agent_turns_migration.py:135、
+test_writeback_approvals_migration.py:4）；偏差源头为 PLAN 存储注册表行
+442/445/446 早于 T14.1/T25.2 实现（其表名已获 SPEC 评审 PASS）。T07.4 是
+首个验证全量组合的任务，暴露此历史偏差。
+
+**裁决（选项 A）**：授权计划级修正——卡片 map 更新为实测事实（v7 增
+`run_turn_call_counters`；v10 改 `writeback_approval_subjects`/
+`writeback_approvals`；最终 19 表），并同步修正 PLAN 存储注册表行
+442/445/446 与"18 表"表述。测试函数体其余部分保持逐字节一致。不改不可变
+DDL（保 checksum 与既有测试）。先例：§52/.gitignore、§55 overlay。
