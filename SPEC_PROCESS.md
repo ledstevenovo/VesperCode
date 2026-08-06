@@ -2280,3 +2280,15 @@ stale/expired/rejected/mismatch 零持久化）。SPEC/Quality 各抓出 1 个
 Important（EXPIRED 结算违规零持久化、carried subject digest 未交叉校验）
 均已闭环。driver 独立验证：formal 1253、gate 219 基线、mypy 265 files
 全绿。合并 codex/wp14 → main。
+
+## 70. 波次 19 收官（2026-08-06）
+
+WP25-LOOP（T25.3：正式顺序循环——停止决策闭式优先级表、薄组合忠实性证明、
+FINAL_WRITEBACK 恢复移交 DEFERRED）、WP26（T26.1/T26.2：持久化 v0011 +
+审批绑定原子写回 + 恢复预览/应用生产协议——零写截止停止、未触及跟踪文件
+复验、真实 Windows ACL/租约/身份故障矩阵）全部完成。两阶段评审多轮闭环
+（T26.1 SPEC/Quality 各 3 Important、T26.2 Quality 1 Important）。driver
+独立验证：formal 1283/1278、gate 219 基线、mypy 274/285 files 全绿；
+评审时报告的 14 个 test_baseline 失败确认为瞬时环境（双 worktree 复跑
+19 passed、agent 多轮全量 1278 passed）。按任务号序合并 codex/wp25-loop
+→ codex/wp26 → main。
