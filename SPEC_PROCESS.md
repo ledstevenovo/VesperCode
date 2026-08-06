@@ -2245,3 +2245,11 @@ SESSION_ERROR 双 pytest 行扫描、错误词汇表映射到 SPEC §4.5 闭集�
 投影——surrogate 泄漏与 evidence_refs digest 两个 Important 闭环）全部
 完成。driver 独立验证：formal 1134/1112、gate 219 基线、mypy 221/224
 files 全绿。合并 codex/wp21 → codex/wp23 → main。
+
+## 66. 波次 15 收官（2026-08-06）
+
+WP25-TURN（T25.1：Agent Turn 建立与计数边界——主循环第一块）完成。计数
+语义精确定义：begin 只推 turn 计数、record_call_started 只推 call 计数、
+abort_before_call 零副作用、close_turn revision CAS 恰好关闭一次；并发
+begin 双线程恰好一个 APPLIED。driver 独立验证：formal 1165、gate 219
+基线、mypy 237 files 全绿。合并 codex/wp25-turn → main。
