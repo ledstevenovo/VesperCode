@@ -1654,3 +1654,13 @@
 - **Verification:** 修复后目标测试通过；全量回归复跑确认。
 - **Human intervention:** 无；夜间自主执行授权有效。
 - **Lesson learned:** 进程级 sys.modules/全局状态断言在并行波合并后必然顺序依赖——源码级 import 面断言才是稳定契约；wave 合并后必须全量回归复跑以捕获此类集成缺陷。
+
+## WAVE11-DRIVER-FINISHING-20260806
+
+- **Timestamp (Asia/Taipei):** `2026-08-06T08:51:56+0800` (system-observed; append-only driver record).
+- **Task ID:** 波次 11 包级 finishing（WP13/WP18-EXECUTION）。
+- **Skills invoked:** `verification-before-completion`、`finishing-a-development-branch`。
+- **Key prompt/context:** 2-WP 并行波完成。driver 独立验证（formal 866/879、gate 219、mypy 全绿、scan/diff-check 全 0、零容器残留）。T13.1 如实上报波次 10 合并缺陷（sys.modules 顺序依赖断言），driver 修复（§61）并全量回归确认。
+- **Git / evidence boundary:** 按任务号序合并 2 分支 → main，push origin main。SPEC_PROCESS §62。无任务卡文本改动。
+- **Human intervention:** 无；夜间自主执行授权有效。
+- **Lesson learned:** 执行 agent 的"全量回归既有失败"上报是波次合并缺陷的早期预警——driver 复现后按属主最小修复，全量回归即恢复；波次合入后必须复跑全量。

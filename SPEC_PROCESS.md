@@ -2199,3 +2199,15 @@ T13.1 执行如实上报全量回归 1 个既有失败（865 passed, 1 failed，
 根因：进程级断言顺序依赖，非源码契约。**修正（T11.1 属主测试的最小修复）**：
 删除进程级 sys.modules 断言与随之未用的 `import sys`；保留模块源码文本断言
 （tools 模块不引用 candidate/os/pathlib/subprocess）——有意义的契约不变。
+
+## 62. 波次 11 收官（2026-08-06）
+
+WP13（T13.1：集中 ALLOW/ASK/DENY 策略评估——不可绕过性证明、缓存键修复
+关闭可欺骗 digest 洞）、WP18-EXECUTION（T18.2：候选物化/锁容器执行/清理——
+真实 32 MiB 洪泛在合并 4 MiB 上限被击杀、非 UTF-8 原始字节证据、嵌套漂移
+检测、完整生命周期零残留）全部完成，两阶段评审 PASS（SPEC/Quality 共 3 个
+Important 修复闭环）。driver 独立验证：formal 866/879、gate 219 基线、
+mypy 全绿、零容器残留。合并 codex/wp13 → codex/wp18-execution → main。
+
+波次 10 合并缺陷修正（§61：进程级 sys.modules 断言）由 T13.1 执行如实
+上报，driver 修复并全量回归确认 866 passed。
