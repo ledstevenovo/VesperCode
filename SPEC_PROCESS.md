@@ -2262,3 +2262,11 @@ WP24（T24.1：ContextProjection 与结构化反馈——harness 纠错环核心
 可裁）、原子消费（compare-and-consume 并发恰好一胜）。SPEC 抓出 I-1
 （source 归因无界 vs DDL 256 字符）已闭环。driver 独立验证：formal 1197、
 gate 219 基线、mypy 247 files 全绿。合并 codex/wp24 → main。
+
+## 68. 波次 17 收官（2026-08-06）
+
+WP25-CALL（T25.2：调用/派发/重启边界——LLM 调用编排核心）完成。恰好
+一次调用、凭据/授权顺序、DENY 零派发、v0009 动作记录、重启处置全部
+经两阶段评审（评审由 driver 按卡 Step 27/29 派遣）。driver 独立验证：
+formal 1214、gate 219 基线、mypy 256 files 全绿。合并 codex/wp25-call
+→ main。
