@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VesperCode 模拟 Demo（公网仿真）</title>
+<style>
+  /* Persistent simulation labeling: the page is never presented as a
+     formal verification (SPEC §2.9/§4.9).  Sufficient contrast: dark
+     text on light background and a light-on-dark banner (WCAG AA). */
+  :root {
+    color-scheme: light dark;
+    --text: #1a1a1a;
+    --background: #f7f5f0;
+    --banner-bg: #101418;
+    --banner-text: #ffffff;
+    --accent: #005a9e;
+    --border: #444444;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    color: var(--text);
+    background: var(--background);
+    line-height: 1.5;
+  }
+  header.simulation-banner {
+    background: var(--banner-bg);
+    color: var(--banner-text);
+    padding: 0.75rem 1rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+  }
+  main { max-width: 56rem; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
+  h1 { font-size: 1.5rem; }
+  h2 { font-size: 1.1rem; margin-top: 1.5rem; }
+  pre {
+    background: #ffffff;
+    border: 1px solid var(--border);
+    border-radius: 0.25rem;
+    padding: 0.75rem;
+    overflow-x: auto;
+    white-space: pre-wrap;
+  }
+  ol.trace { padding-left: 1.5rem; }
+  .status-text { font-weight: 700; }
+  /* Keyboard/focus support: every interactive control is a native
+     button with a visible focus ring (never color-only). */
+  button {
+    font: inherit;
+    padding: 0.5rem 1rem;
+    margin: 0.25rem 0.25rem 0.25rem 0;
+    border: 1px solid var(--border);
+    border-radius: 0.25rem;
+    background: #ffffff;
+    color: var(--text);
+    cursor: pointer;
+  }
+  button:disabled { opacity: 0.55; cursor: not-allowed; }
+  button:focus-visible {
+    outline: 3px solid var(--accent);
+    outline-offset: 2px;
+  }
+  /* Reduced motion: no animation or transition when requested. */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation: none !important;
+      transition: none !important;
+    }
+  }
+</style>
+</head>
+<body>
+<header class="simulation-banner" role="banner">
+  SIMULATION 模拟 — 公网 Mock Demo，非正式验证（{{ mode }}）
+</header>
+<main>
+  <section aria-labelledby="scenario-heading">
+    <h1 id="scenario-heading">固定场景（只读，不可更改）</h1>
+    <p>
+      本 Demo 只使用内置场景、Mock LLM 和模拟执行器；它不注册本地文件、
+      真实凭据、Docker 或真实 LLM 能力，不接收提示词、URL、仓库上传、
+      Provider 或密钥输入（SPEC §2.9 US-09 / §4.9）。
+    </p>
+    <h2>任务源</h2>
+    <pre>{{ scenario.source }}</pre>
+    <h2>注入失败</h2>
+    <pre>{{ scenario.injected_failure }}</pre>
+    <h2>期望补丁</h2>
+    <pre>{{ scenario.expected_patch }}</pre>
+    <h2>固定步骤序列</h2>
+    <ol class="trace">
+      {% for step in scenario.trace.steps %}
+      <li>
+        {{ step.action_label }} — {{ step.outcome }}（状态
+        <span class="status-text">{{ step.status }}</span>）
+      </li>
+      {% endfor %}
+    </ol>
+  </section>
+  <section aria-labelledby="session-heading">
+    <h2 id="session-heading">会话（进程内、最多 20 动作 / 5 分钟，结束后丢弃）</h2>
+    <p id="session-status" aria-live="polite">尚未开始会话。</p>
+    <ol id="session-steps" aria-live="polite"></ol>
+    <div id="live-error" aria-live="assertive" role="alert"></div>
+    <button id="start-session" type="button">启动新会话</button>
+    <button id="advance-step" type="button" disabled>执行下一步</button>
+    <button id="reject-writeback" type="button" disabled>拒绝写回</button>
+    <button id="approve-writeback" type="button" disabled>批准写回</button>
+  </section>
+</main>
+<script>
+  // Fetch-based live controller: no external assets, no untrusted input;
+  // every status update is rendered as text (no HTML injection surface)
+  // and every error lands in the assertive live region.
+  (function () {
+    "use strict";
+    var statusRegion = document.getElementById("session-status");
+    var stepsRegion = document.getElementById("session-steps");
+    var errorRegion = document.getElementById("live-error");
+    var startButton = document.getElementById("start-session");
+    var advanceButton = document.getElementById("advance-step");
+    var rejectButton = document.getElementById("reject-writeback");
+    var approveButton = document.getElementById("approve-writeback");
+    var sessionId = null;
+
+    function showError(message) {
+      errorRegion.textContent = "错误：" + message;
+    }
+
+    function clearError() {
+      errorRegion.textContent = "";
+    }
+
+    function renderStatus(status) {
+      statusRegion.textContent = "会话状态：" + status + "（模拟运行中，非正式验证）";
+    }
+
+    function appendStep(step) {
+      var item = document.createElement("li");
+      item.textContent = step.action_label + " — " + step.outcome +
+        "（状态 " + step.status + "）";
+      stepsRegion.appendChild(item);
+    }
+
+    function setButtons(step) {
+      var waiting = step.status === "DEMO_WAITING_USER";
+      advanceButton.disabled = waiting;
+      rejectButton.disabled = !waiting;
+      approveButton.disabled = !waiting;
+    }
+
+    function post(url, body) {
+      return fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body || {})
+      }).then(function (response) {
+        return response.json().then(function (payload) {
+          if (!response.ok) {
+            throw new Error(payload.detail || response.status);
+          }
+          return payload;
+        });
+      });
+    }
+
+    startButton.addEventListener("click", function () {
+      clearError();
+      post("/demo/sessions").then(function (created) {
+        sessionId = created.demo_session_id;
+        renderStatus(created.session.status);
+        advanceButton.disabled = false;
+      }).catch(function (error) { showError(error.message); });
+    });
+
+    function advance(decision) {
+      if (sessionId === null) {
+        showError("请先启动新会话。");
+        return;
+      }
+      clearError();
+      var body = decision === null ? {} : { decision: decision };
+      post("/demo/sessions/" + encodeURIComponent(sessionId) + "/advance", body)
+        .then(function (step) {
+          appendStep(step);
+          renderStatus(step.status);
+          setButtons(step);
+          if (step.status === "DEMO_COMPLETED") {
+            advanceButton.disabled = true;
+            sessionId = null;
+            renderStatus("DEMO_COMPLETED（会话已结束并丢弃，模拟终态）");
+          }
+        }).catch(function (error) { showError(error.message); });
+    }
+
+    advanceButton.addEventListener("click", function () { advance(null); });
+    rejectButton.addEventListener("click", function () { advance("REJECT"); });
+    approveButton.addEventListener("click", function () { advance("APPROVE"); });
+  })();
+</script>
+</body>
+</html>
