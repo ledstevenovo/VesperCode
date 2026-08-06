@@ -439,11 +439,11 @@ This table is the complete storage-class decision for every SPEC §7 entity plus
 | FinalDiffV1 | local artifact/config owner | Task 12.D owns the immutable structured artifact; complete postimage bytes remain in the Task 10.A content store and SQLite stores only allowed digest/ref fields. |
 | CandidateIdentityV1 | value object/no durable table | Task 12.D owns the derived three-way identity. |
 | CandidateRevision | local artifact/config owner | Tasks 12.B/12.C own the immutable candidate-tree artifact and parent metadata; ordinary turn restart remains non-persistent. |
-| AgentTurn | SQLite migration owner | Task 25.B, `v0007_agent_turns.py`, table `agent_turns`; primary key `turn_id`, FK `run_id → runs`, partial uniqueness for one active turn per Run, exact counters/revision/outcome, and body-free request/result refs only. |
+| AgentTurn | SQLite migration owner | Task 25.B, `v0007_agent_turns.py`, tables `agent_turns` (primary key `turn_id`, FK `run_id → runs`, partial uniqueness for one active turn per Run, exact counters/revision/outcome, and body-free request/result refs only) and `run_turn_call_counters` (primary key `run_id`, non-negative turn/call counters — the SPEC §4.2.5 atomic counting-point storage). |
 | ActionRecord | SQLite migration owner | Task 25.D, `v0009_actions.py`, table `action_records`; primary key `action_id`, FK `turn_id → agent_turns`, unique `(turn_id, action_id)`, digests/decision/result ref only, and no action/result body. |
 | FeedbackRecord | SQLite migration owner | Task 24.C, `v0008_feedback.py`, table `feedback_records`; primary key `feedback_id`, nullable FK `consumed_by_turn_id → agent_turns`, one-winner consume predicate, bounded payload plus evidence refs, and no raw check body. |
-| FinalWritebackSubjectV1 | SQLite migration owner | Task 14.B, `v0010_writeback_approvals.py`, table `final_writeback_subjects`; primary/unique subject digest, exact immutable binding columns, and artifact digests/refs rather than postimage bytes. |
-| FinalWritebackApproval | SQLite migration owner | Task 14.B, `v0010_writeback_approvals.py`, table `final_writeback_approvals`; primary key `approval_id`, FK subject digest and wait id, one terminal decision plus one `PENDING → CONSUMED` winner, and no workspace bytes. |
+| FinalWritebackSubjectV1 | SQLite migration owner | Task 14.B, `v0010_writeback_approvals.py`, table `writeback_approval_subjects`; primary/unique subject digest, exact immutable binding columns, and artifact digests/refs rather than postimage bytes. |
+| FinalWritebackApproval | SQLite migration owner | Task 14.B, `v0010_writeback_approvals.py`, table `writeback_approvals`; primary key `approval_id`, FK subject digest and wait id, one terminal decision plus one `PENDING → CONSUMED` winner, and no workspace bytes. |
 | DisclosureGrantSubjectV1 | SQLite migration owner | Task 15.D, `v0003_disclosure_grants.py`, table `disclosure_grant_subjects`; primary/unique subject digest, frozen provider/endpoint/model/serializer/scope/category/budget/expiry facts, and no segment content. |
 | DisclosureGrant | SQLite migration owner | Task 15.D, `v0003_disclosure_grants.py`, table `disclosure_grants`; primary key `grant_id`, FK subject digest/run/wait, `consumed_bytes` and `ACTIVE/REVOKED` state. Task 15.F owns the exact active-to-revoked transaction on this existing row; SPEC defines no separate revocation entity or v1 revocation table. |
 | RequestContentSegmentV1 | local artifact/config owner | Tasks 15.A/25.C own the ACL-restricted complete prepared-request artifact; SQLite authorization/audit rows may retain only verified source indexes, paths, byte counts, digests, and refs. |
@@ -466,7 +466,7 @@ This table is the complete storage-class decision for every SPEC §7 entity plus
 | DemoSession | in-memory only | Task 30.D owns the bounded expiring Demo session store; it is capability-isolated from the formal control database. |
 | DemoDecision | in-memory only | Task 30.D owns the fixed-scenario decision in its Demo session using Task 30.A's immutable value contract; it cannot become a formal authorization. |
 
-The ordered migration sequence is exactly v0001 through v0012 with no duplicate, gap, or unexpected version. A domain migration test applies Task 7.A's engine to the tuple of the actual immutable predecessor constants plus the current constant; no domain task edits or imports `registry.py`. Task 7.D alone imports the twelve constants, verifies the declared `(version, name, checksum)` order, and exports `ALL_V1_MIGRATIONS`. Its test-only owner map applies every exact prefix to empty temporary SQLite, proves each version's newly visible `sqlite_schema` table delta matches the sole-owner rows above, handles Task 7.A's `schema_migrations` bootstrap separately at v0001, and proves the final set is exactly all 18 declared SQLite tables; production registry code neither contains nor imports that expected map. Complete file bodies, complete LLM requests/responses, raw check output, and recovery backup bytes remain current-user ACL-restricted artifacts; only the explicitly allowed digests/refs above may enter SQLite, and credentials never do.
+The ordered migration sequence is exactly v0001 through v0012 with no duplicate, gap, or unexpected version. A domain migration test applies Task 7.A's engine to the tuple of the actual immutable predecessor constants plus the current constant; no domain task edits or imports `registry.py`. Task 7.D alone imports the twelve constants, verifies the declared `(version, name, checksum)` order, and exports `ALL_V1_MIGRATIONS`. Its test-only owner map applies every exact prefix to empty temporary SQLite, proves each version's newly visible `sqlite_schema` table delta matches the sole-owner rows above, handles Task 7.A's `schema_migrations` bootstrap separately at v0001, and proves the final set is exactly all 19 declared SQLite tables (18 domain tables plus the framework-owned `schema_migrations`); production registry code neither contains nor imports that expected map. Complete file bodies, complete LLM requests/responses, raw check output, and recovery backup bytes remain current-user ACL-restricted artifacts; only the explicitly allowed digests/refs above may enter SQLite, and credentials never do.
 
 ### Split modules and feasibility test families
 
@@ -4010,10 +4010,10 @@ EXPECTED_V1_TABLE_DELTAS_BY_VERSION = {
     4: {"disclosure_authorizations"},
     5: {"memory_entries"},
     6: {"audit_events"},
-    7: {"agent_turns"},
+    7: {"agent_turns", "run_turn_call_counters"},
     8: {"feedback_records"},
     9: {"action_records"},
-    10: {"final_writeback_subjects", "final_writeback_approvals"},
+    10: {"writeback_approval_subjects", "writeback_approvals"},
     11: {"persistence_transactions", "persistence_path_records"},
     12: {"recovery_results"},
 }
@@ -4054,7 +4054,7 @@ def test_registry_prefixes_match_exact_schema_owner_map(
     expected_final = {"schema_migrations"} | set().union(
         *EXPECTED_V1_TABLE_DELTAS_BY_VERSION.values()
     )
-    assert len(expected_final) == 18
+    assert len(expected_final) == 19
     assert before == expected_final
 ```
 
@@ -4069,7 +4069,7 @@ def test_registry_prefixes_match_exact_schema_owner_map(
 
 **Atomic review focus:**
 - SPEC (7.D): Spec compliance review checks Task 7.D's Goal, Milestone 7's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent complete v1 migration registry contract.
-- Quality (7.D): Code quality review checks exact producer set, versions/names/order/checksums, composition immutability, test-only owner-map isolation, prefix introspection purity, and final 18-table agreement.
+- Quality (7.D): Code quality review checks exact producer set, versions/names/order/checksums, composition immutability, test-only owner-map isolation, prefix introspection purity, and final 19-table agreement.
 
 - [ ] **Step 1: Add the exact 7.D RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
 - [ ] **Step 2: Run 7.D RED.** Run `python -m pytest -q tests/unit/storage/test_migration_registry.py::test_registry_rejects_missing_required_domain_migration tests/unit/storage/test_migration_registry.py::test_registry_prefixes_match_exact_schema_owner_map`. Require both displayed node ids to be selected. Expected: FAIL for “the exact task-owned import failure because no final registry/composition contract exists; after collection becomes possible, the missing-migration probe rejects the incomplete tuple and the schema-owner probe still fails on an undeclared, omitted, repeated, early, or late table owner”. Runner/interpreter startup failure, a missing or deselected displayed node, any unrelated import/dependency failure, environment failure, unrelated failure, or already-failing test does not count.
