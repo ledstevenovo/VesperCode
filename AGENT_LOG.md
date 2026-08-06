@@ -2038,3 +2038,13 @@
 - **Verification:** 卡片 map（PLAN.md:4013-4018）与实测 DDL 差异逐项确认；main 测试 pin 事实确认。
 - **Human intervention:** 无；夜间自主执行授权有效（含计划级修正的默认决策）。
 - **Lesson learned:** 注册表文本与实现 DDL 的历史偏差由"首个全量组合验证任务"暴露——此类 BLOCKER 的正确处置是事实核实 + 计划级修正授权，而非改不可变实现或终止任务。
+
+## E1-DRIVER-FINISHING-20260807
+
+- **Timestamp (Asia/Taipei):** `2026-08-07T06:41:21+0800` (system-observed; append-only driver record).
+- **Task ID:** 扩展阶段 E1 包级 finishing（WP07-REGISTRY/WP28）。
+- **Skills invoked:** `verification-before-completion`、`finishing-a-development-branch`。
+- **Key prompt/context:** E1 双 WP 完成。T07.4 经 §73 计划级修正（map 与实现 DDL 对齐）+ driver checkbox 补正；WP28 三任务含真实缺陷修复（live-error hook 区域替换）。driver 独立验证：formal 1392/1396、gate 219、mypy 318/325 files、scan/diff-check 全 0。
+- **Git / evidence boundary:** 按任务号序合并 2 分支 → main，push origin main。SPEC_PROCESS §74。无任务卡文本改动。
+- **Human intervention:** 无；夜间自主执行授权有效。
+- **Lesson learned:** evidence commit 必须勾选全部 step checkbox（完成谓词）——agent 漏勾时 driver 按证据契约窄补正；WebUI 任务的浏览器证据（Edge headless + CSP 违规计数）与代码 pin 同等重要。

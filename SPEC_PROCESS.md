@@ -2337,3 +2337,13 @@ test_writeback_approvals_migration.py:4）；偏差源头为 PLAN 存储注册�
 `writeback_approvals`；最终 19 表），并同步修正 PLAN 存储注册表行
 442/445/446 与"18 表"表述。测试函数体其余部分保持逐字节一致。不改不可变
 DDL（保 checksum 与既有测试）。先例：§52/.gitignore、§55 overlay。
+
+## 74. 扩展阶段 E1 收官（2026-08-07）
+
+WP07-REGISTRY（T07.4：完整 v1 迁移注册表——BLOCKER 经 §73 计划级修正后
+完成，属主映射 9 类违规全 fail-closed）、WP28（T28.1/T28.2/T28.3：loopback
+WebUI 安全底座——固定 HOST→SESSION→ORIGIN→CSRF 顺序、CSP 无 unsafe-inline、
+htmx 2.0.4 打包资产零网络、vespercode serve CLI；质量评审抓到 live-error
+hook 整页替换失效真实缺陷已修复）全部完成。driver 独立验证：formal 1392/
+1396、gate 219 基线、mypy 318/325 files 全绿。按任务号序合并
+codex/wp07-registry → codex/wp28 → main。
