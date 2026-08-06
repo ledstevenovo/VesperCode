@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block content %}
+<section aria-labelledby="run-heading">
+  <meta name="csrf-token" content="{{ csrf_token }}">
+  <h1 id="run-heading">运行详情</h1>
+  <p class="run-id">{{ visibility.run_id }}</p>
+  {{ render_status_badge(visibility) }}
+  <dl class="run-facts">
+    <dt>原因</dt>
+    <dd>{{ reason_text }}</dd>
+    <dt>下一步</dt>
+    <dd>{{ next_action_text }}</dd>
+  </dl>
+  {% if cancellable %}
+  <form
+    method="post"
+    action="/runs/{{ visibility.run_id }}/cancel"
+    hx-post="/runs/{{ visibility.run_id }}/cancel"
+    hx-target="#content"
+    hx-select="#content"
+    hx-swap="outerHTML"
+  >
+    <button type="submit">取消运行</button>
+  </form>
+  {% endif %}
+  <p><a href="/">返回主页</a></p>
+  <script nonce="{{ csp_nonce }}">
+    // The state-change forms run through htmx, which attaches the
+    // server-rendered CSRF token header before every POST (the Task 28.A
+    // boundary accepts only the header form; the HttpOnly session cookie
+    // is never readable by script).  The script is authorized only by the
+    // per-request CSP nonce — there is no unsafe-inline bypass.  The
+    // listener is registered on document.body at page load and the token
+    // is session-stable, so it keeps serving the region swaps: a swapped
+    // copy of this script carries the swap response's own nonce, which
+    // the original document's CSP does not authorize (harmless).
+    (function () {
+      "use strict";
+      var meta = document.querySelector('meta[name="csrf-token"]');
+      var token = meta ? meta.getAttribute("content") : "";
+      document.body.addEventListener("htmx:configRequest", function (event) {
+        event.detail.headers["X-CSRF-Token"] = token;
+      });
+    })();
+  </script>
+</section>
+{% endblock %}
