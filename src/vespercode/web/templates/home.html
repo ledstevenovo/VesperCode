@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block content %}
+<section aria-labelledby="home-heading">
+  <h1 id="home-heading">运行状态</h1>
+  <h2>凭据</h2>
+  <p id="credential-status">
+    凭据状态：{{ "已配置" if credential_status.configured else "未配置" }}（{{ credential_status.provider }}）
+  </p>
+  <h2>最近运行</h2>
+  <div id="runs-region">
+    {% if recent_runs %}
+    <ul class="run-list">
+      {% for run in recent_runs %}
+      <li class="run-item">
+        <span class="run-id">{{ run.run_id }}</span>
+        {{ render_status_badge(run) }}
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p>暂无运行。</p>
+    {% endif %}
+  </div>
+  <button
+    id="refresh-runs"
+    type="button"
+    hx-get="/"
+    hx-target="#content"
+    hx-select="#content"
+    hx-swap="outerHTML"
+  >刷新运行状态</button>
+</section>
+{% endblock %}
