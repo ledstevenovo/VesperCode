@@ -8224,7 +8224,7 @@ git commit -m "Implement T26.1 Persistence Records, Protected Storage, and Write
 
 ### Task T26.2: Recovery Preview and Apply
 
-**Status:** Not started
+**Status:** Complete
 **Work package:** WP26
 **Legacy steps:** 26.B, 26.C
 **Goal:** Inspect a non-terminal transaction and current object/byte identities without writing, returning only proven `COMMITTED`, `ROLLED_BACK`, or `UNRESOLVED`.；Apply only a current bound recovery preview under the workspace lease and prove the production protocol across deadline, external-change, ACL, and Windows identity faults.
@@ -8290,14 +8290,14 @@ def test_recovery_preview_is_read_only(
 - SPEC (26.B): Spec compliance review checks Task 26.B's Goal, Milestone 26's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent read-only three-value recovery-preview contract.
 - Quality (26.B): Code quality review checks transaction/path identity, ordered observations, safe artifact verification, object/byte identity, complete proof for terminal classifications, `UNRESOLVED` default, source attribution, and zero writes to every port.
 
-- [ ] **Step 1: Add the exact 26.B RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
-- [ ] **Step 2: Run 26.B RED.** Run `python -m pytest -q tests/unit/persistence/test_recovery_decision.py::test_recovery_preview_is_read_only`. Expected: FAIL for “the test runner reaches `test_recovery_preview_is_read_only`, but its first task-owned assertion fails because the required zero-write preview has not been implemented; collection, runner startup, unrelated import, or environment failure does not count”. Collection, import, environment, unrelated, or already-failing tests do not count.
-- [ ] **Step 3: Implement 26.B GREEN-1.** Read the exact non-terminal transaction, ordered path records, verified artifact metadata, and current workspace object/byte identities into bounded source-attributed observations without mutation.
-- [ ] **Step 4: Implement 26.B GREEN-2.** Classify only completely proven all-postimage as `COMMITTED`, all-preimage as `ROLLED_BACK`, and every mixed, missing, ambiguous, corrupt, or external-change state as `UNRESOLVED`.
-- [ ] **Step 5: Implement 26.B GREEN-3.** Make `test_recovery_preview_is_read_only` GREEN with the smallest zero-write preview; then make the already-RED `test_recovery_decision_matrix` GREEN against the exact §5.1 matrix.
-- [ ] **Step 6: Implement 26.B GREEN-4.** Own read-only recovery observation and pure classification only. Workspace/artifact/record/audit mutation, approval consumption, terminal recording, and recovery apply remain out of scope.
-- [ ] **Step 7: Run 26.B Target GREEN.** Re-run `python -m pytest -q tests/unit/persistence/test_recovery_decision.py::test_recovery_preview_is_read_only`; require exit 0 and the displayed RED assertion to pass.
-- [ ] **Step 8: Run 26.B Domain.** Run `python -m pytest -q tests/unit/persistence/test_recovery_decision.py`; require exit 0 and every displayed Atomic verification expectation to hold.
+- [x] **Step 1: Add the exact 26.B RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
+- [x] **Step 2: Run 26.B RED.** Run `python -m pytest -q tests/unit/persistence/test_recovery_decision.py::test_recovery_preview_is_read_only`. Expected: FAIL for “the test runner reaches `test_recovery_preview_is_read_only`, but its first task-owned assertion fails because the required zero-write preview has not been implemented; collection, runner startup, unrelated import, or environment failure does not count”. Collection, import, environment, unrelated, or already-failing tests do not count.
+- [x] **Step 3: Implement 26.B GREEN-1.** Read the exact non-terminal transaction, ordered path records, verified artifact metadata, and current workspace object/byte identities into bounded source-attributed observations without mutation.
+- [x] **Step 4: Implement 26.B GREEN-2.** Classify only completely proven all-postimage as `COMMITTED`, all-preimage as `ROLLED_BACK`, and every mixed, missing, ambiguous, corrupt, or external-change state as `UNRESOLVED`.
+- [x] **Step 5: Implement 26.B GREEN-3.** Make `test_recovery_preview_is_read_only` GREEN with the smallest zero-write preview; then make the already-RED `test_recovery_decision_matrix` GREEN against the exact §5.1 matrix.
+- [x] **Step 6: Implement 26.B GREEN-4.** Own read-only recovery observation and pure classification only. Workspace/artifact/record/audit mutation, approval consumption, terminal recording, and recovery apply remain out of scope.
+- [x] **Step 7: Run 26.B Target GREEN.** Re-run `python -m pytest -q tests/unit/persistence/test_recovery_decision.py::test_recovery_preview_is_read_only`; require exit 0 and the displayed RED assertion to pass.
+- [x] **Step 8: Run 26.B Domain.** Run `python -m pytest -q tests/unit/persistence/test_recovery_decision.py`; require exit 0 and every displayed Atomic verification expectation to hold.
 
 #### Legacy step 26.C: Explicit Recovery Apply and Production Fault Acceptance
 
@@ -8341,35 +8341,35 @@ def test_stale_preview_cannot_apply_recovery(
 - SPEC (26.C): Spec compliance review checks Task 26.C's Goal, Milestone 26's four-field aggregate and SPEC scope, this Implementation boundary, exact RED and Schema RED, and Verification as one consistent explicit recovery-apply contract.
 - Quality (26.C): Code quality review checks v0012 schema exactness, workspace/lease/preview binding, pre-change identity rechecks, service-proven terminal recording, stale/external/ACL/deadline faults, unresolved admission, no overwrite, and absence of force or declared-success paths.
 
-- [ ] **Step 9: Add the exact 26.C RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
-- [ ] **Step 10: Run 26.C RED.** Run `python -m pytest -q tests/fault_injection/persistence/test_external_change_faults.py::test_stale_preview_cannot_apply_recovery`. Expected: FAIL for “the test runner reaches `test_stale_preview_cannot_apply_recovery`, but its first task-owned assertion fails because the required stale-digest rejection has not been implemented; collection, runner startup, unrelated import, or environment failure does not count”. Collection, import, environment, unrelated, or already-failing tests do not count.
-- [ ] **Step 11: Implement 26.C GREEN-1.** Define the exact immutable v0012 body-free terminal-result schema and bind apply admission to the current workspace transaction, lease, preview digest, records, artifacts, and requested proven disposition.
-- [ ] **Step 12: Implement 26.C GREEN-2.** Execute only the bound recovery path under the lease, rechecking current identities before each authoritative change and recording one service-proven terminal result; stale, external-change, ACL, deadline, or partial evidence remains unresolved.
-- [ ] **Step 13: Implement 26.C GREEN-3.** Make `test_stale_preview_cannot_apply_recovery` GREEN with the smallest stale-digest rejection; then make the already-RED `test_recovery_apply_fault_matrix` GREEN against the exact §5.1 matrix.
-- [ ] **Step 14: Implement 26.C GREEN-4.** Own v0012 terminal-result storage and explicit recovery apply only. Registry edits, force/ignore/skip/edit overrides, user-declared success, alternate classification, and approval or policy expansion remain out of scope.
-- [ ] **Step 15: Run 26.C Target GREEN.** Re-run `python -m pytest -q tests/fault_injection/persistence/test_external_change_faults.py::test_stale_preview_cannot_apply_recovery`; require exit 0 and the displayed RED assertion to pass.
-- [ ] **Step 16: Run 26.C Domain.** Run `python -m pytest -q tests/unit/storage/test_recovery_migration.py tests/fault_injection/persistence`; require exit 0 and every displayed Atomic verification expectation to hold.
+- [x] **Step 9: Add the exact 26.C RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
+- [x] **Step 10: Run 26.C RED.** Run `python -m pytest -q tests/fault_injection/persistence/test_external_change_faults.py::test_stale_preview_cannot_apply_recovery`. Expected: FAIL for “the test runner reaches `test_stale_preview_cannot_apply_recovery`, but its first task-owned assertion fails because the required stale-digest rejection has not been implemented; collection, runner startup, unrelated import, or environment failure does not count”. Collection, import, environment, unrelated, or already-failing tests do not count.
+- [x] **Step 11: Implement 26.C GREEN-1.** Define the exact immutable v0012 body-free terminal-result schema and bind apply admission to the current workspace transaction, lease, preview digest, records, artifacts, and requested proven disposition.
+- [x] **Step 12: Implement 26.C GREEN-2.** Execute only the bound recovery path under the lease, rechecking current identities before each authoritative change and recording one service-proven terminal result; stale, external-change, ACL, deadline, or partial evidence remains unresolved.
+- [x] **Step 13: Implement 26.C GREEN-3.** Make `test_stale_preview_cannot_apply_recovery` GREEN with the smallest stale-digest rejection; then make the already-RED `test_recovery_apply_fault_matrix` GREEN against the exact §5.1 matrix.
+- [x] **Step 14: Implement 26.C GREEN-4.** Own v0012 terminal-result storage and explicit recovery apply only. Registry edits, force/ignore/skip/edit overrides, user-declared success, alternate classification, and approval or policy expansion remain out of scope.
+- [x] **Step 15: Run 26.C Target GREEN.** Re-run `python -m pytest -q tests/fault_injection/persistence/test_external_change_faults.py::test_stale_preview_cannot_apply_recovery`; require exit 0 and the displayed RED assertion to pass.
+- [x] **Step 16: Run 26.C Domain.** Run `python -m pytest -q tests/unit/storage/test_recovery_migration.py tests/fault_injection/persistence`; require exit 0 and every displayed Atomic verification expectation to hold.
 
 **Task-level verification, review, and completion:**
 
-- [ ] **Step 17: Refactor only inside T26.2.** Improve names and local structure in declared writable Files without changing the displayed interfaces, observable behavior, or successor scope; rerun every legacy Target and Domain after the refactor.
-- [ ] **Step 18: Run the remaining Atomic verification commands and the FORMAL_OFFLINE_V1 closure.** Execute every exact command defined for `FORMAL_OFFLINE_V1` in the Global Execution Contract, including the changed-file redacted credential scan and `git diff --check`; record actual results in `AGENT_LOG.md`. Run `python -m pytest -q tests/unit/storage/test_recovery_migration.py::test_recovery_migration_has_exact_schema`. Run `python -m pytest -q -o addopts='' -m windows_integration tests/integration/windows/test_persistence_acl_and_identity.py`. Require each displayed Atomic verification expectation to hold.
-- [ ] **Step 19: Request T26.2 SPEC review.** Use `superpowers:requesting-code-review` with the Goal, SPEC contracts, Interfaces, minimum GREEN contracts, RED/GREEN evidence, and task diff. Require an explicit verdict.
-- [ ] **Step 20: Close T26.2 SPEC findings.** Fix every Critical/Important finding, rerun affected Targets, Domains, and profile commands, and obtain same-stage re-review PASS.
-- [ ] **Step 21: Request T26.2 quality review.** Use `superpowers:requesting-code-review` only after SPEC review PASS; review the task diff against every Atomic review focus line.
-- [ ] **Step 22: Close T26.2 quality findings.** Fix every Critical/Important finding, rerun affected checks, and obtain same-stage re-review PASS.
-- [ ] **Step 23: Commit T26.2 implementation.** Stage only the task-owned implementation/tests and create one implementation commit after both review stages PASS.
+- [x] **Step 17: Refactor only inside T26.2.** Improve names and local structure in declared writable Files without changing the displayed interfaces, observable behavior, or successor scope; rerun every legacy Target and Domain after the refactor.
+- [x] **Step 18: Run the remaining Atomic verification commands and the FORMAL_OFFLINE_V1 closure.** Execute every exact command defined for `FORMAL_OFFLINE_V1` in the Global Execution Contract, including the changed-file redacted credential scan and `git diff --check`; record actual results in `AGENT_LOG.md`. Run `python -m pytest -q tests/unit/storage/test_recovery_migration.py::test_recovery_migration_has_exact_schema`. Run `python -m pytest -q -o addopts='' -m windows_integration tests/integration/windows/test_persistence_acl_and_identity.py`. Require each displayed Atomic verification expectation to hold.
+- [x] **Step 19: Request T26.2 SPEC review.** Use `superpowers:requesting-code-review` with the Goal, SPEC contracts, Interfaces, minimum GREEN contracts, RED/GREEN evidence, and task diff. Require an explicit verdict.
+- [x] **Step 20: Close T26.2 SPEC findings.** Fix every Critical/Important finding, rerun affected Targets, Domains, and profile commands, and obtain same-stage re-review PASS.
+- [x] **Step 21: Request T26.2 quality review.** Use `superpowers:requesting-code-review` only after SPEC review PASS; review the task diff against every Atomic review focus line.
+- [x] **Step 22: Close T26.2 quality findings.** Fix every Critical/Important finding, rerun affected checks, and obtain same-stage re-review PASS.
+- [x] **Step 23: Commit T26.2 implementation.** Stage only the task-owned implementation/tests and create one implementation commit after both review stages PASS.
 
 ```bash
 git add -- "src/vespercode/persistence/recovery_preview.py" "tests/unit/persistence/test_recovery_decision.py" "src/vespercode/storage/migrations/v0012_recovery.py" "src/vespercode/persistence/recovery_apply.py" "src/vespercode/persistence/recovery.py" "tests/unit/storage/test_recovery_migration.py" "tests/fault_injection/persistence/test_deadline_faults.py" "tests/fault_injection/persistence/test_external_change_faults.py" "tests/integration/windows/test_persistence_acl_and_identity.py"
 git commit -m "Implement T26.2 Recovery Preview and Apply"
 ```
 
-- [ ] **Step 24: Record T26.2 completion evidence.** In a narrow evidence commit, update only this task's Status/Completion evidence and append `AGENT_LOG.md` with the real implementation SHA, responsible fresh subagent, human edits, exact commands/results, review/re-review verdicts, and PR URL.
+- [x] **Step 24: Record T26.2 completion evidence.** In a narrow evidence commit, update only this task's Status/Completion evidence and append `AGENT_LOG.md` with the real implementation SHA, responsible fresh subagent, human edits, exact commands/results, review/re-review verdicts, and PR URL.
 - [ ] **Step 25: Continue or finish WP26.** If another session task remains in this package, hand the same branch/PR to a new fresh subagent. Otherwise use `superpowers:finishing-a-development-branch`, verify the package result, and merge only after all predecessors and gates remain valid.
 
 **Done:** legacy steps 26.B, 26.C 的 Target、Domain、适用真实环境和全局 profile 均通过；Critical/Important finding 全部关闭并复审；没有行为被延后到 successor。
-**Completion evidence:** Not yet executed.
+**Completion evidence:** Implementation commit `e6a11e5` (T26.2) on branch `codex/wp26` (worktree `.worktrees/wp26`), 2026-08-06. Legacy steps 26.B/26.C: the read-only three-value recovery preview and the explicit recovery apply under the real workspace lease with the v0012 terminal-result schema; all Targets/Matrices/Schemas/Domains, the deadline/external-change/ACL/identity fault matrices, and the real-Windows integration proof pass; FORMAL_OFFLINE_V1 closure green; the SPEC review PASSED and the quality review PASSED after a same-stage re-review (the authoritative-change OSError mappings, the canonical v0012 JSON, the dropped decorative classification field, the body-verified backup preview, and the UNRESOLVED end-to-end recovery row all pinned).
 
 ### Task T27.1: Windows Credential Manager Lifecycle
 
