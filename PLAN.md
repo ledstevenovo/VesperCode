@@ -6955,7 +6955,7 @@ git commit -m "Implement T21.1 Formal Validation and VerifiedCandidate"
 
 ### Task T22.1: Workspace-isolated Repository Memory
 
-**Status:** Not started
+**Status:** Complete
 **Work package:** WP22
 **Legacy steps:** 22.A, 22.B, 22.C
 **Goal:** Create/confirm only authorized structured memory with exact workspace identity, creator/source, bounded content, and no authorization power.；List and select only eligible non-cleared entries from the exact workspace under frozen priority, recency, count, and byte limits.；Make an explicit authorized memory clear transaction immediately exclude the targeted workspace entries from every future selection.
@@ -7022,14 +7022,14 @@ def test_model_originated_project_convention_is_rejected(repository: MemoryRepos
 - SPEC (22.A): Spec compliance review checks Task 22.A's Goal, Milestone 22's four-field aggregate and SPEC scope, this Implementation boundary, exact RED and Schema RED, and Verification as one consistent authorized workspace-memory repository contract.
 - Quality (22.A): Code quality review checks v0005 schema exactness, workspace keys/indexes, closed kind/creator/source unions, transactional zero-row rejection, bounds, data minimization, tombstone compatibility, and absence of authorization power.
 
-- [ ] **Step 1: Add the exact 22.A RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
-- [ ] **Step 2: Run 22.A RED.** Run `python -m pytest -q tests/unit/memory/test_authorization.py::test_model_originated_project_convention_is_rejected`. Expected: FAIL for “no closed memory entry/repository authority boundary exists”. Collection, import, environment, unrelated, or already-failing tests do not count.
-- [ ] **Step 3: Implement 22.A GREEN-1.** Define the exact immutable v0005 memory schema and bounded structured entry types with workspace identity, kind, creator, source, timestamps, and clear tombstone fields only.
-- [ ] **Step 4: Implement 22.A GREEN-2.** Enforce authorized create/confirm combinations transactionally, reject model-created conventions, full source bodies, secrets, over-limit values, and cross-workspace writes with zero rows.
-- [ ] **Step 5: Implement 22.A GREEN-3.** Make `test_model_originated_project_convention_is_rejected` GREEN with the smallest creator-authority rejection; then make the already-RED `test_memory_authorization_matrix` GREEN against the exact §5.1 matrix.
-- [ ] **Step 6: Implement 22.A GREEN-4.** Own authorized memory schema and create/confirm repository operations only. Registry edits, selection, clearing, audit, and governance/config/validation authority remain out of scope.
-- [ ] **Step 7: Run 22.A Target GREEN.** Re-run `python -m pytest -q tests/unit/memory/test_authorization.py::test_model_originated_project_convention_is_rejected`; require exit 0 and the displayed RED assertion to pass.
-- [ ] **Step 8: Run 22.A Domain.** Run `python -m pytest -q tests/unit/storage/test_memory_migration.py tests/unit/memory/test_entry.py tests/unit/memory/test_repository.py tests/unit/memory/test_authorization.py`; require exit 0 and every displayed Atomic verification expectation to hold.
+- [x] **Step 1: Add the exact 22.A RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
+- [x] **Step 2: Run 22.A RED.** Run `python -m pytest -q tests/unit/memory/test_authorization.py::test_model_originated_project_convention_is_rejected`. Expected: FAIL for “no closed memory entry/repository authority boundary exists”. Collection, import, environment, unrelated, or already-failing tests do not count.
+- [x] **Step 3: Implement 22.A GREEN-1.** Define the exact immutable v0005 memory schema and bounded structured entry types with workspace identity, kind, creator, source, timestamps, and clear tombstone fields only.
+- [x] **Step 4: Implement 22.A GREEN-2.** Enforce authorized create/confirm combinations transactionally, reject model-created conventions, full source bodies, secrets, over-limit values, and cross-workspace writes with zero rows.
+- [x] **Step 5: Implement 22.A GREEN-3.** Make `test_model_originated_project_convention_is_rejected` GREEN with the smallest creator-authority rejection; then make the already-RED `test_memory_authorization_matrix` GREEN against the exact §5.1 matrix.
+- [x] **Step 6: Implement 22.A GREEN-4.** Own authorized memory schema and create/confirm repository operations only. Registry edits, selection, clearing, audit, and governance/config/validation authority remain out of scope.
+- [x] **Step 7: Run 22.A Target GREEN.** Re-run `python -m pytest -q tests/unit/memory/test_authorization.py::test_model_originated_project_convention_is_rejected`; require exit 0 and the displayed RED assertion to pass.
+- [x] **Step 8: Run 22.A Domain.** Run `python -m pytest -q tests/unit/storage/test_memory_migration.py tests/unit/memory/test_entry.py tests/unit/memory/test_repository.py tests/unit/memory/test_authorization.py`; require exit 0 and every displayed Atomic verification expectation to hold.
 
 #### Legacy step 22.B: Deterministic Workspace Memory Listing and Selection
 
@@ -7066,14 +7066,14 @@ def test_selection_never_crosses_workspace_identity(repository: MemoryRepository
 - SPEC (22.B): Spec compliance review checks Task 22.B's Goal, Milestone 22's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent isolated deterministic memory-selection contract.
 - Quality (22.B): Code quality review checks exact workspace matching, cleared-entry exclusion, frozen priority/recency/tie-break order, canonical byte accounting, count bounds, source retention, deterministic empty results, and no current-evidence override.
 
-- [ ] **Step 9: Add the exact 22.B RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
-- [ ] **Step 10: Run 22.B RED.** Run `python -m pytest -q tests/unit/memory/test_workspace_isolation.py::test_selection_never_crosses_workspace_identity`. Expected: FAIL for “no exact-workspace list/selection boundary exists”. Collection, import, environment, unrelated, or already-failing tests do not count.
-- [ ] **Step 11: Implement 22.B GREEN-1.** Query only non-cleared eligible entries whose exact workspace identity matches the request, with stable repository ordering and no fallback to paths, names, or neighboring workspaces.
-- [ ] **Step 12: Implement 22.B GREEN-2.** Select deterministically by frozen kind priority, recency, stable tie-breakers, count limit, and canonical byte limit while retaining source attribution and excluding unauthorized data.
-- [ ] **Step 13: Implement 22.B GREEN-3.** Make `test_selection_never_crosses_workspace_identity` GREEN with the smallest exact-workspace filter; then make the already-RED `test_memory_selection_matrix` GREEN against the exact §5.1 matrix.
-- [ ] **Step 14: Implement 22.B GREEN-4.** Own workspace-bound listing and pure bounded selection only. Memory creation, confirmation, clearing, current Snapshot/check overrides, and governance decisions remain out of scope.
-- [ ] **Step 15: Run 22.B Target GREEN.** Re-run `python -m pytest -q tests/unit/memory/test_workspace_isolation.py::test_selection_never_crosses_workspace_identity`; require exit 0 and the displayed RED assertion to pass.
-- [ ] **Step 16: Run 22.B Domain.** Run `python -m pytest -q tests/unit/memory/test_selection.py tests/unit/memory/test_workspace_isolation.py`; require exit 0 and every displayed Atomic verification expectation to hold.
+- [x] **Step 9: Add the exact 22.B RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
+- [x] **Step 10: Run 22.B RED.** Run `python -m pytest -q tests/unit/memory/test_workspace_isolation.py::test_selection_never_crosses_workspace_identity`. Expected: FAIL for “no exact-workspace list/selection boundary exists”. Collection, import, environment, unrelated, or already-failing tests do not count.
+- [x] **Step 11: Implement 22.B GREEN-1.** Query only non-cleared eligible entries whose exact workspace identity matches the request, with stable repository ordering and no fallback to paths, names, or neighboring workspaces.
+- [x] **Step 12: Implement 22.B GREEN-2.** Select deterministically by frozen kind priority, recency, stable tie-breakers, count limit, and canonical byte limit while retaining source attribution and excluding unauthorized data.
+- [x] **Step 13: Implement 22.B GREEN-3.** Make `test_selection_never_crosses_workspace_identity` GREEN with the smallest exact-workspace filter; then make the already-RED `test_memory_selection_matrix` GREEN against the exact §5.1 matrix.
+- [x] **Step 14: Implement 22.B GREEN-4.** Own workspace-bound listing and pure bounded selection only. Memory creation, confirmation, clearing, current Snapshot/check overrides, and governance decisions remain out of scope.
+- [x] **Step 15: Run 22.B Target GREEN.** Re-run `python -m pytest -q tests/unit/memory/test_workspace_isolation.py::test_selection_never_crosses_workspace_identity`; require exit 0 and the displayed RED assertion to pass.
+- [x] **Step 16: Run 22.B Domain.** Run `python -m pytest -q tests/unit/memory/test_selection.py tests/unit/memory/test_workspace_isolation.py`; require exit 0 and every displayed Atomic verification expectation to hold.
 
 #### Legacy step 22.C: Transactional Memory Clear
 
@@ -7112,35 +7112,35 @@ def test_successful_clear_is_immediately_ineligible_for_selection() -> None:
 - SPEC (22.C): Spec compliance review checks Task 22.C's Goal, Milestone 22's four-field aggregate and SPEC scope, this Implementation boundary, exact RED, and Verification as one consistent transactional memory-clear contract.
 - Quality (22.C): Code quality review checks explicit authority, exact workspace/target identity, transaction atomicity, immediate post-commit exclusion, replay idempotency, rollback on partial failure, and preservation of immutable audit/source facts.
 
-- [ ] **Step 17: Add the exact 22.C RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
-- [ ] **Step 18: Run 22.C RED.** Run `python -m pytest -q tests/unit/memory/test_clear.py::test_successful_clear_is_immediately_ineligible_for_selection`. Expected: FAIL for “no transaction-bound clear service exists”. Collection, import, environment, unrelated, or already-failing tests do not count.
-- [ ] **Step 19: Implement 22.C GREEN-1.** Validate explicit clear authority, exact workspace identity, command/replay identity, and target scope before entering one atomic tombstone/removal transaction.
-- [ ] **Step 20: Implement 22.C GREEN-2.** Commit all targeted eligibility changes together so future selections exclude them immediately, while replay stays idempotent and forged, cross-workspace, or partial failures change nothing.
-- [ ] **Step 21: Implement 22.C GREEN-3.** Make `test_successful_clear_is_immediately_ineligible_for_selection` GREEN with the smallest post-commit eligibility transition; then make the already-RED `test_memory_clear_transaction_matrix` GREEN against the exact §5.1 matrix.
-- [ ] **Step 22: Implement 22.C GREEN-4.** Own authorized clear transaction and future-selection exclusion only. Immutable audit/source facts, other workspaces, creation/selection policy, and retention remain out of scope.
-- [ ] **Step 23: Run 22.C Target GREEN.** Re-run `python -m pytest -q tests/unit/memory/test_clear.py::test_successful_clear_is_immediately_ineligible_for_selection`; require exit 0 and the displayed RED assertion to pass.
-- [ ] **Step 24: Run 22.C Domain.** Run `python -m pytest -q tests/unit/memory/test_clear.py`; require exit 0 and every displayed Atomic verification expectation to hold.
+- [x] **Step 17: Add the exact 22.C RED test.** Copy the complete displayed test into the declared Test file without changing implementation files.
+- [x] **Step 18: Run 22.C RED.** Run `python -m pytest -q tests/unit/memory/test_clear.py::test_successful_clear_is_immediately_ineligible_for_selection`. Expected: FAIL for “no transaction-bound clear service exists”. Collection, import, environment, unrelated, or already-failing tests do not count.
+- [x] **Step 19: Implement 22.C GREEN-1.** Validate explicit clear authority, exact workspace identity, command/replay identity, and target scope before entering one atomic tombstone/removal transaction.
+- [x] **Step 20: Implement 22.C GREEN-2.** Commit all targeted eligibility changes together so future selections exclude them immediately, while replay stays idempotent and forged, cross-workspace, or partial failures change nothing.
+- [x] **Step 21: Implement 22.C GREEN-3.** Make `test_successful_clear_is_immediately_ineligible_for_selection` GREEN with the smallest post-commit eligibility transition; then make the already-RED `test_memory_clear_transaction_matrix` GREEN against the exact §5.1 matrix.
+- [x] **Step 22: Implement 22.C GREEN-4.** Own authorized clear transaction and future-selection exclusion only. Immutable audit/source facts, other workspaces, creation/selection policy, and retention remain out of scope.
+- [x] **Step 23: Run 22.C Target GREEN.** Re-run `python -m pytest -q tests/unit/memory/test_clear.py::test_successful_clear_is_immediately_ineligible_for_selection`; require exit 0 and the displayed RED assertion to pass.
+- [x] **Step 24: Run 22.C Domain.** Run `python -m pytest -q tests/unit/memory/test_clear.py`; require exit 0 and every displayed Atomic verification expectation to hold.
 
 **Task-level verification, review, and completion:**
 
-- [ ] **Step 25: Refactor only inside T22.1.** Improve names and local structure in declared writable Files without changing the displayed interfaces, observable behavior, or successor scope; rerun every legacy Target and Domain after the refactor.
-- [ ] **Step 26: Run the remaining Atomic verification commands and the FORMAL_OFFLINE_V1 closure.** Execute every exact command defined for `FORMAL_OFFLINE_V1` in the Global Execution Contract, including the changed-file redacted credential scan and `git diff --check`; record actual results in `AGENT_LOG.md`. Run `python -m pytest -q tests/unit/storage/test_memory_migration.py::test_memory_migration_has_exact_schema`. Require each displayed Atomic verification expectation to hold.
-- [ ] **Step 27: Request T22.1 SPEC review.** Use `superpowers:requesting-code-review` with the Goal, SPEC contracts, Interfaces, minimum GREEN contracts, RED/GREEN evidence, and task diff. Require an explicit verdict.
-- [ ] **Step 28: Close T22.1 SPEC findings.** Fix every Critical/Important finding, rerun affected Targets, Domains, and profile commands, and obtain same-stage re-review PASS.
-- [ ] **Step 29: Request T22.1 quality review.** Use `superpowers:requesting-code-review` only after SPEC review PASS; review the task diff against every Atomic review focus line.
-- [ ] **Step 30: Close T22.1 quality findings.** Fix every Critical/Important finding, rerun affected checks, and obtain same-stage re-review PASS.
-- [ ] **Step 31: Commit T22.1 implementation.** Stage only the task-owned implementation/tests and create one implementation commit after both review stages PASS.
+- [x] **Step 25: Refactor only inside T22.1.** Improve names and local structure in declared writable Files without changing the displayed interfaces, observable behavior, or successor scope; rerun every legacy Target and Domain after the refactor.
+- [x] **Step 26: Run the remaining Atomic verification commands and the FORMAL_OFFLINE_V1 closure.** Execute every exact command defined for `FORMAL_OFFLINE_V1` in the Global Execution Contract, including the changed-file redacted credential scan and `git diff --check`; record actual results in `AGENT_LOG.md`. Run `python -m pytest -q tests/unit/storage/test_memory_migration.py::test_memory_migration_has_exact_schema`. Require each displayed Atomic verification expectation to hold.
+- [x] **Step 27: Request T22.1 SPEC review.** Use `superpowers:requesting-code-review` with the Goal, SPEC contracts, Interfaces, minimum GREEN contracts, RED/GREEN evidence, and task diff. Require an explicit verdict.
+- [x] **Step 28: Close T22.1 SPEC findings.** Fix every Critical/Important finding, rerun affected Targets, Domains, and profile commands, and obtain same-stage re-review PASS.
+- [x] **Step 29: Request T22.1 quality review.** Use `superpowers:requesting-code-review` only after SPEC review PASS; review the task diff against every Atomic review focus line.
+- [x] **Step 30: Close T22.1 quality findings.** Fix every Critical/Important finding, rerun affected checks, and obtain same-stage re-review PASS.
+- [x] **Step 31: Commit T22.1 implementation.** Stage only the task-owned implementation/tests and create one implementation commit after both review stages PASS.
 
 ```bash
 git add -- "src/vespercode/storage/migrations/v0005_memory.py" "src/vespercode/memory/entry.py" "src/vespercode/memory/repository.py" "tests/unit/storage/test_memory_migration.py" "tests/unit/memory/test_entry.py" "tests/unit/memory/test_repository.py" "tests/unit/memory/test_authorization.py" "src/vespercode/memory/selection.py" "tests/unit/memory/test_selection.py" "tests/unit/memory/test_workspace_isolation.py" "src/vespercode/memory/clear.py" "tests/unit/memory/test_clear.py"
 git commit -m "Implement T22.1 Workspace-isolated Repository Memory"
 ```
 
-- [ ] **Step 32: Record T22.1 completion evidence.** In a narrow evidence commit, update only this task's Status/Completion evidence and append `AGENT_LOG.md` with the real implementation SHA, responsible fresh subagent, human edits, exact commands/results, review/re-review verdicts, and PR URL.
-- [ ] **Step 33: Continue or finish WP22.** If another session task remains in this package, hand the same branch/PR to a new fresh subagent. Otherwise use `superpowers:finishing-a-development-branch`, verify the package result, and merge only after all predecessors and gates remain valid.
+- [x] **Step 32: Record T22.1 completion evidence.** In a narrow evidence commit, update only this task's Status/Completion evidence and append `AGENT_LOG.md` with the real implementation SHA, responsible fresh subagent, human edits, exact commands/results, review/re-review verdicts, and PR URL.
+- [x] **Step 33: Continue or finish WP22.** If another session task remains in this package, hand the same branch/PR to a new fresh subagent. Otherwise use `superpowers:finishing-a-development-branch`, verify the package result, and merge only after all predecessors and gates remain valid.
 
 **Done:** legacy steps 22.A, 22.B, 22.C 的 Target、Domain、适用真实环境和全局 profile 均通过；Critical/Important finding 全部关闭并复审；没有行为被延后到 successor。
-**Completion evidence:** Not yet executed.
+**Completion evidence:** Implementation commit `ec4e2ca` on branch `codex/wp22` (worktree `.worktrees/wp22`), 2026-08-06; both review stages PASS with same-stage re-reviews (SPEC round 1 PASS after 3 voluntary Minor closures; quality round 1 FAIL then round 2 PASS after Important-1/Important-2 closures).
 
 ### Task T23.1: Redacted Audit and User-facing Visibility Projection
 
