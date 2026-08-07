@@ -228,7 +228,7 @@ def _read_assigned_port(container_id: str) -> int | None:
     if proc.returncode != 0 or not proc.stdout.strip():
         return None
     bind_part = proc.stdout.strip().splitlines()[-1].strip()
-    if not bind_part.startswith(f"{BIND_HOST}:"):
+    if not bind_part.startswith(f"{_loopback_bind_host()}:"):
         return None
     try:
         return int(bind_part.rsplit(":", 1)[1])
@@ -241,7 +241,7 @@ def _wait_until_ready(assigned_port: int) -> bool:
     while time.monotonic() < deadline:
         try:
             with urllib.request.urlopen(
-                f"http://{BIND_HOST}:{assigned_port}/v2/", timeout=2
+                f"http://{_loopback_probe_host()}:{assigned_port}/v2/", timeout=2
             ) as response:
                 if response.status == 200:
                     return True
