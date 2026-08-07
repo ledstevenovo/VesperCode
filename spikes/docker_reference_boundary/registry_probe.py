@@ -21,6 +21,7 @@ pushed, never as a second build contract or new build evidence.
 
 from __future__ import annotations
 
+import os
 import shutil
 import subprocess
 import tempfile
@@ -147,14 +148,35 @@ def _registry_run_argv() -> list[str]:
         "run",
         "-d",
         "-p",
-        f"{BIND_HOST}::{REGISTRY_CONTAINER_PORT}",
+        f"{_loopback_bind_host()}::{REGISTRY_CONTAINER_PORT}",
         REGISTRY_IMAGE_REF,
     ]
 
 
+def _loopback_bind_host() -> str:
+    """Daemon-side publish address for the loopback registry.
+
+    ``127.0.0.1`` by default; ``VESPER_LOOPBACK_BIND_HOST`` overrides it
+    for a dind sibling topology (the GitLab jobs publish inside the
+    daemon service container, so the daemon-side bind must be reachable
+    from the job container through the service alias).
+    """
+    return os.environ.get("VESPER_LOOPBACK_BIND_HOST", BIND_HOST)
+
+
+def _loopback_probe_host() -> str:
+    """Job-side address used to reach the published registry port.
+
+    ``127.0.0.1`` by default; ``VESPER_LOOPBACK_PROBE_HOST`` overrides it
+    for the dind topology, where ``docker`` resolves to the daemon
+    service container from the job container.
+    """
+    return os.environ.get("VESPER_LOOPBACK_PROBE_HOST", BIND_HOST)
+
+
 def _registry_base_url(port: int) -> str:
     """Loopback-only registry API base for one repository."""
-    return f"http://{BIND_HOST}:{port}/v2/{REPOSITORY}"
+    return f"http://{_loopback_probe_host()}:{port}/v2/{REPOSITORY}"
 
 
 def _start_loopback_registry() -> tuple[str, int]:

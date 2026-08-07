@@ -415,6 +415,29 @@ def image_import_docker_hits(tag: str) -> list[str]:
     return [line.strip() for line in proc.stdout.splitlines() if line.strip()]
 
 
+def _loopback_bind_host() -> str:
+    """Daemon-side publish address for the demo container mapping.
+
+    ``127.0.0.1`` by default; ``VESPER_LOOPBACK_BIND_HOST`` overrides it
+    for a dind sibling topology (the GitLab jobs publish inside the
+    daemon service container, reachable from the job container through
+    the service alias).
+    """
+    import os
+
+    return os.environ.get("VESPER_LOOPBACK_BIND_HOST", "127.0.0.1")
+
+
+def _loopback_probe_base(port: int) -> str:
+    """Job-side loopback base URL; ``127.0.0.1`` by default,
+    ``VESPER_LOOPBACK_PROBE_HOST`` overrides it for the dind topology,
+    where ``docker`` resolves to the daemon service container."""
+    import os
+
+    host = os.environ.get("VESPER_LOOPBACK_PROBE_HOST", "127.0.0.1")
+    return f"http://{host}:{port}"
+
+
 def _free_host_port() -> int:
     """One free loopback host port for the container port mapping."""
     with socket.socket() as sock:
@@ -476,7 +499,7 @@ def start_demo_container(tag: str, port: int | None = None) -> str:
             "-e",
             f"PORT={port}",
             "-p",
-            f"127.0.0.1:{port}:{port}",
+            f"{_loopback_bind_host()}:{port}:{port}",
             tag,
         ],
         timeout=120,
@@ -527,7 +550,7 @@ def container_healthz_body(base: str) -> str:
 def _wait_healthz(port: int, timeout_seconds: int = 90) -> None:
     """Poll the local /healthz until 200 or the bounded deadline."""
     deadline = time.monotonic() + timeout_seconds
-    base = f"http://127.0.0.1:{port}"
+    base = _loopback_probe_base(port)
     while time.monotonic() < deadline:
         if _http_status(base, "/healthz") == 200:
             return
@@ -538,7 +561,7 @@ def _wait_healthz(port: int, timeout_seconds: int = 90) -> None:
 def probe_container_healthz(container_id: str) -> int:
     """The /healthz status of one running Demo container."""
     port = container_host_port(container_id)
-    return _http_status(f"http://127.0.0.1:{port}", "/healthz")
+    return _http_status(_loopback_probe_base(port), "/healthz")
 
 
 def _post_json(base: str, path: str, body: dict[str, object]) -> dict[str, object]:
@@ -569,7 +592,7 @@ def _trace_label(step: dict[str, object]) -> str:
 def container_fixed_trace(container_id: str) -> tuple[str, ...]:
     """The six fixed Mock trace labels served by one Demo container."""
     port = container_host_port(container_id)
-    base = f"http://127.0.0.1:{port}"
+    base = _loopback_probe_base(port)
     created = _post_json(base, "/demo/sessions", {})
     session_id = str(created["demo_session_id"])
     labels: list[str] = []
@@ -591,7 +614,7 @@ def container_post_completion_rejected(container_id: str) -> bool:
     rejects with SESSION_NOT_FOUND mapped to HTTP 404.
     """
     port = container_host_port(container_id)
-    base = f"http://127.0.0.1:{port}"
+    base = _loopback_probe_base(port)
     created = _post_json(base, "/demo/sessions", {})
     session_id = str(created["demo_session_id"])
     for index in range(6):
@@ -617,7 +640,7 @@ def container_post_completion_rejected(container_id: str) -> bool:
 def container_sessions_are_ephemeral(container_id: str) -> bool:
     """True when a container restart drops every in-memory session."""
     port = container_host_port(container_id)
-    base = f"http://127.0.0.1:{port}"
+    base = _loopback_probe_base(port)
     created = _post_json(base, "/demo/sessions", {})
     session_id = str(created["demo_session_id"])
     proc = _run_docker(["restart", container_id], timeout=180)
@@ -760,7 +783,7 @@ def run_image_smoke(config: ImageSmokeConfigV1) -> ImageSmokeResultV1:
         try:
             non_root_uid = container_non_root_uid(container_id)
             port = container_host_port(container_id)
-            base = f"http://127.0.0.1:{port}"
+            base = _loopback_probe_base(port)
             healthz_status = _http_status(base, "/healthz")
             healthz_body = container_healthz_body(base)
             trace_steps = container_fixed_trace(container_id)

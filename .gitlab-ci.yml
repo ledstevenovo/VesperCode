@@ -88,6 +88,11 @@ reference-image-build:
   variables:
     DOCKER_HOST: tcp://docker:2375
     DOCKER_TLS_CERTDIR: ""
+    # dind sibling topology: the daemon publishes inside the dind service
+    # container, so the loopback registry probe binds on 0.0.0.0 and
+    # reaches the published port through the service alias.
+    VESPER_LOOPBACK_BIND_HOST: "0.0.0.0"
+    VESPER_LOOPBACK_PROBE_HOST: "docker"
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
     - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH'
@@ -117,6 +122,11 @@ demo-image-build:
   variables:
     DOCKER_HOST: tcp://docker:2375
     DOCKER_TLS_CERTDIR: ""
+    # dind sibling topology: the daemon publishes inside the dind service
+    # container, so the loopback probes bind on 0.0.0.0 and reach the
+    # published ports through the service alias.
+    VESPER_LOOPBACK_BIND_HOST: "0.0.0.0"
+    VESPER_LOOPBACK_PROBE_HOST: "docker"
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
     - if: '$CI_COMMIT_BRANCH == "main"'
@@ -125,6 +135,7 @@ demo-image-build:
     - curl -fsSL https://download.docker.com/linux/static/stable/x86_64/docker-27.3.1.tgz -o docker.tgz
     - tar -xzf docker.tgz
     - install docker/docker /usr/local/bin/docker
+    - docker build --pull=false -f containers/demo/Dockerfile -t vespercode-demo:local .
     - PYTHONPATH=src python scripts/run_demo_image_smoke.py --report tests/.tmp/demo-image-smoke-report.json
   artifacts:
     when: always
