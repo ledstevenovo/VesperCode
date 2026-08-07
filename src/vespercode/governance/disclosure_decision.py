@@ -275,6 +275,11 @@ class DisclosureDecisionServiceV1:
                         kind="STALE",
                         message="decision subject does not match the wait subject",
                     )
+                if command.subject.digest != decision.subject_digest.value:
+                    return DisclosureDecisionResultV1(
+                        kind="BINDING_MISMATCH",
+                        message="grant subject does not match the decision subject",
+                    )
                 status = _wait_status(tx, decision.wait_id)
                 if status == "DECIDED":
                     return self._replay_or_conflict(tx, command, recorded_decision)

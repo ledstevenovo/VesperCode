@@ -56,9 +56,12 @@ from vespercode.validation.baseline import (
     compute_protected_artifact_set_digest,
     compute_resource_parameters_digest,
 )
+from pydantic import ValidationError
+
 from vespercode.validation.check_result import (
     CheckFindingV1,
     CheckResultV1,
+    _raw_evidence_digest,
 )
 from vespercode.validation.formal import (
     FormalValidationFailureV1,
@@ -614,7 +617,7 @@ def _tool_row(
                     status="PASS",
                     check_kind=request.check_kind,  # type: ignore[arg-type]
                     structured_findings=(),
-                    raw_digest=_ZERO,
+                    raw_digest=_raw_evidence_digest(raw_value),
                 )
             ),
         ),
@@ -729,6 +732,57 @@ def evidence() -> FormalValidationEvidenceV1:
     return _passing_evidence(plan())
 
 
+def test_swapped_raw_evidence_rejects_at_row_construction() -> None:
+    # Raw evidence from another request pasted into this row rejects: the
+    # raw identity must bind the exact row identity.
+    plan_value = plan()
+    with pytest.raises(ValidationError):
+        _pytest_row(
+            plan_value,
+            1,
+            evidence=_full_evidence(),
+            raw=_clean_raw("some-other-request"),
+        )
+
+
+def test_swapped_pytest_run_kind_rejects_at_row_construction() -> None:
+    # A COLLECT_ONLY report pasted into the FULL_PYTEST row rejects: the
+    # pytest evidence run_kind must equal the row check kind.
+    plan_value = plan()
+    with pytest.raises(ValidationError):
+        _pytest_row(plan_value, 1, evidence=_collect_evidence())
+
+
+def test_swapped_tool_result_rejects_at_row_construction() -> None:
+    plan_value = plan()
+    ruff_request = plan_value.execution_requests[2]
+    # A MYPY PASS pasted into the RUFF row rejects: the tool result check
+    # kind must equal the row check kind.
+    with pytest.raises(ValidationError):
+        _tool_row(
+            plan_value,
+            2,
+            result=CheckResultV1(
+                status="PASS",
+                check_kind="MYPY",
+                structured_findings=(),
+                raw_digest=_raw_evidence_digest(_clean_raw(ruff_request.request_id)),
+            ),
+        )
+    # A PASS whose raw_digest does not bind the row's raw evidence rejects.
+    with pytest.raises(ValidationError):
+        _tool_row(
+            plan_value,
+            2,
+            result=CheckResultV1(
+                status="PASS",
+                check_kind="RUFF",
+                structured_findings=(),
+                raw_digest=_ZERO,
+            ),
+        )
+
+
 def test_missing_teardown_evidence_cannot_verify_candidate() -> None:
     result = evaluate_formal_success(
         manifest(), candidate(), plan(), evidence_without_teardown()
@@ -760,14 +814,19 @@ def _tool_result(
     plan: FormalValidationPlanV1,
     index: int,
     status: str,
+    raw: RawExecutionResultV1 | None = None,
 ) -> CheckResultV1:
     request = plan.execution_requests[index]
+    # The result must bind the exact raw evidence of the row it sits in
+    # (the row default raw is the clean raw for the same request id).
+    raw_value = raw if raw is not None else _clean_raw(request.request_id)
+    raw_digest = _raw_evidence_digest(raw_value)
     if status == "PASS":
         return CheckResultV1(
             status="PASS",
             check_kind=request.check_kind,  # type: ignore[arg-type]
             structured_findings=(),
-            raw_digest=_ZERO,
+            raw_digest=raw_digest,
         )
     if status == "FAIL":
         return CheckResultV1(
@@ -780,7 +839,7 @@ def _tool_result(
                     location=None,
                 ),
             ),
-            raw_digest=_ZERO,
+            raw_digest=raw_digest,
         )
     return CheckResultV1(
         status="ERROR",
@@ -792,7 +851,7 @@ def _tool_result(
                 location=None,
             ),
         ),
-        raw_digest=_ZERO,
+        raw_digest=raw_digest,
     )
 
 
@@ -1066,24 +1125,25 @@ def _timeout_evidence() -> FormalValidationEvidenceV1:
 def _execution_error_evidence() -> FormalValidationEvidenceV1:
     plan_value = plan()
     rows = _passing_evidence(plan_value).evidence
+    error_raw = RawExecutionResultV1(
+        schema_version=1,
+        request_id=plan_value.request_ids[2],
+        container_id="",
+        exit_code=None,
+        stdout=b"",
+        stderr=b"",
+        output_bytes=0,
+        timed_out=False,
+        output_limit_exceeded=False,
+        container_stopped=False,
+        error_code="CHECK_EXECUTION_ERROR",
+    )
     failed = rows[2].model_copy(
         update={
-            "raw": RawExecutionResultV1(
-                schema_version=1,
-                request_id=plan_value.request_ids[2],
-                container_id="",
-                exit_code=None,
-                stdout=b"",
-                stderr=b"",
-                output_bytes=0,
-                timed_out=False,
-                output_limit_exceeded=False,
-                container_stopped=False,
-                error_code="CHECK_EXECUTION_ERROR",
-            ),
+            "raw": error_raw,
             "tool_result": PresentV1(
                 kind="PRESENT",
-                value=_tool_result(plan_value, 2, "ERROR"),
+                value=_tool_result(plan_value, 2, "ERROR", raw=error_raw),
             ),
         }
     )

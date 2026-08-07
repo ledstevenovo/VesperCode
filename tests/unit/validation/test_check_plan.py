@@ -37,6 +37,7 @@ from vespercode.validation.python_adapter import (
     UnsupportedProjectV1,
     _compute_baseline_plan_digest,
     _compute_formal_plan_digest,
+    expected_argv,
 )
 
 _A = "a" * 64
@@ -62,7 +63,7 @@ def _argv(*arguments: str) -> ExecutionArgumentSequenceV1:
 
 def _baseline_entry(
     check_id: CheckIdentityV1,
-    arguments: tuple[str, ...] = ("python", "-m", "pytest", "/workspace"),
+    arguments: tuple[str, ...] | None = None,
     *,
     target_test_ids: TargetTestIdSequenceV1 | None = None,
 ) -> BaselineCheckPlanEntryV1:
@@ -73,8 +74,13 @@ def _baseline_entry(
         binding = PresentV1(kind="PRESENT", value=target_test_ids)
     else:
         binding = AbsentV1(kind="ABSENT")
+    argv = (
+        expected_argv(check_id, target_test_ids)
+        if arguments is None
+        else _argv(*arguments)
+    )
     return BaselineCheckPlanEntryV1(
-        check_id=check_id, argv=_argv(*arguments), target_test_ids=binding
+        check_id=check_id, argv=argv, target_test_ids=binding
     )
 
 
@@ -82,45 +88,27 @@ def _baseline_entries(
     *node_ids: str,
 ) -> tuple[BaselineCheckPlanEntryV1, ...]:
     ids = node_ids if node_ids else (_TARGET_ADD,)
+    target_ids = _target_ids(*ids)
     return (
-        _baseline_entry(
-            "COLLECT_ONLY", ("python", "-m", "pytest", "--collect-only", "/workspace")
-        ),
-        _baseline_entry(
-            "COLLECT_ONLY", ("python", "-m", "pytest", "--collect-only", "/workspace")
-        ),
-        _baseline_entry("FULL_PYTEST", ("python", "-m", "pytest", "/workspace")),
-        _baseline_entry(
-            "TARGET_TESTS",
-            ("python", "-m", "pytest", *ids),
-            target_test_ids=_target_ids(*ids),
-        ),
-        _baseline_entry("RUFF", ("ruff", "check", "/workspace")),
-        _baseline_entry(
-            "MYPY",
-            ("mypy", "--config-file", "/workspace/pyproject.toml", "/workspace/src"),
-        ),
+        _baseline_entry("COLLECT_ONLY"),
+        _baseline_entry("COLLECT_ONLY"),
+        _baseline_entry("FULL_PYTEST"),
+        _baseline_entry("TARGET_TESTS", target_test_ids=target_ids),
+        _baseline_entry("RUFF"),
+        _baseline_entry("MYPY"),
     )
 
 
 def _formal_entries() -> tuple[FormalCheckPlanEntryV1, ...]:
     return (
         FormalCheckPlanEntryV1(
-            check_id="COLLECT_ONLY",
-            argv=_argv("python", "-m", "pytest", "--collect-only", "/workspace"),
+            check_id="COLLECT_ONLY", argv=expected_argv("COLLECT_ONLY")
         ),
         FormalCheckPlanEntryV1(
-            check_id="FULL_PYTEST", argv=_argv("python", "-m", "pytest", "/workspace")
+            check_id="FULL_PYTEST", argv=expected_argv("FULL_PYTEST")
         ),
-        FormalCheckPlanEntryV1(
-            check_id="RUFF", argv=_argv("ruff", "check", "/workspace")
-        ),
-        FormalCheckPlanEntryV1(
-            check_id="MYPY",
-            argv=_argv(
-                "mypy", "--config-file", "/workspace/pyproject.toml", "/workspace/src"
-            ),
-        ),
+        FormalCheckPlanEntryV1(check_id="RUFF", argv=expected_argv("RUFF")),
+        FormalCheckPlanEntryV1(check_id="MYPY", argv=expected_argv("MYPY")),
     )
 
 
@@ -210,6 +198,34 @@ def test_baseline_entry_target_binding_is_closed() -> None:
             argv=_argv(),
             target_test_ids=AbsentV1(kind="ABSENT"),
         )
+
+
+def test_entries_reject_argv_that_differs_from_the_frozen_command() -> None:
+    # A self-consistent forged argv (even with a recomputed plan digest)
+    # can never construct: every entry must bind the adapter's frozen
+    # command for its check identity.
+    with pytest.raises(ValidationError):
+        BaselineCheckPlanEntryV1(
+            check_id="FULL_PYTEST",
+            argv=_argv("python", "-m", "pytest", "/workspace"),
+            target_test_ids=AbsentV1(kind="ABSENT"),
+        )
+    with pytest.raises(ValidationError):
+        BaselineCheckPlanEntryV1(
+            check_id="TARGET_TESTS",
+            argv=expected_argv("FULL_PYTEST"),
+            target_test_ids=PresentV1(
+                kind="PRESENT", value=_target_ids(_TARGET_ADD)
+            ),
+        )
+    with pytest.raises(ValidationError):
+        FormalCheckPlanEntryV1(
+            check_id="MYPY",
+            argv=_argv("mypy", "check", "/workspace"),
+        )
+    # The frozen adapter argv is the exact accepted sequence.
+    assert _baseline_entry("FULL_PYTEST").argv == expected_argv("FULL_PYTEST")
+    assert _formal_entries()[3].argv == expected_argv("MYPY")
 
 
 def test_valid_plans_construct_with_self_bound_digests() -> None:

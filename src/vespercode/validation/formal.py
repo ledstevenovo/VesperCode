@@ -344,6 +344,12 @@ def evaluate_formal_success(
                 f"request {row.request_id!r} was never executed",
             )
         raw = row.raw
+        if raw is not None and raw.request_id != row.request_id:
+            return _failure(
+                "FORMAL_VALIDATION_FAILED",
+                f"the raw evidence {raw.request_id!r} does not bind the "
+                f"evidence row {row.request_id!r}",
+            )
         if raw is not None:
             if raw.error_code == "CHECK_TIMEOUT":
                 return _failure(
@@ -405,6 +411,14 @@ def evaluate_formal_success(
     # session error is a forbidden-state fact of either run and a
     # crafted-but-valid collect row must not evade the scan.
     collect_evidence = _authoritative_evidence(evidence.evidence[0])
+    if (
+        collect_evidence is None
+        or getattr(collect_evidence, "run_kind", None) != "COLLECT_ONLY"
+    ):
+        return _failure(
+            "FORMAL_VALIDATION_FAILED",
+            "the collect-only request produced no authoritative collect evidence",
+        )
     collect_events = (
         tuple(getattr(collect_evidence, "events", ()))
         if collect_evidence is not None
@@ -462,6 +476,12 @@ def evaluate_formal_success(
             return _failure(
                 "CHECK_ERROR",
                 f"request {row.request_id!r} did not pass its check",
+            )
+        if getattr(result, "check_kind", None) != row.check_kind:
+            return _failure(
+                "FORMAL_VALIDATION_FAILED",
+                f"the check result {getattr(result, 'check_kind', None)!r} "
+                f"does not bind the request {row.request_id!r}",
             )
 
     # Success: only exact current complete passing evidence verifies.

@@ -307,6 +307,37 @@ def test_approve_creates_exactly_one_active_grant(
     assert rows[0][6] == _EXPIRES_AT.value
 
 
+def test_approve_with_swapped_subject_creates_no_grant(
+    control_database: ControlDatabase,
+    service: DisclosureDecisionServiceV1,
+) -> None:
+    # The decision approves subject A (digest matches the wait), but the
+    # command carries a different subject B: the Grant must not bind B.
+    other = subject(budget=2000)
+    assert other.digest != _SUBJECT.digest
+    result = service.decide(decide(subject=other))
+    assert result.kind == "BINDING_MISMATCH"
+    assert result.grant is None
+    assert service.grant_count() == 0
+    assert _grant_row_count(control_database) == 0
+    assert _subject_row_count(control_database) == 0
+    # The mismatch check runs before the wait lock: the wait stays PENDING
+    # and the exact approved subject can still decide the same wait.
+    assert _wait_row(control_database, "wait-1") == ("PENDING", None)
+    assert service.decide(decide()).kind == "APPROVED"
+    assert service.grant_count() == 1
+
+
+def _grant_row_count(control_database: ControlDatabase) -> int:
+    return len(control_database.read_rows("SELECT 1 FROM disclosure_grants"))
+
+
+def _subject_row_count(control_database: ControlDatabase) -> int:
+    return len(
+        control_database.read_rows("SELECT 1 FROM disclosure_grant_subjects")
+    )
+
+
 def test_reject_records_decision_without_grant(
     control_database: ControlDatabase,
     service: DisclosureDecisionServiceV1,

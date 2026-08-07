@@ -258,6 +258,18 @@ class BaselineCheckPlanEntryV1(BaseModel):
             raise ValueError("only TARGET_TESTS entries may bind target ids")
         return self
 
+    @model_validator(mode="after")
+    def _require_exact_frozen_argv(self) -> BaselineCheckPlanEntryV1:
+        if isinstance(self.target_test_ids, PresentV1):
+            expected = expected_argv(self.check_id, self.target_test_ids.value)
+        else:
+            expected = expected_argv(self.check_id)
+        if self.argv != expected:
+            raise ValueError(
+                "entry argv must equal the frozen adapter command for the check"
+            )
+        return self
+
 
 class FormalCheckPlanEntryV1(BaseModel):
     """One frozen formal-validation check: identity plus exact argv."""
@@ -265,6 +277,14 @@ class FormalCheckPlanEntryV1(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
     check_id: FormalCheckIdentityV1
     argv: ExecutionArgumentSequenceV1
+
+    @model_validator(mode="after")
+    def _require_exact_frozen_argv(self) -> FormalCheckPlanEntryV1:
+        if self.argv != expected_argv(self.check_id):
+            raise ValueError(
+                "entry argv must equal the frozen adapter command for the check"
+            )
+        return self
 
 
 class BaselineCheckPlanV1(BaseModel):
@@ -583,6 +603,33 @@ def _mypy_argv() -> ExecutionArgumentSequenceV1:
             f"{_FROZEN_WORKSPACE}/src",
         )
     )
+
+
+def expected_argv(
+    check_id: str,
+    target_test_ids: TargetTestIdSequenceV1 | None = None,
+) -> ExecutionArgumentSequenceV1:
+    """The one frozen adapter argv of one check (SPEC §4.5 fixed argv).
+
+    Every plan entry must bind exactly this sequence: a plan whose argv
+    differs from the adapter-built command rejects at construction, and
+    the execution boundaries re-check it before any container call, so a
+    forged self-consistent plan can never run an arbitrary command in
+    the frozen container.
+    """
+    if check_id == "COLLECT_ONLY":
+        return _collect_only_argv()
+    if check_id == "FULL_PYTEST":
+        return _full_pytest_argv()
+    if check_id == "TARGET_TESTS":
+        if target_test_ids is None:
+            raise ValueError("TARGET_TESTS argv requires the exact target ids")
+        return _target_tests_argv(target_test_ids)
+    if check_id == "RUFF":
+        return _ruff_argv()
+    if check_id == "MYPY":
+        return _mypy_argv()
+    raise ValueError(f"unknown check identity: {check_id!r}")
 
 
 def _baseline_entry(

@@ -66,6 +66,7 @@ from vespercode.profiles.reference import (
 )
 from vespercode.validation.check_result import (
     CheckResultV1,
+    _raw_evidence_digest,
     parse_mypy_result,
     parse_ruff_result,
 )
@@ -80,6 +81,7 @@ from vespercode.validation.pytest_evidence import (
     _extract_channel_document,
     parse_pytest_evidence,
 )
+from vespercode.validation.python_adapter import expected_argv
 
 # The frozen in-container workspace mount (SPEC §1.4.5).
 _FROZEN_WORKSPACE = "/workspace"
@@ -201,6 +203,10 @@ class FormalRequestEvidenceV1(BaseModel):
             return self
         if self.raw is None or self.cleanup is None:
             raise ValueError("executed requests require raw and cleanup evidence")
+        if self.raw.request_id != self.request_id:
+            raise ValueError(
+                "raw evidence must bind the exact request identity of the row"
+            )
         is_pytest = self.check_kind in ("COLLECT_ONLY", "FULL_PYTEST")
         if is_pytest:
             if not isinstance(self.tool_result, AbsentV1):
@@ -209,6 +215,10 @@ class FormalRequestEvidenceV1(BaseModel):
                 if not isinstance(self.parse_error, AbsentV1):
                     raise ValueError(
                         "a parsed pytest row cannot also carry a parse error"
+                    )
+                if self.pytest_evidence.value.run_kind != self.check_kind:
+                    raise ValueError(
+                        "pytest evidence run_kind must equal the row check kind"
                     )
             elif not isinstance(self.parse_error, PresentV1):
                 raise ValueError(
@@ -221,6 +231,15 @@ class FormalRequestEvidenceV1(BaseModel):
                 raise ValueError("tool rows never carry a parse error")
             if not isinstance(self.tool_result, PresentV1):
                 raise ValueError("tool rows require the closed parsed result")
+            result = self.tool_result.value
+            if result.check_kind != self.check_kind:
+                raise ValueError(
+                    "tool result check kind must equal the row check kind"
+                )
+            if result.raw_digest != _raw_evidence_digest(self.raw):
+                raise ValueError(
+                    "tool result raw_digest must bind the exact raw evidence"
+                )
         return self
 
     @property
@@ -731,6 +750,18 @@ def _execute_request(
             "the fresh candidate materialization boundary failed",
         )
     try:
+        if request.argv != expected_argv(request.check_kind):
+            raise ValidationError.from_exception_data(
+                "argv",
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("argv",),
+                        "msg": "argv must equal the frozen adapter command for the check",
+                        "input": request.argv,
+                    }
+                ],
+            )
         execution_request = ExecutionRequestV1.model_validate(
             {
                 "schema_version": 1,

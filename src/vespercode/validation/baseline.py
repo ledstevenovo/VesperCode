@@ -108,7 +108,10 @@ from vespercode.validation.pytest_evidence import (
     _extract_channel_document,
     parse_pytest_evidence,
 )
-from vespercode.validation.python_adapter import BaselineCheckPlanV1
+from vespercode.validation.python_adapter import (
+    BaselineCheckPlanV1,
+    expected_argv,
+)
 from vespercode.workspace.path_guard import protected_artifact_path
 
 # The frozen in-container workspace mount (SPEC §1.4.5).  Container-side
@@ -784,10 +787,29 @@ def _request_for(
 ) -> ExecutionRequestV1:
     """One frozen execution request bound to the plan's identities.
 
-    ``ExecutionRequestV1`` re-validates the frozen manifest/image digests
-    and the closed execution profile, so a plan that no longer matches
-    the frozen built-ins fails closed before any container call.
+    The argv is re-checked against the frozen adapter command for the
+    check before any container call (a forged plan can never run an
+    arbitrary command, even past the plan model validators);
+    ``ExecutionRequestV1`` additionally re-validates the frozen
+    manifest/image digests and the closed execution profile, so a plan
+    that no longer matches the frozen built-ins fails closed before any
+    container call.
     """
+    if argv != expected_argv(
+        check_id,
+        plan.target_test_ids if check_id == "TARGET_TESTS" else None,
+    ):
+        raise ValidationError.from_exception_data(
+            "argv",
+            [
+                {
+                    "type": "value_error",
+                    "loc": ("argv",),
+                    "msg": "argv must equal the frozen adapter command for the check",
+                    "input": argv,
+                }
+            ],
+        )
     return ExecutionRequestV1.model_validate(
         {
             "schema_version": 1,
