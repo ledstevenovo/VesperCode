@@ -19,20 +19,20 @@ import pytest
 # there (formal env runs it fully).
 pytest.importorskip("pydantic")
 
-from src.vespercode.storage.connection import (
+from vespercode.storage.connection import (
     ControlDatabase,
     open_control_database,
 )
-from src.vespercode.storage.migration_engine import (
+from vespercode.storage.migration_engine import (
     MigrationV1,
     apply_migrations,
     migration_checksum,
 )
-from src.vespercode.storage.migrations.v0001_run_wait import RUN_WAIT_V1_MIGRATION
-from src.vespercode.storage.migrations.v0002_idempotency import (
+from vespercode.storage.migrations.v0001_run_wait import RUN_WAIT_V1_MIGRATION
+from vespercode.storage.migrations.v0002_idempotency import (
     IDEMPOTENCY_V1_MIGRATION,
 )
-from src.vespercode.storage.migrations.v0003_disclosure_grants import (
+from vespercode.storage.migrations.v0003_disclosure_grants import (
     DISCLOSURE_GRANTS_V1_MIGRATION,
     DISCLOSURE_GRANTS_V1_STATEMENTS,
 )

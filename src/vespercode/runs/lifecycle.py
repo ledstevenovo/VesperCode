@@ -16,8 +16,8 @@ from typing import Literal, TypeAlias
 
 from pydantic import BaseModel, ConfigDict, model_validator
 
-from src.vespercode.contracts.optional import AbsentV1, PresentV1
-from src.vespercode.contracts.run import (
+from vespercode.contracts.optional import AbsentV1, PresentV1
+from vespercode.contracts.run import (
     RunPhase,
     RunStateV1,
     RunStatus,

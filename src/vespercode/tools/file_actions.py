@@ -24,11 +24,11 @@ from pydantic import (
     model_validator,
 )
 
-from src.vespercode.canonical.digest import domain_digest
-from src.vespercode.canonical.json_v1 import CanonicalValueV1
-from src.vespercode.canonical.path_v1 import CanonicalRelativePathV1
-from src.vespercode.contracts.location import RepositoryLocationV1
-from src.vespercode.tools.file_results import (
+from vespercode.canonical.digest import domain_digest
+from vespercode.canonical.json_v1 import CanonicalValueV1
+from vespercode.canonical.path_v1 import CanonicalRelativePathV1
+from vespercode.contracts.location import RepositoryLocationV1
+from vespercode.tools.file_results import (
     OptionalListFilesCursorV1,
     OptionalSearchTextCursorV1,
 )

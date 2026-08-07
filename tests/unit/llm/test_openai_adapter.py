@@ -29,33 +29,33 @@ import pytest
 # there (formal env runs it fully).
 pytest.importorskip("pydantic")
 
-from src.vespercode.canonical.path_v1 import CanonicalRelativePathV1
-from src.vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
-from src.vespercode.contracts.optional import AbsentV1, PresentV1
-from src.vespercode.credentials.port import SecretCredentialV1
-from src.vespercode.governance.disclosure_ledger import (
+from vespercode.canonical.path_v1 import CanonicalRelativePathV1
+from vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
+from vespercode.contracts.optional import AbsentV1, PresentV1
+from vespercode.credentials.port import SecretCredentialV1
+from vespercode.governance.disclosure_ledger import (
     DisclosureAuthorizationRecordV1,
 )
-from src.vespercode.governance.request_sources import (
+from vespercode.governance.request_sources import (
     RequestContentSegmentV1,
     RequestMessageV1,
     validate_segment_sources,
 )
-from src.vespercode.llm.base import ModelResponse
-from src.vespercode.llm.openai_adapter import (
+from vespercode.llm.base import ModelResponse
+from vespercode.llm.openai_adapter import (
     BoundOpenAILLMAdapterV1,
     LLMTransportError,
     LLMTransportResultV1,
     OpenAILLMAdapter,
     OpenAITransportFailure,
 )
-from src.vespercode.llm.openai_serializer import openai_request_body_bytes
-from src.vespercode.llm.prepared_request import (
+from vespercode.llm.openai_serializer import openai_request_body_bytes
+from vespercode.llm.prepared_request import (
     OpenAIPreparedModelRequestV1,
     prepare_openai_request,
 )
-from src.vespercode.profiles.endpoints import OpenAIEndpointRegistry
-from src.vespercode.profiles.llm import OpenAILLMProfileV1, load_llm_profile
+from vespercode.profiles.endpoints import OpenAIEndpointRegistry
+from vespercode.profiles.llm import OpenAILLMProfileV1, load_llm_profile
 
 _OPENAI_BUILTIN = (
     Path(__file__).resolve().parents[3]

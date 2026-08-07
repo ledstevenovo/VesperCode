@@ -25,11 +25,11 @@ pytest.importorskip("pydantic")
 
 from pydantic import ValidationError
 
-from src.vespercode.canonical.path_v1 import CanonicalRelativePathV1
-from src.vespercode.contracts.location import PathLocationV1, RootLocationV1
-from src.vespercode.contracts.optional import AbsentV1, PresentV1
-from src.vespercode.tools.file_actions import ListFilesActionV1, SearchTextActionV1
-from src.vespercode.tools.file_results import (
+from vespercode.canonical.path_v1 import CanonicalRelativePathV1
+from vespercode.contracts.location import PathLocationV1, RootLocationV1
+from vespercode.contracts.optional import AbsentV1, PresentV1
+from vespercode.tools.file_actions import ListFilesActionV1, SearchTextActionV1
+from vespercode.tools.file_results import (
     FileToolErrorV1,
     ListFilesCursorV1,
     ListFilesEntryV1,
@@ -38,9 +38,9 @@ from src.vespercode.tools.file_results import (
     SearchTextCursorV1,
     SearchTextMatchV1,
 )
-from src.vespercode.tools.list_files import list_files
-from src.vespercode.tools.search_text import search_text
-from src.vespercode.trees.readable import ReadableTreeV1
+from vespercode.tools.list_files import list_files
+from vespercode.tools.search_text import search_text
+from vespercode.trees.readable import ReadableTreeV1
 
 _FIXTURE_FILES: dict[str, bytes] = {
     "README.md": b"needle here\nplain line\nneedle again\n",

@@ -23,9 +23,9 @@ pytest.importorskip("pydantic")
 
 from pydantic import ValidationError
 
-from src.vespercode.canonical.path_v1 import CanonicalRelativePathV1
-from src.vespercode.contracts.optional import AbsentV1, PresentV1
-from src.vespercode.execution.materialization import (
+from vespercode.canonical.path_v1 import CanonicalRelativePathV1
+from vespercode.contracts.optional import AbsentV1, PresentV1
+from vespercode.execution.materialization import (
     AuthorizedExecutionRootV1,
     MaterializationError,
     MaterializedCandidateV1,
@@ -35,14 +35,14 @@ from src.vespercode.execution.materialization import (
     is_non_reusable_name,
     materialize_candidate,
 )
-from src.vespercode.trees.candidate import (
+from vespercode.trees.candidate import (
     CandidatePostimageV1,
     CandidateTreeV1,
     derive_candidate_revision,
     root_candidate_revision,
 )
-from src.vespercode.trees.content_store import ContentObjectRefV1, ContentObjectStore
-from src.vespercode.trees.snapshot import (
+from vespercode.trees.content_store import ContentObjectRefV1, ContentObjectStore
+from vespercode.trees.snapshot import (
     SealedSnapshotInputFileV1,
     SnapshotDirectoryEntryV1,
     SnapshotEntryV1,
@@ -50,7 +50,7 @@ from src.vespercode.trees.snapshot import (
     SnapshotTreeV1,
     _root_digest,
 )
-from src.vespercode.trees.text_classifier import (
+from vespercode.trees.text_classifier import (
     TextMetadataV1,
     classify_supported_text,
 )
@@ -303,7 +303,7 @@ def test_authorized_execution_root_contract() -> None:
 
 def test_non_reusable_name_registry() -> None:
     assert is_non_reusable_name("0" * 32) is False
-    from src.vespercode.execution import materialization as module
+    from vespercode.execution import materialization as module
 
     module.register_non_reusable_name("0" * 32)
     assert is_non_reusable_name("0" * 32) is True

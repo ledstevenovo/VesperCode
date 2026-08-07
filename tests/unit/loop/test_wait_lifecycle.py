@@ -17,9 +17,9 @@ import pytest
 # cleanly there (formal env runs it fully).
 pytest.importorskip("pydantic")
 
-from src.vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
-from src.vespercode.contracts.evidence import DigestV1
-from src.vespercode.contracts.run import (
+from vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
+from vespercode.contracts.evidence import DigestV1
+from vespercode.contracts.run import (
     RunPhase,
     RunStatus,
     WaitContextV1,
@@ -27,10 +27,10 @@ from src.vespercode.contracts.run import (
     WaitDecisionChoiceV1,
     WaitKind,
 )
-from src.vespercode.loop.cancellation import CancellationController
-from src.vespercode.loop.wait_control import WaitController
-from src.vespercode.contracts.optional import AbsentV1, PresentV1
-from src.vespercode.storage.run_repository import RunRecordV1
+from vespercode.loop.cancellation import CancellationController
+from vespercode.loop.wait_control import WaitController
+from vespercode.contracts.optional import AbsentV1, PresentV1
+from vespercode.storage.run_repository import RunRecordV1
 
 _CREATED_AT = CanonicalTimestampV1("2026-08-06T09:00:00.000Z")
 _EXPIRES_AT = CanonicalTimestampV1("2026-08-06T09:05:00.000Z")

@@ -27,11 +27,11 @@ from pydantic import (
     model_validator,
 )
 
-from src.vespercode.canonical.digest import domain_digest
-from src.vespercode.canonical.json_v1 import CanonicalValueV1
-from src.vespercode.contracts.evidence import _DIGEST_RE
-from src.vespercode.contracts.optional import AbsentV1
-from src.vespercode.profiles.editable import _reject_coerced_schema_version
+from vespercode.canonical.digest import domain_digest
+from vespercode.canonical.json_v1 import CanonicalValueV1
+from vespercode.contracts.evidence import _DIGEST_RE
+from vespercode.contracts.optional import AbsentV1
+from vespercode.profiles.editable import _reject_coerced_schema_version
 
 # The exact frozen packaged profile identities (SPEC §4.1; the packaged
 # built-in bytes in src/vespercode/profiles/builtin/ are the single source

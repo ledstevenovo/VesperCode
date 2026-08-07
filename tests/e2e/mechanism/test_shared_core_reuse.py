@@ -17,32 +17,32 @@ import pytest
 
 pytest.importorskip("pydantic")
 
-from src.vespercode.canonical.clock import FakeClockV1
-from src.vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
-from src.vespercode.credentials.service import CredentialService
-from src.vespercode.demo.runner import DemoScenarioRunner
-from src.vespercode.demo.types import DemoSessionV1
-from src.vespercode.execution.docker_executor import DockerExecutor
-from src.vespercode.llm.mock_adapter import MockLLMAdapter
-from src.vespercode.llm.openai_adapter import OpenAILLMAdapter
-from src.vespercode.governance.policy import PolicyEngine
-from src.vespercode.loop.action_binding import bind_action
-from src.vespercode.loop.action_parser import ActionParser
-from src.vespercode.loop.action_pipeline import ActionPipeline
-from src.vespercode.loop.feedback import build_feedback, select_feedback
-from src.vespercode.loop.feedback_consumption import consume_feedback
-from src.vespercode.loop.stopping import StopEvaluator
-from src.vespercode.storage.run_repository import RunRepository
-from src.vespercode.tools.dispatcher import ToolDispatcher
+from vespercode.canonical.clock import FakeClockV1
+from vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
+from vespercode.credentials.service import CredentialService
+from vespercode.demo.runner import DemoScenarioRunner
+from vespercode.demo.types import DemoSessionV1
+from vespercode.execution.docker_executor import DockerExecutor
+from vespercode.llm.mock_adapter import MockLLMAdapter
+from vespercode.llm.openai_adapter import OpenAILLMAdapter
+from vespercode.governance.policy import PolicyEngine
+from vespercode.loop.action_binding import bind_action
+from vespercode.loop.action_parser import ActionParser
+from vespercode.loop.action_pipeline import ActionPipeline
+from vespercode.loop.feedback import build_feedback, select_feedback
+from vespercode.loop.feedback_consumption import consume_feedback
+from vespercode.loop.stopping import StopEvaluator
+from vespercode.storage.run_repository import RunRepository
+from vespercode.tools.dispatcher import ToolDispatcher
 
 import scripts.run_mechanism_demo as _mechanism
-import src.vespercode.demo.runner as _demo_runner
-import src.vespercode.governance.policy as _policy
-import src.vespercode.loop.action_pipeline as _action_pipeline
-import src.vespercode.loop.feedback as _feedback
-import src.vespercode.loop.feedback_consumption as _feedback_consumption
-import src.vespercode.loop.stopping as _stopping
-import src.vespercode.tools.dispatcher as _dispatcher
+import vespercode.demo.runner as _demo_runner
+import vespercode.governance.policy as _policy
+import vespercode.loop.action_pipeline as _action_pipeline
+import vespercode.loop.feedback as _feedback
+import vespercode.loop.feedback_consumption as _feedback_consumption
+import vespercode.loop.stopping as _stopping
+import vespercode.tools.dispatcher as _dispatcher
 from scripts.run_mechanism_demo import MechanismHarness
 
 _CLOCK_EPOCH = CanonicalTimestampV1("2026-08-07T09:00:00.000Z").epoch_milliseconds

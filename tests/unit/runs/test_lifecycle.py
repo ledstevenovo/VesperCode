@@ -17,9 +17,9 @@ pytest.importorskip("pydantic")
 
 from pydantic import ValidationError
 
-from src.vespercode.contracts.optional import AbsentV1, PresentV1
-from src.vespercode.contracts.run import RunStateV1
-from src.vespercode.runs.lifecycle import (
+from vespercode.contracts.optional import AbsentV1, PresentV1
+from vespercode.contracts.run import RunStateV1
+from vespercode.runs.lifecycle import (
     LifecycleEventV1,
     LifecycleRules,
     LifecycleTransitionErrorV1,

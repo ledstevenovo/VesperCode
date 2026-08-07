@@ -22,9 +22,9 @@ from typing import Literal, Protocol
 
 from pydantic import BaseModel, ConfigDict, model_validator
 
-from src.vespercode.contracts.optional import AbsentV1, PresentV1
-from src.vespercode.contracts.run import RunStateV1
-from src.vespercode.storage.run_repository import (
+from vespercode.contracts.optional import AbsentV1, PresentV1
+from vespercode.contracts.run import RunStateV1
+from vespercode.storage.run_repository import (
     RunRepository,
     TransitionCommandV1,
 )

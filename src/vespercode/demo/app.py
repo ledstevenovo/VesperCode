@@ -31,15 +31,15 @@ from pydantic import (
     StrictStr,
 )
 
-from src.vespercode.canonical.clock import ClockV1, SystemClockV1
-from src.vespercode.contracts.evidence import DigestV1
-from src.vespercode.demo.executor import DemoExecutor
-from src.vespercode.demo.runner import (
+from vespercode.canonical.clock import ClockV1, SystemClockV1
+from vespercode.contracts.evidence import DigestV1
+from vespercode.demo.executor import DemoExecutor
+from vespercode.demo.runner import (
     DemoAdvanceErrorV1,
     DemoScenarioRunner,
 )
-from src.vespercode.demo.scenario import FIXED_DEMO_SCENARIO_V1
-from src.vespercode.demo.types import (
+from vespercode.demo.scenario import FIXED_DEMO_SCENARIO_V1
+from vespercode.demo.types import (
     DemoDecisionV1,
     DemoSessionV1,
     DemoStepResultV1,

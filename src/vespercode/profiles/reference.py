@@ -20,11 +20,11 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Strict, StrictStr, field_validator
 
-from src.vespercode.canonical.digest import domain_digest
-from src.vespercode.canonical.json_v1 import CanonicalValueV1
-from src.vespercode.canonical.path_v1 import CanonicalRelativePathV1
-from src.vespercode.contracts.evidence import _DIGEST_RE
-from src.vespercode.profiles.editable import (
+from vespercode.canonical.digest import domain_digest
+from vespercode.canonical.json_v1 import CanonicalValueV1
+from vespercode.canonical.path_v1 import CanonicalRelativePathV1
+from vespercode.contracts.evidence import _DIGEST_RE
+from vespercode.profiles.editable import (
     EditablePathPolicyV1,
     _reject_coerced_schema_version,
 )

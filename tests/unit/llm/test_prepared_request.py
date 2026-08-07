@@ -33,29 +33,29 @@ pytest.importorskip("pydantic")
 
 from pydantic import ValidationError
 
-from src.vespercode.canonical.digest import domain_digest
-from src.vespercode.canonical.json_v1 import CanonicalValueV1, canonical_json_bytes
-from src.vespercode.canonical.path_v1 import CanonicalRelativePathV1
-from src.vespercode.contracts.optional import AbsentV1, PresentV1
-from src.vespercode.governance.request_sources import (
+from vespercode.canonical.digest import domain_digest
+from vespercode.canonical.json_v1 import CanonicalValueV1, canonical_json_bytes
+from vespercode.canonical.path_v1 import CanonicalRelativePathV1
+from vespercode.contracts.optional import AbsentV1, PresentV1
+from vespercode.governance.request_sources import (
     RequestContentSegmentV1,
     RequestMessageV1,
 )
-from src.vespercode.llm.base import ModelResponse
-from src.vespercode.llm.call_result import (
+from vespercode.llm.base import ModelResponse
+from vespercode.llm.call_result import (
     LLMCallResultV1,
     PresentAuthorizationRecordRefV1,
     PresentLLMCallErrorV1,
     PresentResponseDigestV1,
 )
-from src.vespercode.llm.mock_adapter import MockLLMAdapter, MockScriptMismatchError
-from src.vespercode.llm.prepared_request import (
+from vespercode.llm.mock_adapter import MockLLMAdapter, MockScriptMismatchError
+from vespercode.llm.prepared_request import (
     MockPreparedModelRequestV1,
     OpenAIPreparedModelRequestV1,
     prepare_mock_request,
     prepare_openai_request,
 )
-from src.vespercode.profiles.llm import (
+from vespercode.profiles.llm import (
     MockLLMProfileV1,
     OpenAILLMProfileV1,
     load_llm_profile,

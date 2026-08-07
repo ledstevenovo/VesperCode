@@ -19,26 +19,26 @@ from typing import Literal, TypeAlias, cast
 
 from pydantic import BaseModel, ConfigDict, StrictStr
 
-from src.vespercode.canonical.json_v1 import CanonicalValueV1, canonical_json_bytes
-from src.vespercode.canonical.path_v1 import CanonicalRelativePathV1
-from src.vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
-from src.vespercode.contracts.evidence import DigestV1
-from src.vespercode.contracts.optional import AbsentV1, PresentV1
-from src.vespercode.contracts.run import RunStateV1, WaitDecisionV1
-from src.vespercode.governance.disclosure_scope import (
+from vespercode.canonical.json_v1 import CanonicalValueV1, canonical_json_bytes
+from vespercode.canonical.path_v1 import CanonicalRelativePathV1
+from vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
+from vespercode.contracts.evidence import DigestV1
+from vespercode.contracts.optional import AbsentV1, PresentV1
+from vespercode.contracts.run import RunStateV1, WaitDecisionV1
+from vespercode.governance.disclosure_scope import (
     DirectoryDisclosureScopeV1,
     DisclosurePathScopeV1,
     FileDisclosureScopeV1,
     RootDisclosureScopeV1,
 )
-from src.vespercode.governance.disclosure_subject import DisclosureGrantSubjectV1
-from src.vespercode.governance.request_sources import RequestSourceCategoryV1
-from src.vespercode.runs.lifecycle import LifecycleRules
-from src.vespercode.storage.connection import (
+from vespercode.governance.disclosure_subject import DisclosureGrantSubjectV1
+from vespercode.governance.request_sources import RequestSourceCategoryV1
+from vespercode.runs.lifecycle import LifecycleRules
+from vespercode.storage.connection import (
     ControlDatabase,
     ControlTransactionV1,
 )
-from src.vespercode.storage.run_repository import RunRepository
+from vespercode.storage.run_repository import RunRepository
 
 DisclosureGrantStatusV1: TypeAlias = Literal[
     "ACTIVE",

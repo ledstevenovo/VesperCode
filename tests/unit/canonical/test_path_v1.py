@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from src.vespercode.canonical.path_v1 import (
+from vespercode.canonical.path_v1 import (
     CanonicalPathErrorV1,
     CanonicalRelativePathV1,
     validate_canonical_relative_path,

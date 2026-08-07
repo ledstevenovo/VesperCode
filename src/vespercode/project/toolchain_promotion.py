@@ -14,7 +14,7 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 
-from src.vespercode.project.dependency_closure import (
+from vespercode.project.dependency_closure import (
     load_gate_toolchain_snapshot,
 )
 

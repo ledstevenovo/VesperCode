@@ -20,37 +20,37 @@ import pytest
 
 pytest.importorskip("pydantic")
 
-from src.vespercode.candidate.final_diff import (
+from vespercode.candidate.final_diff import (
     FinalDiffEntryV1,
     FinalDiffPreimageV1,
     FinalDiffV1,
 )
-from src.vespercode.canonical.clock import FakeClockV1
-from src.vespercode.canonical.digest import domain_digest
-from src.vespercode.canonical.json_v1 import CanonicalValueV1
-from src.vespercode.canonical.path_v1 import CanonicalRelativePathV1
-from src.vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
-from src.vespercode.contracts.evidence import DigestV1
-from src.vespercode.contracts.run import WaitContextV1, WaitDecisionV1
-from src.vespercode.governance.writeback_approval import (
+from vespercode.canonical.clock import FakeClockV1
+from vespercode.canonical.digest import domain_digest
+from vespercode.canonical.json_v1 import CanonicalValueV1
+from vespercode.canonical.path_v1 import CanonicalRelativePathV1
+from vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
+from vespercode.contracts.evidence import DigestV1
+from vespercode.contracts.run import WaitContextV1, WaitDecisionV1
+from vespercode.governance.writeback_approval import (
     WritebackApprovalRepository,
 )
-from src.vespercode.governance.writeback_decision import (
+from vespercode.governance.writeback_decision import (
     DecideFinalWritebackV1,
     FinalWritebackApprovalV1,
     FinalWritebackDecisionServiceV1,
 )
-from src.vespercode.governance.writeback_subject import (
+from vespercode.governance.writeback_subject import (
     FinalWritebackBindingV1,
     FinalWritebackSubjectV1,
     build_final_writeback_subject,
 )
-from src.vespercode.persistence.artifacts import PersistenceArtifactStoreV1
-from src.vespercode.persistence.transaction import (
+from vespercode.persistence.artifacts import PersistenceArtifactStoreV1
+from vespercode.persistence.transaction import (
     PersistencePathRecordRepositoryV1,
     PersistenceTransactionRepositoryV1,
 )
-from src.vespercode.persistence.writeback import (
+from vespercode.persistence.writeback import (
     PersistenceCommandFactoryV1,
     PersistenceCoordinator,
     PersistenceFaultInjectedError,
@@ -58,40 +58,40 @@ from src.vespercode.persistence.writeback import (
     WritebackBodyV1,
     WritebackFaultPointV1,
 )
-from src.vespercode.profiles.reference import (
+from vespercode.profiles.reference import (
     ReferenceProfileManifestV1,
     load_reference_profile,
 )
-from src.vespercode.storage.connection import (
+from vespercode.storage.connection import (
     ControlDatabase,
     open_control_database,
 )
-from src.vespercode.storage.migration_engine import apply_migrations
-from src.vespercode.storage.migrations.v0001_run_wait import RUN_WAIT_V1_MIGRATION
-from src.vespercode.storage.migrations.v0002_idempotency import (
+from vespercode.storage.migration_engine import apply_migrations
+from vespercode.storage.migrations.v0001_run_wait import RUN_WAIT_V1_MIGRATION
+from vespercode.storage.migrations.v0002_idempotency import (
     IDEMPOTENCY_V1_MIGRATION,
 )
-from src.vespercode.storage.migrations.v0003_disclosure_grants import (
+from vespercode.storage.migrations.v0003_disclosure_grants import (
     DISCLOSURE_GRANTS_V1_MIGRATION,
 )
-from src.vespercode.storage.migrations.v0004_disclosure_authorizations import (
+from vespercode.storage.migrations.v0004_disclosure_authorizations import (
     DISCLOSURE_AUTHORIZATIONS_V1_MIGRATION,
 )
-from src.vespercode.storage.migrations.v0005_memory import MEMORY_V1_MIGRATION
-from src.vespercode.storage.migrations.v0006_audit import AUDIT_V1_MIGRATION
-from src.vespercode.storage.migrations.v0007_agent_turns import (
+from vespercode.storage.migrations.v0005_memory import MEMORY_V1_MIGRATION
+from vespercode.storage.migrations.v0006_audit import AUDIT_V1_MIGRATION
+from vespercode.storage.migrations.v0007_agent_turns import (
     AGENT_TURNS_V1_MIGRATION,
 )
-from src.vespercode.storage.migrations.v0008_feedback import FEEDBACK_V1_MIGRATION
-from src.vespercode.storage.migrations.v0009_actions import ACTIONS_V1_MIGRATION
-from src.vespercode.storage.migrations.v0010_writeback_approvals import (
+from vespercode.storage.migrations.v0008_feedback import FEEDBACK_V1_MIGRATION
+from vespercode.storage.migrations.v0009_actions import ACTIONS_V1_MIGRATION
+from vespercode.storage.migrations.v0010_writeback_approvals import (
     WRITEBACK_APPROVALS_V1_MIGRATION,
 )
-from src.vespercode.storage.migrations.v0011_persistence import (
+from vespercode.storage.migrations.v0011_persistence import (
     PERSISTENCE_V1_MIGRATION,
 )
-from src.vespercode.storage.run_repository import RunRepository
-from src.vespercode.trees.text_classifier import TextMetadataV1
+from vespercode.storage.run_repository import RunRepository
+from vespercode.trees.text_classifier import TextMetadataV1
 
 _ALL_MIGRATIONS = (
     RUN_WAIT_V1_MIGRATION,

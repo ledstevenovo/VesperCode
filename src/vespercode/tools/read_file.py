@@ -13,16 +13,16 @@ from __future__ import annotations
 
 import hashlib
 
-from src.vespercode.tools.file_actions import ReadFileActionV1
-from src.vespercode.tools.file_results import (
+from vespercode.tools.file_actions import ReadFileActionV1
+from vespercode.tools.file_results import (
     ReadFileResultV1,
     ReadFileSuccessV1,
     bounded_utf8_text,
     file_tool_error,
     split_text_lines,
 )
-from src.vespercode.trees.readable import ReadableTreeV1
-from src.vespercode.trees.text_classifier import classify_supported_text
+from vespercode.trees.readable import ReadableTreeV1
+from vespercode.trees.text_classifier import classify_supported_text
 
 _UTF8_BOM = b"\xef\xbb\xbf"
 

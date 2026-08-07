@@ -23,107 +23,107 @@ import pytest
 # cleanly there (formal env runs it fully).
 pytest.importorskip("pydantic")
 
-from src.vespercode.candidate.patch_engine import CandidatePatchOutcomeV1
-from src.vespercode.canonical.clock import FakeClockV1
-from src.vespercode.canonical.path_v1 import CanonicalRelativePathV1
-from src.vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
-from src.vespercode.contracts.evidence import ArtifactRefV1, DigestV1
-from src.vespercode.contracts.optional import AbsentV1
-from src.vespercode.governance.policy import PolicyEngine
-from src.vespercode.llm.base import ModelResponse
-from src.vespercode.loop.action_binding import reset_issued_action_ids
-from src.vespercode.loop.action_pipeline import (
+from vespercode.candidate.patch_engine import CandidatePatchOutcomeV1
+from vespercode.canonical.clock import FakeClockV1
+from vespercode.canonical.path_v1 import CanonicalRelativePathV1
+from vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
+from vespercode.contracts.evidence import ArtifactRefV1, DigestV1
+from vespercode.contracts.optional import AbsentV1
+from vespercode.governance.policy import PolicyEngine
+from vespercode.llm.base import ModelResponse
+from vespercode.loop.action_binding import reset_issued_action_ids
+from vespercode.loop.action_pipeline import (
     ActionPipeline,
     ActionPipelineContextV1,
     ActionRecordRepositoryV1,
     ActionRecordStoredV1,
 )
-from src.vespercode.loop.agent_actions import ActionInstanceV1
-from src.vespercode.loop.feedback import (
+from vespercode.loop.agent_actions import ActionInstanceV1
+from vespercode.loop.feedback import (
     CheckFeedbackSourceV1,
     FeedbackRecordV1,
 )
-from src.vespercode.loop.feedback_consumption import (
+from vespercode.loop.feedback_consumption import (
     FeedbackAppendResultV1,
     FeedbackRepositoryV1,
 )
-from src.vespercode.profiles.registry import build_profile_registry
-from src.vespercode.storage.connection import (
+from vespercode.profiles.registry import build_profile_registry
+from vespercode.storage.connection import (
     ControlDatabase,
     open_control_database,
 )
-from src.vespercode.storage.migration_engine import apply_migrations
-from src.vespercode.storage.migrations.v0001_run_wait import RUN_WAIT_V1_MIGRATION
-from src.vespercode.storage.migrations.v0002_idempotency import (
+from vespercode.storage.migration_engine import apply_migrations
+from vespercode.storage.migrations.v0001_run_wait import RUN_WAIT_V1_MIGRATION
+from vespercode.storage.migrations.v0002_idempotency import (
     IDEMPOTENCY_V1_MIGRATION,
 )
-from src.vespercode.storage.migrations.v0003_disclosure_grants import (
+from vespercode.storage.migrations.v0003_disclosure_grants import (
     DISCLOSURE_GRANTS_V1_MIGRATION,
 )
-from src.vespercode.storage.migrations.v0004_disclosure_authorizations import (
+from vespercode.storage.migrations.v0004_disclosure_authorizations import (
     DISCLOSURE_AUTHORIZATIONS_V1_MIGRATION,
 )
-from src.vespercode.storage.migrations.v0005_memory import MEMORY_V1_MIGRATION
-from src.vespercode.storage.migrations.v0006_audit import AUDIT_V1_MIGRATION
-from src.vespercode.storage.migrations.v0007_agent_turns import (
+from vespercode.storage.migrations.v0005_memory import MEMORY_V1_MIGRATION
+from vespercode.storage.migrations.v0006_audit import AUDIT_V1_MIGRATION
+from vespercode.storage.migrations.v0007_agent_turns import (
     AGENT_TURNS_V1_MIGRATION,
 )
-from src.vespercode.storage.migrations.v0008_feedback import FEEDBACK_V1_MIGRATION
-from src.vespercode.storage.migrations.v0009_actions import ACTIONS_V1_MIGRATION
-from src.vespercode.tools.dispatcher import (
+from vespercode.storage.migrations.v0008_feedback import FEEDBACK_V1_MIGRATION
+from vespercode.storage.migrations.v0009_actions import ACTIONS_V1_MIGRATION
+from vespercode.tools.dispatcher import (
     ActionResultV1,
     CompletionOutcomeV1,
     DispatchContextV1,
     RunCheckOutcomeV1,
     ToolDispatcher,
 )
-from src.vespercode.tools.file_results import (
+from vespercode.tools.file_results import (
     FileToolErrorV1,
     ListFilesSuccessV1,
 )
 
-from src.vespercode.contracts.optional import PresentV1
-from src.vespercode.governance.request_sources import (
+from vespercode.contracts.optional import PresentV1
+from vespercode.governance.request_sources import (
     RequestContentSegmentV1,
     RequestMessageV1,
 )
-from src.vespercode.llm.call_result import (
+from vespercode.llm.call_result import (
     PresentAuthorizationRecordRefV1,
     PresentLLMCallErrorV1,
     PresentResponseDigestV1,
 )
-from src.vespercode.llm.prepared_request import (
+from vespercode.llm.prepared_request import (
     MockPreparedModelRequestV1,
     OpenAIPreparedModelRequestV1,
     prepare_mock_request,
 )
-from src.vespercode.loop.call_orchestrator import (
+from vespercode.loop.call_orchestrator import (
     CallOnceV1,
     LLMCallResultV1,
 )
-from src.vespercode.loop.cancellation import CancellationController
-from src.vespercode.loop.context_projection import (
+from vespercode.loop.cancellation import CancellationController
+from vespercode.loop.context_projection import (
     ContextBudgetFailureV1,
     ContextProjectionV1,
 )
-from src.vespercode.loop.engine import AgentLoopEngine
-from src.vespercode.loop.progress import ProgressEvaluator
-from src.vespercode.loop.restart import RestartGuard
-from src.vespercode.loop.stopping import StopEvaluator
-from src.vespercode.loop.turn_boundary import TurnBoundary
-from src.vespercode.loop.wait_control import WaitController
-from src.vespercode.profiles.llm import (
+from vespercode.loop.engine import AgentLoopEngine
+from vespercode.loop.progress import ProgressEvaluator
+from vespercode.loop.restart import RestartGuard
+from vespercode.loop.stopping import StopEvaluator
+from vespercode.loop.turn_boundary import TurnBoundary
+from vespercode.loop.wait_control import WaitController
+from vespercode.profiles.llm import (
     MockLLMProfileV1,
     load_llm_profile,
 )
-from src.vespercode.contracts.run import (
+from vespercode.contracts.run import (
     RunLimitsV1,
     RunPhase,
     RunStatus,
     WaitContextV1,
     WaitDecisionV1,
 )
-from src.vespercode.storage.run_repository import (
+from vespercode.storage.run_repository import (
     RunRecordV1,
     RunRepository,
     TransitionCommandV1,

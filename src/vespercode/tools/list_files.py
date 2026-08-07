@@ -16,12 +16,12 @@ from __future__ import annotations
 
 from typing import Literal
 
-from src.vespercode.canonical.json_v1 import CanonicalValueV1, canonical_json_bytes
-from src.vespercode.canonical.path_v1 import CanonicalRelativePathV1
-from src.vespercode.contracts.location import RepositoryLocationV1
-from src.vespercode.contracts.optional import AbsentV1, PresentV1
-from src.vespercode.tools.file_actions import ListFilesActionV1, list_files_query_digest
-from src.vespercode.tools.file_results import (
+from vespercode.canonical.json_v1 import CanonicalValueV1, canonical_json_bytes
+from vespercode.canonical.path_v1 import CanonicalRelativePathV1
+from vespercode.contracts.location import RepositoryLocationV1
+from vespercode.contracts.optional import AbsentV1, PresentV1
+from vespercode.tools.file_actions import ListFilesActionV1, list_files_query_digest
+from vespercode.tools.file_results import (
     RESULT_BODY_BYTES_V1,
     FileToolErrorV1,
     ListFilesCursorV1,
@@ -35,8 +35,8 @@ from src.vespercode.tools.file_results import (
     list_files_cursor_digest,
     validate_cursor_binding,
 )
-from src.vespercode.trees.readable import ReadableTreeV1
-from src.vespercode.trees.text_classifier import classify_supported_text
+from vespercode.trees.readable import ReadableTreeV1
+from vespercode.trees.text_classifier import classify_supported_text
 
 
 def list_files(tree: ReadableTreeV1, action: ListFilesActionV1) -> ListFilesResultV1:

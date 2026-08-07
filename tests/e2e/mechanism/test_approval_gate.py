@@ -15,14 +15,14 @@ import pytest
 
 pytest.importorskip("pydantic")
 
-from src.vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
-from src.vespercode.contracts.evidence import DigestV1
-from src.vespercode.governance.writeback_approval import (
+from vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
+from vespercode.contracts.evidence import DigestV1
+from vespercode.governance.writeback_approval import (
     ApprovalNotConsumableErrorV1,
     ConsumeWritebackApprovalV1,
     verify_consumable,
 )
-from src.vespercode.governance.writeback_decision import (
+from vespercode.governance.writeback_decision import (
     FinalWritebackApprovalV1,
 )
 

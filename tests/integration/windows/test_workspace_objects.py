@@ -25,13 +25,13 @@ import win32security  # type: ignore[import-untyped]
 
 from ctypes import wintypes
 
-from src.vespercode.canonical.path_v1 import CanonicalRelativePathV1
-from src.vespercode.workspace.identity_win32 import (
+from vespercode.canonical.path_v1 import CanonicalRelativePathV1
+from vespercode.workspace.identity_win32 import (
     WorkspaceIdentityV1,
     WorkspaceObjectRejectedV1,
     resolve_workspace_identity,
 )
-from src.vespercode.workspace.object_win32 import (
+from vespercode.workspace.object_win32 import (
     FinalObjectIdentityV1,
     inspect_workspace_object,
 )

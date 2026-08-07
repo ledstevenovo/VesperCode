@@ -22,41 +22,41 @@ import pytest
 # cleanly there (formal env runs it fully).
 pytest.importorskip("pydantic")
 
-from src.vespercode.canonical.path_v1 import CanonicalRelativePathV1
-from src.vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
-from src.vespercode.contracts.optional import AbsentV1, PresentV1
-from src.vespercode.loop.feedback import (
+from vespercode.canonical.path_v1 import CanonicalRelativePathV1
+from vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
+from vespercode.contracts.optional import AbsentV1, PresentV1
+from vespercode.loop.feedback import (
     CheckFeedbackSourceV1,
     FeedbackRecordV1,
     FeedbackSeverityV1,
 )
-from src.vespercode.loop.feedback_consumption import (
+from vespercode.loop.feedback_consumption import (
     FeedbackAppendResultV1,
     FeedbackConsumptionResultV1,
     FeedbackRepositoryV1,
     consume_feedback,
 )
-from src.vespercode.storage.connection import (
+from vespercode.storage.connection import (
     ControlDatabase,
     open_control_database,
 )
-from src.vespercode.storage.migration_engine import apply_migrations
-from src.vespercode.storage.migrations.v0001_run_wait import RUN_WAIT_V1_MIGRATION
-from src.vespercode.storage.migrations.v0002_idempotency import (
+from vespercode.storage.migration_engine import apply_migrations
+from vespercode.storage.migrations.v0001_run_wait import RUN_WAIT_V1_MIGRATION
+from vespercode.storage.migrations.v0002_idempotency import (
     IDEMPOTENCY_V1_MIGRATION,
 )
-from src.vespercode.storage.migrations.v0003_disclosure_grants import (
+from vespercode.storage.migrations.v0003_disclosure_grants import (
     DISCLOSURE_GRANTS_V1_MIGRATION,
 )
-from src.vespercode.storage.migrations.v0004_disclosure_authorizations import (
+from vespercode.storage.migrations.v0004_disclosure_authorizations import (
     DISCLOSURE_AUTHORIZATIONS_V1_MIGRATION,
 )
-from src.vespercode.storage.migrations.v0005_memory import MEMORY_V1_MIGRATION
-from src.vespercode.storage.migrations.v0006_audit import AUDIT_V1_MIGRATION
-from src.vespercode.storage.migrations.v0007_agent_turns import (
+from vespercode.storage.migrations.v0005_memory import MEMORY_V1_MIGRATION
+from vespercode.storage.migrations.v0006_audit import AUDIT_V1_MIGRATION
+from vespercode.storage.migrations.v0007_agent_turns import (
     AGENT_TURNS_V1_MIGRATION,
 )
-from src.vespercode.storage.migrations.v0008_feedback import (
+from vespercode.storage.migrations.v0008_feedback import (
     FEEDBACK_V1_MIGRATION,
 )
 

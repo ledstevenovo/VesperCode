@@ -27,26 +27,26 @@ pytest.importorskip("pydantic")
 
 from pydantic import ValidationError
 
-from src.vespercode.candidate.final_diff import (
+from vespercode.candidate.final_diff import (
     FinalDiffEntryV1,
     FinalDiffPreimageV1,
     FinalDiffV1,
 )
-from src.vespercode.canonical.digest import domain_digest
-from src.vespercode.canonical.json_v1 import CanonicalValueV1
-from src.vespercode.canonical.path_v1 import CanonicalRelativePathV1
-from src.vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
-from src.vespercode.governance.writeback_subject import (
+from vespercode.canonical.digest import domain_digest
+from vespercode.canonical.json_v1 import CanonicalValueV1
+from vespercode.canonical.path_v1 import CanonicalRelativePathV1
+from vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
+from vespercode.governance.writeback_subject import (
     FinalWritebackBindingV1,
     FinalWritebackSubjectError,
     FinalWritebackSubjectV1,
     build_final_writeback_subject,
 )
-from src.vespercode.profiles.reference import (
+from vespercode.profiles.reference import (
     ReferenceProfileManifestV1,
     load_reference_profile,
 )
-from src.vespercode.trees.text_classifier import TextMetadataV1
+from vespercode.trees.text_classifier import TextMetadataV1
 
 _CREATED_AT = CanonicalTimestampV1("2026-08-05T09:00:00.000Z")
 _EXPIRES_AT = CanonicalTimestampV1("2026-08-05T09:05:00.000Z")

@@ -31,27 +31,27 @@ import pytest
 # (formal env runs it fully).
 pytest.importorskip("pydantic")
 
-from src.vespercode.canonical.path_v1 import CanonicalRelativePathV1
-from src.vespercode.contracts.evidence import _DIGEST_RE
-from src.vespercode.contracts.optional import AbsentV1, PresentV1
-from src.vespercode.execution.materialization import (
+from vespercode.canonical.path_v1 import CanonicalRelativePathV1
+from vespercode.contracts.evidence import _DIGEST_RE
+from vespercode.contracts.optional import AbsentV1, PresentV1
+from vespercode.execution.materialization import (
     AuthorizedExecutionRootV1,
     MaterializationError,
     allocate_execution_root,
     materialize_candidate,
 )
-from src.vespercode.profiles.reference import load_reference_profile
-from src.vespercode.trees.candidate import (
+from vespercode.profiles.reference import load_reference_profile
+from vespercode.trees.candidate import (
     CandidatePostimageV1,
     CandidateTreeV1,
     derive_candidate_revision,
     root_candidate_revision,
 )
-from src.vespercode.trees.content_store import (
+from vespercode.trees.content_store import (
     ContentObjectRefV1,
     ContentObjectStore,
 )
-from src.vespercode.trees.snapshot import (
+from vespercode.trees.snapshot import (
     SealedSnapshotInputFileV1,
     SnapshotDirectoryEntryV1,
     SnapshotEntryV1,
@@ -59,7 +59,7 @@ from src.vespercode.trees.snapshot import (
     SnapshotTreeV1,
     _root_digest,
 )
-from src.vespercode.trees.text_classifier import (
+from vespercode.trees.text_classifier import (
     TextMetadataV1,
     classify_supported_text,
 )

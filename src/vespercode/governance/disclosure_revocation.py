@@ -17,11 +17,11 @@ from typing import Literal, TypeAlias
 
 from pydantic import BaseModel, ConfigDict, StrictStr
 
-from src.vespercode.canonical.digest import domain_digest
-from src.vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
-from src.vespercode.contracts.evidence import DigestV1
-from src.vespercode.storage.connection import ControlDatabase
-from src.vespercode.storage.idempotency import IdempotencyRepository
+from vespercode.canonical.digest import domain_digest
+from vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
+from vespercode.contracts.evidence import DigestV1
+from vespercode.storage.connection import ControlDatabase
+from vespercode.storage.idempotency import IdempotencyRepository
 
 _REVOKE_EVENT_SCOPE = "disclosure_revoke"
 

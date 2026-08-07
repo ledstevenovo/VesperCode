@@ -38,20 +38,20 @@ from pydantic import (
     field_validator,
 )
 
-from src.vespercode.canonical.digest import domain_digest
-from src.vespercode.canonical.json_v1 import (
+from vespercode.canonical.digest import domain_digest
+from vespercode.canonical.json_v1 import (
     CanonicalJsonErrorV1,
     CanonicalValueV1,
     canonical_json_bytes,
 )
-from src.vespercode.canonical.path_v1 import CanonicalRelativePathV1
-from src.vespercode.contracts.action import ActionResultV1
-from src.vespercode.contracts.optional import (
+from vespercode.canonical.path_v1 import CanonicalRelativePathV1
+from vespercode.contracts.action import ActionResultV1
+from vespercode.contracts.optional import (
     AbsentV1,
     OptionalCanonicalPathV1,
     PresentV1,
 )
-from src.vespercode.governance.request_sources import (
+from vespercode.governance.request_sources import (
     RequestContentSegmentV1,
     RequestMessageV1,
     RequestMessageSequenceV1,
@@ -60,7 +60,7 @@ from src.vespercode.governance.request_sources import (
     SourceValidationError,
     validate_segment_sources,
 )
-from src.vespercode.loop.feedback import (
+from vespercode.loop.feedback import (
     FeedbackRecordSequenceV1,
     FeedbackRecordV1,
     serialize_feedback_record,

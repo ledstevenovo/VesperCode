@@ -43,28 +43,28 @@ if str(_REPO_ROOT) not in sys.path:
 
 from pydantic import BaseModel, ConfigDict, Field, Strict  # noqa: E402
 
-from src.vespercode.candidate.final_diff import (  # noqa: E402
+from vespercode.candidate.final_diff import (  # noqa: E402
     FinalDiffEntryV1,
     FinalDiffPreimageV1,
     FinalDiffV1,
 )
-from src.vespercode.candidate.patch_engine import (  # noqa: E402
+from vespercode.candidate.patch_engine import (  # noqa: E402
     ApplyCandidatePatchAction,
     CandidatePatchOutcomeV1,
 )
-from src.vespercode.canonical.clock import FakeClockV1  # noqa: E402
-from src.vespercode.canonical.digest import domain_digest  # noqa: E402
-from src.vespercode.canonical.json_v1 import (  # noqa: E402
+from vespercode.canonical.clock import FakeClockV1  # noqa: E402
+from vespercode.canonical.digest import domain_digest  # noqa: E402
+from vespercode.canonical.json_v1 import (  # noqa: E402
     CanonicalValueV1,
     canonical_json_bytes,
 )
-from src.vespercode.canonical.path_v1 import CanonicalRelativePathV1  # noqa: E402
-from src.vespercode.canonical.timestamp_v1 import CanonicalTimestampV1  # noqa: E402
-from src.vespercode.contracts.evidence import ArtifactRefV1, DigestV1  # noqa: E402
-from src.vespercode.contracts.location import RootLocationV1  # noqa: E402
-from src.vespercode.contracts.optional import AbsentV1, PresentV1  # noqa: E402
-from src.vespercode.contracts.run import WaitContextV1, WaitDecisionV1  # noqa: E402
-from src.vespercode.credentials.port import (  # noqa: E402
+from vespercode.canonical.path_v1 import CanonicalRelativePathV1  # noqa: E402
+from vespercode.canonical.timestamp_v1 import CanonicalTimestampV1  # noqa: E402
+from vespercode.contracts.evidence import ArtifactRefV1, DigestV1  # noqa: E402
+from vespercode.contracts.location import RootLocationV1  # noqa: E402
+from vespercode.contracts.optional import AbsentV1, PresentV1  # noqa: E402
+from vespercode.contracts.run import WaitContextV1, WaitDecisionV1  # noqa: E402
+from vespercode.credentials.port import (  # noqa: E402
     CredentialBackendProbeV1,
     CredentialBackendUnsafeError,
     CredentialMissingV1,
@@ -72,67 +72,67 @@ from src.vespercode.credentials.port import (  # noqa: E402
     CredentialStatusV1,
     SecretCredentialV1,
 )
-from src.vespercode.demo.executor import DemoExecutor  # noqa: E402
-from src.vespercode.demo.scenario import FIXED_DEMO_SCENARIO_V1  # noqa: E402
-from src.vespercode.demo.types import DemoScenarioV1  # noqa: E402
-from src.vespercode.governance.disclosure_decision import (  # noqa: E402
+from vespercode.demo.executor import DemoExecutor  # noqa: E402
+from vespercode.demo.scenario import FIXED_DEMO_SCENARIO_V1  # noqa: E402
+from vespercode.demo.types import DemoScenarioV1  # noqa: E402
+from vespercode.governance.disclosure_decision import (  # noqa: E402
     DecideDisclosureGrantV1,
     DisclosureDecisionServiceV1,
 )
-from src.vespercode.governance.disclosure_ledger import DisclosureLedger  # noqa: E402
-from src.vespercode.governance.disclosure_scope import (  # noqa: E402
+from vespercode.governance.disclosure_ledger import DisclosureLedger  # noqa: E402
+from vespercode.governance.disclosure_scope import (  # noqa: E402
     DirectoryDisclosureScopeV1,
     DisclosureScopeSequenceV1,
     FileDisclosureScopeV1,
 )
-from src.vespercode.governance.disclosure_subject import (  # noqa: E402
+from vespercode.governance.disclosure_subject import (  # noqa: E402
     DisclosureGrantSubjectV1,
     DisclosureSubjectRequestV1,
     build_disclosure_subject,
 )
-from src.vespercode.governance.policy import PatchPathFactV1, PolicyEngine  # noqa: E402
-from src.vespercode.governance.request_sources import (  # noqa: E402
+from vespercode.governance.policy import PatchPathFactV1, PolicyEngine  # noqa: E402
+from vespercode.governance.request_sources import (  # noqa: E402
     RequestContentSegmentV1,
     RequestMessageV1,
     RequestSourceCategoryV1,
     validate_segment_sources,
 )
-from src.vespercode.governance.writeback_approval import (  # noqa: E402
+from vespercode.governance.writeback_approval import (  # noqa: E402
     ConsumeWritebackApprovalV1,
     WritebackApprovalRepository,
 )
-from src.vespercode.governance.writeback_decision import (  # noqa: E402
+from vespercode.governance.writeback_decision import (  # noqa: E402
     DecideFinalWritebackV1,
     FinalWritebackDecisionServiceV1,
 )
-from src.vespercode.governance.writeback_subject import (  # noqa: E402
+from vespercode.governance.writeback_subject import (  # noqa: E402
     FinalWritebackBindingV1,
     FinalWritebackSubjectV1,
     build_final_writeback_subject,
 )
-from src.vespercode.llm.base import ModelResponse  # noqa: E402
-from src.vespercode.llm.openai_adapter import (  # noqa: E402
+from vespercode.llm.base import ModelResponse  # noqa: E402
+from vespercode.llm.openai_adapter import (  # noqa: E402
     LLMTransportResultV1,
     OpenAILLMAdapter,
 )
-from src.vespercode.llm.prepared_request import prepare_openai_request  # noqa: E402
-from src.vespercode.loop.action_binding import (  # noqa: E402
+from vespercode.llm.prepared_request import prepare_openai_request  # noqa: E402
+from vespercode.loop.action_binding import (  # noqa: E402
     action_semantic_digest,
     reset_issued_action_ids,
 )
-from src.vespercode.loop.action_pipeline import (  # noqa: E402
+from vespercode.loop.action_pipeline import (  # noqa: E402
     ActionPipeline,
     ActionPipelineContextV1,
     ActionRecordRepositoryV1,
     ActionStepResultV1,
 )
-from src.vespercode.loop.agent_actions import AgentAction, RunCheckActionV1  # noqa: E402
-from src.vespercode.loop.call_orchestrator import (  # noqa: E402
+from vespercode.loop.agent_actions import AgentAction, RunCheckActionV1  # noqa: E402
+from vespercode.loop.call_orchestrator import (  # noqa: E402
     CallOnceV1,
     CallOrchestrator,
     LLMCallResultV1,
 )
-from src.vespercode.loop.feedback import (  # noqa: E402
+from vespercode.loop.feedback import (  # noqa: E402
     ActionFeedbackSourceV1,
     CheckFeedbackSourceV1,
     ControlFeedbackSourceV1,
@@ -143,54 +143,54 @@ from src.vespercode.loop.feedback import (  # noqa: E402
     build_feedback,
     select_feedback,
 )
-from src.vespercode.loop.feedback_consumption import (  # noqa: E402
+from vespercode.loop.feedback_consumption import (  # noqa: E402
     FeedbackRepositoryV1,
     consume_feedback,
 )
-from src.vespercode.loop.progress import ProgressDecisionV1  # noqa: E402
-from src.vespercode.loop.stopping import (  # noqa: E402
+from vespercode.loop.progress import ProgressDecisionV1  # noqa: E402
+from vespercode.loop.stopping import (  # noqa: E402
     LoopEvidenceV1,
     RunLoopStateV1,
     StopEvaluator,
 )
-from src.vespercode.loop.turn_boundary import TurnBoundary  # noqa: E402
-from src.vespercode.profiles.endpoints import OpenAIEndpointV1  # noqa: E402
-from src.vespercode.profiles.llm import OpenAILLMProfileV1, load_llm_profile  # noqa: E402
-from src.vespercode.profiles.reference import load_reference_profile  # noqa: E402
-from src.vespercode.storage.connection import ControlDatabase  # noqa: E402
-from src.vespercode.storage.migration_engine import apply_migrations  # noqa: E402
-from src.vespercode.storage.migrations.v0001_run_wait import RUN_WAIT_V1_MIGRATION  # noqa: E402
-from src.vespercode.storage.migrations.v0002_idempotency import (  # noqa: E402
+from vespercode.loop.turn_boundary import TurnBoundary  # noqa: E402
+from vespercode.profiles.endpoints import OpenAIEndpointV1  # noqa: E402
+from vespercode.profiles.llm import OpenAILLMProfileV1, load_llm_profile  # noqa: E402
+from vespercode.profiles.reference import load_reference_profile  # noqa: E402
+from vespercode.storage.connection import ControlDatabase  # noqa: E402
+from vespercode.storage.migration_engine import apply_migrations  # noqa: E402
+from vespercode.storage.migrations.v0001_run_wait import RUN_WAIT_V1_MIGRATION  # noqa: E402
+from vespercode.storage.migrations.v0002_idempotency import (  # noqa: E402
     IDEMPOTENCY_V1_MIGRATION,
 )
-from src.vespercode.storage.migrations.v0003_disclosure_grants import (  # noqa: E402
+from vespercode.storage.migrations.v0003_disclosure_grants import (  # noqa: E402
     DISCLOSURE_GRANTS_V1_MIGRATION,
 )
-from src.vespercode.storage.migrations.v0004_disclosure_authorizations import (  # noqa: E402
+from vespercode.storage.migrations.v0004_disclosure_authorizations import (  # noqa: E402
     DISCLOSURE_AUTHORIZATIONS_V1_MIGRATION,
 )
-from src.vespercode.storage.migrations.v0005_memory import MEMORY_V1_MIGRATION  # noqa: E402
-from src.vespercode.storage.migrations.v0006_audit import AUDIT_V1_MIGRATION  # noqa: E402
-from src.vespercode.storage.migrations.v0007_agent_turns import (  # noqa: E402
+from vespercode.storage.migrations.v0005_memory import MEMORY_V1_MIGRATION  # noqa: E402
+from vespercode.storage.migrations.v0006_audit import AUDIT_V1_MIGRATION  # noqa: E402
+from vespercode.storage.migrations.v0007_agent_turns import (  # noqa: E402
     AGENT_TURNS_V1_MIGRATION,
 )
-from src.vespercode.storage.migrations.v0008_feedback import FEEDBACK_V1_MIGRATION  # noqa: E402
-from src.vespercode.storage.migrations.v0009_actions import ACTIONS_V1_MIGRATION  # noqa: E402
-from src.vespercode.storage.migrations.v0010_writeback_approvals import (  # noqa: E402
+from vespercode.storage.migrations.v0008_feedback import FEEDBACK_V1_MIGRATION  # noqa: E402
+from vespercode.storage.migrations.v0009_actions import ACTIONS_V1_MIGRATION  # noqa: E402
+from vespercode.storage.migrations.v0010_writeback_approvals import (  # noqa: E402
     WRITEBACK_APPROVALS_V1_MIGRATION,
 )
-from src.vespercode.storage.run_repository import RunRepository  # noqa: E402
-from src.vespercode.tools.dispatcher import (  # noqa: E402
+from vespercode.storage.run_repository import RunRepository  # noqa: E402
+from vespercode.tools.dispatcher import (  # noqa: E402
     RunCheckOutcomeV1,
     ToolDispatcher,
     ToolPortsV1,
 )
-from src.vespercode.tools.file_actions import (  # noqa: E402
+from vespercode.tools.file_actions import (  # noqa: E402
     ListFilesActionV1,
     ReadFileActionV1,
     SearchTextActionV1,
 )
-from src.vespercode.tools.file_results import (  # noqa: E402
+from vespercode.tools.file_results import (  # noqa: E402
     FileToolErrorV1,
     ListFilesEntryV1,
     ListFilesSuccessV1,
@@ -200,11 +200,11 @@ from src.vespercode.tools.file_results import (  # noqa: E402
     SearchTextMatchV1,
     SearchTextSuccessV1,
 )
-from src.vespercode.tools.list_files import list_files  # noqa: E402
-from src.vespercode.tools.search_text import search_text  # noqa: E402
-from src.vespercode.trees.readable import ReadableTreeV1  # noqa: E402
-from src.vespercode.trees.text_classifier import TextMetadataV1  # noqa: E402
-from src.vespercode.validation.check_result import CheckFindingV1, CheckResultV1  # noqa: E402
+from vespercode.tools.list_files import list_files  # noqa: E402
+from vespercode.tools.search_text import search_text  # noqa: E402
+from vespercode.trees.readable import ReadableTreeV1  # noqa: E402
+from vespercode.trees.text_classifier import TextMetadataV1  # noqa: E402
+from vespercode.validation.check_result import CheckFindingV1, CheckResultV1  # noqa: E402
 
 _FIXED_DIGEST: Final = "ab" * 32
 """The fixed digest identity of every sealed mechanism value."""

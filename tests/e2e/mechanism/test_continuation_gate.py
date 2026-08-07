@@ -13,16 +13,16 @@ import pytest
 
 pytest.importorskip("pydantic")
 
-from src.vespercode.canonical.path_v1 import CanonicalRelativePathV1
-from src.vespercode.contracts.location import RootLocationV1
-from src.vespercode.contracts.optional import AbsentV1, PresentV1
-from src.vespercode.tools.file_actions import (
+from vespercode.canonical.path_v1 import CanonicalRelativePathV1
+from vespercode.contracts.location import RootLocationV1
+from vespercode.contracts.optional import AbsentV1, PresentV1
+from vespercode.tools.file_actions import (
     ListFilesActionV1,
     SearchTextActionV1,
     list_files_query_digest,
     search_text_query_digest,
 )
-from src.vespercode.tools.file_results import (
+from vespercode.tools.file_results import (
     FileToolErrorV1,
     ListFilesEntryV1,
     ListFilesSuccessV1,
@@ -33,9 +33,9 @@ from src.vespercode.tools.file_results import (
     list_files_cursor_digest,
     search_text_cursor_digest,
 )
-from src.vespercode.tools.list_files import list_files
-from src.vespercode.tools.search_text import search_text
-from src.vespercode.trees.readable import ReadableTreeV1
+from vespercode.tools.list_files import list_files
+from vespercode.tools.search_text import search_text
+from vespercode.trees.readable import ReadableTreeV1
 
 from scripts.run_mechanism_demo import MechanismHarness
 

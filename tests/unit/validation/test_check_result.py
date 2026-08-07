@@ -24,8 +24,8 @@ pytest.importorskip("pydantic")
 
 from pydantic import ValidationError
 
-from src.vespercode.contracts.optional import AbsentV1, PresentV1
-from src.vespercode.validation.check_result import (
+from vespercode.contracts.optional import AbsentV1, PresentV1
+from vespercode.validation.check_result import (
     CheckFindingErrorCodeV1,
     CheckFindingLocationV1,
     CheckFindingSequenceV1,

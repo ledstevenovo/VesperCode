@@ -18,7 +18,7 @@ from typing import Annotated, Generic, Literal, TypeAlias, TypeVar
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from src.vespercode.canonical.path_v1 import CanonicalRelativePathV1
+from vespercode.canonical.path_v1 import CanonicalRelativePathV1
 
 T = TypeVar("T")
 

@@ -17,8 +17,8 @@ pytest.importorskip("pydantic")
 
 from pydantic import ValidationError
 
-from src.vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
-from src.vespercode.contracts.run import (
+from vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
+from vespercode.contracts.run import (
     RunLimitsV1,
     RunStateV1,
     WaitContextV1,

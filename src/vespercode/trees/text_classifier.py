@@ -18,7 +18,7 @@ from typing import Annotated, Literal, TypeAlias
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from src.vespercode.contracts.optional import PresentV1
+from vespercode.contracts.optional import PresentV1
 
 _UTF8_BOM = b"\xef\xbb\xbf"
 _LF_BYTES = b"\n"

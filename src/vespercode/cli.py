@@ -19,12 +19,12 @@ import argparse
 import re
 from typing import Any, Callable, Final, Literal, Protocol, Sequence, TypeAlias
 
-from src.vespercode.web.app import (
+from vespercode.web.app import (
     LocalShellPortsV1,
     create_local_app,
     install_packaged_web_assets,
 )
-from src.vespercode.web.security import LocalWebSecurityConfigV1
+from vespercode.web.security import LocalWebSecurityConfigV1
 
 LOOPBACK_HOST_V1: Final[Literal["127.0.0.1"]] = "127.0.0.1"
 """The only host the serve CLI accepts (literal loopback, SPEC §4.9)."""

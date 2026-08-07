@@ -50,7 +50,7 @@ if str(_REPO_ROOT) not in sys.path:
 
 from pydantic import BaseModel, ConfigDict, Strict  # noqa: E402
 
-from src.vespercode.demo.runner import (  # noqa: E402
+from vespercode.demo.runner import (  # noqa: E402
     DEMO_SHARED_CORE_MODULES_V1 as DEMO_SHARED_CORE_MODULES_V1,
 )
 
@@ -257,7 +257,7 @@ is a violation.
 """
 
 _REGISTRY_CHECK_SCRIPT = """\
-from src.vespercode.demo.app import DEMO_CAPABILITY_KINDS_V1, DemoAppConfigV1, create_demo_app
+from vespercode.demo.app import DEMO_CAPABILITY_KINDS_V1, DemoAppConfigV1, create_demo_app
 app = create_demo_app(DemoAppConfigV1(port=8080))
 assert app.state.capability_kinds == DEMO_CAPABILITY_KINDS_V1, app.state.capability_kinds
 """

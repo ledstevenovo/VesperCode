@@ -30,42 +30,42 @@ from pydantic import (
     field_validator,
 )
 
-from src.vespercode.canonical.clock import ClockV1
-from src.vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
-from src.vespercode.contracts.optional import AbsentV1, PresentV1
-from src.vespercode.contracts.run import (
+from vespercode.canonical.clock import ClockV1
+from vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
+from vespercode.contracts.optional import AbsentV1, PresentV1
+from vespercode.contracts.run import (
     RunLimitsV1,
     RunStateV1,
     WaitContextV1,
     WaitDecisionV1,
     WaitKind,
 )
-from src.vespercode.llm.base import ModelResponse
-from src.vespercode.llm.prepared_request import PreparedModelRequestV1
-from src.vespercode.loop.action_pipeline import (
+from vespercode.llm.base import ModelResponse
+from vespercode.llm.prepared_request import PreparedModelRequestV1
+from vespercode.loop.action_pipeline import (
     ActionPipelineContextV1,
     ActionStepResultV1,
 )
-from src.vespercode.loop.call_orchestrator import (
+from vespercode.loop.call_orchestrator import (
     CallOnceV1,
     LLMCallResultV1,
 )
-from src.vespercode.loop.cancellation import CancellationDecisionV1
-from src.vespercode.loop.context_projection import (
+from vespercode.loop.cancellation import CancellationDecisionV1
+from vespercode.loop.context_projection import (
     ContextBudgetFailureV1,
     ContextProjectionV1,
 )
-from src.vespercode.loop.progress import (
+from vespercode.loop.progress import (
     MAX_PROGRESS_WINDOW_PRIORS_V1,
     ProgressDecisionV1,
     ProgressObservationV1,
     ProgressWindowV1,
 )
-from src.vespercode.loop.restart import (
+from vespercode.loop.restart import (
     RestartDispositionV1,
     RunEvidenceV1,
 )
-from src.vespercode.loop.stopping import (
+from vespercode.loop.stopping import (
     LoopEvidenceV1,
     LoopStopReasonV1,
     RunLoopStateV1,
@@ -73,14 +73,14 @@ from src.vespercode.loop.stopping import (
     StopV1,
     ValidateV1,
 )
-from src.vespercode.loop.turn_boundary import (
+from vespercode.loop.turn_boundary import (
     CloseTurnResultV1,
     TurnOutcomeV1,
 )
-from src.vespercode.loop.wait_control import (
+from vespercode.loop.wait_control import (
     WaitTransitionResultV1,
 )
-from src.vespercode.storage.run_repository import (
+from vespercode.storage.run_repository import (
     RunRecordV1,
     TransitionCommandV1,
     TransitionResultV1,

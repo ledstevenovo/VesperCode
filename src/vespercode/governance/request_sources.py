@@ -26,8 +26,8 @@ from pydantic import (
     field_validator,
 )
 
-from src.vespercode.contracts.evidence import _DIGEST_RE
-from src.vespercode.contracts.optional import OptionalCanonicalPathV1
+from vespercode.contracts.evidence import _DIGEST_RE
+from vespercode.contracts.optional import OptionalCanonicalPathV1
 
 RequestSourceCategoryV1: TypeAlias = Literal[
     "HARNESS_PROTOCOL",

@@ -28,10 +28,10 @@ from pydantic import (
     model_validator,
 )
 
-from src.vespercode.canonical.digest import domain_digest
-from src.vespercode.canonical.path_v1 import CanonicalRelativePathV1
-from src.vespercode.contracts.optional import AbsentV1, PresentV1
-from src.vespercode.validation.pytest_evidence import (
+from vespercode.canonical.digest import domain_digest
+from vespercode.canonical.path_v1 import CanonicalRelativePathV1
+from vespercode.contracts.optional import AbsentV1, PresentV1
+from vespercode.validation.pytest_evidence import (
     PytestEvidenceV1,
     StructuredExceptionV1,
 )

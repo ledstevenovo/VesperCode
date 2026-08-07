@@ -8,9 +8,9 @@ columns.  The final registry composition (Task 7.D) is not editable here.
 
 from __future__ import annotations
 
-from src.vespercode.contracts.evidence import DigestV1
-from src.vespercode.storage.connection import ControlTransactionV1
-from src.vespercode.storage.migration_engine import (
+from vespercode.contracts.evidence import DigestV1
+from vespercode.storage.connection import ControlTransactionV1
+from vespercode.storage.migration_engine import (
     MigrationV1,
     migration_checksum,
 )

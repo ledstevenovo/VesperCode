@@ -18,7 +18,7 @@ pytest.importorskip("pydantic")
 
 from pydantic import ValidationError
 
-from src.vespercode.execution.docker_executor import (
+from vespercode.execution.docker_executor import (
     RawExecutionResultV1,
     _BoundedStreamCollector,
 )

@@ -29,7 +29,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, StrictStr, field_validator, model_validator
 
-from src.vespercode.canonical.path_v1 import (
+from vespercode.canonical.path_v1 import (
     CanonicalPathErrorV1,
     CanonicalRelativePathV1,
 )

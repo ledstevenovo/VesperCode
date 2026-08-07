@@ -18,8 +18,8 @@ import pytest
 # there (formal env runs it fully).
 pytest.importorskip("pydantic")
 
-from src.vespercode.canonical.path_v1 import CanonicalRelativePathV1
-from src.vespercode.governance.disclosure_scope import (
+from vespercode.canonical.path_v1 import CanonicalRelativePathV1
+from vespercode.governance.disclosure_scope import (
     DirectoryDisclosureScopeV1,
     DisclosurePathScopeV1,
     DisclosureScopeError,

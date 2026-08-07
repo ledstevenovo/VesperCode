@@ -37,40 +37,40 @@ from fastapi.responses import JSONResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.testclient import TestClient
 
-from src.vespercode.canonical.path_v1 import CanonicalRelativePathV1
-from src.vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
-from src.vespercode.contracts.optional import AbsentV1, PresentV1
-from src.vespercode.credentials.port import CredentialStatusV1
-from src.vespercode.governance.disclosure_decision import (
+from vespercode.canonical.path_v1 import CanonicalRelativePathV1
+from vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
+from vespercode.contracts.optional import AbsentV1, PresentV1
+from vespercode.credentials.port import CredentialStatusV1
+from vespercode.governance.disclosure_decision import (
     DecideDisclosureGrantV1,
     DisclosureDecisionResultV1,
 )
-from src.vespercode.governance.disclosure_scope import (
+from vespercode.governance.disclosure_scope import (
     DirectoryDisclosureScopeV1,
     DisclosureScopeSequenceV1,
 )
-from src.vespercode.governance.disclosure_subject import (
+from vespercode.governance.disclosure_subject import (
     DisclosureGrantSubjectV1,
     DisclosureSubjectRequestV1,
     build_disclosure_subject,
 )
-from src.vespercode.governance.request_sources import (
+from vespercode.governance.request_sources import (
     RequestSourceV1,
     SourceProjectionV1,
 )
-from src.vespercode.profiles.endpoints import (
+from vespercode.profiles.endpoints import (
     OpenAIEndpointRegistry,
     OpenAIEndpointV1,
 )
-from src.vespercode.profiles.llm import OpenAILLMProfileV1, load_llm_profile
-from src.vespercode.web.app import RunVisibilitySequenceV1, create_local_app
-from src.vespercode.web.disclosure_workflow import (
+from vespercode.profiles.llm import OpenAILLMProfileV1, load_llm_profile
+from vespercode.web.app import RunVisibilitySequenceV1, create_local_app
+from vespercode.web.disclosure_workflow import (
     AuthorizationSummaryV1,
     DisclosureWaitFactsV1,
     build_authorization_summary,
 )
-from src.vespercode.web.routes_disclosure import DisclosureRouteInstallerV1
-from src.vespercode.web.security import (
+from vespercode.web.routes_disclosure import DisclosureRouteInstallerV1
+from vespercode.web.security import (
     LocalRequestErrorCodeV1,
     LocalSessionManager,
     LocalWebSecurityConfigV1,

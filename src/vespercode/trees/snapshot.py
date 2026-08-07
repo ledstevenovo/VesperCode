@@ -25,22 +25,22 @@ from typing import Annotated, Literal, TypeAlias
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from src.vespercode.canonical.digest import domain_digest
-from src.vespercode.canonical.json_v1 import CanonicalJsonErrorV1, CanonicalValueV1
-from src.vespercode.canonical.path_v1 import CanonicalRelativePathV1
-from src.vespercode.contracts.evidence import _DIGEST_RE
-from src.vespercode.contracts.optional import AbsentV1, PresentV1
-from src.vespercode.trees.content_store import (
+from vespercode.canonical.digest import domain_digest
+from vespercode.canonical.json_v1 import CanonicalJsonErrorV1, CanonicalValueV1
+from vespercode.canonical.path_v1 import CanonicalRelativePathV1
+from vespercode.contracts.evidence import _DIGEST_RE
+from vespercode.contracts.optional import AbsentV1, PresentV1
+from vespercode.trees.content_store import (
     ContentIntegrityError,
     ContentObjectRefV1,
     ContentObjectStore,
 )
-from src.vespercode.trees.text_classifier import (
+from vespercode.trees.text_classifier import (
     TextFileClassificationV1,
     TextMetadataV1,
 )
-from src.vespercode.workspace.git_preflight import GitPreflightResultV1
-from src.vespercode.workspace.path_guard import sensitive_path_rule_id
+from vespercode.workspace.git_preflight import GitPreflightResultV1
+from vespercode.workspace.path_guard import sensitive_path_rule_id
 
 SupportedTextClassifierV1: TypeAlias = Callable[[bytes], TextFileClassificationV1]
 """The Task 10.B shared supported-text classifier consumed at construction."""

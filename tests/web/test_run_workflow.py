@@ -37,23 +37,23 @@ from fastapi.responses import JSONResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.testclient import TestClient
 
-from src.vespercode.audit.projection import RunVisibilityV1
-from src.vespercode.contracts.optional import AbsentV1
-from src.vespercode.credentials.port import CredentialStatusV1
-from src.vespercode.web.app import (
+from vespercode.audit.projection import RunVisibilityV1
+from vespercode.contracts.optional import AbsentV1
+from vespercode.credentials.port import CredentialStatusV1
+from vespercode.web.app import (
     LocalRouteInstallerSequenceV1,
     LocalShellPortsV1,
     RunVisibilitySequenceV1,
     create_local_app,
 )
-from src.vespercode.web.routes_runs import RunLifecycleRouteInstallerV1
-from src.vespercode.web.run_lifecycle_workflow import (
+from vespercode.web.routes_runs import RunLifecycleRouteInstallerV1
+from vespercode.web.run_lifecycle_workflow import (
     CreateRunFormV1,
     RunCancellationResultV1,
     RunCreationResultV1,
     RunLifecycleWorkflowPortsV1,
 )
-from src.vespercode.web.security import (
+from vespercode.web.security import (
     LocalRequestErrorCodeV1,
     LocalSessionManager,
     LocalWebSecurityConfigV1,

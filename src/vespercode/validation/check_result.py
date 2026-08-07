@@ -35,11 +35,11 @@ from pydantic import (
     model_validator,
 )
 
-from src.vespercode.canonical.digest import domain_digest
-from src.vespercode.contracts.action import CheckPlanIdV1
-from src.vespercode.contracts.optional import AbsentV1, PresentV1
-from src.vespercode.execution.docker_executor import RawExecutionResultV1
-from src.vespercode.profiles.reference import ReferenceProfileManifestV1
+from vespercode.canonical.digest import domain_digest
+from vespercode.contracts.action import CheckPlanIdV1
+from vespercode.contracts.optional import AbsentV1, PresentV1
+from vespercode.execution.docker_executor import RawExecutionResultV1
+from vespercode.profiles.reference import ReferenceProfileManifestV1
 
 # The frozen T02.4 gate toolchain identities (SPEC §1.4.1; the packaged
 # built-in manifest carries the same values).  The v1 parsers know only

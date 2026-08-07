@@ -24,9 +24,9 @@ from pydantic import (
     model_validator,
 )
 
-from src.vespercode.contracts.evidence import _DIGEST_RE
-from src.vespercode.llm.prepared_request import PreparedModelRequestV1
-from src.vespercode.profiles.editable import _reject_coerced_schema_version
+from vespercode.contracts.evidence import _DIGEST_RE
+from vespercode.llm.prepared_request import PreparedModelRequestV1
+from vespercode.profiles.editable import _reject_coerced_schema_version
 
 # The closed bound on one model response text: the request-side 64 KiB
 # bound of SPEC §5.1 applied symmetrically to the response ("responses and

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from src.vespercode.canonical.json_v1 import (
+from vespercode.canonical.json_v1 import (
     CanonicalJsonErrorV1,
     CanonicalValueV1,
     canonical_json_bytes,

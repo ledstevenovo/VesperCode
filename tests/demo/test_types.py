@@ -28,13 +28,13 @@ pytest.importorskip("pydantic")
 
 from pydantic import ValidationError
 
-from src.vespercode.canonical.digest import domain_digest
-from src.vespercode.canonical.json_v1 import canonical_json_bytes
-from src.vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
-from src.vespercode.contracts.evidence import DigestV1
-from src.vespercode.contracts.optional import AbsentV1
-from src.vespercode.demo.scenario import FIXED_DEMO_SCENARIO_V1
-from src.vespercode.demo.types import (
+from vespercode.canonical.digest import domain_digest
+from vespercode.canonical.json_v1 import canonical_json_bytes
+from vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
+from vespercode.contracts.evidence import DigestV1
+from vespercode.contracts.optional import AbsentV1
+from vespercode.demo.scenario import FIXED_DEMO_SCENARIO_V1
+from vespercode.demo.types import (
     DemoDecisionV1,
     DemoScenarioV1,
     DemoSessionV1,

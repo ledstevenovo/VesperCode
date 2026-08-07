@@ -23,7 +23,7 @@ pytest.importorskip("pydantic")
 
 from pydantic import ValidationError
 
-from src.vespercode.audit.event import (
+from vespercode.audit.event import (
     ActionPayloadV1,
     AuditEventTypeV1,
     AuditEventV1,
@@ -36,7 +36,7 @@ from src.vespercode.audit.event import (
     redact_payload,
     serialize_payload,
 )
-from src.vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
+from vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
 
 _CREATED_AT = CanonicalTimestampV1("2026-08-06T09:00:00.000Z")
 

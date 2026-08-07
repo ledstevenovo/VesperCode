@@ -17,8 +17,8 @@ pytest.importorskip("pydantic")
 
 from pydantic import TypeAdapter, ValidationError
 
-from src.vespercode.canonical.path_v1 import CanonicalRelativePathV1
-from src.vespercode.contracts.location import (
+from vespercode.canonical.path_v1 import CanonicalRelativePathV1
+from vespercode.contracts.location import (
     DirectoryScopeV1,
     DisclosurePathScopeV1,
     FileScopeV1,

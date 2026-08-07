@@ -27,14 +27,14 @@ from pydantic import (
     model_validator,
 )
 
-from src.vespercode.candidate.patch_engine import ApplyCandidatePatchAction
-from src.vespercode.contracts.action import (
+from vespercode.candidate.patch_engine import ApplyCandidatePatchAction
+from vespercode.contracts.action import (
     CheckPlanIdV1,
     _instance_digest_for,
     _require_action_id,
 )
-from src.vespercode.contracts.evidence import _DIGEST_RE
-from src.vespercode.tools.file_actions import (
+from vespercode.contracts.evidence import _DIGEST_RE
+from vespercode.tools.file_actions import (
     ListFilesActionV1,
     ReadFileActionV1,
     SearchTextActionV1,

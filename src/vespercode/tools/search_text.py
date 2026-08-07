@@ -17,15 +17,15 @@ mutation, and cross-tool cursor reuse remain out of scope (GREEN-4).
 
 from __future__ import annotations
 
-from src.vespercode.canonical.json_v1 import CanonicalValueV1, canonical_json_bytes
-from src.vespercode.canonical.path_v1 import CanonicalRelativePathV1
-from src.vespercode.contracts.location import RepositoryLocationV1
-from src.vespercode.contracts.optional import AbsentV1, PresentV1
-from src.vespercode.tools.file_actions import (
+from vespercode.canonical.json_v1 import CanonicalValueV1, canonical_json_bytes
+from vespercode.canonical.path_v1 import CanonicalRelativePathV1
+from vespercode.contracts.location import RepositoryLocationV1
+from vespercode.contracts.optional import AbsentV1, PresentV1
+from vespercode.tools.file_actions import (
     SearchTextActionV1,
     search_text_query_digest,
 )
-from src.vespercode.tools.file_results import (
+from vespercode.tools.file_results import (
     RESULT_BODY_BYTES_V1,
     FileToolErrorV1,
     SearchTextCursorV1,
@@ -38,8 +38,8 @@ from src.vespercode.tools.file_results import (
     split_text_lines,
     validate_cursor_binding,
 )
-from src.vespercode.trees.readable import ReadableTreeV1
-from src.vespercode.trees.text_classifier import classify_supported_text
+from vespercode.trees.readable import ReadableTreeV1
+from vespercode.trees.text_classifier import classify_supported_text
 
 _EXCERPT_BYTES = 1024
 _UTF8_BOM = b"\xef\xbb\xbf"

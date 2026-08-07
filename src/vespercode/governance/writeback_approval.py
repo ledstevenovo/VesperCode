@@ -22,13 +22,13 @@ from typing import Literal, TypeAlias, cast
 
 from pydantic import BaseModel, ConfigDict, StrictStr
 
-from src.vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
-from src.vespercode.governance.writeback_decision import (
+from vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
+from vespercode.governance.writeback_decision import (
     FinalWritebackApprovalV1,
     FinalWritebackApprovalStatusV1,
 )
-from src.vespercode.governance.writeback_subject import FinalWritebackSubjectV1
-from src.vespercode.storage.connection import ControlDatabase
+from vespercode.governance.writeback_subject import FinalWritebackSubjectV1
+from vespercode.storage.connection import ControlDatabase
 
 ApprovalConsumptionKindV1: TypeAlias = Literal[
     "CONSUMED",

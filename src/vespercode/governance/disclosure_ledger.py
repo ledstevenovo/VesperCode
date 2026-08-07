@@ -28,20 +28,20 @@ from pydantic import (
     field_validator,
 )
 
-from src.vespercode.canonical.digest import domain_digest
-from src.vespercode.canonical.json_v1 import CanonicalValueV1, canonical_json_bytes
-from src.vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
-from src.vespercode.governance.disclosure_decision import (
+from vespercode.canonical.digest import domain_digest
+from vespercode.canonical.json_v1 import CanonicalValueV1, canonical_json_bytes
+from vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
+from vespercode.governance.disclosure_decision import (
     parse_categories,
     parse_scope_sequence,
 )
-from src.vespercode.governance.disclosure_scope import scope_matches
-from src.vespercode.governance.request_sources import (
+from vespercode.governance.disclosure_scope import scope_matches
+from vespercode.governance.request_sources import (
     RequestSourceV1,
     SourceProjectionV1,
 )
-from src.vespercode.storage.connection import ControlDatabase
-from src.vespercode.storage.idempotency import IdempotencyRepository
+from vespercode.storage.connection import ControlDatabase
+from vespercode.storage.idempotency import IdempotencyRepository
 
 _AUTHORIZE_EVENT_SCOPE = "disclosure_authorize"
 _DIGEST_RE = re.compile(r"[0-9a-f]{64}")

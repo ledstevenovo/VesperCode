@@ -28,10 +28,10 @@ pytest.importorskip("pydantic")
 # is copied verbatim); the module-level disable documents that card-exact
 # test per the T30.1 precedent.
 
-import src.vespercode.runs.request as request_module
-from src.vespercode.canonical.clock import FakeClockV1
-from src.vespercode.profiles.registry import build_profile_registry
-from src.vespercode.runs.request import (
+import vespercode.runs.request as request_module
+from vespercode.canonical.clock import FakeClockV1
+from vespercode.profiles.registry import build_profile_registry
+from vespercode.runs.request import (
     ConfigInvalidV1,
     RunCreatedV1,
     RunRequestService,
@@ -40,10 +40,10 @@ from src.vespercode.runs.request import (
     freeze_run_config,
     validate_request,
 )
-from src.vespercode.storage.connection import ControlDatabase, open_control_database
-from src.vespercode.storage.migration_engine import apply_migrations
-from src.vespercode.storage.migrations.v0001_run_wait import RUN_WAIT_V1_MIGRATION
-from src.vespercode.storage.run_repository import RunRepository
+from vespercode.storage.connection import ControlDatabase, open_control_database
+from vespercode.storage.migration_engine import apply_migrations
+from vespercode.storage.migrations.v0001_run_wait import RUN_WAIT_V1_MIGRATION
+from vespercode.storage.run_repository import RunRepository
 
 # The deterministic clock instant used for stable frozen_at values.
 _DETERMINISTIC_NOW = 1_784_885_415_123

@@ -31,25 +31,25 @@ from pydantic import (
     model_validator,
 )
 
-from src.vespercode.canonical.clock import ClockV1
-from src.vespercode.canonical.json_v1 import (
+from vespercode.canonical.clock import ClockV1
+from vespercode.canonical.json_v1 import (
     CanonicalJsonErrorV1,
     CanonicalValueV1,
     canonical_json_bytes,
 )
-from src.vespercode.canonical.path_v1 import (
+from vespercode.canonical.path_v1 import (
     CanonicalPathErrorV1,
     CanonicalRelativePathV1,
 )
-from src.vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
-from src.vespercode.contracts.action import ActionResultV1, CheckPlanIdV1
-from src.vespercode.contracts.evidence import StableControlErrorV1
-from src.vespercode.contracts.optional import (
+from vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
+from vespercode.contracts.action import ActionResultV1, CheckPlanIdV1
+from vespercode.contracts.evidence import StableControlErrorV1
+from vespercode.contracts.optional import (
     AbsentV1,
     OptionalCanonicalPathV1,
     PresentV1,
 )
-from src.vespercode.validation.check_result import CheckResultV1
+from vespercode.validation.check_result import CheckResultV1
 
 FEEDBACK_MAX_RECORDS_V1 = 10
 """SPEC 4.5: the next turn receives at most 10 feedback records."""

@@ -18,13 +18,13 @@ from pathlib import Path
 
 import pytest
 
-from src.vespercode.canonical.path_v1 import CanonicalRelativePathV1
-from src.vespercode.workspace.identity_win32 import (
+from vespercode.canonical.path_v1 import CanonicalRelativePathV1
+from vespercode.workspace.identity_win32 import (
     WorkspaceIdentityV1,
     WorkspaceObjectRejectedV1,
     resolve_workspace_identity,
 )
-from src.vespercode.workspace.object_win32 import inspect_workspace_object
+from vespercode.workspace.object_win32 import inspect_workspace_object
 
 pytestmark = pytest.mark.windows_integration
 

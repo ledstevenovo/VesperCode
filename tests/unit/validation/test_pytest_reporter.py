@@ -24,7 +24,7 @@ import pytest
 # fully).
 pytest.importorskip("pydantic")
 
-from src.vespercode.validation.pytest_evidence import (
+from vespercode.validation.pytest_evidence import (
     PytestEvidenceV1,
     PytestReportExpectationV1,
     parse_pytest_evidence,
@@ -349,7 +349,7 @@ def test_two_independent_object_failure_runs_fingerprint_identically(
     """
     import tempfile
 
-    from src.vespercode.validation.failure_fingerprint import (
+    from vespercode.validation.failure_fingerprint import (
         FingerprintNormalizationContextV1,
         build_failure_fingerprint,
     )

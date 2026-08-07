@@ -17,12 +17,12 @@ pytest.importorskip("fastapi")
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from src.vespercode.demo.app import (
+from vespercode.demo.app import (
     DEMO_CAPABILITY_KINDS_V1,
     DemoAppConfigV1,
     create_demo_app,
 )
-from src.vespercode.demo.scenario import FIXED_DEMO_SCENARIO_V1
+from vespercode.demo.scenario import FIXED_DEMO_SCENARIO_V1
 
 
 @pytest.fixture

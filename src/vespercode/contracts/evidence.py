@@ -27,7 +27,7 @@ from pydantic import (
     model_validator,
 )
 
-from src.vespercode.contracts.optional import AbsentV1, PresentV1
+from vespercode.contracts.optional import AbsentV1, PresentV1
 
 _DIGEST_RE = re.compile(r"[0-9a-f]{64}")
 

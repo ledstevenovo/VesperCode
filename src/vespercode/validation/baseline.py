@@ -59,17 +59,17 @@ from pydantic import (
     model_validator,
 )
 
-from src.vespercode.canonical.digest import domain_digest
-from src.vespercode.contracts.evidence import DigestV1, _DIGEST_RE
-from src.vespercode.contracts.optional import AbsentV1, PresentV1
-from src.vespercode.execution.cleanup import (
+from vespercode.canonical.digest import domain_digest
+from vespercode.contracts.evidence import DigestV1, _DIGEST_RE
+from vespercode.contracts.optional import AbsentV1, PresentV1
+from vespercode.execution.cleanup import (
     finalize_execution,
 )
-from src.vespercode.execution.docker_executor import (
+from vespercode.execution.docker_executor import (
     DockerExecutor,
     RawExecutionResultV1,
 )
-from src.vespercode.execution.docker_profile import (
+from vespercode.execution.docker_profile import (
     DockerExecutionProfileV1,
     ExecutionRequestV1,
     _FROZEN_CPUS,
@@ -79,37 +79,37 @@ from src.vespercode.execution.docker_profile import (
     _FROZEN_PIDS_LIMIT,
     _FROZEN_TMPFS_SIZE_BYTES,
 )
-from src.vespercode.execution.materialization import (
+from vespercode.execution.materialization import (
     MaterializationError,
     allocate_execution_root,
     materialize_candidate,
 )
-from src.vespercode.profiles.reference import (
+from vespercode.profiles.reference import (
     ReferenceProfileManifestV1,
     load_reference_profile,
 )
-from src.vespercode.trees.candidate import CandidateTreeV1, root_candidate_revision
-from src.vespercode.trees.content_store import ContentObjectStore
-from src.vespercode.trees.snapshot import SnapshotTreeV1
-from src.vespercode.validation.check_result import (
+from vespercode.trees.candidate import CandidateTreeV1, root_candidate_revision
+from vespercode.trees.content_store import ContentObjectStore
+from vespercode.trees.snapshot import SnapshotTreeV1
+from vespercode.validation.check_result import (
     CheckResultV1,
     _raw_evidence_digest,
     parse_mypy_result,
     parse_ruff_result,
 )
-from src.vespercode.validation.failure_fingerprint import (
+from vespercode.validation.failure_fingerprint import (
     FingerprintNormalizationContextV1,
     build_failure_fingerprint,
 )
-from src.vespercode.validation.pytest_evidence import (
+from vespercode.validation.pytest_evidence import (
     MAX_REPORT_EVENTS,
     PytestEvidenceV1,
     PytestReportExpectationV1,
     _extract_channel_document,
     parse_pytest_evidence,
 )
-from src.vespercode.validation.python_adapter import BaselineCheckPlanV1
-from src.vespercode.workspace.path_guard import protected_artifact_path
+from vespercode.validation.python_adapter import BaselineCheckPlanV1
+from vespercode.workspace.path_guard import protected_artifact_path
 
 # The frozen in-container workspace mount (SPEC §1.4.5).  Container-side
 # output can only ever reference this constant path, never the host

@@ -21,11 +21,11 @@ pytest.importorskip("pydantic")
 
 from pydantic import ValidationError
 
-from src.vespercode.canonical.digest import domain_digest
-from src.vespercode.canonical.json_v1 import CanonicalValueV1
-from src.vespercode.profiles.endpoints import UnknownEndpointError
-from src.vespercode.profiles.reference import ProfileIntegrityError
-from src.vespercode.profiles.registry import (
+from vespercode.canonical.digest import domain_digest
+from vespercode.canonical.json_v1 import CanonicalValueV1
+from vespercode.profiles.endpoints import UnknownEndpointError
+from vespercode.profiles.reference import ProfileIntegrityError
+from vespercode.profiles.registry import (
     DuplicateProfileError,
     ExtraProfileError,
     MissingProfileError,

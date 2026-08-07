@@ -25,9 +25,9 @@ from pydantic import (
     model_validator,
 )
 
-from src.vespercode.canonical.digest import domain_digest
-from src.vespercode.contracts.evidence import OptionalArtifactRefV1, _DIGEST_RE
-from src.vespercode.contracts.optional import AbsentV1, PresentV1
+from vespercode.canonical.digest import domain_digest
+from vespercode.contracts.evidence import OptionalArtifactRefV1, _DIGEST_RE
+from vespercode.contracts.optional import AbsentV1, PresentV1
 
 CheckPlanIdV1: TypeAlias = Literal["TARGET_TESTS", "FULL_PYTEST", "RUFF", "MYPY"]
 """SPEC §4.2.2 ``RunCheckAction`` check plans."""

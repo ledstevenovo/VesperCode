@@ -38,54 +38,54 @@ from fastapi.responses import JSONResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.testclient import TestClient
 
-from src.vespercode.candidate.final_diff import (
+from vespercode.candidate.final_diff import (
     FinalDiffEntryV1,
     FinalDiffPreimageV1,
     FinalDiffV1,
 )
-from src.vespercode.canonical.digest import domain_digest
-from src.vespercode.canonical.json_v1 import CanonicalValueV1
-from src.vespercode.canonical.path_v1 import CanonicalRelativePathV1
-from src.vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
-from src.vespercode.contracts.evidence import DigestV1
-from src.vespercode.contracts.optional import AbsentV1
-from src.vespercode.contracts.run import WaitDecisionV1
-from src.vespercode.credentials.port import CredentialStatusV1
-from src.vespercode.governance.disclosure_decision import (
+from vespercode.canonical.digest import domain_digest
+from vespercode.canonical.json_v1 import CanonicalValueV1
+from vespercode.canonical.path_v1 import CanonicalRelativePathV1
+from vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
+from vespercode.contracts.evidence import DigestV1
+from vespercode.contracts.optional import AbsentV1
+from vespercode.contracts.run import WaitDecisionV1
+from vespercode.credentials.port import CredentialStatusV1
+from vespercode.governance.disclosure_decision import (
     DisclosureDecisionResultV1,
 )
-from src.vespercode.governance.writeback_decision import (
+from vespercode.governance.writeback_decision import (
     DecideFinalWritebackV1,
     FinalWritebackApprovalV1,
     FinalWritebackDecisionResultV1,
     FinalWritebackDecisionKindV1,
 )
-from src.vespercode.governance.writeback_subject import (
+from vespercode.governance.writeback_subject import (
     FinalWritebackBindingV1,
     FinalWritebackSubjectV1,
     build_final_writeback_subject,
 )
-from src.vespercode.persistence.writeback import PersistenceResultV1
-from src.vespercode.profiles.reference import (
+from vespercode.persistence.writeback import PersistenceResultV1
+from vespercode.profiles.reference import (
     ReferenceProfileManifestV1,
     load_reference_profile,
 )
-from src.vespercode.audit.projection import RunVisibilityV1
-from src.vespercode.trees.text_classifier import TextMetadataV1
-from src.vespercode.web.app import RunVisibilitySequenceV1, create_local_app
-from src.vespercode.web.disclosure_workflow import DisclosureWaitFactsV1
-from src.vespercode.web.routes_writeback import FinalWritebackRouteInstallerV1
-from src.vespercode.web.run_workflows import (
+from vespercode.audit.projection import RunVisibilityV1
+from vespercode.trees.text_classifier import TextMetadataV1
+from vespercode.web.app import RunVisibilitySequenceV1, create_local_app
+from vespercode.web.disclosure_workflow import DisclosureWaitFactsV1
+from vespercode.web.routes_writeback import FinalWritebackRouteInstallerV1
+from vespercode.web.run_workflows import (
     RunGovernanceRouteInstallerV1,
     RunGovernanceWorkflowPortsV1,
 )
-from src.vespercode.web.run_lifecycle_workflow import (
+from vespercode.web.run_lifecycle_workflow import (
     CreateRunFormV1,
     RunCancellationResultV1,
     RunCreationResultV1,
     RunLifecycleWorkflowPortsV1,
 )
-from src.vespercode.web.security import (
+from vespercode.web.security import (
     LocalRequestErrorCodeV1,
     LocalSessionManager,
     LocalWebSecurityConfigV1,
@@ -95,7 +95,7 @@ from src.vespercode.web.security import (
     local_response_security_headers,
     verify_local_request,
 )
-from src.vespercode.web.writeback_workflow import (
+from vespercode.web.writeback_workflow import (
     ProductionFinalWritebackWorkflowV1,
     WritebackApprovedV1,
     WritebackReviewV1,

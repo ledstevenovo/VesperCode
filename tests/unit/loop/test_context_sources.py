@@ -20,10 +20,10 @@ import pytest
 # there (formal env runs it fully).
 pytest.importorskip("pydantic")
 
-from src.vespercode.canonical.path_v1 import CanonicalRelativePathV1
-from src.vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
-from src.vespercode.contracts.optional import AbsentV1, PresentV1
-from src.vespercode.loop.context_projection import (
+from vespercode.canonical.path_v1 import CanonicalRelativePathV1
+from vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
+from vespercode.contracts.optional import AbsentV1, PresentV1
+from vespercode.loop.context_projection import (
     ContextProjectionInputsV1,
     ContextProjectionV1,
     FileFragmentInputV1,
@@ -33,7 +33,7 @@ from src.vespercode.loop.context_projection import (
     ToolResultInputV1,
     build_context,
 )
-from src.vespercode.loop.feedback import (
+from vespercode.loop.feedback import (
     CheckFeedbackSourceV1,
     FeedbackRecordV1,
 )

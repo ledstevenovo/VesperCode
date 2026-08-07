@@ -20,28 +20,28 @@ import pytest
 # there (formal env runs it fully).
 pytest.importorskip("pydantic")
 
-from src.vespercode.canonical.digest import domain_digest
-from src.vespercode.canonical.path_v1 import CanonicalRelativePathV1
-from src.vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
-from src.vespercode.contracts.optional import AbsentV1, PresentV1
-from src.vespercode.governance.disclosure_scope import (
+from vespercode.canonical.digest import domain_digest
+from vespercode.canonical.path_v1 import CanonicalRelativePathV1
+from vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
+from vespercode.contracts.optional import AbsentV1, PresentV1
+from vespercode.governance.disclosure_scope import (
     DirectoryDisclosureScopeV1,
     DisclosureScopeSequenceV1,
     FileDisclosureScopeV1,
 )
-from src.vespercode.governance.disclosure_subject import (
+from vespercode.governance.disclosure_subject import (
     DisclosureGrantSubjectV1,
     DisclosureSubjectError,
     DisclosureSubjectRequestV1,
     build_disclosure_subject,
 )
-from src.vespercode.governance.request_sources import (
+from vespercode.governance.request_sources import (
     RequestSourceCategoryV1,
     RequestSourceV1,
     SourceProjectionV1,
 )
-from src.vespercode.profiles.endpoints import OpenAIEndpointV1
-from src.vespercode.profiles.llm import OpenAILLMProfileV1, load_llm_profile
+from vespercode.profiles.endpoints import OpenAIEndpointV1
+from vespercode.profiles.llm import OpenAILLMProfileV1, load_llm_profile
 
 _CREATED_AT = CanonicalTimestampV1("2026-08-05T09:00:00.000Z")
 _EXPIRES_AT = CanonicalTimestampV1("2026-08-05T09:05:00.000Z")

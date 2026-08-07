@@ -16,7 +16,7 @@ from typing import Annotated, Literal, TypeAlias
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from src.vespercode.canonical.path_v1 import CanonicalRelativePathV1
+from vespercode.canonical.path_v1 import CanonicalRelativePathV1
 
 
 class RootLocationV1(BaseModel):

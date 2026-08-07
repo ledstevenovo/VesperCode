@@ -31,7 +31,7 @@ from pydantic import (
     field_validator,
 )
 
-from src.vespercode.contracts.evidence import DigestV1, _DIGEST_RE
+from vespercode.contracts.evidence import DigestV1, _DIGEST_RE
 
 _DACL_SECURITY_INFORMATION: Final = 0x00000004
 _ACL_REVISION: Final = 2

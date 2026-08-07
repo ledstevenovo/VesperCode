@@ -26,24 +26,24 @@ pytest.importorskip("pydantic")
 
 from pydantic import TypeAdapter, ValidationError
 
-from src.vespercode.canonical.path_v1 import CanonicalRelativePathV1
-from src.vespercode.tools.file_actions import ReadFileActionV1
-from src.vespercode.tools.file_results import (
+from vespercode.canonical.path_v1 import CanonicalRelativePathV1
+from vespercode.tools.file_actions import ReadFileActionV1
+from vespercode.tools.file_results import (
     FileToolErrorV1,
     ReadFileResultV1,
     ReadFileSuccessV1,
 )
-from src.vespercode.tools.read_file import read_file
-from src.vespercode.trees.content_store import ContentObjectStore
-from src.vespercode.trees.readable import ReadableTreeV1
-from src.vespercode.trees.snapshot import (
+from vespercode.tools.read_file import read_file
+from vespercode.trees.content_store import ContentObjectStore
+from vespercode.trees.readable import ReadableTreeV1
+from vespercode.trees.snapshot import (
     AcceptedGitPreflightV1,
     SealedSnapshotInputFileV1,
     SnapshotTreeV1,
     create_snapshot,
 )
-from src.vespercode.trees.text_classifier import classify_supported_text
-from src.vespercode.workspace.git_preflight import GitPreflightResultV1
+from vespercode.trees.text_classifier import classify_supported_text
+from vespercode.workspace.git_preflight import GitPreflightResultV1
 
 _UTF8_BOM = b"\xef\xbb\xbf"
 _SEALED_TEXT = "line1\nline2\nline3\n"

@@ -20,11 +20,11 @@ pytest.importorskip("pydantic")
 
 from pydantic import ValidationError
 
-from src.vespercode.canonical.path_v1 import (
+from vespercode.canonical.path_v1 import (
     CanonicalPathErrorV1,
     CanonicalRelativePathV1,
 )
-from src.vespercode.profiles.editable import (
+from vespercode.profiles.editable import (
     EditableOperationV1,
     EditablePathPolicyV1,
     digest_editable_path_policy,

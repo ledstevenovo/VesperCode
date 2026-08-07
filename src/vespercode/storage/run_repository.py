@@ -16,9 +16,9 @@ from typing import Literal, cast
 
 from pydantic import BaseModel, ConfigDict, StrictStr, model_validator
 
-from src.vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
-from src.vespercode.contracts.evidence import DigestV1
-from src.vespercode.contracts.run import (
+from vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
+from vespercode.contracts.evidence import DigestV1
+from vespercode.contracts.run import (
     OptionalRunPhaseV1,
     RunStateV1,
     RunStatus,
@@ -26,8 +26,8 @@ from src.vespercode.contracts.run import (
     WaitDecisionV1,
     WaitKind,
 )
-from src.vespercode.runs.lifecycle import LifecycleRules
-from src.vespercode.storage.connection import (
+from vespercode.runs.lifecycle import LifecycleRules
+from vespercode.storage.connection import (
     ControlDatabase,
     ControlTransactionV1,
 )

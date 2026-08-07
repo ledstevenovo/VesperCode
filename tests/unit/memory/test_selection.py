@@ -19,8 +19,8 @@ pytest.importorskip("pydantic")
 
 from pydantic import ValidationError
 
-from src.vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
-from src.vespercode.memory.entry import (
+from vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
+from vespercode.memory.entry import (
     KnownFailureSourceV1,
     MemoryEntryV1,
     RunSummarySourceV1,
@@ -28,7 +28,7 @@ from src.vespercode.memory.entry import (
     UserVisibleTextSourceV1,
     canonical_memory_byte_count,
 )
-from src.vespercode.memory.selection import (
+from vespercode.memory.selection import (
     FROZEN_MEMORY_KIND_PRIORITY_V1,
     MemorySelectionQueryV1,
     select_memory,

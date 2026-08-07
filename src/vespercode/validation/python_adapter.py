@@ -37,17 +37,17 @@ from pydantic import (
     model_validator,
 )
 
-from src.vespercode.canonical.digest import domain_digest
-from src.vespercode.canonical.json_v1 import CanonicalValueV1
-from src.vespercode.canonical.path_v1 import CanonicalRelativePathV1
-from src.vespercode.contracts.evidence import _DIGEST_RE
-from src.vespercode.contracts.optional import AbsentV1, PresentV1
-from src.vespercode.execution.docker_profile import ExecutionArgumentSequenceV1
-from src.vespercode.profiles.reference import (
+from vespercode.canonical.digest import domain_digest
+from vespercode.canonical.json_v1 import CanonicalValueV1
+from vespercode.canonical.path_v1 import CanonicalRelativePathV1
+from vespercode.contracts.evidence import _DIGEST_RE
+from vespercode.contracts.optional import AbsentV1, PresentV1
+from vespercode.execution.docker_profile import ExecutionArgumentSequenceV1
+from vespercode.profiles.reference import (
     ReferenceProfileManifestV1,
     _compute_manifest_digest,
 )
-from src.vespercode.trees.snapshot import (
+from vespercode.trees.snapshot import (
     SnapshotDirectoryEntryV1,
     SnapshotFileEntryV1,
     SnapshotTreeV1,

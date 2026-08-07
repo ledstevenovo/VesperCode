@@ -14,7 +14,7 @@ import pytest
 
 pytest.importorskip("pydantic")
 
-from src.vespercode.loop.feedback_consumption import (
+from vespercode.loop.feedback_consumption import (
     FeedbackRepositoryV1,
     consume_feedback,
 )

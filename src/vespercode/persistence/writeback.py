@@ -34,42 +34,42 @@ from pydantic import (
     model_validator,
 )
 
-from src.vespercode.candidate.final_diff import FinalDiffV1
-from src.vespercode.canonical.path_v1 import CanonicalRelativePathV1
-from src.vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
-from src.vespercode.contracts.evidence import ArtifactRefV1, DigestV1
-from src.vespercode.contracts.optional import AbsentV1, PresentV1
-from src.vespercode.governance.writeback_approval import (
+from vespercode.candidate.final_diff import FinalDiffV1
+from vespercode.canonical.path_v1 import CanonicalRelativePathV1
+from vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
+from vespercode.contracts.evidence import ArtifactRefV1, DigestV1
+from vespercode.contracts.optional import AbsentV1, PresentV1
+from vespercode.governance.writeback_approval import (
     ApprovalNotConsumableErrorV1,
     ConsumeWritebackApprovalV1,
     WritebackApprovalRepository,
     verify_consumable,
 )
-from src.vespercode.governance.writeback_decision import FinalWritebackApprovalV1
-from src.vespercode.governance.writeback_subject import FinalWritebackSubjectV1
-from src.vespercode.persistence.artifacts import (
+from vespercode.governance.writeback_decision import FinalWritebackApprovalV1
+from vespercode.governance.writeback_subject import FinalWritebackSubjectV1
+from vespercode.persistence.artifacts import (
     PersistenceArtifactAclError,
     PersistenceArtifactStoreV1,
 )
-from src.vespercode.persistence.path_record import (
+from vespercode.persistence.path_record import (
     PersistencePathRecordV1,
     PersistencePreimageV1,
     PersistencePostimageV1,
     WriteOperationV1,
     object_identity_digest,
 )
-from src.vespercode.persistence.transaction import (
+from vespercode.persistence.transaction import (
     PersistencePathRecordRepositoryV1,
     PersistenceTransactionRepositoryV1,
     PersistenceTransactionV1,
     TransactionTransitionErrorV1,
 )
-from src.vespercode.profiles.editable import EditablePathPolicyV1
-from src.vespercode.trees.snapshot import SnapshotFileEntryV1, SnapshotTreeV1
-from src.vespercode.workspace.identity_win32 import WorkspaceIdentityV1
-from src.vespercode.workspace.identity_win32 import WorkspaceObjectRejectedV1
-from src.vespercode.workspace.mutex_win32 import WorkspaceLeaseV1, WorkspaceMutex
-from src.vespercode.workspace.object_win32 import inspect_workspace_object
+from vespercode.profiles.editable import EditablePathPolicyV1
+from vespercode.trees.snapshot import SnapshotFileEntryV1, SnapshotTreeV1
+from vespercode.workspace.identity_win32 import WorkspaceIdentityV1
+from vespercode.workspace.identity_win32 import WorkspaceObjectRejectedV1
+from vespercode.workspace.mutex_win32 import WorkspaceLeaseV1, WorkspaceMutex
+from vespercode.workspace.object_win32 import inspect_workspace_object
 
 PersistenceOutcomeV1 = Literal["SUCCEEDED", "STOPPED", "RECOVERY_REQUIRED"]
 """SPEC 4.6 output: the closed coordinator outcomes."""

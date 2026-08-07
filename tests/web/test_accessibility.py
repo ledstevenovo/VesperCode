@@ -24,63 +24,63 @@ pytest.importorskip("fastapi")
 
 from fastapi.testclient import TestClient
 
-from src.vespercode.audit.projection import RunVisibilityV1
-from src.vespercode.candidate.final_diff import (
+from vespercode.audit.projection import RunVisibilityV1
+from vespercode.candidate.final_diff import (
     FinalDiffEntryV1,
     FinalDiffPreimageV1,
     FinalDiffV1,
 )
-from src.vespercode.canonical.digest import domain_digest
-from src.vespercode.canonical.json_v1 import CanonicalValueV1
-from src.vespercode.canonical.path_v1 import CanonicalRelativePathV1
-from src.vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
-from src.vespercode.contracts.optional import AbsentV1, PresentV1
-from src.vespercode.credentials.port import CredentialStatusV1
-from src.vespercode.governance.disclosure_scope import (
+from vespercode.canonical.digest import domain_digest
+from vespercode.canonical.json_v1 import CanonicalValueV1
+from vespercode.canonical.path_v1 import CanonicalRelativePathV1
+from vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
+from vespercode.contracts.optional import AbsentV1, PresentV1
+from vespercode.credentials.port import CredentialStatusV1
+from vespercode.governance.disclosure_scope import (
     DirectoryDisclosureScopeV1,
     DisclosureScopeSequenceV1,
 )
-from src.vespercode.governance.disclosure_subject import (
+from vespercode.governance.disclosure_subject import (
     DisclosureGrantSubjectV1,
     DisclosureSubjectRequestV1,
     build_disclosure_subject,
 )
-from src.vespercode.governance.request_sources import (
+from vespercode.governance.request_sources import (
     RequestSourceV1,
     SourceProjectionV1,
 )
-from src.vespercode.governance.writeback_subject import (
+from vespercode.governance.writeback_subject import (
     FinalWritebackBindingV1,
     build_final_writeback_subject,
 )
-from src.vespercode.profiles.endpoints import (
+from vespercode.profiles.endpoints import (
     OpenAIEndpointRegistry,
     OpenAIEndpointV1,
 )
-from src.vespercode.profiles.llm import OpenAILLMProfileV1, load_llm_profile
-from src.vespercode.profiles.reference import (
+from vespercode.profiles.llm import OpenAILLMProfileV1, load_llm_profile
+from vespercode.profiles.reference import (
     ReferenceProfileManifestV1,
     load_reference_profile,
 )
-from src.vespercode.trees.text_classifier import TextMetadataV1
-from src.vespercode.web.app import (
+from vespercode.trees.text_classifier import TextMetadataV1
+from vespercode.web.app import (
     LocalShellPortsV1,
     RunVisibilitySequenceV1,
     create_local_app,
 )
-from src.vespercode.web.disclosure_workflow import DisclosureWaitFactsV1
-from src.vespercode.web.run_lifecycle_workflow import (
+from vespercode.web.disclosure_workflow import DisclosureWaitFactsV1
+from vespercode.web.run_lifecycle_workflow import (
     CreateRunFormV1,
     RunCancellationResultV1,
     RunCreationResultV1,
     RunLifecycleWorkflowPortsV1,
 )
-from src.vespercode.web.run_workflows import (
+from vespercode.web.run_workflows import (
     RunGovernanceRouteInstallerV1,
     RunGovernanceWorkflowPortsV1,
 )
-from src.vespercode.web.security import LocalWebSecurityConfigV1
-from src.vespercode.web.writeback_workflow import (
+from vespercode.web.security import LocalWebSecurityConfigV1
+from vespercode.web.writeback_workflow import (
     WritebackReviewV1,
 )
 
@@ -301,7 +301,7 @@ class FakeDisclosurePortsV1:
         return self._waits.get(run_id)
 
     def decide(self, command: Any) -> Any:
-        from src.vespercode.governance.disclosure_decision import (
+        from vespercode.governance.disclosure_decision import (
             DisclosureDecisionResultV1,
         )
 
@@ -323,7 +323,7 @@ class FakeWritebackPortsV1:
         return self._reviews.get(run_id)
 
     def decide(self, command: Any) -> Any:
-        from src.vespercode.web.writeback_workflow import FinalWritebackOutcomeV1
+        from vespercode.web.writeback_workflow import FinalWritebackOutcomeV1
 
         return FinalWritebackOutcomeV1(kind="REJECTED", message="rejected")
 

@@ -21,8 +21,8 @@ pytest.importorskip("pydantic")
 
 from pydantic import ValidationError
 
-from src.vespercode.contracts.optional import AbsentV1, PresentV1
-from src.vespercode.execution.docker_profile import (
+from vespercode.contracts.optional import AbsentV1, PresentV1
+from vespercode.execution.docker_profile import (
     DockerDaemonUnavailableErrorV1,
     DockerEnvironmentV1,
     DockerExecutionProfileV1,
@@ -33,7 +33,7 @@ from src.vespercode.execution.docker_profile import (
     ExecutionReadinessResultV1,
     ExecutionRequestV1,
 )
-from src.vespercode.profiles.reference import (
+from vespercode.profiles.reference import (
     ReferenceProfileManifestV1,
     load_reference_profile,
 )

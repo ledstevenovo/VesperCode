@@ -17,7 +17,7 @@ pytest.importorskip("pydantic")
 
 from pydantic import TypeAdapter, ValidationError
 
-from src.vespercode.contracts.evidence import (
+from vespercode.contracts.evidence import (
     ArtifactRefV1,
     DigestV1,
     EvidenceEnvelopeV1,

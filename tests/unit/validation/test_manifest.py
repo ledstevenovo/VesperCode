@@ -17,10 +17,10 @@ import pytest
 # cleanly there instead of failing at collection (formal env runs it fully).
 pytest.importorskip("pydantic")
 
-from src.vespercode.contracts.evidence import DigestV1
-from src.vespercode.contracts.optional import AbsentV1, PresentV1
-from src.vespercode.trees.snapshot import SnapshotTreeV1
-from src.vespercode.validation.baseline import (
+from vespercode.contracts.evidence import DigestV1
+from vespercode.contracts.optional import AbsentV1, PresentV1
+from vespercode.trees.snapshot import SnapshotTreeV1
+from vespercode.validation.baseline import (
     BaselineTestRecordV1,
     PassingBaselineV1,
     RuntimeCompatibleV1,
@@ -28,7 +28,7 @@ from src.vespercode.validation.baseline import (
     compute_protected_artifact_set_digest,
     compute_resource_parameters_digest,
 )
-from src.vespercode.validation.manifest import (
+from vespercode.validation.manifest import (
     ManifestBindingsV1,
     ManifestError,
     ValidationManifestV1,
@@ -123,17 +123,17 @@ def _passing_baseline(
 
 def _sealed_snapshot() -> SnapshotTreeV1:
     """One minimal sealed Snapshot for the protected-artifact digest."""
-    from src.vespercode.canonical.path_v1 import CanonicalRelativePathV1
-    from src.vespercode.trees.content_store import (
+    from vespercode.canonical.path_v1 import CanonicalRelativePathV1
+    from vespercode.trees.content_store import (
         ContentObjectRefV1,
         ContentObjectStore,
     )
-    from src.vespercode.trees.snapshot import (
+    from vespercode.trees.snapshot import (
         SnapshotDirectoryEntryV1,
         SnapshotFileEntryV1,
         _root_digest,
     )
-    from src.vespercode.trees.text_classifier import TextMetadataV1
+    from vespercode.trees.text_classifier import TextMetadataV1
 
     store = ContentObjectStore()
     pyproject_ref = store.put(b"x")

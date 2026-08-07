@@ -15,12 +15,12 @@ pytest.importorskip("fastapi")
 
 from fastapi.testclient import TestClient
 
-from src.vespercode.demo.app import (
+from vespercode.demo.app import (
     DEMO_CAPABILITY_KINDS_V1,
     DemoAppConfigV1,
     create_demo_app,
 )
-from src.vespercode.demo.healthcheck import main
+from vespercode.demo.healthcheck import main
 
 
 @pytest.fixture
@@ -66,7 +66,7 @@ def test_healthcheck_main_fails_closed_on_missing_template(
     cannot render (health validates assets)."""
     monkeypatch.setenv("PORT", "8080")
     monkeypatch.setattr(
-        "src.vespercode.demo.app._TEMPLATES_DIRECTORY",
+        "vespercode.demo.app._TEMPLATES_DIRECTORY",
         "does-not-exist",
     )
     assert main() == 1
@@ -79,8 +79,8 @@ def test_healthcheck_main_fails_closed_on_registry_drift(
     capability outside the exact fixed simulation set."""
     monkeypatch.setenv("PORT", "8080")
 
-    from src.vespercode.demo import healthcheck as healthcheck_module
-    from src.vespercode.demo import app as demo_app_module
+    from vespercode.demo import healthcheck as healthcheck_module
+    from vespercode.demo import app as demo_app_module
 
     original = demo_app_module.create_demo_app
 

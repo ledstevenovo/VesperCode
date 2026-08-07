@@ -24,22 +24,22 @@ import pytest
 # cleanly there (formal env runs it fully).
 pytest.importorskip("pydantic")
 
-from src.vespercode.llm.base import ModelResponse
-from src.vespercode.llm.mock_adapter import MockLLMAdapter, MockScriptMismatchError
-from src.vespercode.llm.prepared_request import (
+from vespercode.llm.base import ModelResponse
+from vespercode.llm.mock_adapter import MockLLMAdapter, MockScriptMismatchError
+from vespercode.llm.prepared_request import (
     MockPreparedModelRequestV1,
     prepare_mock_request,
 )
-from src.vespercode.profiles.llm import (
+from vespercode.profiles.llm import (
     MockLLMProfileV1,
     load_llm_profile,
 )
-from src.vespercode.governance.request_sources import (
+from vespercode.governance.request_sources import (
     RequestContentSegmentV1,
     RequestMessageV1,
 )
-from src.vespercode.canonical.path_v1 import CanonicalRelativePathV1
-from src.vespercode.contracts.optional import AbsentV1, PresentV1
+from vespercode.canonical.path_v1 import CanonicalRelativePathV1
+from vespercode.contracts.optional import AbsentV1, PresentV1
 
 _MOCK_BUILTIN = (
     Path(__file__).resolve().parents[3]
@@ -151,8 +151,8 @@ def test_mock_generate_rejects_unknown_script_identity() -> None:
 
 def _foreign_request_dict(profile: MockLLMProfileV1) -> dict[str, object]:
     """One digest-consistent request bound to a foreign script identity."""
-    from src.vespercode.canonical.digest import domain_digest
-    from src.vespercode.canonical.json_v1 import CanonicalValueV1, canonical_json_bytes
+    from vespercode.canonical.digest import domain_digest
+    from vespercode.canonical.json_v1 import CanonicalValueV1, canonical_json_bytes
 
     messages = _messages()
     canonical_messages = tuple(

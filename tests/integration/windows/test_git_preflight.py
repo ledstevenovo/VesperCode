@@ -21,12 +21,12 @@ from typing import Final
 
 import pytest
 
-from src.vespercode.profiles.registry import build_profile_registry
-from src.vespercode.workspace.git_preflight import (
+from vespercode.profiles.registry import build_profile_registry
+from vespercode.workspace.git_preflight import (
     GitPreflightResultV1,
     run_git_snapshot_prechecks,
 )
-from src.vespercode.workspace.identity_win32 import resolve_workspace_identity
+from vespercode.workspace.identity_win32 import resolve_workspace_identity
 
 pytestmark = pytest.mark.windows_integration
 

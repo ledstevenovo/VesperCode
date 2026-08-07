@@ -23,51 +23,51 @@ import pytest
 # there (formal env runs it fully).
 pytest.importorskip("pydantic")
 
-from src.vespercode.canonical.path_v1 import CanonicalRelativePathV1
-from src.vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
-from src.vespercode.contracts.evidence import DigestV1
-from src.vespercode.contracts.optional import AbsentV1, PresentV1
-from src.vespercode.contracts.run import WaitContextV1, WaitDecisionV1
-from src.vespercode.governance.disclosure_decision import (
+from vespercode.canonical.path_v1 import CanonicalRelativePathV1
+from vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
+from vespercode.contracts.evidence import DigestV1
+from vespercode.contracts.optional import AbsentV1, PresentV1
+from vespercode.contracts.run import WaitContextV1, WaitDecisionV1
+from vespercode.governance.disclosure_decision import (
     DecideDisclosureGrantV1,
     DisclosureDecisionServiceV1,
 )
-from src.vespercode.governance.disclosure_ledger import (
+from vespercode.governance.disclosure_ledger import (
     AuthorizePreparedRequestV1,
     DisclosureLedger,
 )
-from src.vespercode.governance.disclosure_scope import (
+from vespercode.governance.disclosure_scope import (
     DirectoryDisclosureScopeV1,
     DisclosureScopeSequenceV1,
 )
-from src.vespercode.governance.disclosure_subject import (
+from vespercode.governance.disclosure_subject import (
     DisclosureGrantSubjectV1,
     DisclosureSubjectRequestV1,
     build_disclosure_subject,
 )
-from src.vespercode.governance.request_sources import (
+from vespercode.governance.request_sources import (
     RequestSourceCategoryV1,
     RequestSourceV1,
     SourceProjectionV1,
 )
-from src.vespercode.profiles.endpoints import OpenAIEndpointV1
-from src.vespercode.profiles.llm import OpenAILLMProfileV1, load_llm_profile
-from src.vespercode.storage.connection import (
+from vespercode.profiles.endpoints import OpenAIEndpointV1
+from vespercode.profiles.llm import OpenAILLMProfileV1, load_llm_profile
+from vespercode.storage.connection import (
     ControlDatabase,
     open_control_database,
 )
-from src.vespercode.storage.migration_engine import apply_migrations
-from src.vespercode.storage.migrations.v0001_run_wait import RUN_WAIT_V1_MIGRATION
-from src.vespercode.storage.migrations.v0002_idempotency import (
+from vespercode.storage.migration_engine import apply_migrations
+from vespercode.storage.migrations.v0001_run_wait import RUN_WAIT_V1_MIGRATION
+from vespercode.storage.migrations.v0002_idempotency import (
     IDEMPOTENCY_V1_MIGRATION,
 )
-from src.vespercode.storage.migrations.v0003_disclosure_grants import (
+from vespercode.storage.migrations.v0003_disclosure_grants import (
     DISCLOSURE_GRANTS_V1_MIGRATION,
 )
-from src.vespercode.storage.migrations.v0004_disclosure_authorizations import (
+from vespercode.storage.migrations.v0004_disclosure_authorizations import (
     DISCLOSURE_AUTHORIZATIONS_V1_MIGRATION,
 )
-from src.vespercode.storage.run_repository import RunRepository
+from vespercode.storage.run_repository import RunRepository
 
 _CREATED_AT = CanonicalTimestampV1("2026-08-05T09:00:00.000Z")
 _EXPIRES_AT = CanonicalTimestampV1("2026-08-05T09:05:00.000Z")

@@ -17,8 +17,8 @@ import pytest
 # cleanly there (formal env runs it fully).
 pytest.importorskip("pydantic")
 
-from src.vespercode.contracts.run import RunPhase
-from src.vespercode.loop.restart import (
+from vespercode.contracts.run import RunPhase
+from vespercode.loop.restart import (
     RestartDispositionV1,
     RestartGuard,
     RestartStopReasonV1,

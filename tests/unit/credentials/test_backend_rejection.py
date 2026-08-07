@@ -15,7 +15,7 @@ import pytest
 # cleanly there instead of failing at collection (formal env runs it fully).
 pytest.importorskip("pydantic")
 
-from src.vespercode.credentials.port import (
+from vespercode.credentials.port import (
     CredentialBackendProbeV1,
     CredentialBackendUnsafeError,
     CredentialErrorV1,
@@ -24,7 +24,7 @@ from src.vespercode.credentials.port import (
     CredentialStoreMutationV1,
     SecretCredentialV1,
 )
-from src.vespercode.credentials.service import CredentialService
+from vespercode.credentials.service import CredentialService
 
 
 class _UnsafeCredentialStore:

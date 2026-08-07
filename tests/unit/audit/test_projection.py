@@ -26,7 +26,7 @@ pytest.importorskip("pydantic")
 
 from pydantic import ValidationError
 
-from src.vespercode.audit.event import (
+from vespercode.audit.event import (
     AuditEventV1,
     AuditPayloadV1,
     CheckResultPayloadV1,
@@ -34,16 +34,16 @@ from src.vespercode.audit.event import (
     RecoveryPayloadV1,
     StopEvidencePayloadV1,
 )
-from src.vespercode.audit.projection import (
+from vespercode.audit.projection import (
     ProjectionValidationErrorV1,
     RunVisibilityV1,
     build_run_visibility,
 )
-from src.vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
-from src.vespercode.contracts.evidence import DigestV1
-from src.vespercode.contracts.optional import AbsentV1, PresentV1
-from src.vespercode.contracts.run import RunPhase, RunStatus, WaitContextV1
-from src.vespercode.storage.run_repository import RunRecordV1
+from vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
+from vespercode.contracts.evidence import DigestV1
+from vespercode.contracts.optional import AbsentV1, PresentV1
+from vespercode.contracts.run import RunPhase, RunStatus, WaitContextV1
+from vespercode.storage.run_repository import RunRecordV1
 
 _CREATED_AT = CanonicalTimestampV1("2026-08-06T09:00:00.000Z")
 _EARLIER_AT = CanonicalTimestampV1("2026-08-06T08:00:00.000Z")

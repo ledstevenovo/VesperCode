@@ -16,16 +16,16 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Mapping, Sequence, TypeVar
 
-from src.vespercode.profiles.editable import (
+from vespercode.profiles.editable import (
     EditablePathPolicyV1,
     load_editable_path_policy,
 )
-from src.vespercode.profiles.endpoints import (
+from vespercode.profiles.endpoints import (
     OpenAIEndpointRegistry,
     OpenAIEndpointV1,
 )
-from src.vespercode.profiles.llm import LLMProfileManifestV1, load_llm_profile
-from src.vespercode.profiles.reference import (
+from vespercode.profiles.llm import LLMProfileManifestV1, load_llm_profile
+from vespercode.profiles.reference import (
     ReferenceProfileManifestV1,
     load_reference_profile,
 )

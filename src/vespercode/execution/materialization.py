@@ -41,12 +41,12 @@ from pydantic import (
     model_validator,
 )
 
-from src.vespercode.canonical.digest import domain_digest
-from src.vespercode.canonical.json_v1 import CanonicalValueV1
-from src.vespercode.canonical.path_v1 import CanonicalRelativePathV1
-from src.vespercode.contracts.evidence import _DIGEST_RE
-from src.vespercode.trees.candidate import CandidateOverlayEntryV1, CandidateTreeV1
-from src.vespercode.trees.content_store import ContentIntegrityError
+from vespercode.canonical.digest import domain_digest
+from vespercode.canonical.json_v1 import CanonicalValueV1
+from vespercode.canonical.path_v1 import CanonicalRelativePathV1
+from vespercode.contracts.evidence import _DIGEST_RE
+from vespercode.trees.candidate import CandidateOverlayEntryV1, CandidateTreeV1
+from vespercode.trees.content_store import ContentIntegrityError
 
 MaterializationErrorCodeV1 = Literal[
     "OBJECT_MISSING",

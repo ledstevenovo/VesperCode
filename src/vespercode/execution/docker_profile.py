@@ -29,9 +29,9 @@ from pydantic import (
     model_validator,
 )
 
-from src.vespercode.contracts.evidence import _DIGEST_RE
-from src.vespercode.contracts.optional import AbsentV1, PresentV1
-from src.vespercode.profiles.reference import (
+from vespercode.contracts.evidence import _DIGEST_RE
+from vespercode.contracts.optional import AbsentV1, PresentV1
+from vespercode.profiles.reference import (
     ReferenceProfileManifestV1,
     _compute_manifest_digest,
 )

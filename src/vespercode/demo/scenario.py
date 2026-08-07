@@ -15,10 +15,10 @@ from __future__ import annotations
 
 from typing import Final
 
-from src.vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
-from src.vespercode.contracts.evidence import DigestV1
-from src.vespercode.contracts.optional import AbsentV1, PresentV1
-from src.vespercode.demo.types import (
+from vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
+from vespercode.contracts.evidence import DigestV1
+from vespercode.contracts.optional import AbsentV1, PresentV1
+from vespercode.demo.types import (
     DemoDecisionV1,
     DemoScenarioV1,
     DemoStepResultV1,

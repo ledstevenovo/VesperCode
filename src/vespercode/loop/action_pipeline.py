@@ -29,8 +29,8 @@ from pydantic import (
     model_validator,
 )
 
-from src.vespercode.canonical.clock import ClockV1
-from src.vespercode.contracts.action import (
+from vespercode.canonical.clock import ClockV1
+from vespercode.contracts.action import (
     ActionErrorV1,
     ActionResultV1 as ContractsActionResultV1,
     ActionInstanceV1 as ContractsActionInstanceV1,
@@ -38,46 +38,46 @@ from src.vespercode.contracts.action import (
     PolicyDecisionV1,
     SharedActionV1,
 )
-from src.vespercode.contracts.evidence import (
+from vespercode.contracts.evidence import (
     StableControlErrorV1,
     _DIGEST_RE,
 )
-from src.vespercode.contracts.optional import AbsentV1, PresentV1
-from src.vespercode.contracts.run import RunPhase
-from src.vespercode.governance.policy import (
+from vespercode.contracts.optional import AbsentV1, PresentV1
+from vespercode.contracts.run import RunPhase
+from vespercode.governance.policy import (
     PatchPathFactV1,
     PolicyContextV1,
     PolicyEngine,
     governance_policy_digest,
     policy_context_digest,
 )
-from src.vespercode.llm.base import ModelResponse
-from src.vespercode.loop.action_binding import (
+from vespercode.llm.base import ModelResponse
+from vespercode.loop.action_binding import (
     ActionIdGeneratorV1,
     bind_action,
 )
-from src.vespercode.loop.action_parser import ActionParser
-from src.vespercode.loop.agent_actions import ActionInstanceV1, ParseErrorV1
-from src.vespercode.loop.feedback import (
+from vespercode.loop.action_parser import ActionParser
+from vespercode.loop.agent_actions import ActionInstanceV1, ParseErrorV1
+from vespercode.loop.feedback import (
     FeedbackRecordSequenceV1,
     build_feedback,
 )
-from src.vespercode.loop.feedback_consumption import (
+from vespercode.loop.feedback_consumption import (
     FeedbackAppendResultV1,
     FeedbackConsumptionResultV1,
     FeedbackReferenceSequenceV1,
     FeedbackRepositoryV1,
     consume_feedback,
 )
-from src.vespercode.storage.connection import ControlDatabase
-from src.vespercode.tools.dispatcher import (
+from vespercode.storage.connection import ControlDatabase
+from vespercode.tools.dispatcher import (
     ActionResultV1,
     ArtifactStorePortV1,
     DispatchContextV1,
     ToolDispatcher,
     ToolPortsV1,
 )
-from src.vespercode.trees.readable import ReadableTreeV1
+from vespercode.trees.readable import ReadableTreeV1
 
 _ACTION_TYPES_V1: frozenset[str] = frozenset(
     {

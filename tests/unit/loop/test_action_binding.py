@@ -15,17 +15,17 @@ from __future__ import annotations
 
 import pytest
 
-from src.vespercode.canonical.digest import domain_digest
-from src.vespercode.contracts.location import RootLocationV1
-from src.vespercode.contracts.optional import AbsentV1
-from src.vespercode.loop.action_binding import (
+from vespercode.canonical.digest import domain_digest
+from vespercode.contracts.location import RootLocationV1
+from vespercode.contracts.optional import AbsentV1
+from vespercode.loop.action_binding import (
     ActionBindingErrorV1,
     ActionIdGeneratorV1,
     bind_action,
     reset_issued_action_ids,
 )
-from src.vespercode.loop.agent_actions import AgentAction, RunCheckActionV1
-from src.vespercode.tools.file_actions import ListFilesActionV1
+from vespercode.loop.agent_actions import AgentAction, RunCheckActionV1
+from vespercode.tools.file_actions import ListFilesActionV1
 
 _DIGEST = "1" * 64
 

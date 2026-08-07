@@ -22,7 +22,7 @@ pytest.importorskip("pydantic")
 
 from pydantic import TypeAdapter, ValidationError
 
-from src.vespercode.trees.text_classifier import (
+from vespercode.trees.text_classifier import (
     NonTextFileV1,
     SupportedTextFileV1,
     TextFileClassificationV1,

@@ -21,11 +21,11 @@ pytest.importorskip("fastapi")
 
 from fastapi.testclient import TestClient
 
-from src.vespercode.audit.projection import RunVisibilityV1
-from src.vespercode.contracts.optional import AbsentV1
-from src.vespercode.credentials.port import CredentialStatusV1
-from src.vespercode.web import app as app_module
-from src.vespercode.web.app import (
+from vespercode.audit.projection import RunVisibilityV1
+from vespercode.contracts.optional import AbsentV1
+from vespercode.credentials.port import CredentialStatusV1
+from vespercode.web import app as app_module
+from vespercode.web.app import (
     LocalRouteInstallerSequenceV1,
     LocalShellPortsV1,
     PackagedWebAssetErrorV1,
@@ -34,7 +34,7 @@ from src.vespercode.web.app import (
     install_packaged_web_assets,
     load_packaged_web_asset,
 )
-from src.vespercode.web.security import LocalWebSecurityConfigV1
+from vespercode.web.security import LocalWebSecurityConfigV1
 
 _PINNED_SHA256 = "e209dda5c8235479f3166defc7750e1dbcd5a5c1808b7792fc2e6733768fb447"
 _PINNED_BYTE_LENGTH = 50917
@@ -99,7 +99,7 @@ def test_packaged_asset_loads_with_its_exact_declared_identity() -> None:
 def test_packaged_asset_loads_through_package_resources_only() -> None:
     """The asset bytes come from the package resource itself — the file
     inside the package, never a CDN or a runtime download."""
-    resource = importlib.resources.files("src.vespercode.web").joinpath(
+    resource = importlib.resources.files("vespercode.web").joinpath(
         "static", "htmx.min.js"
     )
     assert resource.is_file()

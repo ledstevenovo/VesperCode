@@ -20,8 +20,8 @@ from __future__ import annotations
 import hashlib
 from typing import Final
 
-from src.vespercode.llm.base import ModelResponse
-from src.vespercode.llm.prepared_request import MockPreparedModelRequestV1
+from vespercode.llm.base import ModelResponse
+from vespercode.llm.prepared_request import MockPreparedModelRequestV1
 
 # The frozen built-in Mock script resource (T06.3 packaged identity):
 # script_digest is the §0.1 MockScriptV1 identity over the exact

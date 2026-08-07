@@ -12,20 +12,20 @@ classification (GREEN-4).
 from __future__ import annotations
 
 
-from src.vespercode.persistence.recovery_apply import (
+from vespercode.persistence.recovery_apply import (
     ApplyRecoveryV1,
     RecoveryApplyService,
     RecoveryResultV1,
 )
-from src.vespercode.persistence.recovery_preview import (
+from vespercode.persistence.recovery_preview import (
     RecoveryPreviewErrorV1,
     RecoveryPreviewService,
     RecoveryPreviewV1,
 )
-from src.vespercode.persistence.transaction import (
+from vespercode.persistence.transaction import (
     PersistenceTransactionRepositoryV1,
 )
-from src.vespercode.workspace.identity_win32 import WorkspaceIdentityV1
+from vespercode.workspace.identity_win32 import WorkspaceIdentityV1
 
 
 class RecoveryService:

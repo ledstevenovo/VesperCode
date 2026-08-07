@@ -24,10 +24,10 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, StrictStr, field_validator, model_validator
 
-from src.vespercode.canonical.digest import domain_digest
-from src.vespercode.canonical.json_v1 import CanonicalValueV1
-from src.vespercode.canonical.path_v1 import CanonicalRelativePathV1
-from src.vespercode.contracts.evidence import _DIGEST_RE
+from vespercode.canonical.digest import domain_digest
+from vespercode.canonical.json_v1 import CanonicalValueV1
+from vespercode.canonical.path_v1 import CanonicalRelativePathV1
+from vespercode.contracts.evidence import _DIGEST_RE
 
 EditableOperationV1 = Literal["CREATE", "REPLACE"]
 """SPEC §1.4.1: the closed set of Candidate operations on editable paths."""

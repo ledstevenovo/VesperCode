@@ -25,14 +25,14 @@ import pytest
 # cleanly there instead of failing at collection (formal env runs it fully).
 pytest.importorskip("pydantic")
 
-from src.vespercode.validation.baseline import (
+from vespercode.validation.baseline import (
     BaselineEvidenceBundleV1,
     RuntimeBaselineBlockedV1,
     RuntimeCompatibleV1,
     evaluate_runtime_compatibility,
 )
-from src.vespercode.validation.check_result import CheckResultV1
-from src.vespercode.validation.pytest_evidence import PytestEvidenceV1
+from vespercode.validation.check_result import CheckResultV1
+from vespercode.validation.pytest_evidence import PytestEvidenceV1
 
 _ADD = "tests/test_calculator.py::test_add_returns_sum"
 _MULTIPLY = "tests/test_calculator.py::test_multiply_returns_product"

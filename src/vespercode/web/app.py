@@ -30,9 +30,9 @@ from jinja2 import Environment, FileSystemLoader
 from markupsafe import Markup
 from pydantic import BaseModel, ConfigDict, Strict, StrictStr
 
-from src.vespercode.audit.projection import RunVisibilityV1, StateLabelV1
-from src.vespercode.credentials.port import CredentialStatusV1
-from src.vespercode.web.security import (
+from vespercode.audit.projection import RunVisibilityV1, StateLabelV1
+from vespercode.credentials.port import CredentialStatusV1
+from vespercode.web.security import (
     LocalRequestErrorCodeV1,
     LocalSessionManager,
     LocalWebSecurityConfigV1,
@@ -141,7 +141,7 @@ def load_packaged_web_asset(
     """
     if name != "htmx.min.js":
         raise PackagedWebAssetErrorV1("unknown packaged web asset")
-    resource = importlib.resources.files("src.vespercode.web").joinpath(
+    resource = importlib.resources.files("vespercode.web").joinpath(
         "static", "htmx.min.js"
     )
     if not resource.is_file():

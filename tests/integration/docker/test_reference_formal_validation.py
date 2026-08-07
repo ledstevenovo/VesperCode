@@ -34,16 +34,16 @@ import pytest
 
 pytest.importorskip("pydantic")
 
-from src.vespercode.candidate.final_diff import recompute_final_diff
-from src.vespercode.candidate.identity import bind_revision_identity
-from src.vespercode.canonical.path_v1 import CanonicalRelativePathV1
-from src.vespercode.contracts.evidence import DigestV1
-from src.vespercode.contracts.optional import AbsentV1, PresentV1
-from src.vespercode.execution.docker_executor import DockerExecutor
-from src.vespercode.profiles.reference import load_reference_profile
-from src.vespercode.trees.candidate import root_candidate_revision
-from src.vespercode.trees.content_store import ContentObjectRefV1, ContentObjectStore
-from src.vespercode.trees.snapshot import (
+from vespercode.candidate.final_diff import recompute_final_diff
+from vespercode.candidate.identity import bind_revision_identity
+from vespercode.canonical.path_v1 import CanonicalRelativePathV1
+from vespercode.contracts.evidence import DigestV1
+from vespercode.contracts.optional import AbsentV1, PresentV1
+from vespercode.execution.docker_executor import DockerExecutor
+from vespercode.profiles.reference import load_reference_profile
+from vespercode.trees.candidate import root_candidate_revision
+from vespercode.trees.content_store import ContentObjectRefV1, ContentObjectStore
+from vespercode.trees.snapshot import (
     SealedSnapshotInputFileV1,
     SnapshotDirectoryEntryV1,
     SnapshotEntryV1,
@@ -51,8 +51,8 @@ from src.vespercode.trees.snapshot import (
     SnapshotTreeV1,
     _root_digest,
 )
-from src.vespercode.trees.text_classifier import TextMetadataV1, classify_supported_text
-from src.vespercode.validation.baseline import (
+from vespercode.trees.text_classifier import TextMetadataV1, classify_supported_text
+from vespercode.validation.baseline import (
     BaselineTestRecordV1,
     PassingBaselineV1,
     RuntimeCompatibleV1,
@@ -60,12 +60,12 @@ from src.vespercode.validation.baseline import (
     compute_protected_artifact_set_digest,
     compute_resource_parameters_digest,
 )
-from src.vespercode.validation.formal_execution import execute_formal_plan
-from src.vespercode.validation.formal_plan import (
+from vespercode.validation.formal_execution import execute_formal_plan
+from vespercode.validation.formal_plan import (
     FormalValidationPlanV1,
     build_formal_validation_plan,
 )
-from src.vespercode.validation.manifest import (
+from vespercode.validation.manifest import (
     ManifestBindingsV1,
     ValidationManifestV1,
     create_validation_manifest,

@@ -24,31 +24,31 @@ import pytest
 # module skips cleanly there (formal env runs it fully).
 pytest.importorskip("pydantic")
 
-from src.vespercode.audit.event import AuditEventTypeV1
-from src.vespercode.audit.repository import (
+from vespercode.audit.event import AuditEventTypeV1
+from vespercode.audit.repository import (
     AppendAuditEventV1,
     AuditPageRequestV1,
     AuditRepository,
 )
-from src.vespercode.audit.retention import AuditRetentionResultV1, apply_audit_retention
-from src.vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
-from src.vespercode.storage.connection import (
+from vespercode.audit.retention import AuditRetentionResultV1, apply_audit_retention
+from vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
+from vespercode.storage.connection import (
     ControlDatabase,
     open_control_database,
 )
-from src.vespercode.storage.migration_engine import apply_migrations
-from src.vespercode.storage.migrations.v0001_run_wait import RUN_WAIT_V1_MIGRATION
-from src.vespercode.storage.migrations.v0002_idempotency import (
+from vespercode.storage.migration_engine import apply_migrations
+from vespercode.storage.migrations.v0001_run_wait import RUN_WAIT_V1_MIGRATION
+from vespercode.storage.migrations.v0002_idempotency import (
     IDEMPOTENCY_V1_MIGRATION,
 )
-from src.vespercode.storage.migrations.v0003_disclosure_grants import (
+from vespercode.storage.migrations.v0003_disclosure_grants import (
     DISCLOSURE_GRANTS_V1_MIGRATION,
 )
-from src.vespercode.storage.migrations.v0004_disclosure_authorizations import (
+from vespercode.storage.migrations.v0004_disclosure_authorizations import (
     DISCLOSURE_AUTHORIZATIONS_V1_MIGRATION,
 )
-from src.vespercode.storage.migrations.v0005_memory import MEMORY_V1_MIGRATION
-from src.vespercode.storage.migrations.v0006_audit import AUDIT_V1_MIGRATION
+from vespercode.storage.migrations.v0005_memory import MEMORY_V1_MIGRATION
+from vespercode.storage.migrations.v0006_audit import AUDIT_V1_MIGRATION
 
 # day_31 = 2026-08-06T09:00:00.000Z; the strict cutoff is exactly 30 days
 # earlier; old facts are 36 days earlier; fresh facts are 5 days earlier.

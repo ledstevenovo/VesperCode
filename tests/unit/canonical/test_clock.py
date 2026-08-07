@@ -6,8 +6,8 @@ import time
 
 import pytest
 
-from src.vespercode.canonical.clock import ClockV1, FakeClockV1, SystemClockV1
-from src.vespercode.canonical.timestamp_v1 import (
+from vespercode.canonical.clock import ClockV1, FakeClockV1, SystemClockV1
+from vespercode.canonical.timestamp_v1 import (
     CanonicalTimestampErrorV1,
     CanonicalTimestampV1,
 )

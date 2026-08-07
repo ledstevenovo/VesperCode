@@ -22,8 +22,8 @@ from fastapi.responses import JSONResponse
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
-from src.vespercode.canonical.clock import FakeClockV1
-from src.vespercode.web.security import (
+from vespercode.canonical.clock import FakeClockV1
+from vespercode.web.security import (
     LocalRequestErrorCodeV1,
     LocalSessionErrorV1,
     LocalSessionManager,

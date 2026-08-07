@@ -24,8 +24,8 @@ from pydantic import (
     model_validator,
 )
 
-from src.vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
-from src.vespercode.loop.progress import ProgressDecisionV1
+from vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
+from vespercode.loop.progress import ProgressDecisionV1
 
 LoopStopReasonV1: TypeAlias = Literal[
     "REPEATED_ACTION_LIMIT",

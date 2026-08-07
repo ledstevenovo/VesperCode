@@ -24,18 +24,18 @@ from typing import Annotated, Literal, TypeAlias
 
 from pydantic import BaseModel, ConfigDict, Field, Strict, StrictStr
 
-from src.vespercode.canonical.digest import domain_digest
-from src.vespercode.canonical.json_v1 import CanonicalJsonErrorV1, canonical_json_bytes
-from src.vespercode.loop.feedback import (
+from vespercode.canonical.digest import domain_digest
+from vespercode.canonical.json_v1 import CanonicalJsonErrorV1, canonical_json_bytes
+from vespercode.loop.feedback import (
     FeedbackRecordSequenceV1,
     FeedbackRecordV1,
     serialize_feedback_record,
     serialize_feedback_source,
 )
-from src.vespercode.storage.connection import (
+from vespercode.storage.connection import (
     ControlDatabase,
 )
-from src.vespercode.storage.idempotency import IdempotencyRepository
+from vespercode.storage.idempotency import IdempotencyRepository
 
 FEEDBACK_ID_MAX_BYTES_V1 = 128
 """One bounded feedback reference (mirrors the record id bound)."""

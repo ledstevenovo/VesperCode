@@ -26,12 +26,12 @@ import pytest
 
 pytest.importorskip("pydantic")
 
-from src.vespercode.canonical.path_v1 import CanonicalRelativePathV1
-from src.vespercode.contracts.optional import AbsentV1, PresentV1
-from src.vespercode.execution.docker_executor import DockerExecutor
-from src.vespercode.profiles.reference import load_reference_profile
-from src.vespercode.trees.content_store import ContentObjectRefV1, ContentObjectStore
-from src.vespercode.trees.snapshot import (
+from vespercode.canonical.path_v1 import CanonicalRelativePathV1
+from vespercode.contracts.optional import AbsentV1, PresentV1
+from vespercode.execution.docker_executor import DockerExecutor
+from vespercode.profiles.reference import load_reference_profile
+from vespercode.trees.content_store import ContentObjectRefV1, ContentObjectStore
+from vespercode.trees.snapshot import (
     SealedSnapshotInputFileV1,
     SnapshotDirectoryEntryV1,
     SnapshotEntryV1,
@@ -39,12 +39,12 @@ from src.vespercode.trees.snapshot import (
     SnapshotTreeV1,
     _root_digest,
 )
-from src.vespercode.trees.text_classifier import TextMetadataV1, classify_supported_text
-from src.vespercode.validation.baseline import (
+from vespercode.trees.text_classifier import TextMetadataV1, classify_supported_text
+from vespercode.validation.baseline import (
     BaselineBlockedV1,
     run_baseline,
 )
-from src.vespercode.validation.python_adapter import (
+from vespercode.validation.python_adapter import (
     BaselineCheckPlanV1,
     PythonProjectAdapterV1,
     SupportedProjectV1,

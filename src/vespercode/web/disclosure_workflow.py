@@ -24,17 +24,17 @@ from jinja2 import Environment, FileSystemLoader
 from markupsafe import Markup
 from pydantic import BaseModel, ConfigDict, Field, Strict, StrictBool, StrictStr
 
-from src.vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
-from src.vespercode.contracts.evidence import DigestV1
-from src.vespercode.contracts.run import WaitDecisionChoiceV1, WaitDecisionV1
-from src.vespercode.governance.disclosure_decision import (
+from vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
+from vespercode.contracts.evidence import DigestV1
+from vespercode.contracts.run import WaitDecisionChoiceV1, WaitDecisionV1
+from vespercode.governance.disclosure_decision import (
     DecideDisclosureGrantV1,
     DisclosureDecisionResultV1,
 )
-from src.vespercode.governance.disclosure_scope import DisclosurePathScopeV1
-from src.vespercode.governance.disclosure_subject import DisclosureGrantSubjectV1
-from src.vespercode.governance.request_sources import RequestSourceCategoryV1
-from src.vespercode.profiles.endpoints import OpenAIEndpointV1
+from vespercode.governance.disclosure_scope import DisclosurePathScopeV1
+from vespercode.governance.disclosure_subject import DisclosureGrantSubjectV1
+from vespercode.governance.request_sources import RequestSourceCategoryV1
+from vespercode.profiles.endpoints import OpenAIEndpointV1
 
 _TEMPLATES_DIRECTORY: Final[str] = str(Path(__file__).resolve().parent / "templates")
 """The packaged template directory (the summary fragment shares it)."""

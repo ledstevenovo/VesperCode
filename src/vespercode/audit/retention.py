@@ -16,8 +16,8 @@ from __future__ import annotations
 
 from pydantic import BaseModel, ConfigDict
 
-from src.vespercode.audit.repository import AuditRepository
-from src.vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
+from vespercode.audit.repository import AuditRepository
+from vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
 
 RETENTION_DAYS = 30
 """SPEC 4.7/5.6: the default audit retention window in days."""

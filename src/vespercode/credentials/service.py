@@ -15,8 +15,8 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Literal
 
-from src.vespercode.contracts.optional import AbsentV1, PresentV1
-from src.vespercode.credentials.port import (
+from vespercode.contracts.optional import AbsentV1, PresentV1
+from vespercode.credentials.port import (
     OPENAI_PROVIDER,
     CredentialContractError,
     CredentialErrorCodeV1,

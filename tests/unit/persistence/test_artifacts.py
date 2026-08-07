@@ -27,7 +27,7 @@ pytest.importorskip("pydantic")
 
 from ctypes import wintypes
 
-from src.vespercode.persistence.artifacts import (
+from vespercode.persistence.artifacts import (
     PersistenceArtifactAclError,
     PersistenceArtifactIntegrityError,
     PersistenceArtifactKindV1,

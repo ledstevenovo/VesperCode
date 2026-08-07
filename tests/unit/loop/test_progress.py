@@ -20,7 +20,7 @@ pytest.importorskip("pydantic")
 
 from pydantic import ValidationError
 
-from src.vespercode.loop.progress import (
+from vespercode.loop.progress import (
     MAX_PROGRESS_WINDOW_PRIORS_V1,
     ProgressEvaluator,
     ProgressObservationV1,

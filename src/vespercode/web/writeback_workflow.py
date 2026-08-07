@@ -22,19 +22,19 @@ from jinja2 import Environment, FileSystemLoader
 from markupsafe import Markup
 from pydantic import BaseModel, ConfigDict, StrictBool, StrictStr
 
-from src.vespercode.candidate.final_diff import FinalDiffV1
-from src.vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
-from src.vespercode.contracts.evidence import DigestV1
-from src.vespercode.contracts.run import WaitDecisionChoiceV1, WaitDecisionV1
-from src.vespercode.governance.writeback_decision import (
+from vespercode.candidate.final_diff import FinalDiffV1
+from vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
+from vespercode.contracts.evidence import DigestV1
+from vespercode.contracts.run import WaitDecisionChoiceV1, WaitDecisionV1
+from vespercode.governance.writeback_decision import (
     DecideFinalWritebackV1,
     FinalWritebackApprovalV1,
     FinalWritebackDecisionKindV1,
     FinalWritebackDecisionResultV1,
 )
-from src.vespercode.governance.writeback_subject import FinalWritebackSubjectV1
-from src.vespercode.persistence.writeback import PersistenceResultV1
-from src.vespercode.web.disclosure_workflow import WorkflowIdentityPortV1
+from vespercode.governance.writeback_subject import FinalWritebackSubjectV1
+from vespercode.persistence.writeback import PersistenceResultV1
+from vespercode.web.disclosure_workflow import WorkflowIdentityPortV1
 
 _TEMPLATES_DIRECTORY: Final[str] = str(Path(__file__).resolve().parent / "templates")
 """The packaged template directory (the review page extends base.html)."""

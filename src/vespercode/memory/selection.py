@@ -17,12 +17,12 @@ from __future__ import annotations
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
 
-from src.vespercode.memory.entry import (
+from vespercode.memory.entry import (
     MemoryEntryV1,
     MemoryKindV1,
     canonical_memory_byte_count,
 )
-from src.vespercode.memory.repository import (
+from vespercode.memory.repository import (
     MemoryEntrySequenceV1,
     MemoryRepository,
 )

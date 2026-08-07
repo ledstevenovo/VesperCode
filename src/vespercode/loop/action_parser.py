@@ -22,12 +22,12 @@ from typing import Any
 
 from pydantic import ValidationError
 
-from src.vespercode.canonical.path_v1 import (
+from vespercode.canonical.path_v1 import (
     CanonicalPathErrorV1,
     CanonicalRelativePathV1,
 )
-from src.vespercode.llm.base import ModelResponse
-from src.vespercode.loop.agent_actions import (
+from vespercode.llm.base import ModelResponse
+from vespercode.loop.agent_actions import (
     AgentAction,
     ParseErrorCodeV1,
     ParseErrorV1,

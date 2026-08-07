@@ -37,8 +37,8 @@ from pydantic import (
     model_validator,
 )
 
-from src.vespercode.execution.docker_profile import ExecutionRequestV1
-from src.vespercode.execution.materialization import MaterializedCandidateV1
+from vespercode.execution.docker_profile import ExecutionRequestV1
+from vespercode.execution.materialization import MaterializedCandidateV1
 
 # The frozen per-check deadline (SPEC §4.2.6: the target-check sublimit
 # ceiling of 120 s); shorter deadlines can be injected on the executor for

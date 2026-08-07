@@ -34,14 +34,14 @@ from pydantic import (
     model_validator,
 )
 
-from src.vespercode.canonical.path_v1 import CanonicalRelativePathV1
-from src.vespercode.profiles.reference import ReferenceProfileManifestV1
-from src.vespercode.workspace.identity_win32 import (
+from vespercode.canonical.path_v1 import CanonicalRelativePathV1
+from vespercode.profiles.reference import ReferenceProfileManifestV1
+from vespercode.workspace.identity_win32 import (
     WorkspaceIdentityV1,
     WorkspaceObjectRejectedV1,
     WorkspaceObjectRejectionCodeV1,
 )
-from src.vespercode.workspace.object_win32 import (
+from vespercode.workspace.object_win32 import (
     FinalObjectIdentityV1,
     WorkspaceObjectKindV1,
     inspect_workspace_object,

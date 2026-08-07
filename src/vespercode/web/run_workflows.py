@@ -14,15 +14,15 @@ from dataclasses import dataclass
 
 from fastapi import FastAPI
 
-from src.vespercode.web.disclosure_workflow import (
+from vespercode.web.disclosure_workflow import (
     DisclosureDecisionWorkflowPortV1,
     WorkflowIdentityPortV1,
 )
-from src.vespercode.web.routes_disclosure import DisclosureRouteInstallerV1
-from src.vespercode.web.routes_runs import RunLifecycleRouteInstallerV1
-from src.vespercode.web.routes_writeback import FinalWritebackRouteInstallerV1
-from src.vespercode.web.run_lifecycle_workflow import RunLifecycleWorkflowPortsV1
-from src.vespercode.web.writeback_workflow import FinalWritebackWorkflowPortV1
+from vespercode.web.routes_disclosure import DisclosureRouteInstallerV1
+from vespercode.web.routes_runs import RunLifecycleRouteInstallerV1
+from vespercode.web.routes_writeback import FinalWritebackRouteInstallerV1
+from vespercode.web.run_lifecycle_workflow import RunLifecycleWorkflowPortsV1
+from vespercode.web.writeback_workflow import FinalWritebackWorkflowPortV1
 
 
 @dataclass(frozen=True)

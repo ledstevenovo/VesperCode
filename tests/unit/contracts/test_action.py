@@ -17,8 +17,8 @@ pytest.importorskip("pydantic")
 
 from pydantic import TypeAdapter, ValidationError
 
-from src.vespercode.canonical.digest import domain_digest
-from src.vespercode.contracts.action import (
+from vespercode.canonical.digest import domain_digest
+from vespercode.contracts.action import (
     ActionErrorV1,
     ActionInstanceV1,
     ActionResultV1,

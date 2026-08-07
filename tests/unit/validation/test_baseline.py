@@ -28,14 +28,14 @@ import pytest
 # cleanly there instead of failing at collection (formal env runs it fully).
 pytest.importorskip("pydantic")
 
-from src.vespercode.canonical.path_v1 import CanonicalRelativePathV1
-from src.vespercode.contracts.evidence import ArtifactRefV1, DigestV1
-from src.vespercode.contracts.optional import AbsentV1, PresentV1
-from src.vespercode.execution.cleanup import ExecutionCleanupResultV1
-from src.vespercode.execution.docker_executor import DockerExecutor
-from src.vespercode.profiles.reference import load_reference_profile
-from src.vespercode.trees.content_store import ContentObjectRefV1, ContentObjectStore
-from src.vespercode.trees.snapshot import (
+from vespercode.canonical.path_v1 import CanonicalRelativePathV1
+from vespercode.contracts.evidence import ArtifactRefV1, DigestV1
+from vespercode.contracts.optional import AbsentV1, PresentV1
+from vespercode.execution.cleanup import ExecutionCleanupResultV1
+from vespercode.execution.docker_executor import DockerExecutor
+from vespercode.profiles.reference import load_reference_profile
+from vespercode.trees.content_store import ContentObjectRefV1, ContentObjectStore
+from vespercode.trees.snapshot import (
     SealedSnapshotInputFileV1,
     SnapshotDirectoryEntryV1,
     SnapshotEntryV1,
@@ -43,19 +43,19 @@ from src.vespercode.trees.snapshot import (
     SnapshotTreeV1,
     _root_digest,
 )
-from src.vespercode.trees.text_classifier import TextMetadataV1, classify_supported_text
-from src.vespercode.validation import baseline as baseline_module
-from src.vespercode.validation.baseline import (
+from vespercode.trees.text_classifier import TextMetadataV1, classify_supported_text
+from vespercode.validation import baseline as baseline_module
+from vespercode.validation.baseline import (
     BaselineBlockedV1,
     PassingBaselineV1,
     run_baseline,
 )
-from src.vespercode.validation.manifest import (
+from vespercode.validation.manifest import (
     ManifestBindingsV1,
     ValidationManifestV1,
     create_validation_manifest,
 )
-from src.vespercode.validation.python_adapter import (
+from vespercode.validation.python_adapter import (
     BaselineCheckPlanV1,
     PythonProjectAdapterV1,
     TargetTestIdSequenceV1,
@@ -1147,7 +1147,7 @@ def test_baseline_publication_matrix(
 
 
 def test_blocked_baseline_requires_exact_violation_presence() -> None:
-    from src.vespercode.validation.baseline import (
+    from vespercode.validation.baseline import (
         BaselineBlockedV1,
         BaselineBlockedReasonV1,
         RuntimeProfileViolationKindV1,
@@ -1190,7 +1190,7 @@ def test_blocked_baseline_requires_exact_violation_presence() -> None:
 
 
 def test_baseline_record_state_table_is_closed() -> None:
-    from src.vespercode.validation.baseline import BaselineTestRecordV1
+    from vespercode.validation.baseline import BaselineTestRecordV1
     from pydantic import ValidationError
 
     target = "tests/test_calculator.py::test_add_returns_sum"
@@ -1245,7 +1245,7 @@ def test_baseline_record_state_table_is_closed() -> None:
 
 
 def test_runtime_compatible_result_is_closed() -> None:
-    from src.vespercode.validation.baseline import (
+    from vespercode.validation.baseline import (
         RuntimeBaselineBlockedV1,
         RuntimeCompatibleV1,
     )
@@ -1288,7 +1288,7 @@ def test_passing_baseline_rejects_coerced_profile_version(
 ) -> None:
     """The published identity fields reject bool/float coercion (the
     T06.1/T05.1 strict-scalar convention, pinned on the closed schema)."""
-    from src.vespercode.validation.baseline import PassingBaselineV1
+    from vespercode.validation.baseline import PassingBaselineV1
     from pydantic import ValidationError
 
     result = run_baseline(

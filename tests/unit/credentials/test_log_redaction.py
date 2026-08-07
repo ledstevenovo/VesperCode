@@ -20,9 +20,9 @@ import pytest
 # cleanly there instead of failing at collection (formal env runs it fully).
 pytest.importorskip("pydantic")
 
-from src.vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
-from src.vespercode.contracts.optional import AbsentV1, PresentV1
-from src.vespercode.credentials.port import (
+from vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
+from vespercode.contracts.optional import AbsentV1, PresentV1
+from vespercode.credentials.port import (
     CredentialBackendProbeV1,
     CredentialBackendUnsafeError,
     CredentialClearFailedError,
@@ -35,7 +35,7 @@ from src.vespercode.credentials.port import (
     CredentialStoreMutationV1,
     SecretCredentialV1,
 )
-from src.vespercode.credentials.service import CredentialService
+from vespercode.credentials.service import CredentialService
 
 _SECRET_VALUE = "inert-sentinel-value"
 

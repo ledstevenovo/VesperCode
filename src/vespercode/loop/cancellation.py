@@ -16,7 +16,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, StrictStr
 
-from src.vespercode.storage.run_repository import RunRecordV1
+from vespercode.storage.run_repository import RunRecordV1
 
 
 class CancellationDecisionV1(BaseModel):

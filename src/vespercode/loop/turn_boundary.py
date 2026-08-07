@@ -27,10 +27,10 @@ from typing import Annotated, Literal, Protocol, TypeAlias, cast
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
 
-from src.vespercode.canonical.clock import ClockV1, SystemClockV1
-from src.vespercode.contracts.optional import PresentV1
-from src.vespercode.contracts.run import RunStateV1
-from src.vespercode.storage.connection import (
+from vespercode.canonical.clock import ClockV1, SystemClockV1
+from vespercode.contracts.optional import PresentV1
+from vespercode.contracts.run import RunStateV1
+from vespercode.storage.connection import (
     ControlDatabase,
     ControlTransactionV1,
 )

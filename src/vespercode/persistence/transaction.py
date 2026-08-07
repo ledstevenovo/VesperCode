@@ -24,16 +24,16 @@ from pydantic import (
     model_validator,
 )
 
-from src.vespercode.canonical.path_v1 import CanonicalRelativePathV1
-from src.vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
-from src.vespercode.contracts.evidence import (
+from vespercode.canonical.path_v1 import CanonicalRelativePathV1
+from vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
+from vespercode.contracts.evidence import (
     ArtifactRefV1,
     DigestV1,
     OptionalDigestV1,
     _DIGEST_RE,
 )
-from src.vespercode.contracts.optional import AbsentV1, PresentV1
-from src.vespercode.persistence.path_record import (
+from vespercode.contracts.optional import AbsentV1, PresentV1
+from vespercode.persistence.path_record import (
     DuplicatePersistencePath,
     PathWriteStateV1,
     PersistencePathRecordSequenceV1,
@@ -43,8 +43,8 @@ from src.vespercode.persistence.path_record import (
     PersistenceTransactionStateV1,
     WriteOperationV1,
 )
-from src.vespercode.trees.text_classifier import TextMetadataV1
-from src.vespercode.storage.connection import (
+from vespercode.trees.text_classifier import TextMetadataV1
+from vespercode.storage.connection import (
     ControlDatabase,
     ControlTransactionV1,
 )

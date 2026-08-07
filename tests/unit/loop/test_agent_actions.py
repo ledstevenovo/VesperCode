@@ -14,8 +14,8 @@ from __future__ import annotations
 import pytest
 from pydantic import ValidationError
 
-from src.vespercode.canonical.digest import domain_digest
-from src.vespercode.loop.agent_actions import (
+from vespercode.canonical.digest import domain_digest
+from vespercode.loop.agent_actions import (
     ActionInstanceV1,
     AgentAction,
     ParseErrorV1,
@@ -110,11 +110,11 @@ def test_propose_completion_action_is_closed() -> None:
 
 
 def test_agent_action_union_is_closed_to_six_types() -> None:
-    from src.vespercode.candidate.patch_engine import ApplyCandidatePatchAction
-    from src.vespercode.canonical.path_v1 import CanonicalRelativePathV1
-    from src.vespercode.contracts.location import RootLocationV1
-    from src.vespercode.contracts.optional import AbsentV1
-    from src.vespercode.tools.file_actions import (
+    from vespercode.candidate.patch_engine import ApplyCandidatePatchAction
+    from vespercode.canonical.path_v1 import CanonicalRelativePathV1
+    from vespercode.contracts.location import RootLocationV1
+    from vespercode.contracts.optional import AbsentV1
+    from vespercode.tools.file_actions import (
         ListFilesActionV1,
         ReadFileActionV1,
         SearchTextActionV1,
@@ -170,9 +170,9 @@ def test_agent_action_union_is_closed_to_six_types() -> None:
 
 
 def test_action_instance_binds_identity() -> None:
-    from src.vespercode.contracts.location import RootLocationV1
-    from src.vespercode.contracts.optional import AbsentV1
-    from src.vespercode.tools.file_actions import ListFilesActionV1
+    from vespercode.contracts.location import RootLocationV1
+    from vespercode.contracts.optional import AbsentV1
+    from vespercode.tools.file_actions import ListFilesActionV1
 
     action = ListFilesActionV1(
         schema_version=1,

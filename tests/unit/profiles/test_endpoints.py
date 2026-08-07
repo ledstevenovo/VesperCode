@@ -18,7 +18,7 @@ pytest.importorskip("pydantic")
 
 from pydantic import ValidationError
 
-from src.vespercode.profiles.endpoints import (
+from vespercode.profiles.endpoints import (
     OpenAIEndpointRegistry,
     OpenAIEndpointV1,
     UnknownEndpointError,

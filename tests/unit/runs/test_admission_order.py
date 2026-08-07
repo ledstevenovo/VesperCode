@@ -17,7 +17,7 @@ import pytest
 # cleanly there (formal env runs it fully).
 pytest.importorskip("pydantic")
 
-from src.vespercode.runs.admission import AdmissionCoordinator
+from vespercode.runs.admission import AdmissionCoordinator
 from tests.unit.runs.test_admission import (
     EXPECTED_ORDER,
     RecordingAdmissionPorts,

@@ -22,8 +22,8 @@ import hashlib
 
 import pytest
 
-from src.vespercode.llm.base import ModelResponse
-from src.vespercode.loop.action_parser import ActionParser
+from vespercode.llm.base import ModelResponse
+from vespercode.loop.action_parser import ActionParser
 
 _DIGEST = "1" * 64
 

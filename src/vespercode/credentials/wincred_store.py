@@ -25,9 +25,9 @@ import keyring.backends.Windows as keyring_windows
 import pywintypes  # type: ignore[import-untyped]
 import win32cred  # type: ignore[import-untyped]
 
-from src.vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
-from src.vespercode.contracts.optional import AbsentV1, PresentV1
-from src.vespercode.credentials.port import (
+from vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
+from vespercode.contracts.optional import AbsentV1, PresentV1
+from vespercode.credentials.port import (
     OPENAI_PROVIDER,
     CredentialBackendProbeV1,
     CredentialBackendUnsafeError,

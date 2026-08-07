@@ -16,10 +16,10 @@ from typing import Callable, Literal, TypeAlias
 
 from pydantic import BaseModel, ConfigDict, StrictStr
 
-from src.vespercode.canonical.clock import SystemClockV1
-from src.vespercode.canonical.digest import domain_digest
-from src.vespercode.contracts.evidence import DigestV1
-from src.vespercode.storage.connection import (
+from vespercode.canonical.clock import SystemClockV1
+from vespercode.canonical.digest import domain_digest
+from vespercode.contracts.evidence import DigestV1
+from vespercode.storage.connection import (
     ControlDatabase,
     ControlTransactionV1,
 )

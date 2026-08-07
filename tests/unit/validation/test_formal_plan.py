@@ -23,24 +23,24 @@ pytest.importorskip("pydantic")
 
 from pydantic import ValidationError
 
-from src.vespercode.canonical.path_v1 import CanonicalRelativePathV1
-from src.vespercode.contracts.optional import AbsentV1, PresentV1
-from src.vespercode.execution.docker_profile import ExecutionArgumentSequenceV1
-from src.vespercode.profiles.reference import (
+from vespercode.canonical.path_v1 import CanonicalRelativePathV1
+from vespercode.contracts.optional import AbsentV1, PresentV1
+from vespercode.execution.docker_profile import ExecutionArgumentSequenceV1
+from vespercode.profiles.reference import (
     ReferenceProfileManifestV1,
     load_reference_profile,
 )
-from src.vespercode.trees.candidate import root_candidate_revision
-from src.vespercode.trees.content_store import ContentObjectRefV1, ContentObjectStore
-from src.vespercode.trees.snapshot import (
+from vespercode.trees.candidate import root_candidate_revision
+from vespercode.trees.content_store import ContentObjectRefV1, ContentObjectStore
+from vespercode.trees.snapshot import (
     SnapshotDirectoryEntryV1,
     SnapshotEntryV1,
     SnapshotFileEntryV1,
     SnapshotTreeV1,
     _root_digest,
 )
-from src.vespercode.trees.text_classifier import TextMetadataV1
-from src.vespercode.validation.formal_plan import (
+from vespercode.trees.text_classifier import TextMetadataV1
+from vespercode.validation.formal_plan import (
     FormalPlanRejectedV1,
     FormalPytestExpectationV1,
     FormalRequestExpectationV1,
@@ -81,8 +81,8 @@ def _frozen_manifest() -> ReferenceProfileManifestV1:
 
 def _sealed_snapshot() -> SnapshotTreeV1:
     """One minimal sealed Snapshot for the plan-schema surface."""
-    from src.vespercode.trees.snapshot import SealedSnapshotInputFileV1
-    from src.vespercode.trees.text_classifier import classify_supported_text
+    from vespercode.trees.snapshot import SealedSnapshotInputFileV1
+    from vespercode.trees.text_classifier import classify_supported_text
 
     store = ContentObjectStore()
     raw_files = (

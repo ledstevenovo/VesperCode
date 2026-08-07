@@ -15,8 +15,8 @@ behavior remain out of scope (GREEN-4).
 
 from __future__ import annotations
 
-from src.vespercode.contracts.optional import AbsentV1
-from src.vespercode.llm.prepared_request import (
+from vespercode.contracts.optional import AbsentV1
+from vespercode.llm.prepared_request import (
     OpenAIRequestBodyMessageV1,
     OpenAIRequestBodyV1,
     OpenAIResponseFormatV1,

@@ -19,11 +19,11 @@ pytest.importorskip("pydantic")
 
 from pydantic import ValidationError
 
-from src.vespercode.canonical.path_v1 import (
+from vespercode.canonical.path_v1 import (
     CanonicalPathErrorV1,
     CanonicalRelativePathV1,
 )
-from src.vespercode.loop.context_projection import (
+from vespercode.loop.context_projection import (
     ContextBudgetFailureV1,
     ContextProjectionErrorV1,
     ContextProjectionInputsV1,
@@ -35,12 +35,12 @@ from src.vespercode.loop.context_projection import (
     ToolResultInputV1,
     build_context,
 )
-from src.vespercode.loop.feedback import (
+from vespercode.loop.feedback import (
     CheckFeedbackSourceV1,
     FeedbackRecordV1,
 )
-from src.vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
-from src.vespercode.contracts.optional import AbsentV1
+from vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
+from vespercode.contracts.optional import AbsentV1
 
 
 def feedback_record(record_id: str, created_at: str) -> FeedbackRecordV1:

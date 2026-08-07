@@ -20,9 +20,9 @@ pytest.importorskip("pydantic")
 
 from pydantic import ValidationError
 
-from src.vespercode.canonical.digest import domain_digest
-from src.vespercode.canonical.json_v1 import CanonicalValueV1
-from src.vespercode.profiles.reference import (
+from vespercode.canonical.digest import domain_digest
+from vespercode.canonical.json_v1 import CanonicalValueV1
+from vespercode.profiles.reference import (
     GateReferenceProfileManifestV1,
     ProfileIntegrityError,
     load_reference_profile,

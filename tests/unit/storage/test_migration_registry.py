@@ -31,44 +31,44 @@ import pytest
 # module skips cleanly there (formal env runs it fully).
 pytest.importorskip("pydantic")
 
-from src.vespercode.contracts.evidence import DigestV1
-from src.vespercode.storage.connection import (
+from vespercode.contracts.evidence import DigestV1
+from vespercode.storage.connection import (
     ControlDatabase,
     ControlTransactionV1,
     open_control_database,
 )
-from src.vespercode.storage.migration_engine import (
+from vespercode.storage.migration_engine import (
     MigrationResultV1,
     MigrationV1,
     apply_migrations,
 )
-from src.vespercode.storage.migrations.registry import (
+from vespercode.storage.migrations.registry import (
     ALL_V1_MIGRATIONS,
     MigrationRegistryError,
     compose_v1_migrations,
 )
-from src.vespercode.storage.migrations.v0001_run_wait import RUN_WAIT_V1_MIGRATION
-from src.vespercode.storage.migrations.v0002_idempotency import IDEMPOTENCY_V1_MIGRATION
-from src.vespercode.storage.migrations.v0003_disclosure_grants import (
+from vespercode.storage.migrations.v0001_run_wait import RUN_WAIT_V1_MIGRATION
+from vespercode.storage.migrations.v0002_idempotency import IDEMPOTENCY_V1_MIGRATION
+from vespercode.storage.migrations.v0003_disclosure_grants import (
     DISCLOSURE_GRANTS_V1_MIGRATION,
 )
-from src.vespercode.storage.migrations.v0004_disclosure_authorizations import (
+from vespercode.storage.migrations.v0004_disclosure_authorizations import (
     DISCLOSURE_AUTHORIZATIONS_V1_MIGRATION,
 )
-from src.vespercode.storage.migrations.v0005_memory import MEMORY_V1_MIGRATION
-from src.vespercode.storage.migrations.v0006_audit import AUDIT_V1_MIGRATION
-from src.vespercode.storage.migrations.v0007_agent_turns import (
+from vespercode.storage.migrations.v0005_memory import MEMORY_V1_MIGRATION
+from vespercode.storage.migrations.v0006_audit import AUDIT_V1_MIGRATION
+from vespercode.storage.migrations.v0007_agent_turns import (
     AGENT_TURNS_V1_MIGRATION,
 )
-from src.vespercode.storage.migrations.v0008_feedback import FEEDBACK_V1_MIGRATION
-from src.vespercode.storage.migrations.v0009_actions import ACTIONS_V1_MIGRATION
-from src.vespercode.storage.migrations.v0010_writeback_approvals import (
+from vespercode.storage.migrations.v0008_feedback import FEEDBACK_V1_MIGRATION
+from vespercode.storage.migrations.v0009_actions import ACTIONS_V1_MIGRATION
+from vespercode.storage.migrations.v0010_writeback_approvals import (
     WRITEBACK_APPROVALS_V1_MIGRATION,
 )
-from src.vespercode.storage.migrations.v0011_persistence import (
+from vespercode.storage.migrations.v0011_persistence import (
     PERSISTENCE_V1_MIGRATION,
 )
-from src.vespercode.storage.migrations.v0012_recovery import RECOVERY_V1_MIGRATION
+from vespercode.storage.migrations.v0012_recovery import RECOVERY_V1_MIGRATION
 
 
 class _RegistryControlDatabase(ControlDatabase):

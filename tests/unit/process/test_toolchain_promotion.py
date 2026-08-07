@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from src.vespercode.project.toolchain_promotion import (
+from vespercode.project.toolchain_promotion import (
     DEFAULT_OFFLINE_EXCLUSION,
     MARKERS_V1,
     FormalToolchainPromotionV1,

@@ -24,11 +24,11 @@ from pydantic import (
     model_validator,
 )
 
-from src.vespercode.canonical.digest import domain_digest
-from src.vespercode.canonical.json_v1 import CanonicalValueV1
-from src.vespercode.contracts.evidence import _DIGEST_RE
-from src.vespercode.contracts.optional import PresentV1
-from src.vespercode.validation.baseline import (
+from vespercode.canonical.digest import domain_digest
+from vespercode.canonical.json_v1 import CanonicalValueV1
+from vespercode.contracts.evidence import _DIGEST_RE
+from vespercode.contracts.optional import PresentV1
+from vespercode.validation.baseline import (
     BaselineTestRecordV1,
     PassingBaselineV1,
     compute_environment_whitelist_digest,

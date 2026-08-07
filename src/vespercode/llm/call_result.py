@@ -25,9 +25,9 @@ from pydantic import (
     model_validator,
 )
 
-from src.vespercode.contracts.evidence import _DIGEST_RE
-from src.vespercode.contracts.optional import AbsentV1
-from src.vespercode.profiles.editable import _reject_coerced_schema_version
+from vespercode.contracts.evidence import _DIGEST_RE
+from vespercode.contracts.optional import AbsentV1
+from vespercode.profiles.editable import _reject_coerced_schema_version
 
 _MAX_IDENTIFIER_CHARS = 128
 _MAX_ERROR_CODE_CHARS = 64

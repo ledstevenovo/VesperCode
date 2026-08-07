@@ -31,43 +31,43 @@ from pydantic import (
     model_validator,
 )
 
-from src.vespercode.candidate.patch_engine import (
+from vespercode.candidate.patch_engine import (
     ApplyCandidatePatchAction,
     CandidatePatchOutcomeV1,
 )
-from src.vespercode.canonical.json_v1 import canonical_json_bytes
-from src.vespercode.canonical.path_v1 import CanonicalRelativePathV1
-from src.vespercode.demo.scenario import FIXED_DEMO_SCENARIO_V1
-from src.vespercode.demo.types import DemoScenarioV1
-from src.vespercode.loop.agent_actions import (
+from vespercode.canonical.json_v1 import canonical_json_bytes
+from vespercode.canonical.path_v1 import CanonicalRelativePathV1
+from vespercode.demo.scenario import FIXED_DEMO_SCENARIO_V1
+from vespercode.demo.types import DemoScenarioV1
+from vespercode.loop.agent_actions import (
     ActionInstanceV1,
     ProposeCompletionActionV1,
     RunCheckActionV1,
 )
-from src.vespercode.tools.dispatcher import (
+from vespercode.tools.dispatcher import (
     CompletionOutcomeV1,
     RunCheckOutcomeV1,
 )
-from src.vespercode.tools.file_actions import (
+from vespercode.tools.file_actions import (
     ListFilesActionV1,
     ReadFileActionV1,
     SearchTextActionV1,
 )
-from src.vespercode.tools.file_results import (
+from vespercode.tools.file_results import (
     ListFilesResultV1,
     ReadFileResultV1,
     ReadFileSuccessV1,
     SearchTextResultV1,
 )
-from src.vespercode.trees.candidate import (
+from vespercode.trees.candidate import (
     CandidateOverlayEntryV1,
     CandidateRevisionV1,
     CandidateTreeV1,
     digest_candidate_tree,
 )
-from src.vespercode.trees.content_store import ContentObjectStore
-from src.vespercode.trees.readable import ReadableTreeV1
-from src.vespercode.trees.snapshot import SnapshotTreeV1
+from vespercode.trees.content_store import ContentObjectStore
+from vespercode.trees.readable import ReadableTreeV1
+from vespercode.trees.snapshot import SnapshotTreeV1
 
 DemoCapabilityKindV1: TypeAlias = Literal["DEMO_READ", "DEMO_PATCH", "DEMO_CHECK"]
 """The closed simulated tool-capability kinds of the Demo executor

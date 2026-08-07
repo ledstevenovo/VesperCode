@@ -27,24 +27,24 @@ pytest.importorskip("pydantic")
 
 from pydantic import ValidationError
 
-from src.vespercode.canonical.digest import domain_digest
-from src.vespercode.canonical.json_v1 import CanonicalValueV1
-from src.vespercode.canonical.path_v1 import CanonicalRelativePathV1
-from src.vespercode.contracts.optional import AbsentV1, PresentV1
-from src.vespercode.governance.request_sources import (
+from vespercode.canonical.digest import domain_digest
+from vespercode.canonical.json_v1 import CanonicalValueV1
+from vespercode.canonical.path_v1 import CanonicalRelativePathV1
+from vespercode.contracts.optional import AbsentV1, PresentV1
+from vespercode.governance.request_sources import (
     RequestContentSegmentV1,
     RequestMessageV1,
 )
-from src.vespercode.llm.openai_serializer import (
+from vespercode.llm.openai_serializer import (
     openai_request_body_bytes,
     serialize_openai_request,
 )
-from src.vespercode.llm.prepared_request import (
+from vespercode.llm.prepared_request import (
     OpenAIRequestBodyV1,
     OpenAIPreparedModelRequestV1,
     prepare_openai_request,
 )
-from src.vespercode.profiles.llm import (
+from vespercode.profiles.llm import (
     OpenAILLMProfileV1,
     OpenAIFixedParametersV1,
     load_llm_profile,

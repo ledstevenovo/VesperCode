@@ -26,6 +26,7 @@ development = ["mypy==2.3.0", "pytest==8.4.2", "ruff==0.16.1"]
 [tool.pytest.ini_options]
 addopts = "-m 'not (windows_integration or docker_integration or reference_e2e or package_smoke or oci_smoke or deployment_smoke)'"
 testpaths = ["tests"]
+pythonpath = ["src"]
 markers = [
     "windows_integration: dedicated Windows integration environment",
     "docker_integration: dedicated Docker integration environment",
@@ -53,4 +54,4 @@ python_version = "3.12"
 strict = true
 warn_unused_configs = true
 explicit_package_bases = true
-mypy_path = ["."]
+mypy_path = ["src"]

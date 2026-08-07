@@ -20,17 +20,17 @@ from typing import Literal, TypeAlias, cast
 
 from pydantic import BaseModel, ConfigDict, StrictStr, field_validator
 
-from src.vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
-from src.vespercode.contracts.evidence import DigestV1
-from src.vespercode.contracts.optional import AbsentV1, PresentV1
-from src.vespercode.contracts.run import RunStateV1, WaitDecisionV1
-from src.vespercode.governance.writeback_subject import FinalWritebackSubjectV1
-from src.vespercode.runs.lifecycle import LifecycleRules
-from src.vespercode.storage.connection import (
+from vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
+from vespercode.contracts.evidence import DigestV1
+from vespercode.contracts.optional import AbsentV1, PresentV1
+from vespercode.contracts.run import RunStateV1, WaitDecisionV1
+from vespercode.governance.writeback_subject import FinalWritebackSubjectV1
+from vespercode.runs.lifecycle import LifecycleRules
+from vespercode.storage.connection import (
     ControlDatabase,
     ControlTransactionV1,
 )
-from src.vespercode.storage.run_repository import RunRepository
+from vespercode.storage.run_repository import RunRepository
 
 FinalWritebackApprovalStatusV1: TypeAlias = Literal[
     "PENDING",

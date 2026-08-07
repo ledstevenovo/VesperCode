@@ -27,23 +27,23 @@ from pydantic import (
     model_validator,
 )
 
-from src.vespercode.canonical.digest import domain_digest
-from src.vespercode.canonical.json_v1 import CanonicalValueV1
-from src.vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
-from src.vespercode.contracts.evidence import _DIGEST_RE
-from src.vespercode.contracts.optional import AbsentV1, PresentV1
-from src.vespercode.governance.disclosure_scope import (
+from vespercode.canonical.digest import domain_digest
+from vespercode.canonical.json_v1 import CanonicalValueV1
+from vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
+from vespercode.contracts.evidence import _DIGEST_RE
+from vespercode.contracts.optional import AbsentV1, PresentV1
+from vespercode.governance.disclosure_scope import (
     DisclosurePathScopeV1,
     DisclosureScopeSequenceV1,
     canonicalize_disclosure_scopes,
     scope_matches,
 )
-from src.vespercode.governance.request_sources import (
+from vespercode.governance.request_sources import (
     RequestSourceCategoryV1,
     SourceProjectionV1,
 )
-from src.vespercode.profiles.endpoints import OpenAIEndpointV1
-from src.vespercode.profiles.llm import OpenAILLMProfileV1
+from vespercode.profiles.endpoints import OpenAIEndpointV1
+from vespercode.profiles.llm import OpenAILLMProfileV1
 
 # SPEC §4.4.3: the declared enum order of the six source categories.
 _CATEGORY_RANK: dict[RequestSourceCategoryV1, int] = {

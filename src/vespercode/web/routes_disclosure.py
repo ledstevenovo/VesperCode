@@ -20,9 +20,9 @@ from fastapi.templating import Jinja2Templates
 from pydantic import ValidationError
 from starlette.datastructures import FormData
 
-from src.vespercode.contracts.run import WaitDecisionChoiceV1
-from src.vespercode.profiles.endpoints import OpenAIEndpointRegistry
-from src.vespercode.web.disclosure_workflow import (
+from vespercode.contracts.run import WaitDecisionChoiceV1
+from vespercode.profiles.endpoints import OpenAIEndpointRegistry
+from vespercode.web.disclosure_workflow import (
     DisclosureDecisionFormV1,
     DisclosureDecisionWorkflowPortV1,
     WorkflowIdentityPortV1,

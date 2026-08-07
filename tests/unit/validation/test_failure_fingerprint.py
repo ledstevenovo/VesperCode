@@ -23,11 +23,11 @@ import pytest
 # fully).
 pytest.importorskip("pydantic")
 
-from src.vespercode.validation.failure_fingerprint import (
+from vespercode.validation.failure_fingerprint import (
     FingerprintNormalizationContextV1,
     build_failure_fingerprint,
 )
-from src.vespercode.validation.pytest_evidence import PytestEvidenceV1
+from vespercode.validation.pytest_evidence import PytestEvidenceV1
 
 _TARGET = "tests/test_a.py::test_value"
 _EXECUTION_ROOT = "C:/Users/runner/vesper-exec-19"

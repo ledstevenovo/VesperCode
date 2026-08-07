@@ -19,9 +19,9 @@ import pytest
 # cleanly there (formal env runs it fully).
 pytest.importorskip("pydantic")
 
-from src.vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
-from src.vespercode.loop.progress import ProgressDecisionV1
-from src.vespercode.loop.stopping import (
+from vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
+from vespercode.loop.progress import ProgressDecisionV1
+from vespercode.loop.stopping import (
     ContinueV1,
     LoopEvidenceV1,
     RunLoopStateV1,

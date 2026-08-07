@@ -43,40 +43,40 @@ from pydantic import (
     Strict,
 )
 
-from src.vespercode.candidate.patch_engine import ApplyCandidatePatchAction
-from src.vespercode.canonical.clock import ClockV1
-from src.vespercode.canonical.digest import domain_digest
-from src.vespercode.canonical.path_v1 import CanonicalRelativePathV1
-from src.vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
-from src.vespercode.contracts.evidence import ArtifactRefV1, DigestV1
-from src.vespercode.contracts.optional import AbsentV1, PresentV1
-from src.vespercode.demo.executor import DemoExecutor
-from src.vespercode.demo.scenario import FIXED_DEMO_SCENARIO_V1
-from src.vespercode.demo.types import (
+from vespercode.candidate.patch_engine import ApplyCandidatePatchAction
+from vespercode.canonical.clock import ClockV1
+from vespercode.canonical.digest import domain_digest
+from vespercode.canonical.path_v1 import CanonicalRelativePathV1
+from vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
+from vespercode.contracts.evidence import ArtifactRefV1, DigestV1
+from vespercode.contracts.optional import AbsentV1, PresentV1
+from vespercode.demo.executor import DemoExecutor
+from vespercode.demo.scenario import FIXED_DEMO_SCENARIO_V1
+from vespercode.demo.types import (
     DemoDecisionV1,
     DemoRunStatus,
     DemoScenarioV1,
     DemoSessionV1,
     DemoStepResultV1,
 )
-from src.vespercode.governance.policy import (
+from vespercode.governance.policy import (
     PatchPathFactV1,
     PolicyEngine,
 )
-from src.vespercode.llm.base import ModelResponse
-from src.vespercode.loop.action_binding import (
+from vespercode.llm.base import ModelResponse
+from vespercode.loop.action_binding import (
     reset_issued_action_ids,
 )
-from src.vespercode.loop.action_pipeline import (
+from vespercode.loop.action_pipeline import (
     ActionPipeline,
     ActionPipelineContextV1,
     ActionRecordRepositoryV1,
 )
-from src.vespercode.loop.agent_actions import (
+from vespercode.loop.agent_actions import (
     AgentAction,
     RunCheckActionV1,
 )
-from src.vespercode.loop.feedback import (
+from vespercode.loop.feedback import (
     ActionFeedbackSourceV1,
     CheckFeedbackSourceV1,
     ControlFeedbackSourceV1,
@@ -87,35 +87,35 @@ from src.vespercode.loop.feedback import (
     build_feedback,
     select_feedback,
 )
-from src.vespercode.loop.feedback_consumption import (
+from vespercode.loop.feedback_consumption import (
     FeedbackRepositoryV1,
     consume_feedback,
 )
-from src.vespercode.loop.progress import ProgressDecisionV1
-from src.vespercode.loop.stopping import (
+from vespercode.loop.progress import ProgressDecisionV1
+from vespercode.loop.stopping import (
     LoopEvidenceV1,
     RunLoopStateV1,
     StopDecisionV1,
     StopEvaluator,
 )
-from src.vespercode.storage.connection import ControlDatabase
-from src.vespercode.storage.migration_engine import apply_migrations
-from src.vespercode.storage.migrations.v0001_run_wait import RUN_WAIT_V1_MIGRATION
-from src.vespercode.storage.migrations.v0002_idempotency import IDEMPOTENCY_V1_MIGRATION
-from src.vespercode.storage.migrations.v0003_disclosure_grants import (
+from vespercode.storage.connection import ControlDatabase
+from vespercode.storage.migration_engine import apply_migrations
+from vespercode.storage.migrations.v0001_run_wait import RUN_WAIT_V1_MIGRATION
+from vespercode.storage.migrations.v0002_idempotency import IDEMPOTENCY_V1_MIGRATION
+from vespercode.storage.migrations.v0003_disclosure_grants import (
     DISCLOSURE_GRANTS_V1_MIGRATION,
 )
-from src.vespercode.storage.migrations.v0004_disclosure_authorizations import (
+from vespercode.storage.migrations.v0004_disclosure_authorizations import (
     DISCLOSURE_AUTHORIZATIONS_V1_MIGRATION,
 )
-from src.vespercode.storage.migrations.v0005_memory import MEMORY_V1_MIGRATION
-from src.vespercode.storage.migrations.v0006_audit import AUDIT_V1_MIGRATION
-from src.vespercode.storage.migrations.v0007_agent_turns import AGENT_TURNS_V1_MIGRATION
-from src.vespercode.storage.migrations.v0008_feedback import FEEDBACK_V1_MIGRATION
-from src.vespercode.storage.migrations.v0009_actions import ACTIONS_V1_MIGRATION
-from src.vespercode.tools.dispatcher import ToolDispatcher
-from src.vespercode.tools.file_results import FileToolResultV1
-from src.vespercode.validation.check_result import (
+from vespercode.storage.migrations.v0005_memory import MEMORY_V1_MIGRATION
+from vespercode.storage.migrations.v0006_audit import AUDIT_V1_MIGRATION
+from vespercode.storage.migrations.v0007_agent_turns import AGENT_TURNS_V1_MIGRATION
+from vespercode.storage.migrations.v0008_feedback import FEEDBACK_V1_MIGRATION
+from vespercode.storage.migrations.v0009_actions import ACTIONS_V1_MIGRATION
+from vespercode.tools.dispatcher import ToolDispatcher
+from vespercode.tools.file_results import FileToolResultV1
+from vespercode.validation.check_result import (
     CheckFindingV1,
     CheckResultV1,
 )

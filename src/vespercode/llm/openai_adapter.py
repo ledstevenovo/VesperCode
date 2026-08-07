@@ -22,14 +22,14 @@ from typing import Annotated, Final, Literal, Mapping, Protocol, TypeAlias
 
 from pydantic import BaseModel, ConfigDict, Field, Strict, field_validator
 
-from src.vespercode.credentials.port import SecretCredentialV1
-from src.vespercode.governance.disclosure_ledger import (
+from vespercode.credentials.port import SecretCredentialV1
+from vespercode.governance.disclosure_ledger import (
     DisclosureAuthorizationRecordV1,
 )
-from src.vespercode.llm.base import ModelResponse, _MAX_RESPONSE_TEXT_BYTES
-from src.vespercode.llm.openai_serializer import openai_request_body_bytes
-from src.vespercode.llm.prepared_request import OpenAIPreparedModelRequestV1
-from src.vespercode.profiles.endpoints import (
+from vespercode.llm.base import ModelResponse, _MAX_RESPONSE_TEXT_BYTES
+from vespercode.llm.openai_serializer import openai_request_body_bytes
+from vespercode.llm.prepared_request import OpenAIPreparedModelRequestV1
+from vespercode.profiles.endpoints import (
     OpenAIEndpointRegistry,
     OpenAIEndpointV1,
 )

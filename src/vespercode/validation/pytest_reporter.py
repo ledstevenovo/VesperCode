@@ -360,11 +360,10 @@ def _assertion_source_line() -> int | None:
                     "pytest",
                     "_pytest",
                     "pluggy",
-                    # Both spellings of the harness package: the installed
-                    # plugin loads as ``vespercode...`` while the repo tree
-                    # maps to ``src.vespercode...``.
+                    # The harness package: the installed plugin and the
+                    # repo tree (src on the path) both load as
+                    # ``vespercode...``.
                     "vespercode",
-                    "src.vespercode",
                 )
             ):
                 return frame.f_lineno

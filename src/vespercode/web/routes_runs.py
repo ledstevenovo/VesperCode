@@ -22,9 +22,9 @@ from fastapi.templating import Jinja2Templates
 from pydantic import ValidationError
 from starlette.datastructures import FormData
 
-from src.vespercode.audit.projection import RunVisibilityV1
-from src.vespercode.web.app import render_status_badge
-from src.vespercode.web.run_lifecycle_workflow import (
+from vespercode.audit.projection import RunVisibilityV1
+from vespercode.web.app import render_status_badge
+from vespercode.web.run_lifecycle_workflow import (
     NEXT_ACTION_TEXT_V1,
     REASON_TEXT_V1,
     RUN_CREATE_LIMIT_FIELDS_V1,

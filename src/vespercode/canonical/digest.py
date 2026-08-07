@@ -14,7 +14,7 @@ from __future__ import annotations
 import hashlib
 from typing import Final, Mapping
 
-from src.vespercode.canonical.json_v1 import (
+from vespercode.canonical.json_v1 import (
     CanonicalValueV1,
     canonical_json_bytes,
 )

@@ -23,10 +23,10 @@ pytest.importorskip("pydantic")
 
 from pydantic import ValidationError
 
-from src.vespercode.canonical.path_v1 import CanonicalRelativePathV1
-from src.vespercode.trees.content_store import ContentObjectStore
-from src.vespercode.trees.readable import ReadableTreeV1
-from src.vespercode.trees.snapshot import (
+from vespercode.canonical.path_v1 import CanonicalRelativePathV1
+from vespercode.trees.content_store import ContentObjectStore
+from vespercode.trees.readable import ReadableTreeV1
+from vespercode.trees.snapshot import (
     AcceptedGitPreflightV1,
     SealedSnapshotInputFileV1,
     SnapshotIntegrityError,
@@ -35,8 +35,8 @@ from src.vespercode.trees.snapshot import (
     create_snapshot,
     verify_snapshot,
 )
-from src.vespercode.trees.text_classifier import classify_supported_text
-from src.vespercode.workspace.git_preflight import GitPreflightResultV1
+from vespercode.trees.text_classifier import classify_supported_text
+from vespercode.workspace.git_preflight import GitPreflightResultV1
 
 _A = "a" * 64
 _B = "b" * 64

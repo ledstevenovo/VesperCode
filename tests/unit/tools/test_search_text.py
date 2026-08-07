@@ -24,18 +24,18 @@ pytest.importorskip("pydantic")
 
 from pydantic import ValidationError
 
-from src.vespercode.canonical.path_v1 import CanonicalRelativePathV1
-from src.vespercode.contracts.optional import AbsentV1, PresentV1
-from src.vespercode.tools.file_actions import SearchTextActionV1
-from src.vespercode.tools.file_results import (
+from vespercode.canonical.path_v1 import CanonicalRelativePathV1
+from vespercode.contracts.optional import AbsentV1, PresentV1
+from vespercode.tools.file_actions import SearchTextActionV1
+from vespercode.tools.file_results import (
     FileToolErrorV1,
     OptionalSearchTextCursorV1,
     SearchTextCursorV1,
     SearchTextMatchV1,
     SearchTextSuccessV1,
 )
-from src.vespercode.tools.search_text import search_text
-from src.vespercode.trees.readable import ReadableTreeV1
+from vespercode.tools.search_text import search_text
+from vespercode.trees.readable import ReadableTreeV1
 
 
 class SearchTree:

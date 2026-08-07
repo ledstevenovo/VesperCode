@@ -33,12 +33,12 @@ from pydantic import (
     model_validator,
 )
 
-from src.vespercode.candidate.patch_engine import CandidatePatchErrorCodeV1
-from src.vespercode.canonical.digest import domain_digest
-from src.vespercode.canonical.json_v1 import CanonicalValueV1
-from src.vespercode.contracts.action import ActionInstanceV1, PolicyDecisionV1
-from src.vespercode.contracts.evidence import _DIGEST_RE
-from src.vespercode.contracts.run import RunPhase
+from vespercode.candidate.patch_engine import CandidatePatchErrorCodeV1
+from vespercode.canonical.digest import domain_digest
+from vespercode.canonical.json_v1 import CanonicalValueV1
+from vespercode.contracts.action import ActionInstanceV1, PolicyDecisionV1
+from vespercode.contracts.evidence import _DIGEST_RE
+from vespercode.contracts.run import RunPhase
 
 PolicyReasonCodeV1: TypeAlias = (
     CandidatePatchErrorCodeV1

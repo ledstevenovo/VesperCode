@@ -26,19 +26,19 @@ pytest.importorskip("pydantic")
 
 from pydantic import ValidationError
 
-from src.vespercode.contracts.optional import AbsentV1
-from src.vespercode.governance.request_sources import (
+from vespercode.contracts.optional import AbsentV1
+from vespercode.governance.request_sources import (
     RequestContentSegmentV1,
     RequestMessageV1,
 )
-from src.vespercode.llm.call_result import (
+from vespercode.llm.call_result import (
     LLMCallResultV1,
     PresentAuthorizationRecordRefV1,
     PresentLLMCallErrorV1,
     PresentResponseDigestV1,
 )
-from src.vespercode.llm.prepared_request import prepare_mock_request
-from src.vespercode.profiles.llm import MockLLMProfileV1, load_llm_profile
+from vespercode.llm.prepared_request import prepare_mock_request
+from vespercode.profiles.llm import MockLLMProfileV1, load_llm_profile
 
 _MOCK_BUILTIN = (
     Path(__file__).resolve().parents[3]

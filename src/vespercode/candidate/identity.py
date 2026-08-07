@@ -23,9 +23,9 @@ from pydantic import (
     model_validator,
 )
 
-from src.vespercode.canonical.digest import domain_digest
-from src.vespercode.contracts.evidence import _DIGEST_RE
-from src.vespercode.trees.candidate import CandidateRevisionV1
+from vespercode.canonical.digest import domain_digest
+from vespercode.contracts.evidence import _DIGEST_RE
+from vespercode.trees.candidate import CandidateRevisionV1
 
 
 class CandidateIdentityV1(BaseModel):

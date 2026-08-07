@@ -27,8 +27,8 @@ from pydantic import (
     model_validator,
 )
 
-from src.vespercode.canonical.json_v1 import CanonicalValueV1, canonical_json_bytes
-from src.vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
+from vespercode.canonical.json_v1 import CanonicalValueV1, canonical_json_bytes
+from vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
 
 MemoryKindV1: TypeAlias = Literal[
     "PROJECT_CONVENTION",

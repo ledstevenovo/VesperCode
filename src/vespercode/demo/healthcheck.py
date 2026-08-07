@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import os
 
-from src.vespercode.demo.app import (
+from vespercode.demo.app import (
     DEMO_CAPABILITY_KINDS_V1,
     DemoAppConfigV1,
     create_demo_app,

@@ -20,16 +20,16 @@ import pytest
 
 pytest.importorskip("pydantic")
 
-from src.vespercode.canonical.path_v1 import CanonicalRelativePathV1
-from src.vespercode.profiles.registry import build_profile_registry
-from src.vespercode.workspace.git_preflight import GitPreflightResultV1
-from src.vespercode.workspace.identity_win32 import (
+from vespercode.canonical.path_v1 import CanonicalRelativePathV1
+from vespercode.profiles.registry import build_profile_registry
+from vespercode.workspace.git_preflight import GitPreflightResultV1
+from vespercode.workspace.identity_win32 import (
     WorkspaceIdentityV1,
     WorkspaceObjectRejectedV1,
     digest_workspace_identity,
 )
-from src.vespercode.workspace.object_win32 import FinalObjectIdentityV1
-from src.vespercode.workspace.path_guard import (
+from vespercode.workspace.object_win32 import FinalObjectIdentityV1
+from vespercode.workspace.path_guard import (
     AuthorizedObjectHandleV1,
     AuthorizedParentHandleV1,
     IgnoreRuleV1,
@@ -177,7 +177,7 @@ class FakeObjectInspector:
 
 def digest_final_object_identity(identity: FinalObjectIdentityV1) -> str:
     """The §0.1 identity of one final object (mirrors object_win32)."""
-    from src.vespercode.canonical.digest import domain_digest
+    from vespercode.canonical.digest import domain_digest
 
     return domain_digest(
         "FinalObjectIdentityV1",

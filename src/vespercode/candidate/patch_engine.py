@@ -27,15 +27,15 @@ from pydantic import (
     model_validator,
 )
 
-from src.vespercode.candidate.unified_diff import (
+from vespercode.candidate.unified_diff import (
     ParsedPatchEntryV1,
     PatchParseFailureV1,
     parse_unified_diff_v1,
 )
-from src.vespercode.canonical.path_v1 import CanonicalRelativePathV1
-from src.vespercode.contracts.evidence import _DIGEST_RE
-from src.vespercode.profiles.reference import ReferenceProfileManifestV1
-from src.vespercode.trees.candidate import (
+from vespercode.canonical.path_v1 import CanonicalRelativePathV1
+from vespercode.contracts.evidence import _DIGEST_RE
+from vespercode.profiles.reference import ReferenceProfileManifestV1
+from vespercode.trees.candidate import (
     CandidateIntegrityError,
     CandidatePostimageV1,
     CandidatePostimageSequenceV1,
@@ -44,12 +44,12 @@ from src.vespercode.trees.candidate import (
     derive_candidate_revision,
     path_collides_with_tree,
 )
-from src.vespercode.trees.snapshot import SnapshotFileEntryV1, SnapshotTreeV1
-from src.vespercode.trees.text_classifier import (
+from vespercode.trees.snapshot import SnapshotFileEntryV1, SnapshotTreeV1
+from vespercode.trees.text_classifier import (
     TextMetadataV1,
     classify_supported_text,
 )
-from src.vespercode.workspace.path_guard import (
+from vespercode.workspace.path_guard import (
     IgnoreRuleV1,
     ignore_rules_digest,
     path_is_ignored,

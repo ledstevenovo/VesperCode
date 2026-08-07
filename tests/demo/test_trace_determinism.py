@@ -16,15 +16,15 @@ import pytest
 
 pytest.importorskip("pydantic")
 
-from src.vespercode.canonical.clock import FakeClockV1
-from src.vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
-from src.vespercode.contracts.evidence import DigestV1
-from src.vespercode.demo.runner import (
+from vespercode.canonical.clock import FakeClockV1
+from vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
+from vespercode.contracts.evidence import DigestV1
+from vespercode.demo.runner import (
     DemoAdvanceErrorV1,
     DemoScenarioRunner,
 )
-from src.vespercode.demo.scenario import FIXED_DEMO_SCENARIO_V1
-from src.vespercode.demo.types import DemoDecisionV1
+from vespercode.demo.scenario import FIXED_DEMO_SCENARIO_V1
+from vespercode.demo.types import DemoDecisionV1
 
 _CLOCK_EPOCH = CanonicalTimestampV1("2026-08-06T09:00:00.000Z").epoch_milliseconds
 _FIXED_DIGEST: Final = "ab" * 32

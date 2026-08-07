@@ -27,15 +27,15 @@ pytest.importorskip("pydantic")
 
 from pydantic import ValidationError
 
-from src.vespercode.candidate.patch_engine import CandidatePatchErrorCodeV1
-from src.vespercode.canonical.digest import domain_digest
-from src.vespercode.contracts.action import (
+from vespercode.candidate.patch_engine import CandidatePatchErrorCodeV1
+from vespercode.canonical.digest import domain_digest
+from vespercode.contracts.action import (
     ActionInstanceV1,
     CheckPlanIdV1,
     SharedActionV1,
 )
-from src.vespercode.contracts.run import RunPhase
-from src.vespercode.governance.policy import (
+from vespercode.contracts.run import RunPhase
+from vespercode.governance.policy import (
     FinalWritebackOperationV1,
     PatchPathFactV1,
     PolicyContextV1,
@@ -47,7 +47,7 @@ from src.vespercode.governance.policy import (
     governance_policy_digest,
     policy_context_digest,
 )
-from src.vespercode.profiles.reference import (
+from vespercode.profiles.reference import (
     ReferenceProfileManifestV1,
     load_reference_profile,
 )
@@ -663,18 +663,18 @@ class TestPurity:
                 imported.append(node.module)
             elif isinstance(node, ast.Import):
                 imported.extend(alias.name for alias in node.names)
-        # Every src.vespercode import must stay within the pure fact
+        # Every vespercode import must stay within the pure fact
         # vocabulary (canonicalization, closed contracts, and the
         # pre-policy rejection codes); tools, storage, credentials, LLM,
         # dispatch, workspace, trees, profiles, and control-plane
         # surfaces can never enter the evaluation module.
         allowed_prefixes = (
-            "src.vespercode.canonical",
-            "src.vespercode.contracts",
-            "src.vespercode.candidate",
+            "vespercode.canonical",
+            "vespercode.contracts",
+            "vespercode.candidate",
         )
         for module in imported:
-            if not module.startswith("src.vespercode"):
+            if not module.startswith("vespercode"):
                 continue
             assert any(
                 module == prefix or module.startswith(prefix + ".")

@@ -35,40 +35,40 @@ from pydantic import (
     model_validator,
 )
 
-from src.vespercode.candidate.final_diff import (
+from vespercode.candidate.final_diff import (
     FinalDiffRejectedError,
     FinalDiffV1,
     recompute_final_diff,
 )
-from src.vespercode.candidate.identity import build_candidate_identity
-from src.vespercode.canonical.digest import domain_digest
-from src.vespercode.canonical.json_v1 import CanonicalValueV1
-from src.vespercode.contracts.evidence import _DIGEST_RE
-from src.vespercode.contracts.optional import AbsentV1, PresentV1
-from src.vespercode.execution.docker_profile import ExecutionArgumentSequenceV1
-from src.vespercode.profiles.reference import (
+from vespercode.candidate.identity import build_candidate_identity
+from vespercode.canonical.digest import domain_digest
+from vespercode.canonical.json_v1 import CanonicalValueV1
+from vespercode.contracts.evidence import _DIGEST_RE
+from vespercode.contracts.optional import AbsentV1, PresentV1
+from vespercode.execution.docker_profile import ExecutionArgumentSequenceV1
+from vespercode.profiles.reference import (
     ReferenceProfileManifestV1,
     load_reference_profile,
 )
-from src.vespercode.trees.candidate import CandidateRevisionV1, CandidateTreeV1
-from src.vespercode.validation.baseline import (
+from vespercode.trees.candidate import CandidateRevisionV1, CandidateTreeV1
+from vespercode.validation.baseline import (
     compute_environment_whitelist_digest,
     compute_protected_artifact_set_digest,
     compute_resource_parameters_digest,
 )
-from src.vespercode.validation.manifest import (
+from vespercode.validation.manifest import (
     ValidationManifestV1,
     validation_manifest_digest,
 )
-from src.vespercode.validation.pytest_evidence import MAX_REPORT_EVENTS
-from src.vespercode.validation.python_adapter import (
+from vespercode.validation.pytest_evidence import MAX_REPORT_EVENTS
+from vespercode.validation.python_adapter import (
     ADAPTER_VERSION,
     CheckPlanError,
     FormalCheckIdentityV1,
     FormalCheckPlanEntryV1,
     PythonProjectAdapterV1,
 )
-from src.vespercode.workspace.path_guard import protected_artifact_path
+from vespercode.workspace.path_guard import protected_artifact_path
 
 # The frozen SPEC §5.1 sub-timeouts of the formal-validation phase: every
 # single check shares ``full_check_timeout_seconds`` and the whole phase

@@ -18,7 +18,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 if TYPE_CHECKING:
-    from src.vespercode.canonical.path_v1 import CanonicalRelativePathV1
+    from vespercode.canonical.path_v1 import CanonicalRelativePathV1
 
 
 @runtime_checkable

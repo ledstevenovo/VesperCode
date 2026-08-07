@@ -27,13 +27,13 @@ from pydantic import (
     model_validator,
 )
 
-from src.vespercode.audit.projection import (
+from vespercode.audit.projection import (
     NextActionV1,
     ReasonCodeV1,
     RunVisibilityV1,
     StateLabelV1,
 )
-from src.vespercode.contracts.run import RunLimitsV1
+from vespercode.contracts.run import RunLimitsV1
 
 REASON_TEXT_V1: Final[dict[ReasonCodeV1, str]] = {
     "RUN_CREATED": "运行已创建",

@@ -34,10 +34,10 @@ from pydantic import (
     field_validator,
 )
 
-from src.vespercode.canonical.clock import SystemClockV1
-from src.vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
-from src.vespercode.contracts.evidence import _DIGEST_RE
-from src.vespercode.workspace.identity_win32 import WorkspaceIdentityV1
+from vespercode.canonical.clock import SystemClockV1
+from vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
+from vespercode.contracts.evidence import _DIGEST_RE
+from vespercode.workspace.identity_win32 import WorkspaceIdentityV1
 
 _WAIT_OBJECT_0: Final = 0
 _WAIT_ABANDONED: Final = 0x00000080

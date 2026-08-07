@@ -38,46 +38,46 @@ from pydantic import (
     model_validator,
 )
 
-from src.vespercode.candidate.patch_engine import (
+from vespercode.candidate.patch_engine import (
     ApplyCandidatePatchAction,
     CandidatePatchErrorCodeV1,
     CandidatePatchOutcomeV1,
 )
-from src.vespercode.contracts.action import (
+from vespercode.contracts.action import (
     ActionInstanceV1 as ContractsActionInstanceV1,
 )
-from src.vespercode.contracts.action import (
+from vespercode.contracts.action import (
     ActionStatusV1,
     SharedActionV1,
     _instance_digest_for,
     _require_action_id,
 )
-from src.vespercode.contracts.evidence import (
+from vespercode.contracts.evidence import (
     ArtifactRefV1,
     OptionalArtifactRefV1,
     _DIGEST_RE,
 )
-from src.vespercode.contracts.optional import AbsentV1, PresentV1
-from src.vespercode.contracts.run import RunPhase
-from src.vespercode.governance.policy import (
+from vespercode.contracts.optional import AbsentV1, PresentV1
+from vespercode.contracts.run import RunPhase
+from vespercode.governance.policy import (
     PatchPathFactV1,
     PolicyContextV1,
     PolicyEngine,
     governance_policy_digest,
     policy_context_digest,
 )
-from src.vespercode.loop.agent_actions import (
+from vespercode.loop.agent_actions import (
     ActionInstanceV1,
     AgentAction,
     ProposeCompletionActionV1,
     RunCheckActionV1,
 )
-from src.vespercode.tools.file_actions import (
+from vespercode.tools.file_actions import (
     ListFilesActionV1,
     ReadFileActionV1,
     SearchTextActionV1,
 )
-from src.vespercode.tools.file_results import (
+from vespercode.tools.file_results import (
     FileToolErrorCodeV1,
     FileToolErrorV1,
     FileToolResultV1,
@@ -88,8 +88,8 @@ from src.vespercode.tools.file_results import (
     SearchTextResultV1,
     SearchTextSuccessV1,
 )
-from src.vespercode.trees.readable import ReadableTreeV1
-from src.vespercode.workspace.path_guard import sensitive_path_rule_id
+from vespercode.trees.readable import ReadableTreeV1
+from vespercode.workspace.path_guard import sensitive_path_rule_id
 
 OwnDispatchErrorCodeV1: TypeAlias = Literal[
     "STALE_CANDIDATE",

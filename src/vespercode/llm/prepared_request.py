@@ -31,20 +31,20 @@ from pydantic import (
     model_validator,
 )
 
-from src.vespercode.canonical.digest import domain_digest
-from src.vespercode.canonical.json_v1 import (
+from vespercode.canonical.digest import domain_digest
+from vespercode.canonical.json_v1 import (
     CanonicalValueV1,
     canonical_json_bytes,
 )
-from src.vespercode.contracts.evidence import _DIGEST_RE
-from src.vespercode.contracts.optional import AbsentV1
-from src.vespercode.governance.request_sources import (
+from vespercode.contracts.evidence import _DIGEST_RE
+from vespercode.contracts.optional import AbsentV1
+from vespercode.governance.request_sources import (
     RequestContentSegmentV1,
     RequestMessageV1,
     validate_segment_sources,
 )
-from src.vespercode.profiles.editable import _reject_coerced_schema_version
-from src.vespercode.profiles.llm import (
+from vespercode.profiles.editable import _reject_coerced_schema_version
+from vespercode.profiles.llm import (
     MockLLMProfileV1,
     OpenAILLMProfileV1,
     OpenAIFixedParametersV1,

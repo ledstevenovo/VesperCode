@@ -24,7 +24,7 @@ pytest.importorskip("pydantic")
 
 from pydantic import ValidationError
 
-from src.vespercode.trees.content_store import (
+from vespercode.trees.content_store import (
     ContentIntegrityError,
     ContentObjectRefV1,
     ContentObjectStore,

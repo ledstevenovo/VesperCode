@@ -41,9 +41,9 @@ from pydantic import (
     model_validator,
 )
 
-from src.vespercode.canonical.digest import domain_digest
-from src.vespercode.canonical.path_v1 import CanonicalRelativePathV1
-from src.vespercode.contracts.optional import AbsentV1, PresentV1
+from vespercode.canonical.digest import domain_digest
+from vespercode.canonical.path_v1 import CanonicalRelativePathV1
+from vespercode.contracts.optional import AbsentV1, PresentV1
 
 # The fixed stdout channel prefix (SPEC §4.5 machine-readable report
 # channel; the T02.4-proven GATEEV1 mechanism).  The production plugin

@@ -14,7 +14,7 @@ from typing import Callable
 
 import pytest
 
-from src.vespercode.project.dependency_closure import (
+from vespercode.project.dependency_closure import (
     FIXED_PYPI_SIMPLE_INDEX_URL,
     DeclaredDependencySetV1,
     load_dependency_closure,

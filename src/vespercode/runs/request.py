@@ -28,22 +28,22 @@ from pydantic import (
     model_validator,
 )
 
-from src.vespercode.canonical.clock import SystemClockV1
-from src.vespercode.canonical.digest import domain_digest
-from src.vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
-from src.vespercode.contracts.optional import AbsentV1
-from src.vespercode.contracts.run import (
+from vespercode.canonical.clock import SystemClockV1
+from vespercode.canonical.digest import domain_digest
+from vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
+from vespercode.contracts.optional import AbsentV1
+from vespercode.contracts.run import (
     RunLimitsV1,
     _require_non_empty_identifier,
 )
-from src.vespercode.profiles.editable import _reject_coerced_schema_version
-from src.vespercode.profiles.endpoints import UnknownEndpointError
-from src.vespercode.profiles.llm import OpenAILLMProfileV1
-from src.vespercode.profiles.registry import (
+from vespercode.profiles.editable import _reject_coerced_schema_version
+from vespercode.profiles.endpoints import UnknownEndpointError
+from vespercode.profiles.llm import OpenAILLMProfileV1
+from vespercode.profiles.registry import (
     ProfileRegistry,
     UnknownProfileError,
 )
-from src.vespercode.storage.run_repository import (
+from vespercode.storage.run_repository import (
     RunRecordV1,
     RunRepository,
 )

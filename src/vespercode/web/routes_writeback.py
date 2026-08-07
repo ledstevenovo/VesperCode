@@ -18,9 +18,9 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from pydantic import ValidationError
 from starlette.datastructures import FormData
 
-from src.vespercode.contracts.run import WaitDecisionChoiceV1
-from src.vespercode.web.disclosure_workflow import WorkflowIdentityPortV1
-from src.vespercode.web.writeback_workflow import (
+from vespercode.contracts.run import WaitDecisionChoiceV1
+from vespercode.web.disclosure_workflow import WorkflowIdentityPortV1
+from vespercode.web.writeback_workflow import (
     FinalWritebackDecisionFormV1,
     FinalWritebackWorkflowPortV1,
     build_final_writeback_decision_command,

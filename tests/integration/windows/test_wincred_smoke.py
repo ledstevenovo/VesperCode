@@ -19,7 +19,7 @@ import win32cred  # type: ignore[import-untyped]
 from collections.abc import Iterator
 from typing import Final
 
-from src.vespercode.credentials.port import (
+from vespercode.credentials.port import (
     CredentialBackendProbeV1,
     CredentialBackendUnsafeError,
     CredentialErrorV1,
@@ -27,8 +27,8 @@ from src.vespercode.credentials.port import (
     CredentialProviderClosedError,
     SecretCredentialV1,
 )
-from src.vespercode.credentials.service import CredentialService
-from src.vespercode.credentials.wincred_store import WindowsCredentialManagerStore
+from vespercode.credentials.service import CredentialService
+from vespercode.credentials.wincred_store import WindowsCredentialManagerStore
 
 pytestmark = pytest.mark.windows_integration
 

@@ -21,27 +21,27 @@ import pytest
 # there (formal env runs it fully).
 pytest.importorskip("pydantic")
 
-from src.vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
-from src.vespercode.contracts.evidence import DigestV1
-from src.vespercode.contracts.optional import AbsentV1, PresentV1
-from src.vespercode.contracts.run import (
+from vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
+from vespercode.contracts.evidence import DigestV1
+from vespercode.contracts.optional import AbsentV1, PresentV1
+from vespercode.contracts.run import (
     RunPhase,
     RunStateV1,
     RunStatus,
     WaitContextV1,
     WaitDecisionV1,
 )
-from src.vespercode.runs.lifecycle import (
+from vespercode.runs.lifecycle import (
     LifecycleEventV1,
     LifecycleRules,
 )
-from src.vespercode.storage.connection import (
+from vespercode.storage.connection import (
     ControlDatabase,
     open_control_database,
 )
-from src.vespercode.storage.migration_engine import apply_migrations
-from src.vespercode.storage.migrations.v0001_run_wait import RUN_WAIT_V1_MIGRATION
-from src.vespercode.storage.run_repository import (
+from vespercode.storage.migration_engine import apply_migrations
+from vespercode.storage.migrations.v0001_run_wait import RUN_WAIT_V1_MIGRATION
+from vespercode.storage.run_repository import (
     RunAlreadyExistsErrorV1,
     RunRecordV1,
     RunRepository,

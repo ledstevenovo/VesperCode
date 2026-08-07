@@ -26,17 +26,17 @@ from pydantic import (
     field_validator,
 )
 
-from src.vespercode.canonical.digest import domain_digest
-from src.vespercode.canonical.path_v1 import CanonicalRelativePathV1
-from src.vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
-from src.vespercode.contracts.evidence import DigestV1
-from src.vespercode.contracts.optional import PresentV1
-from src.vespercode.persistence.artifacts import (
+from vespercode.canonical.digest import domain_digest
+from vespercode.canonical.path_v1 import CanonicalRelativePathV1
+from vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
+from vespercode.contracts.evidence import DigestV1
+from vespercode.contracts.optional import PresentV1
+from vespercode.persistence.artifacts import (
     PersistenceArtifactIntegrityError,
     PersistenceArtifactStoreV1,
 )
-from src.vespercode.persistence.path_record import PersistencePathRecordV1
-from src.vespercode.persistence.recovery_preview import (
+from vespercode.persistence.path_record import PersistencePathRecordV1
+from vespercode.persistence.recovery_preview import (
     RecoveryDispositionV1,
     RecoveryPathObservationV1,
     RecoveryPreviewErrorV1,
@@ -44,19 +44,19 @@ from src.vespercode.persistence.recovery_preview import (
     RecoveryPreviewV1,
     classify_path,
 )
-from src.vespercode.persistence.transaction import (
+from vespercode.persistence.transaction import (
     PersistencePathRecordRepositoryV1,
     PersistenceTransactionRepositoryV1,
     PersistenceTransactionV1,
     TransactionTransitionErrorV1,
 )
-from src.vespercode.persistence.writeback import ClockPort
-from src.vespercode.storage.connection import (
+from vespercode.persistence.writeback import ClockPort
+from vespercode.storage.connection import (
     ControlDatabase,
     ControlTransactionV1,
 )
-from src.vespercode.workspace.identity_win32 import WorkspaceIdentityV1
-from src.vespercode.workspace.mutex_win32 import (
+from vespercode.workspace.identity_win32 import WorkspaceIdentityV1
+from vespercode.workspace.mutex_win32 import (
     WorkspaceLeaseV1,
     WorkspaceMutex,
     WorkspaceMutexError,

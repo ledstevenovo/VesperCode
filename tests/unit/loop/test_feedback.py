@@ -23,23 +23,23 @@ pytest.importorskip("pydantic")
 
 from pydantic import ValidationError
 
-from src.vespercode.canonical.clock import FakeClockV1
-from src.vespercode.canonical.digest import domain_digest
-from src.vespercode.canonical.path_v1 import CanonicalRelativePathV1
-from src.vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
-from src.vespercode.contracts.action import (
+from vespercode.canonical.clock import FakeClockV1
+from vespercode.canonical.digest import domain_digest
+from vespercode.canonical.path_v1 import CanonicalRelativePathV1
+from vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
+from vespercode.contracts.action import (
     ActionErrorV1,
     ActionResultV1,
     ActionStatusV1,
     CheckPlanIdV1,
 )
-from src.vespercode.contracts.evidence import (
+from vespercode.contracts.evidence import (
     ArtifactRefV1,
     DigestV1,
     StableControlErrorV1,
 )
-from src.vespercode.contracts.optional import AbsentV1, PresentV1
-from src.vespercode.loop.feedback import (
+from vespercode.contracts.optional import AbsentV1, PresentV1
+from vespercode.loop.feedback import (
     FEEDBACK_MAX_BYTES_V1,
     FEEDBACK_MAX_RECORDS_V1,
     ActionFeedbackSourceV1,
@@ -56,7 +56,7 @@ from src.vespercode.loop.feedback import (
     serialize_feedback_record,
     serialize_feedback_source,
 )
-from src.vespercode.validation.check_result import (
+from vespercode.validation.check_result import (
     CheckFindingLocationV1,
     CheckFindingV1,
     CheckResultV1,

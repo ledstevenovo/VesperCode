@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from src.vespercode.canonical.digest import DomainDigestErrorV1, domain_digest
-from src.vespercode.canonical.json_v1 import (
+from vespercode.canonical.digest import DomainDigestErrorV1, domain_digest
+from vespercode.canonical.json_v1 import (
     CanonicalJsonErrorV1,
     CanonicalValueV1,
     canonical_json_bytes,

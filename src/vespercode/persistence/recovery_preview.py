@@ -26,28 +26,28 @@ from pydantic import (
     field_validator,
 )
 
-from src.vespercode.canonical.digest import domain_digest
-from src.vespercode.canonical.path_v1 import CanonicalRelativePathV1
-from src.vespercode.contracts.evidence import OptionalDigestV1
-from src.vespercode.persistence.artifacts import (
+from vespercode.canonical.digest import domain_digest
+from vespercode.canonical.path_v1 import CanonicalRelativePathV1
+from vespercode.contracts.evidence import OptionalDigestV1
+from vespercode.persistence.artifacts import (
     PersistenceArtifactIntegrityError,
     PersistenceArtifactKindV1,
     PersistenceArtifactStoreV1,
 )
-from src.vespercode.persistence.path_record import (
+from vespercode.persistence.path_record import (
     PersistencePathRecordSequenceV1,
     PersistencePathRecordV1,
     object_identity_digest,
 )
-from src.vespercode.persistence.transaction import (
+from vespercode.persistence.transaction import (
     PersistencePathRecordRepositoryV1,
     PersistenceTransactionRepositoryV1,
 )
-from src.vespercode.workspace.identity_win32 import (
+from vespercode.workspace.identity_win32 import (
     WorkspaceIdentityV1,
     WorkspaceObjectRejectedV1,
 )
-from src.vespercode.workspace.object_win32 import inspect_workspace_object
+from vespercode.workspace.object_win32 import inspect_workspace_object
 
 RecoveryDispositionV1 = Literal["COMMITTED", "ROLLED_BACK", "UNRESOLVED"]
 """SPEC 4.6: the closed three-value recovery disposition."""

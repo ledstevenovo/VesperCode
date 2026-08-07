@@ -24,12 +24,12 @@ from typing import Final
 
 import pytest
 
-from src.vespercode.canonical.path_v1 import CanonicalRelativePathV1
-from src.vespercode.profiles.registry import build_profile_registry
-from src.vespercode.trees.content_store import ContentObjectStore
-from src.vespercode.trees.readable import ReadableTreeV1
-from src.vespercode.contracts.optional import PresentV1
-from src.vespercode.trees.snapshot import (
+from vespercode.canonical.path_v1 import CanonicalRelativePathV1
+from vespercode.profiles.registry import build_profile_registry
+from vespercode.trees.content_store import ContentObjectStore
+from vespercode.trees.readable import ReadableTreeV1
+from vespercode.contracts.optional import PresentV1
+from vespercode.trees.snapshot import (
     AcceptedGitPreflightV1,
     SealedSnapshotInputFileV1,
     SnapshotFileEntryV1,
@@ -39,12 +39,12 @@ from src.vespercode.trees.snapshot import (
     create_snapshot,
     verify_snapshot,
 )
-from src.vespercode.trees.text_classifier import classify_supported_text
-from src.vespercode.workspace.git_preflight import (
+from vespercode.trees.text_classifier import classify_supported_text
+from vespercode.workspace.git_preflight import (
     GitPreflightResultV1,
     run_git_snapshot_prechecks,
 )
-from src.vespercode.workspace.identity_win32 import resolve_workspace_identity
+from vespercode.workspace.identity_win32 import resolve_workspace_identity
 
 pytestmark = pytest.mark.windows_integration
 

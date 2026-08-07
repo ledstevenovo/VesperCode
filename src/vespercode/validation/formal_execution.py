@@ -35,16 +35,16 @@ from pydantic import (
     model_validator,
 )
 
-from src.vespercode.canonical.digest import domain_digest
-from src.vespercode.canonical.json_v1 import CanonicalValueV1
-from src.vespercode.contracts.evidence import _DIGEST_RE
-from src.vespercode.contracts.optional import AbsentV1, PresentV1
-from src.vespercode.execution.cleanup import (
+from vespercode.canonical.digest import domain_digest
+from vespercode.canonical.json_v1 import CanonicalValueV1
+from vespercode.contracts.evidence import _DIGEST_RE
+from vespercode.contracts.optional import AbsentV1, PresentV1
+from vespercode.execution.cleanup import (
     ExecutionCleanupResultV1,
     finalize_execution,
 )
-from src.vespercode.execution.docker_executor import RawExecutionResultV1
-from src.vespercode.execution.docker_profile import (
+from vespercode.execution.docker_executor import RawExecutionResultV1
+from vespercode.execution.docker_profile import (
     DockerExecutionProfileV1,
     ExecutionRequestV1,
     _FROZEN_CPUS,
@@ -54,27 +54,27 @@ from src.vespercode.execution.docker_profile import (
     _FROZEN_PIDS_LIMIT,
     _FROZEN_TMPFS_SIZE_BYTES,
 )
-from src.vespercode.execution.materialization import (
+from vespercode.execution.materialization import (
     MaterializationError,
     MaterializedCandidateV1,
     allocate_execution_root,
     materialize_candidate,
 )
-from src.vespercode.profiles.reference import (
+from vespercode.profiles.reference import (
     ReferenceProfileManifestV1,
     load_reference_profile,
 )
-from src.vespercode.validation.check_result import (
+from vespercode.validation.check_result import (
     CheckResultV1,
     parse_mypy_result,
     parse_ruff_result,
 )
-from src.vespercode.validation.formal_plan import (
+from vespercode.validation.formal_plan import (
     FormalPytestExpectationV1,
     FormalValidationPlanV1,
     FormalValidationRequestV1,
 )
-from src.vespercode.validation.pytest_evidence import (
+from vespercode.validation.pytest_evidence import (
     PytestEvidenceV1,
     PytestReportExpectationV1,
     _extract_channel_document,

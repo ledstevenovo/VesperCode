@@ -46,30 +46,30 @@ from pydantic import (
     field_validator,
 )
 
-from src.vespercode.candidate.identity import build_candidate_identity
-from src.vespercode.canonical.digest import domain_digest
-from src.vespercode.contracts.evidence import _DIGEST_RE
-from src.vespercode.contracts.optional import PresentV1
-from src.vespercode.profiles.reference import (
+from vespercode.candidate.identity import build_candidate_identity
+from vespercode.canonical.digest import domain_digest
+from vespercode.contracts.evidence import _DIGEST_RE
+from vespercode.contracts.optional import PresentV1
+from vespercode.profiles.reference import (
     ReferenceProfileManifestV1,
     load_reference_profile,
 )
-from src.vespercode.trees.candidate import CandidateRevisionV1
-from src.vespercode.validation.baseline import (
+from vespercode.trees.candidate import CandidateRevisionV1
+from vespercode.validation.baseline import (
     compute_environment_whitelist_digest,
     compute_protected_artifact_set_digest,
     compute_resource_parameters_digest,
 )
-from src.vespercode.validation.formal_execution import (
+from vespercode.validation.formal_execution import (
     FormalRequestEvidenceV1,
     FormalValidationEvidenceV1,
     formal_validation_evidence_digest,
 )
-from src.vespercode.validation.formal_plan import (
+from vespercode.validation.formal_plan import (
     FormalValidationPlanV1,
     formal_validation_plan_digest,
 )
-from src.vespercode.validation.manifest import (
+from vespercode.validation.manifest import (
     ValidationManifestV1,
     validation_manifest_digest,
 )

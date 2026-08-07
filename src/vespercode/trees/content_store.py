@@ -18,7 +18,7 @@ import hashlib
 
 from pydantic import BaseModel, ConfigDict, field_validator
 
-from src.vespercode.contracts.evidence import _DIGEST_RE
+from vespercode.contracts.evidence import _DIGEST_RE
 
 
 class ContentIntegrityError(Exception):

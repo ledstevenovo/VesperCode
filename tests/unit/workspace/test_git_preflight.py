@@ -22,15 +22,15 @@ import pytest
 
 pytest.importorskip("pydantic")
 
-from src.vespercode.workspace.git_preflight import (
+from vespercode.workspace.git_preflight import (
     GitPreflightResultV1,
     run_git_snapshot_prechecks,
 )
-from src.vespercode.workspace.identity_win32 import (
+from vespercode.workspace.identity_win32 import (
     WorkspaceIdentityV1,
     digest_workspace_identity,
 )
-from src.vespercode.profiles.registry import build_profile_registry
+from vespercode.profiles.registry import build_profile_registry
 
 _GIT_BASE_ARGS: Final = (
     "-c",
@@ -492,7 +492,7 @@ def test_observation_command_failure_fails_closed(
     """A failed sealed observation raises GitPreflightError — a failed
     ``ls-files -v``/``--others``/``status`` read must never be sealed as
     empty evidence."""
-    import src.vespercode.workspace.git_preflight as git_preflight
+    import vespercode.workspace.git_preflight as git_preflight
 
     real_git = git_preflight._git
     calls = 0
@@ -522,7 +522,7 @@ def test_unstable_index_is_rejected_before_snapshot(
     sealed_git_repo: GitRepositoryFixture,
 ) -> None:
     """The index read twice must be byte-identical; drift rejects."""
-    import src.vespercode.workspace.git_preflight as git_preflight
+    import vespercode.workspace.git_preflight as git_preflight
 
     calls = 0
 

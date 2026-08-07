@@ -22,10 +22,10 @@ pytest.importorskip("fastapi")
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from src.vespercode.audit.projection import RunVisibilityV1
-from src.vespercode.contracts.optional import AbsentV1
-from src.vespercode.credentials.port import CredentialStatusV1
-from src.vespercode.web.app import (
+from vespercode.audit.projection import RunVisibilityV1
+from vespercode.contracts.optional import AbsentV1
+from vespercode.credentials.port import CredentialStatusV1
+from vespercode.web.app import (
     LocalRouteInstallerSequenceV1,
     LocalShellPortsV1,
     PackagedWebAssetErrorV1,
@@ -34,7 +34,7 @@ from src.vespercode.web.app import (
     install_packaged_web_assets,
     load_packaged_web_asset,
 )
-from src.vespercode.web.security import LocalWebSecurityConfigV1
+from vespercode.web.security import LocalWebSecurityConfigV1
 
 _UNTRUSTED_RUN_TEXT_V1 = "<script>alert(1)</script>"
 """The exact untrusted run text the exact RED renders (SPEC §4.9:
@@ -216,7 +216,7 @@ def test_web_escape_asset_csp_matrix(
         load_packaged_web_asset("cdn.js")  # type: ignore[arg-type]
 
     # --- identity drift fails closed ---
-    import src.vespercode.web.app as app_module
+    import vespercode.web.app as app_module
 
     monkeypatch.setattr(app_module, "_PACKAGED_HTMX_SHA256_V1", "00" * 32)
     with pytest.raises(PackagedWebAssetErrorV1, match="identity mismatch"):

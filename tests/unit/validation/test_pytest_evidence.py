@@ -32,8 +32,8 @@ import pytest
 # fully).
 pytest.importorskip("pydantic")
 
-from src.vespercode.contracts.optional import AbsentV1, PresentV1
-from src.vespercode.validation.pytest_evidence import (
+from vespercode.contracts.optional import AbsentV1, PresentV1
+from vespercode.validation.pytest_evidence import (
     PytestReportExpectationV1,
     parse_pytest_evidence,
 )

@@ -19,17 +19,17 @@ pytest.importorskip("fastapi")
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from src.vespercode.audit.projection import RunVisibilityV1
-from src.vespercode.contracts.optional import AbsentV1
-from src.vespercode.credentials.port import CredentialStatusV1
-from src.vespercode.web.app import (
+from vespercode.audit.projection import RunVisibilityV1
+from vespercode.contracts.optional import AbsentV1
+from vespercode.credentials.port import CredentialStatusV1
+from vespercode.web.app import (
     LocalRouteInstallerSequenceV1,
     LocalRouteInstallerV1,
     LocalShellPortsV1,
     RunVisibilitySequenceV1,
     create_local_app,
 )
-from src.vespercode.web.security import LocalWebSecurityConfigV1
+from vespercode.web.security import LocalWebSecurityConfigV1
 
 
 def credential_status() -> CredentialStatusV1:

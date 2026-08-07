@@ -18,23 +18,23 @@ from __future__ import annotations
 
 from typing import Protocol
 
-from src.vespercode.canonical.digest import domain_digest
-from src.vespercode.canonical.json_v1 import CanonicalValueV1
-from src.vespercode.contracts.action import _instance_digest_for, _require_action_id
-from src.vespercode.candidate.patch_engine import ApplyCandidatePatchAction
-from src.vespercode.loop.agent_actions import (
+from vespercode.canonical.digest import domain_digest
+from vespercode.canonical.json_v1 import CanonicalValueV1
+from vespercode.contracts.action import _instance_digest_for, _require_action_id
+from vespercode.candidate.patch_engine import ApplyCandidatePatchAction
+from vespercode.loop.agent_actions import (
     ActionInstanceV1,
     AgentAction,
     ProposeCompletionActionV1,
     RunCheckActionV1,
 )
-from src.vespercode.tools.file_actions import (
+from vespercode.tools.file_actions import (
     ListFilesActionV1,
     ReadFileActionV1,
     SearchTextActionV1,
     _canonical_location,
 )
-from src.vespercode.tools.file_results import (
+from vespercode.tools.file_results import (
     ListFilesCursorV1,
     SearchTextCursorV1,
 )

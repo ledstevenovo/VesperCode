@@ -24,15 +24,15 @@ from pydantic import (
     model_validator,
 )
 
-from src.vespercode.canonical.digest import domain_digest
-from src.vespercode.canonical.json_v1 import CanonicalValueV1
-from src.vespercode.canonical.path_v1 import CanonicalRelativePathV1
-from src.vespercode.contracts.evidence import (
+from vespercode.canonical.digest import domain_digest
+from vespercode.canonical.json_v1 import CanonicalValueV1
+from vespercode.canonical.path_v1 import CanonicalRelativePathV1
+from vespercode.contracts.evidence import (
     OptionalArtifactRefV1,
     OptionalDigestV1,
     _DIGEST_RE,
 )
-from src.vespercode.trees.text_classifier import TextMetadataV1
+from vespercode.trees.text_classifier import TextMetadataV1
 
 PersistenceTransactionStateV1 = Literal[
     "PREPARED", "WRITING", "COMMITTED", "ROLLED_BACK", "UNRESOLVED"

@@ -28,10 +28,10 @@ from pydantic import (
     model_validator,
 )
 
-from src.vespercode.canonical.path_v1 import CanonicalRelativePathV1
-from src.vespercode.contracts.evidence import ArtifactRefV1, DigestV1
-from src.vespercode.execution.docker_executor import RawExecutionResultV1
-from src.vespercode.execution.materialization import (
+from vespercode.canonical.path_v1 import CanonicalRelativePathV1
+from vespercode.contracts.evidence import ArtifactRefV1, DigestV1
+from vespercode.execution.docker_executor import RawExecutionResultV1
+from vespercode.execution.materialization import (
     MaterializedCandidateV1,
     _MARKER_NAME,
     _is_link,
@@ -39,7 +39,7 @@ from src.vespercode.execution.materialization import (
     digest_materialized_candidate,
     register_non_reusable_name,
 )
-from src.vespercode.trees.candidate import CandidateTreeV1
+from vespercode.trees.candidate import CandidateTreeV1
 
 
 class _CleanupAPIClientV1(Protocol):

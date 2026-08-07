@@ -17,13 +17,13 @@ import pytest
 # module skips cleanly there (formal env runs it fully).
 pytest.importorskip("pydantic")
 
-from src.vespercode.storage.connection import (
+from vespercode.storage.connection import (
     ControlDatabase,
     ControlDatabaseErrorV1,
     ControlTransactionErrorV1,
     open_control_database,
 )
-from src.vespercode.storage.migration_engine import apply_migrations
+from vespercode.storage.migration_engine import apply_migrations
 
 
 @pytest.fixture

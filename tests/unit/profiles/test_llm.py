@@ -21,8 +21,8 @@ pytest.importorskip("pydantic")
 
 from pydantic import ValidationError
 
-from src.vespercode.canonical.digest import domain_digest
-from src.vespercode.profiles.llm import (
+from vespercode.canonical.digest import domain_digest
+from vespercode.profiles.llm import (
     MockLLMProfileV1,
     OpenAILLMProfileV1,
     PresentIntegerParameterV1,

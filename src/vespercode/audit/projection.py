@@ -20,9 +20,9 @@ from typing import Literal, TypeAlias, cast
 
 from pydantic import BaseModel, ConfigDict, StrictStr
 
-from src.vespercode.audit.event import AuditEventV1, RecoveryPayloadV1
-from src.vespercode.contracts.run import WaitContextV1
-from src.vespercode.storage.run_repository import RunRecordV1
+from vespercode.audit.event import AuditEventV1, RecoveryPayloadV1
+from vespercode.contracts.run import WaitContextV1
+from vespercode.storage.run_repository import RunRecordV1
 
 WaitContextSequenceV1: TypeAlias = tuple[WaitContextV1, ...]
 """Immutable ordered tuple of the Run's typed wait contexts."""

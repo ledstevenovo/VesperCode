@@ -23,18 +23,18 @@ pytest.importorskip("pydantic")
 
 from pydantic import ValidationError
 
-from src.vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
-from src.vespercode.contracts.optional import AbsentV1, PresentV1
-from src.vespercode.contracts.run import RunPhase, RunStateV1, RunStatus
-from src.vespercode.runs.admission import (
+from vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
+from vespercode.contracts.optional import AbsentV1, PresentV1
+from vespercode.contracts.run import RunPhase, RunStateV1, RunStatus
+from vespercode.runs.admission import (
     AdmissionCoordinator,
     AdmissionPortsV1,
     AdmissionResultV1,
 )
-from src.vespercode.storage.connection import ControlDatabase, open_control_database
-from src.vespercode.storage.migration_engine import apply_migrations
-from src.vespercode.storage.migrations.v0001_run_wait import RUN_WAIT_V1_MIGRATION
-from src.vespercode.storage.run_repository import (
+from vespercode.storage.connection import ControlDatabase, open_control_database
+from vespercode.storage.migration_engine import apply_migrations
+from vespercode.storage.migrations.v0001_run_wait import RUN_WAIT_V1_MIGRATION
+from vespercode.storage.run_repository import (
     RunRepository,
     TransitionCommandV1,
 )

@@ -23,15 +23,15 @@ from typing import Literal, TypeAlias
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
 
-from src.vespercode.canonical.digest import domain_digest
-from src.vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
-from src.vespercode.memory.entry import (
+from vespercode.canonical.digest import domain_digest
+from vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
+from vespercode.memory.entry import (
     MemoryCreatorV1,
     MemoryErrorCodeV1,
 )
-from src.vespercode.memory.repository import MemoryRepository
-from src.vespercode.storage.connection import ControlDatabase
-from src.vespercode.storage.idempotency import IdempotencyRepository
+from vespercode.memory.repository import MemoryRepository
+from vespercode.storage.connection import ControlDatabase
+from vespercode.storage.idempotency import IdempotencyRepository
 
 _CLEAR_EVENT_SCOPE = "memory_clear"
 _CLEAR_TARGET_MAX = 100

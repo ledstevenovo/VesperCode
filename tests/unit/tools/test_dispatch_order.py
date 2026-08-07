@@ -17,37 +17,37 @@ from typing import Any, Callable
 
 import pytest
 
-from src.vespercode.candidate.patch_engine import ApplyCandidatePatchAction
-from src.vespercode.canonical.path_v1 import CanonicalRelativePathV1
-from src.vespercode.contracts.evidence import ArtifactRefV1, DigestV1
-from src.vespercode.contracts.location import RootLocationV1
-from src.vespercode.contracts.optional import AbsentV1
-from src.vespercode.contracts.run import RunPhase
-from src.vespercode.governance.policy import PatchPathFactV1, PolicyEngine
-from src.vespercode.loop.action_binding import (
+from vespercode.candidate.patch_engine import ApplyCandidatePatchAction
+from vespercode.canonical.path_v1 import CanonicalRelativePathV1
+from vespercode.contracts.evidence import ArtifactRefV1, DigestV1
+from vespercode.contracts.location import RootLocationV1
+from vespercode.contracts.optional import AbsentV1
+from vespercode.contracts.run import RunPhase
+from vespercode.governance.policy import PatchPathFactV1, PolicyEngine
+from vespercode.loop.action_binding import (
     ActionIdGeneratorV1,
     bind_action,
     reset_issued_action_ids,
 )
-from src.vespercode.loop.agent_actions import (
+from vespercode.loop.agent_actions import (
     ActionInstanceV1,
     ProposeCompletionActionV1,
     RunCheckActionV1,
 )
-from src.vespercode.tools.dispatcher import (
+from vespercode.tools.dispatcher import (
     DispatchContextV1,
     ToolDispatcher,
 )
-from src.vespercode.tools.file_actions import (
+from vespercode.tools.file_actions import (
     ListFilesActionV1,
     ReadFileActionV1,
 )
-from src.vespercode.tools.file_results import (
+from vespercode.tools.file_results import (
     ListFilesResultV1,
     ListFilesSuccessV1,
     SearchTextSuccessV1,
 )
-from src.vespercode.trees.readable import ReadableTreeV1
+from vespercode.trees.readable import ReadableTreeV1
 
 _DIGEST = "1" * 64
 

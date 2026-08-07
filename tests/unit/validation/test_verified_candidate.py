@@ -21,7 +21,7 @@ pytest.importorskip("pydantic")
 
 from pydantic import TypeAdapter, ValidationError
 
-from src.vespercode.validation.formal import (
+from vespercode.validation.formal import (
     FormalValidationFailureV1,
     FormalValidationOutcomeV1,
     VerifiedCandidateV1,

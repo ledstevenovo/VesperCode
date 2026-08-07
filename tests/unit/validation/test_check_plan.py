@@ -22,9 +22,9 @@ pytest.importorskip("pydantic")
 
 from pydantic import ValidationError
 
-from src.vespercode.contracts.optional import AbsentV1, PresentV1
-from src.vespercode.execution.docker_profile import ExecutionArgumentSequenceV1
-from src.vespercode.validation.python_adapter import (
+from vespercode.contracts.optional import AbsentV1, PresentV1
+from vespercode.execution.docker_profile import ExecutionArgumentSequenceV1
+from vespercode.validation.python_adapter import (
     ADAPTER_VERSION,
     BaselineCheckPlanEntryV1,
     BaselineCheckPlanV1,

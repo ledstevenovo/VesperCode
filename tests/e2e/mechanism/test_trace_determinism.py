@@ -15,10 +15,10 @@ import pytest
 
 pytest.importorskip("pydantic")
 
-from src.vespercode.canonical.clock import FakeClockV1
-from src.vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
-from src.vespercode.demo.runner import DemoScenarioRunner
-from src.vespercode.demo.scenario import FIXED_DEMO_SCENARIO_V1
+from vespercode.canonical.clock import FakeClockV1
+from vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
+from vespercode.demo.runner import DemoScenarioRunner
+from vespercode.demo.scenario import FIXED_DEMO_SCENARIO_V1
 
 from scripts.run_mechanism_demo import MechanismHarness
 

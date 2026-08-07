@@ -33,10 +33,10 @@ from pydantic import (
     model_validator,
 )
 
-from src.vespercode.contracts.evidence import _DIGEST_RE
-from src.vespercode.profiles.reference import ReferenceProfileManifestV1
-from src.vespercode.workspace.identity_win32 import WorkspaceIdentityV1
-from src.vespercode.workspace.path_guard import (
+from vespercode.contracts.evidence import _DIGEST_RE
+from vespercode.profiles.reference import ReferenceProfileManifestV1
+from vespercode.workspace.identity_win32 import WorkspaceIdentityV1
+from vespercode.workspace.path_guard import (
     IgnoreRuleV1,
     ignore_rules_digest,
     protected_artifact_path,

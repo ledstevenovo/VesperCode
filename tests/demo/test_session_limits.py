@@ -17,19 +17,19 @@ import pytest
 
 pytest.importorskip("pydantic")
 
-from src.vespercode.canonical.clock import FakeClockV1
-from src.vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
-from src.vespercode.contracts.evidence import DigestV1
-from src.vespercode.contracts.optional import AbsentV1
-from src.vespercode.demo.runner import (
+from vespercode.canonical.clock import FakeClockV1
+from vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
+from vespercode.contracts.evidence import DigestV1
+from vespercode.contracts.optional import AbsentV1
+from vespercode.demo.runner import (
     DEMO_MAX_ACTIONS_V1,
     DEMO_MAX_SESSIONS_V1,
     DEMO_SESSION_TTL_MILLISECONDS_V1,
     DemoAdvanceErrorV1,
     DemoScenarioRunner,
 )
-from src.vespercode.demo.scenario import FIXED_DEMO_SCENARIO_V1
-from src.vespercode.demo.types import (
+from vespercode.demo.scenario import FIXED_DEMO_SCENARIO_V1
+from vespercode.demo.types import (
     DemoDecisionV1,
     DemoScenarioV1,
     DemoStepResultV1,
@@ -220,7 +220,7 @@ def test_unknown_feedback_kind_rejects_closed() -> None:
     defensive, so the pin drives the private mapping directly)."""
     from typing import Any, cast
 
-    from src.vespercode.demo.runner import _rehydrate_feedback_row
+    from vespercode.demo.runner import _rehydrate_feedback_row
 
     bogus_row = cast(
         Any,

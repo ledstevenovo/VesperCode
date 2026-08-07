@@ -22,34 +22,34 @@ import pytest
 
 pytest.importorskip("pydantic")
 
-from src.vespercode.candidate.patch_engine import (
+from vespercode.candidate.patch_engine import (
     ApplyCandidatePatchAction,
     CandidatePatchOutcomeV1,
 )
-from src.vespercode.canonical.path_v1 import CanonicalRelativePathV1
-from src.vespercode.contracts.optional import AbsentV1
-from src.vespercode.credentials.service import CredentialService
-from src.vespercode.demo.executor import (
+from vespercode.canonical.path_v1 import CanonicalRelativePathV1
+from vespercode.contracts.optional import AbsentV1
+from vespercode.credentials.service import CredentialService
+from vespercode.demo.executor import (
     PROHIBITED_DEMO_MODULE_PREFIXES_V1,
     BoundActionV1,
     DemoCapabilityErrorV1,
     DemoExecutor,
     DemoToolResultV1,
 )
-from src.vespercode.demo.scenario import FIXED_DEMO_SCENARIO_V1
-from src.vespercode.execution.docker_executor import DockerExecutor
-from src.vespercode.llm.mock_adapter import MockLLMAdapter
-from src.vespercode.llm.openai_adapter import OpenAILLMAdapter
-from src.vespercode.loop.action_binding import (
+from vespercode.demo.scenario import FIXED_DEMO_SCENARIO_V1
+from vespercode.execution.docker_executor import DockerExecutor
+from vespercode.llm.mock_adapter import MockLLMAdapter
+from vespercode.llm.openai_adapter import OpenAILLMAdapter
+from vespercode.loop.action_binding import (
     bind_action,
     reset_issued_action_ids,
 )
-from src.vespercode.loop.agent_actions import (
+from vespercode.loop.agent_actions import (
     RunCheckActionV1,
 )
-from src.vespercode.storage.run_repository import RunRepository
-from src.vespercode.tools.dispatcher import RunCheckOutcomeV1
-from src.vespercode.tools.file_actions import ReadFileActionV1
+from vespercode.storage.run_repository import RunRepository
+from vespercode.tools.dispatcher import RunCheckOutcomeV1
+from vespercode.tools.file_actions import ReadFileActionV1
 
 _FIXED_DIGEST: Final = "ab" * 32
 
@@ -294,7 +294,7 @@ def test_demo_ports_return_fixed_tool_results(demo_executor: DemoExecutor) -> No
         line_count=10,
         max_bytes=1024,
     )
-    from src.vespercode.tools.file_results import ReadFileSuccessV1
+    from vespercode.tools.file_results import ReadFileSuccessV1
 
     read = ports.read_file(cast(Any, None), read_action)
     assert isinstance(read, ReadFileSuccessV1)
@@ -333,8 +333,8 @@ def test_demo_executor_rejects_unregistered_capabilities(
     """list/search/propose are not Demo capabilities: the closed executor
     rejects them and the shared dispatcher would fail closed with zero
     calls (the ports stay unregistered)."""
-    from src.vespercode.loop.agent_actions import ProposeCompletionActionV1
-    from src.vespercode.tools.file_actions import ListFilesActionV1
+    from vespercode.loop.agent_actions import ProposeCompletionActionV1
+    from vespercode.tools.file_actions import ListFilesActionV1
 
     for action in (
         ListFilesActionV1(

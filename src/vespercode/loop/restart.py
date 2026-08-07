@@ -26,7 +26,7 @@ from pydantic import (
     model_validator,
 )
 
-from src.vespercode.contracts.run import RunPhase
+from vespercode.contracts.run import RunPhase
 
 _MAX_IDENTIFIER_CHARS = 128
 

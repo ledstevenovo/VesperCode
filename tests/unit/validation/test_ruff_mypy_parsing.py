@@ -25,16 +25,16 @@ import pytest
 # fully).
 pytest.importorskip("pydantic")
 
-from src.vespercode.contracts.optional import PresentV1
-from src.vespercode.execution.docker_executor import (
+from vespercode.contracts.optional import PresentV1
+from vespercode.execution.docker_executor import (
     ExecutionErrorCodeV1,
     RawExecutionResultV1,
 )
-from src.vespercode.profiles.reference import (
+from vespercode.profiles.reference import (
     ReferenceProfileManifestV1,
     load_reference_profile,
 )
-from src.vespercode.validation.check_result import (
+from vespercode.validation.check_result import (
     parse_mypy_result,
     parse_ruff_result,
 )

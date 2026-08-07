@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from src.vespercode.canonical.timestamp_v1 import (
+from vespercode.canonical.timestamp_v1 import (
     CanonicalTimestampErrorV1,
     CanonicalTimestampV1,
 )

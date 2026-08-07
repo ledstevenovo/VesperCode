@@ -23,7 +23,7 @@ pytest.importorskip("pydantic")
 
 from pydantic import ValidationError
 
-from src.vespercode.candidate.unified_diff import (
+from vespercode.candidate.unified_diff import (
     ParsedPatchEntryV1,
     ParsedPatchV1,
     PatchParseFailureV1,

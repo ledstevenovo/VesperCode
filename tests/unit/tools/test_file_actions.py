@@ -22,15 +22,15 @@ pytest.importorskip("pydantic")
 
 from pydantic import ValidationError
 
-from src.vespercode.canonical.path_v1 import CanonicalRelativePathV1
-from src.vespercode.tools.file_actions import (
+from vespercode.canonical.path_v1 import CanonicalRelativePathV1
+from vespercode.tools.file_actions import (
     ListFilesActionV1,
     ReadFileActionV1,
     SearchTextActionV1,
     list_files_query_digest,
     search_text_query_digest,
 )
-from src.vespercode.tools.file_results import (
+from vespercode.tools.file_results import (
     ListFilesCursorV1,
     SearchTextCursorV1,
 )

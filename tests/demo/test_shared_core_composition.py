@@ -20,32 +20,32 @@ import pytest
 
 pytest.importorskip("pydantic")
 
-from src.vespercode.canonical.clock import FakeClockV1
-from src.vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
-from src.vespercode.contracts.evidence import DigestV1
-from src.vespercode.credentials.service import CredentialService
-from src.vespercode.demo.runner import (
+from vespercode.canonical.clock import FakeClockV1
+from vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
+from vespercode.contracts.evidence import DigestV1
+from vespercode.credentials.service import CredentialService
+from vespercode.demo.runner import (
     DEMO_SHARED_CORE_MODULES_V1,
     DemoScenarioRunner,
 )
-from src.vespercode.demo.scenario import FIXED_DEMO_SCENARIO_V1
-from src.vespercode.demo.types import (
+from vespercode.demo.scenario import FIXED_DEMO_SCENARIO_V1
+from vespercode.demo.types import (
     DemoDecisionV1,
     DemoSessionV1,
 )
-from src.vespercode.execution.docker_executor import DockerExecutor
-from src.vespercode.llm.mock_adapter import MockLLMAdapter
-from src.vespercode.llm.openai_adapter import OpenAILLMAdapter
-from src.vespercode.storage.run_repository import RunRepository
+from vespercode.execution.docker_executor import DockerExecutor
+from vespercode.llm.mock_adapter import MockLLMAdapter
+from vespercode.llm.openai_adapter import OpenAILLMAdapter
+from vespercode.storage.run_repository import RunRepository
 
-import src.vespercode.demo.runner as _demo_runner
-import src.vespercode.governance.policy as _policy
-import src.vespercode.loop.action_pipeline as _action_pipeline
-from src.vespercode.loop.action_parser import ActionParser
-import src.vespercode.loop.feedback as _feedback
-import src.vespercode.loop.feedback_consumption as _feedback_consumption
-import src.vespercode.loop.stopping as _stopping
-import src.vespercode.tools.dispatcher as _dispatcher
+import vespercode.demo.runner as _demo_runner
+import vespercode.governance.policy as _policy
+import vespercode.loop.action_pipeline as _action_pipeline
+from vespercode.loop.action_parser import ActionParser
+import vespercode.loop.feedback as _feedback
+import vespercode.loop.feedback_consumption as _feedback_consumption
+import vespercode.loop.stopping as _stopping
+import vespercode.tools.dispatcher as _dispatcher
 
 _CLOCK_EPOCH = CanonicalTimestampV1("2026-08-06T09:00:00.000Z").epoch_milliseconds
 _FIXED_DIGEST: Final = "ab" * 32
@@ -324,7 +324,7 @@ def test_demo_writeback_steps_require_the_fixed_visitor_decision(
     """The FINAL_WRITEBACK steps advance only through the exact fixed
     visitor decisions (REJECT then APPROVE); a missing or wrong decision
     is a closed rejection and never creates a formal approval."""
-    from src.vespercode.demo.runner import DemoAdvanceErrorV1
+    from vespercode.demo.runner import DemoAdvanceErrorV1
 
     session = demo_runner.create_session("writeback-run")
     for _ in range(4):

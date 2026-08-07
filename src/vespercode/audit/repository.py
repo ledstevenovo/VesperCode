@@ -26,7 +26,7 @@ from pydantic import (
     field_validator,
 )
 
-from src.vespercode.audit.event import (
+from vespercode.audit.event import (
     AuditErrorCodeV1,
     AuditEventTypeV1,
     AuditEventV1,
@@ -36,14 +36,14 @@ from src.vespercode.audit.event import (
     redact_payload,
     serialize_payload,
 )
-from src.vespercode.canonical.digest import domain_digest
-from src.vespercode.canonical.json_v1 import CanonicalJsonErrorV1
-from src.vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
-from src.vespercode.storage.connection import (
+from vespercode.canonical.digest import domain_digest
+from vespercode.canonical.json_v1 import CanonicalJsonErrorV1
+from vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
+from vespercode.storage.connection import (
     ControlDatabase,
     ControlTransactionV1,
 )
-from src.vespercode.storage.idempotency import IdempotencyRepository
+from vespercode.storage.idempotency import IdempotencyRepository
 
 AUDIT_SEQUENCE_MAX_V1 = 2_147_483_647
 """The closed per-Run sequence bound (the 32-bit signed integer maximum).

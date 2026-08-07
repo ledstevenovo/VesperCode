@@ -33,8 +33,8 @@ from pydantic import (
     model_validator,
 )
 
-from src.vespercode.canonical.clock import ClockV1, SystemClockV1
-from src.vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
+from vespercode.canonical.clock import ClockV1, SystemClockV1
+from vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
 
 LOOPBACK_HOST_VALUES_V1: Final[frozenset[str]] = frozenset({"127.0.0.1", "localhost"})
 """The only accepted request Host values (loopback-only, SPEC §4.9)."""

@@ -25,10 +25,10 @@ from typing import TypeAlias, cast
 
 from pydantic import BaseModel, ConfigDict, StrictStr
 
-from src.vespercode.canonical.digest import domain_digest
-from src.vespercode.canonical.json_v1 import CanonicalJsonErrorV1
-from src.vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
-from src.vespercode.memory.entry import (
+from vespercode.canonical.digest import domain_digest
+from vespercode.canonical.json_v1 import CanonicalJsonErrorV1
+from vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
+from vespercode.memory.entry import (
     MemoryCreatorV1,
     MemoryEntryV1,
     MemoryKindV1,
@@ -37,11 +37,11 @@ from src.vespercode.memory.entry import (
     parse_source,
     serialize_source,
 )
-from src.vespercode.storage.connection import (
+from vespercode.storage.connection import (
     ControlDatabase,
     ControlTransactionV1,
 )
-from src.vespercode.storage.idempotency import IdempotencyRepository
+from vespercode.storage.idempotency import IdempotencyRepository
 
 MemoryEntrySequenceV1: TypeAlias = tuple[MemoryEntryV1, ...]
 

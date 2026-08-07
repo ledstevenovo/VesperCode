@@ -33,27 +33,27 @@ from pydantic import (
     model_validator,
 )
 
-from src.vespercode.canonical.clock import ClockV1, SystemClockV1
-from src.vespercode.contracts.evidence import _DIGEST_RE
-from src.vespercode.contracts.optional import AbsentV1, PresentV1
-from src.vespercode.contracts.run import RunStateV1
-from src.vespercode.credentials.port import (
+from vespercode.canonical.clock import ClockV1, SystemClockV1
+from vespercode.contracts.evidence import _DIGEST_RE
+from vespercode.contracts.optional import AbsentV1, PresentV1
+from vespercode.contracts.run import RunStateV1
+from vespercode.credentials.port import (
     CredentialBackendUnsafeError,
     CredentialMissingV1,
     CredentialStorePortV1,
     SecretCredentialV1,
 )
-from src.vespercode.governance.disclosure_ledger import (
+from vespercode.governance.disclosure_ledger import (
     AuthorizePreparedRequestV1,
     DisclosureAuthorizationRecordV1,
     DisclosureLedger,
 )
-from src.vespercode.governance.request_sources import (
+from vespercode.governance.request_sources import (
     SourceValidationError,
     validate_segment_sources,
 )
-from src.vespercode.llm.base import ModelResponse
-from src.vespercode.llm.call_result import (
+from vespercode.llm.base import ModelResponse
+from vespercode.llm.call_result import (
     OptionalAuthorizationRecordRefV1,
     OptionalLLMCallErrorV1,
     OptionalResponseDigestV1,
@@ -61,18 +61,18 @@ from src.vespercode.llm.call_result import (
     PresentLLMCallErrorV1,
     PresentResponseDigestV1,
 )
-from src.vespercode.llm.mock_adapter import MockLLMAdapter, MockScriptMismatchError
-from src.vespercode.llm.openai_adapter import (
+from vespercode.llm.mock_adapter import MockLLMAdapter, MockScriptMismatchError
+from vespercode.llm.openai_adapter import (
     OpenAILLMAdapter,
     OpenAITransportFailure,
 )
-from src.vespercode.llm.prepared_request import (
+from vespercode.llm.prepared_request import (
     MockPreparedModelRequestV1,
     OpenAIPreparedModelRequestV1,
     PreparedModelRequestV1,
 )
-from src.vespercode.loop.turn_boundary import TurnBoundary
-from src.vespercode.profiles.endpoints import OpenAIEndpointRegistry
+from vespercode.loop.turn_boundary import TurnBoundary
+from vespercode.profiles.endpoints import OpenAIEndpointRegistry
 
 # The T16.1 adapter versions the orchestrator holds (the frozen
 # profile/adapter identity gate of SPEC §4.2.1/§4.4.4: a command whose

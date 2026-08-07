@@ -19,8 +19,8 @@ from typing import Literal, TypeAlias
 
 from pydantic import BaseModel, ConfigDict, StrictStr
 
-from src.vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
-from src.vespercode.contracts.run import WaitContextV1, WaitDecisionV1
+from vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
+from vespercode.contracts.run import WaitContextV1, WaitDecisionV1
 
 WaitTransitionKindV1: TypeAlias = Literal[
     "ENTERED",

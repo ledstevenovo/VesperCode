@@ -22,12 +22,12 @@ import pytest
 # cleanly there (formal env runs it fully).
 pytest.importorskip("pydantic")
 
-from src.vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
-from src.vespercode.memory.clear import (
+from vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
+from vespercode.memory.clear import (
     ClearMemoryCommandV1,
     MemoryClearService,
 )
-from src.vespercode.memory.entry import (
+from vespercode.memory.entry import (
     KnownFailureSourceV1,
     MemoryCreatorV1,
     MemoryKindV1,
@@ -35,30 +35,30 @@ from src.vespercode.memory.entry import (
     UserDecisionSourceV1,
     UserVisibleTextSourceV1,
 )
-from src.vespercode.memory.repository import (
+from vespercode.memory.repository import (
     CreateMemoryCommandV1,
     MemoryRepository,
 )
-from src.vespercode.memory.selection import (
+from vespercode.memory.selection import (
     MemorySelectionQueryV1,
     MemorySelectorV1,
 )
-from src.vespercode.storage.connection import (
+from vespercode.storage.connection import (
     ControlDatabase,
     open_control_database,
 )
-from src.vespercode.storage.migration_engine import apply_migrations
-from src.vespercode.storage.migrations.v0001_run_wait import RUN_WAIT_V1_MIGRATION
-from src.vespercode.storage.migrations.v0002_idempotency import (
+from vespercode.storage.migration_engine import apply_migrations
+from vespercode.storage.migrations.v0001_run_wait import RUN_WAIT_V1_MIGRATION
+from vespercode.storage.migrations.v0002_idempotency import (
     IDEMPOTENCY_V1_MIGRATION,
 )
-from src.vespercode.storage.migrations.v0003_disclosure_grants import (
+from vespercode.storage.migrations.v0003_disclosure_grants import (
     DISCLOSURE_GRANTS_V1_MIGRATION,
 )
-from src.vespercode.storage.migrations.v0004_disclosure_authorizations import (
+from vespercode.storage.migrations.v0004_disclosure_authorizations import (
     DISCLOSURE_AUTHORIZATIONS_V1_MIGRATION,
 )
-from src.vespercode.storage.migrations.v0005_memory import MEMORY_V1_MIGRATION
+from vespercode.storage.migrations.v0005_memory import MEMORY_V1_MIGRATION
 
 _CREATED_AT = CanonicalTimestampV1("2026-08-06T09:00:00.000Z")
 _CLEARED_AT = CanonicalTimestampV1("2026-08-06T11:00:00.000Z")

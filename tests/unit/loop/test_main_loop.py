@@ -25,20 +25,20 @@ import pytest
 # cleanly there (formal env runs it fully).
 pytest.importorskip("pydantic")
 
-from src.vespercode.candidate.patch_engine import CandidatePatchOutcomeV1
-from src.vespercode.credentials.port import (
+from vespercode.candidate.patch_engine import CandidatePatchOutcomeV1
+from vespercode.credentials.port import (
     CredentialBackendProbeV1,
     CredentialMissingV1,
     CredentialStatusV1,
     CredentialStoreMutationV1,
     SecretCredentialV1,
 )
-from src.vespercode.canonical.clock import FakeClockV1
-from src.vespercode.canonical.path_v1 import CanonicalRelativePathV1
-from src.vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
-from src.vespercode.contracts.evidence import ArtifactRefV1, DigestV1
-from src.vespercode.contracts.optional import AbsentV1, PresentV1
-from src.vespercode.contracts.run import (
+from vespercode.canonical.clock import FakeClockV1
+from vespercode.canonical.path_v1 import CanonicalRelativePathV1
+from vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
+from vespercode.contracts.evidence import ArtifactRefV1, DigestV1
+from vespercode.contracts.optional import AbsentV1, PresentV1
+from vespercode.contracts.run import (
     RunLimitsV1,
     RunPhase,
     RunStatus,
@@ -46,125 +46,125 @@ from src.vespercode.contracts.run import (
     WaitDecisionV1,
     WaitKind,
 )
-from src.vespercode.governance.disclosure_decision import (
+from vespercode.governance.disclosure_decision import (
     DecideDisclosureGrantV1,
     DisclosureDecisionServiceV1,
 )
-from src.vespercode.governance.disclosure_ledger import DisclosureLedger
-from src.vespercode.governance.disclosure_scope import (
+from vespercode.governance.disclosure_ledger import DisclosureLedger
+from vespercode.governance.disclosure_scope import (
     DirectoryDisclosureScopeV1,
     DisclosureScopeSequenceV1,
 )
-from src.vespercode.governance.disclosure_subject import (
+from vespercode.governance.disclosure_subject import (
     DisclosureGrantSubjectV1,
     DisclosureSubjectRequestV1,
     build_disclosure_subject,
 )
-from src.vespercode.governance.request_sources import (
+from vespercode.governance.request_sources import (
     RequestContentSegmentV1,
     RequestMessageV1,
     RequestSourceCategoryV1,
     validate_segment_sources,
 )
-from src.vespercode.governance.policy import PolicyEngine
-from src.vespercode.llm.base import ModelResponse
-from src.vespercode.llm.call_result import (
+from vespercode.governance.policy import PolicyEngine
+from vespercode.llm.base import ModelResponse
+from vespercode.llm.call_result import (
     PresentResponseDigestV1,
 )
-from src.vespercode.llm.mock_adapter import MockLLMAdapter
-from src.vespercode.llm.openai_adapter import (
+from vespercode.llm.mock_adapter import MockLLMAdapter
+from vespercode.llm.openai_adapter import (
     LLMTransportResultV1,
     OpenAILLMAdapter,
 )
-from src.vespercode.llm.prepared_request import (
+from vespercode.llm.prepared_request import (
     MockPreparedModelRequestV1,
     OpenAIPreparedModelRequestV1,
     prepare_mock_request,
     prepare_openai_request,
 )
-from src.vespercode.loop.action_binding import reset_issued_action_ids
-from src.vespercode.loop.action_pipeline import (
+from vespercode.loop.action_binding import reset_issued_action_ids
+from vespercode.loop.action_pipeline import (
     ActionPipeline,
     ActionPipelineContextV1,
     ActionRecordRepositoryV1,
     ActionStepFeedbackV1,
     ActionStepResultV1,
 )
-from src.vespercode.loop.agent_actions import ActionInstanceV1
-from src.vespercode.loop.call_orchestrator import (
+from vespercode.loop.agent_actions import ActionInstanceV1
+from vespercode.loop.call_orchestrator import (
     CallOnceV1,
     CallOrchestrator,
     LLMCallResultV1,
 )
-from src.vespercode.loop.cancellation import CancellationController
-from src.vespercode.loop.context_projection import (
+from vespercode.loop.cancellation import CancellationController
+from vespercode.loop.context_projection import (
     ContextBudgetFailureV1,
     ContextProjectionV1,
 )
-from src.vespercode.loop.engine import (
+from vespercode.loop.engine import (
     AgentLoopEngine,
     LoopContextBuilderPortV1,
     LoopRequestPreparerPortV1,
     LoopWaitProviderPortV1,
     RunFactsPortV1,
 )
-from src.vespercode.loop.feedback_consumption import (
+from vespercode.loop.feedback_consumption import (
     FeedbackRepositoryV1,
 )
-from src.vespercode.loop.progress import ProgressDecisionV1
-from src.vespercode.loop.stopping import ContinueV1
-from src.vespercode.loop.progress import ProgressEvaluator
-from src.vespercode.loop.restart import RestartGuard
-from src.vespercode.loop.stopping import StopEvaluator
-from src.vespercode.loop.turn_boundary import (
+from vespercode.loop.progress import ProgressDecisionV1
+from vespercode.loop.stopping import ContinueV1
+from vespercode.loop.progress import ProgressEvaluator
+from vespercode.loop.restart import RestartGuard
+from vespercode.loop.stopping import StopEvaluator
+from vespercode.loop.turn_boundary import (
     CloseTurnResultV1,
     TurnBoundary,
     TurnOutcomeV1,
 )
-from src.vespercode.loop.wait_control import WaitController
-from src.vespercode.profiles.endpoints import OpenAIEndpointV1
-from src.vespercode.profiles.llm import (
+from vespercode.loop.wait_control import WaitController
+from vespercode.profiles.endpoints import OpenAIEndpointV1
+from vespercode.profiles.llm import (
     MockLLMProfileV1,
     OpenAILLMProfileV1,
     load_llm_profile,
 )
-from src.vespercode.profiles.registry import build_profile_registry
-from src.vespercode.storage.connection import (
+from vespercode.profiles.registry import build_profile_registry
+from vespercode.storage.connection import (
     ControlDatabase,
     open_control_database,
 )
-from src.vespercode.storage.migration_engine import apply_migrations
-from src.vespercode.storage.migrations.v0001_run_wait import RUN_WAIT_V1_MIGRATION
-from src.vespercode.storage.migrations.v0002_idempotency import (
+from vespercode.storage.migration_engine import apply_migrations
+from vespercode.storage.migrations.v0001_run_wait import RUN_WAIT_V1_MIGRATION
+from vespercode.storage.migrations.v0002_idempotency import (
     IDEMPOTENCY_V1_MIGRATION,
 )
-from src.vespercode.storage.migrations.v0003_disclosure_grants import (
+from vespercode.storage.migrations.v0003_disclosure_grants import (
     DISCLOSURE_GRANTS_V1_MIGRATION,
 )
-from src.vespercode.storage.migrations.v0004_disclosure_authorizations import (
+from vespercode.storage.migrations.v0004_disclosure_authorizations import (
     DISCLOSURE_AUTHORIZATIONS_V1_MIGRATION,
 )
-from src.vespercode.storage.migrations.v0005_memory import MEMORY_V1_MIGRATION
-from src.vespercode.storage.migrations.v0006_audit import AUDIT_V1_MIGRATION
-from src.vespercode.storage.migrations.v0007_agent_turns import (
+from vespercode.storage.migrations.v0005_memory import MEMORY_V1_MIGRATION
+from vespercode.storage.migrations.v0006_audit import AUDIT_V1_MIGRATION
+from vespercode.storage.migrations.v0007_agent_turns import (
     AGENT_TURNS_V1_MIGRATION,
 )
-from src.vespercode.storage.migrations.v0008_feedback import FEEDBACK_V1_MIGRATION
-from src.vespercode.storage.migrations.v0009_actions import ACTIONS_V1_MIGRATION
-from src.vespercode.storage.run_repository import (
+from vespercode.storage.migrations.v0008_feedback import FEEDBACK_V1_MIGRATION
+from vespercode.storage.migrations.v0009_actions import ACTIONS_V1_MIGRATION
+from vespercode.storage.run_repository import (
     RunRecordV1,
     RunRepository,
     TransitionCommandV1,
     TransitionResultV1,
 )
-from src.vespercode.tools.dispatcher import (
+from vespercode.tools.dispatcher import (
     ActionResultV1,
     CompletionOutcomeV1,
     DispatchContextV1,
     RunCheckOutcomeV1,
     ToolDispatcher,
 )
-from src.vespercode.tools.file_results import (
+from vespercode.tools.file_results import (
     FileToolErrorV1,
     ListFilesSuccessV1,
 )
@@ -474,12 +474,12 @@ class RecordingLoopStages:
     def evaluate_safe_point(
         self, run: RunRecordV1, cancellation_requested: bool
     ) -> Any:
-        from src.vespercode.loop.cancellation import CancellationDecisionV1
+        from vespercode.loop.cancellation import CancellationDecisionV1
 
         return CancellationDecisionV1(kind="HOLD", reason="NO_CANCELLATION")
 
     def inspect(self, run: Any) -> Any:
-        from src.vespercode.loop.restart import RestartDispositionV1
+        from vespercode.loop.restart import RestartDispositionV1
 
         return RestartDispositionV1(
             schema_version=1,

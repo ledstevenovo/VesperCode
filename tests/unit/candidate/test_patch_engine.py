@@ -25,30 +25,30 @@ pytest.importorskip("pydantic")
 
 from pydantic import ValidationError
 
-from src.vespercode.canonical.path_v1 import CanonicalRelativePathV1
-from src.vespercode.candidate.patch_engine import (
+from vespercode.canonical.path_v1 import CanonicalRelativePathV1
+from vespercode.candidate.patch_engine import (
     ApplyCandidatePatchAction,
     CandidatePatchContextV1,
     CandidatePatchOutcomeV1,
     apply_candidate_patch,
 )
-from src.vespercode.profiles.registry import build_profile_registry
-from src.vespercode.trees.candidate import (
+from vespercode.profiles.registry import build_profile_registry
+from vespercode.trees.candidate import (
     CandidatePostimageV1,
     CandidateRevisionV1,
     derive_candidate_revision,
     root_candidate_revision,
 )
-from src.vespercode.trees.content_store import ContentObjectStore
-from src.vespercode.trees.snapshot import (
+from vespercode.trees.content_store import ContentObjectStore
+from vespercode.trees.snapshot import (
     AcceptedGitPreflightV1,
     SealedSnapshotInputFileV1,
     SnapshotTreeV1,
     create_snapshot,
 )
-from src.vespercode.trees.text_classifier import classify_supported_text
-from src.vespercode.workspace.git_preflight import GitPreflightResultV1
-from src.vespercode.workspace.path_guard import IgnoreRuleV1, ignore_rules_digest
+from vespercode.trees.text_classifier import classify_supported_text
+from vespercode.workspace.git_preflight import GitPreflightResultV1
+from vespercode.workspace.path_guard import IgnoreRuleV1, ignore_rules_digest
 
 
 def stage_replace(path: str, raw: bytes) -> CandidatePostimageV1:

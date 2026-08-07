@@ -17,7 +17,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, StrictStr
 
-from src.vespercode.storage.connection import (
+from vespercode.storage.connection import (
     ControlDatabase,
     ControlTransactionV1,
 )

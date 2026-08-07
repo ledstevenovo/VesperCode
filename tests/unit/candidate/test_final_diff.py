@@ -24,31 +24,31 @@ pytest.importorskip("pydantic")
 
 from pydantic import ValidationError
 
-from src.vespercode.candidate.final_diff import (
+from vespercode.candidate.final_diff import (
     FinalDiffEntryV1,
     FinalDiffPreimageV1,
     FinalDiffRejectedError,
     FinalDiffV1,
     recompute_final_diff,
 )
-from src.vespercode.canonical.path_v1 import CanonicalRelativePathV1
-from src.vespercode.profiles.editable import EditablePathPolicyV1
-from src.vespercode.profiles.registry import build_profile_registry
-from src.vespercode.trees.candidate import (
+from vespercode.canonical.path_v1 import CanonicalRelativePathV1
+from vespercode.profiles.editable import EditablePathPolicyV1
+from vespercode.profiles.registry import build_profile_registry
+from vespercode.trees.candidate import (
     CandidatePostimageV1,
     CandidateTreeV1,
     derive_candidate_revision,
     root_candidate_revision,
 )
-from src.vespercode.trees.content_store import ContentObjectStore
-from src.vespercode.trees.snapshot import (
+from vespercode.trees.content_store import ContentObjectStore
+from vespercode.trees.snapshot import (
     AcceptedGitPreflightV1,
     SealedSnapshotInputFileV1,
     SnapshotTreeV1,
     create_snapshot,
 )
-from src.vespercode.trees.text_classifier import classify_supported_text
-from src.vespercode.workspace.git_preflight import GitPreflightResultV1
+from vespercode.trees.text_classifier import classify_supported_text
+from vespercode.workspace.git_preflight import GitPreflightResultV1
 
 _FILES: tuple[tuple[str, bytes], ...] = (
     ("README.md", b"readme\n"),

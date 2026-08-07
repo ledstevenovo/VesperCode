@@ -25,11 +25,11 @@ import pytest
 
 from ctypes import wintypes
 
-from src.vespercode.workspace.identity_win32 import (
+from vespercode.workspace.identity_win32 import (
     WorkspaceIdentityV1,
     resolve_workspace_identity,
 )
-from src.vespercode.workspace.mutex_win32 import WorkspaceLeaseV1, WorkspaceMutex
+from vespercode.workspace.mutex_win32 import WorkspaceLeaseV1, WorkspaceMutex
 
 pytestmark = pytest.mark.windows_integration
 
@@ -40,8 +40,8 @@ _CHILD_ACQUIRE_SCRIPT: Final = """
 import json
 import sys
 
-from src.vespercode.workspace.identity_win32 import WorkspaceIdentityV1
-from src.vespercode.workspace.mutex_win32 import (
+from vespercode.workspace.identity_win32 import WorkspaceIdentityV1
+from vespercode.workspace.mutex_win32 import (
     WorkspaceMutex,
     WorkspaceMutexTimeoutError,
 )
@@ -67,8 +67,8 @@ import json
 import os
 import sys
 
-from src.vespercode.workspace.identity_win32 import WorkspaceIdentityV1
-from src.vespercode.workspace.mutex_win32 import WorkspaceMutex
+from vespercode.workspace.identity_win32 import WorkspaceIdentityV1
+from vespercode.workspace.mutex_win32 import WorkspaceMutex
 
 identity = WorkspaceIdentityV1.model_validate(json.loads(sys.stdin.read()))
 lease = WorkspaceMutex.acquire(identity, timeout_ms=2000)

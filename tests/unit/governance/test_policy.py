@@ -24,10 +24,10 @@ import pytest
 # cleanly there (formal env runs it fully).
 pytest.importorskip("pydantic")
 
-from src.vespercode.canonical.digest import domain_digest
-from src.vespercode.contracts.action import ActionInstanceV1, SharedActionV1
-from src.vespercode.contracts.run import RunPhase
-from src.vespercode.governance.policy import (
+from vespercode.canonical.digest import domain_digest
+from vespercode.contracts.action import ActionInstanceV1, SharedActionV1
+from vespercode.contracts.run import RunPhase
+from vespercode.governance.policy import (
     FinalWritebackOperationV1,
     PatchPathFactV1,
     PolicyContextV1,
@@ -35,7 +35,7 @@ from src.vespercode.governance.policy import (
     governance_policy_digest,
     policy_context_digest,
 )
-from src.vespercode.profiles.reference import (
+from vespercode.profiles.reference import (
     ReferenceProfileManifestV1,
     load_reference_profile,
 )

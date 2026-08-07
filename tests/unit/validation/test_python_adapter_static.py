@@ -28,20 +28,20 @@ pytest.importorskip("pydantic")
 
 from pydantic import ValidationError
 
-from src.vespercode.canonical.path_v1 import CanonicalRelativePathV1
-from src.vespercode.profiles.reference import (
+from vespercode.canonical.path_v1 import CanonicalRelativePathV1
+from vespercode.profiles.reference import (
     ReferenceProfileManifestV1,
     load_reference_profile,
 )
-from src.vespercode.trees.content_store import ContentObjectStore
-from src.vespercode.trees.snapshot import (
+from vespercode.trees.content_store import ContentObjectStore
+from vespercode.trees.snapshot import (
     AcceptedGitPreflightV1,
     SealedSnapshotInputFileV1,
     SnapshotTreeV1,
     create_snapshot,
 )
-from src.vespercode.trees.text_classifier import classify_supported_text
-from src.vespercode.validation.python_adapter import (
+from vespercode.trees.text_classifier import classify_supported_text
+from vespercode.validation.python_adapter import (
     BaselineCheckPlanV1,
     CheckPlanError,
     PythonProjectAdapterV1,
@@ -49,7 +49,7 @@ from src.vespercode.validation.python_adapter import (
     TargetTestIdSequenceV1,
     UnsupportedProjectV1,
 )
-from src.vespercode.workspace.git_preflight import GitPreflightResultV1
+from vespercode.workspace.git_preflight import GitPreflightResultV1
 
 # The frozen T02.4 built-in identities (SPEC §1.4.1), independently
 # recomputed by both review stages (test_reference.py precedent).

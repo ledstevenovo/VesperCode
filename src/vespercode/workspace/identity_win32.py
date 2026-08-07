@@ -38,9 +38,9 @@ from pydantic import (
     model_validator,
 )
 
-from src.vespercode.canonical.digest import domain_digest
-from src.vespercode.canonical.json_v1 import CanonicalValueV1
-from src.vespercode.contracts.evidence import _DIGEST_RE
+from vespercode.canonical.digest import domain_digest
+from vespercode.canonical.json_v1 import CanonicalValueV1
+from vespercode.contracts.evidence import _DIGEST_RE
 
 _FILE_READ_ATTRIBUTES: Final = 0x00000080
 _READ_CONTROL: Final = 0x00020000
