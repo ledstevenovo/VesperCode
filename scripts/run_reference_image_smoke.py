@@ -251,17 +251,6 @@ class OCIImageInspection:
     self_reference_scan_passed: bool | None
 
 
-def _empty_inspection() -> OCIImageInspection:
-    """The closed empty inspection of the unimplemented reproduction path."""
-    return OCIImageInspection(
-        manifest_digest=None,
-        image_config_digest=None,
-        recipe_digest=None,
-        platform=None,
-        self_reference_scan_passed=None,
-    )
-
-
 def inspection_from_evidence(
     build: ReferenceImageBuildEvidenceV1,
 ) -> OCIImageInspection:
@@ -860,6 +849,9 @@ def run_reference_image_smoke(
     frozen = task2_go_digest()
     packaged = packaged_reference_manifest_digest()
     freeze_reference_build_input(_REPO_ROOT)  # binds clean-source identity
+    dual_lock_identical = (_REPO_ROOT / LOCK_RELATIVE_V1).read_bytes() == (
+        _REPO_ROOT / FIXTURE_RELATIVE_V1 / "requirements.lock"
+    ).read_bytes()
 
     evidence = rebuild_reference_build_evidence()
     inspection = inspection_from_evidence(evidence)
@@ -952,7 +944,7 @@ def run_reference_image_smoke(
             executor_workspace_write_errno=executor.workspace_write_errno,
             executor_candidate_bytes_match=executor.candidate_bytes_match,
             executor_cleanup_verified=executor.cleanup_verified,
-            fixture_dual_lock_identical=True,
+            fixture_dual_lock_identical=dual_lock_identical,
             all_ok=all_ok,
             report_text="",
             report_digest="",

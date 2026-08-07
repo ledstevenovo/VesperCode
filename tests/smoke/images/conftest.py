@@ -26,14 +26,17 @@ from scripts.run_reference_image_smoke import (
     ProductionExecutorEvidenceV1,
     ReferenceImageBuildEvidenceV1,
     TARGET_TEST_NODE_ID,
+    ensure_reference_tag,
+    inspection_from_evidence,
     probe_loopback_registry,
     rebuild_reference_build_evidence,
-    rebuild_reference_image,
     reference_container_isolation,
     reference_pytest_report,
     reference_workspace_listing,
     run_production_executor_probe,
 )
+
+_REFERENCE_TAG = "vespercode-reference:local"
 
 
 def reference_repo_root() -> Path:
@@ -53,12 +56,23 @@ def rebuilt_reference_build() -> ReferenceImageBuildEvidenceV1:
 
 
 @pytest.fixture(scope="session")
-def rebuilt_reference_image() -> OCIImageInspection:
-    """The closed inspection of the reproduced reference image; before the
-    exact reproduction path is implemented this is the empty
-    pre-implementation inspection, so the exact RED's first task-owned
-    assertion fails on the missing reproduction contract."""
-    return rebuild_reference_image()
+def rebuilt_reference_image(
+    rebuilt_reference_build: ReferenceImageBuildEvidenceV1,
+) -> OCIImageInspection:
+    """The closed inspection of the reproduced reference image, derived
+    from the session's single build evidence (no second build)."""
+    return inspection_from_evidence(rebuilt_reference_build)
+
+
+@pytest.fixture(scope="session")
+def ensure_reference_tagged(
+    rebuilt_reference_build: ReferenceImageBuildEvidenceV1,
+) -> None:
+    """Ensure the frozen reference image is loaded and tagged once per
+    session: the isolation, workspace-listing, and production-executor
+    probes all create containers from the daemon-held image, so a fresh
+    daemon must hold it before any of them runs."""
+    ensure_reference_tag(_REFERENCE_TAG, rebuilt_reference_build)
 
 
 @pytest.fixture(scope="session")
@@ -74,6 +88,7 @@ def reference_isolation_evidence(
 @pytest.fixture(scope="session")
 def reference_workspace_listing_evidence(
     rebuilt_reference_build: ReferenceImageBuildEvidenceV1,
+    ensure_reference_tagged: None,
 ) -> tuple[str, ...]:
     """The sorted /workspace entries of one fresh frozen container."""
     return reference_workspace_listing(
@@ -105,7 +120,9 @@ def reference_pytest_report_evidence(
 
 
 @pytest.fixture(scope="session")
-def production_executor_evidence() -> ProductionExecutorEvidenceV1:
+def production_executor_evidence(
+    ensure_reference_tagged: None,
+) -> ProductionExecutorEvidenceV1:
     """One real production-executor run over a fresh materialized
     fixture candidate."""
     return run_production_executor_probe()
