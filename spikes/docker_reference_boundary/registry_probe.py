@@ -23,7 +23,6 @@ from __future__ import annotations
 
 import shutil
 import subprocess
-import tarfile
 import tempfile
 import time
 import urllib.error
@@ -46,6 +45,7 @@ from spikes.docker_reference_boundary.image_builder import (
     _read_single_manifest,
     _run_docker_build,
     _sha256_hex,
+    normalize_layout_tar,
 )
 from spikes.docker_reference_boundary.input_contract import REGISTRY_IMAGE_DIGEST
 
@@ -256,10 +256,14 @@ def _reproduce_oci_layout(tmp: Path) -> tuple[bytes, bytes, list[bytes]]:
     builder/output/media-type/compression/attestation parameters and the
     builder-identity assert) so the exact manifest bytes live in exactly one
     place; reproduction exists solely to obtain the bytes to push.
+
+    The layout is deterministically normalized (SPEC_PROCESS 86) before
+    the bytes are read: pushing the raw buildkit layout would carry
+    wall-clock layer mtimes and drift the pushed digest away from the
+    frozen build-evidence identity.
     """
     context = tmp / "context"
     output_tar = tmp / "output.tar"
-    layout = tmp / "layout"
     context.mkdir()
     (context / "Dockerfile").write_bytes(_read_required(REPO_ROOT / RECIPE_RELATIVE))
     shutil.copytree(REPO_ROOT / FIXTURE_RELATIVE, context / "fixture")
@@ -267,9 +271,8 @@ def _reproduce_oci_layout(tmp: Path) -> tuple[bytes, bytes, list[bytes]]:
         _read_required(REPO_ROOT / REFERENCE_LOCK_RELATIVE)
     )
     _run_docker_build(context, output_tar)
-    layout.mkdir()
-    with tarfile.open(output_tar, "r") as archive:
-        archive.extractall(layout, filter="data")
+    normalize_layout_tar(output_tar)
+    layout = output_tar.with_name(f"{output_tar.name}.layout")
     _, manifest_bytes = _read_single_manifest(layout)
     _, config_bytes, layer_bytes, _ = _read_members(layout, manifest_bytes)
     return manifest_bytes, config_bytes, layer_bytes

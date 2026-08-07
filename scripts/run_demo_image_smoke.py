@@ -18,7 +18,10 @@ prefixes with ``vespercode.storage`` narrowed to
 ``vespercode.storage.run_repository``, ``vespercode.workspace`` narrowed
 to ``vespercode.workspace.mutex_win32``, and ``vespercode.execution``
 removed because all three execution modules are boot-required type
-imports — Docker absence is proven behaviorally: zero formal adapter
+imports; ``vespercode.audit`` narrowed to the repository/projection/
+retention modules because ``loop.feedback`` boot-imports
+``vespercode.audit.event._contains_secret`` (SPEC_PROCESS 86, same
+§75 precedent class) — Docker absence is proven behaviorally: zero formal adapter
 construction or calls, ``requirements/demo.lock`` without the docker SDK,
 and a boot import closure without ``import docker``).
 
@@ -107,7 +110,9 @@ same sorted-key serialization ``container_healthz_body`` returns."""
 
 PROHIBITED_DEMO_MODULE_PREFIXES_V1: Final[frozenset[str]] = frozenset(
     {
-        "vespercode.audit",
+        "vespercode.audit.repository",
+        "vespercode.audit.projection",
+        "vespercode.audit.retention",
         "vespercode.cli_composition",
         "vespercode.credentials",
         "vespercode.llm.openai_adapter",
@@ -127,8 +132,10 @@ PROHIBITED_DEMO_MODULE_PREFIXES_V1: Final[frozenset[str]] = frozenset(
 """The exact closed prohibited module prefixes of the curated Demo image
 (T34.1 card Interface, §75 ruling): no formal capability adapter —
 loop engine, Run/turn/SQLite repositories, workspace lease, file-tool
-implementations, persistence, credentials, OpenAI adapter, audit,
-memory, web control plane, or CLI composition — may enter the image.
+implementations, persistence, credentials, OpenAI adapter, audit
+repositories/projection/retention, memory, web control plane, or CLI
+composition — may enter the image (``audit.event`` is boot-required by
+``loop.feedback``, SPEC_PROCESS 86).
 
 The prefix rule is exact module-boundary matching: a module path is
 prohibited when it equals a prefix or starts with ``prefix + "."``.

@@ -167,7 +167,7 @@ REFERENCE_IMAGE_TAG_V1: Final = "vespercode-reference:local"
 """The exact local tag of the reproduced reference image (card Build/Driver)."""
 
 FROZEN_TASK2_MANIFEST_DIGEST_V1: Final = (
-    "865930c3cb414cb4d8593a6520560ddabd050e6346b0d882fcdaba230963c47f"
+    "61aa14877eda922fd7fef1c24f268b0bfb9dd53163bd0244d00b0691f475677a"
 )
 """The frozen Task 2 manifest digest: reproduced twice byte-identical by
 the T02.1 fixed-parameter builder after the A-route lock extension
