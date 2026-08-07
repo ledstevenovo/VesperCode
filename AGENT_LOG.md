@@ -2279,3 +2279,13 @@
 - **Task ID:** T38.2 evidence 补正（driver 执行）：Status 行 Not started → Done。
 - **Key prompt/context:** T38.2 evidence commit 勾选了全部 step checkbox 但漏改 Status 行——`SESSION_TASK_COMPLETE_V1` 谓词要求 Status 精确 `**Status:** Complete`。driver 窄修复（仅 T38.2 卡 Status 行 + 本 AGENT_LOG 条目）。
 - **Human intervention:** 无；夜间自主执行授权有效。
+
+## EVIDENCE-REBIND-20260807
+
+- **Timestamp (Asia/Taipei):** `2026-08-07T10:59:56+0800` (system-observed; append-only driver record).
+- **Task ID:** 证据链补绑（用户授权 driver 执行）。
+- **Skills invoked:** `systematic-debugging`（定位提交序导致的自相矛盾）、`verification-before-completion`。
+- **Key prompt/context:** 用户 cd3b7d3+1deb8e1 提交序使工具链证据哈希修改前 gate_scan.py，与提交的修改后 gate_scan.py 不一致——新 worktree 全部受影响。wp31 物化自愈出 74db212c；driver 用 report 模块自身算法重绑 GO 证据（新 digest b400cc66…，GO 保持），loader 验证通过。
+- **Verification:** 旧 GO 加载（fc8354ea）→ 新工具链 → 重绑 → loader 复验 True。
+- **Human intervention:** 用户明确授权修复并继续后续波次。
+- **Lesson learned:** 证据重生成与源码修复必须同一提交原子落地，或按最终代码重算——分两次提交且顺序颠倒会产生不可检出（直到新 worktree 物化才暴露）的自相矛盾。

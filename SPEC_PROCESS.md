@@ -2393,3 +2393,17 @@ confirm=yes 清除门禁、恢复预览零写与 --apply 字面门禁、冻结�
 阶段由 driver 只读执行，9 个接口解读裁决全部落定）。driver 独立验证：
 formal 1497、gate 219 基线、mypy 356 files 全绿；T38.2 Status 行漏标
 由 driver 窄修复。合并 codex/wp38 → main。
+
+## 78. 证据链补绑：gate_scan.py 修复后的工具链与 GO 证据重生成（2026-08-07）
+
+用户提交 cd3b7d3（证据重生成，按当时 gate_scan.py）+ 1deb8e1（随后修改
+gate_scan.py 密钥规则边界 8 行）顺序导致提交态证据不一致：工具链证据
+（247f28d5）哈希的是修改前 gate_scan.py，而提交的 gate_scan.py 是修改后
+（b6a58219）——新 worktree formal 物化 FORMAL_EVIDENCE_INVALID + 4 个
+test_recovery_gate 失败。wp31 的 gate 物化按当前文件自愈了工具链证据
+（74db212c）。
+
+**driver 修复（用户授权）**：1) 工具链证据更新为与当前 gate_scan.py 一致的
+版本（74db212c，wp31 物化自愈产物）；2) 用 report 模块自身算法重绑
+workspace-boundary-go-v1.json 的内嵌 gate_toolchain 并重算 evidence_digest
+（GO 保持，新 digest b400cc66…），loader 验证通过；3) 本记录。
