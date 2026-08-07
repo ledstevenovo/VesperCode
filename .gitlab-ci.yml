@@ -18,7 +18,10 @@
 # with --no-deps (their Windows-artifact hashes do not transfer), then
 # the remaining 37 pure-Python packages stay hash-locked and are
 # installed with --no-deps like the formal bootstrap's flat lock closure;
-# the Windows-only pywin32 lines are excluded.  The Windows wheel job
+# the Windows-only pywin32 lines are excluded.  The Linux unit-test job
+# explicitly ignores tests/integration/windows (the dedicated Windows
+# integration environment, SPEC §10.3; its win32cred/win32api imports
+# cannot be collected on a Linux runner).  The Windows wheel job
 # installs the full lock.
 
 stages:
@@ -37,7 +40,7 @@ unit-test:
     - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH'
   script:
     - python -m pip install --no-deps $(grep -E '^(ast-serialize|charset-normalizer|librt|markupsafe|mypy|pydantic-core|ruff)==' requirements/dev.lock | cut -d' ' -f1) && grep -vE '^(ast-serialize|charset-normalizer|librt|markupsafe|mypy|pydantic-core|ruff|pywin32|pywin32-ctypes)==' requirements/dev.lock > /tmp/dev-lock-linux.txt && python -m pip install --require-hashes --no-deps -r /tmp/dev-lock-linux.txt
-    - python -m pytest -q --junitxml=tests/.tmp/unit-test-report.xml
+    - python -m pytest -q --ignore=tests/integration/windows --junitxml=tests/.tmp/unit-test-report.xml
   artifacts:
     when: always
     reports:
