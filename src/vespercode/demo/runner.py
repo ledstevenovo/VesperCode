@@ -327,9 +327,7 @@ class DemoScenarioRunner:
         apply_migrations(self._database, _DEMO_MIGRATIONS_V1)
         self._patch_fact_holder = _DemoPatchFactHolder()
         self._pipeline = ActionPipeline(
-            patch_path_fact_provider=_DemoPatchPathFactProvider(
-                self._patch_fact_holder
-            )
+            patch_path_fact_provider=_DemoPatchPathFactProvider(self._patch_fact_holder)
         )
         self._policy_engine = PolicyEngine()
         self._dispatcher = ToolDispatcher()

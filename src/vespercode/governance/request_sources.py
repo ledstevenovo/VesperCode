@@ -101,9 +101,7 @@ class RequestContentSegmentV1(BaseModel):
         try:
             raw = self.content.encode("utf-8")
         except UnicodeEncodeError as exc:
-            raise ValueError(
-                "segment content must be a UTF-8 scalar sequence"
-            ) from exc
+            raise ValueError("segment content must be a UTF-8 scalar sequence") from exc
         if len(raw) != self.byte_count:
             raise ValueError(
                 "byte_count must equal the exact UTF-8 byte length of the content"

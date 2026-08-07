@@ -2422,3 +2422,48 @@ routes/tests，因 E3 分支与用户迁移并行而漏网）仍用 `src.vesperc
 `vespercode.*`。验证：formal 全量 1525 passed（35 个失败全清）、gate 219
 passed。先例教训：T19.1 的 installed-name 教训的同类变体——导入风格必须
 全仓库一致，并行分支合入时必须检查导入面统一性。
+
+## 80. 扩展冻结参考镜像（A 路线）解除 T31.1 BLOCKER（2026-08-07）
+
+**背景/裁决**：T31.1（WP31/E4）BLOCKER——正式验证谓词要求 Ruff/Mypy 双
+PASS，但冻结参考镜像仅 pytest（T02.1 欠实现）→ VerifiedCandidate 在
+真实组合下永不产生。向用户提出 A（扩展冻结镜像）vs B（修订卡片
+fail-closed）两路线，用户明确点名 **A**。
+
+**lock 扩展**：`requirements/reference.lock` 与
+`reference/fixture/requirements.lock`（字节双份一致）扩展加入
+ruff==0.16.1、mypy==2.3.0（含 mypy-extensions、ast-serialize 等
+依赖链，哈希全锁定），lock digest 67a6b630…。fixture pyproject.toml
+已含 [tool.ruff]/[tool.mypy] 配置（T02.1 时预留）。
+
+**镜像重建（可复现）**：image_builder（T02.1 固定参数：buildx
+0.30.1、SOURCE_DATE_EPOCH=1700000000、linux/amd64、OCI mediatypes、
+gzip、无 provenance/sbom）重建扩展镜像：
+- manifest digest **865930c3…**（两次独立构建字节级一致 = 可复现）
+- self-reference 扫描通过（final manifest 不出现在任何层/config/annotation）
+- OCI layout `docker load` 后镜像 ID = 865930c3…（与冻结常量一致）
+
+**digest 重绑（21 文件）**：docker_profile.py / profiles/reference.py
+的冻结常量、builtin 与 reference/manifest 双份
+reference-profile-v1.json（digest 9d01f10c…、lock 67a6b630…、
+image 865930c3…）、以及 15 个测试文件的 manifest/image digest 常量。
+
+**测试语义更新**：test_reference_baseline.py 从"Ruff 检查缺工具
+fail-closed（BaselineBlockedV1/CHECK_ERROR）"改为"六检查全完成
+PassingBaselineV1（含 Ruff/Mypy 双 PASS，真实四容器）"；
+test_reference_formal_validation.py 从"Ruff/Mypy CHECK_EXECUTION_ERROR
+→ 无 VerifiedCandidate"改为"四检查全 PASS"。
+
+**driver 顺手修复（历史遗留，非 A 路线引入）**：mypy strict 2 处
+`ValidationError.from_exception_data(..., "msg"=...)` 键错误
+（pydantic 2.13 TypedDict 不允许 msg）→ 统一为 plain ValueError
+（与 python_adapter.py 同类校验一致）；ruff format 14 文件历史格式
+欠账。
+
+**状态竞争记录**：验证期间观察到 reference/manifest/reference-profile-v1.json
+被另一残留会话改写为第三套 digest（349ec22b…，本机无对应镜像、
+无构建记录、src 常量未同步）→ 按"以可复现证据链为准"恢复为
+865930c3… 版（与 builtin 字节一致）。教训：并行会话不得共享写同一
+worktree 的冻结字节；冻结文件写入前必须确认无其他会话活动。
+
+**验证**：（formal 全量结果待补）

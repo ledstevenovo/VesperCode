@@ -42,6 +42,7 @@ from vespercode.trees.snapshot import (
 from vespercode.trees.text_classifier import TextMetadataV1, classify_supported_text
 from vespercode.validation.baseline import (
     BaselineBlockedV1,
+    PassingBaselineV1,
     run_baseline,
 )
 from vespercode.validation.python_adapter import (
@@ -282,31 +283,37 @@ def _baseline_temp_dirs() -> set[str]:
     }
 
 
-def test_real_baseline_stable_failures_then_fails_closed_at_undeclared_tools() -> None:
-    """The real six-check sequence over the supported workspace.
+def test_real_baseline_completes_over_supported_workspace() -> None:
+    """The real six-check baseline sequence completes over the workspace.
 
-    The pytest checks complete with a stable collection and complete
-    CALL/FAIL reports for the target in both the full run and the target
-    rerun (four real containers; the byte-identical repeated fingerprint
-    comparison and the whole §4.5 predicate layer are pinned by the unit
-    matrix — the real run then fails closed at the Ruff check because the
-    frozen image has no ``ruff`` executable (``CHECK_EXECUTION_ERROR`` ->
-    ``CHECK_ERROR``), so the predicate layer is unreachable with the
-    frozen image, exactly as the documented environment risk predicts),
-    no manifest publishes, and zero residue remains.
+    The pytest checks produce stable collection and complete CALL/FAIL
+    reports for the target in both the full run and the target rerun
+    (four real containers), and the Ruff and Mypy checks now run with the
+    extended frozen reference image (re-frozen with ruff/mypy,
+    SPEC_PROCESS §80), so the real baseline publishes one
+    ``PassingBaselineV1`` binding all six evidence digests; zero residue
+    remains.
     """
     before_containers = _executor_container_ids()
     before_dirs = _baseline_temp_dirs()
     snapshot = _sealed_snapshot(_seeded_workspace_files())
     plan = _seeded_plan(snapshot)
     result = run_baseline(plan, snapshot, DockerExecutor())
-    assert isinstance(result, BaselineBlockedV1)
-    assert result.reason == "CHECK_ERROR"
-    assert isinstance(result.violation_kind, AbsentV1)
-    # The four pytest checks completed first: their evidence digests are
-    # the first four refs, then the offending Ruff raw evidence.
-    assert len(result.evidence_refs) == 5
-    assert all(len(ref) == 64 for ref in result.evidence_refs)
+    assert isinstance(result, PassingBaselineV1)
+    # All six checks completed: two collect-only, full, target rerun,
+    # Ruff, and Mypy — each bound as a 64-hex evidence digest.
+    assert len(result.collect_only_evidence_digests) == 2
+    assert all(
+        len(digest) == 64
+        for digest in (
+            result.collect_only_evidence_digests[0],
+            result.collect_only_evidence_digests[1],
+            result.full_pytest_evidence_digest,
+            result.target_rerun_evidence_digest,
+            result.ruff_result_digest,
+            result.mypy_result_digest,
+        )
+    )
     assert _executor_container_ids() == before_containers
     assert _baseline_temp_dirs() == before_dirs
 

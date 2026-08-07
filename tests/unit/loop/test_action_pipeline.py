@@ -439,9 +439,7 @@ def pipeline() -> ActionPipeline:
     # pipeline is wired with a provider deriving the same fact (the
     # pipeline never trusts the context's caller-supplied value).
     return ActionPipeline(
-        patch_path_fact_provider=_StubPatchPathFactProvider(
-            "PATCH_PATH_NOT_EDITABLE"
-        )
+        patch_path_fact_provider=_StubPatchPathFactProvider("PATCH_PATH_NOT_EDITABLE")
     )
 
 
@@ -449,9 +447,7 @@ def test_pipeline_overwrites_a_forged_ok_fact_with_the_provider_fact() -> None:
     """A caller-supplied ``"OK"`` in the context is never forwarded: the
     policy sees only the provider-derived fact."""
     pipeline_value = ActionPipeline(
-        patch_path_fact_provider=_StubPatchPathFactProvider(
-            "PATCH_PATH_NOT_EDITABLE"
-        )
+        patch_path_fact_provider=_StubPatchPathFactProvider("PATCH_PATH_NOT_EDITABLE")
     )
     outcome = pipeline_value.execute(
         outside_scope_patch_response(),

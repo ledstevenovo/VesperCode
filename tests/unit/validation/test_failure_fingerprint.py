@@ -234,9 +234,7 @@ def test_duplicate_call_events_are_not_fingerprintable() -> None:
     # The evidence is assembled past the bundle validator (which bans the
     # duplicate CALL) but the events themselves are real validated values,
     # so the fingerprint boundary operates on typed events.
-    document["events"] = tuple(
-        PytestEventV1.model_validate(event) for event in events
-    )
+    document["events"] = tuple(PytestEventV1.model_validate(event) for event in events)
     evidence = PytestEvidenceV1.model_construct(**document)
     outcome = build_failure_fingerprint(evidence, _TARGET, normalization_context())
     assert outcome.kind == "NOT_FINGERPRINTABLE"

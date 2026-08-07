@@ -44,7 +44,7 @@ _C = "c" * 64
 _D = "d" * 64
 _E = "e" * 64
 _F = "f" * 64
-_IMAGE_DIGEST = "385ffc69d83536e1874d73517b8b9ee2a0dce6166ca0f30c1f3b1021324ea1a8"
+_IMAGE_DIGEST = "865930c3cb414cb4d8593a6520560ddabd050e6346b0d882fcdaba230963c47f"
 
 
 def _bindings() -> ManifestBindingsV1:

@@ -284,9 +284,7 @@ def test_cleanup_refuses_a_forged_materialization_root() -> None:
     # A forged MaterializedCandidateV1 naming an arbitrary directory is
     # never removed: cleanup accepts only allocator-registered roots.
     candidate = tiny_candidate()
-    materialized = materialize_candidate(
-        candidate, allocate_execution_root(_Base.path)
-    )
+    materialized = materialize_candidate(candidate, allocate_execution_root(_Base.path))
     forged_dir = _Base.path / "forged-cleanup-target"
     forged_dir.mkdir()
     forged = materialized.model_copy(update={"root_path": str(forged_dir)})
@@ -313,9 +311,7 @@ def test_injected_cleanup_factory_failure_is_a_closed_cleanup_failure() -> None:
     # the cleanup verdict reports the residual container and never raises
     # out of the cleanup contract.
     candidate = tiny_candidate()
-    materialized = materialize_candidate(
-        candidate, allocate_execution_root(_Base.path)
-    )
+    materialized = materialize_candidate(candidate, allocate_execution_root(_Base.path))
     raw = RawExecutionResultV1(
         schema_version=1,
         request_id="req-1",

@@ -274,9 +274,7 @@ class AuditEventV1(BaseModel):
         if not self.run_id:
             raise ValueError("run_id must be non-empty")
         if self.event_type != self.redacted_payload.kind:
-            raise ValueError(
-                "event_type must equal the redacted payload kind"
-            )
+            raise ValueError("event_type must equal the redacted payload kind")
         return self
 
 

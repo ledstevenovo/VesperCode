@@ -233,9 +233,7 @@ class FormalRequestEvidenceV1(BaseModel):
                 raise ValueError("tool rows require the closed parsed result")
             result = self.tool_result.value
             if result.check_kind != self.check_kind:
-                raise ValueError(
-                    "tool result check kind must equal the row check kind"
-                )
+                raise ValueError("tool result check kind must equal the row check kind")
             if result.raw_digest != _raw_evidence_digest(self.raw):
                 raise ValueError(
                     "tool result raw_digest must bind the exact raw evidence"
@@ -751,16 +749,8 @@ def _execute_request(
         )
     try:
         if request.argv != expected_argv(request.check_kind):
-            raise ValidationError.from_exception_data(
-                "argv",
-                [
-                    {
-                        "type": "value_error",
-                        "loc": ("argv",),
-                        "msg": "argv must equal the frozen adapter command for the check",
-                        "input": request.argv,
-                    }
-                ],
+            raise ValueError(
+                "argv must equal the frozen adapter command for the check"
             )
         execution_request = ExecutionRequestV1.model_validate(
             {

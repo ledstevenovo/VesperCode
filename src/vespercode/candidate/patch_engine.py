@@ -424,12 +424,8 @@ def _apply_entry(entry: ParsedPatchEntryV1, tree: CandidateTreeV1) -> _EntryAppl
         # ``@@ -1 +0,0 @@`` for a deleted first line).  A forged or
         # misdeclared new position never applies, so the postimage is
         # exactly what the patch claims.
-        if hunk.new_start != (
-            len(output) if hunk.new_count == 0 else len(output) + 1
-        ):
-            return _EntryApplication(
-                postimage=None, error="PATCH_CONTEXT_MISMATCH"
-            )
+        if hunk.new_start != (len(output) if hunk.new_count == 0 else len(output) + 1):
+            return _EntryApplication(postimage=None, error="PATCH_CONTEXT_MISMATCH")
         for line in hunk.lines:
             if line.kind == "ADD":
                 output.append(line.text)

@@ -47,7 +47,7 @@ _D = "d" * 64
 _E = "e" * 64
 _F = "f" * 64
 
-_IMAGE_DIGEST = "385ffc69d83536e1874d73517b8b9ee2a0dce6166ca0f30c1f3b1021324ea1a8"
+_IMAGE_DIGEST = "865930c3cb414cb4d8593a6520560ddabd050e6346b0d882fcdaba230963c47f"
 
 _TARGET_ADD = "tests/test_calculator.py::test_add_returns_sum"
 _TARGET_MULTIPLY = "tests/test_calculator.py::test_multiply_returns_product"
@@ -214,9 +214,7 @@ def test_entries_reject_argv_that_differs_from_the_frozen_command() -> None:
         BaselineCheckPlanEntryV1(
             check_id="TARGET_TESTS",
             argv=expected_argv("FULL_PYTEST"),
-            target_test_ids=PresentV1(
-                kind="PRESENT", value=_target_ids(_TARGET_ADD)
-            ),
+            target_test_ids=PresentV1(kind="PRESENT", value=_target_ids(_TARGET_ADD)),
         )
     with pytest.raises(ValidationError):
         FormalCheckPlanEntryV1(

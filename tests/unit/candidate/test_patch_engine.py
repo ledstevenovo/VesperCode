@@ -736,13 +736,7 @@ def test_patch_engine_rejects_a_misdeclared_new_side_start() -> None:
     position never applies: the patch claims a position it does not
     produce."""
     context, _, _ = _context()
-    forged = (
-        "--- a/src/a.py\n"
-        "+++ b/src/a.py\n"
-        "@@ -1,1 +99,1 @@\n"
-        "-x = 1\n"
-        "+x = 2\n"
-    )
+    forged = "--- a/src/a.py\n+++ b/src/a.py\n@@ -1,1 +99,1 @@\n-x = 1\n+x = 2\n"
     outcome = apply_candidate_patch(
         patch_action(context.current.candidate_digest, forged),
         context.current,
@@ -750,12 +744,7 @@ def test_patch_engine_rejects_a_misdeclared_new_side_start() -> None:
     )
     assert outcome.error_code == "PATCH_CONTEXT_MISMATCH"
     # A forged zero-count new position is rejected the same way.
-    forged_zero = (
-        "--- a/src/a.py\n"
-        "+++ b/src/a.py\n"
-        "@@ -1 +99,0 @@\n"
-        "-x = 1\n"
-    )
+    forged_zero = "--- a/src/a.py\n+++ b/src/a.py\n@@ -1 +99,0 @@\n-x = 1\n"
     zero_outcome = apply_candidate_patch(
         patch_action(context.current.candidate_digest, forged_zero),
         context.current,
@@ -793,13 +782,13 @@ def test_patch_engine_applies_git_standard_pure_deletion_hunks() -> None:
         )
         assert outcome.kind == "PUBLISHED", (patch_text, outcome)
         assert outcome.revision is not None
-        assert (
-            outcome.revision.tree.read_bytes(canonical_path("src/a.py")) == expected
-        )
+        assert outcome.revision.tree.read_bytes(canonical_path("src/a.py")) == expected
         assert spy.publish_count == 1
 
 
-def test_apply_rejects_a_context_current_that_differs_from_the_named_candidate() -> None:
+def test_apply_rejects_a_context_current_that_differs_from_the_named_candidate() -> (
+    None
+):
     """The frozen context's ``current`` must be the exact named candidate:
     a mismatched context current rejects before any path or publish."""
     context, _, _ = _context()

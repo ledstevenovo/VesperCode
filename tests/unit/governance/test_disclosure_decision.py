@@ -333,9 +333,7 @@ def _grant_row_count(control_database: ControlDatabase) -> int:
 
 
 def _subject_row_count(control_database: ControlDatabase) -> int:
-    return len(
-        control_database.read_rows("SELECT 1 FROM disclosure_grant_subjects")
-    )
+    return len(control_database.read_rows("SELECT 1 FROM disclosure_grant_subjects"))
 
 
 def test_reject_records_decision_without_grant(

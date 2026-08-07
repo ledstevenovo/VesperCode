@@ -769,9 +769,7 @@ class _FixedPatchPathFactProvider:
 def _deny_pipeline() -> ActionPipeline:
     """One pipeline wired with the fixed non-editable patch-path fact."""
     return ActionPipeline(
-        patch_path_fact_provider=_FixedPatchPathFactProvider(
-            "PATCH_PATH_NOT_EDITABLE"
-        )
+        patch_path_fact_provider=_FixedPatchPathFactProvider("PATCH_PATH_NOT_EDITABLE")
     )
 
 

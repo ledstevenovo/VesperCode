@@ -799,16 +799,8 @@ def _request_for(
         check_id,
         plan.target_test_ids if check_id == "TARGET_TESTS" else None,
     ):
-        raise ValidationError.from_exception_data(
-            "argv",
-            [
-                {
-                    "type": "value_error",
-                    "loc": ("argv",),
-                    "msg": "argv must equal the frozen adapter command for the check",
-                    "input": argv,
-                }
-            ],
+        raise ValueError(
+            "argv must equal the frozen adapter command for the check"
         )
     return ExecutionRequestV1.model_validate(
         {

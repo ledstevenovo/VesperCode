@@ -225,10 +225,10 @@ class GateReferenceProfileManifestV1(BaseModel):
 # execution profile, and the editable policy digest.
 _GATE_PROFILE_ID = "python-src-py312-v1"
 _GATE_REQUIREMENTS_LOCK_DIGEST = (
-    "b3352321735739e66d89522c49645243d698d1e1f14c487ebc36b2d9dda5281a"
+    "67a6b630fb418344bea58ed0b98c1006391bbc947b36356188a1e01fa5fe9a64"
 )
 _GATE_DOCKER_IMAGE_DIGEST = (
-    "385ffc69d83536e1874d73517b8b9ee2a0dce6166ca0f30c1f3b1021324ea1a8"
+    "865930c3cb414cb4d8593a6520560ddabd050e6346b0d882fcdaba230963c47f"
 )
 _GATE_PYTHON_VERSION = "3.12.4"
 _GATE_PYTEST_VERSION = "8.4.2"

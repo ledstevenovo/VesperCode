@@ -74,8 +74,7 @@ def test_spaced_assignment_forms_are_detected(tmp_path: Path) -> None:
     # the value pattern tolerates whitespace after the separator.
     spaced = tmp_path / "config.yaml"
     spaced.write_text(
-        "api_key = sk-spaced-secret\n"
-        "AWS_ACCESS_TOKEN: aws-token\n",
+        "api_key = sk-spaced-secret\nAWS_ACCESS_TOKEN: aws-token\n",
         encoding="utf-8",
     )
     report = scan_changed_files((spaced,))

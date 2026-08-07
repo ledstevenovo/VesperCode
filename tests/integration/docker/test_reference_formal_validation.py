@@ -229,10 +229,12 @@ def _record(
 def _real_manifest(snapshot: SnapshotTreeV1) -> ValidationManifestV1:
     """One Manifest bound to the real Snapshot and the frozen profile.
 
-    The evidence digests are documented synthetic values: the frozen
-    image carries pytest 8.4.2 only, so the real baseline cannot produce
-    target-rerun/Ruff/Mypy evidence (T20.2 evidence) and the formal
-    execution consumes only the Manifest's identity fields.
+    The evidence digests are documented synthetic values: this unit-level
+    helper binds fixed identity fields so the formal-plan construction
+    can be tested without a full real baseline run (the real baseline
+    over the extended frozen image is exercised by
+    ``test_reference_baseline.py``); the formal execution consumes only
+    the Manifest's identity fields.
     """
     frozen = load_reference_profile(_packaged_manifest_bytes())
     baseline = PassingBaselineV1(
@@ -342,20 +344,16 @@ def _formal_temp_dirs() -> set[str]:
     }
 
 
-def test_reference_formal_validation_completes_ordered_then_fails_closed_at_missing_tools() -> (
-    None
-):
-    """The real four-check formal sequence over the supported workspace.
+def test_reference_formal_validation_completes_with_passing_tools() -> None:
+    """The real four-check formal sequence completes over the workspace.
 
-    The two pytest checks complete with authoritative real reports (the
+    The two pytest checks produce authoritative real reports (the
     collect-only defines the collection; the full run reproduces the
-    target's CALL/FAIL over the real fixture bytes), then the Ruff and
-    Mypy checks record their closed execution failures because the
-    frozen image has no ``ruff``/``mypy`` executables
-    (``CHECK_EXECUTION_ERROR`` raw evidence; the documented environment
-    risk — the frozen image/Dockerfile are T02.1/T18.1 evidence and
-    cannot change), so the evidence is complete-ordered but non-success,
-    no ``VerifiedCandidate`` can exist, and zero residue remains.
+    target's CALL/FAIL over the real fixture bytes), and the Ruff and
+    Mypy checks now PASS with the extended frozen reference image
+    (re-frozen with ruff/mypy, SPEC_PROCESS §80), so the evidence is
+    complete and ordered with all four rows successful; zero residue
+    remains.
     """
     before_containers = _executor_container_ids()
     before_dirs = _formal_temp_dirs()
@@ -378,18 +376,18 @@ def test_reference_formal_validation_completes_ordered_then_fails_closed_at_miss
     assert isinstance(evidence.evidence[1].pytest_evidence, PresentV1)
     assert evidence.evidence[1].pytest_evidence.value.run_kind == "FULL_PYTEST"
 
-    # The tool checks failed closed at the missing executables.
+    # The tool checks now PASS with the extended frozen image.
     assert evidence.evidence[2].raw is not None
-    assert evidence.evidence[2].raw.error_code == "CHECK_EXECUTION_ERROR"
+    assert evidence.evidence[2].raw.error_code is None
     assert isinstance(evidence.evidence[2].tool_result, PresentV1)
-    assert evidence.evidence[2].tool_result.value.status == "ERROR"
+    assert evidence.evidence[2].tool_result.value.status == "PASS"
     assert evidence.evidence[3].raw is not None
-    assert evidence.evidence[3].raw.error_code == "CHECK_EXECUTION_ERROR"
+    assert evidence.evidence[3].raw.error_code is None
     assert isinstance(evidence.evidence[3].tool_result, PresentV1)
-    assert evidence.evidence[3].tool_result.value.status == "ERROR"
+    assert evidence.evidence[3].tool_result.value.status == "PASS"
 
-    # The evidence is complete-ordered but explicitly non-success.
-    assert evidence.complete is False
+    # The evidence is complete and ordered with all rows successful.
+    assert evidence.complete is True
 
     # Zero residue: no surviving containers, no surviving roots.
     assert _executor_container_ids() == before_containers

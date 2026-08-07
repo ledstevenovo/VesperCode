@@ -57,7 +57,7 @@ _IMAGE_DIGEST = "cd" * 32
 _CONFIG_DIGEST = "ef" * 32
 _RECIPE_DIGEST = "12" * 32
 _REQUIREMENTS_DIGEST = (
-    "b3352321735739e66d89522c49645243d698d1e1f14c487ebc36b2d9dda5281a"
+    "67a6b630fb418344bea58ed0b98c1006391bbc947b36356188a1e01fa5fe9a64"
 )
 _TOOL_VERSIONS_DIGEST = (
     "43d540528421603981f612ff396d2ae66610cd9be61a8450f403b61374720f0a"
@@ -621,11 +621,11 @@ def test_reference_gate_go_report_with_real_evidence(
         manifest.docker_image_digest
         == report.build.local_oci_manifest_digest
         == report.registry.registry_repo_digest
-        == "385ffc69d83536e1874d73517b8b9ee2a0dce6166ca0f30c1f3b1021324ea1a8"
+        == "865930c3cb414cb4d8593a6520560ddabd050e6346b0d882fcdaba230963c47f"
     )
     assert (
         manifest.requirements_lock_digest
-        == "b3352321735739e66d89522c49645243d698d1e1f14c487ebc36b2d9dda5281a"
+        == "67a6b630fb418344bea58ed0b98c1006391bbc947b36356188a1e01fa5fe9a64"
     )
     assert manifest.python_version == "3.12.4"
     assert manifest.pytest_version == "8.4.2"

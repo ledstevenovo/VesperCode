@@ -378,9 +378,7 @@ def feedback_canonical_bytes(record: FeedbackRecordV1) -> int:
     return len(serialize_feedback_record(record).encode("utf-8"))
 
 
-_SECRET_REDACTED_SUMMARY = (
-    "[feedback summary omitted: contains secret-like content]"
-)
+_SECRET_REDACTED_SUMMARY = "[feedback summary omitted: contains secret-like content]"
 """The fixed bounded summary replacing a secret-bearing check message."""
 
 
