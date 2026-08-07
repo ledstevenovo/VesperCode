@@ -2577,3 +2577,40 @@ docker_executor format + 删除 _corrected_workspace_files 死代码）。
   recovery）全零副作用；终端场景（writeback/audit/determinism）证明。
 - **WP31 合入 main**：分支 codex/wp31（60aa0e6 A 路线 → eafd36c
   31.A/31.B+executor 修复 → 464f7a4/27fe382/271ac72 评审闭环）→ main。
+
+## 84. 扩展阶段 E5 之 WP34-REFERENCE 收官（2026-08-07）
+
+**T34.2（34.A：Reference OCI Reproduction and Isolation Smoke）完成**：
+scripts/run_reference_image_smoke.py + tests/smoke/images/（conftest +
+test_reference_image_contract + test_reference_fixture_smoke）。
+**digest 五方一致 865930c3**（rebuilt == task2_go（T06.2 完整性 loader）
+== packaged manifest == loopback RepoDigest == digest-pull RepoDigest；
+本地 tag 同 Id）。**隔离契约**（真实容器）：network none、uid 10001、
+root/workspace 只读（EROFS 30）、cap-drop ALL、无 docker.sock、bounded
+tmpfs、2 CPU/2 GiB/256 PIDs、cleanup 验证；report 通道（稳定失败目标
+完整 pytest 生命周期 exit 1 → validate_gate_pytest_report COMPLETE）；
+/workspace 冻结 fixture 恰 4 项、双 lock 字节一致；生产 DockerExecutor
+真实运行（frozen builtin image/profile + fresh materialized candidate）。
+no-self-reference 扫描通过；loopback registry 零凭据零外部 push。
+
+**两阶段评审**：SPEC 首轮 PASS（0 Critical/0 Important，5 Minor——
+conftest 范围记录/M2 证据记录/外观性/config 未读/tests/.tmp gitignore
+plan-level/T5 理论 tag 残留）；质量首轮 PASS（2 Important：conftest
+session fixture 隐式顺序依赖（fresh daemon 失败）→ ensure_reference_tagged
+session fixture；会话级单次构建承诺被违反（两次构建）→
+rebuilt_reference_image 派生自单次 build evidence。5 Minor 全关：
+死代码 _empty_inspection、fixture_dual_lock_identical 硬编码→字节计算、
+死返回 RepoDigest、mypy no-any-return 级联、tests/.tmp）。提交
+f22565c/f1c8ebe/2e7678b。
+
+**修复**：manifest 污染（eafd36c 带入 349ec22b 版 reference/manifest）
+→ main 恢复 25df55e + wp34 分支 f1c8ebe（与 packaged builtin 逐字节
+一致）。**plan-level finding**：卡片 Build 命令按字面不可运行（recipe
+COPY fixture/ 需要 image_builder 组装的 context）→ 按 T34.1 先例
+（driver owns image construction）经 T02.1 冻结参数路径构造/校验 tag，
+mismatch NO-GO 不重打（记录于脚本 docstring）。formal 全量
+1524 passed + 1 环境失败（隔离 worktree 无自带 venv，§80 记录类）。
+
+**验证**：Domain 8 passed、Driver all_ok True（报告 digest 自绑定）、
+ruff check/format 全绿、mypy 无真实错误、scan_credentials exit 0、
+git diff --check 干净、无容器残留。
