@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block content %}
+<section aria-labelledby="recovery-heading">
+  <meta name="csrf-token" content="{{ csrf_token }}">
+  <h1 id="recovery-heading">恢复预览</h1>
+  {% if error_message %}
+  <div id="recovery-error" role="alert" aria-live="polite" class="live-error">
+    {{ error_message }}
+  </div>
+  {% endif %}
+  {% if mode == "result" %}
+  <dl class="run-facts">
+    <dt>事务</dt>
+    <dd>{{ result.transaction_id }}</dd>
+    <dt>判定</dt>
+    <dd class="{{ "recovery-warning" if result.disposition == "UNRESOLVED" else "" }}">
+      {{ disposition_label }}
+    </dd>
+    {% if result.disposition == "COMMITTED" %}
+    <dd>全部后映像匹配并重做写后核对；运行进入成功。</dd>
+    {% elif result.disposition == "ROLLED_BACK" %}
+    <dd>全部路径恢复到前映像；运行停止。</dd>
+    {% else %}
+    <dd>存在未知字节、缺失备份、矛盾证据或无法证明的对象身份；运行保持恢复阻塞。</dd>
+    {% endif %}
+    <dt>变更路径</dt>
+    <dd>{% if result.changed_paths %}{{ result.changed_paths | join("、") }}{% else %}无{% endif %}</dd>
+    <dt>证据摘要</dt>
+    <dd>{{ result.evidence_digest or "—" }}</dd>
+    <dt>工作区写入次数</dt>
+    <dd>{{ result.workspace_write_count }}</dd>
+  </dl>
+  {% elif mode == "preview" %}
+  <dl class="run-facts">
+    <dt>事务</dt>
+    <dd>{{ preview.transaction_id }}</dd>
+    <dt>判定</dt>
+    <dd class="{{ "recovery-warning" if preview.disposition == "UNRESOLVED" else "" }}">
+      {{ disposition_label }}
+    </dd>
+    <dt>零写入证明</dt>
+    <dd>本次预览工作区写入次数：{{ preview.workspace_write_count }}</dd>
+    <dt>预览摘要</dt>
+    <dd>{{ preview.preview_digest }}</dd>
+  </dl>
+  <h2>受影响路径</h2>
+  {% if classification_rows %}
+  <ul class="run-list">
+    {% for entry, label in classification_rows %}
+    <li class="run-item">
+      <div class="run-id">{{ entry.path }}</div>
+      <dl class="run-facts">
+        <dt>状态</dt>
+        <dd class="{{ "recovery-warning" if entry.classification in ("EXTERNAL_CHANGE", "UNPROVABLE") else "" }}">
+          {{ label }}
+        </dd>
+        <dt>拟执行动作</dt>
+        <dd>{{ consequence_text(entry.classification) }}</dd>
+      </dl>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p>暂无路径记录。</p>
+  {% endif %}
+  {% if show_apply_form %}
+  <h2>执行恢复（需显式确认）</h2>
+  <form
+    method="post"
+    hx-post
+    hx-target="#content"
+    hx-select="#content"
+    hx-swap="outerHTML"
+  >
+    <input type="hidden" name="transaction_id" value="{{ preview.transaction_id }}">
+    <input type="hidden" name="preview_digest" value="{{ preview.preview_digest }}">
+    <div class="form-field">
+      <label for="recovery-confirmation">
+        <input id="recovery-confirmation" type="checkbox" name="confirmation" value="yes" required>
+        我确认执行该恢复操作
+      </label>
+    </div>
+    <button type="submit">{{ apply_button_text }}</button>
+  </form>
+  {% elif preview.disposition == "UNRESOLVED" %}
+  <p class="recovery-warning">
+    该事务处于未解决状态：只有服务证明的已提交或已回滚终局才能解除恢复阻塞；
+    不存在忽略、强制成功或跳过未知路径的入口。
+  </p>
+  {% endif %}
+  {% else %}
+  <p>恢复预览不可用。</p>
+  {% endif %}
+  <p><a href="/">返回主页</a></p>
+  <script nonce="{{ csp_nonce }}">
+    // The recovery form runs through htmx, which attaches the server-
+    // rendered CSRF token header before every POST (the Task 28.A
+    // boundary accepts only the header form; the HttpOnly session cookie
+    // is never readable by script).  The script is authorized only by the
+    // per-request CSP nonce — there is no unsafe-inline bypass.  The
+    // listener is registered on document.body at page load and the token
+    // is session-stable, so it keeps serving the region swaps: a swapped
+    // copy of this script carries the swap response's own nonce, which
+    // the original document's CSP does not authorize (harmless).
+    (function () {
+      "use strict";
+      var meta = document.querySelector('meta[name="csrf-token"]');
+      var token = meta ? meta.getAttribute("content") : "";
+      document.body.addEventListener("htmx:configRequest", function (event) {
+        event.detail.headers["X-CSRF-Token"] = token;
+      });
+    })();
+  </script>
+</section>
+{% endblock %}
