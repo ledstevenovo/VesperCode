@@ -19,7 +19,7 @@ from __future__ import annotations
 
 import sqlite3
 from dataclasses import dataclass
-from typing import Literal
+from typing import Literal, Protocol
 
 from pydantic import (
     BaseModel,
@@ -30,6 +30,7 @@ from pydantic import (
 )
 
 from vespercode.canonical.clock import ClockV1
+from vespercode.candidate.patch_engine import ApplyCandidatePatchAction
 from vespercode.contracts.action import (
     ActionErrorV1,
     ActionResultV1 as ContractsActionResultV1,
@@ -350,13 +351,35 @@ class ActionPipelineContextV1:
     action_id_generator: ActionIdGeneratorV1
 
 
+class PatchPathFactProviderV1(Protocol):
+    """One trusted deterministic pre-policy patch-path fact derivation.
+
+    The pipeline never forwards a caller-supplied ``patch_path_fact``:
+    for an ``ApplyCandidatePatchAction`` the fact is always derived
+    through this provider (bound to the exact action and current
+    candidate by the provider's construction), and only the derived
+    value reaches the policy engine.
+    """
+
+    def derive(self, action: ApplyCandidatePatchAction) -> PatchPathFactV1: ...
+
+
 class ActionPipeline:
     """One deterministic parse/policy/dispatch/feedback/action pipeline.
 
     ``execute`` owns the exact 25.D sequence; the pipeline never widens a
     DENY and never hides a failure (every stage outcome is exposed on
-    ``ActionStepResultV1``).
+    ``ActionStepResultV1``).  The optional ``patch_path_fact_provider``
+    is the sole trusted channel for the pre-policy patch-path fact; a
+    patch action without a provider fails closed (the policy engine
+    denies it with ``TREE_INTEGRITY_FAILED``).
     """
+
+    def __init__(
+        self,
+        patch_path_fact_provider: PatchPathFactProviderV1 | None = None,
+    ) -> None:
+        self._patch_path_fact_provider = patch_path_fact_provider
 
     def execute(
         self,
@@ -374,8 +397,10 @@ class ActionPipeline:
         if isinstance(parsed, ParseErrorV1):
             return self._invalid_step(parsed, context)
         instance = bind_action(parsed, context.action_id_generator)
+        patch_path_fact = self._effective_patch_path_fact(instance.action)
         evaluation = context.policy_engine.evaluate(
-            _policy_projection(instance), _policy_context(context)
+            _policy_projection(instance),
+            _policy_context(context, patch_path_fact),
         )
         if evaluation.decision == "DENY":
             reason = evaluation.reason_code or "INTERNAL_ERROR"
@@ -405,9 +430,27 @@ class ActionPipeline:
                 context,
             )
         dispatch_result = context.dispatcher.dispatch(
-            instance, _dispatch_context(context)
+            instance, _dispatch_context(context, patch_path_fact)
         )
         return self._dispatch_step(instance, dispatch_result, context)
+
+    def _effective_patch_path_fact(
+        self,
+        action: object,
+    ) -> PatchPathFactV1 | None:
+        """The one trusted pre-policy path fact of the step.
+
+        For an ``ApplyCandidatePatchAction`` the fact is derived through
+        the injected provider; a caller-supplied fact in the context is
+        never forwarded, and a missing provider fails closed as ``None``
+        (the policy engine denies the patch with
+        ``TREE_INTEGRITY_FAILED``).
+        """
+        if not isinstance(action, ApplyCandidatePatchAction):
+            return None
+        if self._patch_path_fact_provider is None:
+            return None
+        return self._patch_path_fact_provider.derive(action)
 
     def _invalid_step(
         self,
@@ -638,7 +681,10 @@ def _contracts_envelope(result: ActionResultV1) -> ContractsActionResultV1:
     )
 
 
-def _policy_context(context: ActionPipelineContextV1) -> PolicyContextV1:
+def _policy_context(
+    context: ActionPipelineContextV1,
+    patch_path_fact: PatchPathFactV1 | None,
+) -> PolicyContextV1:
     """One immutable Task 13 policy context from the step facts."""
     policy_digest = governance_policy_digest(context.editable_policy_digest)
     return PolicyContextV1(
@@ -649,7 +695,7 @@ def _policy_context(context: ActionPipelineContextV1) -> PolicyContextV1:
         reference_profile_digest=context.reference_profile_digest,
         candidate_digest=context.current_candidate_digest,
         final_diff_digest=context.final_diff_digest,
-        patch_path_fact=context.patch_path_fact,
+        patch_path_fact=patch_path_fact,
         writeback=None,
         digest=policy_context_digest(
             run_phase=context.run_phase,
@@ -657,13 +703,16 @@ def _policy_context(context: ActionPipelineContextV1) -> PolicyContextV1:
             reference_profile_digest=context.reference_profile_digest,
             candidate_digest=context.current_candidate_digest,
             final_diff_digest=context.final_diff_digest,
-            patch_path_fact=context.patch_path_fact,
+            patch_path_fact=patch_path_fact,
             writeback=None,
         ),
     )
 
 
-def _dispatch_context(context: ActionPipelineContextV1) -> DispatchContextV1:
+def _dispatch_context(
+    context: ActionPipelineContextV1,
+    patch_path_fact: PatchPathFactV1 | None,
+) -> DispatchContextV1:
     """One exact Task 17.C dispatch context from the step facts."""
     return DispatchContextV1(
         run_phase=context.run_phase,
@@ -671,7 +720,7 @@ def _dispatch_context(context: ActionPipelineContextV1) -> DispatchContextV1:
         reference_profile_digest=context.reference_profile_digest,
         current_candidate_digest=context.current_candidate_digest,
         final_diff_digest=context.final_diff_digest,
-        patch_path_fact=context.patch_path_fact,
+        patch_path_fact=patch_path_fact,
         visible_tree=context.visible_tree,
         ports=context.ports,
         artifact_store=context.artifact_store,

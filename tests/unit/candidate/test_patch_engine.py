@@ -31,6 +31,7 @@ from vespercode.candidate.patch_engine import (
     CandidatePatchContextV1,
     CandidatePatchOutcomeV1,
     apply_candidate_patch,
+    patch_path_fact_for_action,
 )
 from vespercode.profiles.registry import build_profile_registry
 from vespercode.trees.candidate import (
@@ -417,12 +418,17 @@ def test_patch_atomicity_priority_limit_matrix() -> None:
     )
     assert seeded.kind == "PUBLISHED"
     assert seeded.revision is not None
+    # The published revision is the new current: the context must be
+    # re-derived from it (a stale context whose ``current`` is the
+    # pre-seed revision rejects with STALE_CANDIDATE before any path
+    # check), so the collision case uses a fresh seeded context.
+    seeded_context, _, _ = _context(current=seeded.revision)
     spy = SpyCandidatePublisher()
     create_on_dir = "--- /dev/null\n+++ b/src/pkg\n@@ -0,0 +1,1 @@\n+x = 2\n"
     outcome = apply_candidate_patch(
         patch_action(seeded.revision.candidate_digest, create_on_dir),
         seeded.revision,
-        context.with_publisher(spy),
+        seeded_context.with_publisher(spy),
     )
     assert outcome.error_code == "PATH_EXISTS"
     assert spy.publish_count == 0
@@ -628,12 +634,15 @@ def test_patch_atomicity_priority_limit_matrix() -> None:
             stage_replace("README.md", b"readme v2\n"),
         ),
     )
+    # The busy revision is the current candidate: the context is
+    # re-derived from it (a stale context rejects before the limits).
+    busy_context, _, _ = _context(current=busy)
     spy = SpyCandidatePublisher()
     fourth = "--- /dev/null\n+++ b/src/c.py\n@@ -0,0 +1,1 @@\n+z = 1\n"
     outcome = apply_candidate_patch(
         patch_action(busy.candidate_digest, fourth),
         busy,
-        context.with_publisher(spy),
+        busy_context.with_publisher(spy),
     )
     assert outcome.error_code == "PATCH_LIMIT_EXCEEDED"
     assert spy.publish_count == 0
@@ -720,6 +729,121 @@ def test_patch_engine_rejects_an_illegal_entry_in_every_entry_position() -> None
         assert outcome.error_code == "PATCH_PATH_NOT_EDITABLE"
         assert spy.publish_count == 0
         assert context.current.tree.read_bytes(canonical_path("src/a.py")) == b"x = 1\n"
+
+
+def test_patch_engine_rejects_a_misdeclared_new_side_start() -> None:
+    """A hunk whose new-side start does not match the actual postimage
+    position never applies: the patch claims a position it does not
+    produce."""
+    context, _, _ = _context()
+    forged = (
+        "--- a/src/a.py\n"
+        "+++ b/src/a.py\n"
+        "@@ -1,1 +99,1 @@\n"
+        "-x = 1\n"
+        "+x = 2\n"
+    )
+    outcome = apply_candidate_patch(
+        patch_action(context.current.candidate_digest, forged),
+        context.current,
+        context.with_publisher(SpyCandidatePublisher()),
+    )
+    assert outcome.error_code == "PATCH_CONTEXT_MISMATCH"
+    # A forged zero-count new position is rejected the same way.
+    forged_zero = (
+        "--- a/src/a.py\n"
+        "+++ b/src/a.py\n"
+        "@@ -1 +99,0 @@\n"
+        "-x = 1\n"
+    )
+    zero_outcome = apply_candidate_patch(
+        patch_action(context.current.candidate_digest, forged_zero),
+        context.current,
+        context.with_publisher(SpyCandidatePublisher()),
+    )
+    assert zero_outcome.error_code == "PATCH_CONTEXT_MISMATCH"
+
+
+def test_patch_engine_applies_git_standard_pure_deletion_hunks() -> None:
+    """Zero-count new ranges use git's 0-based deletion-point convention:
+    deleting a file's first, middle, or last line applies exactly."""
+    context, _, _ = _context(
+        (("src/a.py", b"line1\nline2\nline3\n"), ("src/b.py", b"y = 1\n"))
+    )
+    cases = (
+        (
+            "--- a/src/a.py\n+++ b/src/a.py\n@@ -1 +0,0 @@\n-line1\n",
+            b"line2\nline3\n",
+        ),
+        (
+            "--- a/src/a.py\n+++ b/src/a.py\n@@ -2 +1,0 @@\n-line2\n",
+            b"line1\nline3\n",
+        ),
+        (
+            "--- a/src/a.py\n+++ b/src/a.py\n@@ -3 +2,0 @@\n-line3\n",
+            b"line1\nline2\n",
+        ),
+    )
+    for patch_text, expected in cases:
+        spy = SpyCandidatePublisher()
+        outcome = apply_candidate_patch(
+            patch_action(context.current.candidate_digest, patch_text),
+            context.current,
+            context.with_publisher(spy),
+        )
+        assert outcome.kind == "PUBLISHED", (patch_text, outcome)
+        assert outcome.revision is not None
+        assert (
+            outcome.revision.tree.read_bytes(canonical_path("src/a.py")) == expected
+        )
+        assert spy.publish_count == 1
+
+
+def test_apply_rejects_a_context_current_that_differs_from_the_named_candidate() -> None:
+    """The frozen context's ``current`` must be the exact named candidate:
+    a mismatched context current rejects before any path or publish."""
+    context, _, _ = _context()
+    other_context, _, _ = _context((("src/a.py", b"x = 9\n"),))
+    outcome = apply_candidate_patch(
+        patch_action(context.current.candidate_digest, valid_replace_patch()),
+        context.current,
+        other_context.with_publisher(SpyCandidatePublisher()),
+    )
+    assert outcome.error_code == "STALE_CANDIDATE"
+
+
+def test_patch_path_fact_for_action_derives_the_deterministic_fact() -> None:
+    """The pre-policy fact is derived from the action and the frozen
+    context, never taken from a caller-supplied value."""
+    context, _, _ = _context()
+    assert (
+        patch_path_fact_for_action(
+            patch_action(context.current.candidate_digest, valid_replace_patch()),
+            context.current,
+            context,
+        )
+        == "OK"
+    )
+    # A non-editable path yields its stable pre-policy fact.
+    assert (
+        patch_path_fact_for_action(
+            patch_action(
+                context.current.candidate_digest, replace_src_a_and_readme_patch()
+            ),
+            context.current,
+            context,
+        )
+        == "PATCH_PATH_NOT_EDITABLE"
+    )
+    # An unparseable patch fails closed as a tree-integrity fact.
+    assert (
+        patch_path_fact_for_action(
+            patch_action(context.current.candidate_digest, "not a diff"),
+            context.current,
+            context,
+        )
+        == "TREE_INTEGRITY_FAILED"
+    )
 
 
 def test_patch_engine_matches_hunks_exactly_across_multiple_hunks() -> None:

@@ -206,6 +206,20 @@ class SpyDispatcher(ToolDispatcher):
 _SHARED_DISPATCHER = SpyDispatcher()
 
 
+class _StubPatchPathFactProvider:
+    """One fixed-fact patch-path provider for pipeline tests.
+
+    The pipeline must consume ONLY the provider's derived fact; the
+    context's caller-supplied ``patch_path_fact`` is never forwarded.
+    """
+
+    def __init__(self, fact: PatchPathFactV1) -> None:
+        self._fact = fact
+
+    def derive(self, action: object) -> PatchPathFactV1:
+        return self._fact
+
+
 class _SequenceIdGenerator:
     """One deterministic Harness action-id generator (fresh per context)."""
 
@@ -421,7 +435,62 @@ def dispatcher() -> SpyDispatcher:
 
 @pytest.fixture
 def pipeline() -> ActionPipeline:
-    return ActionPipeline()
+    # The RED fixture context carries the non-editable fact, so the
+    # pipeline is wired with a provider deriving the same fact (the
+    # pipeline never trusts the context's caller-supplied value).
+    return ActionPipeline(
+        patch_path_fact_provider=_StubPatchPathFactProvider(
+            "PATCH_PATH_NOT_EDITABLE"
+        )
+    )
+
+
+def test_pipeline_overwrites_a_forged_ok_fact_with_the_provider_fact() -> None:
+    """A caller-supplied ``"OK"`` in the context is never forwarded: the
+    policy sees only the provider-derived fact."""
+    pipeline_value = ActionPipeline(
+        patch_path_fact_provider=_StubPatchPathFactProvider(
+            "PATCH_PATH_NOT_EDITABLE"
+        )
+    )
+    outcome = pipeline_value.execute(
+        outside_scope_patch_response(),
+        valid_context(patch_path_fact="OK"),
+    )
+    assert outcome.policy_decision == "DENY"
+    assert outcome.feedback.error_code == "PATCH_PATH_NOT_EDITABLE"
+    assert outcome.dispatch_result is None
+
+
+def test_patch_action_without_a_provider_fails_closed() -> None:
+    """Without a trusted provider the patch fact is None and the policy
+    engine denies with TREE_INTEGRITY_FAILED — never a caller-supplied
+    value."""
+    outcome = ActionPipeline().execute(
+        outside_scope_patch_response(),
+        valid_context(patch_path_fact="OK"),
+    )
+    assert outcome.policy_decision == "DENY"
+    assert outcome.feedback.error_code == "TREE_INTEGRITY_FAILED"
+    assert outcome.dispatch_result is None
+
+
+def test_patch_action_allows_when_the_provider_derives_ok() -> None:
+    """A provider-derived ``OK`` fact reaches the policy as OK: the
+    patch action proceeds to dispatch."""
+    pipeline_value = ActionPipeline(
+        patch_path_fact_provider=_StubPatchPathFactProvider("OK")
+    )
+    dispatcher = SpyDispatcher()
+    outcome = pipeline_value.execute(
+        outside_scope_patch_response(),
+        valid_context(
+            dispatcher=dispatcher,
+            patch_path_fact="PATCH_PATH_NOT_EDITABLE",
+        ),
+    )
+    assert outcome.policy_decision == "ALLOW"
+    assert dispatcher.call_count == 1
 
 
 def _action_rows(database: ControlDatabase) -> list[tuple[str | None, ...]]:

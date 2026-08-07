@@ -325,7 +325,12 @@ class DemoScenarioRunner:
         connection.row_factory = sqlite3.Row
         self._database = ControlDatabase(connection)
         apply_migrations(self._database, _DEMO_MIGRATIONS_V1)
-        self._pipeline = ActionPipeline()
+        self._patch_fact_holder = _DemoPatchFactHolder()
+        self._pipeline = ActionPipeline(
+            patch_path_fact_provider=_DemoPatchPathFactProvider(
+                self._patch_fact_holder
+            )
+        )
         self._policy_engine = PolicyEngine()
         self._dispatcher = ToolDispatcher()
         self._feedback_repository = FeedbackRepositoryV1(self._database)
@@ -490,6 +495,10 @@ class DemoScenarioRunner:
         Task 24.B/24.C functions.
         """
         action = self._script_action(state.step_index)
+        # The pipeline derives the pre-policy patch fact ONLY through its
+        # provider: the runner feeds the provider the deterministic script
+        # fact of the exact step before each execution.
+        self._patch_fact_holder.fact = _script_patch_fact(state.step_index)
         response = _model_response(action)
         turn_id = f"demo-turn-{demo_session_id}-{state.step_index}"
         self._insert_demo_turn(
@@ -702,6 +711,33 @@ def _script_patch_fact(step_index: int) -> PatchPathFactV1:
     """The fixed pre-policy patch fact of one script step."""
     value = dict(_DEMO_SCRIPT_PATCH_FACTS_V1).get(step_index, "OK")
     return cast(PatchPathFactV1, value)
+
+
+class _DemoPatchFactHolder:
+    """One mutable holder of the deterministic scripted patch fact.
+
+    The demo is a fixed script: the pipeline's provider must derive the
+    fact from the scripted step, so the runner updates the holder with
+    the exact step fact before each execution.
+    """
+
+    def __init__(self) -> None:
+        self.fact: PatchPathFactV1 = "OK"
+
+
+class _DemoPatchPathFactProvider:
+    """One demo patch-path provider over the scripted step fact.
+
+    The pipeline never forwards a caller-supplied context fact; this
+    provider is the sole trusted channel, fed by the runner from the
+    frozen demo script.
+    """
+
+    def __init__(self, holder: _DemoPatchFactHolder) -> None:
+        self._holder = holder
+
+    def derive(self, action: object) -> PatchPathFactV1:
+        return self._holder.fact
 
 
 def _model_response(action: AgentAction) -> ModelResponse:

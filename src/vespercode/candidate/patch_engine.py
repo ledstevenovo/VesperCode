@@ -228,6 +228,14 @@ def apply_candidate_patch(
             "base_candidate_digest does not equal the current candidate digest",
         )
     if (
+        context.current.candidate_digest != current.candidate_digest
+        or context.current.tree.digest != current.tree.digest
+    ):
+        return _rejected(
+            "STALE_CANDIDATE",
+            "the context current candidate does not equal the named candidate",
+        )
+    if (
         context.snapshot.repository_policy_digest
         != context.reference.editable_path_policy.digest
     ):
@@ -287,6 +295,30 @@ def apply_candidate_patch(
         revision=child,
         candidate_tree_digest=child.tree.digest,
     )
+
+
+def patch_path_fact_for_action(
+    action: ApplyCandidatePatchAction,
+    current: CandidateRevisionV1,
+    context: CandidatePatchContextV1,
+) -> Literal["OK"] | CandidatePatchErrorCodeV1:
+    """The deterministic pre-policy patch-path fact of one patch action.
+
+    The fact is the first SPEC §4.3 path rejection of the parsed entries
+    in declared priority (sensitive, protected, editable), or ``OK`` when
+    every entry passes; a patch that cannot even parse fails closed as
+    ``TREE_INTEGRITY_FAILED``.  The policy engine consumes only facts
+    derived through this channel — a caller-supplied ``"OK"`` can never
+    reach the policy.
+    """
+    parsed = parse_unified_diff_v1(action.patch_text)
+    if isinstance(parsed, PatchParseFailureV1):
+        return "TREE_INTEGRITY_FAILED"
+    for entry in parsed.entries:
+        failure = _entry_path_failure(entry, current.tree, context)
+        if failure is not None:
+            return failure.error_code or "TREE_INTEGRITY_FAILED"
+    return "OK"
 
 
 def _entry_path_failure(
@@ -384,6 +416,20 @@ def _apply_entry(entry: ParsedPatchEntryV1, tree: CandidateTreeV1) -> _EntryAppl
         # Untouched lines between the previous hunk and this one are
         # preserved exactly as they are.
         output.extend(base_lines[position:hunk_index])
+        # The hunk's new-side region must land exactly where the patch
+        # declares it.  A positive-count new range starts at the 1-based
+        # line ``len(output) + 1`` of the postimage; a zero-count new
+        # range (a pure deletion) declares the 0-based position of the
+        # deletion point, which is exactly ``len(output)`` (git emits
+        # ``@@ -1 +0,0 @@`` for a deleted first line).  A forged or
+        # misdeclared new position never applies, so the postimage is
+        # exactly what the patch claims.
+        if hunk.new_start != (
+            len(output) if hunk.new_count == 0 else len(output) + 1
+        ):
+            return _EntryApplication(
+                postimage=None, error="PATCH_CONTEXT_MISMATCH"
+            )
         for line in hunk.lines:
             if line.kind == "ADD":
                 output.append(line.text)

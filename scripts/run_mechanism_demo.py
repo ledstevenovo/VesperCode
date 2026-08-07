@@ -588,6 +588,30 @@ class _CountingWorkspacePort:
         self._write_count += 1
 
 
+class _MechanismPatchFactHolder:
+    """One mutable holder of the stage's declared pre-policy patch fact.
+
+    The mechanism is a fixed script: the pipeline's provider derives the
+    fact from the holder, which the driver updates with the exact stage
+    fact before each execution (the pipeline never forwards the context's
+    caller-supplied value).
+    """
+
+    def __init__(self) -> None:
+        self.fact: PatchPathFactV1 | None = None
+
+
+class _MechanismPatchPathFactProvider:
+    """One mechanism patch-path provider over the staged fact."""
+
+    def __init__(self, holder: _MechanismPatchFactHolder) -> None:
+        self._holder = holder
+
+    def derive(self, action: object) -> PatchPathFactV1:
+        assert self._holder.fact is not None
+        return self._holder.fact
+
+
 class _FixedActionIdGenerator:
     """One deterministic Harness action-id generator (the same action id
     sequence never repeats, so binding stays deterministic)."""
@@ -784,7 +808,12 @@ class MechanismHarness:
         connection.row_factory = sqlite3.Row
         self._database = ControlDatabase(connection)
         apply_migrations(self._database, _MECHANISM_MIGRATIONS_V1)
-        self._pipeline = ActionPipeline()
+        self._patch_fact_holder = _MechanismPatchFactHolder()
+        self._pipeline = ActionPipeline(
+            patch_path_fact_provider=_MechanismPatchPathFactProvider(
+                self._patch_fact_holder
+            )
+        )
         self._policy_engine = PolicyEngine()
         self._dispatcher = ToolDispatcher()
         self._feedback_repository = FeedbackRepositoryV1(self._database)
@@ -1452,6 +1481,11 @@ class MechanismHarness:
         self._turn_sequence += 1
         turn_id = f"mechanism-turn-{self._turn_sequence}"
         self._insert_mechanism_turn(turn_id)
+        # The pipeline derives the pre-policy patch fact ONLY through its
+        # provider; the driver feeds the provider the stage's declared
+        # fact before each execution (a caller-supplied context fact is
+        # never forwarded).
+        self._patch_fact_holder.fact = patch_path_fact
         response = _model_response(action)
         context = ActionPipelineContextV1(
             turn_id=turn_id,

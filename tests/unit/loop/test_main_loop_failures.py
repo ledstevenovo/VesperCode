@@ -29,7 +29,7 @@ from vespercode.canonical.path_v1 import CanonicalRelativePathV1
 from vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
 from vespercode.contracts.evidence import ArtifactRefV1, DigestV1
 from vespercode.contracts.optional import AbsentV1
-from vespercode.governance.policy import PolicyEngine
+from vespercode.governance.policy import PatchPathFactV1, PolicyEngine
 from vespercode.llm.base import ModelResponse
 from vespercode.loop.action_binding import reset_issued_action_ids
 from vespercode.loop.action_pipeline import (
@@ -86,6 +86,7 @@ from vespercode.contracts.optional import PresentV1
 from vespercode.governance.request_sources import (
     RequestContentSegmentV1,
     RequestMessageV1,
+    validate_segment_sources,
 )
 from vespercode.llm.call_result import (
     PresentAuthorizationRecordRefV1,
@@ -105,6 +106,7 @@ from vespercode.loop.cancellation import CancellationController
 from vespercode.loop.context_projection import (
     ContextBudgetFailureV1,
     ContextProjectionV1,
+    _projection_digest,
 )
 from vespercode.loop.engine import AgentLoopEngine
 from vespercode.loop.progress import ProgressEvaluator
@@ -374,7 +376,7 @@ def control_database(tmp_path: Path) -> Iterator[ControlDatabase]:
 def test_feedback_append_failure_is_not_hidden(
     control_database: ControlDatabase,
 ) -> None:
-    pipeline = ActionPipeline()
+    pipeline = _deny_pipeline()
     context = _context(
         feedback_repository=_RejectingAppendRepository(control_database),
         action_record_repository=ActionRecordRepositoryV1(control_database),
@@ -394,7 +396,7 @@ def test_feedback_append_failure_is_not_hidden(
 def test_action_record_failure_is_not_hidden(
     control_database: ControlDatabase,
 ) -> None:
-    pipeline = ActionPipeline()
+    pipeline = _deny_pipeline()
     context = _context(
         feedback_repository=FeedbackRepositoryV1(control_database),
         action_record_repository=_FailingRecordRepository(control_database),
@@ -410,7 +412,7 @@ def test_action_record_failure_is_not_hidden(
 def test_consume_conflict_is_not_hidden(
     control_database: ControlDatabase,
 ) -> None:
-    pipeline = ActionPipeline()
+    pipeline = _deny_pipeline()
     repository = FeedbackRepositoryV1(control_database)
     # Seed an already-consumed record: another turn (of another run, per
     # the one-active-turn invariant) won the consume.
@@ -458,7 +460,7 @@ def test_consume_conflict_is_not_hidden(
 def test_invalid_output_never_reaches_dispatch_or_policy(
     control_database: ControlDatabase,
 ) -> None:
-    pipeline = ActionPipeline()
+    pipeline = _deny_pipeline()
     dispatcher = SpyDispatcher()
     context = _context(
         feedback_repository=FeedbackRepositoryV1(control_database),
@@ -481,7 +483,7 @@ def test_duplicate_action_record_rejects_closed(
 ) -> None:
     """A duplicate action identity is a typed REJECTED outcome, never a
     raw sqlite error (the store detects the violation by exception type)."""
-    pipeline = ActionPipeline()
+    pipeline = _deny_pipeline()
     repository = FeedbackRepositoryV1(control_database)
     first_context = _context(
         feedback_repository=repository,
@@ -613,11 +615,27 @@ class _StubContextBuilder:
     def build_context(
         self, run_id: str
     ) -> ContextProjectionV1 | ContextBudgetFailureV1:
+        content = "VesperCode v1 protocol."
+        messages = (
+            RequestMessageV1(
+                role="SYSTEM",
+                segments=(
+                    RequestContentSegmentV1(
+                        source_category="HARNESS_PROTOCOL",
+                        source_path=AbsentV1(kind="ABSENT"),
+                        content=content,
+                        content_digest=hashlib.sha256(content.encode()).hexdigest(),
+                        byte_count=len(content.encode()),
+                    ),
+                ),
+            ),
+        )
+        sources = validate_segment_sources(messages)
         return ContextProjectionV1(
-            messages=(),
-            source_projection=(),
-            canonical_byte_count=0,
-            projection_digest="e" * 64,
+            messages=messages,
+            source_projection=sources,
+            canonical_byte_count=len(content.encode()),
+            projection_digest=_projection_digest(messages, sources),
         )
 
 
@@ -733,6 +751,30 @@ def _seed_counted_turn(database: ControlDatabase, run_id: str) -> None:
         )
 
 
+class _FixedPatchPathFactProvider:
+    """One fixed-fact patch-path provider for engine failure tests.
+
+    The pipeline never forwards the context's caller-supplied fact; the
+    RED failure contexts carry the non-editable fact, so the pipeline is
+    wired with a provider deriving exactly that fact.
+    """
+
+    def __init__(self, fact: PatchPathFactV1) -> None:
+        self._fact = fact
+
+    def derive(self, action: object) -> PatchPathFactV1:
+        return self._fact
+
+
+def _deny_pipeline() -> ActionPipeline:
+    """One pipeline wired with the fixed non-editable patch-path fact."""
+    return ActionPipeline(
+        patch_path_fact_provider=_FixedPatchPathFactProvider(
+            "PATCH_PATH_NOT_EDITABLE"
+        )
+    )
+
+
 def _failure_engine(
     database: ControlDatabase,
     *,
@@ -748,7 +790,7 @@ def _failure_engine(
             database, clock=FakeClockV1(_CREATED_AT.epoch_milliseconds)
         ),
         call_orchestrator=_StubCallOrchestrator(result),
-        action_pipeline=ActionPipeline(),
+        action_pipeline=_deny_pipeline(),
         wait_controller=WaitController(),
         cancellation_controller=CancellationController(),
         restart_guard=RestartGuard(),
