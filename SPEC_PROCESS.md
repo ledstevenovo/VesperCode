@@ -2383,3 +2383,13 @@ WP34-DEMO（T34.1：Demo OCI 镜像——§75 修正后构建、allowlist 64==64
 容器级全套证明、F1 容器泄漏修复闭环）全部完成。driver 独立验证：formal
 1423/1412、gate 219 基线、mypy 338/330 files 全绿。按任务号序合并
 codex/wp29 → codex/wp34-demo → main。
+
+## 77. 扩展阶段 E3 收官（2026-08-07）
+
+WP38（T38.1/T38.2/T38.3：凭据/记忆/审计/恢复生产 Web 工作流 + 独立跨工作流
+验收）全部完成。零 secret 矩阵、记忆跨 workspace 隔离、审计单调分页与
+confirm=yes 清除门禁、恢复预览零写与 --apply 字面门禁、冻结安装器元组、
+键盘端到端验收（driver 内联评审：subagent 上限 200/200 使全部 6 个评审
+阶段由 driver 只读执行，9 个接口解读裁决全部落定）。driver 独立验证：
+formal 1497、gate 219 基线、mypy 356 files 全绿；T38.2 Status 行漏标
+由 driver 窄修复。合并 codex/wp38 → main。

@@ -2215,3 +2215,13 @@
 - **Human intervention:** none (the §75 BLOCKER ruling was made by the driver with independent verification).
 - **Implementation commit:** `79fb65a` (6 files, 1308 insertions) via the card's exact `git add` list and the exact message "Implement T34.1 Demo OCI Smoke". Evidence commit: PLAN.md T34.1 Status/16 checkboxes/Completion evidence (incl. the §75 card fix) + this append-only entry. Step 17 (finish WP34-DEMO) is the WP34-DEMO driver's responsibility. PR URL: pending WP34-DEMO closure (driver decision).
 - **Lesson learned:** (1) a whole-package prohibited prefix can silently conflict with the boot closure of frozen shared-core source — before implementing an image-content contract, compute the real runtime import closure (module-level imports only) and check it against every prefix; (2) a `docker run -d` that succeeds but never becomes healthy leaks an orphan when the id is not returned before the health wait — container startup helpers must own their residue on every failure path and sweep their own naming pattern at entry points; (3) script-directory execution (`python /path/script.py`) puts the script's directory on sys.path and can shadow stdlib modules (`demo/types.py` vs `types`) — use `python -m` for in-container health probes; (4) binary wheel hashes are platform-specific — a hash-locked lock file must carry the target platform's wheel hashes (Linux manylinux for the container), not the host's; (5) the system CA store, the stdlib `secrets` module, and pip's vendored CA bundle are trusted base-image infrastructure — a secret-pattern scan must exclude them explicitly or it reports false positives.
+
+## E3-DRIVER-FINISHING-20260807
+
+- **Timestamp (Asia/Taipei):** `2026-08-07T10:31:46+0800` (system-observed; append-only driver record).
+- **Task ID:** 扩展阶段 E3 包级 finishing（WP38）。
+- **Skills invoked:** `verification-before-completion`、`finishing-a-development-branch`、`requesting-code-review`（driver 内联评审——subagent 上限）。
+- **Key prompt/context:** E3 完成。T38.1–T38.3 三任务双评审全 PASS（driver 内联，9 个解读裁决）；T38.2 Status 漏标 driver 窄修复。driver 独立验证：formal 1497、gate 219、mypy 356 files、scan/diff-check 全 0。
+- **Git / evidence boundary:** 合并 codex/wp38 → main，push origin main。SPEC_PROCESS §77。无任务卡文本改动。
+- **Human intervention:** 无；夜间自主执行授权有效。
+- **Lesson learned:** subagent 上限下的评审可改 driver 内联只读执行（对抗性、带先例教训清单），质量与 agent 自派相当；evidence 提交的 Status 行漏标是重复出现的完成谓词缺口（T07.4/T38.2），driver 验证时须检查。
