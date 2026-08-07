@@ -168,10 +168,7 @@ def _files_from_revision(
     """The workspace bytes of the published revision's tree (the sealed
     base snapshot with the applied patch overlay resolved)."""
     tree = revision.tree
-    return tuple(
-        (path.value, tree.read_bytes(path))
-        for path in tree.list_file_paths()
-    )
+    return tuple((path.value, tree.read_bytes(path)) for path in tree.list_file_paths())
 
 
 def _corrected_workspace_files(
@@ -1665,12 +1662,14 @@ def main(argv: list[str] | None = None) -> int:
                 "error_message": result.error_message,
                 "trace_digest": result.trace_digest,
                 "recovery_preview_write_count": recovery.preview_write_count,
+                "recovery_error_code": recovery.error_code,
                 "second_admission_error": recovery.second_admission_error,
                 "recovery_disposition": recovery.recovery_disposition,
                 "unresolved_evidence_preserved": (
                     recovery.unresolved_evidence_preserved
                 ),
                 "audit_event_count": audit.audit_event_count,
+                "audit_error_code": audit.error_code,
                 "audit_sequences_monotonic": audit.audit_sequences_monotonic,
                 "secret_payload_rejected": audit.secret_payload_rejected,
                 "audit_retention_cleared": audit.audit_retention_cleared,
