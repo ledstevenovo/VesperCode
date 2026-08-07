@@ -1,3 +1,5 @@
 .venv-gate/
 .venv-formal/
 __pycache__/
+dist/
+tests/.tmp/

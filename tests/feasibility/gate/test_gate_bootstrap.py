@@ -27,7 +27,7 @@ class AaIntegrityTests(unittest.TestCase):
         self.assertEqual((ROOT / "requirements/gate.in").read_bytes(), expected)
         self.assertEqual(
             (ROOT / ".gitignore").read_bytes(),
-            b".venv-gate/\n.venv-formal/\n__pycache__/\n",
+            b".venv-gate/\n.venv-formal/\n__pycache__/\ndist/\ntests/.tmp/\n",
         )
         self.assertEqual(
             (ROOT / "gates/pytest.ini").read_bytes(),

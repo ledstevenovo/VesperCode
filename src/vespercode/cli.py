@@ -360,3 +360,10 @@ class _VesperCliV1:
 
 cli: Final[_VesperCliV1] = _VesperCliV1()
 """The module-level CLI surface the exact RED invokes."""
+
+
+if __name__ == "__main__":
+    # T33.1 installed entry surface: the frozen console entry point
+    # (``vespercode = vespercode.cli:main`` in ``[project.scripts]``)
+    # plus direct module execution both reach the same closed parser.
+    raise SystemExit(main())
