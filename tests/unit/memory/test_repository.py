@@ -231,6 +231,21 @@ def test_create_rejects_secret_content_with_zero_rows(
         create_command(summary="mirror at https://user:" + "pass@example.com" + "/repo")
     )
     assert url.error_code == "MEMORY_CONTENT_REJECTED"
+    # A prefixed env-var spelling is a secret value too (the boundary rule
+    # allows the underscore prefix).
+    prefixed = repository.create(
+        create_command(summary="set " + "OPENAI_API_KEY" + "=sk-prefixed-secret")
+    )
+    assert prefixed.error_code == "MEMORY_CONTENT_REJECTED"
+    prefixed_token = repository.create(
+        create_command(summary="set " + "AWS_ACCESS_TOKEN" + "=aws-token")
+    )
+    assert prefixed_token.error_code == "MEMORY_CONTENT_REJECTED"
+    # A YAML/TOML-style spaced assignment is a secret value too.
+    spaced = repository.create(
+        create_command(summary="set " + "API_KEY" + " = sk-spaced-secret")
+    )
+    assert spaced.error_code == "MEMORY_CONTENT_REJECTED"
     # A secret smuggled in the source reference is rejected too.
     source_secret = repository.create(
         create_command(

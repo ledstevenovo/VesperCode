@@ -109,6 +109,21 @@ def test_audit_event_is_closed_and_immutable() -> None:
         )
 
 
+def test_event_type_must_equal_the_payload_kind() -> None:
+    # A Recovery payload smuggled under a non-RECOVERY event type (or any
+    # other type/kind mismatch) never constructs: the event type must
+    # equal the redacted payload kind, so recovery facts can never be
+    # hidden behind a forged type.
+    with pytest.raises(ValidationError):
+        AuditEventV1(
+            run_id="run-1",
+            sequence=1,
+            event_type="ACTION",
+            redacted_payload=_call(),
+            created_at=_CREATED_AT,
+        )
+
+
 def test_payload_variants_are_closed_and_bounded() -> None:
     # Extra fields, unknown literals, and over-limit values never parse.
     with pytest.raises(ValidationError):

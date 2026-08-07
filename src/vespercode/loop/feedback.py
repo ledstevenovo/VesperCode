@@ -41,6 +41,7 @@ from vespercode.canonical.path_v1 import (
     CanonicalPathErrorV1,
     CanonicalRelativePathV1,
 )
+from vespercode.audit.event import _contains_secret
 from vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
 from vespercode.contracts.action import ActionResultV1, CheckPlanIdV1
 from vespercode.contracts.evidence import StableControlErrorV1
@@ -377,6 +378,12 @@ def feedback_canonical_bytes(record: FeedbackRecordV1) -> int:
     return len(serialize_feedback_record(record).encode("utf-8"))
 
 
+_SECRET_REDACTED_SUMMARY = (
+    "[feedback summary omitted: contains secret-like content]"
+)
+"""The fixed bounded summary replacing a secret-bearing check message."""
+
+
 def _bounded_summary(text: str) -> str:
     """Truncate one summary deterministically at the bounded length."""
     if len(text) <= FEEDBACK_SUMMARY_MAX_CHARS_V1:
@@ -435,6 +442,20 @@ def _check_records(
     severity: FeedbackSeverityV1 = "MEDIUM" if result.status == "FAIL" else "HIGH"
     records: list[FeedbackRecordV1] = []
     for index, finding in enumerate(result.structured_findings):
+        # The record never carries a secret (SPEC 7 FeedbackRecord): a
+        # check finding message can echo a source line containing a
+        # credential, so the summary is scanned with the frozen secret
+        # vocabulary and redacted to a fixed bounded marker instead of
+        # flowing into the next context.
+        summary = _bounded_summary(finding.message)
+        try:
+            if _contains_secret(summary):
+                summary = _SECRET_REDACTED_SUMMARY
+        except UnicodeEncodeError:
+            # A lone surrogate cannot be canonically encoded for the
+            # scan; the record validator's closed rejection owns that
+            # case (never a raw UnicodeEncodeError out of the builder).
+            pass
         # The payload facts are closed: the optional location is an
         # explicit ABSENT/PRESENT union, never null.
         location: CanonicalValueV1 = {"kind": "ABSENT"}
@@ -461,7 +482,7 @@ def _check_records(
                 kind="CHECK",
                 severity=severity,
                 created_at=created_at,
-                summary=_bounded_summary(finding.message),
+                summary=summary,
                 source_ref=CheckFeedbackSourceV1(
                     kind="CHECK",
                     check_kind=result.check_kind,

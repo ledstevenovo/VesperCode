@@ -42,6 +42,7 @@ from vespercode.contracts.optional import AbsentV1, PresentV1
 from vespercode.loop.feedback import (
     FEEDBACK_MAX_BYTES_V1,
     FEEDBACK_MAX_RECORDS_V1,
+    _SECRET_REDACTED_SUMMARY,
     ActionFeedbackSourceV1,
     CheckFeedbackSourceV1,
     ControlFeedbackSourceV1,
@@ -511,6 +512,43 @@ def test_build_feedback_is_deterministic() -> None:
     second = build_feedback(CHECK_FAIL, _CLOCK)
     assert first == second
     assert serialize_feedback_record(first[0]) == serialize_feedback_record(second[0])
+
+
+def test_build_feedback_redacts_secret_like_summaries() -> None:
+    # A check finding message can echo a source line containing a
+    # credential; the record summary is redacted to the fixed bounded
+    # marker so the secret never flows into the next context.
+    secret_result = CheckResultV1(
+        status="FAIL",
+        check_kind="TARGET_TESTS",
+        structured_findings=(
+            CheckFindingV1(
+                error_code="CHECK_FAILED",
+                message="line 3: OPENAI_API_KEY=sk-redacted-secret",
+                location=None,
+            ),
+        ),
+        raw_digest="a" * 64,
+    )
+    records = build_feedback(secret_result, _CLOCK)
+    assert len(records) == 1
+    assert records[0].summary == _SECRET_REDACTED_SUMMARY
+    assert "sk-redacted-secret" not in records[0].summary
+    # Ordinary messages pass through untouched.
+    clean_result = CheckResultV1(
+        status="FAIL",
+        check_kind="TARGET_TESTS",
+        structured_findings=(
+            CheckFindingV1(
+                error_code="CHECK_FAILED",
+                message="line 3: assertion failed",
+                location=None,
+            ),
+        ),
+        raw_digest="a" * 64,
+    )
+    clean = build_feedback(clean_result, _CLOCK)
+    assert clean[0].summary == "line 3: assertion failed"
 
 
 def test_build_feedback_truncates_oversized_summaries() -> None:

@@ -49,6 +49,43 @@ def test_findings_are_sorted_deterministically(tmp_path: Path) -> None:
     assert report.scanned_file_count == 2
 
 
+def test_prefixed_environment_variable_names_are_detected(
+    tmp_path: Path,
+) -> None:
+    # Env-var spellings with a prefix (OPENAI_API_KEY=, AWS_ACCESS_TOKEN=)
+    # must match: the boundary rule allows an underscore prefix, so the
+    # common prefixed secret assignment cannot evade the scanner.
+    env = tmp_path / "env.txt"
+    env.write_text(
+        "OPENAI_API_KEY=sk-prefixed-secret\n"
+        "AWS_SECRET_KEY=aws-secret-value\n"
+        "AWS_ACCESS_TOKEN=aws-token-value\n",
+        encoding="utf-8",
+    )
+    report = scan_changed_files((env,))
+    # One finding per (file, rule): the file must be flagged as carrying
+    # a generic API key (previously the underscore prefix evaded the rule
+    # entirely and the file passed clean).
+    assert [finding.rule_id for finding in report.findings] == ["GENERIC_API_KEY"]
+
+
+def test_spaced_assignment_forms_are_detected(tmp_path: Path) -> None:
+    # YAML/TOML-style assignments (`API_KEY = value`) must be detected:
+    # the value pattern tolerates whitespace after the separator.
+    spaced = tmp_path / "config.yaml"
+    spaced.write_text(
+        "api_key = sk-spaced-secret\n"
+        "AWS_ACCESS_TOKEN: aws-token\n",
+        encoding="utf-8",
+    )
+    report = scan_changed_files((spaced,))
+    assert [finding.rule_id for finding in report.findings] == ["GENERIC_API_KEY"]
+    rendered = report.model_dump_json()
+    assert "sk-prefixed-secret" not in rendered
+    assert "aws-secret-value" not in rendered
+    assert "aws-token-value" not in rendered
+
+
 def test_private_key_block_and_credential_url_rules(tmp_path: Path) -> None:
     key = tmp_path / "key.pem"
     key.write_text("-----BEGIN " + "RSA PRIVATE KEY-----" + "\nabc\n", encoding="utf-8")

@@ -17,16 +17,16 @@ from pathlib import Path
 from typing import Callable
 
 _PRIVATE_KEY_BLOCK_RE = re.compile(
-    rb"(?<![A-Za-z0-9_])-----BEGIN [A-Z0-9][A-Z0-9 -]* PRIVATE KEY-----"
+    rb"(?<![A-Za-z0-9])-----BEGIN [A-Z0-9][A-Z0-9 -]* PRIVATE KEY-----"
     rb"(?![A-Za-z0-9_])"
 )
 _GENERIC_API_KEY_RE = re.compile(
-    rb"(?<![A-Za-z0-9_])(?i:API_KEY|SECRET_KEY|ACCESS_TOKEN|AUTH_TOKEN)"
-    rb"(?![A-Za-z0-9_])[ \t]*(?>=>|=|:)(?:([\"'])([^\n]+?)\1|"
+    rb"(?<![A-Za-z0-9])(?i:API_KEY|SECRET_KEY|ACCESS_TOKEN|AUTH_TOKEN)"
+    rb"(?![A-Za-z0-9_])[ \t]*(?>=>|=|:)[ \t]*(?:([\"'])([^\n]+?)\1|"
     rb"[^ \t\r\n\v\f,;)}\x22']+)"
 )
 _CREDENTIAL_URL_RE = re.compile(
-    rb"(?<![A-Za-z0-9_])[A-Za-z][A-Za-z0-9+.-]*://[^/\s:@]+:[^/\s@]+@"
+    rb"(?<![A-Za-z0-9])[A-Za-z][A-Za-z0-9+.-]*://[^/\s:@]+:[^/\s@]+@"
 )
 
 _RULES: tuple[tuple[str, re.Pattern[bytes]], ...] = (

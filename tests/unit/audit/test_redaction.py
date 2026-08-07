@@ -185,6 +185,21 @@ def test_audit_rejects_complete_request_body_and_secret_fields(
     assert audit_repository.event_count == 0
 
 
+def test_audit_rejects_prefixed_environment_variable_secrets(
+    audit_repository: AuditRepository,
+) -> None:
+    # Prefixed env-var spellings (OPENAI_API_KEY=...) are secret values and
+    # must fail closed into the audit trail exactly like bare spellings.
+    result = audit_repository.append(
+        append_event(
+            "LLM_CALL",
+            {"outcome": "OPENAI_API_KEY=sk-prefixed-secret"},
+        )
+    )
+    assert result.error_code == "AUDIT_STORE_FAILED"
+    assert audit_repository.event_count == 0
+
+
 def test_audit_schema_replay_pagination_matrix(
     audit_repository: AuditRepository,
 ) -> None:

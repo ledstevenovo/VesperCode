@@ -419,6 +419,26 @@ def test_list_run_pagination_is_complete_and_stable(
         )
 
 
+def test_tampered_event_type_column_fails_closed_on_read(
+    repository: AuditRepository,
+) -> None:
+    """A DB row whose event_type disagrees with its payload kind must
+    never rehydrate: the read fails closed, so a Recovery payload hidden
+    under a forged event type is never silently projected."""
+    appended = repository.append(
+        append_event("LLM_CALL", {"outcome": "COMPLETED"}, event_id="tamper-1")
+    )
+    assert appended.kind == "APPENDED"
+    assert appended.event is not None
+    with repository.database.immediate_transaction() as tx:
+        tx.execute(
+            "UPDATE audit_events SET event_type = 'ACTION' WHERE event_id = ?",
+            ("tamper-1",),
+        )
+    with pytest.raises(ValidationError):
+        repository.list_run("run-1", first_page())
+
+
 def test_page_request_bounds_are_closed() -> None:
     with pytest.raises(ValidationError):
         AuditPageRequestV1(page_size=0)
