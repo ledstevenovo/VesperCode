@@ -21,8 +21,11 @@
 # the Windows-only pywin32 lines are excluded.  The Linux unit-test job
 # explicitly ignores tests/integration/windows (the dedicated Windows
 # integration environment, SPEC §10.3; its win32cred/win32api imports
-# cannot be collected on a Linux runner).  The Windows wheel job
-# installs the full lock.
+# cannot be collected on a Linux runner) and tests/feasibility/docker
+# (its daemon-local loopback-registry probes cannot run on a dind
+# sibling topology; the GitHub Linux job and this project's Docker
+# jobs cover the same machinery).  The Windows wheel job installs
+# the full lock.
 
 stages:
   - verify
@@ -40,7 +43,7 @@ unit-test:
     - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH'
   script:
     - python -m pip install --no-deps $(grep -E '^(ast-serialize|charset-normalizer|librt|markupsafe|mypy|pydantic-core|ruff)==' requirements/dev.lock | cut -d' ' -f1) && grep -vE '^(ast-serialize|charset-normalizer|librt|markupsafe|mypy|pydantic-core|ruff|pywin32|pywin32-ctypes)==' requirements/dev.lock > /tmp/dev-lock-linux.txt && python -m pip install --require-hashes --no-deps -r /tmp/dev-lock-linux.txt
-    - python -m pytest -q --ignore=tests/integration/windows --junitxml=tests/.tmp/unit-test-report.xml
+    - python -m pytest -q --ignore=tests/integration/windows --ignore=tests/feasibility/docker --junitxml=tests/.tmp/unit-test-report.xml
   artifacts:
     when: always
     reports:
@@ -96,7 +99,7 @@ reference-image-build:
     - curl -fsSL https://github.com/docker/buildx/releases/download/v0.30.1/buildx-v0.30.1.linux-amd64 -o /root/.docker/cli-plugins/docker-buildx
     - chmod +x /root/.docker/cli-plugins/docker-buildx
     - docker buildx create --use --name vesper-ci-builder
-    - python scripts/run_reference_image_smoke.py --report tests/.tmp/reference-image-smoke-report.json
+    - PYTHONPATH=src python scripts/run_reference_image_smoke.py --report tests/.tmp/reference-image-smoke-report.json
   artifacts:
     when: always
     paths:
@@ -120,7 +123,7 @@ demo-image-build:
     - curl -fsSL https://download.docker.com/linux/static/stable/x86_64/docker-27.3.1.tgz -o docker.tgz
     - tar -xzf docker.tgz
     - install docker/docker /usr/local/bin/docker
-    - python scripts/run_demo_image_smoke.py --report tests/.tmp/demo-image-smoke-report.json
+    - PYTHONPATH=src python scripts/run_demo_image_smoke.py --report tests/.tmp/demo-image-smoke-report.json
   artifacts:
     when: always
     paths:

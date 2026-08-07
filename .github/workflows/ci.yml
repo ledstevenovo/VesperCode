@@ -43,6 +43,12 @@ jobs:
           cache-dependency-path: requirements/dev.lock
       - name: Install locked Linux development dependencies
         run: python -m pip install --no-deps $(grep -E '^(ast-serialize|charset-normalizer|librt|markupsafe|mypy|pydantic-core|ruff)==' requirements/dev.lock | cut -d' ' -f1) && grep -vE '^(ast-serialize|charset-normalizer|librt|markupsafe|mypy|pydantic-core|ruff|pywin32|pywin32-ctypes)==' requirements/dev.lock > /tmp/dev-lock-linux.txt && python -m pip install --require-hashes --no-deps -r /tmp/dev-lock-linux.txt
+      # The offline suite includes the docker-feasibility tests
+      # (loopback registry round-trip and the real reference gate), which
+      # require the frozen buildx 0.30.1 toolchain.
+      - uses: docker/setup-buildx-action@v3
+        with:
+          version: "v0.30.1"
       - name: Run offline unit test suite and save the report
         # tests/integration/windows is the dedicated Windows integration
         # environment (SPEC §10.3; win32cred/win32api module imports cannot
@@ -74,7 +80,7 @@ jobs:
       - name: Install locked Linux development dependencies
         run: python -m pip install --no-deps $(grep -E '^(ast-serialize|charset-normalizer|librt|markupsafe|mypy|pydantic-core|ruff)==' requirements/dev.lock | cut -d' ' -f1) && grep -vE '^(ast-serialize|charset-normalizer|librt|markupsafe|mypy|pydantic-core|ruff|pywin32|pywin32-ctypes)==' requirements/dev.lock > /tmp/dev-lock-linux.txt && python -m pip install --require-hashes --no-deps -r /tmp/dev-lock-linux.txt
       - name: Reproduce the frozen reference image and run the fixture smoke
-        run: python scripts/run_reference_image_smoke.py --report tests/.tmp/reference-image-smoke-report.json
+        run: PYTHONPATH=src python scripts/run_reference_image_smoke.py --report tests/.tmp/reference-image-smoke-report.json
       - uses: actions/upload-artifact@v4
         with:
           name: reference-image-smoke-report
@@ -96,7 +102,7 @@ jobs:
       - name: Install locked Linux development dependencies
         run: python -m pip install --no-deps $(grep -E '^(ast-serialize|charset-normalizer|librt|markupsafe|mypy|pydantic-core|ruff)==' requirements/dev.lock | cut -d' ' -f1) && grep -vE '^(ast-serialize|charset-normalizer|librt|markupsafe|mypy|pydantic-core|ruff|pywin32|pywin32-ctypes)==' requirements/dev.lock > /tmp/dev-lock-linux.txt && python -m pip install --require-hashes --no-deps -r /tmp/dev-lock-linux.txt
       - name: Build the demo image and run the health and isolation smoke
-        run: python scripts/run_demo_image_smoke.py --report tests/.tmp/demo-image-smoke-report.json
+        run: PYTHONPATH=src python scripts/run_demo_image_smoke.py --report tests/.tmp/demo-image-smoke-report.json
       - uses: actions/upload-artifact@v4
         with:
           name: demo-image-smoke-report
