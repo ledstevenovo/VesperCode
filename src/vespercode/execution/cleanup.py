@@ -37,6 +37,7 @@ from vespercode.execution.materialization import (
     _is_link,
     _remove_tree_no_follow,
     digest_materialized_candidate,
+    is_allocated_root,
     register_non_reusable_name,
 )
 from vespercode.trees.candidate import CandidateTreeV1
@@ -139,7 +140,12 @@ def finalize_execution(
         except Exception:
             client = None
     else:
-        client = client_factory()
+        try:
+            client = client_factory()
+        except Exception:
+            # An injected factory failure is a closed cleanup failure,
+            # never an exception out of the cleanup contract.
+            client = None
     if client is None:
         container_removed = result.container_id == ""
     else:
@@ -305,6 +311,11 @@ def _remove_materialization(materialized: MaterializedCandidateV1) -> bool:
     lifetime.  An already-removed root is vacuously removed (idempotent).
     """
     root = Path(materialized.root_path)
+    if not is_allocated_root(materialized.root_id, materialized.root_path):
+        # The root was not provably allocated by this module: a forged
+        # candidate must never trigger a recursive removal.
+        register_non_reusable_name(materialized.root_id)
+        return False
     if not root.exists() and not _is_link(root):
         return True
     if root.name != materialized.root_id:

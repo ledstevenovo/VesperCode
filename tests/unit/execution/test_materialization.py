@@ -30,6 +30,7 @@ from vespercode.execution.materialization import (
     MaterializationError,
     MaterializedCandidateV1,
     MaterializedFileV1,
+    _require_authorized_path,
     allocate_execution_root,
     digest_materialized_candidate,
     is_non_reusable_name,
@@ -54,6 +55,8 @@ from vespercode.trees.text_classifier import (
     TextMetadataV1,
     classify_supported_text,
 )
+from vespercode.execution.cleanup import finalize_execution
+from vespercode.execution.docker_executor import RawExecutionResultV1
 
 _POLICY_DIGEST = "b857afca63e50a888ee183bd7ac8c7f739be7b60a94fc4f9c55c0a606db144ab"
 
@@ -247,6 +250,94 @@ def test_materialization_error_codes_are_closed() -> None:
     materialize_candidate(candidate, reused)
     with pytest.raises(MaterializationError, match="ROOT_REUSE"):
         materialize_candidate(candidate, reused)
+
+
+def test_materialization_rejects_the_reserved_marker_path() -> None:
+    # The execution-root marker name is a reserved path: a candidate row
+    # carrying it can never overwrite the identity marker.  The guard is
+    # case-insensitive (Windows filesystems are case-insensitive, so a
+    # case variant would open the very same marker file).
+    with pytest.raises(MaterializationError, match="PATH_ESCAPE"):
+        _require_authorized_path(".vespercode-execution-root")
+    with pytest.raises(MaterializationError, match="PATH_ESCAPE"):
+        _require_authorized_path(".VESPERCODE-EXECUTION-ROOT")
+    # Non-marker paths still pass the lexical guard.
+    _require_authorized_path("src/a.py")
+
+
+def test_forged_marker_bound_root_is_never_a_writable_source() -> None:
+    # A root that is lexically well-formed and marker-bound but was never
+    # allocated by this module is rejected: the name+marker pair alone
+    # cannot prove provenance.
+    forged_id = "f" * 32
+    forged = _Base.path / forged_id
+    forged.mkdir()
+    (forged / ".vespercode-execution-root").write_bytes(forged_id.encode("ascii"))
+    with pytest.raises(MaterializationError, match="WRITABLE_SOURCE"):
+        materialize_candidate(
+            tiny_candidate(),
+            AuthorizedExecutionRootV1(root_id=forged_id, root_path=str(forged)),
+        )
+
+
+def test_cleanup_refuses_a_forged_materialization_root() -> None:
+    # A forged MaterializedCandidateV1 naming an arbitrary directory is
+    # never removed: cleanup accepts only allocator-registered roots.
+    candidate = tiny_candidate()
+    materialized = materialize_candidate(
+        candidate, allocate_execution_root(_Base.path)
+    )
+    forged_dir = _Base.path / "forged-cleanup-target"
+    forged_dir.mkdir()
+    forged = materialized.model_copy(update={"root_path": str(forged_dir)})
+    raw = RawExecutionResultV1(
+        schema_version=1,
+        request_id="req-1",
+        container_id="container-1",
+        exit_code=0,
+        stdout=b"",
+        stderr=b"",
+        output_bytes=0,
+        timed_out=False,
+        output_limit_exceeded=False,
+        container_stopped=False,
+        error_code=None,
+    )
+    result = finalize_execution(raw, candidate, forged)
+    assert result.materialization_removed is False
+    assert forged_dir.exists()
+
+
+def test_injected_cleanup_factory_failure_is_a_closed_cleanup_failure() -> None:
+    # An injected client factory that raises is a closed cleanup failure:
+    # the cleanup verdict reports the residual container and never raises
+    # out of the cleanup contract.
+    candidate = tiny_candidate()
+    materialized = materialize_candidate(
+        candidate, allocate_execution_root(_Base.path)
+    )
+    raw = RawExecutionResultV1(
+        schema_version=1,
+        request_id="req-1",
+        container_id="container-1",
+        exit_code=0,
+        stdout=b"",
+        stderr=b"",
+        output_bytes=0,
+        timed_out=False,
+        output_limit_exceeded=False,
+        container_stopped=False,
+        error_code=None,
+    )
+
+    def _boom() -> object:
+        raise RuntimeError("injected cleanup factory failure")
+
+    result = finalize_execution(raw, candidate, materialized, client_factory=_boom)
+    assert result.container_removed is False
+    assert result.materialization_removed is True
+    assert result.workspace_unchanged is True
+    assert result.residual_artifact is not None
 
 
 def test_materialized_schema_contracts() -> None:

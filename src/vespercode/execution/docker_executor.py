@@ -266,7 +266,9 @@ class _BoundedStreamCollector:
         self._max_output_bytes = max_output_bytes
         self._deadline = deadline_monotonic
 
-    def collect(self) -> tuple[bytes, bytes, Literal["ok", "timeout", "overflow"]]:
+    def collect(
+        self,
+    ) -> tuple[bytes, bytes, Literal["ok", "timeout", "overflow", "error"]]:
         pending = bytearray()
         stdout = bytearray()
         stderr = bytearray()
@@ -282,13 +284,19 @@ class _BoundedStreamCollector:
                 # The read timeout fired; the deadline check above decides.
                 continue
             except Exception:
-                # The stream ended (broken pipe/connection close): EOF.
-                break
+                # Any non-timeout read failure is a broken or truncated
+                # stream, never a clean EOF: the collected evidence is
+                # incomplete and must fail closed.
+                return bytes(stdout), bytes(stderr), "error"
             if count == 0:
                 break
             pending.extend(buffer[:count])
             while len(pending) >= _FRAME_HEADER.size:
                 stream_id, size = _FRAME_HEADER.unpack_from(bytes(pending))
+                if stream_id not in (1, 2):
+                    # The multiplexed stream ids are stdout=1 and stderr=2;
+                    # any other id is a corrupt stream.
+                    return bytes(stdout), bytes(stderr), "error"
                 if size > self._max_output_bytes:
                     return bytes(stdout), bytes(stderr), "overflow"
                 if len(pending) < _FRAME_HEADER.size + size:
@@ -299,6 +307,10 @@ class _BoundedStreamCollector:
                 if len(stdout) + len(stderr) + size > self._max_output_bytes:
                     return bytes(stdout), bytes(stderr), "overflow"
                 target.extend(payload)
+        if pending:
+            # A trailing half frame is a truncated stream: the evidence is
+            # incomplete and must never be treated as a clean end.
+            return bytes(stdout), bytes(stderr), "error"
         return bytes(stdout), bytes(stderr), "ok"
 
 
@@ -356,12 +368,13 @@ class DockerExecutor:
             ).collect()
             timed_out = outcome == "timeout"
             output_limit_exceeded = outcome == "overflow"
+            stream_error = outcome == "error"
             container_stopped = False
-            if timed_out or output_limit_exceeded:
+            if timed_out or output_limit_exceeded or stream_error:
                 self._stop_exact_container(container)
                 container_stopped = True
             exit_code: int | None = None
-            if not timed_out and not output_limit_exceeded:
+            if not timed_out and not output_limit_exceeded and not stream_error:
                 try:
                     exit_code = self._wait_exit_code(container, deadline)
                 except _RunNotCompleted:
@@ -376,6 +389,8 @@ class DockerExecutor:
                 if timed_out
                 else "CHECK_OUTPUT_LIMIT_EXCEEDED"
                 if output_limit_exceeded
+                else "CHECK_EXECUTION_ERROR"
+                if stream_error
                 else None
             )
             return RawExecutionResultV1(

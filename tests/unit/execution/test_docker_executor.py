@@ -213,14 +213,22 @@ def _frame(stream_id: int, payload: bytes) -> bytes:
 class _ScriptedSocket:
     """Scripted attach socket over the collector's reader surface."""
 
-    def __init__(self, chunks: list[bytes], timeout_forever: bool = False) -> None:
+    def __init__(
+        self,
+        chunks: list[bytes],
+        timeout_forever: bool = False,
+        raise_error: bool = False,
+    ) -> None:
         self._chunks = list(chunks)
         self._timeout_forever = timeout_forever
+        self._raise_error = raise_error
 
     def settimeout(self, timeout: float) -> None:
         return None
 
     def recv_into(self, buffer: bytearray) -> int:
+        if self._raise_error:
+            raise ConnectionResetError("scripted broken stream")
         if self._timeout_forever:
             raise TimeoutError("scripted silent stream")
         if not self._chunks:
@@ -301,3 +309,48 @@ def test_bounded_collector_overflow_never_buffers_beyond_cap() -> None:
     ).collect()
     assert within[2] == "ok"
     assert len(within[0]) + len(within[1]) == _MAX_OUTPUT_BYTES - 50
+
+
+def test_bounded_collector_broken_stream_is_an_error() -> None:
+    # A non-timeout read failure is a broken stream, never a clean EOF:
+    # the collected evidence is incomplete and fails closed.
+    stdout, stderr, outcome = _BoundedStreamCollector(
+        _ScriptedSocket([_frame(1, b"partial")], raise_error=True),
+        _MAX_OUTPUT_BYTES,
+        time.monotonic() + 60,
+    ).collect()
+    assert outcome == "error"
+    assert stdout == b""
+    assert stderr == b""
+
+
+def test_bounded_collector_rejects_invalid_stream_ids() -> None:
+    # Only the multiplexed stdout (1) and stderr (2) ids are valid; any
+    # other id is a corrupt stream.
+    invalid = _BoundedStreamCollector(
+        _ScriptedSocket([_frame(3, b"corrupt-stream")]),
+        _MAX_OUTPUT_BYTES,
+        time.monotonic() + 60,
+    ).collect()
+    assert invalid[2] == "error"
+    stdin = _BoundedStreamCollector(
+        _ScriptedSocket([_frame(0, b"stdin")]),
+        _MAX_OUTPUT_BYTES,
+        time.monotonic() + 60,
+    ).collect()
+    assert stdin[2] == "error"
+
+
+def test_bounded_collector_trailing_half_frame_is_an_error() -> None:
+    # A truncated trailing frame at EOF is a corrupted stream: the bytes
+    # collected so far are reported but the outcome is an error.
+    frame = _frame(1, b"complete")
+    truncated = frame + frame[:4]
+    stdout, stderr, outcome = _BoundedStreamCollector(
+        _ScriptedSocket([truncated]),
+        _MAX_OUTPUT_BYTES,
+        time.monotonic() + 60,
+    ).collect()
+    assert outcome == "error"
+    assert stdout == b"complete"
+    assert stderr == b""

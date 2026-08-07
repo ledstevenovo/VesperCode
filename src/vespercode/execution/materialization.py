@@ -104,6 +104,13 @@ def _is_link(path: Path) -> bool:
 # lifetime.  The allocator and the cleanup module consult/append this set.
 _NON_REUSABLE_NAMES: set[str] = set()
 
+# Process-lifetime root provenance: every fresh root id maps to the exact
+# normalized absolute path the allocator created.  Materialization and
+# cleanup accept a root only when it hits this registry — a forged
+# ``MaterializedCandidateV1`` naming an arbitrary directory can never be
+# removed, because the digest self-binding alone cannot prove provenance.
+_ALLOCATED_ROOTS: dict[str, str] = {}
+
 
 def register_non_reusable_name(name: str) -> None:
     """Record one failed-cleanup identity as non-reusable for this process.
@@ -114,6 +121,15 @@ def register_non_reusable_name(name: str) -> None:
     machine beyond this process-lifetime guard.
     """
     _NON_REUSABLE_NAMES.add(name)
+
+
+def is_allocated_root(root_id: str, root_path: str) -> bool:
+    """True exactly when *root_path* is the exact path the allocator
+    registered for *root_id* (process-lifetime provenance)."""
+    expected = _ALLOCATED_ROOTS.get(root_id)
+    if expected is None:
+        return False
+    return os.path.normcase(os.path.abspath(root_path)) == expected
 
 
 def is_non_reusable_name(name: str) -> bool:
@@ -327,6 +343,7 @@ def allocate_execution_root(base_dir: Path | None = None) -> AuthorizedExecution
                 "WRITABLE_SOURCE",
                 f"cannot seal the identity marker of execution root {root_path}: {exc}",
             ) from exc
+        _ALLOCATED_ROOTS[root_id] = os.path.normcase(os.path.abspath(str(root_path)))
         return AuthorizedExecutionRootV1(root_id=root_id, root_path=str(root_path))
     raise MaterializationError(
         "ROOT_REUSE", f"no fresh execution-root name is available under {base}"
@@ -430,6 +447,14 @@ def _verify_fresh_root(root: AuthorizedExecutionRootV1) -> None:
             f"execution root {root.root_path!r} has no identity marker binding "
             f"root id {root.root_id!r}",
         )
+    if not is_allocated_root(root.root_id, root.root_path):
+        # A root that is lexically well-formed and marker-bound but was not
+        # provably allocated by this module (a forged name+marker pair) is
+        # never accepted as a writable source.
+        raise MaterializationError(
+            "WRITABLE_SOURCE",
+            f"execution root {root.root_path!r} was not allocated by this module",
+        )
     for entry in os.scandir(root_path):
         if entry.name != _MARKER_NAME:
             raise MaterializationError(
@@ -453,6 +478,11 @@ def _require_authorized_path(value: str) -> None:
     if value.startswith("/") or value.startswith("\\"):
         raise MaterializationError(
             "PATH_ESCAPE", f"materialized path {value!r} is absolute"
+        )
+    if os.path.normcase(value) == os.path.normcase(_MARKER_NAME):
+        raise MaterializationError(
+            "PATH_ESCAPE",
+            f"materialized path {value!r} is the reserved execution-root marker",
         )
     segments = value.split("/")
     if any(segment in ("", ".", "..") for segment in segments):
