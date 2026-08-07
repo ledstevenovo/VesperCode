@@ -1207,6 +1207,10 @@ def run_package_smoke(config: PackageSmokeConfigV1) -> PackageSmokeResultV1:
             python=config.pipx_python or sys.executable,
         )
         outcomes.append(install_outcome)
+        if install_outcome.exit_code != 0:
+            raise PackageSmokeErrorV1(
+                "pipx install failed with exit " + str(install_outcome.exit_code)
+            )
 
         sandbox = pipx_root / "sandbox"
         sandbox.mkdir()
@@ -1257,6 +1261,15 @@ def run_package_smoke(config: PackageSmokeConfigV1) -> PackageSmokeResultV1:
         )
     except PackageSmokeErrorV1 as exc:
         result = _failed_result(exc, tuple(outcomes))
+        return seal_result(result, config)
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        # A subprocess launch/launch-timeout failure must fail closed
+        # with a bounded redacted message (SPEC §5.4), never an
+        # uncaught traceback carrying the temp root path.
+        result = _failed_result(
+            PackageSmokeErrorV1(f"smoke subprocess failed: {type(exc).__name__}"),
+            tuple(outcomes),
+        )
         return seal_result(result, config)
     finally:
         shutil.rmtree(pipx_root, ignore_errors=True)
