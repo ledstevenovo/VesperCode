@@ -26,7 +26,8 @@ class AaIntegrityTests(unittest.TestCase):
         expected = b"pytest>=8,<9\nruff\nmypy\npywin32\ndocker\n"
         self.assertEqual((ROOT / "requirements/gate.in").read_bytes(), expected)
         self.assertEqual(
-            (ROOT / ".gitignore").read_bytes(), b".venv-gate/\n.venv-formal/\n"
+            (ROOT / ".gitignore").read_bytes(),
+            b".venv-gate/\n.venv-formal/\n__pycache__/\n",
         )
         self.assertEqual(
             (ROOT / "gates/pytest.ini").read_bytes(),
