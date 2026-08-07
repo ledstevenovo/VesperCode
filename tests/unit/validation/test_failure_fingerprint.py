@@ -27,7 +27,7 @@ from vespercode.validation.failure_fingerprint import (
     FingerprintNormalizationContextV1,
     build_failure_fingerprint,
 )
-from vespercode.validation.pytest_evidence import PytestEvidenceV1
+from vespercode.validation.pytest_evidence import PytestEventV1, PytestEvidenceV1
 
 _TARGET = "tests/test_a.py::test_value"
 _EXECUTION_ROOT = "C:/Users/runner/vesper-exec-19"
@@ -195,6 +195,52 @@ def normalization_context() -> FingerprintNormalizationContextV1:
         run_id=_RUN_ID,
         container_id=_CONTAINER_ID,
     )
+
+
+def test_duplicate_call_events_are_not_fingerprintable() -> None:
+    # A rerun/divergent report with two CALL events for the target node
+    # is not fingerprintable: the first event alone would hide the
+    # divergence.  The evidence is constructed past the model validators
+    # (which already ban duplicate CALLs) so the fingerprint boundary's
+    # own exactly-one gate is exercised directly.
+    events = [
+        _event(1, "SESSION_START"),
+        _event(2, "COLLECTION_ITEM", node_id=_present_text(_TARGET)),
+        _event(
+            3,
+            "TEST_PHASE",
+            node_id=_present_text(_TARGET),
+            phase=_present_text("CALL"),
+            outcome=_present_text("FAIL"),
+            exception={
+                "kind": "PRESENT",
+                "value": _exception(),
+            },
+        ),
+        _event(
+            4,
+            "TEST_PHASE",
+            node_id=_present_text(_TARGET),
+            phase=_present_text("CALL"),
+            outcome=_present_text("FAIL"),
+            exception={
+                "kind": "PRESENT",
+                "value": _exception(),
+            },
+        ),
+        _event(5, "SESSION_END"),
+    ]
+    document = _evidence_dict(events=events)
+    # The evidence is assembled past the bundle validator (which bans the
+    # duplicate CALL) but the events themselves are real validated values,
+    # so the fingerprint boundary operates on typed events.
+    document["events"] = tuple(
+        PytestEventV1.model_validate(event) for event in events
+    )
+    evidence = PytestEvidenceV1.model_construct(**document)
+    outcome = build_failure_fingerprint(evidence, _TARGET, normalization_context())
+    assert outcome.kind == "NOT_FINGERPRINTABLE"
+    assert outcome.error_code == "TARGET_NOT_REPRODUCED"
 
 
 def test_user_hexadecimal_value_is_not_normalized_away(

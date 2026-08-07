@@ -100,6 +100,7 @@ from vespercode.loop.cancellation import CancellationController
 from vespercode.loop.context_projection import (
     ContextBudgetFailureV1,
     ContextProjectionV1,
+    _projection_digest,
 )
 from vespercode.loop.engine import (
     AgentLoopEngine,
@@ -295,11 +296,12 @@ def _projection(
         for message in messages
         for segment in message.segments
     )
+    sources = validate_segment_sources(messages)
     return ContextProjectionV1(
         messages=messages,
-        source_projection=(),
+        source_projection=sources,
         canonical_byte_count=byte_count,
-        projection_digest=hashlib.sha256(b"projection").hexdigest(),
+        projection_digest=_projection_digest(messages, sources),
     )
 
 

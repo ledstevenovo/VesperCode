@@ -32,8 +32,11 @@ import pytest
 # fully).
 pytest.importorskip("pydantic")
 
+from pydantic import ValidationError
+
 from vespercode.contracts.optional import AbsentV1, PresentV1
 from vespercode.validation.pytest_evidence import (
+    PytestEvidenceV1,
     PytestReportExpectationV1,
     parse_pytest_evidence,
 )
@@ -823,6 +826,25 @@ def test_pytest_report_corruption_matrix(
     else:
         assert outcome.error_code == "REPORTER_INVALID", case_id
         assert outcome.evidence is None, case_id
+
+
+def test_duplicate_call_event_for_one_node_is_rejected() -> None:
+    # A node may execute its CALL phase at most once: a duplicate CALL is
+    # a rerun/divergent report and cannot produce a stable fingerprint.
+    # The duplicate is inserted BEFORE SESSION_END (the last-event check
+    # must not mask the duplicate-CALL ban).
+    report = _complete_report_dict()
+    events = _events_of(report)
+    rerun_call = dict(events[3])
+    rerun_call["sequence"] = 6
+    moved_end = dict(events[5])
+    moved_end["sequence"] = 7
+    rerun = _with_events(report, [*events[:5], rerun_call, moved_end])
+    rerun["event_count"] = 7
+    rerun["integrity_digest"] = recompute_report_digest(rerun)
+    with pytest.raises(ValidationError) as excinfo:
+        PytestEvidenceV1.model_validate(rerun)
+    assert "at most one CALL" in str(excinfo.value)
 
 
 def test_parse_rejects_empty_raw_bytes() -> None:

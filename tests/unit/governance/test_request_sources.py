@@ -22,6 +22,8 @@ import pytest
 # there (formal env runs it fully).
 pytest.importorskip("pydantic")
 
+from pydantic import ValidationError
+
 from vespercode.canonical.path_v1 import CanonicalRelativePathV1
 from vespercode.contracts.optional import AbsentV1, PresentV1
 from vespercode.governance.request_sources import (
@@ -113,16 +115,26 @@ def test_segment_source_projection_is_one_to_one_and_ordered() -> None:
 
 
 def test_content_digest_mismatch_rejected() -> None:
-    with pytest.raises(SourceValidationError, match="CONTENT_DIGEST_MISMATCH"):
-        validate_segment_sources(
-            (message(segment(content="real content", digest="0" * 64)),)
+    # The identity mismatch is rejected at segment construction: the model
+    # binds the digest to the exact content bytes.
+    with pytest.raises(ValidationError):
+        RequestContentSegmentV1(
+            source_category="TOOL_RESULT",
+            source_path=AbsentV1(kind="ABSENT"),
+            content="real content",
+            content_digest="0" * 64,
+            byte_count=len("real content".encode("utf-8")),
         )
 
 
 def test_byte_count_mismatch_rejected() -> None:
-    with pytest.raises(SourceValidationError, match="BYTE_COUNT_MISMATCH"):
-        validate_segment_sources(
-            (message(segment(content="real content", byte_count=999)),)
+    with pytest.raises(ValidationError):
+        RequestContentSegmentV1(
+            source_category="TOOL_RESULT",
+            source_path=AbsentV1(kind="ABSENT"),
+            content="real content",
+            content_digest=hashlib.sha256(b"real content").hexdigest(),
+            byte_count=999,
         )
 
 
@@ -189,19 +201,15 @@ def test_request_wide_segment_total_exceeds_1024_rejected() -> None:
 
 
 def test_content_with_lone_surrogate_rejected() -> None:
-    with pytest.raises(SourceValidationError, match="CONTENT_NOT_UTF8"):
-        validate_segment_sources(
-            (
-                message(
-                    RequestContentSegmentV1(
-                        source_category="TOOL_RESULT",
-                        source_path=AbsentV1(kind="ABSENT"),
-                        content="\ud800",
-                        content_digest="0" * 64,
-                        byte_count=0,
-                    )
-                ),
-            )
+    # The non-UTF-8 content is rejected at segment construction (the model
+    # binds the byte count/digest to the exact UTF-8 content bytes).
+    with pytest.raises(ValidationError):
+        RequestContentSegmentV1(
+            source_category="TOOL_RESULT",
+            source_path=AbsentV1(kind="ABSENT"),
+            content="\ud800",
+            content_digest="0" * 64,
+            byte_count=0,
         )
 
 
@@ -302,11 +310,12 @@ def test_disclosure_source_segment_matrix() -> None:
                 (message(segment(category=category, source_path="src/a.py")),)
             )
 
-    # --- Mismatched content identities: digest and byte count. ---
-    with pytest.raises(SourceValidationError, match="CONTENT_DIGEST_MISMATCH"):
-        validate_segment_sources((message(segment(content="body", digest="1" * 64)),))
-    with pytest.raises(SourceValidationError, match="BYTE_COUNT_MISMATCH"):
-        validate_segment_sources((message(segment(content="body", byte_count=1)),))
+    # --- Mismatched content identities: digest and byte count reject at
+    #     segment construction (the model binds them to the content). ---
+    with pytest.raises(ValidationError):
+        segment(content="body", digest="1" * 64)
+    with pytest.raises(ValidationError):
+        segment(content="body", byte_count=1)
 
     # --- Out-of-range cardinalities. ---
     with pytest.raises(SourceValidationError, match="EMPTY_MESSAGE_SEQUENCE"):

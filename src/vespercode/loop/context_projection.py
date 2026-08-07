@@ -36,6 +36,7 @@ from pydantic import (
     Strict,
     StrictStr,
     field_validator,
+    model_validator,
 )
 
 from vespercode.canonical.digest import domain_digest
@@ -181,6 +182,33 @@ class ContextProjectionV1(BaseModel):
                 "projection_digest must be exactly 64 lowercase hexadecimal characters"
             )
         return value
+
+    @model_validator(mode="after")
+    def _self_bind_identity(self) -> ContextProjectionV1:
+        actual_bytes = sum(
+            len(segment.content.encode("utf-8"))
+            for message in self.messages
+            for segment in message.segments
+        )
+        if actual_bytes != self.canonical_byte_count:
+            raise ValueError(
+                "canonical_byte_count does not bind the exact message bytes"
+            )
+        try:
+            projection = validate_segment_sources(self.messages)
+        except SourceValidationError as exc:
+            raise ValueError(
+                "the source projection cannot be derived from the messages"
+            ) from exc
+        if projection != self.source_projection:
+            raise ValueError(
+                "source_projection must be the one-to-one segment projection"
+            )
+        if self.projection_digest != _projection_digest(self.messages, projection):
+            raise ValueError(
+                "projection_digest must bind the exact messages and projection"
+            )
+        return self
 
     @property
     def feedback_refs(self) -> tuple[str, ...]:

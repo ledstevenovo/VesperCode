@@ -24,6 +24,7 @@ from pydantic import (
     Strict,
     StrictStr,
     field_validator,
+    model_validator,
 )
 
 from vespercode.contracts.evidence import _DIGEST_RE
@@ -94,6 +95,24 @@ class RequestContentSegmentV1(BaseModel):
     @classmethod
     def _digest_has_exact_form(cls, value: str) -> str:
         return _require_digest_form(value)
+
+    @model_validator(mode="after")
+    def _digest_and_byte_count_bind_the_content(self) -> RequestContentSegmentV1:
+        try:
+            raw = self.content.encode("utf-8")
+        except UnicodeEncodeError as exc:
+            raise ValueError(
+                "segment content must be a UTF-8 scalar sequence"
+            ) from exc
+        if len(raw) != self.byte_count:
+            raise ValueError(
+                "byte_count must equal the exact UTF-8 byte length of the content"
+            )
+        if hashlib.sha256(raw).hexdigest() != self.content_digest:
+            raise ValueError(
+                "content_digest must equal the SHA-256 of the exact content bytes"
+            )
+        return self
 
 
 class RequestMessageV1(BaseModel):

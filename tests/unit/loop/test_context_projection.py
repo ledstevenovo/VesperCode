@@ -197,6 +197,31 @@ def test_projection_digest_is_deterministic_and_binds_content() -> None:
     assert reordered.projection_digest != first.projection_digest
 
 
+def test_projection_rejects_forged_identity_fields() -> None:
+    """The projection self-binds its digest, byte count, and the one-to-one
+    source projection: a forged value never validates."""
+    projection = build_context(make_inputs())
+    assert isinstance(projection, ContextProjectionV1)
+    forged_digest = projection.model_copy(update={"projection_digest": "0" * 64})
+    with pytest.raises(ValidationError):
+        ContextProjectionV1.model_validate(forged_digest.model_dump())
+    forged_bytes = projection.model_copy(update={"canonical_byte_count": 0})
+    with pytest.raises(ValidationError):
+        ContextProjectionV1.model_validate(forged_bytes.model_dump())
+    # A projection that is not the one-to-one segment projection rejects.
+    assert projection.source_projection
+    forged_sources = projection.model_copy(
+        update={
+            "source_projection": (
+                projection.source_projection[0],
+                projection.source_projection[0],
+            )
+        }
+    )
+    with pytest.raises(ValidationError):
+        ContextProjectionV1.model_validate(forged_sources.model_dump())
+
+
 def test_projection_feedback_refs_are_ordered() -> None:
     projection = build_context(make_inputs())
     assert isinstance(projection, ContextProjectionV1)

@@ -325,7 +325,10 @@ def build_failure_fingerprint(
         for event in target_events
         if isinstance(event.phase, PresentV1) and event.phase.value == "CALL"
     ]
-    if not call_events:
+    if len(call_events) != 1:
+        # Exactly one CALL phase per target node: a rerun/divergent
+        # duplicate cannot produce a stable fingerprint (the first event
+        # alone would hide the divergence).
         return _not_fingerprintable("TARGET_NOT_REPRODUCED")
     call_event = call_events[0]
     if not isinstance(call_event.outcome, PresentV1):

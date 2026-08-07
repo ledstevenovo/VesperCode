@@ -442,6 +442,20 @@ class PytestEvidenceV1(BaseModel):
                     raise ValueError(
                         "event node id is not a member of the collected set"
                     )
+        # A node may execute its CALL phase at most once: a duplicate CALL
+        # is a rerun/divergent report and cannot produce a stable
+        # fingerprint or a clean formal/baseline pass.
+        seen_call_nodes: set[str] = set()
+        for event in events:
+            if (
+                event.event_type == "TEST_PHASE"
+                and isinstance(event.phase, PresentV1)
+                and event.phase.value == "CALL"
+            ):
+                assert isinstance(event.node_id, PresentV1)
+                if event.node_id.value in seen_call_nodes:
+                    raise ValueError("a node may have at most one CALL event")
+                seen_call_nodes.add(event.node_id.value)
         if self.integrity_digest != pytest_evidence_integrity_digest(self):
             raise ValueError("integrity_digest does not bind the report fields")
         return self
