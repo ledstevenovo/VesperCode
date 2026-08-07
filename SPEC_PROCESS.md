@@ -2544,3 +2544,36 @@ ruff format 折叠 _files_from_revision + docker_executor 修复区域，
 §50.1 以实际为准）；mypy src tests 仅剩继承环境错误（记录）。
 复审：SPEC_REVIEW_PASS（C1/I1/I2/I3 关闭，M1/M2 Minor 已处理——
 docker_executor format + 删除 _corrected_workspace_files 死代码）。
+
+## 83. 扩展阶段 E4（WP31）收官：Milestone 31 达成（2026-08-07）
+
+**T31.1（Reference Fixture End-to-end Workflow）全部完成**：
+- 31.A：scripts/run_reference_e2e.py ReferenceE2EHarness——真实 Windows +
+  Docker + 生产组件组合（snapshot→baseline 六检查→corrective loop 经
+  生产 apply_candidate_patch 管线→formal 四检查→evaluate_formal_success
+  →VerifiedCandidateV1→final wait 零写入），ordered content-addressed
+  trace 两次运行字节一致。Target+Matrix 2 passed。
+- 31.B：cleared-credential call gate（CREDENTIAL_MISSING 五维零副作用）、
+  hard DENY（越界路径零发布）、protected artifact（tests/** →
+  PROTECTED_ARTIFACT_CHANGED 零发布）、final-wait no-write、全场景零
+  写入。4 文件 8 tests passed。
+- 31.C：不确定写回（StepClock 故障注入 → RECOVERY_REQUIRED +
+  UNRESOLVED）→ 只读 recovery preview（三值 disposition 零写）→ 生产
+  AdmissionCoordinator.start_run 阻塞（6 ACCEPTED fixture port + 真实
+  恢复门）→ redacted monotonic audit（secret 拒绝零行、序列单调、清理
+  保留 UNRESOLVED 证据）→ memory 零伪造。2 文件 8 tests passed +
+  Script 模式（--workspace-root/--report）EXIT 0 13 字段真值报告。
+- **两阶段评审闭环**：SPEC 首轮 FAIL（C1 闭包 mypy + I1 Mock/corrective
+  loop + I2 protected artifact + I3 memory）→ 修复 → 复审
+  **SPEC_REVIEW_PASS**；质量首轮 FAIL（6 Important）→ 修复 → 复审
+  阻塞项关闭（format 门 27fe382 修复）→ **PASS**。subagent 驱动执行
+  （§4.6 工作流恢复：31.C 实现 + 两阶段评审均 fresh subagent）。
+- **FORMAL_OFFLINE 闭包**：e2e 18 passed、ruff check/format 全绿（任务
+  文件）、mypy src tests 仅剩继承环境错误（记录）、scan_credentials
+  exit 0、git diff --check 干净。
+- **Milestone 31 达成**：`MILESTONE_COMPLETE_V1(31)`——冻结参考镜像的
+  deterministic disposable harness 经稳定基线、corrective loop、formal
+  验证产生 VerifiedCandidateV1；负向门禁（DENY/protected/credential/
+  recovery）全零副作用；终端场景（writeback/audit/determinism）证明。
+- **WP31 合入 main**：分支 codex/wp31（60aa0e6 A 路线 → eafd36c
+  31.A/31.B+executor 修复 → 464f7a4/27fe382/271ac72 评审闭环）→ main。
