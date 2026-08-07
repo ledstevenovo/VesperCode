@@ -8,16 +8,37 @@ security config, the Task 28.B local shell over the injected
 ``LocalShellFactoryV1``, and the Task 28.C packaged assets — then
 launches through the injected application/server boundary without
 duplicating shell, asset, request-security, or workflow behavior
-(GREEN-2).  Shell construction, package lookup, request authorization,
-route behavior, secrets, providers, and repositories remain out of
-scope (GREEN-4/Boundary).
+(GREEN-2).  T38.2 legacy step 38.E adds the ``recover`` command: the
+closed workspace-path parser with the injected
+``RecoveryCliHandlerV1``, where every invocation without the literal
+``--apply`` switch is a read-only preview (SPEC §8.2/AC-29) and the
+handler result projects as bounded text.  Shell construction, package
+lookup, request authorization, route behavior, secrets, providers, and
+repositories remain out of scope (GREEN-4/Boundary): the recover parser
+opens no control database, applies no migration, constructs no
+repository or production ``RecoveryService``, and provides no
+production default handler (Task 38.F alone owns that binding), and no
+transaction edit, disposition override, force/ignore, credential,
+secret, or recovery-body CLI argument exists.
 """
 
 from __future__ import annotations
 
 import argparse
 import re
-from typing import Any, Callable, Final, Literal, Protocol, Sequence, TypeAlias
+from pathlib import Path
+from typing import (
+    Annotated,
+    Any,
+    Callable,
+    Final,
+    Literal,
+    Protocol,
+    Sequence,
+    TypeAlias,
+)
+
+from pydantic import BaseModel, ConfigDict, Field, StrictStr
 
 from vespercode.web.app import (
     LocalShellPortsV1,
@@ -174,17 +195,144 @@ def install_serve_command(
     )
 
 
+RecoveryCliResultKindV1: TypeAlias = Literal[
+    "PREVIEW",
+    "APPLIED",
+    "UNRESOLVED",
+    "NO_TRANSACTION",
+    "WORKSPACE_REJECTED",
+    "RECOVERY_FAILED",
+]
+"""The closed recovery-CLI outcome vocabulary (bounded projection)."""
+
+
+class RecoveryCliResultV1(BaseModel):
+    """One closed recovery-CLI outcome (38.E interface).
+
+    Every outcome carries a bounded static projection text; the kind is
+    the closed vocabulary the parser projects — the parser never opens
+    storage, never constructs a service, and never reads a raw result.
+    """
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+    kind: RecoveryCliResultKindV1
+    message: Annotated[StrictStr, Field(min_length=1, max_length=4096)]
+
+
+class RecoveryCliHandlerV1(Protocol):
+    """The injected typed recovery-CLI handler seam (38.E interface).
+
+    The handler owns Task 9.D identity/lease resolution and the Task
+    26.C service delegation; the parser only adapts the closed arguments
+    and projects the returned bounded text.  The production handler is
+    bound by Task 38.F alone.
+    """
+
+    def preview(self, workspace: Path) -> RecoveryCliResultV1:
+        """Project the read-only recovery preview of *workspace*."""
+        ...
+
+    def apply(self, workspace: Path) -> RecoveryCliResultV1:
+        """Project the explicit recovery apply of *workspace*."""
+        ...
+
+
+def _subparsers_group(
+    app: argparse.ArgumentParser,
+) -> argparse._SubParsersAction[Any]:
+    """The existing subparsers group of one parser, or a fresh one.
+
+    argparse exposes no public accessor for an already-registered
+    subparsers group and rejects a second ``add_subparsers`` call, so
+    the recover installer reuses the group the serve installer created
+    when present (composition detail, stable across Python 3.12).
+    """
+    for action in app._actions:
+        if isinstance(action, argparse._SubParsersAction):
+            return action
+    return app.add_subparsers(dest="command", required=True, metavar="COMMAND")
+
+
+def _run_recover(
+    args: argparse.Namespace,
+    recovery_handler: RecoveryCliHandlerV1,
+) -> int:
+    """Project exactly one handler outcome (38.E GREEN-2).
+
+    Without the literal ``--apply`` flag the invocation is a read-only
+    preview; with it, the explicit apply.  The bounded projection text
+    is printed as-is; no storage, migration, or service is opened here.
+    """
+    workspace = Path(args.workspace)
+    if args.apply:
+        result = recovery_handler.apply(workspace)
+    else:
+        result = recovery_handler.preview(workspace)
+    print(result.message)
+    return 0
+
+
+def install_recover_command(
+    app: argparse.ArgumentParser,
+    recovery_handler: RecoveryCliHandlerV1,
+) -> None:
+    """Install the closed ``recover`` command onto the application parser.
+
+    The parser accepts exactly ``--workspace PATH`` (required) and the
+    literal ``--apply`` switch (38.E GREEN-1); every force/ignore,
+    disposition-override, transaction-edit, credential, secret, and
+    recovery-body option is an unknown argument and fails closed before
+    any handler call.  Every invocation without ``--apply`` defaults to
+    the read-only preview (SPEC §8.2/AC-29).
+    """
+    subparsers = _subparsers_group(app)
+    recover_parser = subparsers.add_parser(
+        "recover",
+        help="预览或执行工作区恢复",
+        description=(
+            "恢复默认只读预览，不修改工作区、事务状态或备份；"
+            "只有字面 --apply 开关才执行恢复变更。"
+        ),
+    )
+    recover_parser.add_argument(
+        "--workspace",
+        required=True,
+        metavar="PATH",
+        help="目标工作区路径（不带 --apply 时只读预览）",
+    )
+    recover_parser.add_argument(
+        "--apply",
+        action="store_true",
+        help="执行恢复变更（唯一的恢复变更开关）",
+    )
+    recover_parser.set_defaults(
+        _recover_handler=lambda args: _run_recover(args, recovery_handler)
+    )
+
+
 def build_cli(
     shell_factory: LocalShellFactoryV1,
     *,
     server_launcher: ServerLauncherV1 = _uvicorn_launcher,
+    recovery_handler: RecoveryCliHandlerV1 | None = None,
 ) -> argparse.ArgumentParser:
-    """One closed CLI parser with the serve command installed."""
+    """One closed CLI parser with the serve command installed.
+
+    The Task 38.F production binding passes the initialized
+    ``RecoveryCliHandlerV1`` to install the recover command; without a
+    handler (the standalone surface and every Task 28.3 test) the
+    recover command is absent and fails closed as unknown, so the closed
+    serve surface is unchanged (38.F authorized cli.py edit: production
+    recover-handler binding only — command syntax, help/errors, and
+    preview/apply branching are never changed here).
+    """
     parser = argparse.ArgumentParser(
         prog="vespercode",
         description="VesperCode 编码智能体框架本地控制台。",
     )
     install_serve_command(parser, shell_factory, server_launcher=server_launcher)
+    if recovery_handler is not None:
+        install_recover_command(parser, recovery_handler)
     return parser
 
 

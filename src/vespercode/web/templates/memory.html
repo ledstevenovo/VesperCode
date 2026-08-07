@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block content %}
+<section aria-labelledby="memory-heading">
+  <meta name="csrf-token" content="{{ csrf_token }}">
+  <h1 id="memory-heading">运行记忆</h1>
+  <p class="run-id">运行 {{ run_id }}</p>
+  {% if error_message %}
+  <div id="memory-error" role="alert" aria-live="polite" class="live-error">
+    {{ error_message }}
+  </div>
+  {% endif %}
+  <h2>新增项目约定</h2>
+  <form
+    method="post"
+    action="/runs/{{ run_id }}/memory"
+    hx-post="/runs/{{ run_id }}/memory"
+    hx-target="#content"
+    hx-select="#content"
+    hx-swap="outerHTML"
+  >
+    <div class="form-field">
+      <label for="memory-summary">约定摘要</label>
+      <textarea id="memory-summary" name="summary" rows="3" required></textarea>
+    </div>
+    <div class="form-field">
+      <label for="memory-source">来源引用</label>
+      <input id="memory-source" name="source_reference" type="text" autocomplete="off" required>
+    </div>
+    <button type="submit">创建记忆</button>
+  </form>
+  <h2>记忆条目</h2>
+  {% if entries %}
+  <ul class="run-list">
+    {% for entry in entries %}
+    <li class="run-item">
+      <div class="run-id">{{ entry.summary }}</div>
+      <dl class="run-facts">
+        <dt>创建者</dt>
+        <dd>{{ creator_label(entry.creator) }}</dd>
+        <dt>来源</dt>
+        <dd>
+          {{ source_label(entry.source) }}
+          {% if entry.source.kind == "USER_VISIBLE_TEXT" %}
+          — {{ entry.source.reference }}
+          {% elif entry.source.kind == "USER_DECISION" %}
+          — {{ {"APPROVE": "批准", "REJECT": "拒绝", "CONFIG": "配置"}[entry.source.decision] }}：{{ entry.source.reference }}
+          {% elif entry.source.kind == "RUN_SUMMARY" %}
+          — {{ entry.source.run_id }}（{{ {"SUCCEEDED": "成功", "STOPPED": "已停止"}[entry.source.result] }}）
+          {% else %}
+          — {{ entry.source.check_result_digest }} / {{ entry.source.failure_fingerprint_digest }}
+          {% endif %}
+        </dd>
+        <dt>范围</dt>
+        <dd>{{ entry.workspace_identity }}</dd>
+        <dt>状态</dt>
+        <dd>{{ "未确认（待用户确认）" if entry.untrusted else "已确认" }}</dd>
+        <dt>更新时间</dt>
+        <dd>{{ entry.updated_at.value }}</dd>
+      </dl>
+      {% if entry.untrusted %}
+      <form
+        method="post"
+        action="/runs/{{ run_id }}/memory/confirm"
+        hx-post="/runs/{{ run_id }}/memory/confirm"
+        hx-target="#content"
+        hx-select="#content"
+        hx-swap="outerHTML"
+      >
+        <input type="hidden" name="entry_id" value="{{ entry.entry_id }}">
+        <button type="submit">确认</button>
+      </form>
+      {% endif %}
+      <form
+        method="post"
+        action="/runs/{{ run_id }}/memory/clear"
+        hx-post="/runs/{{ run_id }}/memory/clear"
+        hx-target="#content"
+        hx-select="#content"
+        hx-swap="outerHTML"
+      >
+        <input type="hidden" name="entry_ids" value="{{ entry.entry_id }}">
+        <button type="submit">清除</button>
+      </form>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p>暂无记忆条目。</p>
+  {% endif %}
+  <p><a href="/">返回主页</a></p>
+  <script nonce="{{ csp_nonce }}">
+    // The memory forms run through htmx, which attaches the server-
+    // rendered CSRF token header before every POST (the Task 28.A
+    // boundary accepts only the header form; the HttpOnly session cookie
+    // is never readable by script).  The script is authorized only by the
+    // per-request CSP nonce — there is no unsafe-inline bypass.  The
+    // listener is registered on document.body at page load and the token
+    // is session-stable, so it keeps serving the region swaps: a swapped
+    // copy of this script carries the swap response's own nonce, which
+    // the original document's CSP does not authorize (harmless).
+    (function () {
+      "use strict";
+      var meta = document.querySelector('meta[name="csrf-token"]');
+      var token = meta ? meta.getAttribute("content") : "";
+      document.body.addEventListener("htmx:configRequest", function (event) {
+        event.detail.headers["X-CSRF-Token"] = token;
+      });
+    })();
+  </script>
+</section>
+{% endblock %}
