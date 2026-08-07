@@ -69,11 +69,11 @@ jobs:
         # - tests/unit/governance/test_policy_precedence.py and
         #   test_policy.py::test_user_approval_cannot_override_noneditable_path_deny:
         #   real reference-profile readiness needs the local frozen image;
-        # - test_reference_gate_go_report_with_real_evidence: the frozen
-        #   Task 2 digest is only reproducible from the local layer cache
-        #   (the recipe's pip-install layer embeds build-time file mtimes
-        #   and pyc bytes), so the real gate runs in the dedicated
-        #   reference-image-build job on the cached local environment;
+        # - test_reference_gate_go_report_with_real_evidence: the real
+        #   gate needs the full reference-image build and a Docker daemon
+        #   (several minutes, registry loopback, container probes), so it
+        #   runs in the dedicated reference-image-build job; the
+        #   unit-test job keeps the fast static/loader coverage;
         # - the canonical extreme-year rows, the reserved-marker case
         #   guard, and the ACL/recovery Windows tests: Linux libc/ntfs
         #   semantics differ;

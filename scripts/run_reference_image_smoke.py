@@ -13,15 +13,14 @@ Identity sources: the Task 2.G GO identity is read from the packaged
 production manifest (``src/vespercode/profiles/builtin/
 reference-profile-v1.json``) through the T06.2 integrity loader, which
 verifies the packaged bytes against the embedded frozen Task 2.G gate
-identity (image digest 865930c3…, lock 67a6b630…, tools 3.12.4/8.4.2/
+identity (image digest 61aa1487…, lock 67a6b630…, tools 3.12.4/8.4.2/
 0.16.1/2.3.0, profile/policy).  The ``reference/manifest/
-reference-profile-v1.json`` copy is deliberately NOT read: a parallel
-session rewrote it to a third digest set (349ec22b…, no local image, no
-build record, src constants unsynced — SPEC_PROCESS §80 record), so it is
-not a trusted identity source.  Every Task 2 input — recipe, dual lock,
-fixture, manifest, builder, output, registry source — is read-only; any
-observed mismatch fails closed (NO-GO) and never rewrites a frozen byte
-(GREEN-4).
+reference-profile-v1.json`` copy was re-frozen to the same digest set
+under the SPEC_PROCESS §86 determinism normalization and the loader
+verifies the two copies agree; it is not read as a separate identity
+source.  Every Task 2 input — recipe, dual lock, fixture, manifest,
+builder, output, registry source — is read-only; any observed mismatch
+fails closed (NO-GO) and never rewrites a frozen byte (GREEN-4).
 
 The driver owns the reference-image construction and smoke evidence only:
 ``ensure_reference_tag`` reproduces/loads/tags the frozen identity through
@@ -170,9 +169,10 @@ FROZEN_TASK2_MANIFEST_DIGEST_V1: Final = (
     "61aa14877eda922fd7fef1c24f268b0bfb9dd53163bd0244d00b0691f475677a"
 )
 """The frozen Task 2 manifest digest: reproduced twice byte-identical by
-the T02.1 fixed-parameter builder after the A-route lock extension
-(SPEC_PROCESS §80); bound in 15+ test constants and the production
-executor/profile built-ins."""
+the T02.1 fixed-parameter builder after the SPEC_PROCESS §86
+deterministic layer normalization (frozen epoch mtimes, fixed gzip
+headers, canonical manifest/config/index); bound in 15+ test constants
+and the production executor/profile built-ins."""
 
 RECIPE_RELATIVE_V1: Final = Path("containers") / "reference" / "Dockerfile"
 LOCK_RELATIVE_V1: Final = Path("requirements") / "reference.lock"
