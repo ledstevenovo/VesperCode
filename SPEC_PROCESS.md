@@ -2466,4 +2466,9 @@ test_reference_formal_validation.py 从"Ruff/Mypy CHECK_EXECUTION_ERROR
 865930c3… 版（与 builtin 字节一致）。教训：并行会话不得共享写同一
 worktree 的冻结字节；冻结文件写入前必须确认无其他会话活动。
 
-**验证**：（formal 全量结果待补）
+**验证（隔离 worktree 免疫污染）**：A 路线提交 60aa0e6 后在隔离
+worktree（.worktrees/wp31-verify）跑 formal 全量：1523 passed + 2
+failed（1 为隔离环境无 .venv-formal 的环境性失败，1 为 13d8c1f 引入的
+.gitignore 断言未同步——已修复 c6ed7c9，34 passed）。wp31 主工作树三轮
+formal（124 failed/轮）全部由对方会话污染 manifest 造成，与本提交无关。
+src mypy strict 145 files 全绿、ruff check/format 全绿。
