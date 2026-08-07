@@ -369,6 +369,21 @@ class DockerExecutor:
             timed_out = outcome == "timeout"
             output_limit_exceeded = outcome == "overflow"
             stream_error = outcome == "error"
+            if stream_error:
+                # Windows npipe: an exited container closes the attach
+                # socket with an OSError (WinError 109) even after every
+                # byte was delivered, so a closed stream is not proof of
+                # truncation.  When the container has already exited,
+                # recover the authoritative output from the daemon logs
+                # (no npipe) and keep the evidence complete; a still
+                # running container or a logs failure stays fail-closed.
+                recovered = self._recover_exited_output(
+                    container, request.profile.resources.max_output_bytes
+                )
+                if recovered is not None:
+                    stdout, stderr, exceeded = recovered
+                    stream_error = False
+                    output_limit_exceeded = exceeded
             container_stopped = False
             if timed_out or output_limit_exceeded or stream_error:
                 self._stop_exact_container(container)
@@ -576,6 +591,34 @@ class DockerExecutor:
         expected_source = candidate.root_path.replace("\\", "/").lower()
         if observed_source != expected_source:
             raise _IsolationViolationError("workspace mount source drift")
+
+    def _recover_exited_output(
+        self,
+        container: _DockerContainerHandleV1,
+        max_output_bytes: int,
+    ) -> tuple[bytearray, bytearray, bool] | None:
+        """Authoritative daemon logs for an already-exited container.
+
+        Returns ``(stdout, stderr, exceeded)`` when the container has a
+        concrete exit code and the daemon logs are readable, else None.
+        The logs are the demuxed raw bytes (no frame headers) split per
+        stream; ``exceeded`` reports the aggregate byte cap so the
+        overflow fail-closed code is preserved for over-limit output.
+        """
+        try:
+            container.reload()
+            state = container.attrs.get("State") or {}
+            if state.get("Running") is not False or state.get("ExitCode") is None:
+                return None
+            out = bytearray(
+                container.logs(stdout=True, stderr=False, stream=False)
+            )
+            err = bytearray(
+                container.logs(stdout=False, stderr=True, stream=False)
+            )
+        except Exception:
+            return None
+        return out, err, len(out) + len(err) > max_output_bytes
 
     def _open_attach_stream(self, api: _DockerAPIClientV1, container_id: str) -> object:
         """Open the live multiplexed attach stream of the exact container.

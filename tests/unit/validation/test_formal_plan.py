@@ -199,10 +199,16 @@ def _request(
             tool_version=PresentV1(kind="PRESENT", value=tool_version or "0.16.1"),
         )
         argv = (
-            _argv("ruff", "check", "/workspace")
+            _argv("ruff", "check", "--no-cache", "/workspace")
             if check_id == "RUFF"
             else _argv(
-                "mypy", "--config-file", "/workspace/pyproject.toml", "/workspace/src"
+                "mypy",
+                "--no-incremental",
+                "--cache-dir",
+                "/tmp/mypy-cache",
+                "--config-file",
+                "/workspace/pyproject.toml",
+                "/workspace/src",
             )
         )
     return FormalValidationRequestV1(

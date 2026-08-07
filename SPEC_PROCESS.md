@@ -2472,3 +2472,37 @@ failed（1 为隔离环境无 .venv-formal 的环境性失败，1 为 13d8c1f �
 .gitignore 断言未同步——已修复 c6ed7c9，34 passed）。wp31 主工作树三轮
 formal（124 failed/轮）全部由对方会话污染 manifest 造成，与本提交无关。
 src mypy strict 145 files 全绿、ruff check/format 全绿。
+
+## 81. T31.1 31.A/31.B + Windows 执行缺陷修复（2026-08-07）
+
+**Windows npipe 执行缺陷（首次真实执行暴露）**：docker 集成测试此前
+从未在 formal 全量真实运行（addopts 排除 docker_integration），A 路线
+首次真实跑六检查时暴露 executor 缺陷——Windows 上容器退出时 attach
+socket 抛 OSError 109（管道已结束），collector 把它当流错误 →
+CHECK_EXECUTION_ERROR。**修复**：execute 在 collector error 时 fallback
+到 container.logs()（容器已退出且退出码可用时），恢复权威完整输出
+（demux 无帧头、按流分离）；保持超限/超时 fail-closed 语义。修复后
+docker 集成 21 passed（真实六检查全过）。
+
+**frozen argv 缺陷（同类暴露）**：T20.2 时代 ruff/mypy argv 从未真实
+执行（缺工具 fail-closed），真实执行暴露：1) ruff 默认缓存写只读
+/workspace → `--no-cache`；2) mypy 即使 --no-incremental 仍创建
+.mypy_cache → `--cache-dir /tmp/mypy-cache`（profile tmpfs）。workspace
+pyproject 补 [tool.ruff.lint] select（与 gates/ruff.toml 规则集一致，
+报告插件才 PASS）。argv 断言（test_python_adapter_static/test_formal_plan）
+同步。
+
+**T31.1 31.A 完成**：scripts/run_reference_e2e.py ReferenceE2EHarness
+真实生产组合（snapshot→baseline 六检查→corrective loop（fixture add
+故意缺陷，approved patch 写回）→formal 四检查→evaluate_formal_success
+→VerifiedCandidateV1→final wait 零写入），content-addressed trace。
+Target+Matrix 2 passed（真实 Windows+Docker+Mock，VerifiedCandidate
+产生，零工作区写入，trace 两次运行字节一致）。
+
+**T31.1 31.B 完成**：cleared-credential call gate（生产 orchestrator +
+cleared fixture store → CREDENTIAL_MISSING，grant/authorization/turn/
+call/charge 五维零副作用）、hard DENY（patch engine 越界路径拒绝零
+发布）、final-wait no-write、全场景零写入。4 文件 7 tests passed。
+
+**流程记录**：用户提示恢复 §4.6 subagent 驱动工作流（此前会话 subagent
+配额耗尽改 driver 内联）——31.C 起恢复 subagent 执行 + 两阶段评审。

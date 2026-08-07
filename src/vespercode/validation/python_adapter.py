@@ -591,13 +591,26 @@ def _target_tests_argv(
 
 
 def _ruff_argv() -> ExecutionArgumentSequenceV1:
-    return ExecutionArgumentSequenceV1(arguments=("ruff", "check", _FROZEN_WORKSPACE))
+    # --no-cache: the frozen workspace is mounted read-only, so ruff's
+    # default cache at /workspace/.ruff_cache cannot be initialized
+    # (spec §1.4.5; the T20.2-era argv was never executed against a
+    # real ruff binary, so the write path was never exercised).
+    return ExecutionArgumentSequenceV1(
+        arguments=("ruff", "check", "--no-cache", _FROZEN_WORKSPACE)
+    )
 
 
 def _mypy_argv() -> ExecutionArgumentSequenceV1:
+    # --no-incremental with --cache-dir under the profile tmpfs: the
+    # frozen workspace is mounted read-only, and mypy creates its
+    # metastore directory even with caching disabled (spec §1.4.5; the
+    # T20.2-era argv was never executed against a real mypy binary).
     return ExecutionArgumentSequenceV1(
         arguments=(
             "mypy",
+            "--no-incremental",
+            "--cache-dir",
+            "/tmp/mypy-cache",
             "--config-file",
             f"{_FROZEN_WORKSPACE}/pyproject.toml",
             f"{_FROZEN_WORKSPACE}/src",

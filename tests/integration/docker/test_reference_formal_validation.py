@@ -119,6 +119,9 @@ def _supported_pyproject_bytes() -> bytes:
         b"[tool.ruff]\n"
         b"line-length = 88\n"
         b"\n"
+        b"[tool.ruff.lint]\n"
+        b'select = ["E4", "E7", "E9", "F"]\n'
+        b"\n"
         b"[tool.mypy]\n"
         b'python_version = "3.12"\n'
         b"strict = true\n"
