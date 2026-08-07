@@ -2537,6 +2537,10 @@ AdmissionCoordinator.start_run（6 个 ACCEPTED fixture port + 真实
 recovery port + CREATED run）；6) 资源清理——3 个 db 场景
 try/finally close + rmtree。Minor 修复：M7 同 6；M8 tests/.tmp 不提交。
 
-**验证**：e2e 全量 18 passed（31.A 2 + 31.B 8 + 31.C 8，含 docker
-happy path）；Script 模式 EXIT 0（12+ 字段报告全真）；ruff check/format
-全绿；mypy src tests 仅剩继承环境错误（记录）。
+**验证（最终）**：e2e 全量 18 passed（31.A 2 + 31.B 8 + 31.C 8，含 docker
+happy path）；Script 模式 EXIT 0（13+ 字段报告全真）；ruff check/format
+全绿（任务文件；464f7a4 的 format 记录失准由 27fe382 修正——
+ruff format 折叠 _files_from_revision + docker_executor 修复区域，
+§50.1 以实际为准）；mypy src tests 仅剩继承环境错误（记录）。
+复审：SPEC_REVIEW_PASS（C1/I1/I2/I3 关闭，M1/M2 Minor 已处理——
+docker_executor format + 删除 _corrected_workspace_files 死代码）。

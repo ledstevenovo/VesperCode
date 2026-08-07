@@ -171,27 +171,6 @@ def _files_from_revision(
     return tuple((path.value, tree.read_bytes(path)) for path in tree.list_file_paths())
 
 
-def _corrected_workspace_files(
-    files: tuple[tuple[str, bytes], ...],
-) -> tuple[tuple[str, bytes], ...]:
-    """The workspace bytes after the approved corrective patch.
-
-    The reference fixture's ``add`` intentionally subtracts; the
-    corrective loop applies the approved patch (``left - right`` ->
-    ``left + right``) to the calculator bytes so the failing target
-    flips to PASS.  Every other byte is preserved exactly.
-    """
-    return tuple(
-        (
-            rel,
-            raw.replace(b"return left - right", b"return left + right"),
-        )
-        if rel == "src/vesper_fixture/calculator.py"
-        else (rel, raw)
-        for rel, raw in files
-    )
-
-
 def _seeded_baseline_plan(snapshot: SnapshotTreeV1) -> BaselineCheckPlanV1:
     """One baseline plan bound to the sealed workspace Snapshot."""
     manifest = load_reference_profile(_packaged_manifest_bytes())

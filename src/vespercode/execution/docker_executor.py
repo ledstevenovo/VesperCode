@@ -620,12 +620,8 @@ class DockerExecutor:
             state = raw_state if isinstance(raw_state, dict) else {}
             if state.get("Running") is not False or state.get("ExitCode") is None:
                 return None
-            out = bytearray(
-                container.logs(stdout=True, stderr=False, stream=False)
-            )
-            err = bytearray(
-                container.logs(stdout=False, stderr=True, stream=False)
-            )
+            out = bytearray(container.logs(stdout=True, stderr=False, stream=False))
+            err = bytearray(container.logs(stdout=False, stderr=True, stream=False))
         except Exception:
             return None
         return out, err, len(out) + len(err) > max_output_bytes
