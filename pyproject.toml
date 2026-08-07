@@ -23,6 +23,22 @@ dependencies = [
 build = ["build", "hatchling"]
 development = ["mypy==2.3.0", "pytest==8.4.2", "ruff==0.16.1"]
 
+[project.scripts]
+vespercode = "vespercode.cli:main"
+
+[tool.hatch.build.targets.wheel]
+# T33.1 33.A freeze: exactly the declared runtime source tree, assets,
+# and metadata enter the wheel; tests, evidence, credentials, VCS data,
+# and bytecode junk never do.
+packages = ["src/vespercode"]
+include = [
+    "vespercode/**/*.py",
+    "vespercode/**/*.html",
+    "vespercode/**/*.js",
+    "vespercode/**/*.json",
+]
+exclude = ["**/__pycache__/**", "**/*.py[cod]", "**/*.pyo"]
+
 [tool.pytest.ini_options]
 addopts = "-m 'not (windows_integration or docker_integration or reference_e2e or package_smoke or oci_smoke or deployment_smoke)'"
 testpaths = ["tests"]
