@@ -193,6 +193,13 @@ class _DockerContainerHandleV1(Protocol):
     def kill(self) -> None: ...
     def wait(self, timeout: float | None = None) -> dict[str, object]: ...
     def reload(self) -> None: ...
+    def logs(
+        self,
+        *,
+        stdout: bool = True,
+        stderr: bool = True,
+        stream: bool = False,
+    ) -> bytes: ...
 
 
 class _DockerContainersV1(Protocol):
@@ -381,7 +388,9 @@ class DockerExecutor:
                     container, request.profile.resources.max_output_bytes
                 )
                 if recovered is not None:
-                    stdout, stderr, exceeded = recovered
+                    recovered_stdout, recovered_stderr, exceeded = recovered
+                    stdout = bytes(recovered_stdout)
+                    stderr = bytes(recovered_stderr)
                     stream_error = False
                     output_limit_exceeded = exceeded
             container_stopped = False
@@ -607,7 +616,8 @@ class DockerExecutor:
         """
         try:
             container.reload()
-            state = container.attrs.get("State") or {}
+            raw_state = container.attrs.get("State")
+            state = raw_state if isinstance(raw_state, dict) else {}
             if state.get("Running") is not False or state.get("ExitCode") is None:
                 return None
             out = bytearray(

@@ -2506,3 +2506,37 @@ call/charge 五维零副作用）、hard DENY（patch engine 越界路径拒绝�
 
 **流程记录**：用户提示恢复 §4.6 subagent 驱动工作流（此前会话 subagent
 配额耗尽改 driver 内联）——31.C 起恢复 subagent 执行 + 两阶段评审。
+
+## 82. T31.1 两阶段评审修复（2026-08-07）
+
+**SPEC 评审（fresh subagent）：FAIL → 修复 → 复审待定**。C1
+（FORMAL_OFFLINE 闭包 mypy）：修复 harness 自持错误（_canonical_entry
+preimage 注解、_epoch_milliseconds/_policy_digest/_trace_digest 的
+no-any-return、_ClearedCredentialStore.clear 字段）+ docker_executor
+npipe 修复的协议声明（_DockerContainerHandleV1.logs + state 类型 +
+bytearray/bytes）+ test_failure_fingerprint 的 object isinstance。
+`mypy src tests` 剩余 1 个继承模块解析错误
+（test_external_change_faults "Source file found twice"——tests 目录
+非包结构的环境问题，与 T31.1 无关，文档化记录）。I1（corrective loop
+走生产管线）：run_until_final_wait 改用生产 apply_candidate_patch 应用
+approved patch（_CORRECTIVE_PATCH_TEXT），published revision 的 overlay
+字节（tree.read_bytes）构造修正后 snapshot——31.A 的 corrective loop
+现经生产 §4.2.2 管线。I2（protected artifact）：新增
+run_protected_artifact_scenario（tests/** → PROTECTED_ARTIFACT_CHANGED
++ 零发布）+ 测试。I3（memory）：harness 零伪造 memory 断言
+（memory_entries == 0）+ Expected 行未列 memory 的记录解释。
+
+**质量评审（fresh subagent）：FAIL → 修复 → 复审待定**。6 Important：
+1) _ClearedCredentialStore.clear 无效字段（CredentialStoreMutationV1
+schema_version+kind）——已修；2) harness mypy 门禁——真实错误全修
+（剩余 import-untyped 为环境级联，与既有文件同源）；3) ruff E402
+（pytestmark 移到 import 后 7 文件）+ F401——已修；4) CLI fail-open——
+main() 任一场景失败 return 1 + 报告写 error_code/error_message；
+5) admission 阻塞走生产编排——_admission_coordinator 注入
+AdmissionCoordinator.start_run（6 个 ACCEPTED fixture port + 真实
+recovery port + CREATED run）；6) 资源清理——3 个 db 场景
+try/finally close + rmtree。Minor 修复：M7 同 6；M8 tests/.tmp 不提交。
+
+**验证**：e2e 全量 18 passed（31.A 2 + 31.B 8 + 31.C 8，含 docker
+happy path）；Script 模式 EXIT 0（12+ 字段报告全真）；ruff check/format
+全绿；mypy src tests 仅剩继承环境错误（记录）。

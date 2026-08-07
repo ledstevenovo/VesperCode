@@ -23,6 +23,7 @@ import pytest
 # fully).
 pytest.importorskip("pydantic")
 
+from vespercode.contracts.optional import PresentV1
 from vespercode.validation.failure_fingerprint import (
     FingerprintNormalizationContextV1,
     build_failure_fingerprint,
@@ -323,7 +324,7 @@ def test_assertion_diff_is_preserved_in_fingerprint_content(
     assert outcome.kind == "STABLE"
     assert outcome.fingerprint is not None
     diff = outcome.fingerprint.normalized_assertion_diff
-    assert isinstance(diff, object) and diff.kind == "PRESENT"
+    assert isinstance(diff, PresentV1) and diff.kind == "PRESENT"
     assert "where 0xdeadbeef = value()" in diff.value
 
 

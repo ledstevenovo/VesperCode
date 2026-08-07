@@ -11,12 +11,13 @@ import pytest
 
 pytest.importorskip("pydantic")
 
-pytestmark = pytest.mark.reference_e2e
-
 from scripts.run_reference_e2e import (
     ReferenceE2EConfigV1,
     ReferenceE2EHarness,
 )
+
+
+pytestmark = pytest.mark.reference_e2e
 
 
 def test_final_wait_writes_nothing(

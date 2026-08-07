@@ -12,12 +12,13 @@ import pytest
 
 pytest.importorskip("pydantic")
 
-pytestmark = pytest.mark.reference_e2e
-
 from scripts.run_reference_e2e import (
     ReferenceE2EConfigV1,
     ReferenceE2EHarness,
 )
+
+
+pytestmark = pytest.mark.reference_e2e
 
 
 def test_outside_scope_patch_is_denied_before_any_publication(
@@ -45,3 +46,15 @@ def test_hard_deny_trace_is_stable(
         )
     ).run_hard_deny_scenario()
     assert second.trace_digest == first.trace_digest
+
+
+def test_protected_artifact_patch_is_denied_before_any_publication(
+    reference_e2e_harness: ReferenceE2EHarness,
+) -> None:
+    """SPEC §1.4.2: a patch under ``tests/**`` is a protected-artifact
+    change and is denied before any dispatch, publication, artifact,
+    workspace write, or authorization effect."""
+    result = reference_e2e_harness.run_protected_artifact_scenario()
+    assert result.error_code == "PROTECTED_ARTIFACT_CHANGED"
+    assert result.publish_count == 0
+    assert result.workspace_write_count == 0
