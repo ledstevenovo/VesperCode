@@ -1,0 +1,93 @@
+# T35.1 legacy step 35.A: GitHub Actions verification workflow.
+#
+# Every push and every pull request runs the three exact verification jobs
+# (unit-test, reference-image-build, demo-image-build, SPEC §8.4) with
+# read-only permissions, locked setup, deterministic commands, saved
+# reports/artifacts and no publishing credential or action.  Fork pull
+# requests are secretless and still complete the full three-job closure;
+# there is no skip path and no remote query happens from this file.
+#
+# The locked environment is requirements/dev.lock.  That lock includes the
+# Windows-only pywin32 packages, so the Linux runner derives the
+# deterministic Linux subset by excluding exactly those two lines before
+# the hash-locked install (the offline suite has no pywin32 import
+# closure; the dedicated Windows environments keep the full lock).
+
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  unit-test:
+    name: unit-test
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements/dev.lock
+      - name: Install locked development dependencies
+        run: grep -v -e '^pywin32==' -e '^pywin32-ctypes==' requirements/dev.lock > /tmp/dev-lock-linux.txt && python -m pip install --require-hashes -r /tmp/dev-lock-linux.txt
+      - name: Run offline unit test suite and save the report
+        run: python -m pytest -q --junitxml=tests/.tmp/unit-test-report.xml
+      - uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-report
+          path: tests/.tmp/unit-test-report.xml
+          if-no-files-found: error
+          retention-days: 30
+
+  reference-image-build:
+    name: reference-image-build
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements/dev.lock
+      - uses: docker/setup-buildx-action@v3
+        with:
+          version: "0.30.1"
+      - name: Install locked development dependencies
+        run: grep -v -e '^pywin32==' -e '^pywin32-ctypes==' requirements/dev.lock > /tmp/dev-lock-linux.txt && python -m pip install --require-hashes -r /tmp/dev-lock-linux.txt
+      - name: Reproduce the frozen reference image and run the fixture smoke
+        run: python scripts/run_reference_image_smoke.py --report tests/.tmp/reference-image-smoke-report.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: reference-image-smoke-report
+          path: tests/.tmp/reference-image-smoke-report.json
+          if-no-files-found: error
+          retention-days: 30
+
+  demo-image-build:
+    name: demo-image-build
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements/dev.lock
+      - name: Install locked development dependencies
+        run: grep -v -e '^pywin32==' -e '^pywin32-ctypes==' requirements/dev.lock > /tmp/dev-lock-linux.txt && python -m pip install --require-hashes -r /tmp/dev-lock-linux.txt
+      - name: Build the demo image and run the health and isolation smoke
+        run: python scripts/run_demo_image_smoke.py --report tests/.tmp/demo-image-smoke-report.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: demo-image-smoke-report
+          path: tests/.tmp/demo-image-smoke-report.json
+          if-no-files-found: error
+          retention-days: 30

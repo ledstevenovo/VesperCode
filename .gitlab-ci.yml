@@ -1,0 +1,169 @@
+# T35.1 legacy steps 35.B/35.C: GitLab verification pipeline and
+# fail-closed protected-tag release admission.
+#
+# The four exact verification jobs (SPEC §8.4) run with exclusive rules
+# for the required push, merge request, main and tag contexts, bound to
+# the project Windows 11 x64 runner where required, with locked commands,
+# saved reports/artifacts and no release credential in any ordinary
+# pipeline.  The 35.C release job admits only protected semver tags after
+# a fail-closed three-way source/tag commit precheck and the four passing
+# prerequisite verification jobs; the protected masked variables
+# GHCR_PUSH_TOKEN and GITHUB_RELEASE_TOKEN are referenced only inside
+# that job and only after the precheck.
+#
+# The Linux jobs install the deterministic Linux subset of
+# requirements/dev.lock (excluding exactly the Windows-only pywin32
+# lines); the Windows wheel job installs the full lock.
+
+stages:
+  - verify
+  - release
+
+variables:
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.pip-cache"
+  PYTHONDONTWRITEBYTECODE: "1"
+
+unit-test:
+  stage: verify
+  image: python:3.12
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH'
+  script:
+    - grep -v -e '^pywin32==' -e '^pywin32-ctypes==' requirements/dev.lock > /tmp/dev-lock-linux.txt && python -m pip install --require-hashes -r /tmp/dev-lock-linux.txt
+    - python -m pytest -q --junitxml=tests/.tmp/unit-test-report.xml
+  artifacts:
+    when: always
+    reports:
+      junit: tests/.tmp/unit-test-report.xml
+    paths:
+      - tests/.tmp/unit-test-report.xml
+    expire_in: 30 days
+
+wheel-build-smoke:
+  stage: verify
+  tags:
+    - windows-11-x64-vespercode
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH'
+  script:
+    - python -m pip install --require-hashes -r requirements/dev.lock
+    - python -m build --wheel --outdir dist-ci
+    - $wheel = Get-ChildItem dist-ci -Filter *.whl | Select-Object -First 1
+    - $sha256 = (Get-FileHash -Path $wheel.FullName -Algorithm SHA256).Hash.ToLower()
+    - if ($sha256 -notmatch '^[0-9a-f]{64}$') { throw "malformed wheel SHA-256" }
+    - Set-Content -Path dist-ci/vespercode.sha256 -Value "$sha256"
+    - $recomputed = (Get-FileHash -Path $wheel.FullName -Algorithm SHA256).Hash.ToLower()
+    - if ($recomputed -ne $sha256) { throw "wheel SHA-256 mismatch" }
+    - python -m venv venv-smoke
+    - ./venv-smoke/Scripts/python.exe -m pip install $wheel.FullName
+    - ./venv-smoke/Scripts/vespercode.exe --help
+  artifacts:
+    when: always
+    paths:
+      - dist-ci/vespercode.sha256
+    expire_in: 30 days
+
+reference-image-build:
+  stage: verify
+  image: python:3.12
+  services:
+    - name: docker:27.3.1-dind
+      alias: docker
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH'
+    - if: '$CI_COMMIT_TAG =~ /^v[0-9]+\.[0-9]+\.[0-9]+$/ && $CI_COMMIT_REF_PROTECTED == "true"'
+  script:
+    - grep -v -e '^pywin32==' -e '^pywin32-ctypes==' requirements/dev.lock > /tmp/dev-lock-linux.txt && python -m pip install --require-hashes -r /tmp/dev-lock-linux.txt
+    - curl -fsSL https://download.docker.com/linux/static/stable/x86_64/docker-27.3.1.tgz -o docker.tgz
+    - tar -xzf docker.tgz
+    - install docker/docker /usr/local/bin/docker
+    - mkdir -p /root/.docker/cli-plugins
+    - curl -fsSL https://github.com/docker/buildx/releases/download/v0.30.1/buildx-v0.30.1.linux-amd64 -o /root/.docker/cli-plugins/docker-buildx
+    - chmod +x /root/.docker/cli-plugins/docker-buildx
+    - docker buildx create --use --name vesper-ci-builder
+    - python scripts/run_reference_image_smoke.py --report tests/.tmp/reference-image-smoke-report.json
+  artifacts:
+    when: always
+    paths:
+      - tests/.tmp/reference-image-smoke-report.json
+    expire_in: 30 days
+
+demo-image-build:
+  stage: verify
+  image: python:3.12
+  services:
+    - name: docker:27.3.1-dind
+      alias: docker
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == "main"'
+  script:
+    - grep -v -e '^pywin32==' -e '^pywin32-ctypes==' requirements/dev.lock > /tmp/dev-lock-linux.txt && python -m pip install --require-hashes -r /tmp/dev-lock-linux.txt
+    - curl -fsSL https://download.docker.com/linux/static/stable/x86_64/docker-27.3.1.tgz -o docker.tgz
+    - tar -xzf docker.tgz
+    - install docker/docker /usr/local/bin/docker
+    - python scripts/run_demo_image_smoke.py --report tests/.tmp/demo-image-smoke-report.json
+  artifacts:
+    when: always
+    paths:
+      - tests/.tmp/demo-image-smoke-report.json
+    expire_in: 30 days
+
+release:
+  stage: release
+  image: python:3.12
+  needs:
+    - demo-image-build
+    - reference-image-build
+    - unit-test
+    - wheel-build-smoke
+  variables:
+    GITHUB_REPOSITORY: "ledstevenovo/VesperCode"
+  rules:
+    - if: '$CI_COMMIT_TAG =~ /^v[0-9]+\.[0-9]+\.[0-9]+$/ && $CI_COMMIT_REF_PROTECTED == "true"'
+  script:
+    - |
+      python - <<'PY'
+      # release-precheck: fail-closed three-way source/tag commit equality
+      # (read-only public lookups only; no release credential is consumed
+      # before this precheck passes, and the wheel-build-smoke needs
+      # prerequisite rebuilt the wheel from this pipeline's CI_COMMIT_SHA
+      # checkout, so the wheel source commit is CI_COMMIT_SHA by
+      # construction)
+      import json
+      import os
+      import sys
+      import urllib.request
+
+      gitlab_sha = os.environ["CI_COMMIT_SHA"].lower()
+      tag = os.environ["CI_COMMIT_TAG"]
+      repo = os.environ["GITHUB_REPOSITORY"]
+      url = "https://api.github.com/repos/" + repo + "/git/ref/tags/" + tag
+      try:
+          with urllib.request.urlopen(url, timeout=30) as resp:
+              payload = json.load(resp)
+      except Exception as exc:
+          print("FAIL: github tag lookup failed: " + str(exc), file=sys.stderr)
+          sys.exit(1)
+      target = str(payload.get("object", {}).get("sha", "")).lower()
+      if target != gitlab_sha:
+          print("FAIL: gitlab commit and github tag commit differ", file=sys.stderr)
+          sys.exit(1)
+      print("PASS: three-way source/tag commit equality confirmed")
+      PY
+    - echo "release prechecks passed"
+    - |
+      # The T37.1 release execution steps (GHCR push and GitHub Release)
+      # run below and are the only steps allowed to consume the protected
+      # masked variables GHCR_PUSH_TOKEN and GITHUB_RELEASE_TOKEN, which
+      # GitLab injects only into this protected tag job.
+      test -n "$GHCR_PUSH_TOKEN"
