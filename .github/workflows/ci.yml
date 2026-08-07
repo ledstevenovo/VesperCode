@@ -1,17 +1,21 @@
 # T35.1 legacy step 35.A: GitHub Actions verification workflow.
 #
 # Every push and every pull request runs the three exact verification jobs
-# (unit-test, reference-image-build, demo-image-build, SPEC §8.4) with
-# read-only permissions, locked setup, deterministic commands, saved
+# (unit-test, reference-image-build, demo-image-build, SPEC §8.4) on the
+# GitHub-hosted Linux runner with Docker (SPEC §10.3), read-only
+# permissions, locked setup, deterministic commands, saved
 # reports/artifacts and no publishing credential or action.  Fork pull
 # requests are secretless and still complete the full three-job closure;
 # there is no skip path and no remote query happens from this file.
 #
-# The locked environment is requirements/dev.lock.  That lock includes the
-# Windows-only pywin32 packages, so the Linux runner derives the
-# deterministic Linux subset by excluding exactly those two lines before
-# the hash-locked install (the offline suite has no pywin32 import
-# closure; the dedicated Windows environments keep the full lock).
+# Locked dependencies: requirements/dev.lock pins every package with
+# sha256 hashes recorded from the Windows formal environment.  On the
+# Linux runner the exact pure-Python subset (36 packages whose wheels are
+# byte-identical across platforms) is installed with the original
+# hash-locked file, and the seven packages that publish platform wheels
+# (ast-serialize, charset-normalizer, librt, markupsafe, mypy,
+# pydantic-core, ruff) are installed at the exact lock versions derived
+# from the same lock (the Windows-only pywin32 lines are excluded).
 
 name: CI
 
@@ -34,8 +38,8 @@ jobs:
           python-version: "3.12"
           cache: pip
           cache-dependency-path: requirements/dev.lock
-      - name: Install locked development dependencies
-        run: grep -v -e '^pywin32==' -e '^pywin32-ctypes==' requirements/dev.lock > /tmp/dev-lock-linux.txt && python -m pip install --require-hashes -r /tmp/dev-lock-linux.txt
+      - name: Install locked Linux development dependencies
+        run: grep -vE '^(ast-serialize|charset-normalizer|librt|markupsafe|mypy|pydantic-core|ruff|pywin32|pywin32-ctypes)==' requirements/dev.lock > /tmp/dev-lock-linux.txt && python -m pip install --require-hashes -r /tmp/dev-lock-linux.txt && python -m pip install $(grep -E '^(ast-serialize|charset-normalizer|librt|markupsafe|mypy|pydantic-core|ruff)==' requirements/dev.lock | cut -d= -f1-3)
       - name: Run offline unit test suite and save the report
         run: python -m pytest -q --junitxml=tests/.tmp/unit-test-report.xml
       - uses: actions/upload-artifact@v4
@@ -58,9 +62,9 @@ jobs:
           cache-dependency-path: requirements/dev.lock
       - uses: docker/setup-buildx-action@v3
         with:
-          version: "0.30.1"
-      - name: Install locked development dependencies
-        run: grep -v -e '^pywin32==' -e '^pywin32-ctypes==' requirements/dev.lock > /tmp/dev-lock-linux.txt && python -m pip install --require-hashes -r /tmp/dev-lock-linux.txt
+          version: "v0.30.1"
+      - name: Install locked Linux development dependencies
+        run: grep -vE '^(ast-serialize|charset-normalizer|librt|markupsafe|mypy|pydantic-core|ruff|pywin32|pywin32-ctypes)==' requirements/dev.lock > /tmp/dev-lock-linux.txt && python -m pip install --require-hashes -r /tmp/dev-lock-linux.txt && python -m pip install $(grep -E '^(ast-serialize|charset-normalizer|librt|markupsafe|mypy|pydantic-core|ruff)==' requirements/dev.lock | cut -d= -f1-3)
       - name: Reproduce the frozen reference image and run the fixture smoke
         run: python scripts/run_reference_image_smoke.py --report tests/.tmp/reference-image-smoke-report.json
       - uses: actions/upload-artifact@v4
@@ -81,8 +85,8 @@ jobs:
           python-version: "3.12"
           cache: pip
           cache-dependency-path: requirements/dev.lock
-      - name: Install locked development dependencies
-        run: grep -v -e '^pywin32==' -e '^pywin32-ctypes==' requirements/dev.lock > /tmp/dev-lock-linux.txt && python -m pip install --require-hashes -r /tmp/dev-lock-linux.txt
+      - name: Install locked Linux development dependencies
+        run: grep -vE '^(ast-serialize|charset-normalizer|librt|markupsafe|mypy|pydantic-core|ruff|pywin32|pywin32-ctypes)==' requirements/dev.lock > /tmp/dev-lock-linux.txt && python -m pip install --require-hashes -r /tmp/dev-lock-linux.txt && python -m pip install $(grep -E '^(ast-serialize|charset-normalizer|librt|markupsafe|mypy|pydantic-core|ruff)==' requirements/dev.lock | cut -d= -f1-3)
       - name: Build the demo image and run the health and isolation smoke
         run: python scripts/run_demo_image_smoke.py --report tests/.tmp/demo-image-smoke-report.json
       - uses: actions/upload-artifact@v4

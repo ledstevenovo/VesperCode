@@ -12,8 +12,11 @@
 # that job and only after the precheck.
 #
 # The Linux jobs install the deterministic Linux subset of
-# requirements/dev.lock (excluding exactly the Windows-only pywin32
-# lines); the Windows wheel job installs the full lock.
+# requirements/dev.lock: the pure-Python packages stay hash-locked, the
+# seven platform-wheel packages (ast-serialize, charset-normalizer,
+# librt, markupsafe, mypy, pydantic-core, ruff) are version-pinned from
+# the same lock, and the Windows-only pywin32 lines are excluded; the
+# Windows wheel job installs the full lock.
 
 stages:
   - verify
@@ -30,7 +33,7 @@ unit-test:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
     - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH'
   script:
-    - grep -v -e '^pywin32==' -e '^pywin32-ctypes==' requirements/dev.lock > /tmp/dev-lock-linux.txt && python -m pip install --require-hashes -r /tmp/dev-lock-linux.txt
+    - grep -vE '^(ast-serialize|charset-normalizer|librt|markupsafe|mypy|pydantic-core|ruff|pywin32|pywin32-ctypes)==' requirements/dev.lock > /tmp/dev-lock-linux.txt && python -m pip install --require-hashes -r /tmp/dev-lock-linux.txt && python -m pip install $(grep -E '^(ast-serialize|charset-normalizer|librt|markupsafe|mypy|pydantic-core|ruff)==' requirements/dev.lock | cut -d= -f1-3)
     - python -m pytest -q --junitxml=tests/.tmp/unit-test-report.xml
   artifacts:
     when: always
@@ -79,7 +82,7 @@ reference-image-build:
     - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH'
     - if: '$CI_COMMIT_TAG =~ /^v[0-9]+\.[0-9]+\.[0-9]+$/ && $CI_COMMIT_REF_PROTECTED == "true"'
   script:
-    - grep -v -e '^pywin32==' -e '^pywin32-ctypes==' requirements/dev.lock > /tmp/dev-lock-linux.txt && python -m pip install --require-hashes -r /tmp/dev-lock-linux.txt
+    - grep -vE '^(ast-serialize|charset-normalizer|librt|markupsafe|mypy|pydantic-core|ruff|pywin32|pywin32-ctypes)==' requirements/dev.lock > /tmp/dev-lock-linux.txt && python -m pip install --require-hashes -r /tmp/dev-lock-linux.txt && python -m pip install $(grep -E '^(ast-serialize|charset-normalizer|librt|markupsafe|mypy|pydantic-core|ruff)==' requirements/dev.lock | cut -d= -f1-3)
     - curl -fsSL https://download.docker.com/linux/static/stable/x86_64/docker-27.3.1.tgz -o docker.tgz
     - tar -xzf docker.tgz
     - install docker/docker /usr/local/bin/docker
@@ -107,7 +110,7 @@ demo-image-build:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
     - if: '$CI_COMMIT_BRANCH == "main"'
   script:
-    - grep -v -e '^pywin32==' -e '^pywin32-ctypes==' requirements/dev.lock > /tmp/dev-lock-linux.txt && python -m pip install --require-hashes -r /tmp/dev-lock-linux.txt
+    - grep -vE '^(ast-serialize|charset-normalizer|librt|markupsafe|mypy|pydantic-core|ruff|pywin32|pywin32-ctypes)==' requirements/dev.lock > /tmp/dev-lock-linux.txt && python -m pip install --require-hashes -r /tmp/dev-lock-linux.txt && python -m pip install $(grep -E '^(ast-serialize|charset-normalizer|librt|markupsafe|mypy|pydantic-core|ruff)==' requirements/dev.lock | cut -d= -f1-3)
     - curl -fsSL https://download.docker.com/linux/static/stable/x86_64/docker-27.3.1.tgz -o docker.tgz
     - tar -xzf docker.tgz
     - install docker/docker /usr/local/bin/docker
