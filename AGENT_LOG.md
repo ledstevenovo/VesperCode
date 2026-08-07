@@ -2263,3 +2263,10 @@
 - **Implementation commit:** `b3ac1d9` via the card's exact `git add` list (1 file) and the exact message "Implement T38.3 Independent Cross-workflow Browser Acceptance". Evidence commit: PLAN.md T38.3 Status/16 checkboxes (Step 17 finishing left to the driver)/Completion evidence + this append-only entry. Step 17 (finish WP38) is the WP38 driver's responsibility.
 - **PR:** pending WP38 closure (driver decision).
 - **Lesson learned:** (1) a verifier-first acceptance runner is best kept purely test-owned: the card's RED fails on the missing task-owned symbols with a NameError while the production-page fixture already works — the cleanest possible RED independence proof; (2) a fixture that seeds hostile content (raw-body sentinels inside valid redacted payload fields, secret derivatives) turns the runner's forbidden-marker checks into real observations instead of vacuous passes; (3) seeding shared spy factories breaks mutation flows — seeds must live in the acceptance fixture, not in the spy factory, so the browser flow starts from the empty state; (4) the spy's timestamp monotonicity must hold against the real production wall clock (a fixed seeded created_at can postdate the system clock); (5) WP38's three-session-task wave completes with a single-file acceptance task — the subagent spawn limit forced all six review stages to driver-inline execution, which the driver ruled on and recorded in every evidence entry.
+
+## WP38-DRIVER-STATUS-FIX-20260807
+
+- **Timestamp (Asia/Taipei):** `2026-08-07T10:31:26+0800` (system-observed; append-only driver record).
+- **Task ID:** T38.2 evidence 补正（driver 执行）：Status 行 Not started → Done。
+- **Key prompt/context:** T38.2 evidence commit 勾选了全部 step checkbox 但漏改 Status 行——`SESSION_TASK_COMPLETE_V1` 谓词要求 Status 精确 `**Status:** Complete`。driver 窄修复（仅 T38.2 卡 Status 行 + 本 AGENT_LOG 条目）。
+- **Human intervention:** 无；夜间自主执行授权有效。

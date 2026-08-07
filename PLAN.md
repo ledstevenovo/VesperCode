@@ -11008,7 +11008,7 @@ git commit -m "Implement T38.1 Credential, Memory, and Audit Web Workflows"
 
 ### Task T38.2: Recovery Operations and Production Route Composition
 
-**Status:** Not started
+**Status:** Done
 **Work package:** WP38
 **Legacy steps:** 38.D, 38.E, 38.F
 **Goal:** Render Task 26.B preview with zero writes and allow only a separately confirmed, currently bound Task 26.C apply command without bypass controls.；Add injectable typed parsing/delegation for `vespercode recover --workspace PATH` as read-only preview and require the literal `--apply` switch for the only recovery mutation path, without owning production database or service wiring.；Install Credential, Memory, Audit, and Recovery routes through typed ports, freeze the sole production installer tuple after Run/Governance routes, and own the sole installed recovery-CLI handler/service binding after complete v1 database initialization.
