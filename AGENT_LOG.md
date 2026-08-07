@@ -2135,3 +2135,13 @@
 - **Verification:** runner/feedback_consumption/dispatcher/snapshot/check_result 导入点逐处确认。
 - **Human intervention:** 无；夜间自主执行授权有效（含计划级修正的默认决策）。
 - **Lesson learned:** 整包前缀的禁止集必然与共享核心接线的传递依赖冲突——能力隔离的禁止集必须用"精确能力形式前缀 + 行为证明"，T30.2 evidence 的"故意排除布线模块"记录就是此原则的早期体现。
+
+## E2-DRIVER-FINISHING-20260807
+
+- **Timestamp (Asia/Taipei):** `2026-08-07T08:48:48+0800` (system-observed; append-only driver record).
+- **Task ID:** 扩展阶段 E2 包级 finishing（WP29/WP34-DEMO）。
+- **Skills invoked:** `verification-before-completion`、`finishing-a-development-branch`。
+- **Key prompt/context:** E2 双 WP 完成。WP29 三任务（WebUI 工作流，T29.1 CSRF 可提交性缺口 SPEC 修复闭环）；WP34-DEMO（§75 修正 + F1 容器泄漏修复 + 孤儿容器 driver 清理）。driver 独立验证：formal 1423/1412、gate 219、mypy 338/330 files、scan/diff-check 全 0。
+- **Git / evidence boundary:** 按任务号序合并 2 分支 → main，push origin main。SPEC_PROCESS §76。无任务卡文本改动。
+- **Human intervention:** 无；夜间自主执行授权有效。
+- **Lesson learned:** 纯 HTML 表单无法携带 CSRF 头是真实浏览器可提交性的硬缺口——htmx + meta token + nonce 授权监听器是 loopback WebUI 的可行解；容器类任务的孤儿残留要靠"启动失败路径清扫 + 陈旧自愈"双保险。

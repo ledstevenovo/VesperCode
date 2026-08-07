@@ -2373,3 +2373,13 @@ dispatcher.py:92、snapshot.py:42-43、check_result.py:41）；T30.2 evidence
 
 其余 13 前缀不变。卡片文本修正由执行 agent 在分支内完成（T07.4 §73 先例），
 测试体其余部分逐字节一致；不改任何冻结 T30.x/T19.x/T07.x 源码。
+
+## 76. 扩展阶段 E2 收官（2026-08-07）
+
+WP29（T29.1/T29.2/T29.3：正式 Run 生命周期/披露决定/最终写回 WebUI 工作流
+——CSRF 经 meta token + nonce 授权 htmx configRequest 交付、仅
+WritebackApprovedV1 触发持久化、9 路由安装顺序 pin、真实组合浏览器式流程）、
+WP34-DEMO（T34.1：Demo OCI 镜像——§75 修正后构建、allowlist 64==64 身份、
+容器级全套证明、F1 容器泄漏修复闭环）全部完成。driver 独立验证：formal
+1423/1412、gate 219 基线、mypy 338/330 files 全绿。按任务号序合并
+codex/wp29 → codex/wp34-demo → main。
