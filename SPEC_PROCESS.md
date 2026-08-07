@@ -2614,3 +2614,37 @@ mismatch NO-GO 不重打（记录于脚本 docstring）。formal 全量
 **验证**：Domain 8 passed、Driver all_ok True（报告 digest 自绑定）、
 ruff check/format 全绿、mypy 无真实错误、scan_credentials exit 0、
 git diff --check 干净、无容器残留。
+
+## 85. 扩展阶段 E5 收官：WP33 达成（2026-08-07）
+
+**T33.1（33.A/33.B：Wheel Build and Clean pipx Distribution Smoke）完成**：
+- **33.A**：pyproject 冻结 console entry point（[project.scripts]
+  vespercode = vespercode.cli:main）+ 声明式 package-data
+  （[tool.hatch.build.targets.wheel] packages/include/exclude——依赖表、
+  Python range、backend、lockfile、tooling 配置逐字节未动）；wheel
+  164 成员 = 160 runtime（145 py + 11 html + 1 js + 3 json）双向恰好
+  相等 + 4 dist-info；RECORD 逐成员独立重算自洽；entry_points.txt 正确；
+  相邻小写 SHA-256 证据三方一致（391c1b13…）；零禁止成员
+  （tests/src/reference/gates/scripts/.git/凭据/pyc 全排除）。
+- **33.B**：isolated pipx home（PIPX_HOME/PIPX_BIN_DIR/PIPX_MAN_DIR
+  环境变量——pipx 1.16.6 无 --home 参数，官方隔离机制）；装后
+  `vespercode --help` exit 0、零 source-checkout import（PYTHONPATH
+  移除 + cwd 仓库外 + 导入探针 fail-closed）；WebUI 组合（7 页面 200、
+  htmx 50917 字节 + 28.C SHA-256 命中、demo healthz 200）；只读
+  recovery preview（NO_TRANSACTION + 零写入，spy 全 AssertionError，
+  永不 --apply）；§5.4 redaction（1024 限长 + 路径脱敏）；finally 清理
+  （%TEMP% 零残留）。
+- **两阶段评审**：SPEC 首轮 PASS（0C/0I，5 Minor：cli.py __main__
+  guard 记录/`.gitignore`/GBK 乱码表象/M4 证据提交/既有 IMAGE_DIGEST
+  环境）；质量首轮 FAIL（2 Important：pipx install fail-closed 缺口
+  （FileNotFoundError 逃逸 + 路径泄漏）→ PackageSmokeErrorV1 +
+  OSError/TimeoutExpired 捕获；dist/tests/.tmp 未 ignore 弄脏审计
+  工作树 → .gitignore + 断言同步）→ 修复 baf3b82 → 复审
+  **QUALITY_REVIEW_PASS**（失败路径模拟 sealed 无泄漏 + git status
+  干净 + source_tree_clean true）。提交 37c8e25/baf3b82。
+- **验证**：33.A Target/Matrix/Domain 5 passed；33.B Target/Matrix/
+  Domain 14 passed；Build 恰好一个 wheel；Driver all_ok True（报告
+  digest 自绑定）；全套回归 1476 passed（与 base 一致）；ruff/mypy
+  任务文件全绿。
+- **WP33 合入 main**：分支 codex/wp33 → main。E5（WP33 +
+  WP34-REFERENCE）收官。
