@@ -257,11 +257,11 @@ def _apply_deterministic_normalization(
     for digest, blob in zip(normalized_digests, normalized_layers):
         (layout / "blobs" / "sha256" / digest).write_bytes(blob)
     manifest = json.loads(manifest_bytes)
-    for descriptor, digest in zip(manifest["layers"], normalized_digests):
+    for descriptor, (digest, blob) in zip(
+        manifest["layers"], zip(normalized_digests, normalized_layers)
+    ):
         descriptor["digest"] = f"sha256:{digest}"
-        descriptor["size"] = len(normalized_layers[
-            normalized_digests.index(digest)
-        ])
+        descriptor["size"] = len(blob)
     config = json.loads(config_bytes)
     config["rootfs"]["diff_ids"] = [
         f"sha256:{_sha256_hex(_gunzip(blob))}" for blob in normalized_layers
