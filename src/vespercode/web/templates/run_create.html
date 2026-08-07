@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block content %}
+<section aria-labelledby="create-heading">
+  <meta name="csrf-token" content="{{ csrf_token }}">
+  <h1 id="create-heading">创建运行</h1>
+  <form
+    method="post"
+    action="/runs"
+    hx-post="/runs"
+    hx-target="#content"
+    hx-select="#content"
+    hx-swap="outerHTML"
+  >
+    <div class="form-field">
+      <label for="workspace-path">工作区路径</label>
+      <input id="workspace-path" name="workspace_path" type="text" autocomplete="off" required>
+    </div>
+    <div class="form-field">
+      <label for="target-test-ids">目标 pytest 节点（可提交多个同名输入）</label>
+      <input id="target-test-ids" name="target_test_ids" type="text" required>
+      <input name="target_test_ids" type="text">
+    </div>
+    <div class="form-field">
+      <label for="llm-profile-id">LLM profile</label>
+      <input id="llm-profile-id" name="llm_profile_id" type="text" autocomplete="off" required>
+    </div>
+    <div class="form-field">
+      <label for="reference-profile-id">Reference profile</label>
+      <input id="reference-profile-id" name="reference_profile_id" type="text" autocomplete="off" required>
+    </div>
+    <fieldset>
+      <legend>运行限额</legend>
+      {% for name, label in limit_fields %}
+      <div class="form-field">
+        <label for="{{ name }}">{{ label }}</label>
+        <input id="{{ name }}" name="{{ name }}" type="number" min="1" required>
+      </div>
+      {% endfor %}
+    </fieldset>
+    <button type="submit">创建运行</button>
+  </form>
+  <p><a href="/">返回主页</a></p>
+  <script nonce="{{ csp_nonce }}">
+    // The create form runs through htmx, which attaches the server-
+    // rendered CSRF token header before every POST (the Task 28.A
+    // boundary accepts only the header form; the HttpOnly session cookie
+    // is never readable by script).  The script is authorized only by the
+    // per-request CSP nonce — there is no unsafe-inline bypass.  The
+    // listener is registered on document.body at page load and the token
+    // is session-stable, so it keeps serving the region swaps: a swapped
+    // copy of this script carries the swap response's own nonce, which
+    // the original document's CSP does not authorize (harmless).
+    (function () {
+      "use strict";
+      var meta = document.querySelector('meta[name="csrf-token"]');
+      var token = meta ? meta.getAttribute("content") : "";
+      document.body.addEventListener("htmx:configRequest", function (event) {
+        event.detail.headers["X-CSRF-Token"] = token;
+      });
+    })();
+  </script>
+</section>
+{% endblock %}

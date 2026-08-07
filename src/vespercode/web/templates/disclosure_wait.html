@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block content %}
+<section aria-labelledby="disclosure-heading">
+  <meta name="csrf-token" content="{{ csrf_token }}">
+  <h1 id="disclosure-heading">外部数据披露授权</h1>
+  <p class="run-id">运行 {{ wait.run_id }}</p>
+  {{ summary_markup }}
+  <dl class="wait-facts">
+    <dt>等待</dt>
+    <dd>{{ wait.wait_id }}</dd>
+    <dt>授权摘要</dt>
+    <dd class="digest">{{ wait.subject.digest }}</dd>
+  </dl>
+  {% if wait.decided %}
+  <p role="status">该披露等待已处理，不再接受决定。</p>
+  {% else %}
+  <form
+    method="post"
+    action="/runs/{{ wait.run_id }}/disclosure"
+    hx-post="/runs/{{ wait.run_id }}/disclosure"
+    hx-target="#content"
+    hx-select="#content"
+    hx-swap="outerHTML"
+  >
+    <input type="hidden" name="wait_id" value="{{ wait.wait_id }}">
+    <input type="hidden" name="subject_digest" value="{{ wait.subject.digest }}">
+    <button type="submit" name="decision" value="approve">批准披露</button>
+    <button type="submit" name="decision" value="reject">拒绝披露</button>
+  </form>
+  {% endif %}
+  <p><a href="/runs/{{ wait.run_id }}">返回运行详情</a></p>
+  <script nonce="{{ csp_nonce }}">
+    // The decision form runs through htmx, which attaches the server-
+    // rendered CSRF token header before every POST (the Task 28.A
+    // boundary accepts only the header form; the HttpOnly session cookie
+    // is never readable by script).  The script is authorized only by the
+    // per-request CSP nonce — there is no unsafe-inline bypass.  The
+    // listener is registered on document.body at page load and the token
+    // is session-stable, so it keeps serving the region swaps: a swapped
+    // copy of this script carries the swap response's own nonce, which
+    // the original document's CSP does not authorize (harmless).
+    (function () {
+      "use strict";
+      var meta = document.querySelector('meta[name="csrf-token"]');
+      var token = meta ? meta.getAttribute("content") : "";
+      document.body.addEventListener("htmx:configRequest", function (event) {
+        event.detail.headers["X-CSRF-Token"] = token;
+      });
+    })();
+  </script>
+</section>
+{% endblock %}
