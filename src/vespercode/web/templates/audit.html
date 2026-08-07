@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block content %}
+<section aria-labelledby="audit-heading">
+  <meta name="csrf-token" content="{{ csrf_token }}">
+  <h1 id="audit-heading">运行审计</h1>
+  <p class="run-id">运行 {{ run_id }}</p>
+  <p class="retention-note">审计默认保留 30 天；已结束运行可在确认后显式清除。</p>
+  {% if error_message %}
+  <div id="audit-error" role="alert" aria-live="polite" class="live-error">
+    {{ error_message }}
+  </div>
+  {% endif %}
+  {% if items %}
+  <ul class="run-list">
+    {% for entry in items %}
+    <li class="run-item">
+      <div class="run-id">#{{ entry.sequence }} {{ event_type_label(entry.event_type) }}</div>
+      <dl class="run-facts">
+        <dt>时间</dt>
+        <dd>{{ entry.created_at.value }}</dd>
+        {% for fact in render_payload_facts(entry.redacted_payload) %}
+        <dt>事实</dt>
+        <dd{% if payload_has_unresolved_recovery(entry.redacted_payload) %} class="recovery-warning"{% endif %}>{{ fact }}</dd>
+        {% endfor %}
+      </dl>
+    </li>
+    {% endfor %}
+  </ul>
+  {% if next_cursor %}
+  <p>
+    <a href="/runs/{{ run_id }}/audit?cursor={{ next_cursor.last_sequence }}">下一页</a>
+  </p>
+  {% endif %}
+  {% else %}
+  <p>暂无审计事件。</p>
+  {% endif %}
+  {% if clear_state.run_ended and not clear_state.has_unresolved_recovery %}
+  <h2>清除本地审计</h2>
+  <form
+    method="post"
+    action="/runs/{{ run_id }}/audit/clear"
+    hx-post="/runs/{{ run_id }}/audit/clear"
+    hx-target="#content"
+    hx-select="#content"
+    hx-swap="outerHTML"
+  >
+    <div class="form-field">
+      <label for="audit-clear-confirm">
+        <input id="audit-clear-confirm" type="checkbox" name="confirm" value="yes" required>
+        我确认清除该已结束运行的本地审计
+      </label>
+    </div>
+    <button type="submit">清除审计</button>
+  </form>
+  {% elif clear_state.has_unresolved_recovery %}
+  <p class="recovery-warning">
+    该运行存在未解决的恢复证据，审计保留；恢复形成终局前不能清除。
+  </p>
+  {% else %}
+  <p>该运行尚未结束，不能清除审计。</p>
+  {% endif %}
+  <p><a href="/">返回主页</a></p>
+  <script nonce="{{ csp_nonce }}">
+    // The audit forms run through htmx, which attaches the server-
+    // rendered CSRF token header before every POST (the Task 28.A
+    // boundary accepts only the header form; the HttpOnly session cookie
+    // is never readable by script).  The script is authorized only by the
+    // per-request CSP nonce — there is no unsafe-inline bypass.  The
+    // listener is registered on document.body at page load and the token
+    // is session-stable, so it keeps serving the region swaps: a swapped
+    // copy of this script carries the swap response's own nonce, which
+    // the original document's CSP does not authorize (harmless).
+    (function () {
+      "use strict";
+      var meta = document.querySelector('meta[name="csrf-token"]');
+      var token = meta ? meta.getAttribute("content") : "";
+      document.body.addEventListener("htmx:configRequest", function (event) {
+        event.detail.headers["X-CSRF-Token"] = token;
+      });
+    })();
+  </script>
+</section>
+{% endblock %}
