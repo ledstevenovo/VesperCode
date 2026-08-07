@@ -37,42 +37,42 @@ import argparse
 from pathlib import Path
 from typing import Protocol
 
-from src.vespercode.canonical.clock import SystemClockV1
-from src.vespercode.cli import (
+from vespercode.canonical.clock import SystemClockV1
+from vespercode.cli import (
     RecoveryCliHandlerV1,
     RecoveryCliResultV1,
     install_recover_command,
 )
-from src.vespercode.persistence.artifacts import PersistenceArtifactStoreV1
-from src.vespercode.persistence.recovery import RecoveryService
-from src.vespercode.persistence.recovery_apply import (
+from vespercode.persistence.artifacts import PersistenceArtifactStoreV1
+from vespercode.persistence.recovery import RecoveryService
+from vespercode.persistence.recovery_apply import (
     ApplyRecoveryV1,
     RealRecoveryLeasePort,
     RecoveryApplyService,
     RecoveryResultRepositoryV1,
     RecoveryResultV1,
 )
-from src.vespercode.persistence.recovery_preview import (
+from vespercode.persistence.recovery_preview import (
     RealWorkspaceObserver,
     RecoveryPathObservationV1,
     RecoveryPreviewErrorV1,
     RecoveryPreviewV1,
     RecoveryPreviewService,
 )
-from src.vespercode.persistence.transaction import (
+from vespercode.persistence.transaction import (
     PersistencePathRecordRepositoryV1,
     PersistenceTransactionRepositoryV1,
 )
-from src.vespercode.persistence.writeback import RealWorkspacePort
-from src.vespercode.storage.connection import (
+from vespercode.persistence.writeback import RealWorkspacePort
+from vespercode.storage.connection import (
     ControlDatabase,
     ControlDatabaseErrorV1,
     open_control_database,
 )
-from src.vespercode.storage.migration_engine import apply_migrations
-from src.vespercode.storage.migrations.registry import ALL_V1_MIGRATIONS
-from src.vespercode.canonical.path_v1 import CanonicalRelativePathV1
-from src.vespercode.workspace.identity_win32 import (
+from vespercode.storage.migration_engine import apply_migrations
+from vespercode.storage.migrations.registry import ALL_V1_MIGRATIONS
+from vespercode.canonical.path_v1 import CanonicalRelativePathV1
+from vespercode.workspace.identity_win32 import (
     WorkspaceIdentityV1,
     resolve_workspace_identity,
 )

@@ -36,7 +36,7 @@ from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, ConfigDict, StrictStr, ValidationError
 from starlette.datastructures import FormData
 
-from src.vespercode.audit.event import (
+from vespercode.audit.event import (
     ActionPayloadV1,
     AuditPayloadV1,
     CheckResultPayloadV1,
@@ -48,7 +48,7 @@ from src.vespercode.audit.event import (
     RecoveryPayloadV1,
     StopEvidencePayloadV1,
 )
-from src.vespercode.audit.repository import (
+from vespercode.audit.repository import (
     AuditClearResultV1,
     AuditCursorV1,
     AuditPageRequestV1,
@@ -56,7 +56,7 @@ from src.vespercode.audit.repository import (
     AuditPaginationErrorV1,
     ClearEndedRunAuditV1,
 )
-from src.vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
+from vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
 
 AUDIT_PAGE_SIZE_V1 = 20
 """The fixed bounded page size of the audit WebUI (SPEC §5.1 bounds)."""

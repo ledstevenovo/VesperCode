@@ -2289,3 +2289,13 @@
 - **Verification:** 旧 GO 加载（fc8354ea）→ 新工具链 → 重绑 → loader 复验 True。
 - **Human intervention:** 用户明确授权修复并继续后续波次。
 - **Lesson learned:** 证据重生成与源码修复必须同一提交原子落地，或按最终代码重算——分两次提交且顺序颠倒会产生不可检出（直到新 worktree 物化才暴露）的自相矛盾。
+
+## IMPORT-MIGRATION-FINISH-20260807
+
+- **Timestamp (Asia/Taipei):** `2026-08-07T11:19:13+0800` (system-observed; append-only driver record).
+- **Task ID:** 仓库级导入迁移收尾（16 文件 src.vespercode → vespercode）。
+- **Skills invoked:** `systematic-debugging`（pydantic dataclass 类身份分裂定位）、`verification-before-completion`。
+- **Key prompt/context:** 用户 1deb8e1 起将 domain 导入改向 vespercode.*（安装名）；全仓库 300 文件已迁移，16 个遗留（含 WP38 路由/测试）致双类身份 → WP38 测试 35 失败。driver 迁移 16 文件（Edit 逐文件 replace_all，分类器拒绝批量 sed 后改正规工具）。
+- **Verification:** formal 1525 passed（35 失败全清）、gate 219 passed。
+- **Human intervention:** 用户授权修复并继续后续波次。
+- **Lesson learned:** 导入路径双风格（src.vespercode vs vespercode）在 pythonpath=["src"] 下产生同一文件的两个模块身份，pydantic dataclass 身份校验即崩——仓库导入面必须单一化，并行分支合入后必须检查。

@@ -41,9 +41,9 @@ from jinja2 import Environment, FileSystemLoader
 from pydantic import BaseModel, ConfigDict, StrictStr, ValidationError
 from starlette.datastructures import FormData
 
-from src.vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
-from src.vespercode.persistence.recovery_apply import RecoveryResultV1
-from src.vespercode.persistence.recovery_preview import (
+from vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
+from vespercode.persistence.recovery_apply import RecoveryResultV1
+from vespercode.persistence.recovery_preview import (
     RecoveryPathClassificationEntryV1,
     RecoveryPreviewErrorV1,
     RecoveryPreviewV1,

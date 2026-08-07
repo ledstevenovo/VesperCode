@@ -29,9 +29,9 @@ from fastapi.responses import JSONResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.testclient import TestClient
 
-from src.vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
-from src.vespercode.memory.clear import MemoryClearResultV1
-from src.vespercode.memory.entry import (
+from vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
+from vespercode.memory.clear import MemoryClearResultV1
+from vespercode.memory.entry import (
     MemoryCreatorV1,
     MemoryEntryV1,
     MemoryKindV1,
@@ -40,7 +40,7 @@ from src.vespercode.memory.entry import (
     UserDecisionSourceV1,
     UserVisibleTextSourceV1,
 )
-from src.vespercode.web.routes_memory import (
+from vespercode.web.routes_memory import (
     ClearMemoryForRunV1,
     ConfirmMemoryForRunV1,
     CreateMemoryForRunV1,
@@ -48,7 +48,7 @@ from src.vespercode.web.routes_memory import (
     MemoryWorkflowIdentityPortV1,
     MemoryWorkflowPortsV1,
 )
-from src.vespercode.web.security import (
+from vespercode.web.security import (
     LocalRequestErrorCodeV1,
     LocalSessionManager,
     LocalWebSecurityConfigV1,

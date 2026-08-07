@@ -38,37 +38,37 @@ from fastapi.responses import JSONResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.testclient import TestClient
 
-from src.vespercode.audit.event import (
+from vespercode.audit.event import (
     ActionPayloadV1,
     AuditEventV1,
     LifecyclePayloadV1,
 )
-from src.vespercode.audit.repository import (
+from vespercode.audit.repository import (
     AuditClearResultV1,
     AuditCursorV1,
     AuditPageRequestV1,
     AuditPageV1,
     ClearEndedRunAuditV1,
 )
-from src.vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
-from src.vespercode.contracts.optional import AbsentV1, PresentV1
-from src.vespercode.credentials.port import CredentialStatusV1
-from src.vespercode.memory.clear import MemoryClearResultV1
-from src.vespercode.memory.entry import (
+from vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
+from vespercode.contracts.optional import AbsentV1, PresentV1
+from vespercode.credentials.port import CredentialStatusV1
+from vespercode.memory.clear import MemoryClearResultV1
+from vespercode.memory.entry import (
     MemoryEntryV1,
     MemoryMutationResultV1,
     UserVisibleTextSourceV1,
 )
-from src.vespercode.persistence.recovery_apply import RecoveryResultV1
-from src.vespercode.persistence.recovery_preview import (
+from vespercode.persistence.recovery_apply import RecoveryResultV1
+from vespercode.persistence.recovery_preview import (
     RecoveryPathClassificationEntryV1,
     RecoveryPreviewV1,
 )
-from src.vespercode.web.app import (
+from vespercode.web.app import (
     LocalRouteInstallerSequenceV1,
     RunVisibilitySequenceV1,
 )
-from src.vespercode.web.security import LocalWebSecurityConfigV1
+from vespercode.web.security import LocalWebSecurityConfigV1
 
 _FIXED_TOKEN: Final[str] = "f" * 64
 """One deterministic 256-bit hex session/CSRF token (closed token form)."""
@@ -90,7 +90,7 @@ def valid_local_security_headers(csrf_token: str = _FIXED_TOKEN) -> dict[str, st
 
 def _rejection_response(error_code: str) -> JSONResponse:
     """One closed rejection response carrying the exact security headers."""
-    from src.vespercode.web.security import (
+    from vespercode.web.security import (
         local_request_rejection_payload,
         local_request_status,
         local_response_security_headers,
@@ -108,7 +108,7 @@ def _rejection_response(error_code: str) -> JSONResponse:
 
 def _attach_headers(response: Any, csp_nonce: str | None) -> None:
     """Attach the exact CSP and response security headers to one response."""
-    from src.vespercode.web.security import local_response_security_headers
+    from vespercode.web.security import local_response_security_headers
 
     for name, value in local_response_security_headers(csp_nonce).items():
         response.headers[name] = value
@@ -128,7 +128,7 @@ def _build_local_app(
     installers: LocalRouteInstallerSequenceV1,
 ) -> tuple[FastAPI, Any]:
     """One test-local shell mirroring the Task 28.B composition."""
-    from src.vespercode.web.security import (
+    from vespercode.web.security import (
         LocalSessionManager,
         is_loopback_host,
         verify_local_request,
@@ -194,7 +194,7 @@ class SpyCredentialPorts:
         self.configured = False
 
     def set(self, provider: str, secret: Any, event_id: str) -> Any:
-        from src.vespercode.credentials.port import CredentialMutationResultV1
+        from vespercode.credentials.port import CredentialMutationResultV1
 
         self.set_call_count += 1
         self.configured = True
@@ -215,7 +215,7 @@ class SpyCredentialPorts:
         )
 
     def update(self, provider: str, secret: Any, event_id: str) -> Any:
-        from src.vespercode.credentials.port import CredentialMutationResultV1
+        from vespercode.credentials.port import CredentialMutationResultV1
 
         self.update_call_count += 1
         self.configured = True
@@ -224,7 +224,7 @@ class SpyCredentialPorts:
         )
 
     def clear(self, provider: str, event_id: str) -> Any:
-        from src.vespercode.credentials.port import CredentialMutationResultV1
+        from vespercode.credentials.port import CredentialMutationResultV1
 
         self.clear_call_count += 1
         self.configured = False
@@ -345,7 +345,7 @@ class SpyAuditPorts:
         return self.clear_result
 
     def clear_state_for(self, run_id: str) -> Any:
-        from src.vespercode.web.routes_audit import AuditClearStateV1
+        from vespercode.web.routes_audit import AuditClearStateV1
 
         return AuditClearStateV1(
             run_id=run_id, run_ended=True, has_unresolved_recovery=False
@@ -393,7 +393,7 @@ class _EmptyGovernancePorts:
 
 def _spy_operations() -> Any:
     """One spy operations aggregate with the four workflow spies."""
-    from src.vespercode.web.routes_operations import (
+    from vespercode.web.routes_operations import (
         LocalOperationsWorkflowPortsV1,
     )
 
@@ -430,10 +430,10 @@ def _production_ports() -> Any:
     """
     from typing import cast
 
-    from src.vespercode.web.local_composition import (
+    from vespercode.web.local_composition import (
         ProductionLocalWorkflowPortsV1,
     )
-    from src.vespercode.web.run_workflows import RunGovernanceWorkflowPortsV1
+    from vespercode.web.run_workflows import RunGovernanceWorkflowPortsV1
 
     return ProductionLocalWorkflowPortsV1(
         shell=FakeShellPortsV1(),
@@ -473,7 +473,7 @@ def production_client(
     session bootstrap), so every later page and state change flows
     through the exact local request-security contract.
     """
-    from src.vespercode.web.local_composition import build_local_application
+    from vespercode.web.local_composition import build_local_application
 
     app = build_local_application(production_ports, security_config)
     client = TestClient(app, base_url=f"http://127.0.0.1:{security_config.port}")
@@ -844,11 +844,11 @@ def test_acceptance_adds_no_production_interface() -> None:
     import importlib
 
     for module_name in (
-        "src.vespercode.web.app",
-        "src.vespercode.web.routes_operations",
-        "src.vespercode.web.local_composition",
-        "src.vespercode.cli",
-        "src.vespercode.cli_composition",
+        "vespercode.web.app",
+        "vespercode.web.routes_operations",
+        "vespercode.web.local_composition",
+        "vespercode.cli",
+        "vespercode.cli_composition",
     ):
         module = importlib.import_module(module_name)
         assert not hasattr(module, "OperationsAccessibilityAcceptanceResultV1")

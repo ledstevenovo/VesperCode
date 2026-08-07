@@ -30,30 +30,30 @@ from fastapi.responses import JSONResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.testclient import TestClient
 
-from src.vespercode.audit.repository import (
+from vespercode.audit.repository import (
     AuditClearResultV1,
     AuditPageRequestV1,
     AuditPageV1,
     ClearEndedRunAuditV1,
 )
-from src.vespercode.contracts.optional import AbsentV1
-from src.vespercode.credentials.port import CredentialStatusV1
-from src.vespercode.memory.clear import MemoryClearResultV1
-from src.vespercode.memory.entry import MemoryEntryV1, MemoryMutationResultV1
-from src.vespercode.persistence.recovery_apply import RecoveryResultV1
-from src.vespercode.persistence.recovery_preview import (
+from vespercode.contracts.optional import AbsentV1
+from vespercode.credentials.port import CredentialStatusV1
+from vespercode.memory.clear import MemoryClearResultV1
+from vespercode.memory.entry import MemoryEntryV1, MemoryMutationResultV1
+from vespercode.persistence.recovery_apply import RecoveryResultV1
+from vespercode.persistence.recovery_preview import (
     RecoveryPathClassificationEntryV1,
     RecoveryPreviewV1,
 )
-from src.vespercode.web.app import (
+from vespercode.web.app import (
     LocalRouteInstallerSequenceV1,
     RunVisibilitySequenceV1,
 )
-from src.vespercode.web.local_composition import (
+from vespercode.web.local_composition import (
     ProductionLocalWorkflowPortsV1,
     build_local_route_installers,
 )
-from src.vespercode.web.security import LocalWebSecurityConfigV1
+from vespercode.web.security import LocalWebSecurityConfigV1
 
 _FIXED_TOKEN: Final[str] = "f" * 64
 """One deterministic 256-bit hex session/CSRF token (closed token form)."""
@@ -84,7 +84,7 @@ def valid_local_security_headers() -> dict[str, str]:
 
 def _rejection_response(error_code: str) -> JSONResponse:
     """One closed rejection response carrying the exact security headers."""
-    from src.vespercode.web.security import (
+    from vespercode.web.security import (
         local_request_rejection_payload,
         local_request_status,
         local_response_security_headers,
@@ -102,7 +102,7 @@ def _rejection_response(error_code: str) -> JSONResponse:
 
 def _attach_headers(response: Any, csp_nonce: str | None) -> None:
     """Attach the exact CSP and response security headers to one response."""
-    from src.vespercode.web.security import local_response_security_headers
+    from vespercode.web.security import local_response_security_headers
 
     for name, value in local_response_security_headers(csp_nonce).items():
         response.headers[name] = value
@@ -182,7 +182,7 @@ class SpyAuditPorts:
         raise AssertionError("composition tests never clear audit")
 
     def clear_state_for(self, run_id: str) -> Any:
-        from src.vespercode.web.routes_audit import AuditClearStateV1
+        from vespercode.web.routes_audit import AuditClearStateV1
 
         return AuditClearStateV1(
             run_id=run_id, run_ended=True, has_unresolved_recovery=False
@@ -221,10 +221,10 @@ class _EmptyGovernancePorts:
 
 def _production_ports() -> ProductionLocalWorkflowPortsV1:
     """One fake production port aggregate over the spy ports."""
-    from src.vespercode.web.routes_operations import (
+    from vespercode.web.routes_operations import (
         LocalOperationsWorkflowPortsV1,
     )
-    from src.vespercode.web.run_workflows import RunGovernanceWorkflowPortsV1
+    from vespercode.web.run_workflows import RunGovernanceWorkflowPortsV1
     from typing import cast
 
     return ProductionLocalWorkflowPortsV1(
@@ -248,7 +248,7 @@ def _build_local_app(
     installers: LocalRouteInstallerSequenceV1,
 ) -> tuple[FastAPI, Any]:
     """One test-local shell mirroring the Task 28.B composition."""
-    from src.vespercode.web.security import (
+    from vespercode.web.security import (
         LocalSessionManager,
         is_loopback_host,
         verify_local_request,
@@ -332,7 +332,7 @@ def test_build_local_application_composes_governance_then_operations(
     """The production app carries the exact frozen installer tuple and
     serves the governance pages through the real Task 28.B composition
     (GREEN-2/GREEN-3)."""
-    from src.vespercode.web.local_composition import build_local_application
+    from vespercode.web.local_composition import build_local_application
 
     app = build_local_application(production_ports, security_config)
     installers = app.state.local_route_installers
@@ -356,7 +356,7 @@ def test_build_local_application_installs_all_operations_routes(
 ) -> None:
     """All four operations route families are installed and reachable
     through the production app (GREEN-2)."""
-    from src.vespercode.web.local_composition import build_local_application
+    from vespercode.web.local_composition import build_local_application
 
     app = build_local_application(production_ports, security_config)
     client = TestClient(app, base_url=f"http://127.0.0.1:{security_config.port}")
@@ -384,7 +384,7 @@ def test_build_local_application_keeps_loopback_security_boundary(
 ) -> None:
     """The Task 28.A boundary still rejects non-loopback requests on the
     composed production app (GREEN-1)."""
-    from src.vespercode.web.local_composition import build_local_application
+    from vespercode.web.local_composition import build_local_application
 
     app = build_local_application(production_ports, security_config)
     client = TestClient(app, base_url=f"http://127.0.0.1:{security_config.port}")
@@ -400,7 +400,7 @@ def test_local_operations_installer_installs_all_four_families(
     """``LocalOperationsRouteInstallerV1`` installs exactly the
     credential, memory, audit, and recovery route families onto one app
     (GREEN-2)."""
-    from src.vespercode.web.routes_operations import (
+    from vespercode.web.routes_operations import (
         LocalOperationsRouteInstallerV1,
     )
 

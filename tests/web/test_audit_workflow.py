@@ -29,7 +29,7 @@ from fastapi.responses import JSONResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.testclient import TestClient
 
-from src.vespercode.audit.event import (
+from vespercode.audit.event import (
     ActionPayloadV1,
     AuditEventV1,
     DisclosureAuthorizationPayloadV1,
@@ -37,21 +37,21 @@ from src.vespercode.audit.event import (
     RecoveryPayloadV1,
     StopEvidencePayloadV1,
 )
-from src.vespercode.audit.repository import (
+from vespercode.audit.repository import (
     AuditClearResultV1,
     AuditCursorV1,
     AuditPageRequestV1,
     AuditPageV1,
     ClearEndedRunAuditV1,
 )
-from src.vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
-from src.vespercode.web.routes_audit import (
+from vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
+from vespercode.web.routes_audit import (
     AuditClearStateV1,
     AuditRouteInstallerV1,
     AuditWorkflowIdentityPortV1,
     AuditWorkflowPortsV1,
 )
-from src.vespercode.web.security import (
+from vespercode.web.security import (
     LocalRequestErrorCodeV1,
     LocalSessionManager,
     LocalWebSecurityConfigV1,

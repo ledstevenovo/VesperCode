@@ -22,21 +22,21 @@ from dataclasses import dataclass
 
 from fastapi import FastAPI
 
-from src.vespercode.canonical.clock import SystemClockV1
-from src.vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
-from src.vespercode.web.routes_audit import (
+from vespercode.canonical.clock import SystemClockV1
+from vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
+from vespercode.web.routes_audit import (
     AuditRouteInstallerV1,
     AuditWorkflowPortsV1,
 )
-from src.vespercode.web.routes_credentials import (
+from vespercode.web.routes_credentials import (
     CredentialRouteInstallerV1,
     CredentialWorkflowPortsV1,
 )
-from src.vespercode.web.routes_memory import (
+from vespercode.web.routes_memory import (
     MemoryRouteInstallerV1,
     MemoryWorkflowPortsV1,
 )
-from src.vespercode.web.routes_recovery import (
+from vespercode.web.routes_recovery import (
     RecoveryRouteInstallerV1,
     RecoveryWorkflowPortsV1,
 )

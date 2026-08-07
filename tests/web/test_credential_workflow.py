@@ -31,20 +31,20 @@ from fastapi.responses import JSONResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.testclient import TestClient
 
-from src.vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
-from src.vespercode.contracts.optional import AbsentV1, PresentV1
-from src.vespercode.credentials.port import (
+from vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
+from vespercode.contracts.optional import AbsentV1, PresentV1
+from vespercode.credentials.port import (
     CredentialErrorV1,
     CredentialMutationResultV1,
     CredentialStatusV1,
     SecretCredentialV1,
 )
-from src.vespercode.web.routes_credentials import (
+from vespercode.web.routes_credentials import (
     CredentialRouteInstallerV1,
     CredentialWorkflowIdentityPortV1,
     CredentialWorkflowPortsV1,
 )
-from src.vespercode.web.security import (
+from vespercode.web.security import (
     LocalRequestErrorCodeV1,
     LocalSessionManager,
     LocalWebSecurityConfigV1,

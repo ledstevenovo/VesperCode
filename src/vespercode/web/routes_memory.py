@@ -37,9 +37,9 @@ from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, ConfigDict, Field, StrictStr, ValidationError
 from starlette.datastructures import FormData
 
-from src.vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
-from src.vespercode.memory.clear import MemoryClearResultV1
-from src.vespercode.memory.entry import (
+from vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
+from vespercode.memory.clear import MemoryClearResultV1
+from vespercode.memory.entry import (
     MemoryCreatorV1,
     MemoryEntryV1,
     MemoryKindV1,

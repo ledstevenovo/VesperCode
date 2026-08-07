@@ -29,22 +29,22 @@ from fastapi.responses import JSONResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.testclient import TestClient
 
-from src.vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
-from src.vespercode.persistence.recovery_apply import RecoveryResultV1
-from src.vespercode.persistence.recovery_preview import (
+from vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
+from vespercode.persistence.recovery_apply import RecoveryResultV1
+from vespercode.persistence.recovery_preview import (
     RecoveryDispositionV1,
     RecoveryPathClassificationEntryV1,
     RecoveryPathClassificationV1,
     RecoveryPreviewErrorV1,
     RecoveryPreviewV1,
 )
-from src.vespercode.web.routes_recovery import (
+from vespercode.web.routes_recovery import (
     ApplyRecoveryForRunV1,
     RecoveryRouteInstallerV1,
     RecoveryWorkflowIdentityPortV1,
     RecoveryWorkflowPortsV1,
 )
-from src.vespercode.web.security import (
+from vespercode.web.security import (
     LocalRequestErrorCodeV1,
     LocalSessionManager,
     LocalWebSecurityConfigV1,

@@ -29,15 +29,15 @@ import pytest
 
 pytest.importorskip("fastapi")
 
-from src.vespercode.cli import build_cli
-from src.vespercode.cli_composition import (
+from vespercode.cli import build_cli
+from vespercode.cli_composition import (
     bind_production_recover_command,
     build_production_recovery_cli_handler,
     initialize_production_control_database,
 )
-from src.vespercode.storage.migrations.registry import ALL_V1_MIGRATIONS
-from src.vespercode.web.app import LocalShellPortsV1
-from src.vespercode.workspace.identity_win32 import WorkspaceIdentityV1
+from vespercode.storage.migrations.registry import ALL_V1_MIGRATIONS
+from vespercode.web.app import LocalShellPortsV1
+from vespercode.workspace.identity_win32 import WorkspaceIdentityV1
 
 
 class _InvocationResult:
@@ -283,7 +283,7 @@ def test_bind_production_recover_command_installs_recover_and_keeps_serve(
     """``bind_production_recover_command`` installs the recover command
     onto a parser that still serves the closed ``serve`` surface
     (GREEN-2; Expected 38.F: ``vespercode serve`` + ``recover``)."""
-    from src.vespercode.cli import install_serve_command
+    from vespercode.cli import install_serve_command
 
     parser = argparse.ArgumentParser(
         prog="vespercode", description="VesperCode 编码智能体框架本地控制台。"

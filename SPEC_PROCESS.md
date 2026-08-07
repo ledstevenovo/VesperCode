@@ -2407,3 +2407,18 @@ test_recovery_gate 失败。wp31 的 gate 物化按当前文件自愈了工具�
 版本（74db212c，wp31 物化自愈产物）；2) 用 report 模块自身算法重绑
 workspace-boundary-go-v1.json 的内嵌 gate_toolchain 并重算 evidence_digest
 （GO 保持，新 digest b400cc66…），loader 验证通过；3) 本记录。
+
+## 79. 导入路径统一：src.vespercode → vespercode 迁移收尾（2026-08-07）
+
+用户的 1deb8e1 将 4 个 domain 文件改为 `vespercode.*` 导入（安装名方向，
+pyproject pythonpath=["src"] 使其解析到 src/vespercode）；但全仓库大部分
+文件已被用户会话迁移到 `vespercode.*`，遗留 16 个文件（含 WP38 的
+routes/tests，因 E3 分支与用户迁移并行而漏网）仍用 `src.vespercode.*`——
+同一文件两种导入路径产生两个类身份，pydantic dataclass 校验崩溃
+（created_at ValidationError），WP38 测试 35 个失败（wp31 全量 20 failed
++ 19 errors）。
+
+**driver 修复（用户授权"让你来修"）**：16 个遗留文件统一迁移到
+`vespercode.*`。验证：formal 全量 1525 passed（35 个失败全清）、gate 219
+passed。先例教训：T19.1 的 installed-name 教训的同类变体——导入风格必须
+全仓库一致，并行分支合入时必须检查导入面统一性。

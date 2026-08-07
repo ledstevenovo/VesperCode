@@ -2,10 +2,10 @@
 
 The repository uses the standard src layout, so the built wheel installs
 the top-level ``vespercode`` package; every internal import uses
-``from vespercode...`` (never ``src.vespercode``), which resolves in the
+``from vespercode...`` (never ``vespercode``), which resolves in the
 checkout only because pytest adds ``src`` to the path.  This test builds a
 real wheel, installs it into a clean virtualenv, and imports the core
-modules from site-packages — a ``src.vespercode``-style import would fail
+modules from site-packages — a ``vespercode``-style import would fail
 there, so a packaged import break is caught in the package_smoke
 environment instead of silently passing on a checkout root.
 """
@@ -61,7 +61,7 @@ def test_wheel_install_imports_core_modules(tmp_path: Path) -> None:
     _run(str(pip), "install", str(wheels[0]), cwd=tmp_path)
 
     # Import every public module of the installed package: a single
-    # ``from src.vespercode...`` import anywhere would fail to resolve in
+    # ``from vespercode...`` import anywhere would fail to resolve in
     # the clean venv (site-packages has no ``src`` namespace), so a
     # packaged import regression in ANY module is caught here — not just
     # in the handful of core modules.

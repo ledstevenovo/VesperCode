@@ -20,21 +20,21 @@ from dataclasses import dataclass
 
 from fastapi import FastAPI
 
-from src.vespercode.web.app import (
+from vespercode.web.app import (
     LocalRouteInstallerSequenceV1,
     LocalShellPortsV1,
     create_local_app,
 )
-from src.vespercode.web.routes_operations import (
+from vespercode.web.routes_operations import (
     LocalOperationsRouteInstallerV1,
     LocalOperationsWorkflowPortsV1,
     ProductionLocalIdentityPortV1,
 )
-from src.vespercode.web.run_workflows import (
+from vespercode.web.run_workflows import (
     RunGovernanceRouteInstallerV1,
     RunGovernanceWorkflowPortsV1,
 )
-from src.vespercode.web.security import LocalWebSecurityConfigV1
+from vespercode.web.security import LocalWebSecurityConfigV1
 
 
 @dataclass(frozen=True)

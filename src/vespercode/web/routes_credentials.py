@@ -32,8 +32,8 @@ from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, ConfigDict, Field, StrictStr, ValidationError
 from starlette.datastructures import FormData
 
-from src.vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
-from src.vespercode.credentials.port import (
+from vespercode.canonical.timestamp_v1 import CanonicalTimestampV1
+from vespercode.credentials.port import (
     CredentialMutationResultV1,
     CredentialSecretInvalidError,
     CredentialStatusV1,

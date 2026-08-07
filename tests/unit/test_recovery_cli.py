@@ -28,13 +28,13 @@ import pytest
 
 pytest.importorskip("fastapi")
 
-from src.vespercode.cli import (
+from vespercode.cli import (
     RecoveryCliHandlerV1,
     RecoveryCliResultKindV1,
     RecoveryCliResultV1,
     install_recover_command,
 )
-from src.vespercode.web.app import LocalShellPortsV1
+from vespercode.web.app import LocalShellPortsV1
 
 
 class _InvocationResult:
@@ -291,7 +291,7 @@ def test_recovery_cli_module_has_no_storage_or_migration_imports() -> None:
     """The recover parser/delegation surface never imports storage or
     migration machinery at module level (GREEN-4/Boundary: Task 38.F
     owns the production binding)."""
-    import src.vespercode.cli as cli_module
+    import vespercode.cli as cli_module
 
     source = cli_module.__file__
     assert source is not None
