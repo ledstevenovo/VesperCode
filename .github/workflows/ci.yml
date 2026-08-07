@@ -8,6 +8,13 @@
 # requests are secretless and still complete the full three-job closure;
 # there is no skip path and no remote query happens from this file.
 #
+# Locked environment: the Docker engine is pinned to the exact local
+# frozen engine (docker-ce 29.1.3, the Docker Desktop engine the formal
+# environment runs; the runner image's docker-ce 28.0.4 cannot `docker
+# load` buildx OCI-layout tarballs — the containerd-store loader opens
+# "blobs/json" — while 29.1.3 loads them correctly) and buildx is pinned
+# to the frozen 0.30.1.
+#
 # Locked dependencies: requirements/dev.lock pins every package with
 # sha256 hashes recorded from the Windows formal environment.  On the
 # Linux runner the seven packages that publish platform wheels
@@ -36,6 +43,9 @@ jobs:
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
+      - uses: docker/setup-docker-action@v4
+        with:
+          version: "v29.1.3"
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -69,6 +79,9 @@ jobs:
     timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
+      - uses: docker/setup-docker-action@v4
+        with:
+          version: "v29.1.3"
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -94,6 +107,9 @@ jobs:
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
+      - uses: docker/setup-docker-action@v4
+        with:
+          version: "v29.1.3"
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -101,6 +117,8 @@ jobs:
           cache-dependency-path: requirements/dev.lock
       - name: Install locked Linux development dependencies
         run: python -m pip install --no-deps $(grep -E '^(ast-serialize|charset-normalizer|librt|markupsafe|mypy|pydantic-core|ruff)==' requirements/dev.lock | cut -d' ' -f1) && grep -vE '^(ast-serialize|charset-normalizer|librt|markupsafe|mypy|pydantic-core|ruff|pywin32|pywin32-ctypes)==' requirements/dev.lock > /tmp/dev-lock-linux.txt && python -m pip install --require-hashes --no-deps -r /tmp/dev-lock-linux.txt
+      - name: Build the demo OCI image
+        run: docker build --pull=false -f containers/demo/Dockerfile -t vespercode-demo:local .
       - name: Build the demo image and run the health and isolation smoke
         run: PYTHONPATH=src python scripts/run_demo_image_smoke.py --report tests/.tmp/demo-image-smoke-report.json
       - uses: actions/upload-artifact@v4

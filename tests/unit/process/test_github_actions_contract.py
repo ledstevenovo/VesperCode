@@ -27,13 +27,17 @@ EXPECTED_JOBS_V1: frozenset[str] = frozenset(
 )
 
 # Locked setup: the verification workflow may use exactly these pinned
-# actions (SPEC §8.4 locked setup; the card locked-setup pin set).
+# actions (SPEC §8.4 locked setup; the card locked-setup pin set; the
+# docker engine pin matches the local frozen Docker Desktop engine
+# 29.1.3, whose containerd-store loader is the only one that `docker
+# load`s the buildx OCI-layout tarballs the reference smoke produces).
 LOCKED_ACTION_PINS_V1: frozenset[str] = frozenset(
     {
         "actions/checkout@v4",
         "actions/setup-python@v5",
         "actions/upload-artifact@v4",
         "docker/setup-buildx-action@v3",
+        "docker/setup-docker-action@v4",
     }
 )
 
@@ -436,6 +440,7 @@ _BOUNDARY_MATRIX_V1: tuple[tuple[str, object], ...] = (
             "actions/setup-python@v5",
             "actions/upload-artifact@v4",
             "docker/setup-buildx-action@v3",
+            "docker/setup-docker-action@v4",
         ),
     ),
     ("external_publish_actions", ()),
