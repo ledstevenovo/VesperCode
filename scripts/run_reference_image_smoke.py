@@ -13,7 +13,7 @@ Identity sources: the Task 2.G GO identity is read from the packaged
 production manifest (``src/vespercode/profiles/builtin/
 reference-profile-v1.json``) through the T06.2 integrity loader, which
 verifies the packaged bytes against the embedded frozen Task 2.G gate
-identity (image digest 507b23f5…, lock 67a6b630…, tools 3.12.4/8.4.2/
+identity (image digest cf0b6c5c…, lock 67a6b630…, tools 3.12.4/8.4.2/
 0.16.1/2.3.0, profile/policy).  The ``reference/manifest/
 reference-profile-v1.json`` copy was re-frozen to the same digest set
 under the SPEC_PROCESS §86 determinism normalization and the loader
@@ -166,7 +166,7 @@ REFERENCE_IMAGE_TAG_V1: Final = "vespercode-reference:local"
 """The exact local tag of the reproduced reference image (card Build/Driver)."""
 
 FROZEN_TASK2_MANIFEST_DIGEST_V1: Final = (
-    "507b23f5972b6d8715f1a92d3b0527a910955096bf153faff00a19b306cc9178"
+    "cf0b6c5ccac588fccd07c3b9f050bff4daf550ac6e518fd06efb6e988ab1d823"
 )
 """The frozen Task 2 manifest digest: reproduced twice byte-identical by
 the T02.1 fixed-parameter builder after the SPEC_PROCESS §86

@@ -189,13 +189,20 @@ def _normalize_layer_blob(blob: bytes, epoch: int) -> bytes:
                 # produced inside the Linux build container and are
                 # therefore already host-independent (flattening /tmp's
                 # 01777 to 0755 would break the non-root report channel).
+                # COPY-staged fixture files (``app/``) are pinned 0644:
+                # the Windows buildkit simulates modes with everything
+                # executable while Linux reports the real 0644, so the
+                # executable bit is host-dependent for them; fixture
+                # files are not executable by construction.
                 if member.mode & 0o7000:
                     info.mode = member.mode & 0o7777
+                elif member.isdir():
+                    info.mode = 0o755
+                elif member.name.startswith("app/"):
+                    info.mode = 0o644
                 else:
                     info.mode = (
-                        0o755
-                        if member.isdir() or (member.mode & 0o111)
-                        else 0o644
+                        0o755 if (member.mode & 0o111) else 0o644
                     )
                 info.uid = 0
                 info.gid = 0
@@ -299,7 +306,9 @@ def _apply_deterministic_normalization(
     if os.environ.get("VESPER_LAYER_DIAG"):
         # Cross-platform build diagnosis: the raw (uncompressed) tar
         # digest and the normalized layer digest per layer, so a CI
-        # failure can be pinned to a specific layer and stage.
+        # failure can be pinned to a specific layer and stage.  Member
+        # detail (count + first member name/size/mode/content digest)
+        # isolates raw-layer differences between build hosts.
         print(
             "layer_diag "
             + " ".join(
@@ -311,6 +320,18 @@ def _apply_deterministic_normalization(
             ),
             flush=True,
         )
+        for i, blob in enumerate(layer_bytes):
+            raw = _gunzip(blob)
+            with tarfile.open(fileobj=io.BytesIO(raw), mode="r") as source:
+                members = list(source)
+            detail = ", ".join(
+                f"{m.name}:{m.size}:{m.mode & 0o7777:o}:{m.uid}:{m.gid}"
+                for m in members[:4]
+            )
+            print(
+                f"layer_member_diag {i} count={len(members)} first={detail}",
+                flush=True,
+            )
     for digest, blob in zip(normalized_digests, normalized_layers):
         (layout / "blobs" / "sha256" / digest).write_bytes(blob)
     manifest = json.loads(manifest_bytes)
