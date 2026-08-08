@@ -698,6 +698,14 @@ def run_production_executor_probe() -> ProductionExecutorEvidenceV1:
     assert materialized is not None
     assert result is not None
     if result.error_code is not None:
+        # Diagnostic detail for CI: the raw stderr is the evidence of why
+        # the executor container failed (never printed on success).
+        print(
+            "executor failure: "
+            f"error_code={result.error_code} exit={result.exit_code} "
+            f"stderr={result.stderr.decode('utf-8', 'replace')[-2000:]}",
+            flush=True,
+        )
         return ProductionExecutorEvidenceV1(
             exit_code=result.exit_code,
             error_code=result.error_code,
