@@ -2357,3 +2357,12 @@
 - **Verification:** Target/Matrix/Domain 21 passed (formal env); full offline suite 1549 passed 0 failed; ruff/mypy/scan_credentials/diff-check clean; LF line endings.
 - **Human intervention:** 用户批准继续 T36.3（subagent 实现）——无其他。
 - **Lesson learned:** (1) 声明新依赖（PyYAML）会级联破坏冻结的 gate/dependency-closure 自验证链（gate.in 字节断言 + gate.lock 字母序/versions + toolchain/closure 证据 digest）——封闭的小文件用 stdlib 手写解析器（indentation-rigid，任务自有文件 deploy-as-is）比声明依赖更小爆炸半径（SPEC review 推荐 Path B，正确）；(2) pydantic `Literal[()]` 非法（collection 时 AssertionError——空字面量不允许），空元组约束必须用 model_validator；(3) 测试矩阵的 drift 构造与解析器序列化耦合（嵌套 list 被字符串化——loader 的 list 类型分支触发而非非空分支）——断言 match 必须与实际触发的分支一致；(4) 手写解析器/序列化器需对称（round-trip 由矩阵 baseline 钉住）；(5) subagent 实现 + driver 修复的混合模式（4.6/4.7）在 commit 标注中如实记录。
+
+## WP38-CLOSURE-20260808
+
+- **Timestamp (Asia/Taipei):** `2026-08-08T16:30:00+0800` (system-observed; append-only driver record).
+- **Task ID:** WP38 收尾（driver 执行——无实现工作，仅流程关闭）。
+- **Key prompt/context:** 用户指示"开始收尾"。WP38 三个任务（T38.1 Credential/Memory/Audit Web Workflows、T38.2 Recovery Operations and Production Route Composition、T38.3 Independent Cross-workflow Browser Acceptance）此前均已实现并合入 main（git log 确认：d3b773f/b3ac1d9 等已在 main），PLAN.md 三卡 Status 均为 Done 且 Completion evidence 已写（bd5465a/fa628b4/49ea4ce 等），但 83 个 step checkbox 未勾（此前会话只改 Status）。本次收尾：补齐 T38 三卡的 83 个 checkbox + T26-T35 已完成卡的 19 个未勾残留（合计 102 步），确认 T37 卡无 Step checkbox（最终交付特殊卡，Not started），并追加本关闭记录 + SPEC_PROCESS 92。
+- **Verification:** T01-T25/T36/T38 全部卡 checked>0 且 unchecked=0（脚本审计）；T37 无 Step checkbox（特殊卡）；main 已含 WP38 全部实现提交。
+- **Human intervention:** 用户"开始收尾"。
+- **Lesson learned:** WP 收尾的三要素（Status/checkbox/evidence）必须一次性完成——此前会话只改 Status 留下 83 步未勾；批量勾选必须按卡范围精确（本收尾勾了 102 步含 T26-T35 的已完成残留，审计确认均为已完成卡，无未开始卡受影响——T37 无 checkbox 天然隔离）。
