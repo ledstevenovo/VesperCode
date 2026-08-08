@@ -284,7 +284,14 @@ class _BoundedStreamCollector:
             remaining = self._deadline - time.monotonic()
             if remaining <= 0:
                 return bytes(stdout), bytes(stderr), "timeout"
-            self._socket.settimeout(min(0.25, remaining))
+            try:
+                self._socket.settimeout(min(0.25, remaining))
+            except AttributeError:
+                # The docker SDK wraps the Linux attach stream in a
+                # ``SocketIO`` that has no ``settimeout``; the stream
+                # still ends at the container's EOF, so the bounded
+                # deadline below remains the outer guard.
+                pass
             buffer = bytearray(65536)
             try:
                 count = self._socket.recv_into(buffer)
