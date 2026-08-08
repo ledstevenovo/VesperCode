@@ -61,6 +61,7 @@ COPY src/vespercode/loop/action_parser.py /app/vespercode/loop/action_parser.py
 COPY src/vespercode/loop/action_pipeline.py /app/vespercode/loop/action_pipeline.py
 COPY src/vespercode/loop/agent_actions.py /app/vespercode/loop/agent_actions.py
 COPY src/vespercode/loop/context_projection.py /app/vespercode/loop/context_projection.py
+COPY src/vespercode/audit/event.py /app/vespercode/audit/event.py
 COPY src/vespercode/loop/feedback.py /app/vespercode/loop/feedback.py
 COPY src/vespercode/loop/feedback_consumption.py /app/vespercode/loop/feedback_consumption.py
 COPY src/vespercode/loop/progress.py /app/vespercode/loop/progress.py

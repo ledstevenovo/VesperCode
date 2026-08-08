@@ -42,6 +42,7 @@ from spikes.docker_reference_boundary.image_builder import (
     ReferenceImageBuildEvidenceV1,
     _read_required,
     _run_docker_build,
+    normalize_layout_tar,
 )
 
 # Frozen SPEC §1.4.5 execution-profile values: 2 CPU, 2 GiB memory, 256 PIDs,
@@ -265,7 +266,9 @@ def _observation_command() -> list[str]:
 
 
 def _reproduce_frozen_layout(tmp: Path) -> Path:
-    """Reproduce the frozen OCI layout tar via the builder's own machinery."""
+    """Reproduce the frozen OCI layout tar via the builder's own machinery,
+    including the deterministic layer normalization, so the loaded image
+    id matches the frozen build-evidence identity."""
     context = tmp / "context"
     output_tar = tmp / "output.tar"
     context.mkdir()
@@ -275,6 +278,7 @@ def _reproduce_frozen_layout(tmp: Path) -> Path:
         _read_required(REPO_ROOT / REFERENCE_LOCK_RELATIVE)
     )
     _run_docker_build(context, output_tar)
+    normalize_layout_tar(output_tar)
     return output_tar
 
 
@@ -288,6 +292,14 @@ def _ensure_frozen_image(
     re-verified against the frozen build evidence.  A load that reports a
     drifted identity removes the drifted image and fails closed, so no
     residue is ever left on the drift path.
+
+    For an OCI layout tar, ``docker load`` reports the tar's *manifest*
+    digest as the loaded image id (verified against both the raw buildkit
+    tar and the normalized re-packed tar), so the manifest digest is the
+    identity to compare.  The reproduced tar must be the deterministically
+    normalized layout (``_reproduce_frozen_layout``) — loading the raw
+    buildkit tar reports the raw manifest digest, which drifts across
+    builds and correctly fails closed against the frozen evidence.
     """
     image_ref = f"sha256:{build.local_oci_manifest_digest}"
     if _image_id(image_ref) == image_ref:

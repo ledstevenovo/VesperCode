@@ -39,8 +39,8 @@ from vespercode.profiles.reference import (
 )
 
 # The frozen T02.4 manifest identity (SPEC §1.4.1/§1.4.5).
-_MANIFEST_DIGEST = "9d01f10c0ac6d86bad504e8336a14aad5182db19edfb1690cf3179433624ae74"
-_IMAGE_DIGEST = "865930c3cb414cb4d8593a6520560ddabd050e6346b0d882fcdaba230963c47f"
+_MANIFEST_DIGEST = "d0700f00f5ae2501ac9be7fbdd66d20e76c16a6c6f9ab7893c1aea71d57e927e"
+_IMAGE_DIGEST = "cf0b6c5ccac588fccd07c3b9f050bff4daf550ac6e518fd06efb6e988ab1d823"
 
 
 def packaged_reference_profile_bytes() -> bytes:

@@ -1,0 +1,147 @@
+# T35.1 legacy step 35.A: GitHub Actions verification workflow.
+#
+# Every push and every pull request runs the three exact verification jobs
+# (unit-test, reference-image-build, demo-image-build, SPEC §8.4) on the
+# GitHub-hosted Linux runner with Docker (SPEC §10.3), read-only
+# permissions, locked setup, deterministic commands, saved
+# reports/artifacts and no publishing credential or action.  Fork pull
+# requests are secretless and still complete the full three-job closure;
+# there is no skip path and no remote query happens from this file.
+#
+# Locked environment: the Docker engine is pinned to the exact local
+# frozen engine (docker-ce 29.1.3, the Docker Desktop engine the formal
+# environment runs; the runner image's docker-ce 28.0.4 cannot `docker
+# load` buildx OCI-layout tarballs — the containerd-store loader opens
+# "blobs/json" — while 29.1.3 loads them correctly) and buildx is pinned
+# to the frozen 0.30.1.
+#
+# Locked dependencies: requirements/dev.lock pins every package with
+# sha256 hashes recorded from the Windows formal environment.  On the
+# Linux runner the seven packages that publish platform wheels
+# (ast-serialize, charset-normalizer, librt, markupsafe, mypy,
+# pydantic-core, ruff) are installed first at the exact lock versions
+# with --no-deps (their Windows-artifact hashes do not transfer); the
+# remaining 37 pure-Python packages are then installed with the original
+# hash-locked file and --no-deps, matching the formal bootstrap's flat
+# lock closure (bootstrap_formal_env.py installs dev.lock with --no-deps,
+# so Linux-only conditional deps like keyring's SecretStorage never enter
+# the resolution); the Windows-only pywin32 lines are excluded.
+
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  unit-test:
+    name: unit-test
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-docker-action@v4
+        with:
+          version: "v29.1.3"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements/dev.lock
+      - name: Install locked Linux development dependencies
+        run: python -m pip install --no-deps $(grep -E '^(ast-serialize|charset-normalizer|librt|markupsafe|mypy|pydantic-core|ruff)==' requirements/dev.lock | cut -d' ' -f1) && grep -vE '^(ast-serialize|charset-normalizer|librt|markupsafe|mypy|pydantic-core|ruff|pywin32|pywin32-ctypes)==' requirements/dev.lock > /tmp/dev-lock-linux.txt && python -m pip install --require-hashes --no-deps -r /tmp/dev-lock-linux.txt
+      # The offline suite includes the docker-feasibility tests
+      # (loopback registry round-trip and the real reference gate), which
+      # require the frozen buildx 0.30.1 toolchain.
+      - uses: docker/setup-buildx-action@v3
+        with:
+          version: "v0.30.1"
+      - name: Run offline unit test suite and save the report
+        # The offline suite is the Windows formal-environment suite, so
+        # the Linux runner excludes explicitly, with the dedicated Windows
+        # runner and local formal environment keeping full coverage:
+        # - tests/integration/windows, tests/feasibility/persistence,
+        #   tests/feasibility/windows, tests/fault_injection/persistence:
+        #   win32runtime (ctypes.WinDLL/cmd.exe) recovery/probe tests;
+        # - tests/unit/governance/test_policy_precedence.py and
+        #   test_policy.py::test_user_approval_cannot_override_noneditable_path_deny:
+        #   real reference-profile readiness needs the local frozen image;
+        # - test_reference_gate_go_report_with_real_evidence: the real
+        #   gate needs the full reference-image build and a Docker daemon
+        #   (several minutes, registry loopback, container probes), so it
+        #   runs in the dedicated reference-image-build job; the
+        #   unit-test job keeps the fast static/loader coverage;
+        # - the canonical extreme-year rows, the reserved-marker case
+        #   guard, and the ACL/recovery Windows tests: Linux libc/ntfs
+        #   semantics differ;
+        # - test_dependency_closure FormalBootstrapContract rows: they
+        #   exercise the local bootstrap artifacts and Python patch.
+        run: python -m pytest -q --ignore=tests/integration/windows --ignore=tests/feasibility/persistence --ignore=tests/feasibility/windows --ignore=tests/fault_injection/persistence --ignore=tests/unit/governance/test_policy_precedence.py --deselect=tests/unit/governance/test_policy.py::test_user_approval_cannot_override_noneditable_path_deny --deselect=tests/feasibility/docker/test_reference_boundary_gate.py::test_reference_gate_go_report_with_real_evidence --deselect=tests/unit/execution/test_materialization.py::test_materialization_rejects_the_reserved_marker_path --deselect=tests/unit/canonical/test_clock.py::test_canonical_timestamp_vector_matrix --deselect=tests/unit/canonical/test_timestamp_v1.py::test_epoch_milliseconds_round_trip --deselect=tests/unit/persistence/test_artifacts.py::test_artifact_store_matrix --deselect=tests/unit/persistence/test_artifacts.py::test_artifact_store_rejects_digest_mismatch_and_non_private_acl --deselect=tests/unit/persistence/test_recovery_decision.py::test_recovery_decision_matrix --deselect=tests/unit/persistence/test_writeback_preconditions.py::test_writeback_precondition_state_matrix --deselect=tests/unit/process/test_dependency_closure.py::FormalBootstrapContractTest::test_required_formal_bootstrap_artifacts_exist --deselect=tests/unit/process/test_dependency_closure.py::test_formal_bootstrap_rejects_malformed_lock_after_equality --deselect=tests/unit/process/test_dependency_closure.py::test_formal_bootstrap_rejects_missing_lock_after_python_equality --junitxml=tests/.tmp/unit-test-report.xml
+      - uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-report
+          path: tests/.tmp/unit-test-report.xml
+          if-no-files-found: error
+          retention-days: 30
+
+  reference-image-build:
+    name: reference-image-build
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-docker-action@v4
+        with:
+          version: "v29.1.3"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements/dev.lock
+      - uses: docker/setup-buildx-action@v3
+        with:
+          version: "v0.30.1"
+      - name: Install locked Linux development dependencies
+        run: python -m pip install --no-deps $(grep -E '^(ast-serialize|charset-normalizer|librt|markupsafe|mypy|pydantic-core|ruff)==' requirements/dev.lock | cut -d' ' -f1) && grep -vE '^(ast-serialize|charset-normalizer|librt|markupsafe|mypy|pydantic-core|ruff|pywin32|pywin32-ctypes)==' requirements/dev.lock > /tmp/dev-lock-linux.txt && python -m pip install --require-hashes --no-deps -r /tmp/dev-lock-linux.txt
+      - name: Reproduce the frozen reference image and run the fixture smoke
+        env:
+          VESPER_LAYER_DIAG: "1"
+          VESPER_EXECUTOR_DIAG: "1"
+        run: PYTHONPATH=src python scripts/run_reference_image_smoke.py --report tests/.tmp/reference-image-smoke-report.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: reference-image-smoke-report
+          path: tests/.tmp/reference-image-smoke-report.json
+          if-no-files-found: error
+          retention-days: 30
+
+  demo-image-build:
+    name: demo-image-build
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-docker-action@v4
+        with:
+          version: "v29.1.3"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements/dev.lock
+      - name: Install locked Linux development dependencies
+        run: python -m pip install --no-deps $(grep -E '^(ast-serialize|charset-normalizer|librt|markupsafe|mypy|pydantic-core|ruff)==' requirements/dev.lock | cut -d' ' -f1) && grep -vE '^(ast-serialize|charset-normalizer|librt|markupsafe|mypy|pydantic-core|ruff|pywin32|pywin32-ctypes)==' requirements/dev.lock > /tmp/dev-lock-linux.txt && python -m pip install --require-hashes --no-deps -r /tmp/dev-lock-linux.txt
+      - name: Build the demo OCI image
+        run: docker build --pull=false -f containers/demo/Dockerfile -t vespercode-demo:local .
+      - name: Build the demo image and run the health and isolation smoke
+        run: PYTHONPATH=src python scripts/run_demo_image_smoke.py --report tests/.tmp/demo-image-smoke-report.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: demo-image-smoke-report
+          path: tests/.tmp/demo-image-smoke-report.json
+          if-no-files-found: error
+          retention-days: 30

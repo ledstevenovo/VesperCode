@@ -35,7 +35,7 @@ from vespercode.profiles.registry import (
 
 # The frozen §0.1 identity pins of the packaged built-ins (T06.2/T06.3
 # gold pins, independently recomputed by both review stages).
-_MANIFEST_DIGEST = "9d01f10c0ac6d86bad504e8336a14aad5182db19edfb1690cf3179433624ae74"
+_MANIFEST_DIGEST = "d0700f00f5ae2501ac9be7fbdd66d20e76c16a6c6f9ab7893c1aea71d57e927e"
 _POLICY_DIGEST = "b857afca63e50a888ee183bd7ac8c7f739be7b60a94fc4f9c55c0a606db144ab"
 _MOCK_DIGEST = "3fd39f821cae060b3bd0b382bfcd4843cbb465269b1487200582d4bb4346e4a9"
 _OPENAI_DIGEST = "cb46690ef08202e120b71823d3de8ae1c31c903af6b0129984a9a4e893dd3f9c"

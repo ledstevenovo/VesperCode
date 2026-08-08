@@ -21,9 +21,9 @@ pushed, never as a second build contract or new build evidence.
 
 from __future__ import annotations
 
+import os
 import shutil
 import subprocess
-import tarfile
 import tempfile
 import time
 import urllib.error
@@ -46,6 +46,7 @@ from spikes.docker_reference_boundary.image_builder import (
     _read_single_manifest,
     _run_docker_build,
     _sha256_hex,
+    normalize_layout_tar,
 )
 from spikes.docker_reference_boundary.input_contract import REGISTRY_IMAGE_DIGEST
 
@@ -147,14 +148,35 @@ def _registry_run_argv() -> list[str]:
         "run",
         "-d",
         "-p",
-        f"{BIND_HOST}::{REGISTRY_CONTAINER_PORT}",
+        f"{_loopback_bind_host()}::{REGISTRY_CONTAINER_PORT}",
         REGISTRY_IMAGE_REF,
     ]
 
 
+def _loopback_bind_host() -> str:
+    """Daemon-side publish address for the loopback registry.
+
+    ``127.0.0.1`` by default; ``VESPER_LOOPBACK_BIND_HOST`` overrides it
+    for a dind sibling topology (the GitLab jobs publish inside the
+    daemon service container, so the daemon-side bind must be reachable
+    from the job container through the service alias).
+    """
+    return os.environ.get("VESPER_LOOPBACK_BIND_HOST", BIND_HOST)
+
+
+def _loopback_probe_host() -> str:
+    """Job-side address used to reach the published registry port.
+
+    ``127.0.0.1`` by default; ``VESPER_LOOPBACK_PROBE_HOST`` overrides it
+    for the dind topology, where ``docker`` resolves to the daemon
+    service container from the job container.
+    """
+    return os.environ.get("VESPER_LOOPBACK_PROBE_HOST", BIND_HOST)
+
+
 def _registry_base_url(port: int) -> str:
     """Loopback-only registry API base for one repository."""
-    return f"http://{BIND_HOST}:{port}/v2/{REPOSITORY}"
+    return f"http://{_loopback_probe_host()}:{port}/v2/{REPOSITORY}"
 
 
 def _start_loopback_registry() -> tuple[str, int]:
@@ -206,7 +228,7 @@ def _read_assigned_port(container_id: str) -> int | None:
     if proc.returncode != 0 or not proc.stdout.strip():
         return None
     bind_part = proc.stdout.strip().splitlines()[-1].strip()
-    if not bind_part.startswith(f"{BIND_HOST}:"):
+    if not bind_part.startswith(f"{_loopback_bind_host()}:"):
         return None
     try:
         return int(bind_part.rsplit(":", 1)[1])
@@ -219,7 +241,7 @@ def _wait_until_ready(assigned_port: int) -> bool:
     while time.monotonic() < deadline:
         try:
             with urllib.request.urlopen(
-                f"http://{BIND_HOST}:{assigned_port}/v2/", timeout=2
+                f"http://{_loopback_probe_host()}:{assigned_port}/v2/", timeout=2
             ) as response:
                 if response.status == 200:
                     return True
@@ -256,10 +278,14 @@ def _reproduce_oci_layout(tmp: Path) -> tuple[bytes, bytes, list[bytes]]:
     builder/output/media-type/compression/attestation parameters and the
     builder-identity assert) so the exact manifest bytes live in exactly one
     place; reproduction exists solely to obtain the bytes to push.
+
+    The layout is deterministically normalized (SPEC_PROCESS 86) before
+    the bytes are read: pushing the raw buildkit layout would carry
+    wall-clock layer mtimes and drift the pushed digest away from the
+    frozen build-evidence identity.
     """
     context = tmp / "context"
     output_tar = tmp / "output.tar"
-    layout = tmp / "layout"
     context.mkdir()
     (context / "Dockerfile").write_bytes(_read_required(REPO_ROOT / RECIPE_RELATIVE))
     shutil.copytree(REPO_ROOT / FIXTURE_RELATIVE, context / "fixture")
@@ -267,9 +293,8 @@ def _reproduce_oci_layout(tmp: Path) -> tuple[bytes, bytes, list[bytes]]:
         _read_required(REPO_ROOT / REFERENCE_LOCK_RELATIVE)
     )
     _run_docker_build(context, output_tar)
-    layout.mkdir()
-    with tarfile.open(output_tar, "r") as archive:
-        archive.extractall(layout, filter="data")
+    normalize_layout_tar(output_tar)
+    layout = output_tar.with_name(f"{output_tar.name}.layout")
     _, manifest_bytes = _read_single_manifest(layout)
     _, config_bytes, layer_bytes, _ = _read_members(layout, manifest_bytes)
     return manifest_bytes, config_bytes, layer_bytes

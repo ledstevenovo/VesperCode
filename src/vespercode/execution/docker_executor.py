@@ -24,6 +24,7 @@ per-check bound.
 
 from __future__ import annotations
 
+import os
 import struct
 import time
 import uuid
@@ -176,10 +177,19 @@ class RawExecutionResultV1(BaseModel):
 
 
 class _ReadableAttachSocketV1(Protocol):
-    """The minimal raw socket surface the bounded collector needs."""
+    """The minimal raw socket surface the bounded collector needs.
+
+    Linux attach streams surface as an ``http.client`` ``SocketIO`` with
+    ``readinto`` instead of ``recv_into``; the collector prefers
+    ``recv_into`` and falls back to ``readinto`` and then ``read``, so
+    the protocol declares all three (each implementation supplies only
+    the ones it has).
+    """
 
     def settimeout(self, timeout: float) -> None: ...
     def recv_into(self, buffer: bytearray) -> int: ...
+    def readinto(self, buffer: bytearray) -> int: ...
+    def read(self, size: int = -1) -> bytes: ...
 
 
 class _DockerContainerHandleV1(Protocol):
@@ -283,10 +293,32 @@ class _BoundedStreamCollector:
             remaining = self._deadline - time.monotonic()
             if remaining <= 0:
                 return bytes(stdout), bytes(stderr), "timeout"
-            self._socket.settimeout(min(0.25, remaining))
+            try:
+                self._socket.settimeout(min(0.25, remaining))
+            except AttributeError:
+                # The docker SDK wraps the Linux attach stream in a
+                # ``SocketIO`` that has no ``settimeout``; the stream
+                # still ends at the container's EOF, so the bounded
+                # deadline below remains the outer guard.
+                pass
             buffer = bytearray(65536)
             try:
-                count = self._socket.recv_into(buffer)
+                if hasattr(self._socket, "recv_into"):
+                    count = self._socket.recv_into(buffer)
+                elif hasattr(self._socket, "readinto"):
+                    # The Linux attach stream is an ``http.client``
+                    # ``SocketIO`` (HTTPResponse) with ``readinto`` but no
+                    # ``recv_into``; the caller handles the pending
+                    # buffer the same way as ``recv_into``.
+                    count = self._socket.readinto(buffer)
+                else:
+                    # A plain file-like stream (``read`` only): fold the
+                    # bytes into the same pending buffer and fall through
+                    # to the shared frame parsing below.
+                    data = self._socket.read(65536)
+                    count = len(data)
+                    if count:
+                        pending.extend(data)
             except TimeoutError:
                 # The read timeout fired; the deadline check above decides.
                 continue
@@ -445,6 +477,10 @@ class DockerExecutor:
                 error_code="CHECK_ISOLATION_VIOLATION",
             )
         except Exception:
+            if os.environ.get("VESPER_EXECUTOR_DIAG"):
+                import traceback
+
+                traceback.print_exc()
             stopped = False
             if container is not None:
                 try:
