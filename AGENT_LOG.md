@@ -2310,3 +2310,21 @@
 - **Remote CI:** GitHub push run 31236183711 and PR run 31236186335 both success (all three jobs; reference job rebuilds the frozen digest on Linux). GitLab honestly skipped (no project yet) with the dind-topology bindings locally exercised.
 - **Human intervention:** 用户批准 push 到 GitHub 与合入 main（AskUserQuestion 2026-08-08）；磁盘满时授权清理 pip 缓存与 buildx 缓存（本会话早段）。
 - **Lesson learned:** (1) 跨平台确定性必须覆盖所有 buildkit 易变源：层成员顺序（pip 写入序）、gzip 压缩算法（zlib 1.2.13 vs 1.3.1 deflate 输出不同 → stored blocks）、COPY 层 uid/gid/mode（Windows buildkit 模拟 vs Linux 真实）、config history.created（缓存层 vs 新构建的 wall-clock）——逐层 layer_diag（raw/norm digest）+ 成员明细是唯一可靠的定位手段；(2) docker load 对 OCI layout tar 报告 manifest digest 作为镜像 ID（实测），execution/registry 探针必须加载规范化后的 tar；(3) `http.client.SocketIO`（Linux attach 流）无 settimeout/recv_into——collector 需 readinto/read 回退；(4) 验证脚本的 import 前缀双身份（`docker_reference_boundary.X` vs `spikes.docker_reference_boundary.X`）使 pydantic dataclass `__eq__` 恒假——测试与脚本必须统一 `spikes.` 前缀；(5) F4 类"冗余代码"评审建议必须用冻结 digest 实测反驳（删除 -newermt 子句改变了构建产物）。
+
+## DISK-INCIDENT-20260808
+
+- **Timestamp (Asia/Taipei):** `2026-08-08T13:00:00+0800` (system-observed; append-only driver record).
+- **Task ID:** 环境级事件（跨任务——WP35 验证循环的磁盘副作用）。
+- **Key prompt/context:** C 盘被 Docker Desktop 的 WSL2 虚拟盘（`AppData\Local\Docker\wsl\disk\docker_data.vhdx`，78GB）撑满至 0 字节，Docker daemon 崩溃、用户其他软件写入失败。用户明确要求删除 vhdx 恢复磁盘（2026-08-08）。
+- **根因（技术）：** vhdx 是动态扩展虚拟盘——镜像/构建层缓存/容器/卷全部写入，删除内容只释放盘内空间，文件本身不自动收缩。78GB 构成（docker system df 实测）：悬空卷 64.5GB（1261 个——T35.1 容器执行探针（registry/隔离/executor）每容器产生匿名卷，容器删除后卷残留）、镜像 3.2GB（多轮构建）、buildx 缓存 9.8GB（7 轮本地构建循环）。其中悬空卷是最大单一项（此前完全未意识到容器探针会累积卷）。
+- **根因（过程失误）：** (1) 未提前告知用户"构建会使 vhdx 膨胀且不自动收缩"；(2) 未监控 vhdx 大小（WP35 早段 prune 4.6GB 后不再检查，后续构建循环重新膨胀）；(3) 清理只覆盖 buildx 缓存，未清理悬空卷；(4) 磁盘紧张（11GB 可用）时继续 7 轮构建循环。
+- **处置：** buildx prune -a（9.8GB）→ 悬空镜像 prune（29.8MB）→ Docker Desktop 崩溃（Windows 侧 0 字节——prune 释放的内部空间无法回 Windows）→ 用户授权后删除 docker_data.vhdx（78GB）→ C 盘恢复 82GB 可用。在用的 3 个卷（campushub 项目数据）随 vhdx 一并删除——需用户确认是否需从备份恢复。
+- **预防措施（已写入本文档，供后续任务强制执行）：**
+  1. 每个构建循环结束后立即 `docker buildx prune -f` + `docker volume prune -f`（悬空）——不得累积到下一轮。
+  2. 每次构建前后检查 `docker system df` 与 vhdx 大小；剩余 <20GB 时暂停一切构建，先清理。
+  3. vhdx 定期 compact（`wsl --shutdown` + `Optimize-VHD`/`diskpart compact`）——把内部空间还给 Windows；磁盘紧张时优先于继续构建。
+  4. 根因修复：容器执行探针（execution_probe/registry_probe）的 cleanup 必须同时删除其匿名卷（或容器以 `--rm` 运行并显式清理卷）——防止卷累积。
+  5. 任何磁盘占用 >5GB 的操作（构建、拉取、批量安装）执行前必须向用户说明预期磁盘影响。
+  6. 环境级操作（docker 数据、虚拟盘、用户目录清理）必须先明确征得用户同意并说明影响范围。
+- **Human intervention:** 用户多次要求恢复磁盘并最终明确授权删除 vhdx（"赶紧删vhdx"）；用户表达了信任受损（"我对你失去了信任"）——恢复与后续沟通须以行动重建信任。
+- **Lesson learned:** (1) 虚拟盘的"只增不减"特性必须在第一次构建前就向用户说明；(2) 容器匿名卷的累积是隐蔽的大头（64.5GB）——任何"每容器一写"的探针都必须把卷清理纳入 cleanup 契约；(3) 磁盘监控必须是构建循环的强制步骤而非事后补救；(4) 用户明确说"不要写入"时必须立即停止一切写操作，哪怕是为了清理。
