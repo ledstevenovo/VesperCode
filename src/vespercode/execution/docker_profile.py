@@ -43,10 +43,10 @@ from vespercode.profiles.reference import (
 # built-in; the T06.2 loader verifies the packaged bytes against its own
 # gate identity constants.
 _FROZEN_REFERENCE_PROFILE_DIGEST = (
-    "76326c9fdc62b1182db9c28dc855bb6e711f594d7223647ca8e2899c948d14e0"
+    "b02bfc24c91b0013bc466e14b9f133d4d7e89e08c738980c6bbffd18ee8b0048"
 )
 _FROZEN_DOCKER_IMAGE_DIGEST = (
-    "afb8f6c43eeeb704f736e0c22eec4a45aa4852d8a9325804731abb2cec909ef0"
+    "86443f5297b268f0cd8046b09652acb3b6b1d7e4275a743c34e7908bf1d7156d"
 )
 _FROZEN_EXECUTION_PROFILE_VERSION = 1
 

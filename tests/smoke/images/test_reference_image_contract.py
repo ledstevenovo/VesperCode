@@ -14,7 +14,7 @@ The frozen Task 2 digest is bound through the packaged production
 manifest (``src/vespercode/profiles/builtin/reference-profile-v1.json``),
 loaded through the T06.2 integrity loader against the embedded Task 2.G
 gate identity (SPEC_PROCESS §80: rebuilt twice byte-identical as
-afb8f6c4…, SPEC_PROCESS 86 re-freeze).  The ``reference/manifest/reference-profile-v1.json``
+86443f52…, SPEC_PROCESS 86 re-freeze).  The ``reference/manifest/reference-profile-v1.json``
 copy was re-frozen to the same digest set under the §86 determinism
 normalization and the loader verifies the two copies agree; the packaged
 manifest remains the authoritative frozen identity source.

@@ -123,15 +123,32 @@ def _gunzip(blob: bytes) -> bytes:
 
 
 def _deterministic_gzip(data: bytes) -> bytes:
-    """One fixed gzip stream: mtime zero, OS byte 0xff, level 9, with
-    the standard CRC32 + ISIZE trailer."""
-    compressor = zlib.compressobj(9, zlib.DEFLATED, -zlib.MAX_WBITS)
+    """One fixed gzip stream with *stored* (uncompressed) deflate blocks.
+
+    mtime zero and OS byte 0xff, one stored block stream (RFC 1951
+    BTYPE=00), and the standard CRC32 + ISIZE trailer.  Stored blocks
+    carry no compression algorithm, so the bytes are identical across
+    zlib versions — deflate output differs between zlib 1.2.13 (the
+    Windows formal environment) and 1.3.1 (the Linux CI runners), which
+    would otherwise break cross-platform deterministic builds
+    (SPEC_PROCESS 86).
+    """
     header = b"\x1f\x8b\x08\x00" + b"\x00\x00\x00\x00" + b"\x00\xff"
-    body = compressor.compress(data) + compressor.flush()
+    body = bytearray()
+    if not data:
+        body += b"\x01\x00\x00\xff\xff"
+    position = 0
+    while position < len(data):
+        chunk = data[position : position + 65535]
+        final = 0x01 if position + len(chunk) >= len(data) else 0x00
+        body.append(final)
+        body += struct.pack("<HH", len(chunk), (~len(chunk)) & 0xFFFF)
+        body += chunk
+        position += len(chunk)
     trailer = struct.pack(
         "<II", zlib.crc32(data) & 0xFFFFFFFF, len(data) & 0xFFFFFFFF
     )
-    return header + body + trailer
+    return header + bytes(body) + trailer
 
 
 def _normalize_layer_blob(blob: bytes, epoch: int) -> bytes:
