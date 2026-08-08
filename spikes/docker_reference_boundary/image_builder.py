@@ -184,11 +184,19 @@ def _normalize_layer_blob(blob: bytes, epoch: int) -> bytes:
                 # (root:root; 0755 for directories and executable files,
                 # 0644 otherwise) makes the normalized layer bytes
                 # cross-platform deterministic (SPEC_PROCESS 86).
-                info.mode = (
-                    0o755
-                    if member.isdir() or (member.mode & 0o111)
-                    else 0o644
-                )
+                # Special bits (setuid/setgid/sticky) are preserved
+                # verbatim: they only occur in RUN layers, which are
+                # produced inside the Linux build container and are
+                # therefore already host-independent (flattening /tmp's
+                # 01777 to 0755 would break the non-root report channel).
+                if member.mode & 0o7000:
+                    info.mode = member.mode & 0o7777
+                else:
+                    info.mode = (
+                        0o755
+                        if member.isdir() or (member.mode & 0o111)
+                        else 0o644
+                    )
                 info.uid = 0
                 info.gid = 0
                 info.mtime = epoch

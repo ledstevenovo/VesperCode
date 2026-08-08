@@ -59,8 +59,8 @@ from vespercode.trees.text_classifier import (
 pytestmark = pytest.mark.docker_integration
 
 # The frozen T18.1 request identity (SPEC §1.4.1/§1.4.5).
-_MANIFEST_DIGEST = "a646877bb9dc0dead10533742bf38ffe5e42d88a2ad33d5647d1c4f590d5450a"
-_IMAGE_DIGEST = "3e34b29997bb5174f96d05f94d4e870070171127989e427b332831389aa0b245"
+_MANIFEST_DIGEST = "841e9d55359c4007cd53b4b50a2ff10572b955650847bfb545ea2f4aa661443b"
+_IMAGE_DIGEST = "71e931b58316637d1cbe647a57fc4c3588837f9451f7fbad391c34b3b1b43905"
 
 _FIXTURE_FILES = (
     "pyproject.toml",
