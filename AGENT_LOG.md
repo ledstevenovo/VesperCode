@@ -2328,3 +2328,32 @@
   6. 环境级操作（docker 数据、虚拟盘、用户目录清理）必须先明确征得用户同意并说明影响范围。
 - **Human intervention:** 用户多次要求恢复磁盘并最终明确授权删除 vhdx（"赶紧删vhdx"）；用户表达了信任受损（"我对你失去了信任"）——恢复与后续沟通须以行动重建信任。
 - **Lesson learned:** (1) 虚拟盘的"只增不减"特性必须在第一次构建前就向用户说明；(2) 容器匿名卷的累积是隐蔽的大头（64.5GB）——任何"每容器一写"的探针都必须把卷清理纳入 cleanup 契约；(3) 磁盘监控必须是构建循环的强制步骤而非事后补救；(4) 用户明确说"不要写入"时必须立即停止一切写操作，哪怕是为了清理。
+## T36.1-COMPLETION-20260808
+
+- **Timestamp (Asia/Taipei):** `2026-08-08T12:00:00+0800` (system-observed; append-only driver record).
+- **Task ID:** T36.1 Closed Delivery Evidence and Commit Alignment (WP36; 36.A).
+- **Key prompt/context:** Milestone 36's first session task: closed non-secret CI/release/deployment evidence schemas plus a read-only verifier that rejects any source-commit, wheel, manifest, or platform-state misalignment before external publication — T37.1 consumes it before any protected release.
+- **Implementation:** branch `codex/wp36`, commit `9ee10aa` (5 files): `src/vespercode/delivery/evidence.py` (CIReleaseEvidenceV1/ReleaseEvidenceV1/DeploymentEvidenceV1 closed pydantic schemas with extra=forbid, Literal schema_version=1/environment/status, StrictStr/HttpUrl, 40/64-hex content-addressed forms, timezone-qualified ISO timestamps, boolean access_metadata; within-record alignment github_tag_commit == source_commit and reference_manifest_digest == ghcr_repo_digest == pulled_image_digest (SPEC AC-30); `load_and_verify_release_evidence(root, require_live)` read-only verifier with cross-record source_commit + ci_run_id/ci_run_url equality and live terminal/freshness gates) + README + read-only CLI + two test files (exact card RED body byte-identical + 14-row matrix + loader/schema tests, 12 passed).
+- **Verification:** Target/Matrix/Domain with the exact card commands; full offline suite 1425 passed with one pre-existing local-environment failure (bootstrap artifacts — wp35 venv emptied by earlier disk cleanup); ruff/mypy/format clean (project versions 0.16.1/2.3.0).
+- **Human intervention:** 用户启动 WP36（"那我们开始 WP36 吧"）——无其他。
+- **Lesson learned:** (1) SPEC AC-30 的四方 digest 相等（Task 2 RepoDigest == wheel 内嵌 == GHCR == pulled）在 36.A 的记录内落实为三方相等（manifest == ghcr == pulled）+ wheel 独立工件——评审（SPEC round 1）抓住 manifest/GHCR 未校验这一命名合同缺口，说明"记录后置门"也必须在 schema 层 fail-closed；(2) pydantic `ValidationInfo.field_name` 是 Optional，helper 签名应接受 `str | None` 而非在调用点断言；(3) 时间戳验证用正则 + fromisoformat 双保险（时区限定 + 不可能偏移 + 闰秒全部干净 ValueError），live gate 永远收不到 naive datetime；(4) 只读验证器（read_text + json.loads + 纯解析）由 byte-identical 测试钉死——T37.1 的发布前唯一准入面。
+
+## T36.2-COMPLETION-20260808
+
+- **Timestamp (Asia/Taipei):** `2026-08-08T14:00:00+0800` (system-observed; append-only driver record).
+- **Task ID:** T36.2 Release/GHCR Publication Verification Contract (WP36; 36.B).
+- **Key prompt/context:** Milestone 36's second session task: the pure fail-closed publication contract T37.1 consumes — verify one protected source-aligned release (wheel/checksum + Task 2 reference manifest from the final merged prerequisite main source_commit) with zero I/O.
+- **Implementation:** branch `codex/wp36`, commit `b4b8df0` (2 files, driver-inline per 4.7 attribution in the commit message): `src/vespercode/delivery/publication.py` (FrozenReleaseInputsV1/ObservedReleaseResultV1 frozen pydantic models, 7 closed error codes, Accepted/Rejected variants with evidence_write_allowed Literal True/False, pure verify_release_publication_result with deterministic order source→tag→wheel→manifest-vs-GHCR→pulled-vs-GHCR→install→smoke) + test file (card RED byte-identical 905/905 + 14-row matrix). TDD: RED = exact expected import failure (module absent at the T36.1 commit).
+- **Verification:** Target/Matrix/Domain exact card commands; full release suite 14 passed; full offline 1423 passed (docker registry tests failed only from the vhdx deletion removing the local registry:2 image — re-pulled, green; bootstrap pre-existing); ruff/mypy (project gates) clean.
+- **Human intervention:** 用户强调 4.6/4.7 原则（worktree/subagent/TDD/两阶段评审/commit 标注）——T36.2 实现为 driver-inline（如实标注），T36.3 起派发 subagent 实现。
+- **Lesson learned:** (1) pydantic frozen 模型的 `# type: ignore` 必须精确（`[assignment]` 而非 `[misc]`；`StrictStr` 在 py.typed 下静态即 `str`——运行时才抛）；mypy 门禁要按项目 `gates/mypy.ini` 跑（单文件跑会误报 import-not-found）；(2) 纯验证器不做 digest 形态校验是设计决策（fail-closed 由 T36.1 的证据 schema 下游兜底）——评审接受的 informational；(3) T36.2 的 digest 带 `sha256:` 前缀（raw registry 值）vs T36.1 的 bare 64-hex（证据记录）——T37.1 接线时必须按 raw 形式提供 frozen manifest digest；(4) PLAN.md 的 checkbox 批量标记必须精确限定卡范围（本任务曾误标 T36.3/T37 的 100 个步骤，已全部还原）。
+
+## T36.3-COMPLETION-20260808
+
+- **Timestamp (Asia/Taipei):** `2026-08-08T15:30:00+0800` (system-observed; append-only driver record).
+- **Task ID:** T36.3 Static Render Deployment Contract (WP36; 36.C).
+- **Key prompt/context:** Milestone 36's final session task: freeze the exact capability-isolated Demo image/config and static Render contract T37.1 deploys — zero deployment, zero live evidence in WP36.
+- **Implementation:** branch `codex/wp36`, commit `7bc460c` (3 files): `render.yaml` (one web/docker service, PORT=8000, /healthz, SOURCE_COMMIT placeholder slot, no disk/secret/credentials) + test_render_contract.py (card RED byte-identical + RenderContractV1 test-side vocabulary + stdlib `_parse_render_yaml`/`_dump_render_yaml` + load_render_contract + verify_render_deployment_observation + 20-row matrix) + test_public_demo_smoke.py (5 static contract tests). Implemented by a fresh subagent (4.6); driver-inline fixes for the SPEC C1/C2 findings (Path B: PyYAML dropped, hand-rolled stdlib parser/serializer, requirements reverted) and quality Minors.
+- **Verification:** Target/Matrix/Domain 21 passed (formal env); full offline suite 1549 passed 0 failed; ruff/mypy/scan_credentials/diff-check clean; LF line endings.
+- **Human intervention:** 用户批准继续 T36.3（subagent 实现）——无其他。
+- **Lesson learned:** (1) 声明新依赖（PyYAML）会级联破坏冻结的 gate/dependency-closure 自验证链（gate.in 字节断言 + gate.lock 字母序/versions + toolchain/closure 证据 digest）——封闭的小文件用 stdlib 手写解析器（indentation-rigid，任务自有文件 deploy-as-is）比声明依赖更小爆炸半径（SPEC review 推荐 Path B，正确）；(2) pydantic `Literal[()]` 非法（collection 时 AssertionError——空字面量不允许），空元组约束必须用 model_validator；(3) 测试矩阵的 drift 构造与解析器序列化耦合（嵌套 list 被字符串化——loader 的 list 类型分支触发而非非空分支）——断言 match 必须与实际触发的分支一致；(4) 手写解析器/序列化器需对称（round-trip 由矩阵 baseline 钉住）；(5) subagent 实现 + driver 修复的混合模式（4.6/4.7）在 commit 标注中如实记录。

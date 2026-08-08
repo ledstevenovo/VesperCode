@@ -1,0 +1,29 @@
+# T36.3 legacy step 36.C: the committed static Render Web Service
+# contract for the Task 34.B Demo image (SPEC §8.3; PLAN T36.3).
+#
+# Capability-isolated public Demo: the image is built from
+# containers/demo/Dockerfile, the platform injects PORT (the app binds
+# 0.0.0.0:PORT), the health check is GET /healthz, there is no persistent
+# disk, no real-provider secret, no repository credential, and no
+# formal/local/recovery endpoint (the closed four-route surface of the
+# Task 34.B app).  SOURCE_COMMIT is the placeholder slot T37.1 fills with
+# the final merged prerequisite main source_commit.
+#
+# T37.1 alone deploys this exact configuration, performs the protected
+# Render deployment, and writes terminal aligned evidence.  T36.3
+# performs zero Render mutation and writes no deployment-v1.json.
+services:
+  - type: web
+    name: vespercode-demo
+    runtime: docker
+    repo: https://github.com/ledstevenovo/VesperCode
+    branch: main
+    dockerfilePath: containers/demo/Dockerfile
+    dockerContext: .
+    plan: free
+    healthCheckPath: /healthz
+    envVars:
+      - key: PORT
+        value: "8000"
+      - key: SOURCE_COMMIT
+        value: "0000000000000000000000000000000000000000"
