@@ -988,7 +988,7 @@ class _ManifestStub:
         ruff_version: str = "0.16.1",
         mypy_version: str = "2.3.0",
         docker_image_digest: str = (
-            "86443f5297b268f0cd8046b09652acb3b6b1d7e4275a743c34e7908bf1d7156d"
+            "3e34b29997bb5174f96d05f94d4e870070171127989e427b332831389aa0b245"
         ),
         docker_execution_profile_version: int = 1,
     ) -> None:

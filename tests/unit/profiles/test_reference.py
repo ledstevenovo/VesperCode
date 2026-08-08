@@ -30,13 +30,13 @@ from vespercode.profiles.reference import (
 
 # The §0.1 identities of the frozen T02.4 manifest (SPEC §1.4.1),
 # independently recomputed by both review stages.
-_MANIFEST_DIGEST = "b02bfc24c91b0013bc466e14b9f133d4d7e89e08c738980c6bbffd18ee8b0048"
+_MANIFEST_DIGEST = "a646877bb9dc0dead10533742bf38ffe5e42d88a2ad33d5647d1c4f590d5450a"
 _POLICY_DIGEST = "b857afca63e50a888ee183bd7ac8c7f739be7b60a94fc4f9c55c0a606db144ab"
 _REQUIREMENTS_LOCK_DIGEST = (
     "67a6b630fb418344bea58ed0b98c1006391bbc947b36356188a1e01fa5fe9a64"
 )
 _DOCKER_IMAGE_DIGEST = (
-    "86443f5297b268f0cd8046b09652acb3b6b1d7e4275a743c34e7908bf1d7156d"
+    "3e34b29997bb5174f96d05f94d4e870070171127989e427b332831389aa0b245"
 )
 
 # The frozen Task 2.G gate identity constants (the §1.4.1 identity set of

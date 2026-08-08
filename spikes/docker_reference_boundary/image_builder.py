@@ -177,9 +177,20 @@ def _normalize_layer_blob(blob: bytes, epoch: int) -> bytes:
                     data = None
                 info = tarfile.TarInfo(member.name)
                 info.size = len(data) if data is not None else 0
-                info.mode = member.mode
-                info.uid = member.uid
-                info.gid = member.gid
+                # Fixed ownership and standardized modes: buildkit derives
+                # COPY-layer uid/gid/mode from the host filesystem, and a
+                # Windows host has no Unix ownership to map, so these
+                # attributes differ between build hosts.  Pinning them
+                # (root:root; 0755 for directories and executable files,
+                # 0644 otherwise) makes the normalized layer bytes
+                # cross-platform deterministic (SPEC_PROCESS 86).
+                info.mode = (
+                    0o755
+                    if member.isdir() or (member.mode & 0o111)
+                    else 0o644
+                )
+                info.uid = 0
+                info.gid = 0
                 info.mtime = epoch
                 info.type = member.type
                 info.linkname = member.linkname
