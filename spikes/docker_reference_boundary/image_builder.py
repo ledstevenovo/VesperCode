@@ -13,6 +13,7 @@ import gzip
 import hashlib
 import io
 import json
+import os
 import re
 import shutil
 import struct
@@ -276,6 +277,21 @@ def _apply_deterministic_normalization(
         for blob in layer_bytes
     )
     normalized_digests = tuple(_sha256_hex(blob) for blob in normalized_layers)
+    if os.environ.get("VESPER_LAYER_DIAG"):
+        # Cross-platform build diagnosis: the raw (uncompressed) tar
+        # digest and the normalized layer digest per layer, so a CI
+        # failure can be pinned to a specific layer and stage.
+        print(
+            "layer_diag "
+            + " ".join(
+                f"{i}:raw={_sha256_hex(_gunzip(blob))[:12]}"
+                f" norm={digest[:12]}"
+                for i, (blob, digest) in enumerate(
+                    zip(layer_bytes, normalized_digests)
+                )
+            ),
+            flush=True,
+        )
     for digest, blob in zip(normalized_digests, normalized_layers):
         (layout / "blobs" / "sha256" / digest).write_bytes(blob)
     manifest = json.loads(manifest_bytes)

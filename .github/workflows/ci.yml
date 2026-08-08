@@ -107,6 +107,8 @@ jobs:
       - name: Install locked Linux development dependencies
         run: python -m pip install --no-deps $(grep -E '^(ast-serialize|charset-normalizer|librt|markupsafe|mypy|pydantic-core|ruff)==' requirements/dev.lock | cut -d' ' -f1) && grep -vE '^(ast-serialize|charset-normalizer|librt|markupsafe|mypy|pydantic-core|ruff|pywin32|pywin32-ctypes)==' requirements/dev.lock > /tmp/dev-lock-linux.txt && python -m pip install --require-hashes --no-deps -r /tmp/dev-lock-linux.txt
       - name: Reproduce the frozen reference image and run the fixture smoke
+        env:
+          VESPER_LAYER_DIAG: "1"
         run: PYTHONPATH=src python scripts/run_reference_image_smoke.py --report tests/.tmp/reference-image-smoke-report.json
       - uses: actions/upload-artifact@v4
         with:
