@@ -24,6 +24,7 @@ per-check bound.
 
 from __future__ import annotations
 
+import os
 import struct
 import time
 import uuid
@@ -445,6 +446,10 @@ class DockerExecutor:
                 error_code="CHECK_ISOLATION_VIOLATION",
             )
         except Exception:
+            if os.environ.get("VESPER_EXECUTOR_DIAG"):
+                import traceback
+
+                traceback.print_exc()
             stopped = False
             if container is not None:
                 try:
