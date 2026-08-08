@@ -2299,3 +2299,14 @@
 - **Verification:** formal 1525 passed（35 失败全清）、gate 219 passed。
 - **Human intervention:** 用户授权修复并继续后续波次。
 - **Lesson learned:** 导入路径双风格（src.vespercode vs vespercode）在 pythonpath=["src"] 下产生同一文件的两个模块身份，pydantic dataclass 身份校验即崩——仓库导入面必须单一化，并行分支合入后必须检查。
+
+## T35.1-COMPLETION-20260808
+
+- **Timestamp (Asia/Taipei):** `2026-08-08T11:10:00+0800` (system-observed; append-only driver record).
+- **Task ID:** T35.1 Dual GitHub Actions and GitLab CI Contracts (WP35; 35.A/35.B/35.C).
+- **Key prompt/context:** Milestone 35's single session task: exact GitHub (unit-test/reference-image-build/demo-image-build on every push/PR, read-only, no publishing secrets) and GitLab (four jobs, exclusive rules, dind topology) verification jobs plus fail-closed protected-tag release rules and frozen passing source-commit evidence.
+- **Implementation:** branch `codex/wp35`, 19 commits `4e15028`→`8fa4526`: CI contracts (workflow/gitlab/verifier/process tests) + SPEC_PROCESS 86 cross-platform deterministic reference image (sorted layer members, pinned epoch mtimes, stored-block gzip, fixed uid/gid/modes with setuid/setgid/sticky preservation, COPY fixture modes pinned 0644, history.created pinned, docker-executor Linux attach-stream readinto/read fallback). Frozen identity `cf0b6c5c…` reproduced byte-identical on Windows formal env and the GitHub Linux runner (layer_diag norms identical; rebuilt == frozen == packaged).
+- **Verification:** full affected regression 1549 passed; marked groups 43; e2e 18; package smoke 14; CI contracts 67 + verifier PASS; ruff/mypy/diff-check per the PLAN evidence record; pre-existing mutex (2) and mypy (6) failures also present on clean main.
+- **Remote CI:** GitHub push run 31236183711 and PR run 31236186335 both success (all three jobs; reference job rebuilds the frozen digest on Linux). GitLab honestly skipped (no project yet) with the dind-topology bindings locally exercised.
+- **Human intervention:** 用户批准 push 到 GitHub 与合入 main（AskUserQuestion 2026-08-08）；磁盘满时授权清理 pip 缓存与 buildx 缓存（本会话早段）。
+- **Lesson learned:** (1) 跨平台确定性必须覆盖所有 buildkit 易变源：层成员顺序（pip 写入序）、gzip 压缩算法（zlib 1.2.13 vs 1.3.1 deflate 输出不同 → stored blocks）、COPY 层 uid/gid/mode（Windows buildkit 模拟 vs Linux 真实）、config history.created（缓存层 vs 新构建的 wall-clock）——逐层 layer_diag（raw/norm digest）+ 成员明细是唯一可靠的定位手段；(2) docker load 对 OCI layout tar 报告 manifest digest 作为镜像 ID（实测），execution/registry 探针必须加载规范化后的 tar；(3) `http.client.SocketIO`（Linux attach 流）无 settimeout/recv_into——collector 需 readinto/read 回退；(4) 验证脚本的 import 前缀双身份（`docker_reference_boundary.X` vs `spikes.docker_reference_boundary.X`）使 pydantic dataclass `__eq__` 恒假——测试与脚本必须统一 `spikes.` 前缀；(5) F4 类"冗余代码"评审建议必须用冻结 digest 实测反驳（删除 -newermt 子句改变了构建产物）。
