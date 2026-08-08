@@ -111,6 +111,7 @@ jobs:
           VESPER_LAYER_DIAG: "1"
         run: PYTHONPATH=src python scripts/run_reference_image_smoke.py --report tests/.tmp/reference-image-smoke-report.json
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: reference-image-smoke-report
           path: tests/.tmp/reference-image-smoke-report.json
