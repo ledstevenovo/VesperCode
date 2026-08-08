@@ -2330,3 +2330,13 @@
 - **Verification:** Target/Matrix/Domain exact card commands; full release suite 14 passed; full offline 1423 passed (docker registry tests failed only from the vhdx deletion removing the local registry:2 image — re-pulled, green; bootstrap pre-existing); ruff/mypy (project gates) clean.
 - **Human intervention:** 用户强调 4.6/4.7 原则（worktree/subagent/TDD/两阶段评审/commit 标注）——T36.2 实现为 driver-inline（如实标注），T36.3 起派发 subagent 实现。
 - **Lesson learned:** (1) pydantic frozen 模型的 `# type: ignore` 必须精确（`[assignment]` 而非 `[misc]`；`StrictStr` 在 py.typed 下静态即 `str`——运行时才抛）；mypy 门禁要按项目 `gates/mypy.ini` 跑（单文件跑会误报 import-not-found）；(2) 纯验证器不做 digest 形态校验是设计决策（fail-closed 由 T36.1 的证据 schema 下游兜底）——评审接受的 informational；(3) T36.2 的 digest 带 `sha256:` 前缀（raw registry 值）vs T36.1 的 bare 64-hex（证据记录）——T37.1 接线时必须按 raw 形式提供 frozen manifest digest；(4) PLAN.md 的 checkbox 批量标记必须精确限定卡范围（本任务曾误标 T36.3/T37 的 100 个步骤，已全部还原）。
+
+## T36.3-COMPLETION-20260808
+
+- **Timestamp (Asia/Taipei):** `2026-08-08T15:30:00+0800` (system-observed; append-only driver record).
+- **Task ID:** T36.3 Static Render Deployment Contract (WP36; 36.C).
+- **Key prompt/context:** Milestone 36's final session task: freeze the exact capability-isolated Demo image/config and static Render contract T37.1 deploys — zero deployment, zero live evidence in WP36.
+- **Implementation:** branch `codex/wp36`, commit `7bc460c` (3 files): `render.yaml` (one web/docker service, PORT=8000, /healthz, SOURCE_COMMIT placeholder slot, no disk/secret/credentials) + test_render_contract.py (card RED byte-identical + RenderContractV1 test-side vocabulary + stdlib `_parse_render_yaml`/`_dump_render_yaml` + load_render_contract + verify_render_deployment_observation + 20-row matrix) + test_public_demo_smoke.py (5 static contract tests). Implemented by a fresh subagent (4.6); driver-inline fixes for the SPEC C1/C2 findings (Path B: PyYAML dropped, hand-rolled stdlib parser/serializer, requirements reverted) and quality Minors.
+- **Verification:** Target/Matrix/Domain 21 passed (formal env); full offline suite 1549 passed 0 failed; ruff/mypy/scan_credentials/diff-check clean; LF line endings.
+- **Human intervention:** 用户批准继续 T36.3（subagent 实现）——无其他。
+- **Lesson learned:** (1) 声明新依赖（PyYAML）会级联破坏冻结的 gate/dependency-closure 自验证链（gate.in 字节断言 + gate.lock 字母序/versions + toolchain/closure 证据 digest）——封闭的小文件用 stdlib 手写解析器（indentation-rigid，任务自有文件 deploy-as-is）比声明依赖更小爆炸半径（SPEC review 推荐 Path B，正确）；(2) pydantic `Literal[()]` 非法（collection 时 AssertionError——空字面量不允许），空元组约束必须用 model_validator；(3) 测试矩阵的 drift 构造与解析器序列化耦合（嵌套 list 被字符串化——loader 的 list 类型分支触发而非非空分支）——断言 match 必须与实际触发的分支一致；(4) 手写解析器/序列化器需对称（round-trip 由矩阵 baseline 钉住）；(5) subagent 实现 + driver 修复的混合模式（4.6/4.7）在 commit 标注中如实记录。
