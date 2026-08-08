@@ -177,10 +177,19 @@ class RawExecutionResultV1(BaseModel):
 
 
 class _ReadableAttachSocketV1(Protocol):
-    """The minimal raw socket surface the bounded collector needs."""
+    """The minimal raw socket surface the bounded collector needs.
+
+    Linux attach streams surface as an ``http.client`` ``SocketIO`` with
+    ``readinto`` instead of ``recv_into``; the collector prefers
+    ``recv_into`` and falls back to ``readinto`` and then ``read``, so
+    the protocol declares all three (each implementation supplies only
+    the ones it has).
+    """
 
     def settimeout(self, timeout: float) -> None: ...
     def recv_into(self, buffer: bytearray) -> int: ...
+    def readinto(self, buffer: bytearray) -> int: ...
+    def read(self, size: int = -1) -> bytes: ...
 
 
 class _DockerContainerHandleV1(Protocol):
