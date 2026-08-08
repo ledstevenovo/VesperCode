@@ -47,7 +47,7 @@ _D = "d" * 64
 _E = "e" * 64
 _F = "f" * 64
 
-_IMAGE_DIGEST = "71e931b58316637d1cbe647a57fc4c3588837f9451f7fbad391c34b3b1b43905"
+_IMAGE_DIGEST = "507b23f5972b6d8715f1a92d3b0527a910955096bf153faff00a19b306cc9178"
 
 _TARGET_ADD = "tests/test_calculator.py::test_add_returns_sum"
 _TARGET_MULTIPLY = "tests/test_calculator.py::test_multiply_returns_product"

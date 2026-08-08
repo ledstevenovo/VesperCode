@@ -323,6 +323,17 @@ def _apply_deterministic_normalization(
     config["rootfs"]["diff_ids"] = [
         f"sha256:{_sha256_hex(_gunzip(blob))}" for blob in normalized_layers
     ]
+    # Pin the layer-history timestamps to the frozen epoch: buildkit
+    # stamps each history entry with its build wall-clock, which differs
+    # between a cached local build and a fresh CI build even though the
+    # layer bytes are identical (SOURCE_DATE_EPOCH covers ``created`` and
+    # file mtimes but not the history entries).
+    epoch_created = config.get("created")
+    if epoch_created:
+        config["created"] = epoch_created
+        for entry in config.get("history", []):
+            if "created" in entry:
+                entry["created"] = epoch_created
     config_bytes = _canonical_json(config)
     config_digest = _sha256_hex(config_bytes)
     (layout / "blobs" / "sha256" / config_digest).write_bytes(config_bytes)
