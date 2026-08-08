@@ -294,7 +294,22 @@ class _BoundedStreamCollector:
                 pass
             buffer = bytearray(65536)
             try:
-                count = self._socket.recv_into(buffer)
+                if hasattr(self._socket, "recv_into"):
+                    count = self._socket.recv_into(buffer)
+                elif hasattr(self._socket, "readinto"):
+                    # The Linux attach stream is an ``http.client``
+                    # ``SocketIO`` (HTTPResponse) with ``readinto`` but no
+                    # ``recv_into``; the caller handles the pending
+                    # buffer the same way as ``recv_into``.
+                    count = self._socket.readinto(buffer)
+                else:
+                    # A plain file-like stream (``read`` only): fold the
+                    # bytes into the same pending buffer and fall through
+                    # to the shared frame parsing below.
+                    data = self._socket.read(65536)
+                    count = len(data)
+                    if count:
+                        pending.extend(data)
             except TimeoutError:
                 # The read timeout fired; the deadline check above decides.
                 continue
