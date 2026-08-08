@@ -621,7 +621,7 @@ def test_reference_gate_go_report_with_real_evidence(
         manifest.docker_image_digest
         == report.build.local_oci_manifest_digest
         == report.registry.registry_repo_digest
-        == "61aa14877eda922fd7fef1c24f268b0bfb9dd53163bd0244d00b0691f475677a"
+        == "afb8f6c43eeeb704f736e0c22eec4a45aa4852d8a9325804731abb2cec909ef0"
     )
     assert (
         manifest.requirements_lock_digest

@@ -144,7 +144,12 @@ def _normalize_layer_blob(blob: bytes, epoch: int) -> bytes:
     buffer = io.BytesIO()
     with tarfile.open(fileobj=buffer, mode="w", format=tarfile.PAX_FORMAT) as out:
         with tarfile.open(fileobj=io.BytesIO(raw), mode="r") as source:
-            for member in source:
+            # Sort members by name: buildkit preserves the filesystem
+            # write order (pip writes wheel files before dist-info, and
+            # inode order differs across hosts), so the raw layer order
+            # is platform-dependent.  Sorting makes the normalized layer
+            # bytes deterministic across build hosts (SPEC_PROCESS 86).
+            for member in sorted(source, key=lambda member: member.name):
                 if member.isfile():
                     extracted = source.extractfile(member)
                     if extracted is None:

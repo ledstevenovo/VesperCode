@@ -40,8 +40,8 @@ from vespercode.profiles.reference import (
 # and the bound docker image digest of
 # reference/manifest/reference-profile-v1.json, independently recomputed
 # by the T06.2 review stages.
-_MANIFEST_DIGEST = "2650fc34ac3a2fa0add4d4f0572c6b8b416f322a9f864d8c34bcd193858844b5"
-_IMAGE_DIGEST = "61aa14877eda922fd7fef1c24f268b0bfb9dd53163bd0244d00b0691f475677a"
+_MANIFEST_DIGEST = "76326c9fdc62b1182db9c28dc855bb6e711f594d7223647ca8e2899c948d14e0"
+_IMAGE_DIGEST = "afb8f6c43eeeb704f736e0c22eec4a45aa4852d8a9325804731abb2cec909ef0"
 _PROFILE_VERSION = 1
 
 # The exact profile v1 environment whitelist (SPEC §1.4.5), shown in a
