@@ -122,6 +122,57 @@ def test_completion_anchor_must_record_commit_evidence(
     assert "COMMIT_RECORD_MISSING:T01.1" in result.error_codes
 
 
+def test_recorded_pr_url_must_be_https(repository_copy: Path) -> None:
+    log = repository_copy / "AGENT_LOG.md"
+    text = log.read_text(encoding="utf-8")
+    # Insert a recorded PR URL that is not https so the recorded-PR field
+    # fails closed.
+    text = text.replace(
+        "## T35.1-COMPLETION-20260808\n",
+        "## T35.1-COMPLETION-20260808\n- **PR URL:** http://example.invalid/pull/1\n",
+        1,
+    )
+    log.write_text(text, encoding="utf-8")
+    result = verify_process_evidence(repository_copy)
+    assert "PR_RECORD_INVALID:T35.1" in result.error_codes
+
+
+def test_recorded_pending_pr_narrative_is_accepted(
+    repository_copy: Path,
+) -> None:
+    # T01.1/T01.2 honestly record "pending — human decision …" before a PR
+    # exists; a narrative PR record must not be misread as a URL.
+    log = repository_copy / "AGENT_LOG.md"
+    text = log.read_text(encoding="utf-8")
+    text = text.replace(
+        "## T35.1-COMPLETION-20260808\n",
+        "## T35.1-COMPLETION-20260808\n"
+        "- **PR URL:** pending — deferred to WP closure.\n",
+        1,
+    )
+    log.write_text(text, encoding="utf-8")
+    result = verify_process_evidence(repository_copy)
+    assert not any(code.startswith("PR_RECORD_INVALID:") for code in result.error_codes)
+
+
+def test_recorded_human_intervention_must_not_be_empty(
+    repository_copy: Path,
+) -> None:
+    log = repository_copy / "AGENT_LOG.md"
+    text = log.read_text(encoding="utf-8")
+    # Blank out one recorded human-intervention value.
+    text = text.replace(
+        "- **Human intervention:** 用户批准继续 T36.3（subagent 实现）——无其他。",
+        "- **Human intervention:** ",
+        1,
+    )
+    log.write_text(text, encoding="utf-8")
+    result = verify_process_evidence(repository_copy)
+    assert any(
+        code.startswith("HUMAN_INTERVENTION_INVALID:") for code in result.error_codes
+    )
+
+
 def test_expanded_legacy_steps_from_committed_plan() -> None:
     plan = Path(__file__).resolve().parents[3] / "PLAN.md"
     tokens = _expanded_legacy_steps(plan.read_text(encoding="utf-8"))

@@ -4,7 +4,11 @@ Fail-closed checker for the append-preserving process records: the
 SPEC_PROCESS cold-start and document-check records, the PLAN task-card and
 unique legacy-step counts, the AGENT_LOG chronology (every completion entry
 carries a valid timestamp within one day of its header date), and per-task
-review and commit records inside each completion anchor.  The verifier never
+review, commit, PR-URL, and human-intervention records inside each completion
+anchor (recorded PR values that are URLs must be https — narrative records
+such as "pending …" are honest no-PR records, not URLs — and
+human-intervention values must be non-empty when recorded; absent fields in
+early anchors are not inferred).  The verifier never
 mutates any process file and performs no external I/O beyond reading the
 three committed records under the supplied root.
 """
@@ -41,6 +45,14 @@ _REVIEW_MARKER_RE = re.compile(
     re.IGNORECASE,
 )
 _COMMIT_MARKER_RE = re.compile(r"commit\b|提交")
+# ``**PR URL:**`` style labels close their bold markers after the colon;
+# ``[^\S\r\n]*`` swallows horizontal whitespace only, so the captured value
+# stays on the record's own line: a recorded-but-empty field is detected
+# instead of leaking into the next line's text.
+_PR_URL_RE = re.compile(r"\*\*PR URL[:：]\*\*[^\S\r\n]*([^\r\n]*)")
+_HUMAN_INTERVENTION_RE = re.compile(
+    r"\*\*Human intervention[:：]\*\*[^\S\r\n]*([^\r\n]*)"
+)
 
 
 class ProcessEvidenceResultV1(BaseModel):
@@ -80,6 +92,17 @@ def _entry_timestamp_date(body: str) -> str | None:
     if match is None:
         return None
     return match.group(1).replace("-", "")
+
+
+def _days_between(entry_date: str, header_date: str) -> int:
+    """Calendar-day difference between YYYYMMDD values (month-safe)."""
+    from datetime import date
+
+    entry = date.fromisoformat(f"{entry_date[:4]}-{entry_date[4:6]}-{entry_date[6:]}")
+    header = date.fromisoformat(
+        f"{header_date[:4]}-{header_date[4:6]}-{header_date[6:]}"
+    )
+    return abs((entry - header).days)
 
 
 def verify_process_evidence(root: Path | str) -> ProcessEvidenceResultV1:
@@ -132,7 +155,7 @@ def verify_process_evidence(root: Path | str) -> ProcessEvidenceResultV1:
     for match in _ANCHOR_RE.finditer(log):
         header_date = match.group(2)
         entry_date = _entry_timestamp_date(match.group(3))
-        if entry_date is None or abs(int(entry_date) - int(header_date)) > 1:
+        if entry_date is None or _days_between(entry_date, header_date) > 1:
             chronology_invalid = True
     # Every Timestamp line must carry a parseable value, not only anchor
     # ones (date-level ``2026-08-02`` values are legal, arbitrary text is not).
@@ -152,6 +175,21 @@ def verify_process_evidence(root: Path | str) -> ProcessEvidenceResultV1:
         if _COMMIT_MARKER_RE.search(body) is None:
             error_codes.append(f"COMMIT_RECORD_MISSING:{task_id}")
             details.append(f"{task_id} completion anchor carries no commit evidence")
+        pr_match = _PR_URL_RE.search(body)
+        if pr_match is not None:
+            pr_value = pr_match.group(1).strip()
+            # A recorded PR value that is a URL must be https; narrative
+            # records such as "pending — human decision …" document that
+            # no PR exists yet and are not treated as URLs.
+            if re.match(r"^https?://", pr_value, re.IGNORECASE) and not (
+                pr_value.lower().startswith("https://")
+            ):
+                error_codes.append(f"PR_RECORD_INVALID:{task_id}")
+                details.append(f"{task_id} PR URL is not an https URL")
+        human_match = _HUMAN_INTERVENTION_RE.search(body)
+        if human_match is not None and not human_match.group(1).strip():
+            error_codes.append(f"HUMAN_INTERVENTION_INVALID:{task_id}")
+            details.append(f"{task_id} human-intervention record is empty")
 
     return ProcessEvidenceResultV1(
         error_codes=tuple(error_codes), details=tuple(details)

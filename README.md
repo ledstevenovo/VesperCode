@@ -6,7 +6,7 @@ VesperCode 是一个面向 Windows 本地代码仓库的 Coding Agent Harness �
 
 ## 当前状态
 
-- 正式实现已获授权并完成：`FORMAL_READY`（2026-08-03）之后，`PLAN.md` 的 68 张任务卡、38 个里程碑、141 个唯一 legacy steps 全部按计划执行完毕（任务卡状态与计数由 `scripts/verify_process_evidence.py` 复核）。
+- 实现已交付并通过门禁：`FORMAL_READY`（2026-08-03）之后的实现工作已交付；`PLAN.md` 的 68 张任务卡、38 个里程碑、141 个唯一 legacy steps 计数契约与过程记录（冷启动、文档检查、AGENT_LOG 完成锚点）由 `scripts/verify_process_evidence.py` 逐项复核通过；T37.1 的 README 契约（37.A）与过程证据（37.B）验证器已实现并通过测试。
 - 包、镜像与 CI 契约已验证：wheel 打包与 pipx 安装（T33.1/T33.2）、跨平台确定性参考镜像（T35.1）、CI 契约（T35.1）与交付证据 schema（T36.1/T36.2/T36.3）均已落地。
 - **尚未执行**：正式 release（含 GHCR 镜像发布）、Render 部署与公网 WebUI 上线属于 T37 最终交付流程，本文档撰写时均未执行，以下相关章节只给出契约与验证指令，不声称已发布。
 
@@ -21,7 +21,7 @@ VesperCode 是一个面向 Windows 本地代码仓库的 Coding Agent Harness �
 
 1. `docker pull ghcr.io/<owner>/vespercode-reference:<tag>`（tag 见 release 说明）。
 2. 计算拉取镜像的 manifest 与 profile 摘要，与上方冻结身份逐字节比对；任一不一致即判定镜像无效，停止使用。
-3. 用 `scripts/verify_release_publication_result.py` 复核发布结果（`--live` 模式要求终态成功与 24 小时新鲜度），三方摘要（release 记录、GHCR RepoDigest、本地拉取）必须相等。
+3. 用 T36.2 的 `verify_release_publication_result`（`src/vespercode/delivery/publication.py`，输入为冻结的 `FrozenReleaseInputsV1` 与观测的 `ObservedReleaseResultV1`，按 36.B GREEN-2 确定性顺序比对）复核发布结果，三方摘要（release 记录、GHCR RepoDigest、本地拉取）必须相等。
 
 发布前的镜像验证入口是 `scripts/verify_release_evidence.py --live <evidence_root>`；`delivery/evidence/` 下的三条 JSON 记录只在终端事实确认后写入。
 
@@ -69,8 +69,19 @@ render.yaml            # Render 部署契约（T36.3，已提交未部署）
 ## Distribution
 
 - 分发形态：wheel（`pyproject.toml` 冻结 console 入口 `vespercode = vespercode.cli:main`，T33.1 验证 164 个 wheel 成员双向一致）+ 参考镜像（上文冻结身份）。
+- 正式 release 后，版本化 wheel 作为 GitHub Release 附件提供，同时发布 SHA-256 摘要；下载产物按摘要校验后，从本地构建产物安装的规范命令为 `pipx install dist/vespercode-<version>-py3-none-any.whl`（只有包实际发布到配置的 Python 包索引后，才可使用 `pipx install vespercode`）。
+- 正式 reference 镜像发布到与仓库同一所有者下的 `ghcr.io/ledstevenovo/vespercode-reference`，规范引用为 `ghcr.io/ledstevenovo/vespercode-reference@sha256:cf0b6c5ccac588fccd07c3b9f050bff4daf550ac6e518fd06efb6e988ab1d823`；tag 不构成运行身份，运行与证据只接受 digest。
+- 镜像验证链（按序执行，任一失败即本地正式运行失败关闭）：
+  1. `docker pull ghcr.io/ledstevenovo/vespercode-reference@sha256:cf0b6c5ccac588fccd07c3b9f050bff4daf550ac6e518fd06efb6e988ab1d823`；
+  2. `docker image inspect <image> --format '{{json .RepoDigests}}'` 必须恰好等于该 digest（本地 RepoDigest 核验）；
+  3. 镜像内 profile/version smoke：`scripts/run_reference_image_smoke.py`（T34.2；重建与 loopback 拉取的 manifest digest 均与冻结 digest 逐字节比对）；
+  4. 确认 wheel 内置 `reference-profile-v1.json` 的 `docker_image_digest` 与所拉取 digest 完全一致：
+     `python -c "import glob,json,zipfile; m=json.load(zipfile.ZipFile(glob.glob('dist/vespercode-*.whl')[0]).read('vespercode/profiles/builtin/reference-profile-v1.json')); print(m['docker_image_digest'])"`
 - 发布流程契约由 T36.2 的 `verify_release_publication_result` 定义（7 个封闭错误码、确定性优先级 source→tag→wheel→manifest-vs-GHCR→pulled→install→smoke）；**release 未执行**，发布时间与 tag 待 T37 流程在冻结 `source_commit` 后确定。
 - 发布必须使用只读权限的 CI（无发布秘密）与 fail-closed 的受保护 tag 规则（T35.1）。
+- 本地运行前提：Windows 11 x64、Python 3.12、Git、Docker Desktop Linux 容器模式，以及按不可变 digest 拉取并核验的 `python-src-py312-v1` reference 执行镜像（`src/vespercode/profiles/builtin/reference-profile-v1.json`）。
+- 凭据配置：本地模式凭据经系统凭据存储（keyring）读取，WebUI 只绑定 `127.0.0.1`；LLM profile 为 `openai-single-turn-v1`（精确模型 `gpt-4.1-mini`，`src/vespercode/profiles/builtin/openai-single-turn-v1.json`）；外发请求按所选 profile 声明的 `NO_CONTENT_REDACTION_V1` 契约披露——所选项目正文在规范裁剪后原样发送、不做正文扫描，外发前经 `src/vespercode/web/disclosure_workflow.py` 向用户披露。
+- 恢复：`vespercode recover --workspace <path>` 只预览恢复；增加 `--apply` 后才执行；WebUI 提供等价的预览与显式确认入口（SPEC §8.2）。
 
 ## Limitations
 
@@ -88,5 +99,6 @@ render.yaml            # Render 部署契约（T36.3，已提交未部署）
 
 ## Web UI
 
-- **本地 WebUI**：本地实际使用模式下由 `vespercode` 启动，只绑定 `127.0.0.1`，健康检查端点 `/healthz`。
+- **本地 WebUI**：本地实际使用模式下由 `vespercode serve` 启动，只绑定 `127.0.0.1`，不对外暴露，也不提供公网健康检查端点。
+- **公网演示模式**：demo 应用（`src/vespercode/demo/app.py`）暴露 `GET /healthz` 健康检查（SPEC §8.3），部署后由平台探活；演示模式只使用内置示例仓库与 Mock LLM。
 - **公网 WebUI**：Render 部署契约（`render.yaml`：PORT=8000、`SOURCE_COMMIT` 槽位、无磁盘/秘密/凭据）已提交，但部署**未执行**，当前没有可访问的公网 URL；T37 流程部署成功后会在此处记录真实 URL。
