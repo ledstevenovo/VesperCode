@@ -10665,7 +10665,7 @@ git commit -m "Define T36.3 Static Render Deployment Contract"
 
 ### Task T37.1: Final delivery, README, and process records
 
-**Status:** Not started
+**Status:** In progress
 **Work package:** WP37
 **Legacy steps:** 37.A, 37.B
 **Goal:** Freeze the final source commit after WP36 and WP38 merge, verify the final CI/release/deployment evidence, publish the required delivery artifacts, write an evidence-backed README, and append truthful process records for the document check, disposable cold-start, formal tasks, reviews, commits, PRs, failures, and lessons.
@@ -10731,7 +10731,7 @@ def test_process_evidence_requires_cold_start_record(repository_copy: Path) -> N
 - [ ] Finish WP37 only after all evidence is truthful and the student-owned reflection remains student-authored.
 
 **Done:** README, process records, final delivery evidence, CI/release/deployment alignment, and applicable reviews pass; no external result or student reflection content is fabricated.
-**Completion evidence:** Not started; no implementation or evidence commit exists.
+**Completion evidence:** In progress — implementation committed on branch `codex/wp37` (worktree `.worktrees/wp37`): `9575f45` (37.A/37.B verifiers + README rewrite + 23 tests), `e016665` (SPEC-review closure), `493384e` (fresh-subagent quality-review closure). Target and Domain pass (`23 passed`); `ruff check`/`format` clean, `mypy` 5 files Success, `gate_scan.py` exit 0, `git diff --check` clean; both verifiers ACCEPTED on the committed tree. GREEN-3 (freeze source_commit, terminal CI/release/GHCR/Render evidence, three delivery evidence records) and the reflection gate remain pending; the card is NOT marked Complete. Details in `AGENT_LOG.md` (`T37.1-IMPLEMENTATION-20260809`).
 
 
 ### Task T37.2: Delivery and reflection readiness

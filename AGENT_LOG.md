@@ -2396,3 +2396,54 @@
   完成证据的删除与恢复都必须核对 git 历史中的真实提交；对「声称已勾选」的记录要核对
   commit diff 的时间性；从历史完整版本恢复比手工重写更可靠——但恢复后必须逐卡验证
   证据行唯一性与真实性（本次发现 T26.1/T26.2 已有真实证据，避免误回填覆盖）。
+
+## T37.1-IMPLEMENTATION-20260809
+
+- **Timestamp (Asia/Taipei):** `2026-08-09T16:50:00+0800` (system-observed; append-only driver record).
+- **Task ID:** T37.1（driver 执行 legacy 37.A/37.B——实现与两轮评审记录，**非完成记录**；
+  GREEN-3 最终交付、release/部署证据与反思仍未执行）。
+- **Key prompt/context:** 用户登机前授权五阶段自主执行（方案甲 A→E，登机期间不暂停等待）；
+  本条目记录 Phase C：T37.1 实现、SPEC 评审与 fresh-subagent 质量评审。运行环境为 Linux
+  （无 Windows 对象、pywin32 不可装），本地只运行 T37 自有测试文件；不代写 REFLECTION、
+  不发布任何外部产物、不把未记录的证据写成既成事实。
+- **Implementation (legacy 37.A/37.B):**
+  - `scripts/verify_readme_contract.py`（37.A）：9 个必需 README 章节标题映射到各自封闭
+    错误码；缺文件 fail-closed（`FileNotFoundError`）；CLI exit 0/1。
+  - `scripts/verify_process_evidence.py`（37.B）：68 任务卡 / 141 唯一 legacy steps 计数
+    契约；冷启动与文档检查记录（冷启动标题必须正向「通过」，两记录段落体须含正向完成
+    标记）；AGENT_LOG 完成锚点时间线（合法时间戳且与标题日期差 ≤1 天，月份安全）；
+    每锚点 review 与 commit 记录；PR 记录（记录值若是 URL 必须 https；「pending — human
+    decision …」是诚实无 PR 记录，不视为 URL）；Human intervention 记录非空；早期锚点
+    缺失字段不推断；只读、无外部 I/O。
+  - 测试：两条 RED 与卡片逐字一致；Domain 共 23 个（含冷启动失败态拒绝、文档检查正向
+    结果要求、PR 叙述记录接受、空 Human intervention 拒绝等）；conftest 提供可修改的
+    repository_copy 副本夹具，真实仓库零变更。
+  - README.md 重写：基于已提交实现与验证事实；release/deploy 未执行如实延期；完整覆盖
+    SPEC §8.2（`docker pull ghcr.io/ledstevenovo/vespercode-reference@sha256:<digest>`、
+    RepoDigest 核验、镜像内 profile smoke、wheel 内嵌 digest 确认、SHA-256 校验命令、
+    凭据配置、`NO_CONTENT_REDACTION_V1` 披露、恢复指令、精确模型 gpt-4.1-mini）与 §8.4
+    （两端项目 URL、镜像方向、三者一致同步规则、参考/Demo 镜像可复制本地 build/run 命令）。
+  - 提交：`9575f45`（实现 + README 重写）、`e016665`（SPEC 评审闭包）、`493384e`
+    （质量评审闭包）。
+- **Reviews:** SPEC 合规评审关闭 I1–I4、M3、M4（README 过度声称/不存在脚本引用/§8.2
+  缺失/PR 与 human 记录检查/月份边界/healthz 归属）；M1/M2/M5/M6 记录为无需修改。
+  fresh subagent 质量评审（只读、对抗式）初判 CHANGES-REQUIRED，全部 SHOULD-FIX 关闭：
+  (1) README 补 §8.2 校验命令与 §8.4 build/run 命令、项目 URL/镜像方向/同步方式；
+  (2) 冷启动标题拒绝「未通过」、两记录段落体正向标记；(3) 修复 `[^未]*` 跨行误匹配
+  （冷启动正则曾跨行误配 §26 文档检查段）与 fixture `remove_document_check_body` 贪婪
+  `.*` 吞全文件。NIT 记录：整锚点删除检测（T31.1/T33.1/T34.2 证据在 SPEC_PROCESS
+  §80-85 而非锚点）交由 T37.2 delivery gate 补按卡完成证据溯源；review/commit 标记保持
+  词级（4 个锚点无结构化标记，强化会误伤真实记录）；「记录即验证」语义保持；
+  README 契约按标题契约（设计如此）；里程碑计数不在 verifier 契约内（README 措辞已修正）。
+- **Verification:** 23 个测试全部通过（含两条逐字 RED）；`ruff check`/`format` 干净；
+  `mypy` 5 个文件 Success；`scripts/gate_scan.py` exit 0；`git diff --check` 干净；
+  两个 verifier 对已提交树均返回 ACCEPTED。
+- **Known limitations / T37.2 handoff:** 整锚点删除在本 verifier 中不可检测（真实仓库
+  有 3 张 Complete 卡的证据不在锚点中），T37.2 delivery gate 需补按卡完成证据溯源
+  （PLAN Status=Complete 卡必须在 AGENT_LOG 有锚点或在 SPEC_PROCESS §80-85 有记录）；
+  本环境为 Linux，未收集任何 Windows 专属证据。
+- **Human intervention:** 无（用户登机，自主执行获授权；PLAN 状态回填仅依据已提交证据）。
+- **Lesson learned:** 验证正则必须先对真实文件做「匹配对象=预期对象」断言再固化——本次
+  `[^未]*` 与贪婪 `.*` 都因跨行吞并而「假通过」；对抗式 fresh-subagent 评审能发现
+  fail-closed 语义缺口（失败态记录、正文剥离、锚点删除）与 README 过度声称，值得保留；
+  强化检查必须在真实仓库仍 ACCEPTED 与 fail-closed 之间同时成立。
