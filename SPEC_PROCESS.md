@@ -2660,3 +2660,29 @@ git diff --check 干净、无容器残留。
 - **验证**：full offline suite（formal env）1549 passed 0 failed；release suite（-m deployment_smoke）21 passed；GitHub Actions 3 job 全绿（push 与 PR #3）；ruff/mypy（项目门禁）/scan_credentials/diff-check 干净。
 - **环境**：磁盘事件（vhdx 78GB）期间 Docker WSL 数据盘删除并迁移到 D:\DockerDesktopWSL（预防措施见 AGENT_LOG DISK-INCIDENT-20260808 与 REFLECTION.md）；wp36 新建 .venv-formal（dev.lock 哈希安装——yaml 未声明，Path B 后无依赖）。
 - **WP38 收尾（SPEC_PROCESS 92）**：WP38（T38.1 Credential/Memory/Audit Web Workflows、T38.2 Recovery Operations and Production Route Composition、T38.3 Independent Cross-workflow Browser Acceptance）三个任务此前已实现并合入 main（d3b773f/b3ac1d9 等；Status Done、Completion evidence 已写——T38.3 的 keyboard-only 验收经 build_local_application 生产组合 + CSRF 契约）。收尾补齐 PLAN.md 三卡的 83 个 step checkbox（+T26-T35 已完成卡的 19 个残留）+ 本记录。T37 卡无 Step checkbox（最终交付特殊卡）。WP36 与 WP38 均已合入——T37.1（最终交付 release/部署/README/全过程记录）的前置条件满足。
+
+## 93. 计划级更正：§92 关于 PLAN.md T26-T35 残留勾选的时间性记录更正（2026-08-09）
+
+§92（SPEC_PROCESS 92，commit `816f6da`，2026-08-08 17:07）声称在该提交中「补齐
+PLAN.md 三卡的 83 个 step checkbox（+T26-T35 已完成卡的 19 个残留）」。本次核对
+`816f6da` 相对其父提交的实际 diff：该提交**未触及任何 T26.1–T35.1 卡行**（0 处
+T26-T35 行变更），因此「19 个残留已勾选」的记录与提交内容不一致，时间上不可能。
+本记录为 append-only 更正：§92 原文保持逐字不变，其勾选主张以本记录为准不成立。
+
+更正所依据的仓库事实（均可在 git 历史中复核）：
+- `816f6da` diff：仅 SPEC_PROCESS.md 追加 §92 文本，PLAN.md 无任何行变更。
+- PLAN.md 的 T26.1–T35.1 卡曾在 `ea85ee9`（2026-08-08 11:03）中被整块删除（2360 行，
+  含 T25.3 完成证据与全部 T26.1–T35.1 卡），`816f6da` 未恢复、未勾选任何此类行。
+- `91dcd09`（2026-08-06）的错误 find-replace 曾把约 12 张卡的
+  「Not yet executed.」替换为 T25.3 完成证据（`6d48f0b`），是后续污染的根源。
+
+恢复动作（2026-08-09，commit 见 git log）：从最后一次完整 PLAN.md（commit
+`8fa4526` 的完整版）按模式提取 T25.3 证据行与 T26.1–T35.1 全部卡并恢复入当前
+PLAN.md；对仅有误放证据行、无真实证据的 T31.1/T32.1/T33.1/T34.2/T35.1 卡按
+AGENT_LOG.md 的 COMPLETION anchors 与 SPEC_PROCESS §80-85 回填真实证据
+（Status 置 Complete 仅依据既有记录，未新造任何证据）；T26.1/T26.2 删除重复注入
+的 T25.3 证据行、保留卡内既有真实证据；T37.1/T37.2 卡证据复位为「Not started;
+no implementation or evidence commit exists.」（T37 未实现）。恢复后 PLAN.md
+门槛复核：68 张任务卡、141 个唯一 legacy steps（按展开 **Legacy steps:** 字段
+去重）、`6d48f0b` 全文件仅 1 处（T25.3 卡）、T37.1 标题唯一、里程碑注册表 38 行
+完整、`git diff --check` 干净。

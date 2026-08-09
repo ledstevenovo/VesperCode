@@ -2366,3 +2366,33 @@
 - **Verification:** T01-T25/T36/T38 全部卡 checked>0 且 unchecked=0（脚本审计）；T37 无 Step checkbox（特殊卡）；main 已含 WP38 全部实现提交。
 - **Human intervention:** 用户"开始收尾"。
 - **Lesson learned:** WP 收尾的三要素（Status/checkbox/evidence）必须一次性完成——此前会话只改 Status 留下 83 步未勾；批量勾选必须按卡范围精确（本收尾勾了 102 步含 T26-T35 的已完成残留，审计确认均为已完成卡，无未开始卡受影响——T37 无 checkbox 天然隔离）。
+
+## PLAN-RESTORE-20260809
+
+- **Timestamp (Asia/Taipei):** `2026-08-09T00:30:00+0800` (system-observed; append-only driver record).
+- **Task ID:** PLAN.md 损坏修复（driver 执行——恢复既有记录，不新造证据）。
+- **Key prompt/context:** 发现 PLAN.md 在 codex/wp37 分支历史中遭受两处损坏：(1) `91dcd09`
+  （2026-08-06「Record T25.3 completion evidence」）执行错误 find-replace，把约 12 张卡的
+  「Not yet executed.」替换为 T25.3 完成证据（`6d48f0b`），污染扩散到 T26.1/T26.2/T31.1/
+  T32.1/T33.1/T34.2/T35.1 卡；(2) `ea85ee9`（2026-08-08 11:03）删除 2360 行（T25.3 证据 +
+  全部 T26.1–T35.1 卡），并把 T35.1 证据误放在 T25.3 卡下；(3) `816f6da`（17:07，
+  SPEC_PROCESS 92）声称勾选「T26-T35 已完成卡的 19 个残留」，但其 diff 实际未触及任何
+  T26-T35 行，时间上不可能（详见 SPEC_PROCESS 93 更正）。T37.1 标题在损坏过程中重复，
+  T37.1/T37.2 卡带错误 `6d48f0b` 证据。
+- **Recovery (2026-08-09):** 从最后一次完整 PLAN.md（`8fa4526` 版本）按模式提取
+  T25.3 证据行与 T26.1–T35.1 全部卡，恢复入当前 PLAN.md；仅含误放证据行、无真实证据的
+  T31.1/T32.1/T33.1/T34.2/T35.1 卡按本日志 COMPLETION anchors（T26.1-COMPLETION-20260806
+  L1945-1960 / T26.2-COMPLETION-20260806 L1961-1986 / T32.1-COMPLETION-20260807
+  L2015-2050）与 SPEC_PROCESS §80-85 回填真实证据（Status 置 Complete 仅依据既有记录）；
+  T26.1/T26.2 卡内已有真实证据（f729726/e6a11e5 摘要），仅删除重复注入的 T25.3 证据行；
+  删除第一个重复 T37.1 标题；T37.1/T37.2 证据复位为「Not started; no implementation or
+  evidence commit exists.」（T37 未实现，保持 Not started）。
+- **Verification:** 门槛复核全部通过——68 张任务卡（`grep -c '^### Task T'`）；141 个唯一
+  legacy steps（按展开 **Legacy steps:** 字段去重）；`6d48f0b` 全文件仅 1 处（T25.3 卡）；
+  T37.1 标题唯一；里程碑注册表 38 行完整；`git diff --check` 干净；恢复内容与 parent
+  (`8fa4526`) 逐行 diff 复核一致。
+- **Human intervention:** 无（用户登机中，自主执行获授权）。
+- **Lesson learned:** 大文件的 find-replace 必须按卡范围精确断言（先验证目标行数再替换）；
+  完成证据的删除与恢复都必须核对 git 历史中的真实提交；对「声称已勾选」的记录要核对
+  commit diff 的时间性；从历史完整版本恢复比手工重写更可靠——但恢复后必须逐卡验证
+  证据行唯一性与真实性（本次发现 T26.1/T26.2 已有真实证据，避免误回填覆盖）。
