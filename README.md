@@ -6,7 +6,7 @@ VesperCode 是一个面向 Windows 本地代码仓库的 Coding Agent Harness �
 
 ## 当前状态
 
-- 实现已交付并通过门禁：`FORMAL_READY`（2026-08-03）之后的实现工作已交付；`PLAN.md` 的 68 张任务卡、38 个里程碑、141 个唯一 legacy steps 计数契约与过程记录（冷启动、文档检查、AGENT_LOG 完成锚点）由 `scripts/verify_process_evidence.py` 逐项复核通过；T37.1 的 README 契约（37.A）与过程证据（37.B）验证器已实现并通过测试。
+- 实现已交付并通过门禁：`FORMAL_READY`（2026-08-03）之后的实现工作已交付；`PLAN.md` 的 68 张任务卡与 141 个唯一 legacy steps 计数契约，以及过程记录（冷启动、文档检查、AGENT_LOG 完成锚点）由 `scripts/verify_process_evidence.py` 逐项复核通过；T37.1 的 README 契约（37.A）与过程证据（37.B）验证器已实现并通过测试。
 - 包、镜像与 CI 契约已验证：wheel 打包与 pipx 安装（T33.1/T33.2）、跨平台确定性参考镜像（T35.1）、CI 契约（T35.1）与交付证据 schema（T36.1/T36.2/T36.3）均已落地。
 - **尚未执行**：正式 release（含 GHCR 镜像发布）、Render 部署与公网 WebUI 上线属于 T37 最终交付流程，本文档撰写时均未执行，以下相关章节只给出契约与验证指令，不声称已发布。
 
@@ -23,7 +23,7 @@ VesperCode 是一个面向 Windows 本地代码仓库的 Coding Agent Harness �
 2. 计算拉取镜像的 manifest 与 profile 摘要，与上方冻结身份逐字节比对；任一不一致即判定镜像无效，停止使用。
 3. 用 T36.2 的 `verify_release_publication_result`（`src/vespercode/delivery/publication.py`，输入为冻结的 `FrozenReleaseInputsV1` 与观测的 `ObservedReleaseResultV1`，按 36.B GREEN-2 确定性顺序比对）复核发布结果，三方摘要（release 记录、GHCR RepoDigest、本地拉取）必须相等。
 
-发布前的镜像验证入口是 `scripts/verify_release_evidence.py --live <evidence_root>`；`delivery/evidence/` 下的三条 JSON 记录只在终端事实确认后写入。
+发布结果的证据验证入口是 `scripts/verify_release_evidence.py --live <evidence_root>`（T36.1，`--live` 要求终态成功与 24 小时新鲜度）；`delivery/evidence/` 下的三条 JSON 记录只在终端事实确认后写入。镜像自身的复现与 digest 验证入口是 `scripts/run_reference_image_smoke.py`（T34.2）。
 
 ## Installation
 
@@ -69,7 +69,7 @@ render.yaml            # Render 部署契约（T36.3，已提交未部署）
 ## Distribution
 
 - 分发形态：wheel（`pyproject.toml` 冻结 console 入口 `vespercode = vespercode.cli:main`，T33.1 验证 164 个 wheel 成员双向一致）+ 参考镜像（上文冻结身份）。
-- 正式 release 后，版本化 wheel 作为 GitHub Release 附件提供，同时发布 SHA-256 摘要；下载产物按摘要校验后，从本地构建产物安装的规范命令为 `pipx install dist/vespercode-<version>-py3-none-any.whl`（只有包实际发布到配置的 Python 包索引后，才可使用 `pipx install vespercode`）。
+- 正式 release 后，版本化 wheel 作为 GitHub Release 附件提供，同时发布 SHA-256 摘要；下载产物先按摘要校验（`sha256sum <wheel>`；Windows PowerShell：`Get-FileHash <wheel> -Algorithm SHA256`），再按以下规范命令安装：从本地构建产物安装为 `pipx install dist/vespercode-<version>-py3-none-any.whl`（只有包实际发布到配置的 Python 包索引后，才可使用 `pipx install vespercode`）。
 - 正式 reference 镜像发布到与仓库同一所有者下的 `ghcr.io/ledstevenovo/vespercode-reference`，规范引用为 `ghcr.io/ledstevenovo/vespercode-reference@sha256:cf0b6c5ccac588fccd07c3b9f050bff4daf550ac6e518fd06efb6e988ab1d823`；tag 不构成运行身份，运行与证据只接受 digest。
 - 镜像验证链（按序执行，任一失败即本地正式运行失败关闭）：
   1. `docker pull ghcr.io/ledstevenovo/vespercode-reference@sha256:cf0b6c5ccac588fccd07c3b9f050bff4daf550ac6e518fd06efb6e988ab1d823`；
@@ -77,6 +77,13 @@ render.yaml            # Render 部署契约（T36.3，已提交未部署）
   3. 镜像内 profile/version smoke：`scripts/run_reference_image_smoke.py`（T34.2；重建与 loopback 拉取的 manifest digest 均与冻结 digest 逐字节比对）；
   4. 确认 wheel 内置 `reference-profile-v1.json` 的 `docker_image_digest` 与所拉取 digest 完全一致：
      `python -c "import glob,json,zipfile; m=json.load(zipfile.ZipFile(glob.glob('dist/vespercode-*.whl')[0]).read('vespercode/profiles/builtin/reference-profile-v1.json')); print(m['docker_image_digest'])"`
+- 可复制的本地 `docker build` / `docker run`（复现与诊断用；参考镜像的正式身份只有上方不可变 digest，本地重建必须经 digest 比对后才可声称与正式镜像等价）：
+  - **参考镜像**（Dockerfile `containers/reference/Dockerfile`；build context 必须含冻结的 `fixture/` 与 `requirements.lock`，即 Task 2 配方上下文——`scripts/run_reference_image_smoke.py` 自动装配该上下文并重建、比对 digest）：
+    `docker build --no-cache -f containers/reference/Dockerfile -t vespercode-reference:repro <context>`；
+    `docker run --rm --network none --user vesper vespercode-reference:repro python --version`。
+  - **Demo 镜像**（Dockerfile `containers/demo/Dockerfile`；build context 为仓库根；容器读平台注入的 `PORT` 并绑定 `0.0.0.0:PORT`，健康检查 `GET /healthz`）：
+    `docker build --no-cache -f containers/demo/Dockerfile -t vespercode-demo:local .`；
+    `docker run --rm -p 8000:8000 -e PORT=8000 --user vesper vespercode-demo:local`，随后 `curl http://127.0.0.1:8000/healthz`。以上命令均不含凭据；Demo 镜像无真实能力、无 secret、无 Docker socket（SPEC §8.3）。
 - 发布流程契约由 T36.2 的 `verify_release_publication_result` 定义（7 个封闭错误码、确定性优先级 source→tag→wheel→manifest-vs-GHCR→pulled→install→smoke）；**release 未执行**，发布时间与 tag 待 T37 流程在冻结 `source_commit` 后确定。
 - 发布必须使用只读权限的 CI（无发布秘密）与 fail-closed 的受保护 tag 规则（T35.1）。
 - 本地运行前提：Windows 11 x64、Python 3.12、Git、Docker Desktop Linux 容器模式，以及按不可变 digest 拉取并核验的 `python-src-py312-v1` reference 执行镜像（`src/vespercode/profiles/builtin/reference-profile-v1.json`）。
@@ -95,6 +102,7 @@ render.yaml            # Render 部署契约（T36.3，已提交未部署）
 
 - **GitHub Actions**（T35.1）：`unit-test` / `reference-image-build` / `demo-image-build` 三 job，在每次 push 与 PR 上运行；权限只读、零发布秘密；reference job 在 Linux runner 上重建冻结 digest（跨平台确定性已证明）。近期 push/PR 运行均成功（`AGENT_LOG.md` 的 T35.1 记录）。
 - **GitLab CI**（T35.1）：四 job 契约与 dind 拓扑 loopback 绑定已提交；无项目未运行（见 Limitations）。
+- **两端项目 URL 与镜像方向**（SPEC §8.4）：GitHub 仓库 `https://github.com/ledstevenovo/VesperCode` 是源码、版本 tag、Release 与 GHCR package 的发布权威，GitHub Actions 三 job 在每次 push 与 PR 上运行；GitLab 无项目，其完整 CI/Windows wheel/受保护发布闭环契约已提交但从未运行。普通 CI 不反向改写 GitHub；受保护 release pipeline 只有在 GitLab `CI_COMMIT_SHA`、GitHub 同名 tag commit 与待发布 wheel 源提交三者一致时才可发布，任一查询失败或摘要不一致即停止。
 - **本地验证链**：`scripts/scan_credentials.py`（凭据扫描）、`scripts/verify_readme_contract.py`（README 契约）、`scripts/verify_process_evidence.py`（过程记录）、`scripts/verify_release_evidence.py --live`（交付证据，终端事实后使用）组成只读、fail-closed 的收尾验证链。
 
 ## Web UI

@@ -1,14 +1,17 @@
 """T37.1 legacy step 37.B: delivery process evidence verifier (read-only).
 
 Fail-closed checker for the append-preserving process records: the
-SPEC_PROCESS cold-start and document-check records, the PLAN task-card and
-unique legacy-step counts, the AGENT_LOG chronology (every completion entry
-carries a valid timestamp within one day of its header date), and per-task
-review, commit, PR-URL, and human-intervention records inside each completion
-anchor (recorded PR values that are URLs must be https — narrative records
-such as "pending …" are honest no-PR records, not URLs — and
-human-intervention values must be non-empty when recorded; absent fields in
-early anchors are not inferred).  The verifier never
+SPEC_PROCESS cold-start and document-check records (each must carry a
+positive completion marker — the cold-start heading must positively say
+the cold start passed, and both sections need a completion token in their
+body), the PLAN task-card and unique legacy-step counts, the AGENT_LOG
+chronology (every completion entry carries a valid timestamp within one
+day of its header date), and per-task review, commit, PR-URL, and
+human-intervention records inside each completion anchor (recorded PR
+values that are URLs must be https — narrative records such as
+"pending …" are honest no-PR records, not URLs — and human-intervention
+values must be non-empty when recorded; absent fields in early anchors
+are not inferred).  The verifier never
 mutates any process file and performs no external I/O beyond reading the
 three committed records under the supplied root.
 """
@@ -26,8 +29,14 @@ from pydantic import BaseModel, ConfigDict
 EXPECTED_TASK_COUNT = 68
 EXPECTED_LEGACY_STEP_COUNT = 141
 
-_COLD_START_HEADING_RE = re.compile(r"^## \d+\. .*冷启动.*通过", re.MULTILINE)
+# The cold-start completion heading must positively say the cold start
+# passed (``冷启动[^\n未]*通过`` — single line, rejects a corrupted
+# ``未通过`` record); the document-check heading (SPEC_PROCESS §26)
+# carries no status token, so both records additionally require a positive
+# completion marker in the section body.
+_COLD_START_HEADING_RE = re.compile(r"^## \d+\. .*冷启动[^\n未]*通过", re.MULTILINE)
 _DOCUMENT_CHECK_HEADING_RE = re.compile(r"^## \d+\. .*文档检查", re.MULTILINE)
+_POSITIVE_RESULT_RE = re.compile(r"通过|完成")
 _TASK_HEADING_RE = re.compile(r"^### Task (T\d+\.\d+):", re.MULTILINE)
 _LEGACY_STEPS_RE = re.compile(r"^\*\*Legacy steps:\*\*\s*(.+)$", re.MULTILINE)
 _LEGACY_TOKEN_SPLIT_RE = re.compile(r"[;,、]")
@@ -94,6 +103,16 @@ def _entry_timestamp_date(body: str) -> str | None:
     return match.group(1).replace("-", "")
 
 
+def _section_from_heading(text: str, heading_match: re.Match[str]) -> str:
+    """The section owned by *heading_match*: the heading line plus the
+    body up to the next ``## `` heading (or EOF)."""
+    tail = text[heading_match.start() :]
+    following = re.search(r"^## ", tail[len(heading_match.group(0)) :], re.MULTILINE)
+    if following is None:
+        return tail
+    return tail[: len(heading_match.group(0)) + following.start()]
+
+
 def _days_between(entry_date: str, header_date: str) -> int:
     """Calendar-day difference between YYYYMMDD values (month-safe)."""
     from datetime import date
@@ -132,12 +151,18 @@ def verify_process_evidence(root: Path | str) -> ProcessEvidenceResultV1:
     error_codes: list[str] = []
     details: list[str] = []
 
-    if _COLD_START_HEADING_RE.search(spec) is None:
+    cold_start = _COLD_START_HEADING_RE.search(spec)
+    if cold_start is None or (
+        _POSITIVE_RESULT_RE.search(_section_from_heading(spec, cold_start)) is None
+    ):
         error_codes.append("COLD_START_RECORD_MISSING")
-        details.append("SPEC_PROCESS.md carries no cold-start completion record")
-    if _DOCUMENT_CHECK_HEADING_RE.search(spec) is None:
+        details.append("SPEC_PROCESS.md carries no passing cold-start record")
+    document_check = _DOCUMENT_CHECK_HEADING_RE.search(spec)
+    if document_check is None or (
+        _POSITIVE_RESULT_RE.search(_section_from_heading(spec, document_check)) is None
+    ):
         error_codes.append("DOCUMENT_CHECK_RECORD_MISSING")
-        details.append("SPEC_PROCESS.md carries no document-check record")
+        details.append("SPEC_PROCESS.md carries no passing document-check record")
 
     task_count = len(_TASK_HEADING_RE.findall(plan))
     if task_count != EXPECTED_TASK_COUNT:
@@ -166,6 +191,12 @@ def verify_process_evidence(root: Path | str) -> ProcessEvidenceResultV1:
         error_codes.append("AGENT_LOG_CHRONOLOGY_INVALID")
         details.append("AGENT_LOG.md completion entries or timestamps are not valid")
 
+    # Whole-anchor deletion is deliberately not detected here: three
+    # Complete tasks (T31.1/T33.1/T34.2) legitimately record their
+    # evidence in SPEC_PROCESS §80-85 instead of AGENT_LOG anchors, so a
+    # "every Complete card must have an anchor" rule would fail the real
+    # records.  T37.2's delivery gate adds the per-card completion-evidence
+    # provenance check against both files.
     for match in _ANCHOR_RE.finditer(log):
         task_id = match.group(1)
         body = match.group(3)

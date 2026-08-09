@@ -16,6 +16,7 @@ from conftest import (  # type: ignore[import-not-found]  # noqa: E402
     remove_cold_start_record,
     remove_completion_commit_lines,
     remove_completion_review_marker,
+    remove_document_check_body,
     remove_document_check_record,
 )
 
@@ -43,6 +44,31 @@ def test_full_repository_passes_process_evidence(repository_copy: Path) -> None:
 
 def test_document_check_record_is_required(repository_copy: Path) -> None:
     remove_document_check_record(repository_copy / "SPEC_PROCESS.md")
+    result = verify_process_evidence(repository_copy)
+    assert "DOCUMENT_CHECK_RECORD_MISSING" in result.error_codes
+
+
+def test_cold_start_record_rejects_failed_status(repository_copy: Path) -> None:
+    # A corrupted record that says the cold start did NOT pass must not
+    # satisfy the completion-record check.
+    spec = repository_copy / "SPEC_PROCESS.md"
+    text = spec.read_text(encoding="utf-8")
+    text = text.replace(
+        "## 40. 最终 bounded 1.Aa 冷启动通过与文档同步（2026-08-02）",
+        "## 40. 最终 bounded 1.Aa 冷启动未通过与文档同步（2026-08-02）",
+        1,
+    )
+    spec.write_text(text, encoding="utf-8")
+    result = verify_process_evidence(repository_copy)
+    assert "COLD_START_RECORD_MISSING" in result.error_codes
+
+
+def test_document_check_record_requires_positive_result(
+    repository_copy: Path,
+) -> None:
+    # A document-check heading with its result body stripped away must not
+    # satisfy the completion-record check.
+    remove_document_check_body(repository_copy / "SPEC_PROCESS.md")
     result = verify_process_evidence(repository_copy)
     assert "DOCUMENT_CHECK_RECORD_MISSING" in result.error_codes
 

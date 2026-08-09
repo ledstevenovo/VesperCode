@@ -91,6 +91,18 @@ def remove_document_check_record(path: Path) -> None:
     path.write_text(cleaned, encoding="utf-8")
 
 
+def remove_document_check_body(path: Path) -> None:
+    """Strip the document-check section body, keeping its heading line."""
+    text = path.read_text(encoding="utf-8")
+    # ``[^\n]*`` keeps the heading anchor on its own line: a greedy ``.*``
+    # (DOTALL) would swallow the whole file to the last ``文档检查``.
+    section = re.compile(
+        r"(^## \d+\. [^\n]*文档检查[^\n]*\n).*?(?=^## |\Z)",
+        re.MULTILINE | re.DOTALL,
+    )
+    path.write_text(section.sub(r"\1", text), encoding="utf-8")
+
+
 def _strip_anchor_lines(path: Path, task_id: str, pattern: re.Pattern[str]) -> None:
     """Remove matching lines from *task_id*'s COMPLETION anchor body."""
     text = path.read_text(encoding="utf-8")
