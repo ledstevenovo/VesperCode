@@ -2447,3 +2447,60 @@
   `[^未]*` 与贪婪 `.*` 都因跨行吞并而「假通过」；对抗式 fresh-subagent 评审能发现
   fail-closed 语义缺口（失败态记录、正文剥离、锚点删除）与 README 过度声称，值得保留；
   强化检查必须在真实仓库仍 ACCEPTED 与 fail-closed 之间同时成立。
+
+## T37.2-IMPLEMENTATION-20260809
+
+- **Timestamp (Asia/Taipei):** `2026-08-09T17:23:03+0800` (system-observed; append-only driver record).
+- **Task ID:** T37.2（legacy 37.C——交付就绪门禁与反思结构契约实现，**非完成记录**；
+  终态证据、release/部署、反思与 Complete 状态均未发生）。
+- **Key prompt/context:** 用户登机前授权五阶段自主执行（方案甲 A→E）；本条目记录
+  Phase D（T37.2 实现与两轮评审）与 Phase E 收尾。运行环境为 Linux（无 Windows 对象），
+  本地只运行 T37 自有测试文件；不代写 REFLECTION、不发布、不写 delivery/evidence JSON、
+  不把 T37 卡标 Complete。
+- **Implementation (legacy 37.C):**
+  - `scripts/verify_delivery.py`：可注入 loader（默认 T37.1 `verify_process_evidence`，
+    RED-1 用失败结果证明拒绝）；PLAN 68 张任务卡终态检查（`Complete`/`Done`，含带注释
+    变体）；141 唯一 legacy steps 必须被终态卡覆盖；逐卡完成证据溯源（AGENT_LOG 锚点
+    **或** SPEC_PROCESS §80 之后终区记录——T37.1 质量评审整锚点删除交接的落地）；
+    README 契约聚合；反思契约聚合；`require_live=True` 时读取 `delivery/evidence/` 三
+    JSON，跨记录 source_commit 一致性（SOURCE_COMMIT_DRIFT 优先于通用
+    DELIVERY_EVIDENCE_INVALID）。只读、无外部 I/O。
+  - `scripts/verify_reflection.py`：仅检查学生反思的结构契约——可解析、至少一个
+    markdown 标题、AI 协助状态披露（token 边界 + 协助/所有权词或显式否定）、
+    1,500–2,500 字（CJK 逐字 + 非 CJK 字母/数字 run，标点与 markdown 语法不计）；
+    绝不生成或评分子实质内容。
+  - 测试：两条 RED 与卡片逐字一致；新增 `test_reflection_contract.py`（10 项）与
+    `test_delivery_evidence.py` 聚合就绪用例（13 项）；conftest 新增
+    `failed_process_evidence` 夹具、`mark_child_incomplete`、`remove_completion_anchor`、
+    `ready_repository`（全终态副本，锚点经真实 loader 校验无循环假设）。
+  - 提交：`fe37590`。
+- **Reviews:** SPEC 合规评审（driver 内联）逐项核验：接口签名与卡片一致；Target/Domain
+  命令与卡片相同且通过；文件清单与卡片一致；不重复解析 review（loader 负责）；
+  真实树失败集合恰为诚实预期（T37.1/T37.2 非终态、37.A–37.C 未覆盖、
+  REFLECTION_CONTRACT_FAILED、--live 加 DELIVERY_EVIDENCE_INVALID），零意外码。
+  fresh subagent 对抗式质量评审（只读，全部发现经执行验证）初判 CHANGES-REQUIRED：
+  (1) IMPORTANT：完成证据溯源原按「SPEC_PROCESS 任意提及」回退——T01.1 等 59/63 任务
+  在文件各处被偶然提及，整锚点删除仍可逃逸；修复为限定 §80 之后终区（T31.1/T33.1/
+  T34.2 记录所在），真实树验证通过，新增删除锚点回归测试；(2) IMPORTANT：披露正则
+  拒绝自身文档声称接受的「未使用任何 AI 工具」，且 IGNORECASE 误配 email/wait 中的
+  "ai"；修复为 token 边界 + 否定分支，新增正反两向测试；(3) MINOR：不可解码证据文件
+  的 UnicodeDecodeError 逃出 API——补捕获并加测试；(4) MINOR：畸形文件被 drift 掩码
+  ——按设计保留（drift 是特定裁决，测试断言其优先）；NIT 关闭（锚点日期尾锚、
+  Path|str 超集按 T37.1 先例保留、未提交状态由本提交解决、既有 REFLECTION.md 如实
+  拒绝）。修复后 49 项测试全绿，全部门禁通过。
+- **Verification:** 卡片 Target 命令 `2 passed`；Domain（三个文件）`49 passed`；
+  `ruff check`/`format --check` 干净（14 文件）；`mypy --explicit-package-bases` 8 文件
+  Success；`scripts/gate_scan.py` exit 0；`git diff --check` 干净。真实树四 verifier：
+  process evidence ACCEPTED、README contract ACCEPTED、delivery（非 live 与 live）
+  拒绝集与诚实预期完全一致、reflection 对既有 REFLECTION.md（磁盘事件记录，558 字、
+  无披露）如实拒绝。只读性经评审 SHA-256 前后快照验证零变更。
+- **Known limitations:** `tests/unit/process/test_dependency_closure.py` 要求
+  `.venv-formal/Scripts/python.exe`（Windows formal 环境产物），Linux 上预存在失败，
+  与 T37 无关（不在 T37 自有文件内）；既有 REFLECTION.md 是 2026-08-08 磁盘事件过程
+  记录，不是最终反思——最终反思由学生撰写，须通过 verify_reflection 结构契约；
+  --live 证据仅在用户完成终态 CI/release/部署并填写三份 JSON 后成立。
+- **Human intervention:** 无（用户登机，自主执行获授权；PLAN 状态回填仅依据已提交证据）。
+- **Lesson learned:** 聚合门禁的「溯源回退」是最容易 fail-open 的地方——任意提及不等于
+  记录，必须按证据实际所在的区域限定范围，并用「真实树 + 删除锚点」双向验证；
+  披露类结构检查要对真实语言形态（否定披露、英文词内小写缩写）做正反样例矩阵，
+  评审子代理的逐条执行验证（非猜测）值得保留。

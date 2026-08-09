@@ -197,10 +197,10 @@ def ready_repository(repository_copy: Path) -> Path:
     structurally compliant student reflection present."""
     plan = repository_copy / "PLAN.md"
     text = plan.read_text(encoding="utf-8")
-    # T37.1 is the only ``In progress`` card; with it terminal, the only
-    # remaining ``Not started`` card is T37.2.
-    text = text.replace("**Status:** In progress", "**Status:** Complete", 1)
-    text = text.replace("**Status:** Not started", "**Status:** Complete", 1)
+    # The only non-terminal statuses in the committed PLAN are the T37
+    # cards; every card must become terminal for the gate to accept.
+    text = text.replace("**Status:** In progress", "**Status:** Complete")
+    text = text.replace("**Status:** Not started", "**Status:** Complete")
     plan.write_text(text, encoding="utf-8")
 
     log = repository_copy / "AGENT_LOG.md"

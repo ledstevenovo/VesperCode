@@ -10731,12 +10731,12 @@ def test_process_evidence_requires_cold_start_record(repository_copy: Path) -> N
 - [ ] Finish WP37 only after all evidence is truthful and the student-owned reflection remains student-authored.
 
 **Done:** README, process records, final delivery evidence, CI/release/deployment alignment, and applicable reviews pass; no external result or student reflection content is fabricated.
-**Completion evidence:** In progress — implementation committed on branch `codex/wp37` (worktree `.worktrees/wp37`): `9575f45` (37.A/37.B verifiers + README rewrite + 23 tests), `e016665` (SPEC-review closure), `493384e` (fresh-subagent quality-review closure). Target and Domain pass (`23 passed`); `ruff check`/`format` clean, `mypy` 5 files Success, `gate_scan.py` exit 0, `git diff --check` clean; both verifiers ACCEPTED on the committed tree. GREEN-3 (freeze source_commit, terminal CI/release/GHCR/Render evidence, three delivery evidence records) and the reflection gate remain pending; the card is NOT marked Complete. Details in `AGENT_LOG.md` (`T37.1-IMPLEMENTATION-20260809`).
+**Completion evidence:** In progress — implementation committed on branch `codex/wp37` (worktree `.worktrees/wp37`): `9575f45` (37.A/37.B verifiers + README rewrite + 23 tests), `e016665` (SPEC-review closure), `493384e` (fresh-subagent quality-review closure). Target and Domain pass (`23 passed`); `ruff check`/`format` clean, `mypy` 5 files Success, `gate_scan.py` exit 0, `git diff --check` clean; both verifiers ACCEPTED on the committed tree. The whole-anchor-deletion handoff to T37.2 is closed (`fe37590`): the delivery gate now requires per-terminal-card completion evidence (AGENT_LOG anchor or SPEC_PROCESS final-region record). GREEN-3 (freeze source_commit, terminal CI/release/GHCR/Render evidence, three delivery evidence records) and the reflection gate remain pending; the card is NOT marked Complete. Details in `AGENT_LOG.md` (`T37.1-IMPLEMENTATION-20260809`).
 
 
 ### Task T37.2: Delivery and reflection readiness
 
-**Status:** Not started
+**Status:** In progress
 **Work package:** WP37
 **Legacy steps:** 37.C
 **Goal:** Aggregate truthful process, task, review, CI/release/deployment, documentation, and reflection records; report ready only when all 68 session tasks cover all 141 legacy steps and the student-authored reflection satisfies its structural requirements.
@@ -10803,7 +10803,7 @@ def test_delivery_rejects_incomplete_executable_child(repository_copy: Path) -> 
 - [ ] Commit implementation, record truthful evidence, and finish WP37.
 
 **Done:** readiness, delivery, reflection-structure, task-coverage, and protected-source checks pass without fabricated evidence or generated student content.
-**Completion evidence:** Not started; no implementation or evidence commit exists.
+**Completion evidence:** In progress — implementation committed on branch `codex/wp37` (worktree `.worktrees/wp37`): `fe37590` (verify_delivery + verify_reflection + 23 tests; RED tests verbatim from this card). Target `2 passed`; Domain (three files) `49 passed`; `ruff check`/`format` clean, `mypy` 8 files Success, `gate_scan.py` exit 0, `git diff --check` clean; real-tree rejection set exactly the honest pending items (T37.1/T37.2 non-terminal, 37.A–37.C uncovered, REFLECTION_CONTRACT_FAILED, --live adds DELIVERY_EVIDENCE_INVALID). Quality review (fresh read-only subagent) CHANGES-REQUIRED findings all closed: completion-evidence provenance scoped to the SPEC_PROCESS final region (§80+) so incidental mentions no longer mask whole-anchor deletion (new deletion regression test), disclosure regex token-bounded with negative-disclosure branch, UnicodeDecodeError fail-closed. GREEN-3 terminal evidence (frozen source_commit, CI/release/GHCR/Render facts, three delivery evidence records) and the student-authored reflection remain pending; the card is NOT marked Complete. Details in `AGENT_LOG.md` (`T37.2-IMPLEMENTATION-20260809`).
 
 
 ### Task T38.1: Credential, Memory, and Audit Web Workflows
