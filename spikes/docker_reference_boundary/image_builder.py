@@ -146,9 +146,7 @@ def _deterministic_gzip(data: bytes) -> bytes:
         body += struct.pack("<HH", len(chunk), (~len(chunk)) & 0xFFFF)
         body += chunk
         position += len(chunk)
-    trailer = struct.pack(
-        "<II", zlib.crc32(data) & 0xFFFFFFFF, len(data) & 0xFFFFFFFF
-    )
+    trailer = struct.pack("<II", zlib.crc32(data) & 0xFFFFFFFF, len(data) & 0xFFFFFFFF)
     return header + bytes(body) + trailer
 
 
@@ -171,7 +169,9 @@ def _normalize_layer_blob(blob: bytes, epoch: int) -> bytes:
                 if member.isfile():
                     extracted = source.extractfile(member)
                     if extracted is None:
-                        raise ValueError(f"layer member {member.name!r} is not readable")
+                        raise ValueError(
+                            f"layer member {member.name!r} is not readable"
+                        )
                     data = extracted.read()
                 else:
                     data = None
@@ -201,9 +201,7 @@ def _normalize_layer_blob(blob: bytes, epoch: int) -> bytes:
                 elif member.name.startswith("app/"):
                     info.mode = 0o644
                 else:
-                    info.mode = (
-                        0o755 if (member.mode & 0o111) else 0o644
-                    )
+                    info.mode = 0o755 if (member.mode & 0o111) else 0o644
                 info.uid = 0
                 info.gid = 0
                 info.mtime = epoch
@@ -299,8 +297,7 @@ def _apply_deterministic_normalization(
         layout, manifest_bytes
     )
     normalized_layers = tuple(
-        _normalize_layer_blob(blob, int(SOURCE_DATE_EPOCH))
-        for blob in layer_bytes
+        _normalize_layer_blob(blob, int(SOURCE_DATE_EPOCH)) for blob in layer_bytes
     )
     normalized_digests = tuple(_sha256_hex(blob) for blob in normalized_layers)
     if os.environ.get("VESPER_LAYER_DIAG"):
@@ -312,11 +309,8 @@ def _apply_deterministic_normalization(
         print(
             "layer_diag "
             + " ".join(
-                f"{i}:raw={_sha256_hex(_gunzip(blob))[:12]}"
-                f" norm={digest[:12]}"
-                for i, (blob, digest) in enumerate(
-                    zip(layer_bytes, normalized_digests)
-                )
+                f"{i}:raw={_sha256_hex(_gunzip(blob))[:12]} norm={digest[:12]}"
+                for i, (blob, digest) in enumerate(zip(layer_bytes, normalized_digests))
             ),
             flush=True,
         )
