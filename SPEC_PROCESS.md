@@ -1774,7 +1774,7 @@ Dirac 的正向测试和实现把 credential match 的结果写成 `stderr="ERRO
 
 ### 38.2 剩余文档歧义与处理
 
-Agent 指出 `CREDENTIAL_URL` 的通用 token-boundary 句可能被理解为要求匹配在 `@` 后立即结束，而普通 credential URL 的 hostname 会位于其后。独立审阅确认该文字歧义，但当前测试和实现的意图一致：规则只报告包含凭据的 `scheme://user:password@` 前缀，hostname/path 不进入 matched fact。已在 `PLAN.md` 明确该规则只要求 leading boundary、匹配在 `@` 结束且不要求 `@` 后 trailing boundary。
+Agent 指出 `CREDENTIAL_URL` 的通用 token-boundary 句可能被理解为要求匹配在 `@` 后立即结束，而普通 credential URL 的 hostname 会位于其后。独立审阅确认该文字歧义，但当前测试和实现的意图一致：规则只报告 scheme 后包含用户名、冒号、口令和 `@` 分隔符的 userinfo 前缀，hostname/path 不进入 matched fact。已在 `PLAN.md` 明确该规则只要求 leading boundary、匹配在 `@` 结束且不要求 `@` 后 trailing boundary。
 
 这次仅澄清了已执行合同，没有改变产品范围；为保持冷启动证据与最新文档一致，仍需从新的候选文档提交建立 disposable worktree，并由全新 Agent 重跑一次 Aa。完成前不授权正式实现。
 
@@ -2669,3 +2669,11 @@ git diff --check 干净、无容器残留。
 - **TDD 与验证：** 新合同测试 RED 明确观察 direct declaration 缺失、lock/record version/family 缺失及 bootstrap probe 缺失；GREEN target `1 passed`，其余 dependency-closure behavior tests `22 passed, 1 deselected`，Ruff、scoped mypy、credential scan、`git diff --check` 均通过。完整闭包文件另有一个真实记录的环境前置失败：隔离 worktree 不含本地 `.venv-formal/Scripts/python.exe`；实现 worker 按任务边界没有重建或安装该环境。修复后的真实 `package_smoke` 复跑由 pre-T37 控制器在 hash-locked formal environment materialization 后执行，本节不声称其已通过。
 - **Cold-start 判定：** 不重复 cold-start。课程选定的 cold-start task 是 T01.1，其输入、目标和完成条件均未改变；本修复没有选择新架构、改变 T01.1 或扩展 T33.1 的既定目标，只是补齐 T33.1 已有 isolated-pipx package-smoke 条件所必需、此前遗漏的调用工具。若后续改变 selected cold-start task 或其完成条件，仍按原规则重跑。
 - **评审发现：** fresh SPEC review 对 `0d14aba` 给出 Important I-1：技术闭包已更新，但 PLAN/T33.1/SPEC_PROCESS/AGENT_LOG 的 post-completion amendment 尚未形成闭环。本节与相邻 PLAN amendment/append-only AGENT_LOG 条目是该 finding 的窄幅过程修复；不改技术文件，不虚构 package-smoke 结果。
+
+## 94. Pre-T37 专项门禁真实阻断闭合（2026-08-11）
+
+- **package-smoke 终态复验：** 在 `70d7d5e` 上从更新后的 51-entry `requirements/dev.lock` 新建 worktree-local `.venv-formal`；bootstrap 返回 `OK`，`python -m pipx --version` 返回 `1.16.6`。真实 `package_smoke` 结果为 `15 passed, 1657 deselected`，0 failed、0 required skip。此前 `No module named pipx` 的 `1 failed, 8 errors` 已由 `0d14aba` 的声明/lock/record/probe 一致修复关闭。fresh SPEC 初审的唯一 Important（缺 process amendment）由 `70d7d5e` 关闭并 re-review PASS；fresh quality review PASS，记录 1 个非阻断测试耦合 Minor。
+- **OCI 零残留发现：** 首次 `oci_smoke` 虽为 `21 passed`，但 Docker 终态从 0 volume 变为 2 个匿名 volume、共 `431.3MB`；两个 volume 的创建时间与两次 registry probe 一致，容器引用为零。最小定位确认 `spikes/docker_reference_boundary/registry_probe.py` 的 cleanup 仅执行 `docker rm -f`，未删除 `registry:2` 声明的匿名 `/var/lib/registry` volume。因此该次 profile 不计作完整通过，先升级为真实阻断项。
+- **TDD 修复与评审：** `27440df16e6f681882e707346f3839f510f83fdf` 先以精确 cleanup argv RED 证明缺少 `-v`，再最小改为 `docker rm -f -v <container_id>`；remove failure 仍返回 false，成功后仍须 inspect 证明容器不存在。纯 cleanup/boundary tests `3 passed, 2 deselected`，静态 CI/smoke contracts `15 passed`，Ruff/mypy/credential scan/diff-check 通过。fresh SPEC review PASS、fresh quality review PASS，均 0 Critical/Important/Minor。
+- **受控清理和真实复验：** 删除前在同一前台命令再次验证两个精确 volume 名称、anonymous label、创建时间和零容器引用；只删除这两个可重建的 registry 测试 volumes，未删除镜像、命名 volume 或用户数据。修复后真实 `oci_smoke` 为 `21 passed, 1653 deselected`；前后均为 0 container / 0 volume，镜像和 build-cache 仅保留可复用非活动数据。该复验关闭 volume 残留阻断，但不代表 T37 已完成。
+- **方案校正结果：** gate digest 与 `EXECUTION_WORKSPACE_MUTATED` 仍未实际失败，不升级为修复任务；本轮真正需要修复的是书面已知 mutex/mypy，以及现场观测到的 formal pipx closure 和 registry volume cleanup。后续仍须在最终 docs-inclusive source SHA 上重跑六类专项、默认 pytest、静态门禁、whole-branch review 和远端三项 CI。
