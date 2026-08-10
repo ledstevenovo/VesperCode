@@ -55,7 +55,7 @@ from vespercode.trees.text_classifier import (
     TextMetadataV1,
     classify_supported_text,
 )
-from vespercode.execution.cleanup import finalize_execution
+from vespercode.execution.cleanup import _CleanupClientV1, finalize_execution
 from vespercode.execution.docker_executor import RawExecutionResultV1
 
 _POLICY_DIGEST = "b857afca63e50a888ee183bd7ac8c7f739be7b60a94fc4f9c55c0a606db144ab"
@@ -326,7 +326,7 @@ def test_injected_cleanup_factory_failure_is_a_closed_cleanup_failure() -> None:
         error_code=None,
     )
 
-    def _boom() -> object:
+    def _boom() -> _CleanupClientV1:
         raise RuntimeError("injected cleanup factory failure")
 
     result = finalize_execution(raw, candidate, materialized, client_factory=_boom)

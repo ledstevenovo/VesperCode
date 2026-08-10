@@ -237,6 +237,16 @@ class _ScriptedSocket:
         buffer[: len(chunk)] = chunk
         return len(chunk)
 
+    def readinto(self, buffer: bytearray) -> int:
+        return self.recv_into(buffer)
+
+    def read(self, size: int = -1) -> bytes:
+        read_size = sum(len(chunk) for chunk in self._chunks) if size < 0 else size
+        if read_size == 0:
+            return b""
+        buffer = bytearray(read_size)
+        return bytes(buffer[: self.recv_into(buffer)])
+
 
 def test_bounded_collector_parses_frames_across_chunks() -> None:
     # Frame boundaries split across arbitrary chunk boundaries.
