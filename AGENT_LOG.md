@@ -2366,3 +2366,15 @@
 - **Verification:** T01-T25/T36/T38 全部卡 checked>0 且 unchecked=0（脚本审计）；T37 无 Step checkbox（特殊卡）；main 已含 WP38 全部实现提交。
 - **Human intervention:** 用户"开始收尾"。
 - **Lesson learned:** WP 收尾的三要素（Status/checkbox/evidence）必须一次性完成——此前会话只改 Status 留下 83 步未勾；批量勾选必须按卡范围精确（本收尾勾了 102 步含 T26-T35 的已完成残留，审计确认均为已完成卡，无未开始卡受影响——T37 无 checkbox 天然隔离）。
+
+## PRE-T37-PIPX-CLOSURE-20260811
+
+- **Timestamp (Asia/Taipei):** `2026-08-11T00:40:54+08:00` (system-observed).
+- **Task ID:** `PRE-T37-PIPX-CLOSURE` — pre-T37 package-smoke formal dependency-closure amendment.
+- **Skills invoked:** `test-driven-development` for the `0d14aba` contract-first implementation; `receiving-code-review` for technical verification and narrow closure of fresh SPEC review finding I-1.
+- **Key prompt/context:** The pre-T37 terminal-verification controller ran the required `package_smoke` profile from the formal Python 3.12.4 environment and observed `1 failed, 8 errors`, all rooted in `No module named pipx`. PLAN's post-T04.1 fail-closed dependency rule prohibits ad-hoc install or silent re-lock. The fix was constrained to the formal development declaration/lock/record/bootstrap identity and one regression contract; this follow-up is constrained to PLAN/SPEC_PROCESS/AGENT_LOG process evidence plus the SDD task report.
+- **RED/GREEN evidence:** RED target reached one aggregate assertion and reported `direct_declaration=False`, `locked_version=None`, `recorded_family=None`, `recorded_version=None`, and `bootstrap_probe=False`. GREEN target was `1 passed`; dependency-closure behaviors were `22 passed, 1 deselected`. A separate full-file run truthfully remained `22 passed, 1 failed` solely because the isolated worktree had no local `.venv-formal/Scripts/python.exe`; no environment was rebuilt or mutated. Scoped Ruff format/check, mypy, changed-file credential scan, and `git diff --check` passed. The real post-fix `package_smoke` rerun is controller-owned and is not claimed complete here.
+- **Implementation commit:** `0d14aba28bde3e5b23f0ac165e346a08bffcf8ed` (`Declare pipx in formal dependency closure`). It declares `pipx==1.16.6` as development direct, adds its four newly required hash-locked transitives, binds the 51-entry/15-direct closure record, and verifies pipx in the formal identity probe.
+- **Fresh SPEC review:** I-1 Important — the technical closure was correct but the frozen T04.1/T33.1 process sources had no post-completion amendment, leaving old 46-entry/14-direct evidence as the only written dependency identity. Narrow process repair appends the new identity and failure/cold-start rationale while retaining all historical evidence; same-stage re-review remains required.
+- **Human intervention:** none.
+- **Lesson learned:** A formal tool invoked only by a late smoke driver is still part of the project dependency closure. Passing historical smoke evidence cannot authorize a host-provided tool on a later clean environment; the declaration, hash lock, closure record, bootstrap identity, task contract, and process evidence must move together, and the real smoke must be rerun before any new PASS claim.
