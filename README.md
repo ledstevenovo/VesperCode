@@ -1,137 +1,112 @@
 # VesperCode
 
-VesperCode 是一个面向 Windows 本地代码仓库的 Coding Agent Harness 课程项目。它的目标不是把现成的 Agent 框架换一层包装，而是自行实现一套可测试、可审计、以治理为核心的 Agent 内核：让 LLM 在受控工作区中检查代码、提出候选补丁、运行结构化验证，并根据客观反馈继续修正，同时限制路径、工具、审批、凭据和数据披露风险。
+VesperCode 是一个面向 Windows 本地代码仓库的 Coding Agent Harness 课程项目。它不是把现成的 Agent 框架换一层包装，而是自行实现一套可测试、可审计、以治理为核心的 Agent 内核：让 LLM 在受控工作区中检查代码、提出候选补丁、运行结构化验证，并根据客观反馈继续修正，同时限制路径、工具、审批、凭据和数据披露风险。
 
-项目已完成规约、计划和不同 Agent 类型的冷启动验证，并于 2026-08-03 获得 `FORMAL_READY` 正式实现授权。当前尚未提交正式实现代码或可运行发行版；本文档会明确区分已完成的过程门槛与仍待完成的产品交付。
-
-## 项目目标
-
-VesperCode 解决的问题是：LLM 可以提出代码修改，但不能单独可靠地提供文件边界、危险动作拦截、测试证据、审批语义、持久化事务和跨会话上下文。Harness 负责这些工程约束，LLM 只负责在当前上下文中决定下一步动作。
-
-核心循环为：
-
-```text
-上下文装配 → 单次 LLM 决策 → 动作解析 → 治理判定 → 工具执行
-      ↑                                              ↓
-      └──────── 结构化反馈、记忆与停机判断 ←──────────┘
-```
-
-主要贡献维度是治理机制，尤其是确定性护栏、一次性审批、验收契约防篡改和候选补丁到权威工作区的受控晋升。
-
-## 核心设计
-
-### 两种运行模式
-
-- **本地实际使用模式**：在 Windows 本机运行，只绑定 `127.0.0.1` 的本地 WebUI，处理用户指定的本地 Git 工作区。
-- **公网演示模式**：只使用内置示例仓库、预定义场景、Mock LLM 和受限 `DemoExecutor`，不读取本地文件、不接收任意仓库或真实凭据、不执行任意命令或对外网络请求。演示结果始终标记为模拟运行，终态为 `DEMO_COMPLETED`，不能伪装成正式修复成功。
-
-两种模式共享状态模型和 Harness 核心，但进程启动后模式不可切换。公网进程不注册本地文件系统、凭据管理、Docker 执行器或真实 LLM 供应商能力。
-
-### 受控工作区与补丁事务
-
-- `AuthoritativeWorkspace` 是用户的权威工作区。
-- `ExecutionWorkspace` 是由快照或候选树物化的可丢弃纯文件树，不包含 `.git` 元数据或指针。
-- LLM 只能提出目标固定为执行副本的 `ApplyCandidatePatchAction`。
-- 只有正式验证完成并获得一次性批准后，Harness 才能生成目标固定为权威工作区的 `PersistVerifiedDiffAction`。
-- 首版只支持创建或修改支持矩阵内的普通文本文件；删除、重命名、二进制修改、文件模式变化、任意 Shell 和通用联网均拒绝。
-- 发现工作区外部变化、事务恢复未解决或仓库策略变化时，必须停止并保护用户修改。
-
-### 四类领域机制
-
-Coding 场景中的机制设计如下：
-
-| 机制 | VesperCode 的实现方向 |
-| --- | --- |
-| 动作与工具 | 受路径围栏和能力边界约束的文件读取、候选补丁和结构化检查动作 |
-| 客观反馈 | 将 pytest、Ruff、Mypy 和复现结果转换为结构化状态与失败指纹，回灌 Agent |
-| 危险动作 | `ALLOW / ASK / DENY` 风险分类；硬拒绝不能被批准覆盖；高风险批准绑定完整上下文且只能消费一次 |
-| 记忆 | 按仓库身份检索项目约定、历史决策、运行摘要和已知失败；不把记忆当成权限或验收条件 |
-
-验收契约由不可变、版本化的 `ValidationManifestV1` 保护。自然语言缺陷、测试提案审批和 `ValidationManifestV2` 属于当前 v1 的明确非目标；这不是 Agent 修改验收契约的例外，也不是可被普通批准绕过的 `DENY`。
-
-## 支持范围与安全边界
-
-首版核心协议保持语言无关，但只提供明确兼容性画像内的 Python 项目适配器，支持通过 pytest 收集和运行测试，以及运行项目已配置的 Ruff 和 Mypy 检查。项目环境、依赖和 Docker profile 必须预先准备，VesperCode 不在运行过程中自动联网安装依赖、拉取镜像或构建环境。超出支持矩阵的项目以 `UNSUPPORTED_PROJECT` 失败关闭。
-
-运行准入要求包括有效 Git `HEAD`、干净且可确定性物化的工作区、受支持的仓库策略和安全的 tracked 文件集合。系统不自动执行 `commit`、`stash` 或 `clean`，也不覆盖运行前已有的权威文件。
-
-真实 LLM 凭据必须使用操作系统凭据管理器、带主密码的加密存储或其他符合规约的安全方案；不得硬编码、提交、写入日志、命令历史或明文配置。首次录入应隐藏输入，并提供不回显明文的状态查看、更新和清除能力。公网演示不接收真实凭据。
-
-本地读取权限不等于对外披露权限。向真实 LLM 供应商发送代码、检查结果或记忆前，需要独立的数据披露授权；授权绑定供应商、端点、模型、范围、脱敏规则、预算和有效期，并为每次实际发送生成记录。
-
-## 用户旅程
-
-项目规约当前定义了九条用户故事，覆盖：
-
-1. 运行前检查与安全启动；
-2. 真实 LLM 凭据的录入、查看、更新和清除；
-3. 根据已有失败测试修复缺陷；
-4. 控制向真实 LLM 的数据披露；
-5. 依赖确定性护栏和一次性动作审批；
-6. 审查、持久化并恢复已验证 diff；
-7. 检查和清除仓库记忆；
-8. 理解状态和审计证据；
-9. 无需真实仓库或凭据地体验可重复的公网模拟流程。
-
-已有稳定失败测试场景必须满足完整基线、目标测试稳定性、保护配置不变、正式 Docker 验证和最终精确写入核对，才能进入成功判定。
-
-## 计划交付物
-
-最终项目必须包含：
-
-- 自行实现的 Harness 主循环、动作解析、工具分发、治理、反馈、记忆、配置和 Mock LLM 抽象；
-- 不依赖网络和真实 LLM 的确定性单元测试；
-- 机制演示：危险动作拦截、注入一次确定性检查失败后的反馈修正，以及治理重点机制的确定性行为；
-- 安全凭据生命周期、分发方式、CI 测试任务和线上可访问的公网 WebUI 演示；
-- 根目录过程文档：`SPEC.md`、`PLAN.md`、`SPEC_PROCESS.md`、`AGENT_LOG.md`、`README.md` 和 `REFLECTION.md`。
-
-实现必须遵循 TDD（先红、再绿、再重构）、隔离 worktree、subagent 任务拆分、规格合规审查和代码质量审查。项目不得把主循环委托给 LangChain AgentExecutor、AutoGen、CrewAI、LlamaIndex agents 或其他高层 Agent runner。
+本文档内容全部基于本仓库已提交的实现与验证证据，不包含任何未经终端验证的外部结果。
 
 ## 当前状态
 
-已完成：
+- 实现已交付并通过门禁：`FORMAL_READY`（2026-08-03）之后的实现工作已交付；`PLAN.md` 的 68 张任务卡与 141 个唯一 legacy steps 计数契约，以及过程记录（冷启动、文档检查、AGENT_LOG 完成锚点）由 `scripts/verify_process_evidence.py` 逐项复核通过；T37.1 的 README 契约（37.A）与过程证据（37.B）验证器已实现并通过测试。
+- 包、镜像与 CI 契约已验证：wheel 打包与 pipx 安装（T33.1/T33.2）、跨平台确定性参考镜像（T35.1）、CI 契约（T35.1）与交付证据 schema（T36.1/T36.2/T36.3）均已落地。
+- **尚未执行**：正式 release（含 GHCR 镜像发布）、Render 部署与公网 WebUI 上线属于 T37 最终交付流程，本文档撰写时均未执行，以下相关章节只给出契约与验证指令，不声称已发布。
 
-- 完整 `SPEC.md`：问题、九条 INVEST 用户故事、领域与机制设计、功能/非功能规约、架构、数据模型、凭据/分发、技术选型、验收标准与风险；
-- 完整 `PLAN.md`：68 个正式执行切片、依赖、并行边界、预期 RED、验证和评审步骤；
-- 治理作为主要贡献维度，以及本地真实模式与公网 Mock 演示模式的安全边界；
-- CS-03 的不同 Agent 类型、无历史冷启动验证：达到预先声明的 T01.1 边界，且无未解决的 `BLOCKING` 或 `CLARIFY` finding；
-- 2026-08-03 的人工 `FORMAL_READY` 确认。该确认允许依照当前计划开始正式任务，但不表示任何正式任务或交付已经完成。
+## Reference image digest verification
 
-待完成：
+本仓库的参考镜像身份在 Windows formal 环境与 GitHub Linux runner 上字节一致复现（SPEC_PROCESS 86），冻结身份为：
 
-- T01.1 及其后的全部正式实现任务；当前尚未创建任何正式实现/测试代码；
-- 源代码、测试、机制演示、CI/CD、发行配置和 WebUI 部署；
-- 逐任务的 `AGENT_LOG.md`、PLAN 状态、提交、PR、评审和验证证据；
-- 1500–2500 字、由学生本人撰写并声明 AI 润色范围的 `REFLECTION.md`。
+- manifest 摘要：`cf0b6c5ccac588fccd07c3b9f050bff4daf550ac6e518fd06efb6e988ab1d823`
+- profile 摘要：`d0700f00f5ae2501ac9be7fbdd66d20e76c16a6c6f9ab7893c1aea71d57e927e`
 
-因此，当前仓库不能被视为可安装或可运行的 VesperCode 发行版。
+当 release 发布后，按以下步骤验证镜像未被篡改（可操作指令）：
 
-## 仓库结构
+1. `docker pull ghcr.io/<owner>/vespercode-reference:<tag>`（tag 见 release 说明）。
+2. 计算拉取镜像的 manifest 与 profile 摘要，与上方冻结身份逐字节比对；任一不一致即判定镜像无效，停止使用。
+3. 用 T36.2 的 `verify_release_publication_result`（`src/vespercode/delivery/publication.py`，输入为冻结的 `FrozenReleaseInputsV1` 与观测的 `ObservedReleaseResultV1`，按 36.B GREEN-2 确定性顺序比对）复核发布结果，三方摘要（release 记录、GHCR RepoDigest、本地拉取）必须相等。
 
-```text
-.
-├── AI4SE_Final_Project_通用要求.md
-├── AI4SE_Final_Project_A_Coding_Agent_Harness(1).md
-├── SPEC.md
-├── SPEC_PROCESS.md
-├── PLAN.md
-├── AGENT_LOG.md
-├── README.md
-└── REFLECTION.md
+发布结果的证据验证入口是 `scripts/verify_release_evidence.py --live <evidence_root>`（T36.1，`--live` 要求终态成功与 24 小时新鲜度）；`delivery/evidence/` 下的三条 JSON 记录只在终端事实确认后写入。镜像自身的复现与 digest 验证入口是 `scripts/run_reference_image_smoke.py`（T34.2）。
+
+## Installation
+
+- 运行环境：Python 3.12（本项目在 Windows 11 与 Linux 上开发与验证；`dev.lock` 锁定依赖，含 `pywin32`，只能在 Windows 安装）。
+- 从源码构建 wheel：`python -m build`（T33.1 验证 wheel 恰好一个，成员清单与 `RECORD` 自洽）。
+- 安装：`pip install dist/vespercode-*.whl`，或隔离安装 `pipx install dist/vespercode-*.whl`（T33.2 验证 `vespercode --help` 退出码 0、不泄漏源码 checkout 导入）。
+- 开发安装：`pip install -e .` 后 `pytest`（完整离线套件基线 `1549 passed`，T35.1 记录）。
+
+## Usage
+
+安装后有两个入口：
+
+- **本地实际使用模式**（Windows 本机）：`vespercode` 启动只绑定 `127.0.0.1` 的本地 WebUI，处理用户指定的本地 Git 工作区。所有路径、工具、审批与凭据披露均受治理判定约束。
+- **公网演示模式**：只使用内置示例仓库、预定义场景、Mock LLM 与受限 `DemoExecutor`，不读取本地文件、不接收任意仓库或真实凭据、不执行任意命令或对外网络请求。演示结果始终标记为模拟运行，终态为 `DEMO_COMPLETED`。
+
+两种模式共享状态模型与 Harness 核心，但进程启动后模式不可切换。
+
+## Directory layout
+
+```
+src/vespercode/        # 包源码（cli、loop、governance、persistence、
+                       #   recovery、delivery、storage 等模块）
+scripts/               # 只读验证器与工具（scan_credentials、verify_*）
+tests/                 # unit / e2e / smoke / integration 测试
+gates/                 # 冻结的 gate 工具链与证据
+delivery/evidence/     # 交付证据 schema 与记录槽位（ci/release/deployment）
+SPEC.md                # 规格（§1.6、§5.x、§8.x、§10.1 验收标准）
+PLAN.md                # 68 张任务卡、38 里程碑、141 唯一 legacy steps
+SPEC_PROCESS.md        # 追加式过程记录（含冷启动与文档检查记录）
+AGENT_LOG.md           # 追加式执行日志（含每任务 COMPLETION 锚点）
+render.yaml            # Render 部署契约（T36.3，已提交未部署）
+.github/workflows/     # GitHub Actions（T35.1，三 job 契约）
+.gitlab-ci.yml         # GitLab CI（T35.1，四 job 契约，无项目未运行）
 ```
 
-正式实现将在后续单独启动 T01.1 时，把应用代码放入 `src/`，把测试放入 `tests/`，并将 Harness 核心、工具适配器、护栏、反馈校验器和记忆组件拆为独立模块。
+## Secure key setup
 
-## 项目文档
+- 仓库凭据红线由 `scripts/scan_credentials.py` 强制：任何变更文件中的 API key、私钥块、带凭据 URL 都会在提交前被扫描拦截（`CREDENTIAL_SCAN_*` 错误码），报告只给出规则与路径、绝不回显匹配值。
+- 本地模式下 WebUI 只监听 `127.0.0.1`，不对外暴露。
+- 持久化与凭据存储受 NTFS ACL 保护；身份校验与排他互斥由真实 Windows 对象实现（`tests/integration/windows/test_persistence_acl_and_identity.py`）。
+- 公网演示进程不注册本地文件系统、凭据管理、Docker 执行器或真实 LLM 供应商能力。
 
-- [通用课程要求](<AI4SE_Final_Project_通用要求.md>)：所有项目共享的流程、凭据、测试、分发和交付要求。
-- [Coding Agent Harness 专项要求](<AI4SE_Final_Project_A_Coding_Agent_Harness(1).md>)：Harness 的主循环、四类机制、实现边界和 Mock LLM 测试要求。
-- [项目规约](SPEC.md)：VesperCode 的问题定义、用户故事和设计合同。
-- [规约过程记录](SPEC_PROCESS.md)：brainstorming、外部审查、关键迭代、CS-03 与 `FORMAL_READY` 决定。
-- [实现计划](PLAN.md)：当前正式实施 handoff；已获 `FORMAL_READY`，首个任务为尚未开始的 T01.1。
-- [Agent 日志](AGENT_LOG.md)：冷启动、人工决定和后续正式任务的时间线、subagent 与人工修改记录。
-- [反思报告](REFLECTION.md)：最终由学生本人完成的项目反思。
+## Distribution
 
-## 许可证与第三方依赖
+- 分发形态：wheel（`pyproject.toml` 冻结 console 入口 `vespercode = vespercode.cli:main`，T33.1 验证 164 个 wheel 成员双向一致）+ 参考镜像（上文冻结身份）。
+- 正式 release 后，版本化 wheel 作为 GitHub Release 附件提供，同时发布 SHA-256 摘要；下载产物先按摘要校验（`sha256sum <wheel>`；Windows PowerShell：`Get-FileHash <wheel> -Algorithm SHA256`），再按以下规范命令安装：从本地构建产物安装为 `pipx install dist/vespercode-<version>-py3-none-any.whl`（只有包实际发布到配置的 Python 包索引后，才可使用 `pipx install vespercode`）。
+- 正式 reference 镜像发布到与仓库同一所有者下的 `ghcr.io/ledstevenovo/vespercode-reference`，规范引用为 `ghcr.io/ledstevenovo/vespercode-reference@sha256:cf0b6c5ccac588fccd07c3b9f050bff4daf550ac6e518fd06efb6e988ab1d823`；tag 不构成运行身份，运行与证据只接受 digest。
+- 镜像验证链（按序执行，任一失败即本地正式运行失败关闭）：
+  1. `docker pull ghcr.io/ledstevenovo/vespercode-reference@sha256:cf0b6c5ccac588fccd07c3b9f050bff4daf550ac6e518fd06efb6e988ab1d823`；
+  2. `docker image inspect <image> --format '{{json .RepoDigests}}'` 必须恰好等于该 digest（本地 RepoDigest 核验）；
+  3. 镜像内 profile/version smoke：`scripts/run_reference_image_smoke.py`（T34.2；重建与 loopback 拉取的 manifest digest 均与冻结 digest 逐字节比对）；
+  4. 确认 wheel 内置 `reference-profile-v1.json` 的 `docker_image_digest` 与所拉取 digest 完全一致：
+     `python -c "import glob,json,zipfile; m=json.load(zipfile.ZipFile(glob.glob('dist/vespercode-*.whl')[0]).read('vespercode/profiles/builtin/reference-profile-v1.json')); print(m['docker_image_digest'])"`
+- 可复制的本地 `docker build` / `docker run`（复现与诊断用；参考镜像的正式身份只有上方不可变 digest，本地重建必须经 digest 比对后才可声称与正式镜像等价）：
+  - **参考镜像**（Dockerfile `containers/reference/Dockerfile`；build context 必须含冻结的 `fixture/` 与 `requirements.lock`，即 Task 2 配方上下文——`scripts/run_reference_image_smoke.py` 自动装配该上下文并重建、比对 digest）：
+    `docker build --no-cache -f containers/reference/Dockerfile -t vespercode-reference:repro <context>`；
+    `docker run --rm --network none --user vesper vespercode-reference:repro python --version`。
+  - **Demo 镜像**（Dockerfile `containers/demo/Dockerfile`；build context 为仓库根；容器读平台注入的 `PORT` 并绑定 `0.0.0.0:PORT`，健康检查 `GET /healthz`）：
+    `docker build --no-cache -f containers/demo/Dockerfile -t vespercode-demo:local .`；
+    `docker run --rm -p 8000:8000 -e PORT=8000 --user vesper vespercode-demo:local`，随后 `curl http://127.0.0.1:8000/healthz`。以上命令均不含凭据；Demo 镜像无真实能力、无 secret、无 Docker socket（SPEC §8.3）。
+- 发布流程契约由 T36.2 的 `verify_release_publication_result` 定义（7 个封闭错误码、确定性优先级 source→tag→wheel→manifest-vs-GHCR→pulled→install→smoke）；**release 未执行**，发布时间与 tag 待 T37 流程在冻结 `source_commit` 后确定。
+- 发布必须使用只读权限的 CI（无发布秘密）与 fail-closed 的受保护 tag 规则（T35.1）。
+- 本地运行前提：Windows 11 x64、Python 3.12、Git、Docker Desktop Linux 容器模式，以及按不可变 digest 拉取并核验的 `python-src-py312-v1` reference 执行镜像（`src/vespercode/profiles/builtin/reference-profile-v1.json`）。
+- 凭据配置：本地模式凭据经系统凭据存储（keyring）读取，WebUI 只绑定 `127.0.0.1`；LLM profile 为 `openai-single-turn-v1`（精确模型 `gpt-4.1-mini`，`src/vespercode/profiles/builtin/openai-single-turn-v1.json`）；外发请求按所选 profile 声明的 `NO_CONTENT_REDACTION_V1` 契约披露——所选项目正文在规范裁剪后原样发送、不做正文扫描，外发前经 `src/vespercode/web/disclosure_workflow.py` 向用户披露。
+- 恢复：`vespercode recover --workspace <path>` 只预览恢复；增加 `--apply` 后才执行；WebUI 提供等价的预览与显式确认入口（SPEC §8.2）。
 
-Python 3.12、核心框架、低层 LLM 边界、容器、CI 与分发方向已在 `SPEC.md` 和 `PLAN.md` 冻结；正式任务将创建精确依赖锁、第三方许可证清单和发行配置。不得提交任何真实凭据。
+## Limitations
+
+- **平台**：主运行环境是 Windows 11；`pywin32` 锁在 `dev.lock` 中，Linux 上无法安装，因此本仓库在 Linux 只能运行不依赖 Windows 对象的测试子集。
+- **未部署公网**：`render.yaml` 已提交但从未部署；公网 WebUI 不可用，本文档不提供公网 URL。
+- **GitLab**：GitLab 无项目，其四 job 契约只做过静态验证与本地 dind 演练，从未在 GitLab 运行。
+- **既有失败**（与 T37 无关，干净 main 同样存在）：`tests/integration/windows/test_named_mutex.py` 2 项；`mypy` 在 4 个测试文件中的 6 个既有错误。
+- **首版能力边界**：只支持创建/修改支持矩阵内的普通文本文件；删除、重命名、二进制修改、文件模式变化、任意 Shell 与通用联网均拒绝（见 SPEC 与 PLAN）。
+
+## CI/CD
+
+- **GitHub Actions**（T35.1）：`unit-test` / `reference-image-build` / `demo-image-build` 三 job，在每次 push 与 PR 上运行；权限只读、零发布秘密；reference job 在 Linux runner 上重建冻结 digest（跨平台确定性已证明）。近期 push/PR 运行均成功（`AGENT_LOG.md` 的 T35.1 记录）。
+- **GitLab CI**（T35.1）：四 job 契约与 dind 拓扑 loopback 绑定已提交；无项目未运行（见 Limitations）。
+- **两端项目 URL 与镜像方向**（SPEC §8.4）：GitHub 仓库 `https://github.com/ledstevenovo/VesperCode` 是源码、版本 tag、Release 与 GHCR package 的发布权威，GitHub Actions 三 job 在每次 push 与 PR 上运行；GitLab 无项目，其完整 CI/Windows wheel/受保护发布闭环契约已提交但从未运行。普通 CI 不反向改写 GitHub；受保护 release pipeline 只有在 GitLab `CI_COMMIT_SHA`、GitHub 同名 tag commit 与待发布 wheel 源提交三者一致时才可发布，任一查询失败或摘要不一致即停止。
+- **本地验证链**：`scripts/scan_credentials.py`（凭据扫描）、`scripts/verify_readme_contract.py`（README 契约）、`scripts/verify_process_evidence.py`（过程记录）、`scripts/verify_release_evidence.py --live`（交付证据，终端事实后使用）组成只读、fail-closed 的收尾验证链。
+
+## Web UI
+
+- **本地 WebUI**：本地实际使用模式下由 `vespercode serve` 启动，只绑定 `127.0.0.1`，不对外暴露，也不提供公网健康检查端点。
+- **公网演示模式**：demo 应用（`src/vespercode/demo/app.py`）暴露 `GET /healthz` 健康检查（SPEC §8.3），部署后由平台探活；演示模式只使用内置示例仓库与 Mock LLM。
+- **公网 WebUI**：Render 部署契约（`render.yaml`：PORT=8000、`SOURCE_COMMIT` 槽位、无磁盘/秘密/凭据）已提交，但部署**未执行**，当前没有可访问的公网 URL；T37 流程部署成功后会在此处记录真实 URL。

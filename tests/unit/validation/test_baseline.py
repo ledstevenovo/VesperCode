@@ -536,6 +536,16 @@ class _FakeStreamSocket:
         buffer[: len(chunk)] = chunk
         return len(chunk)
 
+    def readinto(self, buffer: bytearray) -> int:
+        return self.recv_into(buffer)
+
+    def read(self, size: int = -1) -> bytes:
+        read_size = sum(len(chunk) for chunk in self._chunks) if size < 0 else size
+        if read_size == 0:
+            return b""
+        buffer = bytearray(read_size)
+        return bytes(buffer[: self.recv_into(buffer)])
+
 
 class _FakeContainer:
     def __init__(
@@ -565,6 +575,15 @@ class _FakeContainer:
         if self.stopped_exact or self.killed_exact:
             return {"StatusCode": 137}
         return {"StatusCode": self._exit_code}
+
+    def logs(
+        self,
+        *,
+        stdout: bool = True,
+        stderr: bool = True,
+        stream: bool = False,
+    ) -> bytes:
+        return b""
 
 
 class _Script:

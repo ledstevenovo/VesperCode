@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import ctypes
 import hashlib
+import os
 import shutil
 import subprocess
 import sys
@@ -84,6 +85,19 @@ class ChildAcquireResultV1:
     kind: Literal["ACQUIRED", "TIMED_OUT", "ERROR"]
 
 
+def _child_environment() -> dict[str, str]:
+    """Provide a child Python process the same source import root as pytest."""
+    environment = os.environ.copy()
+    source_root = str(_REPO_ROOT / "src")
+    existing_pythonpath = environment.get("PYTHONPATH")
+    environment["PYTHONPATH"] = (
+        source_root
+        if existing_pythonpath is None
+        else source_root + os.pathsep + existing_pythonpath
+    )
+    return environment
+
+
 def child_process_try_acquire(
     identity: WorkspaceIdentityV1, timeout_ms: int
 ) -> ChildAcquireResultV1:
@@ -94,6 +108,7 @@ def child_process_try_acquire(
         capture_output=True,
         text=True,
         cwd=_REPO_ROOT,
+        env=_child_environment(),
         timeout=30,
         check=False,
     )
@@ -113,6 +128,7 @@ def child_process_abandon(identity: WorkspaceIdentityV1) -> None:
         capture_output=True,
         text=True,
         cwd=_REPO_ROOT,
+        env=_child_environment(),
         timeout=30,
         check=False,
     )

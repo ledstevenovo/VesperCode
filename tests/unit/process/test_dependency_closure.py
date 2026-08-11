@@ -14,6 +14,8 @@ from typing import Callable
 
 import pytest
 
+from scripts import bootstrap_formal_env
+from scripts.bootstrap_gate_env import validate_lock_bytes
 from vespercode.project.dependency_closure import (
     FIXED_PYPI_SIMPLE_INDEX_URL,
     DeclaredDependencySetV1,
@@ -122,6 +124,42 @@ def test_declared_v1_dependency_closure_is_complete(
     assert report.marker_or_source_mismatches == ()
     assert report.gate_tool_version_mismatches == ()
     assert report.python_version_mismatches == ()
+
+
+def test_package_smoke_tool_is_in_formal_dependency_closure() -> None:
+    root = Path(__file__).resolve().parents[3]
+    stack = _reviewed_plan_stack()
+    lock_entries = validate_lock_bytes((root / "requirements/dev.lock").read_bytes())
+    locked = {entry.name: entry.version for entry in lock_entries}
+    record = json.loads(
+        (root / "config/dependency-closure-v1.json").read_text(encoding="utf-8")
+    )
+    if not isinstance(record, dict):
+        raise AssertionError("closure record must be a JSON object")
+    direct_families = record.get("direct_families")
+    distributions = record.get("distributions")
+    if not isinstance(direct_families, dict) or not isinstance(distributions, list):
+        raise AssertionError("closure record dependency fields are malformed")
+    recorded_versions = {
+        item["name"]: item["version"]
+        for item in distributions
+        if isinstance(item, dict) and "name" in item and "version" in item
+    }
+
+    assert {
+        "direct_declaration": "pipx==1.16.6" in stack.development,
+        "locked_version": locked.get("pipx"),
+        "recorded_family": direct_families.get("pipx"),
+        "recorded_version": recorded_versions.get("pipx"),
+        "bootstrap_probe": "pipx"
+        in getattr(bootstrap_formal_env, "_FORMAL_IDENTITY_DISTRIBUTIONS", ()),
+    } == {
+        "direct_declaration": True,
+        "locked_version": "1.16.6",
+        "recorded_family": "development",
+        "recorded_version": "1.16.6",
+        "bootstrap_probe": True,
+    }
 
 
 def _run_bootstrap(root: Path, evidence: Path) -> subprocess.CompletedProcess[str]:

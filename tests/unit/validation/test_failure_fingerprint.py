@@ -236,7 +236,18 @@ def test_duplicate_call_events_are_not_fingerprintable() -> None:
     # duplicate CALL) but the events themselves are real validated values,
     # so the fingerprint boundary operates on typed events.
     document["events"] = tuple(PytestEventV1.model_validate(event) for event in events)
-    evidence = PytestEvidenceV1.model_construct(**document)
+    evidence = PytestEvidenceV1.model_construct(
+        schema_version=1,
+        report_plugin_version="1",
+        run_kind="FULL_PYTEST",
+        planned_node_ids=(_TARGET,),
+        collected_node_ids=(_TARGET,),
+        events=tuple(PytestEventV1.model_validate(event) for event in events),
+        pytest_exit_code=1,
+        event_count=len(events),
+        normal_end_marker=True,
+        integrity_digest=str(document["integrity_digest"]),
+    )
     outcome = build_failure_fingerprint(evidence, _TARGET, normalization_context())
     assert outcome.kind == "NOT_FINGERPRINTABLE"
     assert outcome.error_code == "TARGET_NOT_REPRODUCED"

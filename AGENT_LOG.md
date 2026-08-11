@@ -2366,3 +2366,176 @@
 - **Verification:** T01-T25/T36/T38 全部卡 checked>0 且 unchecked=0（脚本审计）；T37 无 Step checkbox（特殊卡）；main 已含 WP38 全部实现提交。
 - **Human intervention:** 用户"开始收尾"。
 - **Lesson learned:** WP 收尾的三要素（Status/checkbox/evidence）必须一次性完成——此前会话只改 Status 留下 83 步未勾；批量勾选必须按卡范围精确（本收尾勾了 102 步含 T26-T35 的已完成残留，审计确认均为已完成卡，无未开始卡受影响——T37 无 checkbox 天然隔离）。
+
+## PLAN-RESTORE-20260809
+
+- **Timestamp (Asia/Taipei):** `2026-08-09T00:30:00+0800` (system-observed; append-only driver record).
+- **Task ID:** PLAN.md 损坏修复（driver 执行——恢复既有记录，不新造证据）。
+- **Key prompt/context:** 发现 PLAN.md 在 codex/wp37 分支历史中遭受两处损坏：(1) `91dcd09`
+  （2026-08-06「Record T25.3 completion evidence」）执行错误 find-replace，把约 12 张卡的
+  「Not yet executed.」替换为 T25.3 完成证据（`6d48f0b`），污染扩散到 T26.1/T26.2/T31.1/
+  T32.1/T33.1/T34.2/T35.1 卡；(2) `ea85ee9`（2026-08-08 11:03）删除 2360 行（T25.3 证据 +
+  全部 T26.1–T35.1 卡），并把 T35.1 证据误放在 T25.3 卡下；(3) `816f6da`（17:07，
+  SPEC_PROCESS 92）声称勾选「T26-T35 已完成卡的 19 个残留」，但其 diff 实际未触及任何
+  T26-T35 行，时间上不可能（详见 SPEC_PROCESS 93 更正）。T37.1 标题在损坏过程中重复，
+  T37.1/T37.2 卡带错误 `6d48f0b` 证据。
+- **Recovery (2026-08-09):** 从最后一次完整 PLAN.md（`8fa4526` 版本）按模式提取
+  T25.3 证据行与 T26.1–T35.1 全部卡，恢复入当前 PLAN.md；仅含误放证据行、无真实证据的
+  T31.1/T32.1/T33.1/T34.2/T35.1 卡按本日志 COMPLETION anchors（T26.1-COMPLETION-20260806
+  L1945-1960 / T26.2-COMPLETION-20260806 L1961-1986 / T32.1-COMPLETION-20260807
+  L2015-2050）与 SPEC_PROCESS §80-85 回填真实证据（Status 置 Complete 仅依据既有记录）；
+  T26.1/T26.2 卡内已有真实证据（f729726/e6a11e5 摘要），仅删除重复注入的 T25.3 证据行；
+  删除第一个重复 T37.1 标题；T37.1/T37.2 证据复位为「Not started; no implementation or
+  evidence commit exists.」（T37 未实现，保持 Not started）。
+- **Verification:** 门槛复核全部通过——68 张任务卡（`grep -c '^### Task T'`）；141 个唯一
+  legacy steps（按展开 **Legacy steps:** 字段去重）；`6d48f0b` 全文件仅 1 处（T25.3 卡）；
+  T37.1 标题唯一；里程碑注册表 38 行完整；`git diff --check` 干净；恢复内容与 parent
+  (`8fa4526`) 逐行 diff 复核一致。
+- **Human intervention:** 无（用户登机中，自主执行获授权）。
+- **Lesson learned:** 大文件的 find-replace 必须按卡范围精确断言（先验证目标行数再替换）；
+  完成证据的删除与恢复都必须核对 git 历史中的真实提交；对「声称已勾选」的记录要核对
+  commit diff 的时间性；从历史完整版本恢复比手工重写更可靠——但恢复后必须逐卡验证
+  证据行唯一性与真实性（本次发现 T26.1/T26.2 已有真实证据，避免误回填覆盖）。
+
+## T37.1-IMPLEMENTATION-20260809
+
+- **Timestamp (Asia/Taipei):** `2026-08-09T16:50:00+0800` (system-observed; append-only driver record).
+- **Task ID:** T37.1（driver 执行 legacy 37.A/37.B——实现与两轮评审记录，**非完成记录**；
+  GREEN-3 最终交付、release/部署证据与反思仍未执行）。
+- **Key prompt/context:** 用户登机前授权五阶段自主执行（方案甲 A→E，登机期间不暂停等待）；
+  本条目记录 Phase C：T37.1 实现、SPEC 评审与 fresh-subagent 质量评审。运行环境为 Linux
+  （无 Windows 对象、pywin32 不可装），本地只运行 T37 自有测试文件；不代写 REFLECTION、
+  不发布任何外部产物、不把未记录的证据写成既成事实。
+- **Implementation (legacy 37.A/37.B):**
+  - `scripts/verify_readme_contract.py`（37.A）：9 个必需 README 章节标题映射到各自封闭
+    错误码；缺文件 fail-closed（`FileNotFoundError`）；CLI exit 0/1。
+  - `scripts/verify_process_evidence.py`（37.B）：68 任务卡 / 141 唯一 legacy steps 计数
+    契约；冷启动与文档检查记录（冷启动标题必须正向「通过」，两记录段落体须含正向完成
+    标记）；AGENT_LOG 完成锚点时间线（合法时间戳且与标题日期差 ≤1 天，月份安全）；
+    每锚点 review 与 commit 记录；PR 记录（记录值若是 URL 必须 https；「pending — human
+    decision …」是诚实无 PR 记录，不视为 URL）；Human intervention 记录非空；早期锚点
+    缺失字段不推断；只读、无外部 I/O。
+  - 测试：两条 RED 与卡片逐字一致；Domain 共 23 个（含冷启动失败态拒绝、文档检查正向
+    结果要求、PR 叙述记录接受、空 Human intervention 拒绝等）；conftest 提供可修改的
+    repository_copy 副本夹具，真实仓库零变更。
+  - README.md 重写：基于已提交实现与验证事实；release/deploy 未执行如实延期；完整覆盖
+    SPEC §8.2（`docker pull ghcr.io/ledstevenovo/vespercode-reference@sha256:<digest>`、
+    RepoDigest 核验、镜像内 profile smoke、wheel 内嵌 digest 确认、SHA-256 校验命令、
+    凭据配置、`NO_CONTENT_REDACTION_V1` 披露、恢复指令、精确模型 gpt-4.1-mini）与 §8.4
+    （两端项目 URL、镜像方向、三者一致同步规则、参考/Demo 镜像可复制本地 build/run 命令）。
+  - 提交：`9575f45`（实现 + README 重写）、`e016665`（SPEC 评审闭包）、`493384e`
+    （质量评审闭包）。
+- **Reviews:** SPEC 合规评审关闭 I1–I4、M3、M4（README 过度声称/不存在脚本引用/§8.2
+  缺失/PR 与 human 记录检查/月份边界/healthz 归属）；M1/M2/M5/M6 记录为无需修改。
+  fresh subagent 质量评审（只读、对抗式）初判 CHANGES-REQUIRED，全部 SHOULD-FIX 关闭：
+  (1) README 补 §8.2 校验命令与 §8.4 build/run 命令、项目 URL/镜像方向/同步方式；
+  (2) 冷启动标题拒绝「未通过」、两记录段落体正向标记；(3) 修复 `[^未]*` 跨行误匹配
+  （冷启动正则曾跨行误配 §26 文档检查段）与 fixture `remove_document_check_body` 贪婪
+  `.*` 吞全文件。NIT 记录：整锚点删除检测（T31.1/T33.1/T34.2 证据在 SPEC_PROCESS
+  §80-85 而非锚点）交由 T37.2 delivery gate 补按卡完成证据溯源；review/commit 标记保持
+  词级（4 个锚点无结构化标记，强化会误伤真实记录）；「记录即验证」语义保持；
+  README 契约按标题契约（设计如此）；里程碑计数不在 verifier 契约内（README 措辞已修正）。
+- **Verification:** 23 个测试全部通过（含两条逐字 RED）；`ruff check`/`format` 干净；
+  `mypy` 5 个文件 Success；`scripts/gate_scan.py` exit 0；`git diff --check` 干净；
+  两个 verifier 对已提交树均返回 ACCEPTED。
+- **Known limitations / T37.2 handoff:** 整锚点删除在本 verifier 中不可检测（真实仓库
+  有 3 张 Complete 卡的证据不在锚点中），T37.2 delivery gate 需补按卡完成证据溯源
+  （PLAN Status=Complete 卡必须在 AGENT_LOG 有锚点或在 SPEC_PROCESS §80-85 有记录）；
+  本环境为 Linux，未收集任何 Windows 专属证据。
+- **Human intervention:** 无（用户登机，自主执行获授权；PLAN 状态回填仅依据已提交证据）。
+- **Lesson learned:** 验证正则必须先对真实文件做「匹配对象=预期对象」断言再固化——本次
+  `[^未]*` 与贪婪 `.*` 都因跨行吞并而「假通过」；对抗式 fresh-subagent 评审能发现
+  fail-closed 语义缺口（失败态记录、正文剥离、锚点删除）与 README 过度声称，值得保留；
+  强化检查必须在真实仓库仍 ACCEPTED 与 fail-closed 之间同时成立。
+
+## T37.2-IMPLEMENTATION-20260809
+
+- **Timestamp (Asia/Taipei):** `2026-08-09T17:23:03+0800` (system-observed; append-only driver record).
+- **Task ID:** T37.2（legacy 37.C——交付就绪门禁与反思结构契约实现，**非完成记录**；
+  终态证据、release/部署、反思与 Complete 状态均未发生）。
+- **Key prompt/context:** 用户登机前授权五阶段自主执行（方案甲 A→E）；本条目记录
+  Phase D（T37.2 实现与两轮评审）与 Phase E 收尾。运行环境为 Linux（无 Windows 对象），
+  本地只运行 T37 自有测试文件；不代写 REFLECTION、不发布、不写 delivery/evidence JSON、
+  不把 T37 卡标 Complete。
+- **Implementation (legacy 37.C):**
+  - `scripts/verify_delivery.py`：可注入 loader（默认 T37.1 `verify_process_evidence`，
+    RED-1 用失败结果证明拒绝）；PLAN 68 张任务卡终态检查（`Complete`/`Done`，含带注释
+    变体）；141 唯一 legacy steps 必须被终态卡覆盖；逐卡完成证据溯源（AGENT_LOG 锚点
+    **或** SPEC_PROCESS §80 之后终区记录——T37.1 质量评审整锚点删除交接的落地）；
+    README 契约聚合；反思契约聚合；`require_live=True` 时读取 `delivery/evidence/` 三
+    JSON，跨记录 source_commit 一致性（SOURCE_COMMIT_DRIFT 优先于通用
+    DELIVERY_EVIDENCE_INVALID）。只读、无外部 I/O。
+  - `scripts/verify_reflection.py`：仅检查学生反思的结构契约——可解析、至少一个
+    markdown 标题、AI 协助状态披露（token 边界 + 协助/所有权词或显式否定）、
+    1,500–2,500 字（CJK 逐字 + 非 CJK 字母/数字 run，标点与 markdown 语法不计）；
+    绝不生成或评分子实质内容。
+  - 测试：两条 RED 与卡片逐字一致；新增 `test_reflection_contract.py`（10 项）与
+    `test_delivery_evidence.py` 聚合就绪用例（13 项）；conftest 新增
+    `failed_process_evidence` 夹具、`mark_child_incomplete`、`remove_completion_anchor`、
+    `ready_repository`（全终态副本，锚点经真实 loader 校验无循环假设）。
+  - 提交：`fe37590`。
+- **Reviews:** SPEC 合规评审（driver 内联）逐项核验：接口签名与卡片一致；Target/Domain
+  命令与卡片相同且通过；文件清单与卡片一致；不重复解析 review（loader 负责）；
+  真实树失败集合恰为诚实预期（T37.1/T37.2 非终态、37.A–37.C 未覆盖、
+  REFLECTION_CONTRACT_FAILED、--live 加 DELIVERY_EVIDENCE_INVALID），零意外码。
+  fresh subagent 对抗式质量评审（只读，全部发现经执行验证）初判 CHANGES-REQUIRED：
+  (1) IMPORTANT：完成证据溯源原按「SPEC_PROCESS 任意提及」回退——T01.1 等 59/63 任务
+  在文件各处被偶然提及，整锚点删除仍可逃逸；修复为限定 §80 之后终区（T31.1/T33.1/
+  T34.2 记录所在），真实树验证通过，新增删除锚点回归测试；(2) IMPORTANT：披露正则
+  拒绝自身文档声称接受的「未使用任何 AI 工具」，且 IGNORECASE 误配 email/wait 中的
+  "ai"；修复为 token 边界 + 否定分支，新增正反两向测试；(3) MINOR：不可解码证据文件
+  的 UnicodeDecodeError 逃出 API——补捕获并加测试；(4) MINOR：畸形文件被 drift 掩码
+  ——按设计保留（drift 是特定裁决，测试断言其优先）；NIT 关闭（锚点日期尾锚、
+  Path|str 超集按 T37.1 先例保留、未提交状态由本提交解决、既有 REFLECTION.md 如实
+  拒绝）。修复后 49 项测试全绿，全部门禁通过。
+- **Verification:** 卡片 Target 命令 `2 passed`；Domain（三个文件）`49 passed`；
+  `ruff check`/`format --check` 干净（14 文件）；`mypy --explicit-package-bases` 8 文件
+  Success；`scripts/gate_scan.py` exit 0；`git diff --check` 干净。真实树四 verifier：
+  process evidence ACCEPTED、README contract ACCEPTED、delivery（非 live 与 live）
+  拒绝集与诚实预期完全一致、reflection 对既有 REFLECTION.md（磁盘事件记录，558 字、
+  无披露）如实拒绝。只读性经评审 SHA-256 前后快照验证零变更。
+- **Known limitations:** `tests/unit/process/test_dependency_closure.py` 要求
+  `.venv-formal/Scripts/python.exe`（Windows formal 环境产物），Linux 上预存在失败，
+  与 T37 无关（不在 T37 自有文件内）；既有 REFLECTION.md 是 2026-08-08 磁盘事件过程
+  记录，不是最终反思——最终反思由学生撰写，须通过 verify_reflection 结构契约；
+  --live 证据仅在用户完成终态 CI/release/部署并填写三份 JSON 后成立。
+- **Human intervention:** 无（用户登机，自主执行获授权；PLAN 状态回填仅依据已提交证据）。
+- **Lesson learned:** 聚合门禁的「溯源回退」是最容易 fail-open 的地方——任意提及不等于
+  记录，必须按证据实际所在的区域限定范围，并用「真实树 + 删除锚点」双向验证；
+  披露类结构检查要对真实语言形态（否定披露、英文词内小写缩写）做正反样例矩阵，
+  评审子代理的逐条执行验证（非猜测）值得保留。
+## PRE-T37-PIPX-CLOSURE-20260811
+
+- **Timestamp (Asia/Taipei):** `2026-08-11T00:40:54+08:00` (system-observed).
+- **Task ID:** `PRE-T37-PIPX-CLOSURE` — pre-T37 package-smoke formal dependency-closure amendment.
+- **Skills invoked:** `test-driven-development` for the `0d14aba` contract-first implementation; `receiving-code-review` for technical verification and narrow closure of fresh SPEC review finding I-1.
+- **Key prompt/context:** The pre-T37 terminal-verification controller ran the required `package_smoke` profile from the formal Python 3.12.4 environment and observed `1 failed, 8 errors`, all rooted in `No module named pipx`. PLAN's post-T04.1 fail-closed dependency rule prohibits ad-hoc install or silent re-lock. The fix was constrained to the formal development declaration/lock/record/bootstrap identity and one regression contract; this follow-up is constrained to PLAN/SPEC_PROCESS/AGENT_LOG process evidence plus the SDD task report.
+- **RED/GREEN evidence:** RED target reached one aggregate assertion and reported `direct_declaration=False`, `locked_version=None`, `recorded_family=None`, `recorded_version=None`, and `bootstrap_probe=False`. GREEN target was `1 passed`; dependency-closure behaviors were `22 passed, 1 deselected`. A separate full-file run truthfully remained `22 passed, 1 failed` solely because the isolated worktree had no local `.venv-formal/Scripts/python.exe`; no environment was rebuilt or mutated. Scoped Ruff format/check, mypy, changed-file credential scan, and `git diff --check` passed. The real post-fix `package_smoke` rerun is controller-owned and is not claimed complete here.
+- **Implementation commit:** `0d14aba28bde3e5b23f0ac165e346a08bffcf8ed` (`Declare pipx in formal dependency closure`). It declares `pipx==1.16.6` as development direct, adds its four newly required hash-locked transitives, binds the 51-entry/15-direct closure record, and verifies pipx in the formal identity probe.
+- **Fresh SPEC review:** I-1 Important — the technical closure was correct but the frozen T04.1/T33.1 process sources had no post-completion amendment, leaving old 46-entry/14-direct evidence as the only written dependency identity. Narrow process repair appends the new identity and failure/cold-start rationale while retaining all historical evidence; same-stage re-review remains required.
+- **Human intervention:** none.
+- **Lesson learned:** A formal tool invoked only by a late smoke driver is still part of the project dependency closure. Passing historical smoke evidence cannot authorize a host-provided tool on a later clean environment; the declaration, hash lock, closure record, bootstrap identity, task contract, and process evidence must move together, and the real smoke must be rerun before any new PASS claim.
+
+## PRE-T37-PROFILE-CLOSURE-20260811
+
+- **Timestamp (Asia/Taipei):** `2026-08-11T01:29:56+08:00` (system-observed).
+- **Task ID:** `PRE-T37-PROFILE-CLOSURE` — package-smoke materialization and OCI registry-volume residue repair.
+- **Skills invoked:** `systematic-debugging`, `test-driven-development`, `subagent-driven-development`, `requesting-code-review`, and `verification-before-completion`.
+- **Key prompt/context:** Execute the corrected pre-T37 terminal-verification plan against real Windows/Docker environments. The plan treats unobserved gate/workspace hypotheses as contingency only and requires every dedicated profile to execute without required skip or resource residue.
+- **Package-smoke evidence:** The amended closure implementation is `0d14aba28bde3e5b23f0ac165e346a08bffcf8ed`; process amendment is `70d7d5efd47fe7db8d92c7c30e52c84c51a1ce0b`. A new worktree-local formal environment was materialized solely through `scripts/bootstrap_formal_env.py` and the 51-entry hash lock (`OK`; pipx `1.16.6`). The real profile then passed `15 passed, 1657 deselected`, closing the earlier `1 failed, 8 errors` missing-module result. Fresh SPEC re-review PASS; fresh quality review PASS with one non-blocking Minor (the regression test inspects the shared private identity tuple rather than directly simulating `_verify_identities` mismatch behavior).
+- **OCI residue RED/root cause:** Before the initial OCI run: 0 containers / 0 volumes. The profile assertions passed `21 passed`, but afterward two anonymous volumes remained, totaling `431.3MB`; both were created in the registry-probe run window and had zero container users. `_cleanup_registry` used `docker rm -f`, so the container disappeared while the `registry:2` anonymous data volume survived.
+- **Registry cleanup implementation:** Fresh implementer commit `27440df16e6f681882e707346f3839f510f83fdf` (`Remove registry volumes during cleanup`) used an exact RED for the missing `-v`, then changed only the cleanup command/docstring plus two tests. Remove failure remains fail-closed; success still requires container inspect absence. Target/boundary `3 passed, 2 deselected`; static CI/smoke `15 passed`; Ruff/scoped mypy/credential scan/diff-check passed. Fresh SPEC and quality reviews both PASS with no findings.
+- **Real cleanup/verification:** The controller validated the exact two volume names, anonymous labels, creation timestamps, and zero container references in one foreground safety check, then removed only those disposable test registry volumes. The first validation attempt stopped before deletion because PowerShell parsed `CreatedAt` as a DateTime; the corrected UTC comparison passed. Post-fix real `oci_smoke` completed `21 passed, 1653 deselected`; Docker remained 0 containers / 0 volumes. The removed data is not recoverable but consisted only of reproducible test registry blobs; no image, named volume, or user data was removed.
+- **Human intervention:** none.
+- **Lesson learned:** A green test count is insufficient for a Docker gate whose contract includes zero residue. Image-declared anonymous volumes survive `docker rm -f`; the lifecycle command must include `-v`, and real pre/post daemon resource sets—not mocks alone—are required completion evidence.
+
+## PRE-T37-DELIVERY-INTEGRATION-20260811
+
+- **Timestamp (Asia/Taipei):** `2026-08-11T20:08:19+08:00` (system-observed).
+- **Task ID:** `PRE-T37-DELIVERY-INTEGRATION` — integrate WP37 delivery work with the verified pre-T37 source candidate without merging main, publishing, deploying, or marking T37 complete.
+- **Skills invoked:** `executing-plans`, `git-workflow`, `using-git-worktrees`, `systematic-debugging`, and `test-driven-development`.
+- **Key prompt/context:** The user explicitly authorized integration of `codex/wp37@7c6f308` and `codex/pre-t37-verify@3560f427` into the isolated `codex/pre-t37-delivery` candidate. The merge retained both append-only process histories and renumbered the later SPEC_PROCESS sections from duplicate 93/94 to 94/95. Current platform rules required direct driver execution rather than subagent delegation.
+- **RED/root cause:** The pre-merge WP37 domain passed `49 passed`. After merge, `test_delivery_rejects_deleted_completion_anchor` failed (`1 failed, 48 passed`): SPEC_PROCESS §94 truthfully mentions T01.1 only to explain why the cold-start trial is not repeated, but `verify_delivery` treated any task-id mention after §80 as completion evidence. Deleting the real T01.1 AGENT_LOG anchor therefore failed open.
+- **GREEN:** `scripts/verify_delivery.py` now accepts SPEC_PROCESS fallback evidence only when a section heading or line-leading bold record title explicitly names the task and states `完成`, `收官`, or `达成`. The existing RED passed, the full T37 domain returned `49 passed`, Ruff format/check passed, and scoped mypy reported no issues.
+- **Human intervention:** The user said `允许整合`; no authorization was given or used for main merge, push, release, deployment, delivery-evidence fabrication, final reflection authorship, or T37 completion.
+- **Lesson learned:** A position-bounded prose search is still fail-open when later append-only records may mention old task identifiers. Completion provenance needs a positive record structure, not mere location plus token presence; merge candidates must rerun branch-owned adversarial tests even when both parents passed independently.

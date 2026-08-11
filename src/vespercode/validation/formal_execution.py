@@ -749,9 +749,7 @@ def _execute_request(
         )
     try:
         if request.argv != expected_argv(request.check_kind):
-            raise ValueError(
-                "argv must equal the frozen adapter command for the check"
-            )
+            raise ValueError("argv must equal the frozen adapter command for the check")
         execution_request = ExecutionRequestV1.model_validate(
             {
                 "schema_version": 1,

@@ -828,7 +828,12 @@ def _assert_exact_baseline_plan(
     assert plan.entries[1].argv.arguments == (*base, "--collect-only", "/workspace")
     assert plan.entries[2].argv.arguments == (*base, "/workspace")
     assert plan.entries[3].argv.arguments == (*base, *node_ids)
-    assert plan.entries[4].argv.arguments == ("ruff", "check", "--no-cache", "/workspace")
+    assert plan.entries[4].argv.arguments == (
+        "ruff",
+        "check",
+        "--no-cache",
+        "/workspace",
+    )
     assert plan.entries[5].argv.arguments == (
         "mypy",
         "--no-incremental",
@@ -946,7 +951,12 @@ def test_build_formal_plan_freezes_exact_frozen_plan(
     )
     assert plan.entries[0].argv.arguments == (*base, "--collect-only", "/workspace")
     assert plan.entries[1].argv.arguments == (*base, "/workspace")
-    assert plan.entries[2].argv.arguments == ("ruff", "check", "--no-cache", "/workspace")
+    assert plan.entries[2].argv.arguments == (
+        "ruff",
+        "check",
+        "--no-cache",
+        "/workspace",
+    )
     assert plan.entries[3].argv.arguments == (
         "mypy",
         "--no-incremental",
