@@ -273,6 +273,7 @@ def test_delivery_rejects_failed_readme_contract(repository_copy: Path) -> None:
 
 
 def test_delivery_rejects_missing_reflection(repository_copy: Path) -> None:
+    (repository_copy / "REFLECTION.md").unlink()
     result = verify_delivery(repository_copy, require_live=False)
     assert "REFLECTION_CONTRACT_FAILED" in result.error_codes
 
