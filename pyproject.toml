@@ -21,7 +21,7 @@ dependencies = [
 
 [project.optional-dependencies]
 build = ["build", "hatchling"]
-development = ["mypy==2.3.0", "pytest==8.4.2", "ruff==0.16.1"]
+development = ["mypy==2.3.0", "pipx==1.16.6", "pytest==8.4.2", "ruff==0.16.1"]
 
 [project.scripts]
 vespercode = "vespercode.cli:main"

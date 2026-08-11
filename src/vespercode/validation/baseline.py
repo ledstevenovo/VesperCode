@@ -799,9 +799,7 @@ def _request_for(
         check_id,
         plan.target_test_ids if check_id == "TARGET_TESTS" else None,
     ):
-        raise ValueError(
-            "argv must equal the frozen adapter command for the check"
-        )
+        raise ValueError("argv must equal the frozen adapter command for the check")
     return ExecutionRequestV1.model_validate(
         {
             "schema_version": 1,

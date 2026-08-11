@@ -252,9 +252,9 @@ def _wait_until_ready(assigned_port: int) -> bool:
 
 
 def _cleanup_registry(container_id: str) -> bool:
-    """Remove the registry container and verify it is gone."""
+    """Remove the registry container and its anonymous data volume, then verify."""
     proc = subprocess.run(
-        ["docker", "rm", "-f", container_id],
+        ["docker", "rm", "-f", "-v", container_id],
         capture_output=True,
         text=True,
         timeout=60,

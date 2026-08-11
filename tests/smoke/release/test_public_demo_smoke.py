@@ -22,7 +22,7 @@ from urllib.parse import urlsplit
 
 import pytest
 
-from test_render_contract import _parse_render_yaml
+from tests.smoke.release.test_render_contract import _parse_render_yaml
 
 # The hash-locked gate toolchain does not install runtime
 # dependencies (pydantic), so this module skips cleanly there

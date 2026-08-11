@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import dataclasses
+import subprocess
+from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
@@ -69,6 +71,45 @@ def test_loopback_registry_roundtrip_preserves_three_way_digest(
     assert result.registry_repo_digest == build_evidence.local_oci_manifest_digest
     assert result.digest_pull_repo_digest == build_evidence.local_oci_manifest_digest
     assert result.cleanup_verified is True
+
+
+def test_cleanup_registry_removes_anonymous_volume_and_verifies_container_absence(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[list[str]] = []
+    results: Iterator[subprocess.CompletedProcess[str]] = iter(
+        [
+            subprocess.CompletedProcess[str](args=[], returncode=0),
+            subprocess.CompletedProcess[str](args=[], returncode=1),
+        ]
+    )
+
+    def run(argv: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
+        calls.append(argv)
+        return next(results)
+
+    monkeypatch.setattr(subprocess, "run", run)
+
+    assert registry_probe._cleanup_registry("registry-container") is True
+    assert calls == [
+        ["docker", "rm", "-f", "-v", "registry-container"],
+        ["docker", "inspect", "registry-container"],
+    ]
+
+
+def test_cleanup_registry_remove_failure_is_not_reported_as_verified(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[list[str]] = []
+
+    def run(argv: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
+        calls.append(argv)
+        return subprocess.CompletedProcess[str](args=argv, returncode=1)
+
+    monkeypatch.setattr(subprocess, "run", run)
+
+    assert registry_probe._cleanup_registry("registry-container") is False
+    assert calls == [["docker", "rm", "-f", "-v", "registry-container"]]
 
 
 def _assert_exact_rejection(rejection: LoopbackRegistryDigestMismatchV1) -> None:

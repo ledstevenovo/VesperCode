@@ -50,6 +50,7 @@ _EXIT_CODES = {
 
 _DEV_LOCK_REL_PATH = Path("requirements/dev.lock")
 _VENV_DIR_NAME = ".venv-formal"
+_FORMAL_IDENTITY_DISTRIBUTIONS = ("pytest", "ruff", "mypy", "pipx")
 
 
 class BootstrapError(Exception):
@@ -183,7 +184,7 @@ def _verify_identities(venv_python: Path, root: Path, expected_python: str) -> N
         "version = sys.version_info\n"
         "print(version.major, version.minor, version.micro)\n"
         "installed = {}\n"
-        "for name in ('pytest', 'ruff', 'mypy'):\n"
+        f"for name in {_FORMAL_IDENTITY_DISTRIBUTIONS!r}:\n"
         "    try:\n"
         "        installed[name] = metadata.version(name)\n"
         "    except metadata.PackageNotFoundError:\n"
@@ -221,7 +222,7 @@ def _verify_identities(venv_python: Path, root: Path, expected_python: str) -> N
         ) from exc
     if not isinstance(installed, dict):
         raise MaterializeFailed("formal environment tool identity probe is malformed")
-    for tool in ("pytest", "ruff", "mypy"):
+    for tool in _FORMAL_IDENTITY_DISTRIBUTIONS:
         installed_version = installed.get(tool)
         if installed_version != locked.get(tool):
             raise MaterializeFailed(
