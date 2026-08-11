@@ -140,7 +140,22 @@ def verify_delivery(
             log,
             re.MULTILINE,
         )
-        has_record = re.search(r"\b" + re.escape(task_id) + r"\b", final_region)
+        escaped_task_id = re.escape(task_id)
+        completion_marker = r"(?:完成|收官|达成)"
+        has_record = re.search(
+            r"^(?:"
+            r"#{2,6}\s+[^\r\n]*\b"
+            + escaped_task_id
+            + r"\b[^\r\n]*"
+            + completion_marker
+            + r"|(?:[-*]\s+)?\*\*[^*\r\n]*\b"
+            + escaped_task_id
+            + r"\b[^*\r\n]*"
+            + completion_marker
+            + r"[^*\r\n]*\*\*)",
+            final_region,
+            re.MULTILINE,
+        )
         if has_anchor is None and has_record is None:
             error_codes.append(f"COMPLETION_EVIDENCE_MISSING:{task_id}")
             details.append(
