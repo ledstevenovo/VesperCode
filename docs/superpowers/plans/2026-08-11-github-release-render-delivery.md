@@ -46,15 +46,16 @@ def _workflow_text() -> str:
 def test_release_workflow_has_closed_admission_and_permissions() -> None:
     text = _workflow_text()
     for required in (
-        "workflow_dispatch:",
-        "tag_name:",
-        "source_commit:",
+        "push:",
+        "tags:",
+        '- "v*"',
         "environment: release",
         "contents: write",
         "packages: write",
         "concurrency:",
         "cancel-in-progress: false",
         "^v[0-9]+\\.[0-9]+\\.[0-9]+$",
+        "GITHUB_REF_NAME",
         "git rev-list -n 1",
         'if version != "0.1.0":',
     ):
@@ -65,7 +66,7 @@ def test_release_workflow_proves_wheel_and_reference_publication() -> None:
     text = _workflow_text()
     for required in (
         "runs-on: windows-latest",
-        "python -m build --wheel --outdir dist-release",
+        "python -m build --wheel --no-isolation --outdir dist-release",
         "vespercode.exe --help",
         "docker/setup-docker-action@v4",
         'version: "v29.1.3"',
@@ -109,22 +110,15 @@ Do not commit a permanently failing tree. Preserve the terminal output in the C1
 name: Release
 
 on:
-  workflow_dispatch:
-    inputs:
-      tag_name:
-        description: Immutable semver release tag
-        required: true
-        type: string
-      source_commit:
-        description: Frozen 40-hex source commit
-        required: true
-        type: string
+  push:
+    tags:
+      - "v*"
 
 permissions:
   contents: read
 
 concurrency:
-  group: release-${{ inputs.tag_name }}
+  group: release-${{ github.ref_name }}
   cancel-in-progress: false
 
 jobs:
@@ -135,19 +129,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.tag_name }}
+          ref: ${{ github.ref_name }}
           fetch-depth: 0
       - id: identity
         shell: bash
-        env:
-          TAG_NAME: ${{ inputs.tag_name }}
-          SOURCE_COMMIT: ${{ inputs.source_commit }}
         run: |
           set -euo pipefail
+          TAG_NAME="$GITHUB_REF_NAME"
+          SOURCE_COMMIT=$(git rev-list -n 1 "$TAG_NAME")
           [[ "$TAG_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]
           test "$TAG_NAME" = "v0.1.0"
           [[ "$SOURCE_COMMIT" =~ ^[0-9a-f]{40}$ ]]
           test "$(git rev-list -n 1 "$TAG_NAME")" = "$SOURCE_COMMIT"
+          test "$(git rev-parse HEAD)" = "$SOURCE_COMMIT"
           python - <<'PY'
           import tomllib
           with open("pyproject.toml", "rb") as stream:
@@ -167,7 +161,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.tag_name }}
+          ref: ${{ github.ref_name }}
           fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
@@ -180,7 +174,7 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = "Stop"
-          python -m build --wheel --outdir dist-release
+          python -m build --wheel --no-isolation --outdir dist-release
           $wheels = @(Get-ChildItem dist-release -Filter *.whl)
           if ($wheels.Count -ne 1) { throw "expected exactly one wheel" }
           $wheel = $wheels[0]
@@ -214,13 +208,13 @@ jobs:
     env:
       IMAGE: ghcr.io/ledstevenovo/vespercode-reference
       FROZEN_DIGEST: sha256:cf0b6c5ccac588fccd07c3b9f050bff4daf550ac6e518fd06efb6e988ab1d823
-      TAG_NAME: ${{ inputs.tag_name }}
+      TAG_NAME: ${{ github.ref_name }}
       SOURCE_COMMIT: ${{ needs.preflight.outputs.source_commit }}
       GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.tag_name }}
+          ref: ${{ github.ref_name }}
           fetch-depth: 0
       - uses: docker/setup-docker-action@v4
         with:
@@ -273,10 +267,22 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if gh release view "$TAG_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then exit 1; fi
           wheel=$(find dist-release -maxdepth 1 -type f -name '*.whl')
+          wheel_name=$(basename "$wheel")
           wheel_sha256=$(cut -d' ' -f1 dist-release/vespercode.sha256)
-          gh release create "$TAG_NAME" "$wheel" dist-release/vespercode.sha256 --repo "$GITHUB_REPOSITORY" --verify-tag --title "VesperCode $TAG_NAME" --notes "First verified VesperCode course-project release."
+          if gh release view "$TAG_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            mapfile -t assets < <(gh release view "$TAG_NAME" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name')
+            test "${#assets[@]}" -eq 2
+            printf '%s\n' "${assets[@]}" | grep -Fxq "$wheel_name"
+            printf '%s\n' "${assets[@]}" | grep -Fxq vespercode.sha256
+            mkdir existing-release
+            gh release download "$TAG_NAME" --repo "$GITHUB_REPOSITORY" --dir existing-release --pattern "$wheel_name" --pattern vespercode.sha256
+            existing_wheel_sha256=$(sha256sum "existing-release/$wheel_name" | cut -d' ' -f1)
+            test "$existing_wheel_sha256" = "$wheel_sha256"
+            cmp existing-release/vespercode.sha256 dist-release/vespercode.sha256
+          else
+            gh release create "$TAG_NAME" "$wheel" dist-release/vespercode.sha256 --repo "$GITHUB_REPOSITORY" --verify-tag --title "VesperCode $TAG_NAME" --notes "First verified VesperCode course-project release."
+          fi
           release_json=$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$TAG_NAME")
           export RELEASE_ID=$(jq -r '.id' <<<"$release_json")
           export RELEASE_URL=$(jq -r '.html_url' <<<"$release_json")
@@ -400,16 +406,12 @@ git push origin refs/tags/v0.1.0
 Expected: the remote peeled tag commit equals `source_commit`. Never issue a
 tag delete or force update.
 
-- [ ] **Step 4: Dispatch and monitor Release workflow**
+- [ ] **Step 4: Monitor the tag-triggered Release workflow**
 
-```powershell
-$sourceCommit = (git rev-parse origin/main).Trim()
-gh workflow run release.yml --repo ledstevenovo/VesperCode -f tag_name=v0.1.0 -f "source_commit=$sourceCommit"
-```
-
-Resolve the run id by exact workflow, event, tag input, and creation time. Wait
-with `gh run watch --exit-status`. A transient GitHub failure may rerun the same
-immutable run at most twice.
+The successful tag push automatically creates one `Release` workflow run.
+Resolve its run id by workflow name, event `push`, branch `v0.1.0`, source
+commit, and creation time. Wait with `gh run watch --exit-status`. A transient
+GitHub failure may rerun the same immutable run at most twice.
 
 - [ ] **Step 5: Verify terminal publication**
 

@@ -52,11 +52,12 @@ repository ruleset matches `refs/tags/v*` and rejects tag update and deletion.
 The ordinary `ci.yml` remains read-only. Only the publication job in
 `release.yml` receives `contents: write` and `packages: write`.
 
-The workflow accepts strict `tag_name` and `source_commit` inputs. Before any
-write, it resolves the remote tag commit, requires the tag to be `v0.1.0`,
-requires the package version to be `0.1.0`, requires `source_commit` to be 40
-lowercase hexadecimal characters, and requires the tag commit to equal that
-frozen source commit selected after the C1 PR merges and its `main` CI succeeds.
+The workflow is admitted only by a pushed `v*` tag, so the protected
+Environment observes the real tag ref rather than the default branch. Before
+any write, it peels the tag to its commit, requires the tag to be `v0.1.0`,
+requires the package version to be `0.1.0`, requires the commit to be 40
+lowercase hexadecimal characters, and checks out that exact frozen source
+selected after the C1 PR merges and its `main` CI succeeds.
 
 ### Wheel path
 
