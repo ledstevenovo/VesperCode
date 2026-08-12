@@ -115,7 +115,7 @@ jobs:
     env:
       IMAGE: ghcr.io/ledstevenovo/vespercode-reference
       FROZEN_DIGEST: sha256:cf0b6c5ccac588fccd07c3b9f050bff4daf550ac6e518fd06efb6e988ab1d823
-      TAG_NAME: ${{ env.RELEASE_TAG }}
+      TAG_NAME: "v0.1.0"
       SOURCE_COMMIT: ${{ needs.preflight.outputs.source_commit }}
       GH_TOKEN: ${{ github.token }}
     steps:

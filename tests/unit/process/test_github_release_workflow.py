@@ -79,3 +79,9 @@ def test_release_workflow_has_a_closed_main_only_recovery_admission() -> None:
 def test_release_workflow_forces_utf8_for_the_windows_cli_smoke() -> None:
     text = _workflow_text()
     assert 'PYTHONUTF8: "1"' in text
+
+
+def test_release_workflow_does_not_self_reference_workflow_env_in_job_env() -> None:
+    text = _workflow_text()
+    assert 'TAG_NAME: "v0.1.0"' in text
+    assert "TAG_NAME: ${{ env.RELEASE_TAG }}" not in text
