@@ -47,17 +47,19 @@ reproduce. It remains an emergency diagnostic path, not the delivery path.
 ### Protected admission
 
 The repository has one `release` Environment. It has no required reviewer so
-the approved unattended run can finish, but it admits only release tags. A
-repository ruleset matches `refs/tags/v*` and rejects tag update and deletion.
+the approved unattended run can finish, and normally admits only release tags.
+A repository ruleset matches `refs/tags/v*` and rejects tag update and deletion.
 The ordinary `ci.yml` remains read-only. Only the publication job in
 `release.yml` receives `contents: write` and `packages: write`.
 
-The workflow is admitted only by a pushed `v*` tag, so the protected
-Environment observes the real tag ref rather than the default branch. Before
-any write, it peels the tag to its commit, requires the tag to be `v0.1.0`,
-requires the package version to be `0.1.0`, requires the commit to be 40
-lowercase hexadecimal characters, and checks out that exact frozen source
-selected after the C1 PR merges and its `main` CI succeeds.
+The normal workflow admission is a pushed `v*` tag, so the protected
+Environment observes the real tag ref. A parameter-free recovery admission is
+available only from `refs/heads/main`; it hard-codes `v0.1.0` and its frozen
+source commit, accepts no caller-supplied tag or commit, and checks out the tag
+for every job. Before any write, both paths peel the tag, require the package
+version to be `0.1.0`, and require checkout, tag, and frozen source identities
+to match. The Environment may admit `main` only for the recovery run and must
+return to the tag-only policy immediately after terminal publication.
 
 ### Wheel path
 

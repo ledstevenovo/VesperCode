@@ -1,9 +1,10 @@
 # T37 GitHub-native protected publication.
 #
-# A pushed immutable semver tag is the only admission path. Ordinary CI stays
-# read-only; only the environment-protected publish job can write Release and
-# GHCR objects. Every source, package and image identity is checked before the
-# GitHub Release is created.
+# A pushed immutable semver tag is the normal admission path. A parameter-free
+# manual recovery may run only from main and remains pinned to the same frozen
+# tag and commit. Ordinary CI stays read-only; only the environment-protected
+# publish job can write Release and GHCR objects. Every source, package and
+# image identity is checked before the GitHub Release is created.
 
 name: Release
 
@@ -11,12 +12,17 @@ on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
 
 permissions:
   contents: read
 
+env:
+  RELEASE_TAG: "v0.1.0"
+  FROZEN_SOURCE_COMMIT: "d31bdeeafe8ad65b60fac213e23fcab9dffdd7aa"
+
 concurrency:
-  group: release-${{ github.ref_name }}
+  group: release-v0.1.0
   cancel-in-progress: false
 
 jobs:
@@ -28,20 +34,24 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.ref_name }}
+          ref: ${{ env.RELEASE_TAG }}
           fetch-depth: 0
       - id: identity
         name: Verify tag, source and package version
         shell: bash
         run: |
           set -euo pipefail
-          TAG_NAME="$GITHUB_REF_NAME"
-          SOURCE_COMMIT=$(git rev-list -n 1 "$TAG_NAME")
-          [[ "$TAG_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]
-          test "$TAG_NAME" = "v0.1.0"
-          [[ "$SOURCE_COMMIT" =~ ^[0-9a-f]{40}$ ]]
-          test "$(git rev-list -n 1 "$TAG_NAME")" = "$SOURCE_COMMIT"
-          test "$(git rev-parse HEAD)" = "$SOURCE_COMMIT"
+          if test "$GITHUB_EVENT_NAME" = "push"; then
+            test "$GITHUB_REF" = "refs/tags/v0.1.0"
+          else
+            test "$GITHUB_EVENT_NAME" = "workflow_dispatch"
+            test "$GITHUB_REF" = "refs/heads/main"
+          fi
+          [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          test "$RELEASE_TAG" = "v0.1.0"
+          [[ "$FROZEN_SOURCE_COMMIT" =~ ^[0-9a-f]{40}$ ]]
+          test "$(git rev-list -n 1 "$RELEASE_TAG")" = "$FROZEN_SOURCE_COMMIT"
+          test "$(git rev-parse HEAD)" = "$FROZEN_SOURCE_COMMIT"
           python - <<'PY'
           import tomllib
 
@@ -50,16 +60,18 @@ jobs:
           if version != "0.1.0":
               raise SystemExit(f"unexpected project version: {version}")
           PY
-          echo "source_commit=$SOURCE_COMMIT" >> "$GITHUB_OUTPUT"
+          echo "source_commit=$FROZEN_SOURCE_COMMIT" >> "$GITHUB_OUTPUT"
 
   wheel-build-smoke:
     needs: preflight
     runs-on: windows-latest
     timeout-minutes: 45
+    env:
+      PYTHONUTF8: "1"
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.ref_name }}
+          ref: ${{ env.RELEASE_TAG }}
           fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
@@ -103,13 +115,13 @@ jobs:
     env:
       IMAGE: ghcr.io/ledstevenovo/vespercode-reference
       FROZEN_DIGEST: sha256:cf0b6c5ccac588fccd07c3b9f050bff4daf550ac6e518fd06efb6e988ab1d823
-      TAG_NAME: ${{ github.ref_name }}
+      TAG_NAME: ${{ env.RELEASE_TAG }}
       SOURCE_COMMIT: ${{ needs.preflight.outputs.source_commit }}
       GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.ref_name }}
+          ref: ${{ env.RELEASE_TAG }}
           fetch-depth: 0
       - uses: docker/setup-docker-action@v4
         with:

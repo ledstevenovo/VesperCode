@@ -23,7 +23,7 @@ def test_release_workflow_has_closed_admission_and_permissions() -> None:
         "concurrency:",
         "cancel-in-progress: false",
         r"^v[0-9]+\.[0-9]+\.[0-9]+$",
-        "GITHUB_REF_NAME",
+        "GITHUB_REF",
         "git rev-list -n 1",
         'if version != "0.1.0":',
     ):
@@ -60,3 +60,22 @@ def test_release_workflow_replays_only_an_identical_existing_release() -> None:
         'test "$existing_wheel_sha256" = "$wheel_sha256"',
     ):
         assert required in text
+
+
+def test_release_workflow_has_a_closed_main_only_recovery_admission() -> None:
+    text = _workflow_text()
+    for required in (
+        "workflow_dispatch:",
+        'RELEASE_TAG: "v0.1.0"',
+        'FROZEN_SOURCE_COMMIT: "d31bdeeafe8ad65b60fac213e23fcab9dffdd7aa"',
+        'test "$GITHUB_REF" = "refs/heads/main"',
+        'test "$GITHUB_EVENT_NAME" = "workflow_dispatch"',
+        "ref: ${{ env.RELEASE_TAG }}",
+        'test "$(git rev-list -n 1 "$RELEASE_TAG")" = "$FROZEN_SOURCE_COMMIT"',
+    ):
+        assert required in text
+
+
+def test_release_workflow_forces_utf8_for_the_windows_cli_smoke() -> None:
+    text = _workflow_text()
+    assert 'PYTHONUTF8: "1"' in text

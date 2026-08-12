@@ -426,6 +426,21 @@ Read the package visibility. If it is private, use the authenticated package
 settings UI/API to set `vespercode-reference` public, then verify an anonymous
 manifest request can resolve the frozen digest.
 
+#### Immutable-tag recovery amendment
+
+The first `v0.1.0` run built and installed the wheel but its Windows CLI smoke
+failed while printing Chinese help through the runner's default `cp1252`
+stdout. No publish job ran. The tag is already protected and must not move.
+Recover through a narrow PR that adds `PYTHONUTF8=1` and a parameter-free
+`workflow_dispatch` admission fixed to `v0.1.0` and
+`d31bdeeafe8ad65b60fac213e23fcab9dffdd7aa`. The recovery must run only from
+`refs/heads/main`, while all jobs checkout the fixed tag and repeat the same
+identity, wheel, image, Release, and observation gates. Temporarily add a
+`main` branch deployment policy to the `release` Environment only for this
+run; remove it immediately after the run reaches terminal success, then verify
+that the Environment again contains exactly the `v*` tag policy. Do not
+delete, recreate, or move `v0.1.0`.
+
 ### Task 5: Bind and deploy the Render Blueprint
 
 **Files:**
