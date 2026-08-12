@@ -6,8 +6,8 @@
 # 0.0.0.0:PORT), the health check is GET /healthz, there is no persistent
 # disk, no real-provider secret, no repository credential, and no
 # formal/local/recovery endpoint (the closed four-route surface of the
-# Task 34.B app).  SOURCE_COMMIT is the placeholder slot T37.1 fills with
-# the final merged prerequisite main source_commit.
+# Task 34.B app).  SOURCE_COMMIT is frozen to the final merged prerequisite
+# main source_commit published as v0.1.0.
 #
 # T37.1 alone deploys this exact configuration, performs the protected
 # Render deployment, and writes terminal aligned evidence.  T36.3
@@ -26,4 +26,4 @@ services:
       - key: PORT
         value: "8000"
       - key: SOURCE_COMMIT
-        value: "0000000000000000000000000000000000000000"
+        value: "d31bdeeafe8ad65b60fac213e23fcab9dffdd7aa"
