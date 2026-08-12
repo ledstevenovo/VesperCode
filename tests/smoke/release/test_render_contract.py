@@ -61,6 +61,10 @@ DEMO_PLATFORM_PORT_V1: Final = 8000
 # The exact platform health check path of the Demo app (SPEC §8.3).
 DEMO_HEALTH_PATH_V1: Final = "/healthz"
 
+# The exact final prerequisite-main source published as v0.1.0.  Release,
+# GHCR, and Render evidence must remain aligned to this immutable subject.
+RELEASE_SOURCE_COMMIT_V1: Final = "d31bdeeafe8ad65b60fac213e23fcab9dffdd7aa"
+
 # The closed route surface of the Task 34.B Demo app: the health route,
 # the fixed scenario page, and the two session routes (``create_demo_app``
 # registers exactly these and disables docs/redoc/openapi).  No formal,
@@ -456,6 +460,12 @@ def test_render_contract_has_no_disk_or_real_provider_secret(
 ) -> None:
     assert render_contract.persistent_disks == ()
     assert render_contract.secret_names == ()
+
+
+def test_committed_render_contract_uses_release_source_commit(
+    render_contract: RenderContractV1,
+) -> None:
+    assert render_contract.source_commit == RELEASE_SOURCE_COMMIT_V1
 
 
 def _dump_render_yaml(payload: dict[str, object]) -> str:
