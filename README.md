@@ -18,6 +18,45 @@ VesperCode 是一个面向 Windows 本地代码仓库的 Coding Agent Harness �
 - **健康检查**：[https://vespercode-demo.onrender.com/healthz](https://vespercode-demo.onrender.com/healthz)
 - **最终 main CI**：[GitHub Actions 运行 31714048744](https://github.com/ledstevenovo/VesperCode/actions/runs/31714048744)
 
+## Coding Agent Harness 专项要求核对
+
+本节逐项核对 `AI4SE_Final_Project_A_Coding_Agent_Harness(1).md` 的 A 类专项要求。结论是：Harness 内核、六个基础维度、治理主要贡献、Mock LLM 离线测试和机制演示均已实现。这里的结论只针对 A 类专项要求；课程通用要求仍应结合 `AI4SE_Final_Project_通用要求.md`、`SPEC.md`、`PLAN.md` 和交付证据共同审查。
+
+| 专项要求 | 实现与证据 | 核对结果 |
+|---|---|---|
+| A.1 决策封装 | `src/vespercode/loop/engine.py`、`call_orchestrator.py`、`action_parser.py` 和 `stopping.py` 自行完成上下文组织、单次 LLM 调用、动作解析、执行反馈和停机判断 | 已实现 |
+| A.1 动作 / 工具 | `src/vespercode/tools/` 与 `loop/action_pipeline.py` 提供结构化的文件读取、检索、补丁、检查和完成提议，并通过统一分发器执行 | 已实现 |
+| A.1 上下文与记忆 | `src/vespercode/loop/context_projection.py` 和 `src/vespercode/memory/` 实现有限上下文投影、仓库隔离、来源授权、检索和清除 | 已实现 |
+| A.1 治理护栏 | `src/vespercode/governance/` 实现路径围栏、保护工件、`ALLOW / ASK / DENY`、披露授权和一次性最终写回批准 | 已实现，且为主要贡献 |
+| A.1 反馈闭环 | `loop/feedback.py` 与 `feedback_consumption.py` 将检查结果和治理拒绝转换为结构化反馈，并控制下一轮的精确消费 | 已实现 |
+| A.1 配置 | Pydantic 封闭 Schema、内置只读 profile、冻结运行配置、预算和不可由普通配置放宽的硬规则共同构成声明式约束 | 已实现 |
+| A.3 四类领域机制设计 | `SPEC.md` 第 3 节分别定义所需工具、客观反馈信号、危险动作和记忆需求，并说明对应的确定性代码机制 | 已完成 |
+| A.4-A 自研主循环 | 主循环和工具编排均位于本仓库源码中；运行依赖不包含 LangChain AgentExecutor、AutoGen、CrewAI 或 LlamaIndex agent 等高层循环 | 已满足 |
+| A.4-A 可注入 LLM 抽象 | `src/vespercode/llm/base.py` 定义抽象边界；`mock_adapter.py` 和 `openai_adapter.py` 分别提供离线 Mock 与单轮真实供应商适配器 | 已满足 |
+| A.4-B 机制必须是代码 | 策略引擎、检查结果解析、反馈构建、批准仓库、披露门和停止判定均为可直接调用的确定性代码，而非提示词约定 | 已满足 |
+| A.4-C 移除真实 LLM 后仍可测试 | `tests/unit/llm/`、`loop/`、`tools/`、`governance/`、`memory/` 和 `tests/e2e/mechanism/` 覆盖 Mock LLM、工具分发、治理、反馈、记忆与停机 | 已满足 |
+| A.4-D 基础完整、重点深入 | `SPEC.md` 第 3.2 节列出决策、工具、记忆、治理、反馈、配置六维最低实现，并把确定性治理管线声明为主要贡献 | 已满足 |
+| A.5 SPEC 额外章节 | `SPEC.md` 第 3 节“领域与机制设计”回答四类机制、六个维度、主要贡献与信任边界 | 已完成 |
+| A.6 Mock/Stub 确定性单元测试 | 核心测试不需要真实模型或外部网络；Mock 适配器使用固定响应驱动主循环和机制断言 | 已满足 |
+| A.6 机制演示 | `scripts/run_mechanism_demo.py` 与 `tests/e2e/mechanism/` 提供固定场景、Mock LLM 和有界 JSON 报告 | 已满足 |
+| A.7 专项交付物 | 仓库包含自研 Harness 内核、Mock LLM 测试、机制 E2E 测试和可重复运行脚本 | 已提交 |
+
+机制演示对 A.6 三项强制行为的对应关系如下：
+
+1. **危险动作拦截**：`test_hard_deny.py` 和 `test_protected_artifacts.py` 证明越界路径、测试及检查配置修改会在产生副作用前被拒绝。
+2. **失败反馈改变下一步动作**：`test_feedback_recovery.py` 注入一次检查失败，断言反馈被下一轮精确消费，且纠正动作摘要不同于失败前动作摘要。
+3. **主要贡献的确定性行为**：`test_approval_gate.py`、`test_disclosure_gate.py`、`test_continuation_gate.py` 和 `test_trace_determinism.py` 分别验证一次性批准、披露门、防篡改 continuation cursor 和重复运行确定性，均与治理主要贡献对齐。
+
+在当前源码 checkout 中可执行以下离线复现命令。项目采用 `src/` 布局，因此直接运行脚本时显式设置 `PYTHONPATH`；如果已经通过 wheel 或 editable install 安装 `vespercode`，则不需要这一步。
+
+```powershell
+.\.venv-formal\Scripts\python.exe -m pytest -q tests\unit\llm\test_mock_adapter.py tests\unit\loop tests\unit\tools tests\unit\governance tests\unit\memory tests\e2e\mechanism
+$env:PYTHONPATH = (Resolve-Path .\src).Path
+.\.venv-formal\Scripts\python.exe scripts\run_mechanism_demo.py --report tests\.tmp\mechanism-demo-report.json
+```
+
+2026-08-14 在当前 `main` 基线上的专项复核结果为 `476 passed`；机制脚本成功生成 10 阶段、4535 字节的有界报告。该结果证明 A 类专项机制可以离线、确定性复现，不代表公网 Demo 具有真实仓库、真实凭据、Docker 或真实 LLM 能力。
+
 ## 公网 Demo 验证流程
 
 > 作品主体是面向 Windows 本地 Git 仓库运行的 Coding Agent Harness，以源码、Python wheel、本地 WebUI 和受控 Docker 验证环境交付；Render 站点只是无凭据、无真实仓库访问能力的固定模拟验收界面。
