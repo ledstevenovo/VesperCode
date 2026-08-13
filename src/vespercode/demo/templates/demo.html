@@ -192,7 +192,16 @@
             sessionId = null;
             renderStatus("DEMO_COMPLETED（会话已结束并丢弃，模拟终态）");
           }
-        }).catch(function (error) { showError(error.message); });
+        }).catch(function (error) {
+          if (error.message === "DEMO_DECISION_REQUIRED") {
+            renderStatus("DEMO_WAITING_USER");
+            advanceButton.disabled = true;
+            rejectButton.disabled = false;
+            approveButton.disabled = false;
+            return;
+          }
+          showError(error.message);
+        });
     }
 
     advanceButton.addEventListener("click", function () { advance(null); });

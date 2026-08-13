@@ -122,6 +122,18 @@ def test_page_buttons_map_to_the_fixed_visitor_decisions(
     assert 'id="approve-writeback"' in response.text
 
 
+def test_page_projects_decision_required_into_waiting_controls(
+    demo_client: TestClient,
+) -> None:
+    """The fail-closed API rejection that requests a simulated visitor
+    choice must become the page's waiting state instead of a dead end."""
+    text = demo_client.get("/").text
+    assert 'error.message === "DEMO_DECISION_REQUIRED"' in text
+    assert 'renderStatus("DEMO_WAITING_USER")' in text
+    assert "rejectButton.disabled = false" in text
+    assert "approveButton.disabled = false" in text
+
+
 def test_page_has_no_untrusted_input_surface(demo_client: TestClient) -> None:
     """No prompt, URL, repository, upload, provider, or secret input
     exists anywhere on the page (SPEC §4.9/§8.3)."""
