@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "release_id": "369351815",
+  "tag_name": "v0.1.0",
+  "source_commit": "d31bdeeafe8ad65b60fac213e23fcab9dffdd7aa",
+  "github_tag_commit": "d31bdeeafe8ad65b60fac213e23fcab9dffdd7aa",
+  "wheel_sha256": "ad6706009653a57253c0732037cd643c753416d28f58137543df3771cee86356",
+  "reference_manifest_digest": "cf0b6c5ccac588fccd07c3b9f050bff4daf550ac6e518fd06efb6e988ab1d823",
+  "ghcr_repo_digest": "cf0b6c5ccac588fccd07c3b9f050bff4daf550ac6e518fd06efb6e988ab1d823",
+  "pulled_image_digest": "cf0b6c5ccac588fccd07c3b9f050bff4daf550ac6e518fd06efb6e988ab1d823",
+  "release_url": "https://github.com/ledstevenovo/VesperCode/releases/tag/v0.1.0",
+  "ci_run_id": "31613220901",
+  "ci_run_url": "https://github.com/ledstevenovo/VesperCode/actions/runs/31613220901",
+  "environment_category": "github_actions",
+  "status": "SUCCEEDED",
+  "recorded_at": "2026-08-13T14:45:22Z",
+  "access_metadata": {
+    "release_public": true,
+    "wheel_checksum_public": true,
+    "ghcr_image_public": true
+  }
+}
