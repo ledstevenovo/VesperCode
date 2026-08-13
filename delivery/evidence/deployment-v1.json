@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "deployment_id": "dep-d9ut99tg1s2s73e8u0vg",
+  "source_commit": "d31bdeeafe8ad65b60fac213e23fcab9dffdd7aa",
+  "demo_image_digest": "ca6e479878bf3a487b1469931293bd7d769f1e6f7cc1d17dc4292d89a28354f4",
+  "render_url": "https://vespercode-demo.onrender.com",
+  "environment_category": "github_actions",
+  "status": "SUCCEEDED",
+  "recorded_at": "2026-08-13T14:45:22Z",
+  "access_metadata": {
+    "render_public": true
+  }
+}

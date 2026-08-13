@@ -10671,7 +10671,7 @@ git commit -m "Define T36.3 Static Render Deployment Contract"
 
 ### Task T37.1: Final delivery, README, and process records
 
-**Status:** In progress
+**Status:** Complete
 **Work package:** WP37
 **Legacy steps:** 37.A, 37.B
 **Goal:** Freeze the final source commit after WP36 and WP38 merge, verify the final CI/release/deployment evidence, publish the required delivery artifacts, write an evidence-backed README, and append truthful process records for the document check, disposable cold-start, formal tasks, reviews, commits, PRs, failures, and lessons.
@@ -10730,19 +10730,19 @@ def test_process_evidence_requires_cold_start_record(repository_copy: Path) -> N
 - Final delivery: verify terminal CI, release, GHCR, Render, source-commit alignment, credential scan, and the public WebUI URL only after the source commit is frozen.
 
 **Task-level verification, review, and completion:**
-- [ ] Add and run both displayed RED tests before GREEN.
-- [ ] Implement the four GREEN contracts and run Target and Domain.
-- [ ] Request and pass SPEC-compliance review, then code-quality review; close Critical/Important findings and re-review.
-- [ ] Commit implementation, append the real evidence to `AGENT_LOG.md`, and run the final delivery checks.
-- [ ] Finish WP37 only after all evidence is truthful and the student-owned reflection remains student-authored.
+- [x] Add and run both displayed RED tests before GREEN.
+- [x] Implement the four GREEN contracts and run Target and Domain.
+- [x] Request and pass SPEC-compliance review, then code-quality review; close Critical/Important findings and re-review.
+- [x] Commit implementation, append the real evidence to `AGENT_LOG.md`, and run the final delivery checks.
+- [x] Finish WP37 only after all evidence is truthful and the student-owned reflection remains student-authored.
 
 **Done:** README, process records, final delivery evidence, CI/release/deployment alignment, and applicable reviews pass; no external result or student reflection content is fabricated.
-**Completion evidence:** In progress — implementation committed on branch `codex/wp37` (worktree `.worktrees/wp37`): `9575f45` (37.A/37.B verifiers + README rewrite + 23 tests), `e016665` (SPEC-review closure), `493384e` (fresh-subagent quality-review closure). Target and Domain pass (`23 passed`); `ruff check`/`format` clean, `mypy` 5 files Success, `gate_scan.py` exit 0, `git diff --check` clean; both verifiers ACCEPTED on the committed tree. The whole-anchor-deletion handoff to T37.2 is closed (`fe37590`): the delivery gate now requires per-terminal-card completion evidence (AGENT_LOG anchor or SPEC_PROCESS final-region record). GREEN-3 (freeze source_commit, terminal CI/release/GHCR/Render evidence, three delivery evidence records) and the reflection gate remain pending; the card is NOT marked Complete. Details in `AGENT_LOG.md` (`T37.1-IMPLEMENTATION-20260809`).
+**Completion evidence:** Complete — implementation/review commits `9575f45`, `e016665`, `493384e`, and handoff `fe37590` remain the verified T37.1 implementation basis. Final GREEN-3 observed `source_commit` `d31bdeeafe8ad65b60fac213e23fcab9dffdd7aa`; GitHub Actions release run `31613220901` succeeded; public GitHub Release/tag `v0.1.0`, wheel SHA-256 `ad670600…356`, GHCR three-way digest `cf0b6c5c…823`, Render Free deploy `dep-d9ut99tg1s2s73e8u0vg`, public `/healthz` and fixed browser scenario all passed. The three closed records in `delivery/evidence/` align to the frozen product source. Final evidence commit/PR SHA is derived from Git history after this record; details in `AGENT_LOG.md` (`T37.1-COMPLETION-20260813`).
 
 
 ### Task T37.2: Delivery and reflection readiness
 
-**Status:** In progress
+**Status:** Complete
 **Work package:** WP37
 **Legacy steps:** 37.C
 **Goal:** Aggregate truthful process, task, review, CI/release/deployment, documentation, and reflection records; report ready only when all 68 session tasks cover all 141 legacy steps and the student-authored reflection satisfies its structural requirements.
@@ -10803,13 +10803,13 @@ def test_delivery_rejects_incomplete_executable_child(repository_copy: Path) -> 
 - Final delivery: run `verify_delivery(..., require_live=True)` only after WP37 is merged and the final source-aligned external observations are complete.
 
 **Task-level verification, review, and completion:**
-- [ ] Add and run both displayed RED tests before GREEN.
-- [ ] Implement the four GREEN contracts and run Target and Domain.
-- [ ] Request and pass SPEC-compliance review, then code-quality review; close Critical/Important findings and re-review.
-- [ ] Commit implementation, record truthful evidence, and finish WP37.
+- [x] Add and run both displayed RED tests before GREEN.
+- [x] Implement the four GREEN contracts and run Target and Domain.
+- [x] Request and pass SPEC-compliance review, then code-quality review; close Critical/Important findings and re-review.
+- [x] Commit implementation, record truthful evidence, and finish WP37.
 
 **Done:** readiness, delivery, reflection-structure, task-coverage, and protected-source checks pass without fabricated evidence or generated student content.
-**Completion evidence:** In progress — implementation committed on branch `codex/wp37` (worktree `.worktrees/wp37`): `fe37590` (verify_delivery + verify_reflection + 23 tests; RED tests verbatim from this card). Target `2 passed`; Domain (three files) `49 passed`; `ruff check`/`format` clean, `mypy` 8 files Success, `gate_scan.py` exit 0, `git diff --check` clean; real-tree rejection set exactly the honest pending items (T37.1/T37.2 non-terminal, 37.A–37.C uncovered, REFLECTION_CONTRACT_FAILED, --live adds DELIVERY_EVIDENCE_INVALID). Quality review (fresh read-only subagent) CHANGES-REQUIRED findings all closed: completion-evidence provenance scoped to the SPEC_PROCESS final region (§80+) so incidental mentions no longer mask whole-anchor deletion (new deletion regression test), disclosure regex token-bounded with negative-disclosure branch, UnicodeDecodeError fail-closed. GREEN-3 terminal evidence (frozen source_commit, CI/release/GHCR/Render facts, three delivery evidence records) and the student-authored reflection remain pending; the card is NOT marked Complete. Details in `AGENT_LOG.md` (`T37.2-IMPLEMENTATION-20260809`).
+**Completion evidence:** Complete — implementation/review commit `fe37590` remains the verified readiness basis (Target `2 passed`, Domain `49 passed`, quality findings closed). On the final evidence tree, process/README/reflection checks and live evidence verification pass; `REFLECTION.md` is student-owned, disclosed, parseable, and 2388 words. All 68 session tasks and 141 legacy steps are terminal/covered. Final evidence commit/PR SHA is derived from Git history after this record; details in `AGENT_LOG.md` (`T37.2-COMPLETION-20260813`). The non-task `FINAL_DELIVERY_POST_MERGE_V1` remains to run against the eventual merged `delivery_head` and creates no repository commit.
 
 
 ### Task T38.1: Credential, Memory, and Audit Web Workflows

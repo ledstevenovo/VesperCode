@@ -2702,3 +2702,10 @@ no implementation or evidence commit exists.」（T37 未实现）。恢复后 P
 - **TDD 修复与评审：** `27440df16e6f681882e707346f3839f510f83fdf` 先以精确 cleanup argv RED 证明缺少 `-v`，再最小改为 `docker rm -f -v <container_id>`；remove failure 仍返回 false，成功后仍须 inspect 证明容器不存在。纯 cleanup/boundary tests `3 passed, 2 deselected`，静态 CI/smoke contracts `15 passed`，Ruff/mypy/credential scan/diff-check 通过。fresh SPEC review PASS、fresh quality review PASS，均 0 Critical/Important/Minor。
 - **受控清理和真实复验：** 删除前在同一前台命令再次验证两个精确 volume 名称、anonymous label、创建时间和零容器引用；只删除这两个可重建的 registry 测试 volumes，未删除镜像、命名 volume 或用户数据。修复后真实 `oci_smoke` 为 `21 passed, 1653 deselected`；前后均为 0 container / 0 volume，镜像和 build-cache 仅保留可复用非活动数据。该复验关闭 volume 残留阻断，但不代表 T37 已完成。
 - **方案校正结果：** gate digest 与 `EXECUTION_WORKSPACE_MUTATED` 仍未实际失败，不升级为修复任务；本轮真正需要修复的是书面已知 mutex/mypy，以及现场观测到的 formal pipx closure 和 registry volume cleanup。后续仍须在最终 docs-inclusive source SHA 上重跑六类专项、默认 pytest、静态门禁、whole-branch review 和远端三项 CI。
+## 96. T37 最终发布、Render 公网部署与交付证据收口（2026-08-13）
+
+T37.1 冻结产品源码 `d31bdeeafe8ad65b60fac213e23fcab9dffdd7aa`。受保护 GitHub workflow run `31613220901` 成功创建公开 `v0.1.0` Release、wheel 与 GHCR reference 镜像；annotated tag 最终解析到该源码，wheel SHA-256 为 `ad670600…356`，冻结 manifest、GHCR RepoDigest 与重新拉取 digest 三方均为 `cf0b6c5c…823`。发布过程未改写 tag、未绕过 Environment/规则集、未向普通 CI 注入发布凭据。
+
+Render Blueprint 创建公开 Free Web Service `vespercode-demo`。初始公网固定场景暴露一个真实 UI 投影缺陷：后端正确返回 `DEMO_DECISION_REQUIRED`，前端却没有进入等待用户状态。该问题通过 PR #10 以 TDD 最小修复，六项 PR 检查与 main 三项 CI 全绿后正常合并；自动部署 `dep-d9ut99tg1s2s73e8u0vg` 从配置提交 `8b596b0…` 构建并进入 Live。匿名健康检查、三项安全头、无输入安全边界与完整 DENIED/CHECK_FAILED/WAITING_USER/REJECTED/COMPLETED 浏览器状态链均通过。Free 实例会在空闲时休眠，冷启动可能超过 50 秒；公网服务只提供固定 simulation，不托管 Windows 本地 Harness 能力。
+
+三份 `delivery/evidence/*-v1.json` 只写入已观测终态，统一绑定产品 `source_commit=d31bdee…`。deployment record 的 Demo digest 来自同一部署配置 SHA 的 GitHub Actions smoke artifact；Render 控制台不直接暴露镜像 digest，过程记录明确保留来源边界。T37.2 的 RED 基线只剩两卡非终态、37.A–37.C 未覆盖和三份 evidence 缺失；README 与学生自有 2388 词 reflection 已分别通过结构合同。补齐证据和真实状态后进入 PR/CI；WP37 合并后另执行无仓库写入的 `FINAL_DELIVERY_POST_MERGE_V1`，冻结 `delivery_head`，不把它混写为产品源码身份。
