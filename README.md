@@ -10,6 +10,34 @@ VesperCode 是一个面向 Windows 本地代码仓库的 Coding Agent Harness �
 - 包、镜像与 CI 契约已验证：wheel 打包与 pipx 安装（T33.1/T33.2）、跨平台确定性参考镜像（T35.1）、CI 契约（T35.1）与交付证据 schema（T36.1/T36.2/T36.3）均已落地。
 - 最终发布与公网演示已完成：受保护 workflow 发布 `v0.1.0`、wheel 与 GHCR reference 镜像；Render Free 服务已上线并通过 `/healthz` 与固定场景验证。发布、部署与同源证据见 `delivery/evidence/`。
 
+## 项目链接
+
+- **GitHub 源码仓库**：[ledstevenovo/VesperCode](https://github.com/ledstevenovo/VesperCode)
+- **v0.1.0 Release**：[版本说明与 wheel 下载](https://github.com/ledstevenovo/VesperCode/releases/tag/v0.1.0)
+- **公网 Demo**：[https://vespercode-demo.onrender.com](https://vespercode-demo.onrender.com)
+- **健康检查**：[https://vespercode-demo.onrender.com/healthz](https://vespercode-demo.onrender.com/healthz)
+- **最终 main CI**：[GitHub Actions 运行 31714048744](https://github.com/ledstevenovo/VesperCode/actions/runs/31714048744)
+
+## 公网 Demo 验证流程
+
+> 作品主体是面向 Windows 本地 Git 仓库运行的 Coding Agent Harness，以源码、Python wheel、本地 WebUI 和受控 Docker 验证环境交付；Render 站点只是无凭据、无真实仓库访问能力的固定模拟验收界面。
+
+Render 使用 Free 实例，空闲休眠后首次访问可能需要等待 50 秒以上。页面打开后按以下步骤验证：
+
+1. 确认页面顶部显示 `SIMULATION`，并确认页面没有 prompt、仓库上传、Provider 或密钥输入框。
+2. 点击“启动新会话”。
+3. 连续四次点击“执行下一步”，依次核对：
+   - `PATCH docs/outside-scope.md` → `DENIED`
+   - `PATCH README.md` → `DENIED`
+   - `PATCH src/example.py` → `CHECK_FAILED`
+   - `PATCH tests/test_example.py` → `DENIED`
+4. 再点击一次“执行下一步”，确认会话进入 `DEMO_WAITING_USER`，且“拒绝写回”和“批准写回”按钮可用。
+5. 点击“拒绝写回”，确认出现 `FINAL_WRITEBACK` → `REJECTED`。
+6. 点击“批准写回”，确认出现 `FINAL_WRITEBACK` → `COMPLETED`，最终状态为 `DEMO_COMPLETED`，且“执行下一步”“拒绝写回”“批准写回”三个按钮全部禁用。
+7. 打开健康检查链接，确认 HTTP 200，响应正文精确为 `{"status":"ok","mode":"simulation"}`。
+
+这条固定流程分别验证越界路径拦截、目标外文件拦截、检查失败反馈、禁止篡改测试，以及最终写回必须经过用户明确决策。所有结果均为模拟证据，不会修改真实仓库。
+
 ## Reference image digest verification
 
 本仓库的参考镜像身份在 Windows formal 环境与 GitHub Linux runner 上字节一致复现（SPEC_PROCESS 86），冻结身份为：
