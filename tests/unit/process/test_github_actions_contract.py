@@ -23,7 +23,7 @@ _REPO_ROOT = Path(__file__).resolve().parents[3]
 GITHUB_WORKFLOW_PATH_V1 = _REPO_ROOT / ".github" / "workflows" / "ci.yml"
 
 EXPECTED_JOBS_V1: frozenset[str] = frozenset(
-    {"unit-test", "reference-image-build", "demo-image-build"}
+    {"unit-test"}
 )
 
 # Locked setup: the verification workflow may use exactly these pinned
@@ -35,9 +35,6 @@ LOCKED_ACTION_PINS_V1: frozenset[str] = frozenset(
     {
         "actions/checkout@v4",
         "actions/setup-python@v5",
-        "actions/upload-artifact@v4",
-        "docker/setup-buildx-action@v3",
-        "docker/setup-docker-action@v4",
     }
 )
 
@@ -407,27 +404,26 @@ def github_contract() -> GitHubActionsContractV1:
     return load_github_actions_contract(GITHUB_WORKFLOW_PATH_V1)
 
 
-# The exact RED body of the card (PLAN.md 35.A): the first assert is
-# ruff-wrapped (the card displays it on one 98-char line) — a documented
-# tooling deviation of the T17.1/T24.1 precedent class; the assertions
-# themselves are unchanged.
-def test_github_runs_three_no_publish_jobs_on_push_and_pr(
+# V2 active CI contract: one standard-library unit-test job remains on the
+# current source line; the historical v1 image jobs are not active CI jobs.
+def test_github_runs_v2_unit_test_job_on_push_and_pr(
     github_contract: GitHubActionsContractV1,
 ) -> None:
-    assert github_contract.job_names == {
-        "unit-test",
-        "reference-image-build",
-        "demo-image-build",
-    }
+    assert github_contract.job_names == {"unit-test"}
     assert github_contract.runs_all(events={"push", "pull_request"})
     assert github_contract.external_publish_actions == ()
 
 
-# §5.1 matrix rows (card 35.A Expected lines; §5.1 itself defines no CI
-# matrix, so the Expected rows are the operative matrix authority per the
-# T02.1 precedent): exact jobs/triggers/permissions/locked setup, fork
-# secretlessness, loopback-inside-reference only, artifacts, and the
-# no-external-publish boundary.
+def test_unit_job_runs_the_current_v2_offline_command(
+    github_contract: GitHubActionsContractV1,
+) -> None:
+    text = GITHUB_WORKFLOW_PATH_V1.read_text(encoding="utf-8")
+    assert "python -m unittest discover -s tests/unit/v2 -v" in text
+
+
+# V2 CI contract: one current unit-test job, push/PR triggers, read-only
+# permissions, no secrets, and no historical Docker/image jobs on the active
+# relaxed-identity source line.
 _BOUNDARY_MATRIX_V1: tuple[tuple[str, object], ...] = (
     ("job_names", EXPECTED_JOBS_V1),
     ("triggers", frozenset({"push", "pull_request"})),
@@ -438,22 +434,14 @@ _BOUNDARY_MATRIX_V1: tuple[tuple[str, object], ...] = (
         (
             "actions/checkout@v4",
             "actions/setup-python@v5",
-            "actions/upload-artifact@v4",
-            "docker/setup-buildx-action@v3",
-            "docker/setup-docker-action@v4",
         ),
     ),
     ("external_publish_actions", ()),
     ("secrets_referenced", ()),
     (
         "artifact_names",
-        (
-            "demo-image-smoke-report",
-            "reference-image-smoke-report",
-            "unit-test-report",
-        ),
+        (),
     ),
-    ("reference_loopback_step_present", True),
 )
 
 
@@ -470,8 +458,7 @@ def test_fork_pull_request_runs_secretless(
     github_contract: GitHubActionsContractV1,
 ) -> None:
     """GREEN-2: fork/ordinary verification stays secretless — no workflow
-    or job references any GitHub secret, so fork PRs complete the full
-    three-job closure with no credential and no skip path."""
+    or job references any GitHub secret, and the v2 unit job has no skip path."""
     assert github_contract.secrets_referenced == ()
     assert github_contract.external_publish_actions == ()
     assert github_contract.runs_all(events=frozenset({"pull_request"}))

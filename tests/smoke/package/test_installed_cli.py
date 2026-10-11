@@ -6,7 +6,10 @@ exit 0 and zero source-checkout imports (GREEN-3); the distribution
 smoke matrix pins the isolated layout, the packaged entry point, the
 installed-version identity binding, the zero source-fallback fact, and
 the closed standalone surface (the production recover binding is the
-Task 38.F composition, never the standalone entry).
+Task 38.F composition, never the standalone entry).  B4b-02B extends
+the matrix to the distinct v2 alpha entry: the same installed wheel
+also answers ``vespercode-v2 --help`` (the legacy v1 script is never
+silently presented as the v2 console boundary).
 """
 
 from __future__ import annotations
@@ -20,8 +23,8 @@ from scripts.run_package_smoke import InstalledPackage
 
 pytestmark = pytest.mark.package_smoke
 
-_PROJECT_VERSION_V1: Final = "0.1.0"
-"""The frozen distribution version (33.A pin, pyproject ``version``)."""
+_PROJECT_VERSION_V2: Final = "0.2.0a0"
+"""The v2 alpha distribution version (pyproject ``version``)."""
 
 _REPO_ROOT: Final = Path(__file__).resolve().parents[3]
 """The repository root (tests/smoke/package/test_installed_cli.py)."""
@@ -58,6 +61,13 @@ def test_installed_distribution_smoke_matrix(
     assert "serve" in help_result.output
     assert "VesperCode" in help_result.output
 
+    # --- the packaged v2 alpha entry point proves help (B4b-02B): the
+    # legacy script and the v2 script are distinct installed apps ---
+    v2_help_result = clean_pipx_install.run("vespercode-v2", "--help")
+    assert v2_help_result.exit_code == 0
+    assert "vespercode-v2" in v2_help_result.output
+    assert "serve" in v2_help_result.output
+
     # --- zero source-checkout fallback across the matrix ---
     assert clean_pipx_install.source_checkout_import_count == 0
 
@@ -67,7 +77,7 @@ def test_installed_distribution_smoke_matrix(
     assert not installed_path.is_relative_to(_REPO_ROOT / "src")
 
     # --- the installed version binds the 33.A wheel version ---
-    assert clean_pipx_install.installed_version() == _PROJECT_VERSION_V1
+    assert clean_pipx_install.installed_version() == _PROJECT_VERSION_V2
 
     # --- the closed standalone surface: recover fails closed without
     # the Task 38.F production binding (never ``recover --apply``) ---

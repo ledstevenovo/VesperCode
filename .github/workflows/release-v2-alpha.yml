@@ -1,0 +1,124 @@
+# B4b-02B: the independent v2 alpha wheel/release path (source artifact).
+#
+# This workflow is the v2 alpha release path and is completely separate
+# from the frozen v1 release workflow (release.yml), which stays
+# byte-unchanged and pinned to its own frozen v1 admission identity.
+# The v2 alpha path is source-only: it verifies the 0.2.0a0 package
+# identity, runs the documented offline v2 unit suite, builds the
+# wheel with the locked build toolchain, smoke-installs it through
+# the vespercode-v2 console entry point, and uploads the wheel plus
+# its SHA-256 evidence as one CI artifact for evaluation.
+#
+# Publish boundary (explicit): this workflow publishes nothing. It
+# creates no GitHub Release object, pushes no image to any registry,
+# and performs no public deployment of any kind; it claims no v1 image
+# identity for v2 authorization or package identity. Every job runs
+# read-only (contents: read) and references no GitHub secret, so the
+# alpha path can never spend a write permission or a credential.
+#
+# Tag admission, documented: the frozen v1 release workflow triggers
+# on every pushed "v*" tag and fails closed on its own frozen v1
+# admission pins, so pushing a v2 alpha tag would start that workflow
+# to no effect. This workflow is therefore manual (workflow_dispatch)
+# only and requires no tag at all: the alpha artifact is bound to the
+# checked-out source commit, not to a tag name.
+
+name: Release v2 alpha
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-v2-alpha
+  cancel-in-progress: false
+
+jobs:
+  preflight:
+    name: v2 alpha identity preflight
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Verify the v2 alpha package identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import tomllib
+
+          with open("pyproject.toml", "rb") as stream:
+              project = tomllib.load(stream)["project"]
+          version = project["version"]
+          if version != "0.2.0a0":
+              raise SystemExit(f"unexpected v2 alpha version: {version}")
+          scripts = project["scripts"]
+          if scripts.get("vespercode-v2") != "vespercode.cli_v2:main":
+              raise SystemExit("the vespercode-v2 console entry point drifted")
+          if scripts.get("vespercode") != "vespercode.cli:main":
+              raise SystemExit("the legacy v1 console entry point drifted")
+          init_source = open(
+              "src/vespercode/__init__.py", encoding="utf-8"
+          ).read()
+          if 'V2_VERSION = "0.2.0a0"' not in init_source:
+              raise SystemExit("the package V2_VERSION pin drifted")
+          PY
+
+  unit-test:
+    name: unit-test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Run the documented offline v2 unit suite
+        run: PYTHONPATH=src python -m unittest discover -s tests/unit/v2 -v
+
+  wheel-build-smoke:
+    name: v2 alpha wheel build and install smoke
+    needs: [preflight, unit-test]
+    runs-on: windows-latest
+    timeout-minutes: 30
+    env:
+      PYTHONUTF8: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements/dev.lock
+      - name: Install the locked Windows build toolchain
+        run: python -m pip install --require-hashes -r requirements/dev.lock
+      - name: Build the v2 alpha wheel and smoke-install it
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          python -m build --wheel --no-isolation --outdir dist-v2-alpha
+          $wheels = @(Get-ChildItem dist-v2-alpha -Filter *.whl)
+          if ($wheels.Count -ne 1) { throw "expected exactly one wheel" }
+          $wheel = $wheels[0]
+          if ($wheel.Name -ne "vespercode-0.2.0a0-py3-none-any.whl") {
+            throw "unexpected v2 alpha wheel name: $($wheel.Name)"
+          }
+          $sha256 = (Get-FileHash $wheel.FullName -Algorithm SHA256).Hash.ToLower()
+          if ($sha256 -notmatch "^[0-9a-f]{64}$") { throw "malformed wheel digest" }
+          Set-Content dist-v2-alpha/vespercode-0.2.0a0-py3-none-any.whl.sha256 "$sha256  $($wheel.Name)"
+          python -m venv venv-v2-alpha-smoke
+          ./venv-v2-alpha-smoke/Scripts/python.exe -m pip install --no-deps $wheel.FullName
+          ./venv-v2-alpha-smoke/Scripts/vespercode-v2.exe --help
+      - uses: actions/upload-artifact@v4
+        with:
+          name: v2-alpha-wheel
+          path: |
+            dist-v2-alpha/vespercode-0.2.0a0-py3-none-any.whl
+            dist-v2-alpha/vespercode-0.2.0a0-py3-none-any.whl.sha256
+          if-no-files-found: error
+          retention-days: 30

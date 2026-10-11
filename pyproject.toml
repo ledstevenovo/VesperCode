@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "vespercode"
-version = "0.1.0"
-description = "VesperCode coding agent harness (v1)"
+version = "0.2.0a0"
+description = "VesperCode harness with v2 relaxed-identity alpha modules; legacy v1 CLI"
 requires-python = ">=3.12,<3.13"
 dependencies = [
     "docker",
@@ -25,6 +25,7 @@ development = ["mypy==2.3.0", "pipx==1.16.6", "pytest==8.4.2", "ruff==0.16.1"]
 
 [project.scripts]
 vespercode = "vespercode.cli:main"
+vespercode-v2 = "vespercode.cli_v2:main"
 
 [tool.hatch.build.targets.wheel]
 # T33.1 33.A freeze: exactly the declared runtime source tree, assets,
