@@ -4174,3 +4174,47 @@
   squash hash per task at merge time, and verify tree equality
   (`git diff main <branch-tip> --stat`) before deleting any "residual"
   branch that looks unmerged.
+
+## WORKTREE-CACHE-CLEANUP-20261011
+
+- Task: user-directed A-class disk cleanup (merged worktrees, merged
+  branches, caches, git gc). B-class items (unmerged branches, submission
+  zips, .mimosa, root docs) intentionally untouched.
+- Verification before removal: every in-repo worktree classified by branch
+  merge status + dirty state; tracked modifications tested with
+  `git diff --ignore-cr-at-eol --stat` to separate real edits from
+  CRLF-phantom modifications (the `M src/vespercode/trees/readable.py`
+  pattern across ~20 worktrees was EOL-only).
+- Removed: 30 registered in-repo worktrees under `.worktrees/` (23 on
+  merged branches, clean or EOL-phantom-verified; 6 cold-start detached
+  checkouts; plus spec-v1-stage35-reset, EOL-phantom). Deleted 67 merged
+  local branches (`git branch -d` only; nothing unmerged was forced).
+  Kept: 8 worktrees on unmerged branches (p0-codex x3, admission-v3,
+  p0-local-entry, task-9, wp01-r1, wp02-r1), 3 with real uncommitted diffs
+  (spec-v3-canonicalization-v1: SPEC_v3.md 59+/30-; wp31-verify and
+  wp01-r1-fresh-lf: 1-line each), and 8 merged branches still checked out
+  in external worktrees.
+- Caches removed: .mypy_cache, .pytest_cache, .ruff_cache, .r00-temp
+  (157 MB test debris), __pycache__ under src/tests/scripts; .codegraph
+  partially removed (SQLite db locked by the running codegraph tool; it
+  regenerates). `git reflog expire --expire=now --all` +
+  `git gc --prune=now`: .git 91.6 MB -> 9.4 MB (all expired objects were
+  reachable content duplicates or belonged to merged-only branches).
+- Result: top-level working-tree footprint 8116 MB -> 264 MB. v2 unit
+  suite re-run after cleanup: 598 tests, 0 failures, 2 controlled skips.
+- INCIDENT (own it): the removal loop dropped the "non-junk untracked ->
+  keep" guard that the classification pass had applied. Six cold-start
+  detached worktrees (cold-start-v2/v7/v8/v9/v10, cold-start-t01) were
+  therefore removed together with their untracked per-trial `gates/`,
+  `requirements/`, and `tests/` working copies. Untracked files are not
+  in the object database and are unrecoverable. Damage assessment: the
+  canonical gate evidence survives in main's `gates/evidence/`
+  (gate-toolchain-v1.json, workspace-boundary-go-v1.json), the
+  coldstart/* branches, and the 110+ cold-start records in
+  SPEC_PROCESS.md; what may be lost is only each trial's raw working
+  copy of those files. The correct stop condition was known and stated
+  before execution -- the bug was carrying it in the classifier but not
+  the executor. Lesson: the removal script must re-derive the full keep
+  predicate itself, never inherit a weaker one.
+- Human intervention: user-directed cleanup scope (A-class only); all
+  execution and the incident above by the main-thread agent.
