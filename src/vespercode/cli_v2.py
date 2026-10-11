@@ -3,9 +3,8 @@
 ``vespercode.cli_v2`` is the standard-library-only v2 command line
 (``vespercode-v2``): a closed argparse grammar — ``run``, ``status``,
 ``writeback``, ``recovery``, ``credential-status``, ``disclosure-status``,
-and ``serve`` — where every argument is bounded and typed, and no shell,
-argv passthrough, provider URL, secret, policy, or profile option
-exists.  Writeback and recovery are preview-by-default and require the
+``serve``, and ``tui`` — where every argument is bounded and typed, and
+no shell, argv passthrough, secret, policy, or profile option exists.  Writeback and recovery are preview-by-default and require the
 explicit ``--apply`` switch; the agent loop runs only behind an
 injected LLM boundary (no real provider transport exists in this
 slice, so the shipped default composition fails runs closed).
@@ -75,22 +74,16 @@ def _cli_max_turns(value: str) -> int:
 
 def _cli_identifier(value: str) -> str:
     if V2_IDENTIFIER_RE.fullmatch(value) is None:
-        raise argparse.ArgumentTypeError(
-            "the value must be a short opaque identifier"
-        )
+        raise argparse.ArgumentTypeError("the value must be a short opaque identifier")
     return value
 
 
 def _cli_port(value: str) -> int:
     if _DECIMAL_RE.fullmatch(value) is None:
-        raise argparse.ArgumentTypeError(
-            "port must be a 1..65535 decimal integer"
-        )
+        raise argparse.ArgumentTypeError("port must be a 1..65535 decimal integer")
     port = int(value)
     if not 1 <= port <= 65535:
-        raise argparse.ArgumentTypeError(
-            "port must be between 1 and 65535"
-        )
+        raise argparse.ArgumentTypeError("port must be between 1 and 65535")
     return port
 
 
@@ -112,9 +105,7 @@ def build_v2_cli_parser() -> argparse.ArgumentParser:
             "Writeback and recovery are previews unless --apply is given."
         ),
     )
-    subparsers = parser.add_subparsers(
-        dest="command", required=True, metavar="COMMAND"
-    )
+    subparsers = parser.add_subparsers(dest="command", required=True, metavar="COMMAND")
 
     run_parser = subparsers.add_parser(
         "run",
@@ -123,9 +114,7 @@ def build_v2_cli_parser() -> argparse.ArgumentParser:
     run_parser.add_argument(
         "--workspace", type=_existing_directory, required=True, metavar="DIR"
     )
-    run_parser.add_argument(
-        "--task", type=_cli_task, required=True, metavar="TEXT"
-    )
+    run_parser.add_argument("--task", type=_cli_task, required=True, metavar="TEXT")
     run_parser.add_argument(
         "--max-turns",
         type=_cli_max_turns,
@@ -133,9 +122,7 @@ def build_v2_cli_parser() -> argparse.ArgumentParser:
         metavar="N",
     )
 
-    status_parser = subparsers.add_parser(
-        "status", help="project recorded v2 runs"
-    )
+    status_parser = subparsers.add_parser("status", help="project recorded v2 runs")
     status_parser.add_argument(
         "--workspace", type=_existing_directory, required=True, metavar="DIR"
     )
@@ -219,6 +206,24 @@ def build_v2_cli_parser() -> argparse.ArgumentParser:
         default=V2_CLI_DEFAULT_PORT,
         metavar="PORT",
     )
+
+    tui_parser = subparsers.add_parser(
+        "tui",
+        help=(
+            "interactive streaming TUI over the v2 loop "
+            "(scripted offline LLM by default; no API key needed)"
+        ),
+    )
+    tui_parser.add_argument(
+        "--workspace", type=_existing_directory, required=True, metavar="DIR"
+    )
+    tui_parser.add_argument("--task", type=_cli_task, default=None, metavar="TEXT")
+    tui_parser.add_argument(
+        "--max-turns",
+        type=_cli_max_turns,
+        default=_DEFAULT_MAX_TURNS,
+        metavar="N",
+    )
     return parser
 
 
@@ -242,12 +247,14 @@ class V2CliComposition:
         llm_factory: Callable[[], V2LLM] | None = None,
         shell_factory: Callable[[Path, int], V2LocalShell] | None = None,
         web_launcher: Callable[[object, str, int], object] = v2_serve_forever,
+        tui_launcher: Callable[[object], int] | None = None,
         stream: TextIO | None = None,
         error_stream: TextIO | None = None,
     ) -> None:
         self._llm_factory = llm_factory
         self._shell_factory = shell_factory
         self._web_launcher = web_launcher
+        self._tui_launcher = tui_launcher
         self._stream: TextIO = stream if stream is not None else sys.stdout
         self._error_stream: TextIO = (
             error_stream if error_stream is not None else sys.stderr
@@ -346,9 +353,7 @@ class V2CliComposition:
             if not args.apply:
                 self._emit(f"staged writes: {len(operations)}")
                 for operation in operations:
-                    self._emit(
-                        f"preview {operation.action_type} {operation.path}"
-                    )
+                    self._emit(f"preview {operation.action_type} {operation.path}")
                 self._emit("approval: not created")
                 self._emit("workspace: not written (pass --apply)")
                 return 0
@@ -448,6 +453,35 @@ class V2CliComposition:
         finally:
             shell.close()
         return 0
+
+    def _run_tui(self, args: argparse.Namespace) -> int:
+        # The TUI is a lazily-shipped surface: nothing in this module (or
+        # the stdlib-only launch/view-model modules) imports textual at
+        # module level; the import happens only when the command runs.
+        from vespercode.tui.v2_launch import (
+            DEFAULT_DEMO_TASK,
+            V2TuiLaunchSpec,
+            build_demo_llm_factory,
+        )
+
+        spec = V2TuiLaunchSpec(
+            workspace=args.workspace,
+            task=args.task if args.task is not None else DEFAULT_DEMO_TASK,
+            max_turns=args.max_turns,
+            llm_factory=build_demo_llm_factory(),
+        )
+        launcher = self._tui_launcher
+        if launcher is None:
+            launcher = _default_tui_launcher
+        return launcher(spec)
+
+
+def _default_tui_launcher(spec: object) -> int:
+    """Run the textual streaming TUI (textual imported only here)."""
+
+    from vespercode.tui.v2_app import run_v2_tui
+
+    return run_v2_tui(spec)
 
 
 def main(argv: Sequence[str] | None = None) -> int:

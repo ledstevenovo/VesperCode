@@ -145,6 +145,7 @@ class V2CliWorkspaceTests(unittest.TestCase):
                 "credential-status",
                 "disclosure-status",
                 "serve",
+                "tui",
             },
         )
         options: set[str] = set()
