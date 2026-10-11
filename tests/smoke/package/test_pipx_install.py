@@ -23,8 +23,8 @@ from scripts.run_package_smoke import (
 
 pytestmark = pytest.mark.package_smoke
 
-_PROJECT_VERSION_V1: Final = "0.1.0"
-"""The frozen distribution version (33.A pin, pyproject ``version``)."""
+_PROJECT_VERSION_V2: Final = "0.2.0a0"
+"""The v2 alpha distribution version (pyproject ``version``)."""
 
 _REPO_ROOT: Final = Path(__file__).resolve().parents[3]
 """The repository root (tests/smoke/package/test_pipx_install.py)."""
@@ -37,7 +37,7 @@ def _installed_record_entries(
     dist_info = package.venv_dir / "Lib" / "site-packages"
     if not dist_info.is_dir():
         dist_info = package.venv_dir / "lib" / "python3.12" / "site-packages"
-    record_path = dist_info / f"vespercode-{_PROJECT_VERSION_V1}.dist-info" / "RECORD"
+    record_path = dist_info / f"vespercode-{_PROJECT_VERSION_V2}.dist-info" / "RECORD"
     if not record_path.is_file():
         raise PackageSmokeErrorV1(f"installed RECORD missing: {record_path}")
     rows: dict[str, tuple[str, str]] = {}

@@ -2588,3 +2588,1544 @@
 - **RED baseline:** On clean `origin/main@8b596b0`, `verify_delivery.py --live` rejected exactly `TASK_NOT_TERMINAL:T37.1`, `TASK_NOT_TERMINAL:T37.2`, `LEGACY_STEP_INCOMPLETE:37.A`, `37.B`, `37.C`, and `DELIVERY_EVIDENCE_INVALID`; README contract already ACCEPTED and reflection contract ACCEPTED at 2388 words.
 - **GREEN closure:** Added only the three terminal evidence records, updated factual README state, marked the two T37 cards terminal, and appended process records. No product source, protected subject path, release tag, reflection prose, or external service configuration changed in this task.
 - **Verification/review/commit:** Exact commands and final results are recorded in the closure PR and its CI. Implementation commit SHA and PR URL are mechanically derivable after creation and therefore are not self-embedded here. `FINAL_DELIVERY_POST_MERGE_V1` will freeze and verify the merged `delivery_head` externally without another repository commit.
+
+## V2-01-V2-04-IMPLEMENTATION-20261010
+
+- Timestamp: 2026-10-10.
+- Task IDs: V2-01 identity/database boundary; V2-02 relaxed governance; V2-03 Harness core; V2-04 version/process contract.
+- User instruction: no superpowers skills. Ordinary repository tools were used. One read-only review subagent was authorized after implementation; it had no write role.
+- Implementation: opaque UUID reference types, relaxed policy, fresh `vespercode-v2.sqlite` schema, optimistic revisions, one-shot revision-bound approvals, scripted LLM, scoped memory, policy-first dispatcher, self-owned loop, composition root, and repeatable mechanism demo. Active SPEC/PLAN/README and package metadata now describe v2 alpha; v1 docs are retained as frozen copies.
+- Human edits: none supplied during this slice.
+- Verification: `python -m unittest discover -s tests\\unit\\v2 -v` -> 29 tests passed, one controlled symlink skip; compileall passed; demo repeated DENIED -> SUCCESS -> DONE and only `src/example.py` was written in the in-memory port; `git diff --check` passed. Official Pydantic-dependent README/credential scanners were blocked by the host's missing Pydantic and are not claimed as passed.
+- Lesson: removing content-addressed identity must not remove behavior governance. Revision freshness belongs in the transaction and approval predicate; lexical path validation must run before path-library normalization; v1 release evidence must be described as historical rather than reused by v2.
+
+## ROUTE-A-WRITEBACK-RECOVERY-20261011
+
+- Timestamp: 2026-10-11.
+- Task IDs: RA-01..RA-05 (Route A of the v2 migration: real local filesystem writeback and recovery).
+- Role: implementation subagent spawned by the parent migration session; worked directly in the isolated worktree `.worktrees/relaxed-v2-migration`. The user explicitly prohibited superpowers skills; none were invoked. No commit was made; the working tree is left for the parent agent to inspect.
+- Human edits: none supplied during this slice.
+- Implementation (strict TDD, RED before each GREEN):
+  - A0 froze the writeback contracts in `contracts/v2_writeback.py` (CREATE/REPLACE operations, journal entries, requests/outcomes, the PREPARED/WRITING/COMMITTED/UNRESOLVED/ROLLED_BACK state vocabulary, and the `V2WorkspacePort` protocol) with `test_writeback_contracts.py`.
+  - A1 added `workspace/v2_boundary.py`: canonical lexical rules, component-wise `lstat` walk refusing symlinks and Windows reparse points (junctions are reparse points that `Path.is_symlink` does not report), resolved confinement, strict file type checks, Windows reserved-name and trailing dot/space refusal, and a full recheck immediately before mutation; covered by `test_v2_boundary.py` including Windows-marked junction tests.
+  - A2 bumped the v2 schema to version 3 (transactions state CHECK + `updated_at`, new `transaction_journal`), added `begin_writeback_transaction` (atomic approval consumption + journaling), `transition_transaction` (legal map + state CAS), listing/lookup helpers, and `persistence/v2_writeback.py` whose validation order guarantees zero writes on stale/mismatch/deny; `InMemoryWorkspacePort` now satisfies the port protocol for deterministic tests.
+  - A3 added `persistence/v2_recovery.py`: pending-transaction listing, byte-comparison preview (APPLIED/PENDING/DRIFTED/UNREADABLE), apply, and rollback with fail-closed drift blocking; covered by `test_v2_recovery.py` including fresh-database restart recovery.
+  - A4 added `workspace/v2_disk.py` (atomic temp-file writes with fsync, link-based CREATE, replace-based REPLACE) and rewired `runtime_v2.py` so `V2Harness` composes the in-memory staging port (loop), the real disk port (writeback/recovery), and exposes `stage_candidate`/`staged_operations`; `test_v2_harness_writeback.py` proves end-to-end disk writeback, zero-writes-without-approval, deterministic in-memory disk-port injection, and crash + restart recovery on the real filesystem.
+- Self-review fix: the first implementation consumed the approval before discovering a missing parent directory (classified as a mid-write fault); the frozen port protocol gained a non-mutating `validate` and the writeback preflight now rejects such requests as `MISMATCH` before any approval consumption. The unused `ResolvedPathV2` import in the disk port was also removed.
+- Verification: `python -m unittest discover -s tests/unit/v2 -v` -> 106 tests, 0 failures, 2 controlled skips (symlink creation unavailable on this Windows host; junction-based reparse tests run instead). compileall clean. `git diff --check` clean. The repeatable demo still produces DENIED -> SUCCESS -> DONE deterministically. Official pytest/Pydantic-dependent contract and v1 suites could not run on this host (no pytest, no pydantic installed) and are not claimed as passed; the CI workflow file itself is unchanged and still matches its static contract.
+- Security posture: no shell, network, Docker, or external LLM capability was added; explicit user approval consumption and candidate revision binding are preserved; protected/sensitive path denial, workspace confinement, junction/symlink refusal, transaction atomicity, recovery drift blocking, and memory credential redaction are unchanged. No content digest was introduced as identity or authorization; ordinary byte comparison is used only for write verification and recovery.
+- Lesson: `Path.is_symlink()` is not a reparse-point detector on Windows -- junctions escape it, so the boundary must inspect `st_file_attributes`; and newline translation (`write_text` without `newline=""`) corrupts fixture equality on Windows, so byte-exact tests must write fixtures with `newline=""`.
+
+## ROUTE-A-CONTENT-GUARD-20261011
+
+- Timestamp: 2026-10-11.
+- Task ID: RA-06 (Route A hardening; parent review REQUIRED CHANGES).
+- Parent finding (Important): `V2WritebackService` preflight journaled `original_content`, but `LocalDiskWorkspacePort.apply()` only rechecked path/type immediately before `os.replace` -- an external process could modify a REPLACE target between preflight and publication and the writeback would overwrite it.
+- Strict TDD repair in the same worktree (no superpowers skills; no commit):
+  - RED: `tests/unit/v2/test_v2_replace_content_guard.py` injects an external rewrite between preflight and publication (racing ports over both the in-memory and the real disk port). Against the pre-fix code both REPLACE regressions failed with `AssertionError: 'COMMITTED' != 'FAILED'` -- the old code overwrote external bytes and reported COMMITTED -- and the planned-write port tests errored on the missing `PlannedWriteV2` API. A `PlannedWriteV2` contract block in `test_writeback_contracts.py` was import-RED. Two pins (CREATE target-appears race; rollback-restore binding) were green immediately and now guard the semantics.
+  - GREEN: the frozen port contract now publishes only `PlannedWriteV2` values (a `WriteOperationV2` bound to the exact expected original bytes: `None` for CREATE, the observed bytes for REPLACE; `JournalEntryV2.planned()` / `planned_restore()` build them, with `WorkspaceContentMismatchError` in contracts). Both ports compare current bytes to the expected original immediately before publication and raise instead of overwriting; CREATE keeps the no-clobber `os.link`. The writeback service returns FAILED with a durable UNRESOLVED transaction, the approval stays CONSUMED and the journal readable, and recovery apply/rollback publish through the same binding (a restore expects the applied bytes; drift still blocks fail-closed). Ordinary byte/text comparison only -- no digest anywhere.
+- Verification: `python -m unittest discover -s tests/unit/v2 -v` -> 121 tests, 0 failures, 2 controlled symlink skips (was 108; +6 guard regressions, +7 plan-contract tests). compileall clean; `git diff --check` clean; the demo still runs deterministically. Official pytest/Pydantic-dependent contract and v1 suites still cannot run on this host (no pytest, no pydantic installed) and are not claimed.
+- Residual risk (documented in SPEC/README): a modification landing in the micro-window between the final comparison and the rename could still be overwritten -- neither Win32 nor POSIX offers an atomic compare-and-rename for file content; the comparison is the last operation before publication and recovery drift detection still fails closed after any such event. Non-UTF-8 targets are refused rather than compared.
+- Lesson: a path/type recheck immediately before mutation is not a content guard -- binding the observed original bytes into the publish operation makes the check and the mutation share one value, and the fix must cover rollback restores too, whose expectation is the applied bytes, not the preflight bytes.
+
+## ROUTE-A-CONTENT-BOUND-REMOVAL-AND-SCHEMA-20261011
+
+- Timestamp: 2026-10-11.
+- Task ID: RA-07 (Route A hardening round 2; parent review REQUIRED CHANGES, two Important findings).
+- Finding 1 (Important, confirmed): recovery rollback called an unbound `remove(path)` for applied CREATE entries, so an external process could replace a created file between the recovery observation and the unlink and rollback would delete the external content.
+- Finding 2 (Important, partially incorrect): the parent reported that `transaction_journal` columns were not validated. Verification against the working tree showed the journal columns were already in `_V2_REQUIRED_COLUMNS` and enforced by the open-time loop; a malformed-journal test passed against the pre-fix code as a pin. The real gap of the same class: `actions`, `disclosures`, and `artifacts` were in `_V2_TABLES` but absent from `_V2_REQUIRED_COLUMNS`, so malformed versions of those tables were accepted.
+- Strict TDD repair in the same worktree (no superpowers skills; no commit):
+  - RED (Issue 1): two rollback-race regressions (real disk and in-memory racing ports) failed with `AssertionError: 'ROLLED_BACK' != 'FAILED'` -- the old code deleted the externally changed file and reported success; the two removal-seam port tests errored on the missing `remove_expected`; the contracts test proved the frozen protocol accepted a plain-remove implementation.
+  - RED (Issue 2): malformed `actions`/`disclosures`/`artifacts` tables were accepted by `open_v2_database` (`AssertionError: open_v2_database accepted a malformed actions table` and counterparts); the malformed-journal pin passed, proving the parent's journal premise wrong while confirming the issue class.
+  - GREEN (Issue 1): the port protocol's `remove(path)` was replaced by `remove_expected(path, expected_content)`; both ports compare the current bytes to the expected content immediately before the unlink and raise `WorkspaceContentMismatchError` on mismatch or unreadable targets; recovery rollback binds the removal to the journaled content, returning FAILED with the transaction left non-terminal and the external bytes intact; the plain `remove` no longer exists on any port, so no future caller can construct an unbound removal.
+  - GREEN (Issue 2): `actions`, `disclosures`, and `artifacts` column sets were added to `_V2_REQUIRED_COLUMNS`; open and initialize now reject any malformed v2 table, and the journal behavior is pinned by its own test.
+- Verification: `python -m unittest discover -s tests/unit/v2 -v` -> 130 tests, 0 failures, 2 controlled symlink skips (was 121; +4 content-bound removal regressions/pins, +1 protocol test, +4 schema tests). compileall clean; `git diff --check` clean; the demo still runs deterministically. pytest/Pydantic remain unavailable on this host, so pytest-based process contract and v1 suites were not run and are not claimed.
+- Residual risk (documented in SPEC/README): the removal comparison shares the same residual micro-window as the replace comparison -- a change landing between the compare and the unlink could still delete changed bytes; no portable atomic compare-and-delete exists. Non-UTF-8 targets are refused rather than compared.
+- Lesson: every recovery mutation needs the same content binding as the write path -- deletes are writes over absence, and an unbound removal method left on a port is an invitation to reintroduce the hazard; schema gates must enumerate every table they claim to own, and review findings should be verified against the tree before the fix is designed (the journal was already covered; three other tables were not).
+
+## ROUTE-A-SECRET-GATE-AND-CORRUPT-JOURNAL-20261011
+
+- Timestamp: 2026-10-11.
+- Task ID: RA-08 (Route A hardening round 3; parent review REQUIRED CHANGES, two Important findings).
+- Finding 1 (Important, confirmed): `transaction_journal.content` persisted complete staged content, and the path policy only denied sensitive FILE names, so an ordinary `src/*.py` carrying a credential (`api_key = ...`, Bearer headers, PEM private keys, provider tokens) would enter the control database on a successful writeback.
+- Finding 2 (Important, confirmed): `V2RecoveryService._load_active()` accepted an active transaction with zero journal rows (preview returned unblocked with no items, and apply could commit it without verifying any write), and never checked position contiguity or row binding.
+- Strict TDD repair in the same worktree (no superpowers skills; no commit):
+  - RED: a pre-fix probe showed the writeback returning `COMMITTED` with `API_KEY = "abc123"` stored in both the port and the journal row; the scanner module import failed (`ModuleNotFoundError: No module named 'vespercode.governance.v2_secret_scanner'`); the empty-journal and non-contiguous-position regressions failed with `AssertionError: ValueError not raised`; a first malformed-rows fixture leaked port state across `subTest` iterations and was fixed by using a fresh port per iteration before re-capturing the RED; the three malformed-row-shape subtests passed as pins because `JournalEntryV2` already rejected them.
+  - GREEN (Issue 1): new `governance/v2_secret_scanner.py` — deterministic conservative scanner matching assignment spellings (`api_key=`, `password:`, `token=`, ...), Bearer headers, PEM private-key headers, and structured provider-token shapes (GitHub, Slack, OpenAI/Anthropic project keys, Stripe, AWS access key ids, Google API keys, npm tokens, JWT shapes). The returned marker is a fixed spelling or the static label `provider-token` — never the matched secret. `V2WritebackService` scans every staged operation's content and every REPLACE target's observed original before `begin_writeback_transaction`; a hit returns DENIED with zero writes, a PENDING approval, and no transaction, and the message contains only the path. Marker-based by design: benign code that merely mentions credential handling can be refused (documented false positive) and unstructured random secrets are not caught (documented gap); no digest, no entropy detection, no v1 reuse.
+  - GREEN (Issue 2): `_load_active` now validates the journal before use — non-empty, every row bound to the requested transaction, positions contiguous from zero, and row shapes through `JournalEntryV2`. Any violation raises a closed ValueError with a static message (no journal content leaked) and preview/apply/rollback never advance the transaction to a terminal state.
+- Verification: `python -m unittest discover -s tests/unit/v2 -v` -> 141 tests, 0 failures, 2 controlled symlink skips (was 130; +8 scanner tests, +3 corrupted-journal tests). compileall clean; `git diff --check` clean; the demo still runs deterministically. pytest/Pydantic remain unavailable on this host, so pytest-based process contract and v1 suites were not run and are not claimed.
+- Residual risks (documented in SPEC/README): the marker scanner cannot catch unstructured random secrets and can refuse benign credential-mentioning code; recovery of a corrupted journal raises instead of returning an outcome object, leaving the operator to inspect the database directly.
+- Lesson: a journal that persists content is a credential sink — the gate belongs before the approval is consumed, and REPLACE originals are content too (refusing to journal a file that already contains a credential is the conservative choice). A corrupted durable plan cannot be "recovered" — it must be refused before any state advance, because an empty or gapped journal means the write set is unknown.
+
+## ROUTE-A-WHEEL-CONTRACT-20261011
+
+- Timestamp: 2026-10-11.
+- Task ID: RA-09 (Route A hardening round 4; parent review REQUIRED CHANGES, one Important packaging finding).
+- Finding (Important, confirmed): the six Route A production modules (`contracts/v2_writeback.py`, `workspace/v2_boundary.py`, `workspace/v2_disk.py`, `persistence/v2_writeback.py`, `persistence/v2_recovery.py`, `governance/v2_secret_scanner.py`) were missing from `REQUIRED_RUNTIME_MEMBERS` in `tests/smoke/package/test_wheel_contents.py`, so the v2 offline suite could pass while a built wheel omitted Route A code. Verified against the tree: 0 matches for the six modules in the contract; the v2 baseline members (v2_identity, relaxed_policy, llm/v2, loop/v2_engine, memory/v2, storage/v2_database, tools/v2_dispatcher, runtime_v2) were already listed by the parent's baseline.
+- Repair (strict TDD with one honest order deviation, disclosed):
+  - The contract edits were staged before the guard existed (a config-list change). RED evidence was then captured by temporarily reverting only my uncommitted member additions — the parent's baseline untouched — and running the new guard: `test_every_v2_production_module_is_a_required_wheel_member` failed listing exactly the six missing modules (`AssertionError: ... ['contracts/v2_writeback.py', 'governance/v2_secret_scanner.py', 'persistence/v2_recovery.py', 'persistence/v2_writeback.py', 'workspace/v2_boundary.py', 'workspace/v2_disk.py']`). Re-applying the additions turned the guard green (4/4).
+  - GREEN: the six modules joined `REQUIRED_RUNTIME_MEMBERS`; new stdlib-only offline guard `tests/unit/v2/test_v2_wheel_contract.py` pins all 14 v2 production modules and enforces: pin ⊆ wheel contract members, pin ⊆ source tree, Hatchling `packages = ["src/vespercode"]` + `vespercode/**/*.py` include intact, and pin == discovered v2 tree surface (`v2*.py` + `relaxed_policy.py` + `runtime_v2.py`), so future v2 modules cannot escape the contract.
+- Verification: `python -m unittest discover -s tests/unit/v2 -v` → 145 tests, 0 failures, 2 controlled symlink skips (was 141; +4 guard tests). compileall clean over `src`, `tests/unit/v2`, and the smoke contract file (a syntax proof for the edited pytest file that needs no pytest); `git diff --check` clean; the demo still runs deterministically. The CI `unit-test` job runs the same v2 discover command (ci.yml line 21), so the guard runs on every push.
+- Honest limitations: the real-wheel smoke suite (`tests/smoke/package/test_wheel_contents.py` under pytest + the pipx install driver) cannot run on this host — pytest, `build`, and pipx are not installed and ad-hoc installs are rejected per the frozen environment precedent — so the built wheel itself was not exercised this round; the deliverable is the contract listing plus the offline static guard, and the real-wheel proof remains the package smoke environment's job. No release is claimed; the v1 release workflow was not touched.
+- Lesson: source-tree tests cannot see packaging regressions — a module set must be contract-pinned in the packaging test itself, and the guard belongs in the offline suite that runs on every push, not only in the gated smoke environment. Contract-list changes should still be test-first: staging the list edit before the guard forced a revert-and-recapture dance that honest TDD would have avoided.
+
+
+## ROUTE-B1-CANDIDATE-VALIDATION-REFERENCE-IDENTITY-20261011
+
+- Timestamp: 2026-10-11.
+- Task ID: B1-01/B1-02/B1-03 (Route B1; subagent session spawned by the
+  parent with an explicit no-superpowers, no-commit instruction).
+- Scope: migrate the candidate/validation/reference-profile identity
+  consumers to a v2 ID/revision boundary; preserve all v1 modules and
+  release evidence as read-only legacy; do not attempt Route B2
+  disclosure/provider, WebUI/CLI, Docker, or release work.
+- Strict TDD execution in the same worktree (no skills, no commit):
+  - RED (contracts): `tests/unit/v2/test_v2_candidate_control.py` and
+    `tests/unit/v2/test_v2_validation_contracts.py` failed with
+    `ModuleNotFoundError` for the new modules; the static guard
+    `tests/unit/v2/test_v2_b1_v1_separation.py` failed on missing
+    module files. Two first-draft test expectations were corrected
+    before GREEN (they mis-expressed the intended error/None and
+    unknown-fields-first semantics); the corrected expectations were the
+    design intent.
+  - GREEN (contracts): `candidate/v2_candidate.py`,
+    `contracts/v2_validation.py`, `profiles/v2_reference.py`, new id
+    generators in `contracts/v2_identity.py` -- 23 tests green.
+  - RED (packaging): the wheel-contract guard failed with
+    tree-only=['candidate/v2_candidate.py', 'contracts/v2_validation.py',
+    'profiles/v2_reference.py'] the moment the modules existed; the pin
+    and `REQUIRED_RUNTIME_MEMBERS` updates turned it green.
+  - RED (storage): `tests/unit/v2/test_v2_validation_storage.py` failed
+    with `AttributeError` for every new method and the three tables
+    were absent from the fresh schema. GREEN: `reference_profiles`,
+    `candidate_diffs`, `validation_runs` joined the v3 schema with
+    strict column validation, fail-closed creation rules, one-shot
+    bounded result recording, and revalidating reads -- 11 tests green.
+- Design decisions recorded honestly: the three tables were added to
+  schema version 3 (not a new version) per the parent's explicit
+  instruction, so a pre-B1 v3 database is rejected fail-closed by the
+  table-set check and never migrated in place; the existing Route A
+  `CandidateIdentityV2` was left untouched and a separate
+  `CandidateControlIdentityV2` carries the bounded status; no v1 module
+  is imported by any B1 module (statically guarded), and v1 sources are
+  unmodified in git.
+- Verification: `PYTHONPATH=src python -m unittest discover -s
+  tests/unit/v2 -v` -> 179 tests, 0 failures, 2 controlled symlink
+  skips (was 145). compileall clean over `src/vespercode`,
+  `tests/unit/v2`, and the smoke contract file. `git diff --check`
+  clean. The repeatable demo still runs deterministically. The
+  pytest/pipx-gated package smoke suite and the pydantic-gated v1 suites
+  were NOT run (pytest and pydantic are not installed on this host) and
+  are not claimed.
+- Security review performed by the implementing agent: no new capability,
+  shell, network, Docker, or LLM surface was added; the new tables carry
+  only opaque IDs, revisions, statuses, bounded harness-written error
+  messages, and declared tool version strings -- no file content, no
+  candidate bodies, no credentials; the strict parsers reject
+  v1-digest-shaped payloads and unknown fields fail closed; reads
+  revalidate record shapes so corrupted rows cannot flow into consumers.
+- Remaining risks (documented in SPEC/README): validation records are
+  control-plane facts, not content proofs; no validation executor exists
+  yet (a PASSED run is caller-recorded bookkeeping until the Docker slice
+  lands); the bounded error message never authenticates content; the
+  schema-stays-v3 choice makes pre-B1 v3 databases unusable without a
+  fresh path (fail-closed, by design).
+- Lesson: migrating identity consumers is a vocabulary-and-invariants
+  exercise, not a rename -- the durable value is the fail-closed binding
+  checks (five-key equality, revision currency) that replace the v1
+  digest chain, and the packaging pin turning RED on its own the moment a
+  new module exists is exactly the guard working as designed.
+
+
+## ROUTE-B1-CURRENCY-CHECKED-TERMINALIZATION-20261011
+
+- Timestamp: 2026-10-11.
+- Task ID: B1-04 (Route B1 hardening; main-thread review IMPORTANT finding,
+  reworked by the implementing subagent in the same worktree -- no skills,
+  no commit).
+- Finding (IMPORTANT, verified real against the tree):
+  `record_validation_result` only CASed `validation_runs.status =
+  'PENDING'`; it never verified candidate revision currency, run
+  ownership, or referenced profile existence, so an old validation run
+  could be terminalized after candidate advancement or profile state
+  drift, leaving misleading terminal evidence (the pure
+  `verify_evidence_binding` would reject later, but the terminal row
+  would already be wrong).
+- Strict TDD repair:
+  - RED: four regressions (stale candidate revision; run ownership drift;
+    missing reference profile row; corrupted reference profile row) all
+    failed with `AssertionError: V2DatabaseError not raised` against the
+    pre-fix code, each asserting the run stays PENDING; the stale case
+    also asserted malformed outcomes still reject first and that a fresh
+    current-revision run still terminalizes.
+  - GREEN: inside the one existing SQLite transaction, the method now
+    loads the validation row's binding, verifies the candidate still
+    belongs to the validation run's run at the recorded revision, and
+    verifies the referenced profile revision still exists and
+    revalidates as a `ReferenceProfileRecordV2`; only then does the
+    one-shot PENDING -> terminal UPDATE run (its status CAS stays as the
+    final backstop). Drift rejects with closed V2DatabaseErrors and
+    rolls back, leaving the run PENDING -- no terminal evidence for a
+    non-current binding. Unknown/already-terminal runs still return
+    False; bounded status/error validation still runs first; no digest
+    identity is consulted anywhere.
+- Verification: `PYTHONPATH=src python -m unittest discover -s
+  tests/unit/v2 -v` -> 183 tests, 0 failures, 2 controlled symlink skips
+  (was 179; +4 hardening regressions). compileall clean over
+  `src/vespercode` and `tests/unit/v2`. `git diff --check` clean.
+  pytest and pydantic remain unavailable on this host, so the
+  pytest/pipx-gated package smoke suite and the pydantic-gated v1 suites
+  were not run and are not claimed.
+- Residual risks (documented in SPEC/README): a validation run whose
+  binding drifted stays PENDING forever (by design -- no terminal
+  evidence for stale state; a future slice may need an explicit
+  abandoned/invalid lifecycle state if PENDING accumulation becomes an
+  operational concern); run-ownership drift and profile-row deletion
+  require direct database tampering (no API path), so the checks are
+  tamper-evidence, not a concurrency hazard; the corruption vector for
+  profile metadata still requires the read-path fail-closed
+  `get_reference_profile` for diagnosis.
+- Lesson: a status CAS proves the row is writable, not that the facts it
+  cites are current -- terminalizing evidence needs the same currency
+  checks as consuming an approval, because a terminal record is a claim
+  about the current control state.
+
+
+## ROUTE-B2-DISCLOSURE-PROVIDER-CREDENTIAL-CONTROL-PLANE-20261011
+
+- Timestamp: 2026-10-11.
+- Task ID: B2-01..B2-04 (Route B2; implemented by the same subagent in
+  the same isolated worktree, per the parent's instruction: independent
+  implementation, strict review loop, no commit, no skills).
+- Key prompt/context: implement Route B2 only -- the disclosure /
+  provider / credentials control-plane slice with stdlib-only v2
+  contracts/modules using opaque IDs + revisions and no digest
+  identity; deterministic pure policy/ledger services (explicit user
+  approval before ACTIVE; expired/revoked/exhausted grants reject with
+  zero charge and zero authorization rows; atomic category/path-scope
+  and cumulative byte-budget checks; replay/one-shot with no double
+  charge; endpoint/profile/revision binding checked by control IDs;
+  no automatic retry and no raw provider exception or secret in the
+  outcome); strict TDD tests first under tests/unit/v2; v2 storage
+  tables only within the existing schema v3 with strict table/column
+  validation and no v1 data migration; preserve Route A/B1 behavior
+  and test suite; grow the wheel contract; update the process
+  documents truthfully; mark B3+ not started; no network, shell,
+  Docker, or real provider call (injectable fakes only); never print,
+  persist, return, or include raw credential values or derivatives in
+  messages, IDs, DB rows, journal, memory, or reports; do not use
+  hashlib/digest as v2 authorization identity.
+- Subagent output (strict TDD, all in-worktree, uncommitted):
+  - RED first: five new test modules were written before any
+    production module and failed with ModuleNotFoundError
+    (`vespercode.governance.v2_disclosure`,
+    `vespercode.credentials.v2_port`, and the `vespercode.providers`
+    import chain) plus the B2 separation guard's missing-module
+    failures; 69 new tests in total (contracts/policy 22, credential port
+    12, ledger 20, provider call 12, separation guard 3) cover cross-run /
+    cross-grant /
+    cross-profile binding, expiry (lazy ledger flip and call-time
+    clock), revocation, budget races (sequential first-wins plus the
+    EXHAUSTED flip), replay and replay-conflict, one-shot consume,
+    stale profile revisions, the source scope/path boundary (FILE
+    exact, DIRECTORY segment boundary, ROOT), malformed-command
+    rejection, corrupted-row fail-closed reads, secret redaction
+    (wrapper repr/equality/serialization, status field surface, and a
+    full-database secret scan), and failure no-retry (exactly one
+    transport call with a sanitized static outcome).
+  - GREEN: `src/vespercode/governance/v2_disclosure.py` (grant and
+    authorization records, ROOT/FILE/DIRECTORY scopes over canonical
+    relative paths, closed outcome vocabulary with static messages,
+    pure expiry/scope/payload-key policy, strict exact-field parsers),
+    `credentials/v2_port.py` (redacted, non-comparable,
+    non-serializable `V2CredentialSecret`; `V2CredentialProviderPort`;
+    the deterministic `InMemoryV2CredentialProvider` fake),
+    `profiles/v2_endpoints.py` (immutable provider endpoint records),
+    `providers/v2_call.py` (`ProviderCallRequest/Response/Outcome`,
+    the `V2ProviderTransport` protocol, and `V2ProviderCallService`:
+    binding re-checks, credential reveal only inside the call frame,
+    one-shot consume before exactly one transport call, no retry, the
+    closed `PROVIDER_CALL_FAILED` code with a static message), four
+    new id generators in `contracts/v2_identity.py`, and six new
+    v3-schema tables plus ledger methods in `storage/v2_database.py`
+    (grant create/get/activate/revoke with the one-grant-per-disclosure
+    rule; `authorize_disclosure_request` with the atomic scope, budget,
+    replay, expiry, and endpoint/profile binding checks; the one-shot
+    bound consume; immutable provider endpoints; revalidating read
+    projections that fail closed on corrupted rows).
+  - Packaging: the wheel pin grew to 21 v2 production modules and the
+    smoke `REQUIRED_RUNTIME_MEMBERS` gained the four members; the
+    lockstep test was the natural RED (`tree-only=[...]` the moment
+    the modules existed) and turned green with the pin.  A new static
+    guard (`test_v2_b2_v1_separation.py`) pins that the B2 modules
+    import no v1 authority module and no `hashlib`.
+- Human intervention: none (no human edits to this slice's files).
+- Verification: full v2 suite
+  `PYTHONPATH=src python -m unittest discover -s tests/unit/v2 -v` ->
+  252 tests, 0 failures, 2 controlled symlink skips (was 183; +69
+  B2).  compileall clean over `src/vespercode`, `tests/unit/v2`, and
+  the smoke contract file.  `git diff --check` clean.  The repeatable
+  demo still runs deterministically.  pytest and pydantic remain
+  unavailable on this host, so the pytest/pipx-gated package smoke
+  suite and the pydantic-gated v1 suites were NOT run and are not
+  claimed.
+- Security review performed by the implementing agent: no network,
+  shell, Docker, or real provider capability was added (the transport
+  and the credential port ship deterministic in-memory fakes); no v1
+  module is imported by any B2 module and no hashlib/digest is used
+  anywhere in the disclosure plane; the credential's raw value exists
+  only between `reveal` and the single transport call and never
+  enters a record, outcome, exception, message, ID, or database row
+  (pinned by the wrapper redaction tests, the status field-surface
+  test, and the full-database secret scan); every new table stores
+  only opaque IDs, revisions, bounded statuses/timestamps, and small
+  declared strings.
+- Honest boundary: B3 WebUI/CLI, Docker validation execution, release
+  automation, the real OS credential adapter, and real provider
+  transports remain NOT STARTED; Route B is not fully complete.
+- Lesson: making the provider call one-shot means putting the ledger
+  CAS ahead of the transport -- "at most one call per authorization"
+  is a property of ordering, not of message wording, and sanitization
+  is enforceable only because outcomes are closed static records
+  instead of pass-through payloads.
+
+
+## ROUTE-B2-HARDENING-CAPABILITY-REVEAL-ATOMIC-CONSUME-20261011
+
+- Timestamp: 2026-10-11.
+- Task ID: B2-05 (Route B2 hardening round 1; main-thread review
+  IMPORTANT findings, reworked by the same implementing subagent in
+  the same worktree -- no skills, no commit).
+- Findings (IMPORTANT, both verified real against the tree):
+  (1) `V2CredentialSecret.reveal` was a public no-argument method, so
+  any code holding a wrapper could obtain the raw secret directly --
+  the "reveal is consumed only by the provider call boundary" rule
+  existed only in docstrings; (2) the provider call service read the
+  grant and then consumed the authorization with a plain status CAS,
+  so a grant revocation (or an expiry crossing) between the read and
+  the consume still allowed the provider call the ledger was supposed
+  to gate.
+- Strict TDD repair:
+  - RED: the capability contract tests failed with ImportError (no
+    seam existed) and missed assertRaises (`reveal()` with no
+    argument succeeded); the consume tests failed with
+    `AttributeError` (bool has no `kind`) and
+    `AssertionError: V2DatabaseError not raised` on the tamper
+    probes; both race regressions failed with
+    `AssertionError: 'SUCCEEDED' != 'FAILED'` -- a hostile
+    credential store revoking the grant between the service's read
+    and its consume, and an injected clock crossing the grant expiry
+    between the grant check and the consume, both let the provider
+    call proceed against the pre-fix code.
+  - GREEN: the port mints a private single-instance reveal
+    capability (identity-checked; a missing argument rejects with
+    TypeError and any other value, including a fresh look-alike
+    instance of the private class, rejects with the closed
+    CREDENTIAL_REVEAL_FORBIDDEN error); no public API of the module
+    exposes the capability (pinned by a public-surface test), and
+    `providers/v2_call.py` obtains it only through the documented
+    module-private friend seam.  The fake transport still receives
+    the correct raw value.  `consume_disclosure_authorization` is
+    now one transaction that revalidates the full binding
+    (authorization/grant/run/request), the AUTHORIZED status, the
+    grant's ACTIVE state, the grant's expiry as of an explicit
+    deterministic `now` parameter (the service passes its
+    injectable clock -- the consume-time recheck is deterministic),
+    and the endpoint/profile binding (tamper evidence); it returns a
+    closed DisclosureConsumeOutcomeV2 (CONSUMED / NOT_AUTHORIZED /
+    GRANT_NOT_ACTIVE) so the service maps a lost race to the right
+    failure code with zero transport calls and no burned
+    authorization.  Corrupted or missing control rows reject
+    fail-closed with V2DatabaseError and roll back.  Consumed
+    authorizations are never refunded after a provider failure and
+    no-retry semantics are unchanged.
+- Human intervention: none (no human edits to this slice's files).
+- Verification: full v2 suite -> 260 tests, 0 failures, 2 controlled
+  symlink skips (was 252; +8 hardening tests: 2 capability contract,
+  4 consume revalidation/tamper, 2 provider-call races).  compileall
+  clean over `src/vespercode`, `tests/unit/v2`, and the smoke
+  contract file.  `git diff --check` clean.  The repeatable demo still
+  runs.  A runtime probe re-proved that the capability is absent from
+  the public surface and that importing the B2 modules loads no
+  v1/digest module.  pytest and pydantic remain unavailable on this
+  host, so the pytest/pipx-gated package smoke suite and the
+  pydantic-gated v1 suites were NOT run and are not claimed.
+- Security review performed by the implementing agent: the raw secret
+  is still never printed, persisted, logged, or returned by any public
+  API; the only accessor is capability-gated and the capability is
+  private-by-spelling with identity checking; direct non-provider use
+  (no argument, wrong value, look-alike instance) rejects; the
+  transport still receives the correct value only inside the single
+  provider call frame; no new capability, shell, network, Docker, or
+  LLM surface was added; no v1 file was modified.
+- Remaining risks (recorded honestly in SPEC §7): the reveal
+  capability is enforced by object identity and naming convention,
+  not cryptography -- a caller that deliberately imports the private
+  friend seam (or reaches into the wrapper's private slot) is outside
+  the public surface the boundary promises to protect; the consume
+  revalidation closes the read-to-consume window, and the residual
+  post-consume window is the deliberate one-shot semantics (burn,
+  no refund, exactly one transport call), not a revalidation gap.
+- Honest boundary: B3 WebUI/CLI, Docker validation execution, the
+  real OS credential adapter, real provider transports, and release
+  work remain NOT STARTED; Route B is not fully complete.
+- Lesson: an API boundary that lives only in docstrings is not a
+  boundary -- gating the accessor on a capability that no public
+  surface hands out turns the rule into a rejection callers can test,
+  and a terminal ledger transition (consume) needs the same currency
+  checks as any approval consumption, because the state it certified
+  at read time may have changed by commit time.
+
+
+## ROUTE-B3-LOCAL-CLI-WEBUI-INTEGRATION-20261011
+
+- Timestamp: 2026-10-11.
+- Task ID: B3-01..B3-06 (Route B3; the local v2 CLI/WebUI integration
+  layer; same worktree, same strict-TDD loop as Routes A/B1/B2 --
+  no skills invoked, no commit).
+- Parent instruction (scope): v2 local loopback CLI/WebUI integration
+  layer ONLY; no Docker, release, public deployment, or real provider
+  transport; preserve v1 `vespercode.cli` as untouched legacy; no
+  arbitrary shell/argv/provider-URL/secret arguments; deterministic
+  typed form contracts with allowlists; all mutation endpoints require
+  explicit confirmation and bound run/candidate/revision/transaction
+  IDs; stale or mismatched forms zero domain calls/writes; no raw
+  credential/token/body/content in logs or pages; B4 Docker/release
+  clearly not started; RED tests first; run the full 260+ v2 suite,
+  compileall, diff check, and the wheel contract tests; pydantic and
+  pytest are unavailable on this host and must not be installed or
+  claimed.
+- Environment finding that shaped the design: import probes proved
+  fastapi, pydantic, pytest, and uvicorn are ALL absent.  The v2
+  WebUI is therefore a framework-agnostic application contract
+  (frozen request/response records) plus a standard-library
+  `http.server` loopback adapter; the v1 FastAPI plane is never
+  imported or required.  Everything stays unittest-discoverable
+  under `tests/unit/v2` so the one documented CI command keeps the
+  whole surface green (the parent's "tests/web/v2 or equivalent" is
+  satisfied by the equivalent placement, recorded in SPEC_PROCESS
+  entry 107).
+- What was implemented (GREEN, after RED):
+  - `src/vespercode/shell_v2.py` -- the shared local domain surface:
+    `V2LocalShell` over the Route A harness (control DB under
+    `<workspace>/.vespercode`) and the B2 credential port; run start
+    only behind an injected LLM factory (`NO_LLM_BOUNDARY` fail
+    closed, zero run rows otherwise); each run's writeback bound to
+    the staged operations observed at staging time (process-local;
+    fresh processes get `NOTHING_STAGED` and must use recovery);
+    approval creation re-checks run/candidate/revision bindings;
+    writeback additionally DENIES the control-plane directory (a
+    local `RelaxedPolicyV2` subclass), so staged content can never
+    replace the v2 control database even after an approval.
+  - `src/vespercode/web/v2_security.py` -- the loopback security
+    boundary: literal `127.0.0.1`-only bind config, bounded
+    256-bit sessions (bounded TTL and count, injectable clock and
+    token generator), the fixed HOST -> SESSION -> ORIGIN -> CSRF
+    order (state changes only) with stable closed codes/statuses/
+    payloads, and the exact CSP + security headers.
+  - `src/vespercode/web/v2_forms.py` -- typed allowlisted form
+    contracts: exact field sets with per-field closed parsers
+    (identifiers, decimal revisions, bounded task text, the literal
+    CONFIRM, the CSRF token form); duplicate fields (HTTP parameter
+    pollution) and excessive field counts reject; no form carries a
+    path, policy/profile override, provider URL, secret, or content.
+  - `src/vespercode/web/v2_app.py` -- the framework-agnostic WebUI:
+    a closed route table, security before parsing or domain calls,
+    safe reads auto-establish sessions (Set-Cookie + embedded CSRF
+    token), binding pre-checks before mutations, `V2ShellError` ->
+    bounded status pages by closed code (`NO_LLM_BOUNDARY` -> 503),
+    and escaped bounded HTML only.
+  - `src/vespercode/web/v2_server.py` -- the stdlib loopback
+    adapter: literal-host/port validation before any socket,
+    bounded bodies (64 KiB; 413/415 before parsing with the rejected
+    body drained bounded so the client can read the rejection),
+    GET/POST only (405 otherwise), silent request logging, and
+    single-threaded serving on the caller's thread.
+  - `src/vespercode/cli_v2.py` -- the closed v2 CLI
+    (`vespercode-v2` console entry point added to pyproject; the
+    legacy `vespercode` entry point untouched): run, status,
+    writeback, recovery, credential-status, disclosure-status, serve;
+    preview-by-default with explicit `--apply`; injectable
+    composition (LLM factory, shell factory, server launcher,
+    streams) so everything is offline-testable.
+  - `src/vespercode/storage/v2_database.py` gained ONLY two bounded
+    read projections (`list_runs`, `list_disclosure_grants`; 1..500
+    fail-closed limits) -- no new tables, no schema version change.
+  - Wheel contract: the pin grew to 27 v2 production modules
+    (cli_v2, shell_v2, web/v2_app, web/v2_forms, web/v2_security,
+    web/v2_server added to both the offline lockstep test and the
+    smoke `REQUIRED_RUNTIME_MEMBERS`).
+- Strict TDD evidence (RED captured first):
+  - The wheel-contract pin was extended FIRST: the lockstep test
+    failed with `pin-only=['cli_v2.py', 'shell_v2.py',
+    'web/v2_app.py', 'web/v2_forms.py', 'web/v2_security.py',
+    'web/v2_server.py']`, the required-member test failed until the
+    smoke contract grew, and the module-existence test failed until
+    the sources existed.
+  - All six new test modules failed with `ModuleNotFoundError` and
+    the B3 separation guard with `FileNotFoundError` before any
+    implementation existed (4 failures + 9 errors at the first
+    full-RED run).
+  - Mid-loop GREEN fixes the tests forced (recorded honestly): a
+    positional-after-keyword call in the shell's run projection;
+    the fresh-session 401 (a new session now serves the safe read
+    directly after the host check); the oversized-body 413 reset
+    (the server now drains the rejected body bounded before
+    responding); Windows temp-dir cleanup ordering in the tests
+    (cleanup registered as a LIFO cleanup so shells close first).
+  - Test-side corrections during the loop (recorded honestly): the
+    app-test setUp's session GET polluted the zero-call assertions
+    (fixed by clearing the recording after establishment); the
+    disclosure fixtures used a non-existent category/scope and were
+    corrected to the closed vocabulary; the CLI grammar test first
+    over-forbade the bounded `--provider` lookup key of
+    credential-status and was corrected to forbid the
+    provider-CONNECTION surface instead; two RED expectations about
+    the boundary itself were decided rather than papered over
+    (Host-header whitespace is stripped like ordinary HTTP tokens;
+    the CSP's deliberately inline style-src exception is asserted
+    against script-src specifically).
+- Human intervention: none (no human edits to this slice's files).
+- Verification: full v2 suite
+  `PYTHONPATH=src python -m unittest discover -s tests/unit/v2 -v` ->
+  358 tests, 0 failures, 2 controlled symlink skips (was 260; +98
+  B3 tests).  compileall clean over `src/vespercode`,
+  `tests/unit/v2`, and the smoke contract file.  `git diff --check`
+  clean.  The repeatable demo still runs deterministically.  A
+  runtime import probe proved that importing the entire B3 surface
+  loads NO v1 authority module.  An end-to-end CLI smoke ran run ->
+  status -> writeback preview -> writeback --apply ->
+  credential-status -> disclosure-status -> a REAL loopback serve
+  (home page fetched over the socket: Set-Cookie, security headers,
+  CSRF token embedded).  pytest and pydantic remain unavailable on
+  this host, so the pytest/pipx-gated package smoke suite and the
+  pydantic-gated v1 suites were NOT run and are not claimed.
+- Security review performed by the implementing agent: no network,
+  shell, Docker, or real provider capability was added (the serve
+  surface binds the literal loopback host only; the only transport
+  is the local `http.server`); no v1 module is imported by any B3
+  module (pinned statically by the B3 separation guard and at
+  runtime by the import probe); no B3 surface derives digest
+  identity (no hashlib) or depends on a third-party package; no
+  credential, token, request body, or file content appears in any
+  CLI line, page, status, log, or outcome -- projections are bounded
+  control-plane facts only, escaped in HTML; malformed or polluted
+  forms perform ZERO shell calls (not just zero writes), and
+  unknown/stale/mismatched bindings perform zero mutation calls; the
+  control-plane directory is denied to writeback; the credential
+  status stays the non-revealing three-field projection behind the
+  B2 in-memory fake (process-local, no OS store, no secret surface).
+- Honest boundary: B4 -- Docker validation execution, release
+  automation, the real OS credential adapter, real provider
+  transports, and public deployment -- is NOT STARTED; Route B is
+  not fully complete.  The WebUI is a local single-user loopback tool
+  (no authentication beyond the session/origin/CSRF gates; any
+  process on the machine can reach the port); sessions are in-memory
+  and bounded (restarts log browsers out); the serve composition
+  must be served by the thread that owns its shell (the CLI does).
+- Lesson: an integration layer is a TYPE CHECKER, not a new authority
+  -- the moment the app owned session resolution, passing a
+  brand-new session through the cookie-equality verify was a type
+  confusion between "the request identified itself" and "the
+  response establishes identity", and the fix was to give fresh
+  sessions their own documented path after the host check; equally,
+  a transport rejection nobody can read (413 before draining the
+  body) is not a rejection, it is a reset.
+
+
+## ROUTE-B3-HARDENING-MANAGER-BOUND-AUTHORIZATION-20261011
+
+- Timestamp: 2026-10-11.
+- Task ID: B3-07 (Route B3 hardening round after the parent review
+  rejected the first B3 report; same worktree, same strict-TDD loop
+  -- no skills invoked, no commit).
+- Parent review finding (scope): IMPORTANT security issue --
+  `verify_v2_local_request()` received a caller-provided `session`
+  object and checked cookie/CSRF equality against it, but never
+  proved that the session was registered in the current
+  `V2LocalSessionManager` or still live; registration and liveness
+  lived only in the caller-side resolution docstring, which is too
+  implicit for the security boundary.  Required: RED tests for (a) a
+  forged unregistered session object with matching cookie/CSRF,
+  (b) an expired session object, and (c) a valid session resolved
+  from the manager, asserting SESSION_INVALID/SESSION_EXPIRED before
+  Origin/CSRF/domain calls; the smallest safe API change preserving
+  framework-agnostic app/server behavior and the existing B3 tests;
+  no route handler able to bypass the manager by passing an arbitrary
+  session object; full suite + compileall + diff check + truthful
+  process counts + self-review; no superpowers, no commit.
+- Vulnerability demonstration (pre-fix throwaway probe, verbatim):
+  `forged unregistered session -> authorized: True` and
+  `expired session -> authorized: True` -- a never-registered
+  session object with its own matching cookie value and CSRF token,
+  and a session object whose TTL had already passed, BOTH authorized
+  through the session-taking verifier.
+- RED (tests first, exact):
+  - `tests/unit/v2/test_v2_web_security.py` was rewritten FIRST to
+    the manager-bound API and failed with
+    `ImportError: cannot import name 'authorize_v2_local_request'
+    from 'vespercode.web.v2_security'` (the seam did not exist).
+  - The two new app-level pins (forged cookie POST and expired
+    session POST -> 401 with zero shell calls) passed against the
+    app's existing manager-resolution behavior: they are behavior
+    pins guarding the app through the refactor, not vulnerability
+    demonstrations -- the vulnerability was in the boundary function
+    the app called with an already-resolved session, which is
+    exactly the implicit trust the review flagged.  One test-side
+    correction during the loop, recorded honestly: the
+    expired-session app pin first measured the zero-call property
+    without excluding its own session-establishing home GET; fixed
+    by clearing the recording after establishment (setup is not the
+    behavior under test).
+- GREEN (the smallest safe API change):
+  - The session-taking `verify_v2_local_request` was REMOVED (not
+    deprecated) and replaced by the manager-bound
+    `authorize_v2_local_request(*, method, headers, cookies, form,
+    session_manager, config)`: one function performs the whole fixed
+    order HOST -> SESSION -> ORIGIN -> CSRF, where the SESSION check
+    is self-contained -- the cookie value must resolve to a session
+    registered in the given `V2LocalSessionManager` (type-checked;
+    the app hands its own) and must still be live at the manager's
+    clock, so forged/expired values reject with
+    SESSION_INVALID/SESSION_EXPIRED BEFORE the Origin and CSRF
+    checks; an authorized result carries the resolved live session
+    (`V2RequestAuthorizationV2` gained an optional,
+    consistency-checked `session` field; rejected results never
+    carry one).  Cookie equality with the resolved session holds by
+    construction because the manager resolves the session from the
+    exact cookie value.
+  - `V2LocalWebApp.handle` delegates every request to the authorizer
+    -- no session object ever passes through the app into an
+    authorization call, because no such parameter exists -- and a GET
+    that fails only the session check auto-establishes a fresh
+    session from the same manager (the host check has already
+    passed inside the authorizer; POSTs never auto-create).  The
+    server adapter is unchanged (it only bridges HTTP to
+    `app.handle`).
+  - Why removal rather than an additive variant: keeping a public
+    session-taking verifier would leave the bypass open -- "no route
+    handler can bypass the manager" is satisfiable only if the
+    session-taking form does not exist.  All pre-existing
+    order/code assertions moved to the new seam unchanged (host
+    first, session before origin/csrf, origin before csrf, csrf
+    correctness, origin binding, safe reads, PUT behavior) plus four
+    new boundary tests (forged unregistered session, expired
+    registered session, valid-session identity resolution from the
+    manager, non-manager store rejects) and record-consistency
+    tests for the new `session` field.
+- Verification (GREEN, exact): full v2 suite
+  `python -m unittest discover -s tests/unit/v2` -> 365 tests, 0
+  failures, 2 controlled symlink skips (was 358; +7 hardening
+  tests); compileall clean over `src/vespercode`, `tests/unit/v2`,
+  and the smoke contract file; `git diff --check` clean; the
+  repeatable demo still runs; the post-fix probe proves the old seam
+  is gone (importing `verify_v2_local_request` now fails with
+  `ImportError`) and the forged/expired scenarios reject with
+  SESSION_INVALID/SESSION_EXPIRED; a real-loopback security smoke
+  fetched the served home page over the socket and drove a POST with
+  a forged cookie -> 401 SESSION_INVALID with zero shell calls; the
+  end-to-end CLI smoke (run/status/writeback preview + --apply/
+  credential-status/disclosure-status/real serve) and the runtime
+  v1-import probe still pass.  pytest and pydantic remain
+  unavailable on this host, so the pytest/pipx-gated package smoke
+  suite and the pydantic-gated v1 suites were NOT run and are not
+  claimed.
+- Security review performed by the implementing agent: the boundary
+  now resolves identity itself in the fixed order -- a caller can
+  hand it nothing but a real `V2LocalSessionManager` (type-checked)
+  and the app hands its own; the forged/expired scenarios reject at
+  the SESSION check before Origin/CSRF and with zero shell calls
+  (pinned at the boundary level, at the app level, and over a real
+  loopback socket); an authorized result carries the manager's exact
+  session object (identity pinned); rejected results never carry a
+  session (record consistency pinned); the safe-read auto-establish
+  path remains read-only (GETs only; mutations never auto-create);
+  no network, shell, Docker, or provider capability was added; no
+  v1 module is imported by any B3 module (static separation guard +
+  runtime import probe); no credential, token, request body, or file
+  content appears in any CLI line, page, status, log, or outcome.
+- Honest boundary / remaining risks: the authorizer proves
+  registration and liveness in the session manager it is HANDED --
+  it cannot know about a process-global "one true manager", so
+  in-process code that constructs its own manager could authorize
+  against that manager's own sessions; this is a same-process trust
+  boundary (the app hands its own manager), not a remote one.
+  Sessions remain in-memory/bounded (restarts log browsers out); the
+  serve composition remains single-threaded on the shell-owning
+  thread; the 16 MiB drain cap on 413/415 rejections stands.  B4 --
+  Docker validation execution, release automation, the real OS
+  credential adapter, real provider transports, and public
+  deployment -- is NOT STARTED; Route B is not fully complete.
+- Human intervention: none beyond the parent review instruction
+  itself; no human edits to the code or tests.
+- Lesson: a security boundary that takes an already-resolved identity
+  object as a parameter trusts the caller by construction -- the fix
+  is not to re-check the object more carefully but to REMOVE the
+  parameter, so the boundary resolves identity itself in the fixed
+  order and there is nothing left for a caller to forge.
+
+## ROUTE-B4A-EXECUTION-PROFILE-READINESS-BOUNDARY-20261011
+
+- Timestamp: 2026-10-11.
+- Task ID: B4a-01..B4a-05 (Route B4a; the v2 Docker validation
+  execution profile and the injectable execution/readiness boundary;
+  same worktree, same strict-TDD loop as Routes A/B1/B2/B3 -- no
+  skills invoked, no commit).
+- Parent instruction (scope): B4a is the v2 Docker validation/execution
+  PROFILE plus an injectable execution/readiness BOUNDARY ONLY --
+  stdlib-only modules with opaque reference profile id+revision and
+  bounded execution parameters; no digest identity, no hashlib, no
+  reuse of v1 Docker/profile/validation authority; injectable
+  execution/readiness ports with deterministic fakes for offline
+  tests (a real Docker adapter only as a clearly separated optional
+  boundary, never required by the unit job); fail-closed execution
+  parameters (no shell string, closed argv/action kinds, network
+  disabled, non-root/read-only/capability limits, read-only workspace
+  mount, bounded timeout/output, no docker socket, no user-supplied
+  image URL/registry/credentials); bounded sanitized outcomes that
+  never carry raw command/provider/output secrets; RED tests first;
+  wheel contract growth; truthful docs with B4b (release/public
+  deployment/real OS credential adapter/real provider transport)
+  marked NOT STARTED; report Docker/Pydantic/pytest availability
+  honestly without installing anything.
+- Environment findings (reported honestly, nothing installed): Docker
+  CLI and daemon ARE available and reachable on this host (both
+  29.1.3, `docker info` rc 0); pydantic and pytest remain UNAVAILABLE,
+  so the pytest/pipx-gated package smoke suite and the pydantic-gated
+  v1 suites were NOT run and are not claimed.  Local images carry only
+  registry/tag spellings (`dbgpt-erp:<long-tag>`, `python:3.12-slim`,
+  ...), which the closed opaque-token charset deliberately excludes.
+- What was implemented (GREEN, after RED):
+  - `src/vespercode/execution/v2_profile.py` --
+    `ExecutionProfileRecordV2`: opaque execution-profile id +
+    revision bound to an opaque reference-profile id/revision, an
+    opaque local image token (charset-closed; URL, registry/tag, and
+    64-hex digest spellings reject), a non-root uid:gid (both ids >= 1),
+    and the pinned isolation policy (network disabled, read-only
+    rootfs, all capabilities dropped, no docker socket, read-only
+    workspace mount) with bounded timeout (1..600 s) and output
+    (1..4 MiB) ceilings; `execution_profile_from_mapping` is a strict
+    exact-field parse, so v1-shaped payloads never parse.
+  - `src/vespercode/execution/v2_execution.py` -- the closed contracts
+    and ports: `ExecutionActionRequestV2` (control bindings + a
+    `VALIDATE_CANDIDATE`-only vocabulary whose per-kind grammar pins
+    the frozen executable token and exact argument count; argv
+    arguments are bounded opaque tokens -- a shell command string, an
+    option, a path, a URL, or a digest shape rejects at construction;
+    no image/URL/credential/command field exists);
+    `ExecutionResultV2`/`ExecutionReadinessResultV2`/
+    `ExecutionOutcomeV2` (the outcome re-verifies at construction:
+    closed error code, the static message of its own code, bounded
+    exit code, excerpt capped at 2048 chars and control-character
+    free); `V2ExecutionPort`/`V2ReadinessPort` injectable protocols.
+  - `src/vespercode/execution/v2_executor.py` -- `V2ExecutionService`
+    (binding mismatches reject BEFORE readiness; NOT_READY rejects
+    BEFORE execution; exactly one executor call, no retry; executor
+    exceptions and hostile returns map to the closed EXECUTION_FAILED
+    code with the raw text discarded; excerpts sanitized) plus the
+    deterministic `FakeV2Executor`/`FakeV2Readiness`.
+  - `src/vespercode/execution/v2_docker_probe.py` -- the clearly
+    separated, optional, READ-ONLY Docker readiness probe
+    (`SubprocessDockerProbeV2`): closed literal argv (`docker image
+    inspect <token>`, then `docker info` to distinguish missing image
+    from unreachable daemon), `shell=False`, 15 s bounded timeout, all
+    output discarded (no digest is ever parsed), injectable command
+    runner; the slice's single subprocess edge; no container is ever
+    created, run, pulled, or pushed.
+  - `scripts/run_v2_execution_probe_demo.py` -- the opt-in read-only
+    manual evidence script.
+  - Guards and packaging:
+    `tests/unit/v2/test_v2_b4_v1_separation.py` (static + runtime
+    separation: no v1 authority import, no hashlib, no third-party,
+    subprocess only in the probe, no sockets, importing the B4a
+    surface loads no v1 module); the wheel pin grew to 31 v2
+    production modules and the smoke member set gained the four
+    matching members.
+- RED (captured): the new test files failed first with
+  `ModuleNotFoundError: No module named
+  'vespercode.execution.v2_profile'` / `'...v2_execution'` /
+  `'...v2_docker_probe'`, and the separation guard failed with
+  `missing B4a module: execution/v2_profile.py`; once the sources
+  landed, the natural packaging RED fired: the wheel pin drift test
+  failed with `tree-only=['execution/v2_docker_probe.py',
+  'execution/v2_execution.py', 'execution/v2_executor.py',
+  'execution/v2_profile.py']`.
+- GREEN loop: one fix -- the readiness record needed
+  `reason: str | None = None` so the READY spelling constructs (the
+  default fake caught it in its first run); then the pin and smoke
+  member set grew with the four modules.
+- Verification (exact): full v2 suite `python -m unittest discover -s
+  tests/unit/v2` -> 431 tests, 0 failures, 2 controlled symlink skips
+  (was 365; +66 B4a tests across five new test files); compileall
+  clean over `src/vespercode`, `tests/unit/v2`, the demo scripts, and
+  the smoke contract file; `git diff --check` clean; the repeatable
+  demo still runs.  Manual opt-in probe evidence (read-only): the real
+  daemon answered IMAGE_NOT_AVAILABLE for absent tokens while staying
+  reachable (the two-step discrimination over the real edge), and a
+  scoped unreachable DOCKER_HOST produced DAEMON_UNAVAILABLE; no
+  READY-over-real-daemon run was possible on this host (every local
+  image needs a registry/tag spelling the closed charset excludes) --
+  the READY decision is covered offline by the fake-runner tests, and
+  the mapping gap is documented as a B4b limitation.
+- Security review performed by the implementing agent: no arbitrary
+  shell execution was added (the execution port takes a structured
+  record; the only subprocess edge is a read-only probe with a closed
+  literal argv, `shell=False`, and a bounded timeout, and it is never
+  run by the unit job); no digest authorization exists (64-hex
+  spellings reject everywhere; the probe parses no digests); no
+  user-supplied image URL/registry/credential field exists on any
+  record; outcomes are closed static shapes with bounded sanitized
+  excerpts and no raw exception text; no v1 module is imported by any
+  B4a module (static guard + runtime import probe); v1 execution
+  modules and evidence remain untouched; Route A/B1/B2/B3 tests all
+  pass unchanged.
+- Honest boundary / remaining risks: the profile is configuration
+  identity only -- it cannot prove image bytes (no digest chain);
+  the execution plane has no database wiring, no harness/CLI
+  composition, and no real container execution (contracts + ports +
+  deterministic fakes only); the probe resolves the opaque token
+  verbatim, so tagged-only hosts honestly read IMAGE_NOT_AVAILABLE
+  until a B4b adapter carries an operator-maintained
+  token-to-reference mapping.  B4b -- release automation, public
+  deployment, the real OS credential adapter, real provider
+  transports, and the real container execution adapter -- is NOT
+  STARTED; Route B is not fully complete.
+- Human intervention: none beyond the parent instruction itself; no
+  human edits to the code or tests.
+- Lesson: closed vocabularies do the security work that a digest chain
+  used to pretend to do -- one charset validator on the opaque image
+  token eliminates URL, registry, option, and digest spellings at
+  construction, and an outcome record that re-verifies its own shape
+  turns "sanitized" from a runtime promise into a construction-time
+  invariant.
+
+## ROUTE-B4A-HARDENING-CONTROL-PLANE-BINDING-20261011
+
+- Timestamp: 2026-10-11.
+- Task ID: B4a-06 (Route B4a hardening; the B1 control-plane binding
+  gate; same worktree, same strict-TDD loop -- no skills invoked, no
+  commit).
+- Parent instruction (scope): the B4a review was REJECTED with one
+  finding -- the execution request carried no run/candidate/revision
+  binding and the service checked only profile bindings, so any
+  syntactically valid VALIDATE_CANDIDATE request could execute against
+  an unrelated or stale candidate.  Required: RED tests proving
+  unknown/mismatched/stale run/candidate/revision requests reject
+  before readiness/executor while a matching binding is accepted (over
+  existing v2 DB records or a strict injected binding port); the
+  smallest explicit design (preferably request fields + an injected
+  read-only lookup port); zero readiness/executor calls on binding
+  failure; truthful docs; B4b stays NOT STARTED; full suite +
+  compileall + diff check + self-review; no superpowers, no commit.
+- What was implemented (GREEN, after RED):
+  - `ExecutionActionRequestV2` gained `run_id`, `candidate_id`
+    (argv-token-conformant -- the closed grammar projects it into the
+    adapter-facing argv), and `candidate_revision`; for
+    VALIDATE_CANDIDATE the two argv argument slots must equal the
+    request's own candidate_id and the decimal spelling of its
+    candidate_revision, so the argv is a closed projection of the
+    request's control fields and cannot drift from them.
+  - New contracts in `execution/v2_execution.py`:
+    `ExecutionBindingFactsV2` (run/candidate/current-revision facts)
+    and the read-only `V2ExecutionBindingPort`
+    (`lookup_execution_binding(run_id, candidate_id) -> facts | None`),
+    plus the closed codes `EXECUTION_BINDING_NOT_FOUND` and
+    `EXECUTION_BINDING_STALE` with static messages.
+  - `V2ExecutionService(profile, binding, readiness, executor)` now
+    REQUIRES the binding port and enforces the fixed order:
+    profile bindings -> control-plane binding (the service re-verifies
+    every field of the returned facts; unknown/foreign -> NOT_FOUND,
+    stale -> STALE, both BEFORE readiness and with zero executor
+    calls) -> readiness -> exactly one executor call, no retry.
+  - `FakeV2BindingLookup` (deterministic fake) in
+    `execution/v2_executor.py`, and a test-local read-only adapter
+    over the REAL v2 control database in the service suite
+    (run/snapshot/candidate rows; `advance_candidate` crossing the
+    revision proves the stale gate; a foreign run's candidate proves
+    the pair gate).  No digest identity, no raw paths/URLs/shell
+    anywhere in the seam; no new modules, so the wheel pin is
+    unchanged.
+- RED (captured): the rewritten request tests failed with
+  `TypeError: ExecutionActionRequestV2.__init__() got an unexpected
+  keyword argument 'run_id'` and the service suite failed with
+  `ImportError: cannot import name 'ExecutionBindingFactsV2' from
+  'vespercode.execution.v2_execution'` -- the seam did not exist.
+- GREEN loop: one test-side fix -- the not-ready scenarios shared a
+  single binding fake across subTests while asserting one lookup, so
+  each subTest now builds its own fake.
+- Verification (exact): full v2 suite `python -m unittest discover -s
+  tests/unit/v2` -> 443 tests, 0 failures, 2 controlled symlink skips
+  (was 431; +12 binding tests), exit 0; compileall clean over
+  `src/vespercode`, `tests/unit/v2`, the demo scripts, and the smoke
+  contract file; `git diff --check` clean; the repeatable demo still
+  runs (SUCCEEDED/DONE).  pytest and pydantic remain unavailable on
+  this host, so the pytest/pipx-gated package smoke suite and the
+  pydantic-gated v1 suites were NOT run and are not claimed; the
+  Docker daemon remains available and was NOT touched in this pass.
+- Security review performed by the implementing agent: the binding
+  gate is deterministic service code (never a prompt instruction) and
+  rejects with zero readiness/executor calls; the service re-verifies
+  every field of the port's returned facts, so a hostile or drifted
+  lookup cannot authorize a foreign or stale binding (pinned by the
+  foreign-facts test); a broken port fails loudly (ValueError) rather
+  than silently authorizing; the argv cannot name a different
+  candidate than the declared binding (construction-time invariant);
+  no digest identity, no shell string, no paths/URLs entered the
+  seam; Route A/B1/B2/B3 tests all pass unchanged; v1 modules remain
+  untouched.
+- Honest boundary / remaining risks: the binding gate proves currency
+  at lookup time but consumes/locks nothing -- a candidate can still
+  advance between the check and a future real execution (a B4b
+  execution transaction must re-check or one-shot-consume the binding
+  the way writeback approvals consume); the request does not yet bind
+  a B1 validation-run record; and the production database-backed
+  binding implementation does not exist yet (the fake and the
+  test-local adapter prove the seam only).  B4b -- release automation,
+  public deployment, the real OS credential adapter, real provider
+  transports, and the real container execution adapter -- is NOT
+  STARTED; Route B is not fully complete.
+- Human intervention: none beyond the parent review instruction
+  itself; no human edits to the code or tests.
+- Lesson: an execution boundary is only as authoritative as the
+  control-plane facts it revalidates -- make the request DECLARE what
+  it targets, project that declaration into every adapter-facing
+  surface (here: the argv), and re-verify it against the live control
+  plane before any side of the boundary is touched.
+
+## ROUTE-B4B01-REAL-CONTAINER-EXECUTION-ADAPTER-20261011
+
+- Timestamp: 2026-10-11.
+- Task ID: B4b-01 (Route B4b; the optional real container execution
+  adapter behind the frozen B4a ports; same worktree, same
+  strict-TDD loop -- no skills invoked, no commit).
+- Parent instruction (scope): implement B4b-01 ONLY -- an optional
+  real container execution adapter behind the existing
+  V2ExecutionPort/V2ReadinessPort with strict isolation, bounded,
+  deterministic boundaries: the adapter accepts only the closed
+  structured ExecutionActionRequestV2 + ExecutionProfileRecordV2
+  (never shell strings, arbitrary argv, user image/URL/registry
+  credentials, docker socket, or unrestricted network); subprocess
+  and docker usage confined to one clearly separated adapter with
+  an injectable runner; deterministic result sanitation and cleanup;
+  RED tests first, then GREEN, under tests/unit/v2; real-Docker
+  integration tests optional and honestly skipped when Docker is
+  unavailable; update the v2 wheel contract and the truthfulness
+  docs; mark B4b-02 (production database wiring, release/public
+  deployment, OS credentials, real provider transports) NOT
+  STARTED; run the full v2 suite, compileall, diff check, and wheel
+  contract; do not install pytest/pydantic/build dependencies ad
+  hoc; do not commit; do not use superpowers skills; do not
+  reset/discard pre-existing changes.
+- What was implemented (GREEN, after RED):
+  - `src/vespercode/execution/v2_docker_executor.py` (new; the second
+    and last subprocess edge of the v2 execution plane):
+    `SubprocessDockerExecutorV2` (constructed with the operator's
+    validated absolute comma-free workspace directory -- adapter
+    configuration, never a request field -- and an injectable
+    command runner) plus the frozen/slots `ExecutorCommandOutcomeV2`
+    (returncode=None exactly when timed out) and the frozen
+    resource bounds (CPU 2, memory 2 GiB, pids 256, tmpfs
+    `/tmp:rw,size=256m`, cleanup timeout 30 s).
+  - One closed command sequence per run: `docker create --pull never`
+    (network none, the profile's non-root user, read-only rootfs,
+    `--cap-drop ALL`, frozen memory/swap/pids/cpu, a bounded `/tmp`
+    tmpfs, exactly one read-only bind of the workspace at
+    `/workspace`, then the image token and the request argv) ->
+    `docker inspect` (daemon-side drift verification BEFORE start:
+    network mode, read-only rootfs, cap drop, privileged, memory/
+    swap/cpu/pids, tmpfs, user, image, cmd, the single workspace
+    bind with the daemon-normalized lowercased source, and rejection
+    of any `docker.sock` spelling in any mount source/target) -> one
+    `docker start --attach` under the remaining budget -> on
+    timeout `docker stop --time 0` -> ALWAYS `docker rm --force`
+    after any successful create (best-effort, never able to change
+    the determined result).
+  - One monotonic deadline spans create+inspect+start
+    (profile.timeout_seconds): only a timed-out attached start
+    reports TIMED_OUT; pre-start budget exhaustion, output overflow
+    (runner-reported or re-verified over cap), nonzero exits, runner
+    exceptions, and hostile runner returns all map to the closed
+    FAILED result with no CLI/daemon error text; no retry exists
+    anywhere; the per-run container name
+    `vespercode-exec-<uuid4().hex>` never enters a result.
+  - The default runner: `subprocess.Popen` with `shell=False`,
+    `stdin=DEVNULL`, and two reader threads draining stdout/stderr
+    under ONE shared byte budget; budget exhaustion stops collection,
+    flags truncation, and kills the process; wall-clock expiry
+    kills the CLI process and reaps it.
+  - Tests: `tests/unit/v2/test_v2_docker_executor.py` (25 offline
+    fake-runner tests: the exact create argv, the phase sequences,
+    the full drift matrix via a scripted `_inspect_payload`
+    mirroring the real daemon's exact field spellings, timeout and
+    overflow mapping, nonzero/exception/hostile outcomes, cleanup
+    on every exit path, and that the B4a binding/readiness gates
+    issue NO runner call at all when they fail upstream);
+    `tests/integration/docker/test_v2_execution_adapter.py`
+    (opt-in real-daemon suite, honest `SkipTest` with the exact
+    reason when the CLI, the daemon, or the token-named image is
+    unavailable; mounts only a throwaway temporary workspace
+    read-only and removes the containers it creates).
+  - Guard/contract updates: `tests/unit/v2/
+    test_v2_b4_v1_separation.py` (the executor joins the probe as
+    the two permitted subprocess edges; runtime import list),
+    `tests/unit/v2/test_v2_wheel_contract.py` (offline wheel pin),
+    `tests/smoke/package/test_wheel_contents.py`
+    (`REQUIRED_RUNTIME_MEMBERS`; pytest-gated, statically edited
+    only, not run on this host).
+- RED (captured): the new test module failed with
+  `ModuleNotFoundError: No module named
+  'vespercode.execution.v2_docker_executor'`; the separation guard
+  failed with `missing Route B execution-plane module:
+  execution/v2_docker_executor.py`; the wheel pin failed with
+  `declared v2 module does not exist` -- 444 tests, 3 failures, 7
+  errors before any implementation existed.
+- GREEN loop: the drift-check field set and the create flag order
+  were calibrated against the real daemon via a live create+inspect
+  cycle (Docker 29.1.3; the calibration container was removed
+  cleanly) before being pinned in the implementation and mirrored
+  in the offline `_inspect_payload`.
+- Verification (exact): full v2 suite `python -m unittest discover
+  -s tests/unit/v2` -> 468 tests, 0 failures, 2 controlled symlink
+  skips, exit 0 (was 443; +25 adapter tests; the offline wheel
+  contract pin is part of the suite and passes with the new
+  module); the opt-in integration suite `python -m unittest
+  discover -s tests/integration/docker -p
+  "test_v2_execution_adapter.py" -v` against the real local Docker
+  29.1.3 daemon -> both tests pass, with the explicit real-run
+  evidence status=FAILED, exit_code=1, output_len=268 (the
+  daemon's "executable file not found" -- the operator-tagged demo
+  image has no `vespercode-validate` entrypoint) and no leftover
+  containers via `docker ps -a`; operator setup `docker tag
+  vespercode-demo:local vespercode-validation-image` (kept in
+  place); compileall clean; `git diff --check` clean; manual
+  88-char line scan clean on all new/edited files (ruff is
+  unavailable on this host).  pytest and pydantic remain
+  unavailable on this host, so the pytest/pipx-gated package smoke
+  suite and the pydantic-gated v1 suites were NOT run and are not
+  claimed; no SUCCEEDED run over the real daemon is claimed (no
+  validation-entrypoint image exists yet).
+- Security review performed by the implementing agent: the adapter
+  accepts only the closed structured records (a shell string or a
+  non-record request raises); the workspace mount comes from
+  validated adapter configuration, never from a request; the image
+  token is never pulled, pushed, or built and no content digest is
+  parsed (the inspect report feeds the drift decision only);
+  `--pull never` makes the no-pull rule structural; the isolation
+  flag set is closed and re-verified against the daemon BEFORE the
+  container starts (any drift fails closed with nothing run); the
+  docker socket is structurally absent (no `-v` flag exists and any
+  `docker.sock` spelling in a mount source/target rejects); output
+  is bounded twice (runner budget + adapter re-verification) and
+  overflow fails closed rather than truncating a success; every
+  failure mode collapses to the closed FAILED result with no
+  CLI/daemon error text; cleanup runs on every exit path and never
+  changes the determined result; the offline unit job never spawns
+  a process (the fake runner pins every decision); no v1 module,
+  no third-party import, no network socket, and no new database
+  table.
+- Honest boundary / remaining risks: B4b-02 -- the production
+  database-backed binding implementation and any database wiring of
+  the execution plane, release automation, public deployment (any
+  non-loopback binding, TLS, or remote operator surface), the real
+  OS credential adapter, and real provider transports -- is NOT
+  STARTED; Route B is not fully complete.  The adapter is unwired
+  into any caller (no harness, CLI, or WebUI composes it); the
+  binding gate is check-time only (a candidate can still advance
+  between the binding lookup and the real run -- one-shot consume
+  is B4b-02 database wiring); cleanup is best-effort (a daemon that
+  becomes unreachable after a create can leave a container for the
+  operator); a workspace path containing a comma is rejected at
+  construction (the `--mount` value is comma-delimited); and no
+  content/digest guarantee exists (the v1 chain is deliberately
+  gone) -- isolation is proven per run, not image bytes.
+- Human intervention: none beyond the parent instruction itself;
+  no human edits to the code or tests.
+- Lesson: a real execution boundary is a transport, not a trust
+  decision -- prove the daemon's observable configuration matches
+  the frozen flag set before anything starts, and make every
+  failure mode collapse into the same closed, evidence-free FAILED
+  result the deterministic fake already promised.
+
+## ROUTE-B4B02A-PRODUCTION-DATABASE-BACKED-BINDING-20261011
+
+- Timestamp: 2026-10-11.
+- Task ID: B4b-02A (Route B4b; the production database-backed
+  execution binding replacing B4a's fake/read-only binding seam;
+  same worktree, same strict-TDD loop -- no skills invoked, no
+  commit).
+- Parent instruction (scope): retry B4b-02A ONLY in this worktree
+  after a provider HTTP 404 aborted the prior attempt with zero
+  changes; keep the existing CI/release workflow and public
+  deployment unchanged; do not commit, do not reset/discard existing
+  changes.  Replace B4a's fake/read-only execution binding with a
+  production-shaped read-only V2Database binding adapter
+  (stdlib-only, no v1 imports, no digest identity) that resolves
+  run/candidate to the current revision and rejects unknown/foreign
+  rows; extend the binding to the validation run control plane
+  (require a cited validation run that binds the same run, the same
+  candidate, the CURRENT candidate revision, and the request's
+  reference profile id+revision, and is terminal PASSED) before
+  readiness/executor; keep all binding checks read-only and
+  fail-closed (stale/foreign/missing/corrupt records reject, never
+  fake data); strict TDD (RED first) under tests/unit/v2 with the
+  named scenario list; preserve B4a request compatibility only if
+  safe; update the wheel contract for the new module; update
+  SPEC/PLAN/README/SPEC_PROCESS/AGENT_LOG truthfully; state that
+  B4b-02B (release/wheel automation) and B4b-02C (public
+  deployment) remain NOT STARTED; run the full v2 suite (468+),
+  compileall, diff check, and the wheel contract; do not install
+  pytest/pydantic/build ad hoc.
+- Skills invoked: none (the parent instruction explicitly forbids
+  superpowers skills; plain TDD loop only).
+- Key context examined: execution/v2_execution.py (the frozen
+  request/outcome/binding contracts), execution/v2_executor.py (the
+  service gate order and the deterministic fakes),
+  execution/v2_profile.py, storage/v2_database.py (the real v2
+  control database and its B1 read/revalidation methods:
+  get_run/get_candidate/get_validation_run/get_reference_profile),
+  contracts/v2_validation.py (ValidationRunRecordV2 and the closed
+  status set), candidate/v2_candidate.py
+  (CandidateControlIdentityV2), profiles/v2_reference.py, the B4a
+  service/request/docker-executor test suites, the B4 separation
+  guard, the wheel contract pin + REQUIRED_RUNTIME_MEMBERS, and the
+  truthfulness docs.
+- RED (before any implementation; 447 tests ran, 4 failures, 17
+  errors): tests/unit/v2/test_v2_database_binding.py failed with
+  `ModuleNotFoundError: No module named
+  'vespercode.execution.v2_database_binding'`;
+  test_v2_execution_service.py failed to load (ImportError:
+  ExecutionBindingOutcomeV2 / ValidationBindingFactsV2);
+  test_v2_execution_request.py failed the closed field-set pin and
+  the citation contract (TypeError: unexpected keyword argument
+  'validation_run_id'); the B4 separation guard failed (missing
+  Route B execution-plane module); the wheel pin failed (declared
+  v2 module does not exist; pin/tree drift).
+- Implementation (GREEN): (1) execution/v2_execution.py -- the
+  request gains an OPTIONAL validation_run_id (opaque-identifier
+  validated when cited, never projected into the argv; None is the
+  B4a isolated-fake spelling); new closed
+  EXECUTION_BINDING_OUTCOME_KINDS_V2 (RESOLVED, BINDING_NOT_FOUND,
+  VALIDATION_REQUIRED, VALIDATION_NOT_FOUND, VALIDATION_NOT_PASSED);
+  new ValidationBindingFactsV2 (the validation's own five keys +
+  status from the closed B1 set) nested into ExecutionBindingFactsV2;
+  new ExecutionBindingOutcomeV2 (kind + facts, self-enforcing:
+  only RESOLVED carries facts); the port signature becomes
+  lookup_execution_binding(run_id, candidate_id, validation_run_id,
+  reference_profile_id, reference_profile_revision); three new
+  closed outcome codes + static messages.  (2)
+  execution/v2_executor.py -- the service consults the port with all
+  five request keys, maps every closed kind BEFORE readiness (zero
+  readiness/executor calls on any binding rejection), and
+  re-verifies every returned fact against the request (identity
+  drift -> EXECUTION_BINDING_NOT_FOUND / EXECUTION_BINDING_STALE;
+  validation identity/profile drift -> VALIDATION_BINDING_NOT_FOUND;
+  a non-PASSED echoed status -> VALIDATION_BINDING_NOT_PASSED;
+  invented validation facts for an uncited request cannot bypass the
+  citation requirement); FakeV2BindingLookup keeps the isolated B4a
+  seam (uncited resolves) and gains validation_required /
+  validation_unresolved / validation_status scriptables.  (3)
+  execution/v2_database_binding.py (NEW) -- DatabaseBackedExecutionBinding:
+  constructor requires a real V2Database; the lookup is strictly
+  read-only (composes only existing read methods; no mutation, no
+  approval consumption, no validation result creation, no candidate
+  advancement), holds no cached state (a fresh process reopens and
+  resolves the same committed binding), and fails closed in order:
+  citation required -> run exists -> candidate exists, its row
+  revalidates as CandidateControlIdentityV2, and belongs to the run
+  -> the cited validation row revalidates as ValidationRunRecordV2
+  and binds (same run, same candidate, CURRENT revision, the
+  request's reference profile id/revision) -> the validation's own
+  profile row still exists and revalidates -> status is terminal
+  PASSED; record-revalidation failures (ValueError/TypeError) answer
+  the corresponding closed NOT_FOUND kind -- never fake data -- while
+  infrastructure failures beyond record shape (sqlite3) propagate
+  loudly and still execute nothing.
+- Tests: tests/unit/v2/test_v2_database_binding.py (NEW; 21 tests
+  over a real v2 control database: port contract + constructor gate,
+  valid current binding at the adapter and through the whole service
+  (executes exactly once), uncited -> VALIDATION_BINDING_REQUIRED,
+  unknown run/candidate, foreign-run candidate, foreign-run
+  validation, unknown validation, stale request revision (new
+  current validation -> EXECUTION_BINDING_STALE), stale validation
+  after candidate advance, pending validation, failed validation,
+  reference profile revision mismatch, deleted profile row, corrupted
+  validation/candidate/profile rows, the read-only proof (every v2
+  table byte-identical across accepted and rejected lookups), and
+  the fresh-process reopen -- a NEW interpreter + connection +
+  adapter resolve the same committed binding); test_v2_execution_
+  service.py updated to the new port contract with the new
+  validation-gate tests (fake REQUIRED/NOT_FOUND/NOT_PASSED,
+  drifted-facts re-verification, invented-facts bypass attempt) and
+  the superseded B4a test-local _DatabaseBindingLookup (plus its
+  four tests) REMOVED; test_v2_execution_request.py field-set pin +
+  citation contract; test_v2_b4_v1_separation.py guards the new
+  module (no v1 imports, no hashlib, stdlib+v2 only, no subprocess,
+  no socket); wheel pin + REQUIRED_RUNTIME_MEMBERS include
+  vespercode/execution/v2_database_binding.py.
+- Subagent output / verification: full v2 suite
+  `python -m unittest discover -s tests/unit/v2` -> 494 tests, 0
+  failures, 2 controlled symlink skips, exit 0 (baseline 468; +21
+  production-binding tests, +5 service/request contract tests, -4
+  superseded test-local adapter tests); `python -m compileall`
+  clean; `git diff --check` clean; manual 88-char line scan clean
+  for new code (the only >88 lines in touched files are
+  pre-existing lines preserved verbatim; ruff is unavailable on
+  this host); the wheel contract test green in the suite.  pytest
+  and pydantic remain unavailable on this host, so the
+  pytest/pipx-gated package smoke suite and the pydantic-gated v1
+  suites were NOT run and are not claimed.  The CI/release workflow
+  files (.github/workflows/ci.yml and the release workflow) were
+  NOT touched by this task (their pre-existing uncommitted
+  modifications from earlier tasks remain exactly as they were).
+- Human intervention: none beyond the parent instruction itself; no
+  human edits to the code or tests.
+- Honest boundary: B4b-02B -- release/wheel automation beyond the
+  existing unchanged CI/release workflow files -- and B4b-02C --
+  public deployment (any non-loopback binding, TLS, or remote
+  operator surface) -- are both NOT STARTED; Route B is not fully
+  complete.  The adapter is production-shaped but UNWIRED into any
+  caller (no harness, CLI, or WebUI composes it yet; one-shot
+  consume of the binding is future B4b-02 database wiring); the
+  binding gate is check-time only (a candidate can still advance
+  between the binding lookup and a real run); the real OS credential
+  adapter and real provider transports also remain NOT STARTED.
+- Lesson: pass the request's own binding keys into the port and
+  return a closed verdict vocabulary that can name every way reality
+  says no -- required, unresolvable, stale, not passed -- because a
+  facts-or-None return forces callers to guess, and the hostile-port
+  re-verification only works when the port had to echo fields the
+  service can compare.
+
+## ROUTE-B4B02A-STRUCTURAL-CITATION-GATE-20261011
+
+- Timestamp: 2026-10-11.
+- Task ID: B4b-02A third-round review fix (Route B4b; the production
+  database-backed execution binding's structural citation gate; same
+  worktree, same strict-TDD loop -- no skills invoked, no commit).
+- Parent instruction (scope): the main-thread third-round review
+  REJECTED the prior cut -- ``validation_run_id`` was optional and
+  ``V2ExecutionService`` executed uncited requests through a
+  permissive fake, so production safety depended on the caller's
+  choice of binding port.  Required: make the production path
+  structurally require the citation; preserve isolated fake tests
+  only through an explicitly separate test-only subclass; RED first
+  (uncited cannot reach readiness/executor in the production
+  service; cited PASSED binding succeeds); prefer a seam impossible
+  to confuse or a separate ``V2ExecutionTestService``; update
+  docs/contract language; no digest identity; full suite (494+),
+  compileall, diff check; no superpowers, no commit.
+- Skills invoked: none.
+- Key context examined: the round-2 service/adapter/test state
+  (``execution/v2_executor.py``, ``execution/v2_execution.py``,
+  ``execution/v2_database_binding.py``, the three execution test
+  modules), and the reviewer's semantic-gap finding.
+- RED (captured before any fix): RED-1 -- the new
+  ``test_an_uncited_request_rejects_before_the_binding_lookup``
+  failed with ``AssertionError: 'SUCCEEDED' != 'FAILED'`` (the
+  unguarded production service executed an uncited request through
+  the permissive fake: binding consulted, readiness checked,
+  executor called); RED-2 -- the service suite failed to load with
+  ``ImportError: cannot import name 'V2ExecutionTestService'``
+  (468 tests ran, 1 loader error); the direct adapter pin
+  (``test_the_adapter_itself_requires_a_citation``) passed
+  immediately -- it pins the adapter's pre-existing uncited
+  rejection, now masked by the service gate in the service path.
+- Implementation (GREEN): ``V2ExecutionService`` gained the frozen
+  class attribute ``_REQUIRES_VALIDATION_CITATION = True`` and a
+  structural gate in ``execute`` -- after the profile-binding checks,
+  BEFORE the binding port is consulted, an uncited request rejects
+  with the closed ``VALIDATION_BINDING_REQUIRED`` code, so no
+  binding-port choice (fake or real) can bypass the validation
+  requirement.  ``V2ExecutionTestService`` is the explicitly
+  TEST-ONLY subclass (``_REQUIRES_VALIDATION_CITATION = False``):
+  non-production by contract, named for grep, documented in the
+  module docstring and SPEC, and never constructed by any harness,
+  CLI, or WebUI; it relaxes exactly the one gate so the offline
+  fakes can exercise the service's ordering and sanitization.  The
+  deep defenses remain and are pinned: the production DB adapter
+  still answers an uncited lookup with ``VALIDATION_REQUIRED``
+  (defense in depth, now pinned by a direct port test), and a port
+  that invents validation facts for an uncited request still rejects
+  closed (exercised through the test subclass).  The docker-executor
+  service-gate tests now cite a validation and run the PRODUCTION
+  service; the isolated uncited seam moved under the test subclass
+  with renamed explicitly test-only tests plus a subclass-shape pin;
+  contract/docstring language rewritten (``None`` is the explicitly
+  test-only spelling; the production service rejects uncited
+  requests before the port is consulted).
+- Tests: +3 (497 total): the production uncited gate test
+  (VALIDATION_BINDING_REQUIRED with zero binding lookups, zero
+  readiness checks, zero executor calls, then the cited PASSED
+  binding executes exactly once), the test-service subclass pin
+  (issubclass + a production instance is NOT a test service), and
+  the adapter's direct citation pin; the three rewritten test-only
+  tests (uncited executes only through ``V2ExecutionTestService``;
+  the port-level VALIDATION_REQUIRED kind mapping; the
+  invented-facts bypass attempt) all construct the test subclass
+  by name.
+- Verification: full v2 suite ``python -m unittest discover -s
+  tests/unit/v2`` -> 497 tests, 0 failures, 2 controlled symlink
+  skips, exit 0 (was 494); the five key tests re-verified
+  individually, all ok; ``python -m compileall`` clean; ``git diff
+  --check`` clean; manual 88-char line scan clean for new code
+  (ruff unavailable on this host); CI/release workflow files
+  untouched.
+- Human intervention: none beyond the parent instruction itself; no
+  human edits to the code or tests.
+- Honest boundary: B4b-02B (release/wheel automation) and B4b-02C
+  (public deployment) remain NOT STARTED; the adapter and the gated
+  service are still UNWIRED into any caller; the binding gate is
+  check-time only; Route B is not fully complete.
+- Lesson: a safety property that lives in a collaborator is a
+  configuration, not a guarantee -- make the requirement the
+  service's own gate, placed before the collaborator is even
+  consulted, and give the test-only relaxation a NAME (a separate
+  subclass) so it is greppable and cannot be confused with a
+  production constructor.
+
+## ROUTE-B4B02B-V2-ALPHA-RELEASE-PATH-20261011
+
+- Timestamp: 2026-10-11.
+- Task ID: B4b-02B (Route B4b: the independent v2 alpha
+  wheel/release path; same worktree, strict TDD, no skills invoked,
+  no commit).
+- Parent instruction (scope): prepare a coherent v2 alpha
+  wheel/release path without mixing it with the v1 release -- define
+  the alpha package identity/version consistently, add an offline/
+  stdlib wheel build/install smoke contract (every v2 module including
+  the B4b execution and database-binding modules in the wheel member
+  contract; no tests/evidence/credentials/checkout leakage; coherent
+  metadata/version/entry points), choose and document an independent
+  release strategy that does NOT modify `.github/workflows/release.yml`
+  (prefer `release-v2-alpha.yml`), keep the publish boundary
+  explicit (no v1 digest as v2 identity, no secrets in ordinary CI),
+  add RED tests first then GREEN under `tests/unit/v2/process` or
+  existing stdlib v2 contracts, update SPEC/PLAN/README/SPEC_PROCESS/
+  AGENT_LOG truthfully (B4b-02C stays NOT STARTED), run the full suite
+  (497+), compileall, and the diff checks; preserve the v1 release
+  evidence byte-unchanged.
+- Skills invoked: none.
+- Key context examined: the existing wheel/package contracts
+  (`tests/unit/v2/test_v2_wheel_contract.py`,
+  `tests/smoke/package/*`, `scripts/run_package_smoke.py`), the
+  frozen v1 release workflow and its offline pytest-era pins
+  (`tests/unit/process/test_github_release_workflow.py`,
+  `test_github_actions_contract.py`, `test_ci_release_rules.py`),
+  the current `ci.yml`, `pyproject.toml`, and the B4b-02A
+  PLAN/SPEC/AGENT_LOG records.
+- RED (captured before any implementation): the new process suite
+  failed with 8 errors (`FileNotFoundError:
+  ...\.github\workflows\release-v2-alpha.yml`) plus the
+  workflow-exists failure, and the wheel-contract extension failed
+  the smoke-matrix pin (the v2 console entry-point assertion missing
+  from `tests/smoke/package/test_wheel_contents.py`) -- 24 tests,
+  2 failures, 8 errors; one RED-side test bug was fixed before any
+  implementation existed (the leak test's member-shape assumption:
+  the offline contract extracts package-relative members, so the
+  check was corrected to first-segment semantics against the parsed
+  prohibited set).
+- Implementation (GREEN): `.github/workflows/release-v2-alpha.yml`
+  (new; workflow_dispatch-only, `contents: read`, concurrency
+  `release-v2-alpha`; preflight -> unit-test -> wheel-build-smoke
+  jobs; locked Windows toolchain; exactly one
+  `vespercode-0.2.0a0-py3-none-any.whl`; adjacent
+  `<wheel>.whl.sha256` lowercase evidence; fresh-venv `--no-deps`
+  install; `vespercode-v2.exe --help`; one `v2-alpha-wheel`
+  artifact with `if-no-files-found: error`); the offline contract
+  suite `tests/unit/v2/process/test_v2_alpha_release_path.py`
+  (13 tests: workflow existence, dispatch-only admission, read-only/
+  secretless/unpublished tokens, the closed action enumeration, the
+  identity preflight, the documented unit command, the wheel build/
+  install smoke, the one named artifact, the evidence-file
+  convention, the frozen v1 workflow pins, no v2 tokens in the v1
+  workflow, the secretless CI pin, and the v2 CLI parser prog pin);
+  the wheel-contract extension (7 tests: pyproject identity,
+  version-pin coherence, the two-entry console boundary, the
+  smoke-matrix entry-point pins, the smoke-suite version pins, the
+  required/prohibited disjointness, and the first-segment leakage
+  check); the smoke matrix now asserts BOTH console entry points and
+  the installed-wheel smoke now proves `vespercode-v2 --help` from
+  the isolated pipx home; and the truthfulness docs (SPEC §5/§6/§7,
+  README status/installation/distribution/CI-CD/limitations, PLAN
+  Task B4b-02B, SPEC_PROCESS entry 114, this entry).
+- Tests: +20 (517 total; was 497).
+- Verification: full v2 suite `python -m unittest discover -s
+  tests/unit/v2` -> 517 tests, 0 failures, 2 controlled symlink
+  skips, exit 0; the two new suites re-verified individually (24
+  tests, OK); `python -m compileall` clean; `git diff --check`
+  clean; manual 88-char line scan clean for new code (ruff
+  unavailable on this host).  `build`, pytest, and pipx are NOT
+  installed on this host and were NOT installed ad hoc: the real
+  wheel build, the pytest/pipx-gated package smoke suite, and an
+  actual `release-v2-alpha.yml` run were NOT executed and are NOT
+  claimed.  `git diff .github/workflows/release.yml` is empty (the
+  frozen v1 release workflow is byte-unchanged; the v1 release
+  tag/evidence files are untouched).
+- Human intervention: none beyond the parent instruction itself; no
+  human edits to the code or tests.
+- Honest boundary: B4b-02C -- public deployment (any non-loopback
+  binding, TLS, or remote operator surface), the real OS credential
+  adapter, and real provider transports -- remains NOT STARTED; the
+  `v2-alpha-wheel` artifact is a transient CI artifact, not a
+  published distribution; the release workflow has never been
+  executed on GitHub's runners; the B4b-02A binding remains unwired
+  into any caller; Route B is not fully complete.
+- Lesson: make the release path's admission shape carry its safety --
+  manual dispatch, read-only permissions, a closed action
+  enumeration, and zero secrets make the workflow structurally
+  unable to publish, and a no-deps install that still answers
+  `--help` is the strongest offline proof of a packaging boundary.
+
+## ROUTE-B4B02C1-OS-CREDENTIAL-AND-PROVIDER-TRANSPORT-20261011
+
+- Timestamp: 2026-10-11.
+- Task ID: B4b-02C1 (Route B4b: the production OS credential adapter
+  and the real provider transport boundary; C1 only -- C2 public
+  deployment NOT STARTED; same worktree, strict TDD, no skills
+  invoked, subagent execution with parent review).
+- Skills invoked: none (the parent instruction explicitly excluded the
+  superpowers skills for this dispatch; the superpowers TDD
+  discipline was applied manually as RED -> GREEN with recorded
+  evidence).
+- Key prompt/context: implement B4b-02C1 only in the current worktree
+  -- a v2 OS credential adapter behind the existing
+  `V2CredentialProviderPort` (Windows Credential Manager for
+  supported Windows, isolated optional platform imports, fail-closed
+  unavailable/unsafe backends, non-revealing status, no v1 credential
+  service as v2 authority) plus a real provider transport adapter
+  behind `V2ProviderTransport` for the declared provider
+  endpoint/profile only (injectable HTTP/request edge, strict
+  timeout/body/output bounds, no arbitrary URL/base_url/headers/argv/
+  shell, endpoint resolved from v2 endpoint/profile records, no
+  automatic retry, all exceptions and non-success responses mapped to
+  static sanitized outcomes, never the response body or secret in
+  DB/log/outcome); preserve the `V2CredentialSecret` reveal capability
+  boundary; ensure the provider call service consumes the disclosure
+  authorization atomically before exactly one transport call with no
+  refund; RED/GREEN tests for safe/missing/unsafe backends, request/
+  response bounds, timeout, redirect/endpoint mismatch, non-success,
+  exception redaction, exact-one-call/no-retry, and credential
+  absence from the DB; wheel contract membership; truthful docs; full
+  suite (517+), compileall, diff check; no public deployment/C2; no
+  superpowers skills; no commit.
+- Implementation (GREEN): `src/vespercode/credentials/v2_os_store.py`
+  (new: `OSV2CredentialProvider` over the injectable
+  `V2OSCredentialBackendPort`; the real `WindowsCredentialManagerV2Backend`
+  with lazy function-local `win32cred`/`pywintypes` imports; the
+  unavailable placeholder and `default_v2_os_credential_backend`;
+  the closed `V2OSCredentialStoreError` and its
+  `OS_CREDENTIAL_STORE_ERROR_CODES_V2`; the closed backend-id set;
+  per-operation probe (identity + write/read/delete probe cycle of
+  `vespercode/v2/probe`), post-write re-verify, metadata-only status,
+  fresh no-cache reads, idempotent clear, and the disjoint
+  `vespercode/v2/credential/<provider>` target namespace);
+  `src/vespercode/providers/v2_transport.py` (new:
+  `V2ProviderTransportAdapter` constructed from exactly one v2
+  endpoint record + the reference profile record it must bind + an
+  injectable HTTP edge; the closed `PROVIDER_ADDRESSES_V2` map and
+  `resolve_provider_address_v2`; `V2ProviderHttpEdge` +
+  `V2ProviderHttpResult`; the bounded deterministic
+  `_control_request_body` serializer (control IDs/revisions only);
+  `PROVIDER_TRANSPORT_TIMEOUT_SECONDS_V2 = 60`,
+  `PROVIDER_MAX_REQUEST_BODY_BYTES_V2 = 1600`,
+  `PROVIDER_MAX_RESPONSE_BODY_BYTES_V2 = 1 MiB`; the real
+  `_HttpxV2ProviderEdge` (lazy httpx import, streaming,
+  `follow_redirects=False`, body-bound abort); one edge call, no
+  retry, full redaction to the closed `FAILED` response, and the
+  independent post-service binding recheck);
+  `src/vespercode/credentials/v2_port.py` (the separately minted
+  storage capability: `_StorageCapability`,
+  `_storage_reveal_capability`, and
+  `V2CredentialSecret.reveal_for_storage` -- granted only to the OS
+  store module, never interchangeable with the provider-call
+  `reveal`, which is unchanged); `src/vespercode/providers/v2_call.py`
+  (docstring only: the credential-port failure happens strictly
+  before the consume and propagates loudly -- never silently mapped,
+  never burns the authorization);
+  `tests/unit/v2/test_v2_os_credential_store.py` (23 tests, the
+  deterministic fake backend + the ast import-isolation pins);
+  `tests/unit/v2/test_v2_provider_transport.py` (27 tests, the
+  deterministic fake HTTP edge + constructor-signature and
+  import-isolation pins);
+  `tests/unit/v2/test_v2_provider_boundary.py` (13 composed
+  end-to-end tests over a real v2 control database: safe-backend
+  success, missing credential, unsafe/unavailable backends, timeout,
+  redirect, non-success, exception redaction, exact-one-call/
+  no-retry, the adapter binding-recheck burn, DB byte/row secret
+  absence);
+  `tests/unit/v2/test_v2_credentials_port.py` (+4 storage-reveal
+  capability tests);
+  `tests/unit/v2/test_v2_b2_v1_separation.py` (the two new modules
+  join the guarded B2 plane);
+  `tests/unit/v2/test_v2_wheel_contract.py` +
+  `tests/smoke/package/test_wheel_contents.py` (the new modules join
+  the wheel pin/`REQUIRED_RUNTIME_MEMBERS`);
+  `tests/integration/windows/test_v2_os_credential_store.py` (the
+  opt-in real-WinCred suite: Windows + pywin32 +
+  `VESPERCODE_V2_WINCRED_INTEGRATION=1` gate, honest skips with exact
+  reasons, unknown-entry refusal, teardown residue proof); and the
+  truthfulness docs (SPEC sections 5/7/8 + the B2 acceptance
+  criteria, README status/key-setup/integration/limitations/
+  directory-layout, SPEC_PROCESS entry 115, PLAN Task B4b-02C1,
+  this entry).
+- RED (recorded before any implementation): 507 tests, 3 failures,
+  6 errors -- `ModuleNotFoundError: No module named
+  'vespercode.credentials.v2_os_store'` (the OS store and boundary
+  suites), `No module named 'vespercode.providers.v2_transport'` (the
+  transport suite), `ImportError: cannot import name
+  '_storage_reveal_capability'` (the port suite), the B2 separation
+  guard's missing-module `FileNotFoundError` and existence failure,
+  and the wheel contract's source-tree existence and pin-drift
+  failures. Two RED-side test-double bugs were fixed BEFORE any
+  implementation existed (the fake backend now fails closed on
+  non-string stored values exactly like the real backend's
+  undecodable blob; and `None` is the constructor's default-backend
+  sentinel, not a non-conforming backend).
+- Tests: +67 (584 total; was 517): 23 OS-store, 27 transport, 13
+  composed boundary, 4 storage-reveal.
+- Verification: full v2 suite `python -m unittest discover -s
+  tests/unit/v2` -> 584 tests, 0 failures, 2 controlled symlink
+  skips, exit 0; the four new/extended suites re-verified
+  individually (23/27/13/18 tests, OK); `python -m compileall` clean
+  (src + tests/unit/v2 + tests/integration/windows); `git diff
+  --check` clean; manual 88-char line scan clean for new code (ruff
+  is unavailable on this host; the only >88 lines in touched files
+  are pre-existing, preserved verbatim). pytest, pydantic, pywin32,
+  and httpx are NOT installed on this host and were NOT installed ad
+  hoc: the pytest-gated suites were NOT run and are not claimed; the
+  real WinCred integration suite was LOADED and skips honestly on
+  this host (4 skips with the exact recorded reasons -- pywin32
+  unavailable, no opt-in given); no real OS store access, no real
+  network call, and no real provider contact is claimed by any
+  recorded run. The CI/release workflow files are untouched by this
+  task; `git diff .github/workflows/release.yml` is empty (the frozen
+  v1 release workflow is byte-unchanged).
+- Human intervention: none beyond the parent instruction itself; no
+  human edits to the code or tests.
+- Honest boundary: B4b-02C2 -- public deployment (any non-loopback
+  binding, TLS, or remote operator surface) -- is NOT STARTED;
+  neither new adapter is wired into the harness loop, CLI, or WebUI
+  (the shipped default port implementation stays the in-memory
+  fake); the real httpx edge has never been executed against any real
+  provider; the transport request body is the bounded control-plane
+  projection, not authorized content (the content-bearing completions
+  payload is a later slice); the real OS backend identity is proven
+  without the v1 keyring check (platform + import + capability
+  cycle -- a documented, reasoned deviation); Route B is not fully
+  complete (the B4b-02A binding also remains unwired).
+- Lesson: a capability boundary does not have to be single-consumer
+  to stay closed -- minting a second, narrower, separately named
+  capability for the one collaborator that structurally needs it (a
+  real store must touch the raw value to store it) keeps every frame
+  auditable, while making the two capabilities non-interchangeable
+  preserves the original boundary verbatim; and fail-closed means
+  LOUD -- an infrastructure failure should propagate with a static
+  redacted error BEFORE the one-shot consume, never be silently
+  mapped to a business outcome that would mislead the operator.
+
+## B4b-02C2-DECISION-20261011
+
+- User selected the local-only route. Public deployment is intentionally not implemented in the v2 alpha.
+- The supported boundary is the existing `127.0.0.1` loopback WebUI with one local workspace/session context.
+- No public URL, remote operator surface, TLS deployment, or multi-tenant claim is made.
+- A future public service requires a separate authentication, tenant isolation, cloud credential, TLS, quota, audit, and remote sandbox design.

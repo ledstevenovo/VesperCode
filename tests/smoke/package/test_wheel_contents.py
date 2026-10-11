@@ -1,9 +1,10 @@
 """T33.1 legacy step 33.A: versioned wheel contents tests.
 
 The exact RED pins one clean wheel containing every declared runtime
-module/template/static asset (the frozen console entry point included)
-and excluding tests, source evidence, credentials, VCS data, and
-prohibited members (GREEN-1); the artifact matrix pins the one
+module/template/static asset (both console entry points included: the
+legacy v1 script and the v2 alpha script) and excluding tests, source
+evidence, credentials, VCS data, and prohibited members (GREEN-1); the
+artifact matrix pins the one
 filename/version/RECORD/resource/digest/entry-point contract of the
 exact §5.1 wheel artifact matrix (Expected 33.A: one wheel, correct
 filename/version/RECORD/resources, independent digest, zero prohibited
@@ -21,8 +22,14 @@ from scripts.run_package_smoke import WheelArchive
 
 pytestmark = pytest.mark.package_smoke
 
-PROJECT_VERSION_V1: Final = "0.1.0"
-"""The frozen distribution version (pyproject [project] ``version``)."""
+PROJECT_VERSION_V2: Final = "0.2.0a0"
+"""The v2 alpha distribution version (pyproject [project] ``version``)."""
+
+# Route A / RA-09 note: every v2 production module is a required runtime
+# member.  The offline guard that fails closed on a missing v2 module is
+# tests/unit/v2/test_v2_wheel_contract.py, which runs in the ordinary v2
+# unit job (no pytest, no wheel build needed); this suite remains the
+# real-wheel smoke proof for the package smoke environment.
 
 _PACKAGED_HTMX_SHA256_V1: Final = (
     "e209dda5c8235479f3166defc7750e1dbcd5a5c1808b7792fc2e6733768fb447"
@@ -43,6 +50,7 @@ REQUIRED_RUNTIME_MEMBERS: Final[frozenset[str]] = frozenset(
         "vespercode/candidate/identity.py",
         "vespercode/candidate/patch_engine.py",
         "vespercode/candidate/unified_diff.py",
+        "vespercode/candidate/v2_candidate.py",
         "vespercode/canonical/clock.py",
         "vespercode/canonical/digest.py",
         "vespercode/canonical/json_v1.py",
@@ -50,13 +58,19 @@ REQUIRED_RUNTIME_MEMBERS: Final[frozenset[str]] = frozenset(
         "vespercode/canonical/timestamp_v1.py",
         "vespercode/cli.py",
         "vespercode/cli_composition.py",
+        "vespercode/cli_v2.py",
         "vespercode/contracts/action.py",
         "vespercode/contracts/evidence.py",
         "vespercode/contracts/location.py",
         "vespercode/contracts/optional.py",
         "vespercode/contracts/run.py",
+        "vespercode/contracts/v2_identity.py",
+        "vespercode/contracts/v2_validation.py",
+        "vespercode/contracts/v2_writeback.py",
         "vespercode/credentials/port.py",
         "vespercode/credentials/service.py",
+        "vespercode/credentials/v2_os_store.py",
+        "vespercode/credentials/v2_port.py",
         "vespercode/credentials/wincred_store.py",
         "vespercode/demo/app.py",
         "vespercode/demo/executor.py",
@@ -69,6 +83,12 @@ REQUIRED_RUNTIME_MEMBERS: Final[frozenset[str]] = frozenset(
         "vespercode/execution/docker_executor.py",
         "vespercode/execution/docker_profile.py",
         "vespercode/execution/materialization.py",
+        "vespercode/execution/v2_database_binding.py",
+        "vespercode/execution/v2_docker_executor.py",
+        "vespercode/execution/v2_docker_probe.py",
+        "vespercode/execution/v2_execution.py",
+        "vespercode/execution/v2_executor.py",
+        "vespercode/execution/v2_profile.py",
         "vespercode/governance/disclosure_decision.py",
         "vespercode/governance/disclosure_ledger.py",
         "vespercode/governance/disclosure_revocation.py",
@@ -79,12 +99,16 @@ REQUIRED_RUNTIME_MEMBERS: Final[frozenset[str]] = frozenset(
         "vespercode/governance/writeback_approval.py",
         "vespercode/governance/writeback_decision.py",
         "vespercode/governance/writeback_subject.py",
+        "vespercode/governance/relaxed_policy.py",
+        "vespercode/governance/v2_disclosure.py",
+        "vespercode/governance/v2_secret_scanner.py",
         "vespercode/llm/base.py",
         "vespercode/llm/call_result.py",
         "vespercode/llm/mock_adapter.py",
         "vespercode/llm/openai_adapter.py",
         "vespercode/llm/openai_serializer.py",
         "vespercode/llm/prepared_request.py",
+        "vespercode/llm/v2.py",
         "vespercode/loop/action_binding.py",
         "vespercode/loop/action_parser.py",
         "vespercode/loop/action_pipeline.py",
@@ -100,10 +124,12 @@ REQUIRED_RUNTIME_MEMBERS: Final[frozenset[str]] = frozenset(
         "vespercode/loop/stopping.py",
         "vespercode/loop/turn_boundary.py",
         "vespercode/loop/wait_control.py",
+        "vespercode/loop/v2_engine.py",
         "vespercode/memory/clear.py",
         "vespercode/memory/entry.py",
         "vespercode/memory/repository.py",
         "vespercode/memory/selection.py",
+        "vespercode/memory/v2.py",
         "vespercode/persistence/artifacts.py",
         "vespercode/persistence/path_record.py",
         "vespercode/persistence/recovery.py",
@@ -111,6 +137,8 @@ REQUIRED_RUNTIME_MEMBERS: Final[frozenset[str]] = frozenset(
         "vespercode/persistence/recovery_preview.py",
         "vespercode/persistence/transaction.py",
         "vespercode/persistence/writeback.py",
+        "vespercode/persistence/v2_recovery.py",
+        "vespercode/persistence/v2_writeback.py",
         "vespercode/profiles/builtin/mock-deterministic-v1.json",
         "vespercode/profiles/builtin/openai-single-turn-v1.json",
         "vespercode/profiles/builtin/reference-profile-v1.json",
@@ -119,8 +147,12 @@ REQUIRED_RUNTIME_MEMBERS: Final[frozenset[str]] = frozenset(
         "vespercode/profiles/llm.py",
         "vespercode/profiles/reference.py",
         "vespercode/profiles/registry.py",
+        "vespercode/profiles/v2_endpoints.py",
+        "vespercode/profiles/v2_reference.py",
         "vespercode/project/dependency_closure.py",
         "vespercode/project/toolchain_promotion.py",
+        "vespercode/providers/v2_call.py",
+        "vespercode/providers/v2_transport.py",
         "vespercode/runs/admission.py",
         "vespercode/runs/lifecycle.py",
         "vespercode/runs/request.py",
@@ -142,12 +174,14 @@ REQUIRED_RUNTIME_MEMBERS: Final[frozenset[str]] = frozenset(
         "vespercode/storage/migrations/v0011_persistence.py",
         "vespercode/storage/migrations/v0012_recovery.py",
         "vespercode/storage/run_repository.py",
+        "vespercode/storage/v2_database.py",
         "vespercode/tools/dispatcher.py",
         "vespercode/tools/file_actions.py",
         "vespercode/tools/file_results.py",
         "vespercode/tools/list_files.py",
         "vespercode/tools/read_file.py",
         "vespercode/tools/search_text.py",
+        "vespercode/tools/v2_dispatcher.py",
         "vespercode/trees/candidate.py",
         "vespercode/trees/content_store.py",
         "vespercode/trees/readable.py",
@@ -177,6 +211,10 @@ REQUIRED_RUNTIME_MEMBERS: Final[frozenset[str]] = frozenset(
         "vespercode/web/run_lifecycle_workflow.py",
         "vespercode/web/run_workflows.py",
         "vespercode/web/security.py",
+        "vespercode/web/v2_app.py",
+        "vespercode/web/v2_forms.py",
+        "vespercode/web/v2_security.py",
+        "vespercode/web/v2_server.py",
         "vespercode/web/static/htmx.min.js",
         "vespercode/web/templates/audit.html",
         "vespercode/web/templates/base.html",
@@ -194,13 +232,18 @@ REQUIRED_RUNTIME_MEMBERS: Final[frozenset[str]] = frozenset(
         "vespercode/workspace/mutex_win32.py",
         "vespercode/workspace/object_win32.py",
         "vespercode/workspace/path_guard.py",
-        f"vespercode-{PROJECT_VERSION_V1}.dist-info/entry_points.txt",
+        "vespercode/workspace/v2_boundary.py",
+        "vespercode/workspace/v2_disk.py",
+        "vespercode/runtime_v2.py",
+        "vespercode/shell_v2.py",
+        f"vespercode-{PROJECT_VERSION_V2}.dist-info/entry_points.txt",
     }
 )
 """Every declared runtime module/template/static asset of the wheel plus
-the frozen console entry point (33.A GREEN-1).  The dist-info member
-name carries the frozen project version so the entry-point requirement
-binds the exact versioned wheel."""
+the version-bound console entry-point metadata (33.A GREEN-1; B4b-02B
+pins both scripts: the legacy v1 entry and the v2 alpha entry).  The
+dist-info member name carries the pinned project version so the
+entry-point requirement binds the exact versioned wheel."""
 
 PROHIBITED_WHEEL_MEMBERS: Final[frozenset[str]] = frozenset(
     {
@@ -284,25 +327,27 @@ def test_wheel_artifact_matrix(built_wheel: WheelArchive) -> None:
     RECORD, the pinned packaged assets, the adjacent lowercase
     independent digest evidence, and zero prohibited member.
     """
-    expected_name = f"vespercode-{PROJECT_VERSION_V1}-py3-none-any.whl"
+    expected_name = f"vespercode-{PROJECT_VERSION_V2}-py3-none-any.whl"
     assert built_wheel.name == expected_name
-    assert built_wheel.version == PROJECT_VERSION_V1
+    assert built_wheel.version == PROJECT_VERSION_V2
     wheels = list(built_wheel.wheel_path.parent.glob("vespercode-*.whl"))
     assert wheels == [built_wheel.wheel_path]
 
-    # --- the frozen console entry point ---
+    # --- the two console entry points: the legacy v1 script stays the
+    # frozen v1 CLI and the v2 alpha script is the v2 CLI ---
     entry_points = built_wheel.member_bytes(
-        f"vespercode-{PROJECT_VERSION_V1}.dist-info/entry_points.txt"
+        f"vespercode-{PROJECT_VERSION_V2}.dist-info/entry_points.txt"
     ).decode("utf-8")
     assert "[console_scripts]" in entry_points
     assert "vespercode = vespercode.cli:main" in entry_points
+    assert "vespercode-v2 = vespercode.cli_v2:main" in entry_points
 
     # --- the frozen distribution metadata ---
     metadata = built_wheel.member_bytes(
-        f"vespercode-{PROJECT_VERSION_V1}.dist-info/METADATA"
+        f"vespercode-{PROJECT_VERSION_V2}.dist-info/METADATA"
     ).decode("utf-8")
     assert "Name: vespercode" in metadata
-    assert f"Version: {PROJECT_VERSION_V1}" in metadata
+    assert f"Version: {PROJECT_VERSION_V2}" in metadata
 
     # --- the pinned packaged assets ship with their exact identity ---
     htmx = built_wheel.member_bytes("vespercode/web/static/htmx.min.js")
