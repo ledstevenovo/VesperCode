@@ -4129,3 +4129,48 @@
 - The supported boundary is the existing `127.0.0.1` loopback WebUI with one local workspace/session context.
 - No public URL, remote operator surface, TLS deployment, or multi-tenant claim is made.
 - A future public service requires a separate authentication, tenant isolation, cloud credential, TLS, quota, audit, and remote sandbox design.
+
+## PLAN-WRITEBACK-CLEANUP-20261011
+
+- Task: backfill the v2 task statuses in PLAN.md and remove the residual
+  migration worktree/branch (user-directed housekeeping; no code change).
+- Facts established before any edit: PR #14 merged
+  `codex/relaxed-v2-migration` as a single-parent squash commit `b436ad3`
+  (2026-10-11 18:00 +0800). The branch tip `41202d9` ("feat: add v2 local
+  harness alpha", 17:46 +0800) is not an ancestor of main, but its tree is
+  byte-identical to the `b436ad3` tree: `git diff main 41202d9 --stat`
+  shows only `src/vespercode/validation/python_adapter.py` and
+  `task_plan.md`, exactly the files `2aef9d7` changed after the merge
+  (post-merge refactor moving target-id checks into the pydantic model
+  behind the try/except boundary, plus adding task_plan.md). No per-task
+  commit hashes exist anywhere -- the whole v2 implementation lives in the
+  one squash commit -- so PLAN.md records `b436ad3` for every completed
+  task instead of per-task hashes.
+- PLAN.md: all 39 `complete in the current worktree; implementation commit
+  pending` status lines replaced with `complete; implementation merged to
+  main via PR #14 (squash commit b436ad3, 2026-10-11)`; RA-04's accidental
+  duplicate status line was deduplicated. V2-05's stale "not started"
+  claim for WebUI/CLI, Docker execution, the real OS credential/provider
+  adapters, and release was rewritten to the honest current state: those
+  slices are implemented by B3-01..B3-07, B4a-01..B4a-06, and
+  B4b-01..B4b-02C1; public deployment (B4b-02C2) stays intentionally
+  local-only per the decision above; the recorded remaining gaps are the
+  unwired real adapters (harness loop/CLI/WebUI still default to the
+  in-memory fakes) and the pending v1 digest runtime path removal.
+- task_plan.md: a supersede note was added under 当前执行进度 correcting
+  the stale "尚未合并/尚未创建提交" statements (merged via PR #14 /
+  b436ad3; worktree and branch deleted after content-equality
+  verification).
+- Cleanup: `.worktrees/relaxed-v2-migration` removed (0 dirty files
+  verified first); local branch `codex/relaxed-v2-migration` deleted (was
+  41202d9); origin branch deleted via `git push origin --delete`. Nothing
+  of value was discarded: branch tree == b436ad3 tree.
+- Verification: v2 unit suite on main ran 598 tests, 0 failures, 2
+  controlled symlink skips before the edits and again after them; the
+  cleanup produced no code diff, so the test outcome is unaffected.
+- Human intervention: none beyond the user's direct instruction to perform
+  this housekeeping; all edits were made by the main-thread agent.
+- Lesson: squash merges erase per-task commit provenance -- record the
+  squash hash per task at merge time, and verify tree equality
+  (`git diff main <branch-tip> --stat`) before deleting any "residual"
+  branch that looks unmerged.

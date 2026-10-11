@@ -35,7 +35,8 @@ the v1 schema or delete legacy evidence in this plan.
   (468 tests ran, 1 loader error).
 - **Verification:** `python -m unittest discover -s tests\unit\v2 -v`.
 - **Dependencies:** none. **Parallelizable:** no; this is the storage base.
-- **Status:** complete in the current worktree; implementation commit pending.
+- **Status:** complete; implementation merged to main via PR #14 (squash
+  commit b436ad3, 2026-10-11).
 
 ## Task V2-02 — Deterministic relaxed governance
 
@@ -52,7 +53,8 @@ the v1 schema or delete legacy evidence in this plan.
   available.
 - **Dependencies:** V2-01 vocabulary only. **Parallelizable:** no, shares policy
   semantics with the dispatcher.
-- **Status:** complete in the current worktree; implementation commit pending.
+- **Status:** complete; implementation merged to main via PR #14 (squash
+  commit b436ad3, 2026-10-11).
 
 ## Task V2-03 — Harness core and feedback mechanism
 
@@ -71,7 +73,8 @@ the v1 schema or delete legacy evidence in this plan.
   corrective-action scenario twice and compare statuses/turns/workspace bytes.
 - **Dependencies:** V2-01 and V2-02. **Parallelizable:** no; composition is
   the final vertical slice.
-- **Status:** complete in the current worktree; implementation commit pending.
+- **Status:** complete; implementation merged to main via PR #14 (squash
+  commit b436ad3, 2026-10-11).
 
 ## Task V2-04 — Version and process contract
 
@@ -89,7 +92,8 @@ the v1 schema or delete legacy evidence in this plan.
   `git diff --check`, README/process contract checks where dependencies exist.
 - **Dependencies:** V2-01–V2-03. **Parallelizable:** documentation can be
   reviewed independently after the code slice is stable.
-- **Status:** complete in the current worktree; implementation commit pending.
+- **Status:** complete; implementation merged to main via PR #14 (squash
+  commit b436ad3, 2026-10-11).
 
 ## Task V2-05 — Remaining integrations (future)
 
@@ -102,16 +106,17 @@ the v1 schema or delete legacy evidence in this plan.
 - **Dependencies:** V2-04 and explicit contract review.
 - **Parallelizable:** independent adapters may proceed in separate worktrees
   after interfaces are frozen.
-- **Status:** partially started — Route A (real local filesystem writeback
-  and recovery) is implemented by tasks RA-01..RA-09 below; Route B1
-  (candidate/validation/reference-profile identity contracts and storage)
-  is implemented by tasks B1-01..B1-04 below; Route B2 (the
-  disclosure/provider/credential control plane — grants, per-request
-  authorizations, provider endpoints, the injectable credential port, and
-  the one-call provider boundary) is implemented by tasks B2-01..B2-05
-  below; the remaining integrations (WebUI/CLI, Docker validation
-  execution, the real OS credential adapter and real provider
-  transports, and release) are **not started**.
+- **Status:** complete — every integration this task scoped is implemented
+  by the tasks below and merged to main via PR #14 (squash commit
+  b436ad3, 2026-10-11): Route A by RA-01..RA-09, Route B1 by
+  B1-01..B1-04, Route B2 by B2-01..B2-05, the WebUI/CLI by B3-01..B3-07,
+  the Docker execution profile by B4a-01..B4a-06, and the v2 execution
+  adapters and alpha wheel/release path by B4b-01..B4b-02C1. Public
+  deployment (B4b-02C2) was decided local-only on 2026-10-11 and is
+  intentionally not implemented. Known remaining gaps: the real OS
+  credential and provider transport adapters are not yet wired into the
+  harness loop/CLI/WebUI (shipped defaults remain the in-memory fakes),
+  and the legacy v1 digest runtime path removal is still pending.
 
 ## Task RA-01 — Route A / A0: frozen writeback interfaces
 
@@ -130,7 +135,8 @@ the v1 schema or delete legacy evidence in this plan.
 - **Verification:** `python -m unittest tests.unit.v2.test_writeback_contracts -v`.
 - **Dependencies:** V2-01 vocabulary. **Parallelizable:** no; every later
   Route A task consumes these contracts.
-- **Status:** complete in the current worktree; implementation commit pending.
+- **Status:** complete; implementation merged to main via PR #14 (squash
+  commit b436ad3, 2026-10-11).
 
 ## Task RA-02 — Route A / A1: real path/object boundary
 
@@ -150,7 +156,8 @@ the v1 schema or delete legacy evidence in this plan.
   Windows host and skip elsewhere.
 - **Dependencies:** RA-01 constants only. **Parallelizable:** no; the port
   and all writeback services depend on it.
-- **Status:** complete in the current worktree; implementation commit pending.
+- **Status:** complete; implementation merged to main via PR #14 (squash
+  commit b436ad3, 2026-10-11).
 
 ## Task RA-03 — Route A / A2: durable transactions and atomic writeback
 
@@ -175,7 +182,8 @@ the v1 schema or delete legacy evidence in this plan.
 - **Verification:** `python -m unittest tests.unit.v2.test_v2_database_transactions tests.unit.v2.test_v2_writeback -v`
   plus the full v2 suite.
 - **Dependencies:** RA-01, RA-02. **Parallelizable:** no.
-- **Status:** complete in the current worktree; implementation commit pending.
+- **Status:** complete; implementation merged to main via PR #14 (squash
+  commit b436ad3, 2026-10-11).
 
 ## Task RA-04 — Route A / A3: recovery preview, apply, and rollback
 
@@ -191,9 +199,8 @@ the v1 schema or delete legacy evidence in this plan.
   safety.
 - **Verification:** `python -m unittest tests.unit.v2.test_v2_recovery -v`.
 - **Dependencies:** RA-03. **Parallelizable:** no.
-- **Status:** complete in the current worktree; implementation commit pending.
-
-- **Status:** complete in the current worktree; implementation commit pending.
+- **Status:** complete; implementation merged to main via PR #14 (squash
+  commit b436ad3, 2026-10-11).
 
 ## Task RA-05 — Route A / A4+A5: real disk port, harness injection, and fault/Windows tests
 
@@ -214,7 +221,8 @@ the v1 schema or delete legacy evidence in this plan.
   demo script, compileall, `git diff --check`.
 - **Dependencies:** RA-01..RA-04. **Parallelizable:** no; final vertical
   slice.
-- **Status:** complete in the current worktree; implementation commit pending.
+- **Status:** complete; implementation merged to main via PR #14 (squash
+  commit b436ad3, 2026-10-11).
 
 ## Task RA-06 — Route A hardening: compare-and-publish content guard
 
@@ -245,7 +253,8 @@ the v1 schema or delete legacy evidence in this plan.
   121 tests), compileall, `git diff --check`, demo script.
 - **Dependencies:** RA-01..RA-05. **Parallelizable:** no; hardens the frozen
   port contract every Route A consumer depends on.
-- **Status:** complete in the current worktree; implementation commit pending.
+- **Status:** complete; implementation merged to main via PR #14 (squash
+  commit b436ad3, 2026-10-11).
 
 ## Task RA-07 — Route A hardening round 2: content-bound removal and full schema validation
 
@@ -285,7 +294,8 @@ the v1 schema or delete legacy evidence in this plan.
   130 tests), compileall, `git diff --check`, demo script.
 - **Dependencies:** RA-06. **Parallelizable:** no; second hardening pass over
   the frozen port contract and the schema gate.
-- **Status:** complete in the current worktree; implementation commit pending.
+- **Status:** complete; implementation merged to main via PR #14 (squash
+  commit b436ad3, 2026-10-11).
 
 ## Task RA-08 — Route A hardening round 3: secret-content gate and corrupted-journal rejection
 
@@ -323,7 +333,8 @@ the v1 schema or delete legacy evidence in this plan.
   141 tests), compileall, `git diff --check`, demo script.
 - **Dependencies:** RA-07. **Parallelizable:** no; third hardening pass
   over the writeback boundary and the recovery gate.
-- **Status:** complete in the current worktree; implementation commit pending.
+- **Status:** complete; implementation merged to main via PR #14 (squash
+  commit b436ad3, 2026-10-11).
 
 ## Task RA-09 — Route A hardening round 4: wheel package contract covers the v2 modules
 
@@ -368,7 +379,8 @@ the v1 schema or delete legacy evidence in this plan.
   static guard plus the contract listing are this round's deliverable.
 - **Dependencies:** RA-08. **Parallelizable:** no; packaging contract
   pass over the v2 module surface.
-- **Status:** complete in the current worktree; implementation commit pending.
+- **Status:** complete; implementation merged to main via PR #14 (squash
+  commit b436ad3, 2026-10-11).
 
 ## Task B1-01 — Route B1: candidate/validation/reference identity contracts
 
@@ -411,7 +423,8 @@ the v1 schema or delete legacy evidence in this plan.
 - **Dependencies:** V2-01 vocabulary. **Parallelizable:** the three modules
   are independent of the storage slice (B1-02) but the tests were written
   and turned green together with them.
-- **Status:** complete in the current worktree; implementation commit pending.
+- **Status:** complete; implementation merged to main via PR #14 (squash
+  commit b436ad3, 2026-10-11).
 
 ## Task B1-02 — Route B1: durable validation/reference storage (v3 schema)
 
@@ -449,7 +462,8 @@ the v1 schema or delete legacy evidence in this plan.
   transaction/writeback/recovery tests still pass.
 - **Dependencies:** B1-01 contracts. **Parallelizable:** no; one schema
   module.
-- **Status:** complete in the current worktree; implementation commit pending.
+- **Status:** complete; implementation merged to main via PR #14 (squash
+  commit b436ad3, 2026-10-11).
 
 ## Task B1-03 — Route B1: wheel contract and documentation
 
@@ -479,7 +493,8 @@ the v1 schema or delete legacy evidence in this plan.
   the repeatable demo.
 - **Dependencies:** B1-01, B1-02. **Parallelizable:** documentation can be
   reviewed independently.
-- **Status:** complete in the current worktree; implementation commit pending.
+- **Status:** complete; implementation merged to main via PR #14 (squash
+  commit b436ad3, 2026-10-11).
 - **Boundary:** Route B2 (disclosure/provider), WebUI/CLI, Docker
   validation, and any release work are **not started** in this slice.
 
@@ -520,7 +535,8 @@ the v1 schema or delete legacy evidence in this plan.
   `git diff --check`.
 - **Dependencies:** B1-02. **Parallelizable:** no; hardening pass over
   the B1 storage boundary.
-- **Status:** complete in the current worktree; implementation commit pending.
+- **Status:** complete; implementation merged to main via PR #14 (squash
+  commit b436ad3, 2026-10-11).
 
 ## Task B2-01 — Route B2: disclosure/credential/endpoint contracts and pure policy
 
@@ -573,7 +589,8 @@ the v1 schema or delete legacy evidence in this plan.
 - **Dependencies:** V2-01 vocabulary; B1-01 record conventions.
   **Parallelizable:** the contract modules are independent of the
   storage slice (B2-03) but were test-driven together with it.
-- **Status:** complete in the current worktree; implementation commit pending.
+- **Status:** complete; implementation merged to main via PR #14 (squash
+  commit b436ad3, 2026-10-11).
 
 ## Task B2-02 — Route B2: provider endpoint and disclosure grant storage (v3 schema)
 
@@ -618,7 +635,8 @@ the v1 schema or delete legacy evidence in this plan.
   proving Route A/B1 tests still pass.
 - **Dependencies:** B2-01 contracts, B1-02 schema conventions.
   **Parallelizable:** no; one schema module.
-- **Status:** complete in the current worktree; implementation commit pending.
+- **Status:** complete; implementation merged to main via PR #14 (squash
+  commit b436ad3, 2026-10-11).
 
 ## Task B2-03 — Route B2: atomic disclosure authorization ledger and provider call boundary
 
@@ -671,7 +689,8 @@ the v1 schema or delete legacy evidence in this plan.
   (252 tests, 0 failures, 2 controlled symlink skips; was 183).
 - **Dependencies:** B2-01, B2-02. **Parallelizable:** no; the ledger
   and the call boundary share the authorization state machine.
-- **Status:** complete in the current worktree; implementation commit pending.
+- **Status:** complete; implementation merged to main via PR #14 (squash
+  commit b436ad3, 2026-10-11).
 
 ## Task B2-04 — Route B2: wheel contract, separation guard, and documentation
 
@@ -710,7 +729,8 @@ the v1 schema or delete legacy evidence in this plan.
   and the repeatable demo.
 - **Dependencies:** B2-01..B2-03. **Parallelizable:** documentation can
   be reviewed independently.
-- **Status:** complete in the current worktree; implementation commit pending.
+- **Status:** complete; implementation merged to main via PR #14 (squash
+  commit b436ad3, 2026-10-11).
 - **Boundary:** B3 (WebUI/CLI integration), Docker validation
   execution, the real OS credential adapter, real provider
   transports, release automation, and the validation executor are
@@ -773,7 +793,8 @@ the v1 schema or delete legacy evidence in this plan.
   the B2 modules loads no v1/digest module.
 - **Dependencies:** B2-01..B2-04. **Parallelizable:** no; hardening
   pass over the frozen credential and provider call boundaries.
-- **Status:** complete in the current worktree; implementation commit pending.
+- **Status:** complete; implementation merged to main via PR #14 (squash
+  commit b436ad3, 2026-10-11).
 
 ## Task B3-01 — Route B3: the local v2 services shell
 
@@ -810,7 +831,8 @@ the v1 schema or delete legacy evidence in this plan.
 - **Dependencies:** Route A, B1, B2. **Parallelizable:** the shell and
   the web security/forms modules were developed together; the shell
   contract is testable independently of the CLI/WebUI.
-- **Status:** complete in the current worktree; implementation commit pending.
+- **Status:** complete; implementation merged to main via PR #14 (squash
+  commit b436ad3, 2026-10-11).
 
 ## Task B3-02 — Route B3: the loopback WebUI security boundary
 
@@ -843,7 +865,8 @@ the v1 schema or delete legacy evidence in this plan.
   exactness) inside the full suite.
 - **Dependencies:** none (pure boundary). **Parallelizable:** yes;
   independent of the shell and CLI tasks.
-- **Status:** complete in the current worktree; implementation commit pending.
+- **Status:** complete; implementation merged to main via PR #14 (squash
+  commit b436ad3, 2026-10-11).
 
 ## Task B3-03 — Route B3: typed allowlisted form contracts
 
@@ -870,7 +893,8 @@ the v1 schema or delete legacy evidence in this plan.
   unknown/missing/duplicate/malformed rejections, closed literals)
   inside the full suite.
 - **Dependencies:** none (pure contracts). **Parallelizable:** yes.
-- **Status:** complete in the current worktree; implementation commit pending.
+- **Status:** complete; implementation merged to main via PR #14 (squash
+  commit b436ad3, 2026-10-11).
 
 ## Task B3-04 — Route B3: the framework-agnostic WebUI application
 
@@ -908,7 +932,8 @@ the v1 schema or delete legacy evidence in this plan.
   inside the full suite.
 - **Dependencies:** B3-01..B3-03. **Parallelizable:** no; composes all
   three.
-- **Status:** complete in the current worktree; implementation commit pending.
+- **Status:** complete; implementation merged to main via PR #14 (squash
+  commit b436ad3, 2026-10-11).
 
 ## Task B3-05 — Route B3: the standard-library loopback server adapter
 
@@ -944,7 +969,8 @@ the v1 schema or delete legacy evidence in this plan.
   host/port validation) inside the full suite.
 - **Dependencies:** B3-04. **Parallelizable:** no; the transport seam
   of the app contract.
-- **Status:** complete in the current worktree; implementation commit pending.
+- **Status:** complete; implementation merged to main via PR #14 (squash
+  commit b436ad3, 2026-10-11).
 
 ## Task B3-06 — Route B3: the closed v2 CLI, wheel contract, and documentation
 
@@ -1001,7 +1027,8 @@ the v1 schema or delete legacy evidence in this plan.
   a fetched home page).
 - **Dependencies:** B3-01..B3-05. **Parallelizable:** documentation can
   be reviewed independently.
-- **Status:** complete in the current worktree; implementation commit pending.
+- **Status:** complete; implementation merged to main via PR #14 (squash
+  commit b436ad3, 2026-10-11).
 - **Boundary:** B4 — Docker validation execution, release automation,
   the real OS credential adapter, real provider transports, and any
   public deployment — is **not started** in this slice; Route B is not
@@ -1075,7 +1102,8 @@ the v1 schema or delete legacy evidence in this plan.
   smoke, and the runtime v1-import probe.
 - **Dependencies:** B3-01..B3-06. **Parallelizable:** no; a hardening
   pass over the frozen security boundary.
-- **Status:** complete in the current worktree; implementation commit pending.
+- **Status:** complete; implementation merged to main via PR #14 (squash
+  commit b436ad3, 2026-10-11).
 - **Boundary:** B4 — Docker validation execution, release automation,
   the real OS credential adapter, real provider transports, and any
   public deployment — is **not started** in this slice; Route B is not
@@ -1115,7 +1143,8 @@ the v1 schema or delete legacy evidence in this plan.
   inside the full suite.
 - **Dependencies:** none within B4a (consumes the B1 reference-profile
   binding semantics only). **Parallelizable:** with B4a-02.
-- **Status:** complete in the current worktree; implementation commit pending.
+- **Status:** complete; implementation merged to main via PR #14 (squash
+  commit b436ad3, 2026-10-11).
 
 ## Task B4a-02 — Route B4a: the closed execution request/result/outcome contracts and ports
 
@@ -1153,7 +1182,8 @@ the v1 schema or delete legacy evidence in this plan.
   suite.
 - **Dependencies:** B4a-01 (imports the profile record for the port
   signature). **Parallelizable:** with B4a-04's test authoring.
-- **Status:** complete in the current worktree; implementation commit pending.
+- **Status:** complete; implementation merged to main via PR #14 (squash
+  commit b436ad3, 2026-10-11).
 
 ## Task B4a-03 — Route B4a: the execution service and the deterministic fakes
 
@@ -1191,7 +1221,8 @@ the v1 schema or delete legacy evidence in this plan.
   echo, and the outcome closed-shape pins) inside the full suite.
 - **Dependencies:** B4a-01, B4a-02. **Parallelizable:** no; composes
   the two contract modules.
-- **Status:** complete in the current worktree; implementation commit pending.
+- **Status:** complete; implementation merged to main via PR #14 (squash
+  commit b436ad3, 2026-10-11).
 
 ## Task B4a-04 — Route B4a: the optional read-only Docker readiness probe
 
@@ -1231,7 +1262,8 @@ the v1 schema or delete legacy evidence in this plan.
   (the READY decision is covered offline by the fake-runner tests).
 - **Dependencies:** B4a-01, B4a-02. **Parallelizable:** yes, with
   B4a-03.
-- **Status:** complete in the current worktree; implementation commit pending.
+- **Status:** complete; implementation merged to main via PR #14 (squash
+  commit b436ad3, 2026-10-11).
 
 ## Task B4a-05 — Route B4a: separation guard, wheel contract, and documentation
 
@@ -1273,7 +1305,8 @@ the v1 schema or delete legacy evidence in this plan.
   (29.1.3) are available and were exercised read-only only.
 - **Dependencies:** B4a-01..B4a-04. **Parallelizable:** documentation
   can be reviewed independently.
-- **Status:** complete in the current worktree; implementation commit pending.
+- **Status:** complete; implementation merged to main via PR #14 (squash
+  commit b436ad3, 2026-10-11).
 - **Boundary:** B4b — release automation, public deployment, the real
   OS credential adapter, real provider transports, and the real
   container execution adapter — is **not started** in this slice
@@ -1339,7 +1372,8 @@ the v1 schema or delete legacy evidence in this plan.
   pydantic-gated v1 suites were NOT run and are not claimed.
 - **Dependencies:** B4a-01..B4a-05. **Parallelizable:** no; a hardening
   pass over the frozen execution boundary.
-- **Status:** complete in the current worktree; implementation commit pending.
+- **Status:** complete; implementation merged to main via PR #14 (squash
+  commit b436ad3, 2026-10-11).
 - **Boundary:** B4b — release automation, public deployment, the real
   OS credential adapter, real provider transports, the production
   database-backed binding implementation, and the real container
@@ -1454,7 +1488,8 @@ the v1 schema or delete legacy evidence in this plan.
   real daemon is claimed (no validation-entrypoint image exists yet).
 - **Dependencies:** B4a-01..B4a-06. **Parallelizable:** no; the only
   new execution-plane subprocess edge is this adapter.
-- **Status:** complete in the current worktree; implementation commit pending.
+- **Status:** complete; implementation merged to main via PR #14 (squash
+  commit b436ad3, 2026-10-11).
 - **Boundary:** B4b-02 — the production database-backed binding
   implementation and any database wiring of the execution plane,
   release automation, public deployment (any non-loopback binding,
@@ -1610,7 +1645,8 @@ the v1 schema or delete legacy evidence in this plan.
   untouched by this task.
 - **Dependencies:** B4a-01..B4a-06 + B4b-01. **Parallelizable:** no;
   the only new execution-plane binding module is this adapter.
-- **Status:** complete in the current worktree; implementation commit pending.
+- **Status:** complete; implementation merged to main via PR #14 (squash
+  commit b436ad3, 2026-10-11).
 - **Boundary:** B4b-02B — release/wheel automation (any tag-triggered
   or artifact-publishing workflow beyond the existing unchanged
   CI/release files) — and B4b-02C — public deployment (any
@@ -1702,7 +1738,8 @@ the v1 schema or delete legacy evidence in this plan.
   is empty; the v1 tag/evidence files are untouched).
 - **Dependencies:** B4b-01 + B4b-02A. **Parallelizable:** yes; the
   release path touches no production module and no v1 file.
-- **Status:** complete in the current worktree; implementation commit pending.
+- **Status:** complete; implementation merged to main via PR #14 (squash
+  commit b436ad3, 2026-10-11).
 - **Boundary:** B4b-02C — public deployment (any non-loopback
   binding, TLS, or remote operator surface), the real OS credential
   adapter, and real provider transports — is **NOT STARTED**; the
@@ -1861,7 +1898,8 @@ the v1 schema or delete legacy evidence in this plan.
   whose wheel contract the new modules join). **Parallelizable:** no;
   the two new production modules are the only credential/transport
   edges of the v2 provider plane.
-- **Status:** complete in the current worktree; implementation commit pending.
+- **Status:** complete; implementation merged to main via PR #14 (squash
+  commit b436ad3, 2026-10-11).
 - **Boundary:** B4b-02C2 — public deployment (any non-loopback
   binding, TLS, or remote operator surface) — is **NOT STARTED**;
   neither new adapter is wired into the harness loop, CLI, or WebUI

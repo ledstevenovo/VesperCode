@@ -467,6 +467,13 @@ v0.2.0：删除旧 digest 运行路径
 
 > 本节是对上方迁移计划的追加执行记录，不修改原计划。实现位于隔离
 > worktree/分支 `codex/relaxed-v2-migration`，尚未合并到 `main`，也尚未创建提交。
+>
+> 状态更正（2026-10-11）：上面"尚未合并、尚未创建提交"的描述已过时。
+> 全部 v2 迁移实现已经由 PR #14（squash 合并提交 `b436ad3`）合入 `main`，
+> `main` 随后在 `2aef9d7` 中对 `src/vespercode/validation/python_adapter.py`
+> 做了后续重构并加入本文件。隔离 worktree 与分支
+> `codex/relaxed-v2-migration`（本地与 origin）已在确认其内容全部被
+> `main` 包含后删除；下文所有"尚未提交或合并"的表述一律以本更正为准。
 
 ### 已完成：V2-01 身份模型与数据库边界
 
