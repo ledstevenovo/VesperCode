@@ -1512,3 +1512,84 @@ a token-named local image is unavailable.
 The real v2 Harness is intentionally local-only in this alpha. The v2 WebUI binds to literal `127.0.0.1`, uses in-process sessions, and operates against a local workspace, local OS credential boundary, and local Docker/operator boundary. It is not a multi-user service and must not be exposed through a public bind or deployment configuration.
 
 A future public service requires a separate product/security design for authentication, tenant/workspace isolation, cloud secret storage, TLS/reverse proxy, quotas, audit retention, and remote sandboxing. Changing the host bind is not an acceptable deployment migration. B4b-02C2 is intentionally not implemented.
+
+## 9. v2 token-level streaming LLM boundary and TUI (2026-10-12)
+
+The v2 LLM boundary gains a token-level streaming protocol and the operator
+gains a streaming terminal UI, aligned with the Claude Code / pi experience
+("方案 3"). All work stays on the v2 path; the frozen v1 `LLMAdapter`
+one-call contract (`llm/base.py`, SPEC §4.2.1) is untouched.
+
+**Streaming contract (llm/v2.py, loop/v2_engine.py).** `stream(request) ->
+Iterator[str]` yields ordered text increments whose concatenation parses as
+the JSON action object; `stream_events(request) -> Iterator[V2StreamEvent]`
+is the typed variant that separates `reasoning` increments
+(chain-of-thought, never part of the action text) from `content`
+increments. The default behavior for a generate()-only LLM is
+`stream_via_generate`: the full serialized action yielded as one chunk, so
+`ScriptedLLMV2` stays drop-in compatible with zero changes.
+`ScriptedStreamLLMV2` is the deterministic offline streaming mock
+(fixed-size token chunks, optional scripted reasoning per turn).
+`V2AgentLoop.run` resolves the boundary structurally: `stream_events` first,
+then `stream`, then the default bridge; content increments are forwarded
+through the optional `on_delta` callback, reasoning through `on_reasoning`,
+and each turn's outcome (dispatch result, parse-failure feedback, or the
+`LLM_CALL_FAILED` result) through `on_result`. With no callbacks attached
+the loop's observable behavior is identical to the pre-streaming loop. An
+unparseable aggregate feeds the existing feedback path (`V2ActionError`) —
+not `LLM_CALL_FAILED`; only `Exception`-shaped failures map onto the
+`LLM_CALL_FAILED` stop, so a `KeyboardInterrupt` raised from a callback
+propagates and serves as the cancellation mechanism.
+
+**Streaming TUI (vespercode/tui/).** `vespercode-v2 tui` opens a textual
+app over one workspace: the task input is pre-filled, model output streams
+token by token into the current turn's block (reasoning in a muted style),
+and each turn closes the block with a bounded summary line — action name,
+parameter summary (path, content char count; never full content in the
+summary), and the dispatcher result, so guardrail denials are visible live.
+`Ctrl+C` cancels the running turn via the callback-propagation path above;
+`Ctrl+Q` quits. Writes stay staged in memory (the v2 approval-gated
+writeback services remain the only mutation path); the final status line
+reports the staged count. The package ships lazily: `v2_launch` (launch
+spec + offline demo factory) and `v2_view_model` (pure presentation state)
+are stdlib-only, while `v2_app` imports textual at module level and is
+imported only when the command runs — the CLI core and every offline test
+never require textual. The default LLM is the scripted streaming demo
+(guardrail denial → feedback recovery → DONE), fully offline with no API
+key.
+
+**Real adapter (llm/v2_openai_adapter.py).** `V2OpenAICompatLLM` implements
+the same boundary against any OpenAI-compatible `/chat/completions` SSE
+endpoint. The transport is injectable (`V2OpenAIStreamTransport`: one POST
+yielding byte chunks); the real transport lazily imports httpx with
+`follow_redirects=False` and a fixed 60 s read timeout. The SSE reader
+decodes lines incrementally, processes `data:` payloads only, and
+terminates on the standard double-safeguard only — a chunk's
+`finish_reason` or the `data: [DONE]` sentinel; the vendor-specific
+`lastOne` flag is ignored. A stream exceeding the closed 1 MiB bound, a
+non-200 status, or any transport exception maps onto the typed
+`V2OpenAIAdapterError` with a static message (`CONFIG_MISSING` with setup
+guidance, or `LLM_CALL_FAILED`); no secret, URL, header, or body fragment
+reaches an exception text. LongCat's chain-of-thought travels on its own
+typed channel: `reasoning_content` increments are yielded as
+`V2StreamEvent("reasoning", ...)` and never mix into the action text; the
+observed empty first `content` chunk emits nothing. The API key is read
+once at construction from an injectable provider (default: the
+`VESPERCODE_V2_BASE_URL`/`VESPERCODE_V2_MODEL`/`VESPERCODE_V2_API_KEY`
+user-level environment variables), placed only into the Authorization
+header, and never printed, logged, or stored; `vespercode-v2 tui --llm
+openai [--base-url URL] [--model NAME]` never accepts a key on argv.
+Explicit arguments override the environment; the environment overrides the
+verified defaults (`https://api.longcat.chat/openai/v1`,
+`LongCat-2.5-Preview`). The adapter imports no v1 contract type.
+
+**Limitations.** The TUI is a local operator surface (loopback discipline
+of B4b-02C2 applies); it stages writes in memory only and offers no
+writeback path. The SSE reader assumes one complete JSON chunk per
+`data:` line (the standard OpenAI-compatible wire format) and skips
+malformed lines rather than failing the stream. `stream_via_generate`
+round-trips the action through JSON, so a generate()-only LLM returning
+non-JSON-serializable values now fails closed as `LLM_CALL_FAILED` instead
+of reaching the dispatcher. Textual-backed tests skip honestly where
+textual is not installed (the CI `unit-test` job installs no third-party
+dependencies and runs the stdlib-only surface).

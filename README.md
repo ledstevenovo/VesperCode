@@ -408,6 +408,36 @@ from the process that owns the workspace (the `serve` command does
 exactly that; restarts log browsers out because sessions are in-memory
 and bounded).
 
+### The v2 streaming TUI (token-level, offline by default)
+
+`vespercode-v2 tui` opens an interactive terminal UI over the v2 loop and
+streams the model output token by token (chain-of-thought reasoning is
+rendered in a muted style on its own channel). Each turn closes with a
+summary line — action name, parameter summary (path, content char count),
+and the dispatcher result, so a guardrail denial and the feedback-driven
+recovery are visible live. `Enter` runs the pre-filled task, `Ctrl+C`
+cancels the running turn, `Ctrl+Q` quits.
+
+```powershell
+$env:PYTHONPATH = (Resolve-Path .\src).Path
+python -m vespercode.cli_v2 tui --workspace C:\work\example                       # offline scripted streaming demo (no API key)
+python -m vespercode.cli_v2 tui --workspace C:\work\example --task "your task" --max-turns 10
+python -m vespercode.cli_v2 tui --workspace C:\work\example --llm openai          # real streaming adapter (needs VESPERCODE_V2_API_KEY)
+python -m vespercode.cli_v2 tui --workspace C:\work\example --llm openai --base-url https://api.longcat.chat/openai/v1 --model LongCat-2.5-Preview
+```
+
+The default `--llm scripted` composes the deterministic offline streaming
+mock: the demo script stages a guarded denial (`tests/` path), then the
+corrected replacement, then `DONE` — so the whole streaming experience is
+reproducible with no key and no network. Writes are always staged in
+memory; nothing touches the workspace outside the approval-gated writeback
+services. The `openai` option drives the real OpenAI-compatible SSE
+adapter (`src/vespercode/llm/v2_openai_adapter.py`): base URL and model
+resolve from `--base-url`/`--model`, then the `VESPERCODE_V2_BASE_URL` /
+`VESPERCODE_V2_MODEL` environment variables, then the verified defaults
+(`https://api.longcat.chat/openai/v1`, model `LongCat-2.5-Preview`). The
+API key is never a command-line option — see [Secure key setup](#secure-key-setup).
+
 ## Repeatable v2 mechanism demo
 
 Run:
@@ -438,7 +468,11 @@ src/vespercode/providers/v2_call.py        # one-call, no-retry provider boundar
 src/vespercode/providers/v2_transport.py  # real provider transport adapter: closed address map, injectable HTTP edge, strict bounds (Route B4b-02C1)
 src/vespercode/governance/relaxed_policy.py
 src/vespercode/storage/v2_database.py     # fresh v2 SQLite schema (v3)
-src/vespercode/llm/v2.py                  # injectable scripted LLM seam
+src/vespercode/llm/v2.py                  # injectable scripted LLM seam + streaming protocol (stream/stream_events, default bridge, scripted streaming mock)
+src/vespercode/llm/v2_openai_adapter.py   # real OpenAI-compatible SSE streaming adapter (injectable transport, typed reasoning channel)
+src/vespercode/tui/v2_launch.py           # streaming TUI launch spec + offline demo factory (stdlib-only)
+src/vespercode/tui/v2_view_model.py       # streaming TUI pure presentation state (stdlib-only)
+src/vespercode/tui/v2_app.py              # textual streaming TUI app (lazily imported; needs textual only here)
 src/vespercode/memory/v2.py               # run-scoped feedback memory
 src/vespercode/tools/v2_dispatcher.py     # policy-first tool dispatch + staging port
 src/vespercode/loop/v2_engine.py          # self-owned main loop
@@ -536,6 +570,33 @@ test values to the current user's real Credential Manager, refuses to
 clobber unknown pre-existing entries, deletes what it creates, and
 proves zero `vespercode/v2/` residue); it skips honestly with the
 exact reason otherwise.
+
+**Key setup for the v2 streaming adapter (`--llm openai`).** The real
+OpenAI-compatible streaming adapter reads its key once at construction
+from the injectable provider; the default provider is the user-level
+environment variable `VESPERCODE_V2_API_KEY`. Setup steps (steps only —
+no key value ever belongs in a file, a test, a command line, a log, or
+this repository):
+
+1. Create the key in the provider's console and copy it to the
+   clipboard only.
+2. Set it as a **user-level** environment variable, e.g.
+   `setx VESPERCODE_V2_API_KEY "<paste>"` in a fresh PowerShell window
+   (or System Properties → Environment Variables), so it never lands in
+   a shell history file or a project dotfile.
+3. Optionally set `VESPERCODE_V2_BASE_URL` and `VESPERCODE_V2_MODEL`
+   the same way (defaults: `https://api.longcat.chat/openai/v1`,
+   `LongCat-2.5-Preview`).
+4. Open a **new** terminal so the variable is inherited, then run
+   `vespercode-v2 tui --workspace <DIR> --llm openai` — a missing key
+   fails closed with `CONFIG_MISSING` and setup guidance; the adapter
+   places the value only into the request's Authorization header and
+   never prints, logs, or stores it.
+5. To rotate or remove: update or delete the user-level variable the
+   same way; `vespercode-v2 credential-status` keeps reporting the
+   non-revealing status of the B2 credential port (which stays the
+   authority for the provider-call plane and is unchanged by the
+   streaming adapter).
 
 The v2 policy treats model output, repository text, tool results, and memory
 as untrusted. It does not grant shell execution, arbitrary executable paths,

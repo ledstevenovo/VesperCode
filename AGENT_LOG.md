@@ -4218,3 +4218,158 @@
   predicate itself, never inherit a weaker one.
 - Human intervention: user-directed cleanup scope (A-class only); all
   execution and the incident above by the main-thread agent.
+
+## GOAL-V2-STREAMING-TUI-20261012
+
+- **Timestamp (Asia/Taipei):** `2026-10-12T03:06:46+08:00`
+- **Task ID:** `GOAL-V2-STREAMING-TUI` (phases A→B→C→D per
+  `GOAL_v2_streaming_tui.md`, executed fully autonomously while the
+  initiator was offline; no human input was available or requested at
+  any point).
+- **Skills invoked:** none beyond the repository's own TDD workflow
+  (failing tests first, minimal implementation, refactor; the Mimosa
+  pre-commit hook was never bypassed).
+- **Key prompt/context:** the GOAL pre-verified a real LongCat SSE
+  endpoint and user-level credentials; hard constraints: v1 frozen
+  contract untouched, strict TDD, no existing test deleted or weakened,
+  no secret in code/logs/tests/commits, work only on `zcode/new-ui`,
+  never push.
+
+### Phase A — streaming LLM boundary (commit `f3c97d3`)
+
+- Failing tests first (`tests/unit/v2/test_v2_streaming.py`), then:
+  `V2StreamEvent` + `ScriptedStreamLLMV2` + `stream_via_generate` in
+  `llm/v2.py`; `V2StreamingLLM`/`V2EventStreamLLM` protocols and the
+  streaming pipeline in `loop/v2_engine.py` (resolution order
+  `stream_events` > `stream` > default bridge; optional `on_delta`/
+  `on_reasoning`/`on_result` callbacks).
+- Decisions: `ScriptedLLMV2` left byte-identical (zero changes) — the
+  default bridge yields the full serialized action as one chunk;
+  unparseable streamed output raises `V2ActionError` so it feeds the
+  existing feedback path (a TDD round caught the first implementation
+  misclassifying it as `LLM_CALL_FAILED`); `on_result` was added in
+  phase B's TDD round as the per-turn hook the TUI needs.
+- Verification: full v2 suite 617 green; mypy strict + ruff clean.
+
+### Phase B — streaming TUI (commit `fe27a12`)
+
+- New `vespercode/tui/` (`v2_launch` stdlib launch surface, pure
+  `v2_view_model`, textual `v2_app`), the closed `tui` subcommand
+  (`--workspace/--task/--max-turns`), textual>=0.86 in pyproject.
+- Decisions: **textual 8.2.8 chosen** (installed and rendered correctly
+  on Windows; the rich-Live fallback was never needed — recorded per
+  the GOAL's default rule); TUI composes `V2AgentLoop` directly over
+  the in-memory staging port (not the shell's control-database run
+  path) so the demo stays offline and the v2 staged-write governance
+  keeps the workspace untouched; textual imports lazily (subprocess
+  proof test blocks textual and imports the CLI core); `Ctrl+C` cancel
+  rides `KeyboardInterrupt` through the engine callback path, cleaned
+  up in the TUI worker's `try/finally`.
+- Pin growth (designed contract flow, not test weakening): wheel
+  contract `_V2_PRODUCTION_MODULES` + smoke `REQUIRED_RUNTIME_MEMBERS`
+  + the closed-grammar command set now include the new surface.
+- Verification: 637 v2 tests green; textual pilot tests exercise real
+  widgets (streaming block, turn summaries incl. DENIED, cancel).
+
+### Phase C — real OpenAI-compatible adapter (commit `727e27f`)
+
+- `llm/v2_openai_adapter.py`: `V2OpenAICompatLLM` (generate/stream/
+  stream_events) over injectable `V2OpenAIStreamTransport`; real
+  transport lazily imports httpx (no redirect follow, 60 s read
+  timeout); incremental SSE line reader; standard double-safeguard
+  termination (`finish_reason` / `[DONE]`), vendor `lastOne` ignored;
+  1 MiB bounded stream; typed `V2OpenAIAdapterError` (`CONFIG_MISSING`
+  with setup guidance / `LLM_CALL_FAILED`), static messages only.
+- LongCat handling verified: `reasoning_content` on its own typed
+  channel, empty first content chunk emits nothing. Key from injectable
+  provider (default env `VESPERCODE_V2_API_KEY`), never printed/logged/
+  stored/argv; base_url/model: CLI arg > env > verified LongCat
+  defaults; `tui --llm openai --base-url --model` wired.
+- **Live smoke (network, initiator's pre-verified endpoint):** 13 SSE
+  events (10 reasoning + 3 content) aggregating to exactly
+  `{"action_type": "DONE"}`; key read from the user scope in-process
+  and never echoed.
+- Verification: 17 offline transport-fake adapter tests + 3 CLI tests;
+  full v2 suite 657 green; mypy strict + ruff clean.
+
+### Phase D — documentation (this commit)
+
+- `SPEC.md` §9 (streaming boundary + TUI + real adapter, contract
+  shapes, limitations), `SPEC_PROCESS.md` iteration 116 (why v2 not
+  v1, accepted/rejected alternatives, autonomy decisions), README
+  (`tui` usage, offline demo, real-key setup steps — no key values),
+  this AGENT_LOG entry with the phase hash table.
+- Full-suite verification recorded below once the run completes.
+
+### Commit table
+
+| Phase | Commit | Subject |
+| --- | --- | --- |
+| A | `f3c97d3` | feat(v2): streaming LLM boundary with engine delta forwarding (phase A) |
+| B | `fe27a12` | feat(v2): streaming TUI over textual with offline scripted demo (phase B) |
+| C | `727e27f` | feat(v2): real OpenAI-compatible streaming adapter with offline tests (phase C) |
+| D | this commit | docs(v2): streaming TUI records (phase D) |
+
+- **Human intervention:** none (initiator offline for the whole run;
+  every decision resolved via the GOAL's defaults or the most
+  conservative option, as recorded above).
+- **Full-suite verification (phase D, this commit):**
+  `python -m pytest` (all suites, 123 marker-deselected) on this
+  machine: **2220 passed, 6 skipped, 10 failed, 35 errors** — and every
+  red is pre-existing or environmental, none in the streaming surface:
+  - fixed by this phase (my pyproject `textual` addition had drifted
+    the v1 dependency closure): `config/dependency-closure-v1.json`
+    regenerated coherently (textual=runtime family, six new locked
+    distributions — textual/rich/markdown-it-py/mdit-py-plugins/mdurl/
+    linkify-it-py with PyPI-verified hashes) and
+    `requirements/dev.lock` extended with the same six hash-pinned
+    entries; `test_declared_v1_dependency_closure_is_complete` and the
+    three `test_validate_dependency_closure_reports_*` tests are green
+    again (their red had cascaded from the missing direct entry).
+  - fail identically at the baseline commit `5a25ae1` (verified by
+    running the same files in a baseline worktree): the two
+    `tests/feasibility/gate/test_gate_bootstrap.py` integrity tests and
+    `test_ci_release_rules.py::test_release_rule_boundary_matrix` (the
+    `.gitignore` byte-pin predates this session — commit `c71227a`).
+  - environmental drift, present at baseline: the three
+    `test_dependency_closure.py` formal-bootstrap tests (this machine
+    lacks `.venv-formal/` — removed in the 2026-10-11 cleanup — and
+    runs Python 3.12.14 where the committed gate evidence pins
+    3.12.4).
+  - environmental, from untracked repo-root state predating this
+    session: the 35 setup errors in `test_delivery_evidence.py` (29)
+    and `test_readme_contract.py` (6) — the `repository_copy` fixture's
+    `shutil.copytree` of the repo root trips over the huge untracked
+    `.worktrees/` residue (path-length WinError 3/206 plus an
+    access-denied nested `pytest-of-tongshuo`); removing that residue
+    is the user's Tier-B decision and was not taken.
+  - pre-existing stale pins on the committed tree: the two
+    `test_delivery_evidence.py` count tests parse `PLAN.md` (untouched
+    by this session) expecting 68 `### Task T\d.\d:` headers / 141
+    legacy steps — the committed plan is the v2 plan, which uses a
+    different format (0 found).
+  - full-suite-only test-isolation pollution (green standalone and in
+    CI's per-tree `unittest discover`): `test_v2_b4_v1_separation`
+    and `test_v2_provider_transport` see v1-era modules (`httpx`,
+    `vespercode.execution.docker_executor`) already in `sys.modules`
+    because earlier v1 test files imported them in the same pytest
+    process.
+  - the CI `unit-test` job surface — `python -m unittest discover -s
+    tests/unit/v2` — is fully green: 657 tests, 2 controlled skips.
+- **Disk note for future runs:** a full pytest on this repo needs its
+  `--basetemp` OUTSIDE the repository: the `repository_copy` fixture
+  copies the repo root, so an in-repo basetemp recurses into itself
+  (one run ballooned to ~27 GB and twice filled the D: drive to 0);
+  the default `C:\...\Temp\pytest-of-tongshuo` is access-denied on this
+  machine. A truncated-write during those disk-full runs corrupted the
+  tracked `reference/manifest/reference-profile-v1.json`; it was
+  restored from git before the final clean run.
+- **Lesson:** a frozen v1 contract is best left frozen — extending the
+  duck-typed v2 boundary with a documented default bridge gave the
+  streaming protocol a zero-migration path; and a typed reasoning
+  channel keeps chain-of-thought out of the action text even when a
+  vendor decides to think on the same SSE connection. Second lesson:
+  every declared dependency lives in three agreeing places (pyproject,
+  dev.lock, the closure record) — adding one without the other two
+  fails exactly the pins that exist to catch it, and a recursive
+  fixture plus an in-repo temp dir is a disk-filling bomb.

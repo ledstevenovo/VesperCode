@@ -4185,3 +4185,89 @@ Render Blueprint 创建公开 Free Web Service `vespercode-demo`。初始公网�
 - Reason: B3 assumes a single local user, loopback binding, in-process sessions, local workspace, local OS credentials, and local Docker/operator boundary. Public operation would require authentication, tenant/workspace isolation, cloud secret storage, TLS/reverse proxy, quota, audit retention, and remote sandboxing.
 - Verification: the v2 WebUI/server tests continue to enforce loopback-only bind and HOST/SESSION/ORIGIN/CSRF security. No public deployment action was performed.
 - Remaining work: none for the local-only alpha deployment boundary; public multi-user operation would be a separate future product track.
+
+## 116. v2 token-level streaming LLM boundary + streaming TUI + real OpenAI-compatible adapter (2026-10-12)
+
+- Trigger: the initiator selected "方案 3 — token-level streaming TUI,
+  aligned with the Claude Code / pi experience" and pre-verified a real
+  LongCat SSE endpoint (`https://api.longcat.chat/openai/v1`, model
+  `LongCat-2.5-Preview`), storing the key in the user-level environment
+  before going offline; execution was fully autonomous per
+  `GOAL_v2_streaming_tui.md`.
+- Why extend v2 instead of v1: the v1 `LLMAdapter` one-call contract
+  (SPEC §4.2.1) is a frozen, digest-bound security boundary (its
+  authorization record proves the exact request was authorized before
+  the call); retrofitting a streaming protocol would either break the
+  frozen contract or bolt a second identity semantics onto it. The v2
+  path is the active alpha surface with its own duck-typed boundary, a
+  deterministic scripted LLM, and no digest binding — the streaming
+  protocol could be added as an extension with a documented default
+  bridge instead of a contract change.
+- Accepted AI suggestions:
+  - keep the core protocol as `stream(request) -> Iterator[str]` (plain
+    text deltas) and put chain-of-thought on a separate typed channel
+    (`stream_events` yielding `V2StreamEvent("reasoning"|"content")`) —
+    the GOAL offered "typed increments in stream()" or "a separate
+    reasoning channel"; the separate channel keeps the Phase-A contract
+    shape exactly as written while still separating thinking from
+    action text (chosen);
+  - the engine resolves the boundary structurally
+    (`stream_events` > `stream` > `stream_via_generate`) so
+    `ScriptedLLMV2` stays zero-change compatible and every existing
+    test keeps its exact behavior (chosen);
+  - an unparseable streamed aggregate feeds the existing
+    `V2ActionError` feedback path rather than stopping as
+    `LLM_CALL_FAILED` — caught by the TDD round: the first engine
+    implementation parsed inside the LLM-failure try block and the new
+    failing test exposed the wrong classification (chosen).
+- Rejected alternatives:
+  - typed increment objects as the core `stream()` payload — rejected:
+    the GOAL pins `Iterator[str]` for the core contract, and the typed
+    channel achieves the same goal without breaking the documented
+    shape;
+  - routing the TUI through `V2LocalShell.start_run` — rejected for
+    this slice: the shell's run path has no streaming callbacks and
+    records runs in the control database; the TUI demo composes
+    `V2AgentLoop` directly over the in-memory staging port (v2's
+    staged-write governance keeps the workspace untouched without an
+    explicit approval), and shell integration remains future work;
+  - exposing `--api-key` on the CLI — rejected: the closed-grammar
+    forbidden-option list (tests/unit/v2/test_cli_v2.py) bans key-on-
+    argv by design; the key comes from the environment or an injectable
+    provider only.
+- Key decisions under full autonomy (recorded per the GOAL's default
+  rule): textual chosen for the TUI (worked on Windows; the rich-Live
+  fallback was never needed); `on_result` added as a third optional
+  engine callback because per-turn summaries need the turn outcomes as
+  they happen, not only at loop end; engine `run` keeps
+  `except Exception` for LLM failures so `KeyboardInterrupt` from a
+  cancel callback propagates (the GOAL's "engine-level try/finally"
+  is realized in the TUI worker's try/finally); JSON-serialize the
+  generate()-only default bridge (documented behavior change for
+  non-JSON-serializable model returns, which fail closed).
+- Verification: TDD throughout — failing tests first in
+  `tests/unit/v2/test_v2_streaming.py` (19), `test_v2_tui_view_model.py`
+  (12), `test_v2_tui_cli.py` (9, including a subprocess proof that the
+  CLI core imports with textual blocked), `test_v2_tui_app.py` (2,
+  textual pilot, honestly skipped where textual is absent),
+  `test_v2_openai_adapter.py` (17, fake transports only); full v2 suite
+  `python -m unittest discover -s tests/unit/v2` -> 657 tests, 0
+  failures, 2 controlled skips; mypy strict and ruff clean on every new
+  module; live smoke against the verified LongCat endpoint streamed 10
+  reasoning + 3 content events aggregating to exactly
+  `{"action_type": "DONE"}` (key read from the user scope in-process,
+  never printed or stored).
+- Honest boundary: the TUI does not integrate the control-database run
+  recording or the writeback approval flow; the real transport has been
+  exercised once against LongCat (smoke above) but is otherwise covered
+  only by offline transport fakes; textual-backed tests do not run in
+  the dependency-free CI `unit-test` job (they run locally and skip in
+  CI). The `textual` dependency was registered coherently across all
+  three agreement points (pyproject, `requirements/dev.lock` with
+  PyPI-verified hashes, `config/dependency-closure-v1.json` with a
+  recomputed evidence digest) after the full-suite run caught the
+  closure pin; the full-suite reds that remain are pre-existing or
+  environmental and are enumerated with baseline comparisons in the
+  AGENT_LOG closing entry.
+- Commits: phase A `f3c97d3`, phase B `fe27a12`, phase C `727e27f`
+  (documentation/phase D recorded in the AGENT_LOG closing entry).
