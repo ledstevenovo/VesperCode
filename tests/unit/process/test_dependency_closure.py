@@ -286,11 +286,17 @@ def test_formal_bootstrap_rejects_drifted_toolchain_binding() -> None:
         assert not (temp_root / ".venv-formal").exists()
 
 
+# The "after python equality" bootstrap tests record the running
+# interpreter's own patch, so the equality precondition holds by
+# construction on any machine and the lock check is what fires.
+_LOCAL_PYTHON_PATCH = ".".join(str(part) for part in sys.version_info[:3])
+
+
 def test_formal_bootstrap_rejects_missing_lock_after_python_equality() -> None:
     with TemporaryDirectory() as raw_temp_root:
         temp_root = Path(raw_temp_root)
         evidence = temp_root / WORKSPACE_BOUNDARY_GO_EVIDENCE_PATH
-        build_workspace_boundary_gate_test_fixture(temp_root, "3.12.4")
+        build_workspace_boundary_gate_test_fixture(temp_root, _LOCAL_PYTHON_PATCH)
         completed = _run_bootstrap(temp_root, evidence)
         assert completed.returncode != 0
         assert "FORMAL_LOCK_INVALID" in completed.stderr
@@ -301,7 +307,7 @@ def test_formal_bootstrap_rejects_malformed_lock_after_equality() -> None:
     with TemporaryDirectory() as raw_temp_root:
         temp_root = Path(raw_temp_root)
         evidence = temp_root / WORKSPACE_BOUNDARY_GO_EVIDENCE_PATH
-        build_workspace_boundary_gate_test_fixture(temp_root, "3.12.4")
+        build_workspace_boundary_gate_test_fixture(temp_root, _LOCAL_PYTHON_PATCH)
         lock_dir = temp_root / "requirements"
         lock_dir.mkdir(parents=True)
         (lock_dir / "dev.lock").write_text(
@@ -331,7 +337,15 @@ def _build_closure_temp_root(
     observable.
     """
     repo_root = Path(__file__).resolve().parents[3]
-    build_workspace_boundary_gate_test_fixture(temp_root, "3.12.4")
+    record = json.loads(
+        (repo_root / "config/dependency-closure-v1.json").read_text(encoding="utf-8")
+    )
+    if not isinstance(record, dict):
+        raise AssertionError("closure record must be a JSON object")
+    # The synthetic toolchain binds to the committed record's own python
+    # patch, so record and gate agree by construction and only the test's
+    # mutation is observable as drift.
+    build_workspace_boundary_gate_test_fixture(temp_root, str(record["python_version"]))
     lock_dir = temp_root / "requirements"
     lock_dir.mkdir(parents=True)
     (lock_dir / "dev.lock").write_bytes(
@@ -339,11 +353,6 @@ def _build_closure_temp_root(
     )
     record_dir = temp_root / "config"
     record_dir.mkdir(parents=True)
-    record = json.loads(
-        (repo_root / "config/dependency-closure-v1.json").read_text(encoding="utf-8")
-    )
-    if not isinstance(record, dict):
-        raise AssertionError("closure record must be a JSON object")
     mutate_record(record)
     record["evidence_digest"] = _recompute_record_digest(record)
     (record_dir / "dependency-closure-v1.json").write_text(

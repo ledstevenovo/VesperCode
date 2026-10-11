@@ -4373,3 +4373,154 @@
   dev.lock, the closure record) — adding one without the other two
   fails exactly the pins that exist to catch it, and a recursive
   fixture plus an in-repo temp dir is a disk-filling bomb.
+
+## GOAL-V2-STREAMING-TUI-CONVERGENCE-20261012
+
+- **Timestamp (Asia/Taipei):** `2026-10-12T06:27:05+08:00`
+- **Task ID:** `GOAL-V2-STREAMING-TUI` convergence round — driving the
+  remaining full-suite reds to their documented end state after the
+  phase A–D commits (`f3c97d3`/`fe27a12`/`727e27f`/`9a18bac`); still
+  fully autonomous, no human input available.
+
+### Gate evidence re-bind (corrected after a cascade discovery)
+
+- The committed Task 1 evidence had one REAL drift: `gate_scan.py` was
+  last touched after the evidence was minted, so
+  `gate_scan_core_sha256` no longer matched the file.  Two further reds
+  were machine drift: this host lacks `.venv-formal/` (removed in the
+  2026-10-11 cleanup) and its Python patch is 3.12.14 where the frozen
+  evidence pins 3.12.4.
+- **Attempted and reverted:** the convergence first re-bound
+  `gates/evidence/gate-toolchain-v1.json` (and the embedded copy in the
+  terminal GO report, and the closure record) to Python 3.12.14.  The
+  next whole-repo run exploded to 136 reds: the toolchain python patch
+  is load-bearing for the ENTIRE frozen reference-profile identity
+  chain — `_GATE_PYTHON_VERSION = "3.12.4"` code constants in
+  `profiles/reference.py`, the packaged
+  `reference-profile-v1.json` manifest, the formal-toolchain promotion
+  record, and the whole governance digest table — and the T02.4
+  reference-gate test re-freezes that manifest *from the toolchain
+  file*, so re-binding python re-froze the packaged manifest to 3.12.14
+  in the working tree and broke ~125 governance tests.  Reverted:
+  python_version is pinned back to the frozen **3.12.4** everywhere
+  (toolchain file, GO report embedded copy, closure record), the
+  re-frozen manifest was restored from git, and the frozen identity
+  chain is byte-identical to HEAD again apart from the one real fix.
+- **The correction that stands:** the toolchain file's eight
+  bound-file digests were recomputed from current bytes (only
+  `gate_scan_core_sha256` actually differs) with python 3.12.4 kept,
+  the terminal GO report was re-assembled and atomically rewritten
+  through the Task 1 public
+  `assemble_workspace_boundary_report` /
+  `write_workspace_boundary_gate_report` APIs with the SAME real probe
+  observations (P1-2 embedded-vs-root binding holds by construction),
+  and the closure record keeps its phase-D dev_lock/textual state with
+  python 3.12.4.  Evidence: governance 270 green,
+  toolchain-promotion green, reference-boundary-gate green,
+  dependency-closure 23 green, gate-bootstrap 7 green.
+- `scripts/bootstrap_formal_env.py` ran clean (exit 0) during the
+  reverted re-bind window: `.venv-formal/` was materialized with the
+  local Python 3.12.14 via the hash-locked `--require-hashes
+  --no-deps` install of the updated `requirements/dev.lock` — which
+  also end-to-end validates the six textual-chain entries added in
+  phase D.  Honest note: the formal environment is the local
+  interpreter's materialization; the committed evidence continues to
+  pin the frozen 3.12.4 identity, and re-pinning *that* identity to a
+  new machine is exactly the promotion decision the frozen records
+  gate.
+
+### Test-contract growth (assertions preserved, pins extended)
+
+- `tests/feasibility/gate/test_gate_bootstrap.py`:
+  `test_gate_input_lists_exact_direct_requirements` pins `.gitignore`
+  exact bytes — updated to the current seven lines (the two trailing
+  lines are commit `c71227a`'s security fix keeping the
+  credential-bearing local tool config unstaged); the pin stays
+  byte-exact.
+- `tests/unit/process/test_dependency_closure.py`: the two
+  "after python equality" bootstrap tests now record the *running*
+  interpreter's patch (the stale `3.12.4` literal only matched the
+  original machine), and the closure fixture binds the synthetic
+  toolchain to the committed record's own python patch so record and
+  gate agree by construction and only each test's mutation is
+  observable as drift.  All 23 dependency-closure tests green.
+
+### Full-suite isolation fixes (assertion contracts preserved)
+
+- `test_v2_b4_v1_separation` and `test_v2_provider_transport` failed
+  only in whole-repo pytest runs because earlier v1 test files had
+  already imported `httpx` / `vespercode.execution.docker_executor` in
+  the same process.  Both assertions now check the delta over
+  `sys.modules` — "this import/construction did not LOAD the forbidden
+  module" — which is the exact contract each docstring states and is
+  causally correct under same-process pollution; standalone and CI
+  behavior are unchanged (green there before and after).
+
+### repository_copy fixture aligned with its documented contract
+
+- The `tests/unit/process/conftest.py::repository_copy` docstring
+  promises a *tracked-content* copy, but the ignore list only excluded
+  `.git`/virtualenvs/caches, so the fixture copied untracked residue
+  (giant `.worktrees/`, `.codegraph/`, `.mimosa/`, and the local
+  credential-bearing `opencode.json`) into every temp copy — 35 setup
+  errors from path-length and access-denied failures inside
+  `.worktrees/`, plus a credential-hygiene problem.  The fixture now
+  derives root-level entries from `git ls-files` (fail-closed) and
+  keeps the static ignore list for cache/virtualenv directories below
+  tracked roots.  Result: the 35 errors are gone (the six
+  `test_readme_contract` setup errors became passes), and the
+  delivery/readme tests now run against the tracked tree only.
+
+### Documented deviations requiring the initiator's decision (red by design, not by defect)
+
+These remain red on purpose: each pins a v1-era delivery contract that
+the v2 merge (`b436ad3`) superseded in product reality, and re-pinning
+is a product decision (which contract is canonical going forward), not
+a mechanical fix.  None of them touches the v2 streaming surface.
+
+1. **PLAN.md pin family — 9 reds in `tests/unit/process/test_delivery_evidence.py`.**
+   The committed `PLAN.md` is the v2 relaxed-identity plan; the
+   delivery-gate tests still pin the v1 card contract: exactly 68
+   `### Task T\d.\d:` cards and 141 legacy-step tokens (2 direct count
+   tests), plus the `ready_repository`/delivery-gate flow that
+   terminates v1 task cards and appends v1-format completion anchors
+   (7 tests).  Decision needed: re-pin the delivery contract to the v2
+   plan's own completion semantics, or restore a v1-shaped plan file.
+2. **CI release-rule matrix — 1 red in
+   `tests/unit/process/test_ci_release_rules.py::test_release_rule_boundary_matrix`.**
+   The card 35.C matrix expects three GitHub jobs on push/pull_request
+   (`unit-test`, `reference-image-build`, `demo-image-build`); the v2
+   merge replaced `.github/workflows/ci.yml` with the single
+   `unit-test` job.  Decision needed: re-pin the matrix to the v2 CI
+   reality or restore the v1 image-build jobs.
+3. **`.worktrees/` residue cleanup — Tier-B user decision, untouched.**
+   The untracked worktree residue stays on disk (its removal was
+   explicitly classified as needing the user's go-ahead in the
+   2026-10-11 cleanup record).  After the fixture fix it no longer
+   affects any test; it is a disk-space and hygiene item only.
+
+### Verification
+
+- Targeted: gate bootstrap 7/7, dependency closure 23/23,
+  b4/provider v2 tests 38/38, governance+reference-boundary 270/270,
+  toolchain promotion green; delivery+readme 28 passed / 9 red (the
+  documented PLAN.md pin family).
+- **Final whole-repo run (this commit):** `python -m pytest` —
+  **2255 passed, 6 skipped, 10 failed, 0 errors** (123 marker
+  deselected).  The 10 failures are exactly the documented deviations
+  above: 9 in the PLAN.md v1-pin family
+  (`test_delivery_evidence.py`) and 1 the CI release-rule matrix
+  (`test_ci_release_rules.py`).  Zero errors, zero failures anywhere
+  in the v2 streaming surface, the governance identity chain, the
+  gate-evidence chain, or the dependency closure.  The CI `unit-test`
+  job surface (`python -m unittest discover -s tests/unit/v2`) remains
+  fully green: 657 tests, 2 controlled skips.
+
+- **Human intervention:** none; every change above stays inside the
+  sanctioned convergence scope (evidence re-bind, isolation fixes
+  without weakening, contract-growth pins, documented deviations).
+- **Lesson:** environment-pinned evidence (python patch, file digests)
+  must be re-minted through the artifact's own digest conventions, not
+  hand-edited; and a test fixture should copy exactly what its
+  docstring promises — "tracked content" is a `git ls-files` question,
+  not a hand-maintained ignore list.

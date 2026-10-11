@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import re
 import shutil
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -41,21 +42,44 @@ _IGNORED_DIRS = {
 }
 
 
+def _tracked_root_entries() -> frozenset[str]:
+    """The top-level tracked names (files and directories) of the repo."""
+    completed = subprocess.run(
+        ("git", "ls-files"),
+        cwd=str(_REPO_ROOT),
+        check=True,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+    )
+    return frozenset(
+        line.split("/", 1)[0] for line in completed.stdout.splitlines() if line
+    )
+
+
+_TRACKED_ROOT_ENTRIES = _tracked_root_entries()
+
+
 @pytest.fixture
 def repository_copy(tmp_path: Path) -> Path:
     """A full tracked-content repository copy under *tmp_path*.
 
-    Copies the committed tree (no ``.git``, no virtualenvs, no caches) so
-    every process/README verifier can run against a mutable copy and the
-    mutation helpers below can remove records without touching the real
-    repository.
+    Copies exactly the git-tracked tree: root-level entries come from
+    ``git ls-files``, so untracked local residue — stale worktrees, tool
+    caches, credential-bearing local tool configs — can never enter a
+    test copy, and the static ignore list still prunes cache and
+    virtualenv directories below tracked directories.  Every
+    process/README verifier runs against a mutable copy and the mutation
+    helpers below remove records without touching the real repository.
     """
     dest = tmp_path / "repo"
-    shutil.copytree(
-        _REPO_ROOT,
-        dest,
-        ignore=shutil.ignore_patterns(*_IGNORED_DIRS),
-    )
+
+    def _ignore(directory: str, names: list[str]) -> list[str]:
+        if Path(directory) == _REPO_ROOT:
+            return [name for name in names if name not in _TRACKED_ROOT_ENTRIES]
+        return [name for name in names if name in _IGNORED_DIRS]
+
+    shutil.copytree(_REPO_ROOT, dest, ignore=_ignore)
     return dest
 
 

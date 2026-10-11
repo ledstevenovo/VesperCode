@@ -215,6 +215,14 @@ class B4V1SeparationTests(unittest.TestCase):
             )
 
     def test_importing_the_b4_surface_loads_no_v1_authority_module(self) -> None:
+        # The asserted contract is that importing the B4 surface does not
+        # LOAD a v1 authority module.  Same-process state from earlier test
+        # files is causally irrelevant, so the check is a delta over
+        # sys.modules: any forbidden name newly loaded by these imports is
+        # a violation; a name some earlier test already imported is not.
+        loaded_before = {
+            authority for authority in _V1_AUTHORITY_MODULES if authority in sys.modules
+        }
         for module_name in (
             "vespercode.execution.v2_profile",
             "vespercode.execution.v2_execution",
@@ -224,13 +232,17 @@ class B4V1SeparationTests(unittest.TestCase):
             "vespercode.execution.v2_database_binding",
         ):
             importlib.import_module(module_name)
-        for authority in _V1_AUTHORITY_MODULES:
-            self.assertNotIn(
-                authority,
-                sys.modules,
-                f"importing the Route B execution surface loaded the v1 "
-                f"authority module {authority}",
-            )
+        newly_loaded = {
+            authority
+            for authority in _V1_AUTHORITY_MODULES
+            if authority in sys.modules and authority not in loaded_before
+        }
+        self.assertEqual(
+            newly_loaded,
+            set(),
+            f"importing the Route B execution surface loaded the v1 "
+            f"authority modules {sorted(newly_loaded)}",
+        )
 
 
 if __name__ == "__main__":

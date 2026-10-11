@@ -25,9 +25,13 @@ class AaIntegrityTests(unittest.TestCase):
     def test_gate_input_lists_exact_direct_requirements(self) -> None:
         expected = b"pytest>=8,<9\nruff\nmypy\npywin32\ndocker\n"
         self.assertEqual((ROOT / "requirements/gate.in").read_bytes(), expected)
+        # Pinned exact bytes; the two trailing lines were added by commit
+        # c71227a to keep the local credential-bearing tool config unstaged.
         self.assertEqual(
             (ROOT / ".gitignore").read_bytes(),
-            b".venv-gate/\n.venv-formal/\n__pycache__/\ndist/\ntests/.tmp/\n",
+            ".venv-gate/\n.venv-formal/\n__pycache__/\ndist/\ntests/.tmp/\n"
+            "# local tool config holding a plaintext API key — never stage\n"
+            "opencode.json\n".encode("utf-8"),
         )
         self.assertEqual(
             (ROOT / "gates/pytest.ini").read_bytes(),

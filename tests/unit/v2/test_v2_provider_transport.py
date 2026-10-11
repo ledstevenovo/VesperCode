@@ -240,11 +240,19 @@ class V2ProviderTransportAdapterConstructionTests(unittest.TestCase):
                     )
 
     def test_default_construction_never_touches_the_network_stack(self) -> None:
+        # The asserted contract is that CONSTRUCTING the adapter with the
+        # default edge loads no HTTP client; httpx may only appear in
+        # sys.modules when a real call lazily imports it.  Same-process
+        # state from earlier test files is causally irrelevant, so the
+        # check is a delta over sys.modules.
+        httpx_before = "httpx" in sys.modules
         adapter = V2ProviderTransportAdapter(endpoint=_ENDPOINT, profile=_PROFILE)
         self.assertIsNotNone(adapter)
-        # Constructing the adapter with the default edge loads no HTTP
-        # client at all; httpx stays unimported until a real call.
-        self.assertNotIn("httpx", sys.modules)
+        self.assertEqual(
+            "httpx" in sys.modules,
+            httpx_before,
+            "constructing the default-transport adapter imported httpx",
+        )
 
 
 class V2ProviderTransportAdapterCallTests(unittest.TestCase):
