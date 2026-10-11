@@ -3,3 +3,5 @@
 __pycache__/
 dist/
 tests/.tmp/
+# local tool config holding a plaintext API key — never stage
+opencode.json
