@@ -23,6 +23,7 @@ import sys
 from pathlib import Path
 from typing import Callable, Sequence, TextIO
 
+from vespercode.llm.v2_openai_adapter import V2OpenAIAdapterError
 from vespercode.loop.v2_engine import V2LLM
 from vespercode.shell_v2 import V2LocalShell, V2ShellError
 from vespercode.web.v2_app import V2LocalWebApp
@@ -223,6 +224,27 @@ def build_v2_cli_parser() -> argparse.ArgumentParser:
         type=_cli_max_turns,
         default=_DEFAULT_MAX_TURNS,
         metavar="N",
+    )
+    tui_parser.add_argument(
+        "--llm",
+        choices=("scripted", "openai"),
+        default="scripted",
+        help=(
+            "scripted: offline deterministic streaming mock (no key); "
+            "openai: real streaming adapter (key from VESPERCODE_V2_API_KEY)"
+        ),
+    )
+    tui_parser.add_argument(
+        "--base-url",
+        default=None,
+        metavar="URL",
+        help="OpenAI-compatible base URL (env VESPERCODE_V2_BASE_URL)",
+    )
+    tui_parser.add_argument(
+        "--model",
+        default=None,
+        metavar="NAME",
+        help="model name (env VESPERCODE_V2_MODEL)",
     )
     return parser
 
@@ -464,16 +486,34 @@ class V2CliComposition:
             build_demo_llm_factory,
         )
 
+        llm_factory: Callable[[], object] | None = None
+        if args.llm == "openai":
+            try:
+                adapter = self._build_openai_adapter(args)
+            except V2OpenAIAdapterError as exc:
+                self._emit_error(exc.code, str(exc))
+                return 1
+            llm_factory = lambda: adapter  # noqa: E731 - stateless, one instance
         spec = V2TuiLaunchSpec(
             workspace=args.workspace,
             task=args.task if args.task is not None else DEFAULT_DEMO_TASK,
             max_turns=args.max_turns,
-            llm_factory=build_demo_llm_factory(),
+            llm_factory=(
+                llm_factory if llm_factory is not None else build_demo_llm_factory()
+            ),
         )
         launcher = self._tui_launcher
         if launcher is None:
             launcher = _default_tui_launcher
         return launcher(spec)
+
+    @staticmethod
+    def _build_openai_adapter(args: argparse.Namespace) -> object:
+        # Imported lazily as well: the real adapter is only needed for
+        # this one option, and its missing-key failure is a CLI error.
+        from vespercode.llm.v2_openai_adapter import V2OpenAICompatLLM
+
+        return V2OpenAICompatLLM(base_url=args.base_url, model=args.model)
 
 
 def _default_tui_launcher(spec: object) -> int:

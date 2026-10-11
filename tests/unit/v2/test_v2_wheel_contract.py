@@ -60,6 +60,7 @@ _V2_PRODUCTION_MODULES: frozenset[str] = frozenset(
         "governance/v2_disclosure.py",
         "governance/v2_secret_scanner.py",
         "llm/v2.py",
+        "llm/v2_openai_adapter.py",
         "loop/v2_engine.py",
         "memory/v2.py",
         "persistence/v2_recovery.py",

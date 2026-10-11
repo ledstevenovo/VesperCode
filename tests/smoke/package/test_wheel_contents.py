@@ -109,6 +109,7 @@ REQUIRED_RUNTIME_MEMBERS: Final[frozenset[str]] = frozenset(
         "vespercode/llm/openai_serializer.py",
         "vespercode/llm/prepared_request.py",
         "vespercode/llm/v2.py",
+        "vespercode/llm/v2_openai_adapter.py",
         "vespercode/loop/action_binding.py",
         "vespercode/loop/action_parser.py",
         "vespercode/loop/action_pipeline.py",

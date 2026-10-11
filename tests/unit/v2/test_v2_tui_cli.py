@@ -2,13 +2,16 @@
 
 from __future__ import annotations
 
+import os
 import subprocess
 import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 from vespercode.cli_v2 import V2CliComposition
+from vespercode.llm.v2_openai_adapter import V2OpenAICompatLLM
 from vespercode.tui.v2_launch import DEFAULT_DEMO_TASK, V2TuiLaunchSpec
 
 _REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -94,6 +97,57 @@ class V2TuiCliTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             with self.assertRaises(RuntimeError):
                 cli.run(["tui", "--workspace", directory])
+
+    def test_tui_openai_option_builds_the_real_adapter(self) -> None:
+        specs: list[V2TuiLaunchSpec] = []
+        cli = V2CliComposition(tui_launcher=self._recording_launcher(specs))
+        environment = {
+            "VESPERCODE_V2_BASE_URL": "",
+            "VESPERCODE_V2_MODEL": "",
+            "VESPERCODE_V2_API_KEY": "",
+        }
+        with mock.patch.dict(os.environ, environment, clear=True):
+            os.environ["VESPERCODE_V2_API_KEY"] = "stub-key-not-a-secret"
+            try:
+                with tempfile.TemporaryDirectory() as directory:
+                    code = cli.run(
+                        [
+                            "tui",
+                            "--workspace",
+                            directory,
+                            "--llm",
+                            "openai",
+                            "--base-url",
+                            "https://flag.example/v1",
+                            "--model",
+                            "flag-model",
+                        ]
+                    )
+            finally:
+                os.environ.pop("VESPERCODE_V2_API_KEY", None)
+
+        self.assertEqual(code, 0)
+        llm = specs[0].llm_factory()
+        self.assertIsInstance(llm, V2OpenAICompatLLM)
+
+    def test_tui_openai_option_without_a_key_fails_with_guidance(self) -> None:
+        cli = V2CliComposition(tui_launcher=lambda spec: 0)
+        environment = {"VESPERCODE_V2_API_KEY": ""}
+        with mock.patch.dict(os.environ, environment, clear=True):
+            with tempfile.TemporaryDirectory() as directory:
+                code = cli.run(["tui", "--workspace", directory, "--llm", "openai"])
+
+        self.assertEqual(code, 1)
+
+    def test_tui_scripted_option_needs_no_key(self) -> None:
+        specs: list[V2TuiLaunchSpec] = []
+        cli = V2CliComposition(tui_launcher=self._recording_launcher(specs))
+        with mock.patch.dict(os.environ, {}, clear=True):
+            with tempfile.TemporaryDirectory() as directory:
+                code = cli.run(["tui", "--workspace", directory, "--llm", "scripted"])
+
+        self.assertEqual(code, 0)
+        self.assertTrue(hasattr(specs[0].llm_factory(), "stream_events"))
 
     def test_core_modules_import_without_textual_installed(self) -> None:
         """The TUI ships lazily: the CLI core never imports textual."""
