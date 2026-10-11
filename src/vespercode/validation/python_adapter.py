@@ -33,6 +33,7 @@ from pydantic import (
     ConfigDict,
     Field,
     StrictStr,
+    ValidationError,
     field_validator,
     model_validator,
 )
@@ -1113,30 +1114,18 @@ class PythonProjectAdapterV1:
     def _require_exact_target_ids(
         self, target_test_ids: tuple[str, ...]
     ) -> TargetTestIdSequenceV1:
-        """One closed target-id validation channel for plan construction.
+        """Validate target ids once and preserve the adapter error boundary.
 
-        Every constraint of ``TargetTestIdSequenceV1`` (1..20 unique,
-        non-empty, at most 1024 UTF-8 bytes) is proven here with the
-        adapter's closed ``CheckPlanError`` channel, so construction can
-        never escape a raw schema error after the check.
+        ``TargetTestIdSequenceV1`` owns the cardinality, uniqueness, and
+        per-id constraints. The adapter only translates its schema error to
+        the stable ``CheckPlanError`` used by plan construction.
         """
-        if not target_test_ids:
-            raise CheckPlanError("TARGET_IDS_INVALID", "target ids must not be empty")
-        if len(target_test_ids) > 20:
-            raise CheckPlanError("TARGET_IDS_INVALID", "target ids must be at most 20")
-        if len(target_test_ids) != len(set(target_test_ids)):
-            raise CheckPlanError("TARGET_IDS_INVALID", "target ids must be unique")
-        for node_id in target_test_ids:
-            if node_id == "":
-                raise CheckPlanError(
-                    "TARGET_IDS_INVALID", "target ids must be non-empty"
-                )
-            if len(node_id.encode("utf-8")) > 1024:
-                raise CheckPlanError(
-                    "TARGET_IDS_INVALID",
-                    "target ids must be at most 1024 UTF-8 bytes",
-                )
-        return TargetTestIdSequenceV1(target_test_ids=tuple(target_test_ids))
+        try:
+            return TargetTestIdSequenceV1(target_test_ids=tuple(target_test_ids))
+        except ValidationError as error:
+            raise CheckPlanError(
+                "TARGET_IDS_INVALID", "target ids do not satisfy the closed target set"
+            ) from error
 
     def build_formal_plan(
         self,
