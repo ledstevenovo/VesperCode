@@ -4524,3 +4524,22 @@ a mechanical fix.  None of them touches the v2 streaming surface.
   hand-edited; and a test fixture should copy exactly what its
   docstring promises — "tracked content" is a `git ls-files` question,
   not a hand-maintained ignore list.
+
+## 2026-10-12 23:00–23:50 (+08:00) — round-2: zcode/new-ui 评审四缺陷修复与总验收
+
+- **Task:** `zcode-newui-fix-round2` / 交付 `reviews/zcode-new-ui/v2/FIX_REPORT.md`；四项缺陷 P0-1（同帧双键丢正文）、P0-2（CI 缺 textual）、P1-1（引擎吞异常）、P1-2（CLI no-op）。
+- **Skills:** TDD（红转绿）、独立复核、干净环境 CI 证据、分阶段提交。
+- **负责 subagent:** T1/T2 实现 = `line1-core`（线1 工程师）；T3/T4 实现 = `line2-ci-cli`（线2 工程师）；T5/T6 独立复核 = `auditor`（模型异于实现者）；T0 基线 / T7 总验收 = `acceptor`。
+- **关键 prompt/context:** 分支 `zcode/new-ui` @ `7221af5208e828b991360ec77d9d78af729c456d`（= 评审被测提交）；解释器 `.\.venv-formal\Scripts\python.exe`（3.12.14）；决策 A = 10 红挂账不修。修复面：`v2_openai_adapter.py`（`_events_from_sse_line` 返回 `(events, ended)`，同帧两字段都取）、`v2_engine.py`（`except Exception as exc` → `V2ToolResult(..., error=exc)`）、`.github/workflows/ci.yml`（+`pip install textual==8.2.8`）、`cli_v2.py`（+`if __name__ == "__main__": raise SystemExit(main())`）。
+- **Verification（acceptor 亲手实跑，不采信自证）:**
+  - B1 `test_v2_openai_adapter_same_frame` → `Ran 10 tests / OK`（红证据实际值 `'BBB'` ≠ `'AAABBB'` 真实）。
+  - M1 `test_v2_engine_error_propagation` → `Ran 8 tests / OK`（红证据 `unexpectedly None` 真实）。
+  - B2 新建 `.venv-ci-clean2`（无 textual）：`discover -s tests/unit/v2` = `Ran 678 / FAILED (errors=295, skipped=2)`；离线闭包装入 textual 8.2.8 后同命令 = `FAILED (errors=297, skipped=0)`，`test_v2_tui_app` 两用例真执行（+2 ERROR 为 `%TEMP%` 沙箱 `_resetperms WinError 5` 伪错）。本机口径 **2→0**；完整 **4→2** 中另 2 个是 Linux 特有 symlink 守卫，需 CI 日志确认。
+  - `test_v2_alpha_release_path.py` → `13 passed`。
+  - v2 全发现 **678 = 657 + 10(T1) + 8(T2) + 3(T4)**；错误集与 `error-ids.txt` 逐 id 一致（263 唯一 id，对称差 0）。
+  - 全量 `pytest -q --basetemp=D:\pytest-bt` = `365 failed, 1517 passed, 6 skipped, 123 deselected, 438 errors`；分类：§2b 十红 **10**（逐项命中）、沙箱噪声 677、环境伪错 116（102 × `v2_database.py:1642 OperationalError` + 14 × `test_baseline.py TREE_INTEGRITY_FAILED`）、**修复引入新红 0**。环境归因由自写探针坐实（`mkdtemp` 目录内 `os.mkdir`/写入/`chmod`/`rmtree` 全 `WinError 5`；零 VesperCode 代码的 `sqlite3` 同样 `OperationalError`；`allocate_execution_root` 抛 `MaterializationError: WRITABLE_SOURCE`，即 `baseline.py:866→883` 的 `TREE_INTEGRITY_FAILED` 路径）。
+  - 零删除零弱化：工作树无 `D`/`M` 测试文件（`tests/` 仅 3 个 `??` 新文件）。
+- **计数:** v2 678（基线 657 + 新增 21）；全量 365 failed / 438 errors（其中 10 = 挂账十红）。
+- **提交哈希:** c1=`2b9d687da641b0c22223138b7ccf211c0405f124`、c2=`d5ebf7fca2781da8364a160cd0e26e214217c153`、c3=`e5faa0fa3e74d4c18a373e8cbdaf05cecb6d0533`、c4=`e07786a047a3bb95f1940991308ee1ede2f918bf`、c5=本条目所在提交（哈希以 `git log -5` 为准）。c1–c5 于 2026-10-13 由 captain 会话在用户批准的提权运行中线性提交——成员会话对 `.git` 全树被沙箱 Deny ACE 拒写（`git add` 报 `fatal: Unable to create 'D:/code/VesperCode/.git/index.lock': Permission denied`；`icacls .git` 显示 `(DENY)(W,D,Rc,DC)` 与继承 ACE，`.git`/`objects`/`refs`/`logs` 写入探针全 DENY，仓库根可写）、审批关闭不可提权，故由具备 `.git` 写权限的 captain 会话代执（原委见 `FIX_REPORT.md` 文首）；无 merge、**未 push**。captain 提权同轮真跑全量 pytest（沙箱外）：`10 failed, 2276 passed, 6 skipped, 123 deselected, 1 warning in 300.30s (0:05:00)`（原始输出 `.round2-baseline/captain-tier1-fullpytest.txt`）；另 v2 discover 提权真跑 `Ran 678 tests / OK (skipped=2)`、`ERR_IDS=0`、`FAIL_IDS=0`（`.round2-baseline/captain-tier1-discover.md`）。
+- **Human intervention:** 无人工改码；人工侧仅提供环境（Windows/DSH 沙箱）与决策 A 口径。
+- **Lesson:** ① 受限会话的沙箱会显式保护 `.git`（Deny ACE 全树），**「由验收者最后统一提交」的分工必须在可写 `.git` 的会话执行**，否则全部证据齐备仍无法落地提交；② 在本机 `%TEMP%` 被沙箱注入 Deny ACL 的环境里，`pytest`/`unittest` 全量跑必然大面积伪错，唯一可信做法是**用自写探针把每个失败家族归因到环境**（含「零项目代码」的最小复现）并按家族计数，而不是笼统写「沙箱噪声」；③ 干净 venv 无 pip 时，`ensurepip` 亦被沙箱拒，需按合同许可的离线闭包方式装依赖并如实记录等价性。
