@@ -105,8 +105,8 @@ class V2AgentLoop:
                     on_delta=on_delta,
                     on_reasoning=on_reasoning,
                 )
-            except Exception:
-                result = V2ToolResult("FAILED", "LLM call failed")
+            except Exception as exc:
+                result = V2ToolResult("FAILED", "LLM call failed", error=exc)
                 record(turn, result)
                 return V2LoopResult(
                     "STOPPED", "LLM_CALL_FAILED", turn, tuple(results), tuple(contexts)
