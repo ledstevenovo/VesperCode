@@ -536,3 +536,7 @@ __all__ = [
     "build_v2_cli_parser",
     "main",
 ]
+
+
+if __name__ == "__main__":  # pragma: no cover - exercised via a real subprocess
+    raise SystemExit(main())
