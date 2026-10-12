@@ -249,67 +249,59 @@ class V2OpenAICompatLLM:
             line_buffer += decoder.decode(chunk)
             *complete_lines, line_buffer = line_buffer.split("\n")
             for line in complete_lines:
-                event = self._event_from_sse_line(line)
-                if isinstance(event, _StreamEnd):
+                events, ended = self._events_from_sse_line(line)
+                yield from events
+                if ended:
                     return
-                if event is not None:
-                    yield event
         line_buffer += decoder.decode(b"", final=True)
-        event = self._event_from_sse_line(line_buffer)
-        if not isinstance(event, _StreamEnd) and event is not None:
-            yield event
+        events, _ended = self._events_from_sse_line(line_buffer)
+        yield from events
 
     @staticmethod
-    def _event_from_sse_line(line: str) -> V2StreamEvent | _StreamEnd | None:
-        """One SSE line -> one event, ``_STREAM_END``, or None (skip).
+    def _events_from_sse_line(line: str) -> tuple[list[V2StreamEvent], bool]:
+        """One SSE line -> (frame events, stream-ended flag).
 
         Each ``data:`` payload carries one complete JSON chunk (the
-        standard OpenAI-compatible wire format).  ``finish_reason`` and
-        the ``[DONE]`` sentinel are the only terminators; ``lastOne``
-        is ignored.
+        standard OpenAI-compatible wire format).  A delta may carry
+        ``reasoning_content`` and ``content`` in the SAME frame; every
+        present field is processed, in that order, before any
+        termination decision.  ``finish_reason`` and the ``[DONE]``
+        sentinel are the only terminators; ``lastOne`` is ignored.
         """
 
         stripped = line.rstrip("\r")
         if not stripped.startswith("data:"):
-            return None
+            return [], False
         payload = stripped[len("data:") :].strip()
         if not payload:
-            return None
+            return [], False
         if payload == "[DONE]":
-            return _STREAM_END
+            return [], True
         try:
             chunk = json.loads(payload)
         except json.JSONDecodeError:
-            return None
+            return [], False
         if not isinstance(chunk, dict):
-            return None
+            return [], False
         choices = chunk.get("choices")
         if not isinstance(choices, list) or not choices:
-            return None
+            return [], False
         first = choices[0]
         if not isinstance(first, dict):
-            return None
+            return [], False
         delta = first.get("delta")
         if not isinstance(delta, dict):
             delta = {}
+        events: list[V2StreamEvent] = []
         reasoning = delta.get("reasoning_content")
         if isinstance(reasoning, str) and reasoning:
-            return V2StreamEvent("reasoning", reasoning)
+            events.append(V2StreamEvent("reasoning", reasoning))
         content = delta.get("content")
         if isinstance(content, str) and content:
-            return V2StreamEvent("content", content)
-        if first.get("finish_reason"):
-            return _STREAM_END
-        return None
+            events.append(V2StreamEvent("content", content))
+        ended = bool(first.get("finish_reason"))
+        return events, ended
 
-
-class _StreamEnd:
-    """The closed end-of-stream signal (never a V2StreamEvent)."""
-
-    __slots__ = ()
-
-
-_STREAM_END = _StreamEnd()
 
 __all__ = [
     "V2_OPENAI_API_KEY_ENV",
