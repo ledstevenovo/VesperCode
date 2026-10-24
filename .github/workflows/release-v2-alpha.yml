@@ -78,8 +78,23 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: Install TUI test dependencies
+        run: pip install textual==8.2.8
       - name: Run the documented offline v2 unit suite
-        run: PYTHONPATH=src python -m unittest discover -s tests/unit/v2 -v
+        run: |
+          set -euo pipefail
+          PYTHONPATH=src python -m unittest discover -s tests/unit/v2 -v 2>&1 | tee /tmp/v2-test-output.txt
+          # Explicit guard: the TUI suite (test_v2_tui_app,
+          # test_v2_tui_state_reset) must never be silently skipped on the
+          # release path.  The textual install above makes skips impossible,
+          # but if a future drift removed it the guard fails closed.  The
+          # grep targets only TUI test cases — the two symlink-creation
+          # guards (test_relaxed_policy, test_v2_boundary) legitimately
+          # skip on Linux and are NOT matched.
+          if grep -E 'test_v2_tui_app|test_v2_tui_state_reset' /tmp/v2-test-output.txt | grep -q 'skipped'; then
+            echo "ERROR: TUI tests were silently skipped (textual missing?)" >&2
+            exit 1
+          fi
 
   wheel-build-smoke:
     name: v2 alpha wheel build and install smoke
