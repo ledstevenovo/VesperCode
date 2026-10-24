@@ -4543,3 +4543,27 @@ a mechanical fix.  None of them touches the v2 streaming surface.
 - **提交哈希:** c1=`2b9d687da641b0c22223138b7ccf211c0405f124`、c2=`d5ebf7fca2781da8364a160cd0e26e214217c153`、c3=`e5faa0fa3e74d4c18a373e8cbdaf05cecb6d0533`、c4=`e07786a047a3bb95f1940991308ee1ede2f918bf`、c5=本条目所在提交（哈希以 `git log -5` 为准）。c1–c5 于 2026-10-13 由 captain 会话在用户批准的提权运行中线性提交——成员会话对 `.git` 全树被沙箱 Deny ACE 拒写（`git add` 报 `fatal: Unable to create 'D:/code/VesperCode/.git/index.lock': Permission denied`；`icacls .git` 显示 `(DENY)(W,D,Rc,DC)` 与继承 ACE，`.git`/`objects`/`refs`/`logs` 写入探针全 DENY，仓库根可写）、审批关闭不可提权，故由具备 `.git` 写权限的 captain 会话代执（原委见 `FIX_REPORT.md` 文首）；无 merge、**未 push**。captain 提权同轮真跑全量 pytest（沙箱外）：`10 failed, 2276 passed, 6 skipped, 123 deselected, 1 warning in 300.30s (0:05:00)`（原始输出 `.round2-baseline/captain-tier1-fullpytest.txt`）；另 v2 discover 提权真跑 `Ran 678 tests / OK (skipped=2)`、`ERR_IDS=0`、`FAIL_IDS=0`（`.round2-baseline/captain-tier1-discover.md`）。
 - **Human intervention:** 无人工改码；人工侧仅提供环境（Windows/DSH 沙箱）与决策 A 口径。
 - **Lesson:** ① 受限会话的沙箱会显式保护 `.git`（Deny ACE 全树），**「由验收者最后统一提交」的分工必须在可写 `.git` 的会话执行**，否则全部证据齐备仍无法落地提交；② 在本机 `%TEMP%` 被沙箱注入 Deny ACL 的环境里，`pytest`/`unittest` 全量跑必然大面积伪错，唯一可信做法是**用自写探针把每个失败家族归因到环境**（含「零项目代码」的最小复现）并按家族计数，而不是笼统写「沙箱噪声」；③ 干净 venv 无 pip 时，`ensurepip` 亦被沙箱拒，需按合同许可的离线闭包方式装依赖并如实记录等价性。
+
+## 2026-10-24 18:10 (+08:00) — round-3 验收与分阶段提交（acceptor = 主线程 ZCode 会话）
+
+- **Task:** `zcode-newui-fix-round3` 成果验收与落地。round-3 团队（line1-core / line2-ci-cli / auditor 三成员）于 10-13~10-14 按外审 m00246 六项完成 t1-t8（六项修复 + 线1 复核 PASS），但 **t9（线2 独立复核）因 auditor 模型 429 限流失败**，且 captain 计划的 c1-c7 分阶段提交从未执行——79 文件 ±1200 行滞留工作树 10 天。本会话按用户指令接手：全量验证 + 六项对照核验 + 亲自补做线2 复核 + 分阶段提交。
+- **验收方法（不采信自证，关键证据全部亲手重跑）：**
+  - **残留清理**：删除 t6 警告的两个未跟踪残留——`src/sitecustomize.py`（T5 沙箱 shim 桥，会劫持一切 `PYTHONPATH=src` 进程的 sitecustomize 导入）与 `src/vespercode/_sandbox_test.py`（空探针）。删除后 CI 面 707 全过，证明无依赖。
+  - **高#2（EOF fail-closed）**：亲跑 `.round3-baseline/probe_a_eof.py` → 现抛 `V2OpenAIAdapterError: LLM call failed`（基线为静默接受 'AAABBB'）；13 个新终止测试 + 1 个披露改契约的既有测试全绿。
+  - **中#3（TUI 状态重置）**：亲跑 probe_b → 取消后新流 `content_text='NEW'`（基线 'partialNEW'）；10 个新测试全绿。
+  - **高#1（十红→0，决策 B）**：`tests/unit/process` 全量 **123 passed / 0 failed**（修复前该子集 10 failed/25 passed）；**负控制 5/5 亲自重跑通过**（NC1/NC2/NC3 重新注入仍红，NC4/NC5 改钉值仍红）——对齐非弱化的关键证据。
+  - **中#4（release 工作流）**：diff 亲审（pinned textual 安装 + TUI skip fail-closed grep 守卫）；v1 release 工作流与 ci 工作流零字节改动。
+  - **中#5（规范化）**：三件套亲手复跑——tracked 523 文件 ruff check 全过（仅 2 个 v1 冻结夹具因其自带 fixture TOML 语法错误拒绝，非本分支范围）；`mypy src` **0 errors/187 文件**；ruff format 51 个残余坏文件**与本次 diff 交集为 0**（全部为未修改的 v1 冻结区/夹具遗留债）。
+  - **低#6（渲染有界）**：6 个新窗口测试全绿（并入 c2）。
+  - **零删除审计**：tests/ diff 中 7 个 `-def test_` = 7 个 `+def test_`（6 个 format 签名换行 + 1 个已披露契约改名 `test_eof_without_done_still_yields_the_stream`→`..._fails_closed`），**零真实删除**；密钥模式扫描 1297 行新增无命中。
+- **全量验证（提交前，工作树态）：** `pytest -q --basetemp=<仓库外>` → **`2315 passed, 6 skipped, 0 failed, 0 errors`，exit 0**——本分支历史上首次全量完全绿。对账：2255（收敛轮）+10（高#1 修复红）+50（新增 v2 测试）=2315 ✓。CI 面（`unittest discover -s tests/unit/v2`）**707 / OK (skipped=2)**。
+- **提交哈希（本会话，线性无 merge，未 push）：**
+  - c1=`984fec0` fix(v2): fail-closed on SSE streams exhausted without a termination marker（高#2）
+  - c2=`74cd045` fix(v2): reset TUI state between runs and bound the streaming render window（中#3+低#6，因同文件 hunk 交织合并为一枚 TUI 提交）
+  - c3=`e791a02` test: align the process/CI delivery contract with the v2 plan reality（高#1）
+  - c4=`aca651c` ci: install the TUI dependency and guard against silent TUI skips on the v2 release path（中#4）
+  - c5=`58f9a40` style: ruff format, lint fixes, and strict-mypy cleanup across the v2 surface（中#5，69 文件）
+  - c6=本条目所在提交。
+- **遗留与诚实边界：** ① t9 线2 复核从未由独立模型执行（限流），本条目的亲手复跑（探针×2、负控制×5、三件套×3、全量、CI 面）是其替代而非等价物——缺一层「异模型独立视角」；② 分支仍未 push，验收标准 1 的远端 CI 绿灯仍无运行证据；③ 2 个 v1 冻结夹具文件的 format/TOML 遗留债挂账（不在本分支范围）；④ `.worktrees/` 残留清理仍为 Tier-B 用户决策；⑤ c2 将中#3 与低#6 合并提交（view-model 同文件 hunk 交织，拆分风险大于收益，t7 报告原建议按 t3-evidence §② 拆 hunks，未采纳并在此披露）。
+- **Human intervention:** 用户本轮明确指令「把 round-3 的未提交改动做一轮验收（跑全量 + 对照六项逐项核验）然后分阶段提交」；无其他人工改码。
+- **Lesson:** 半途而废的多 agent 修复轮最危险的不是代码质量（本轮代码全绿），而是**无主工作树**——79 文件 ±1200 行悬置 10 天，任何一次误操作（`git add -A` 连同 sitecustomize 残留一起入库）都会造成真实污染；验收者接手时第一件事应是盘点+清残留，最后一件事才是提交。
