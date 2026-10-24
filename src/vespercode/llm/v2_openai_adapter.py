@@ -17,8 +17,9 @@ see README "真实 key 配置").  Design boundaries:
   ``V2OpenAIAdapterError`` with a static message — no secret, URL,
   header, or body fragment ever reaches an exception text;
 - termination is the standard double-safeguard only: a chunk carrying a
-  ``finish_reason`` or the ``data: [DONE]`` sentinel ends the stream;
-  the vendor-specific ``lastOne`` flag is ignored;
+  ``finish_reason`` or the ``data: [DONE]`` sentinel ends the stream, and
+  a stream whose bytes exhaust without either marker fails closed as
+  ``LLM_CALL_FAILED``; the vendor-specific ``lastOne`` flag is ignored;
 - LongCat's chain-of-thought travels on its own typed channel:
   ``reasoning_content`` increments are yielded as
   ``V2StreamEvent("reasoning", ...)`` (rendered muted by the TUI) and
@@ -254,8 +255,12 @@ class V2OpenAICompatLLM:
                 if ended:
                     return
         line_buffer += decoder.decode(b"", final=True)
-        events, _ended = self._events_from_sse_line(line_buffer)
+        events, ended = self._events_from_sse_line(line_buffer)
         yield from events
+        if not ended:
+            # EOF without any termination marker: a truncated stream
+            # never completes as normal output (round-3 fail-closed).
+            raise V2OpenAIAdapterError("LLM_CALL_FAILED")
 
     @staticmethod
     def _events_from_sse_line(line: str) -> tuple[list[V2StreamEvent], bool]:

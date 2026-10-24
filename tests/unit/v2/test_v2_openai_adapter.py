@@ -189,13 +189,22 @@ class V2OpenAIAdapterStreamTests(unittest.TestCase):
 
         self.assertEqual(deltas, ['{"action', '_type": "DONE"}'])
 
-    def test_eof_without_done_still_yields_the_stream(self) -> None:
+    def test_eof_without_any_termination_marker_fails_closed(self) -> None:
+        # Round-3 contract correction (external review 高#2): a stream
+        # that exhausts without EVER carrying ``finish_reason`` or the
+        # ``data: [DONE]`` sentinel is truncated and must fail closed
+        # as ``LLM_CALL_FAILED`` per SPEC.md "Real adapter" (the
+        # fail-closed-on-exhaustion sentence).  The previous lenient
+        # expectation — content returned with no terminator — was the
+        # defect under fix; see .round3-baseline/t1-evidence.md for the
+        # itemized contract-correction disclosure.
         transport = _FakeTransport([_content_chunk('{"action_type": "DONE"}')])
         adapter = _adapter(transport)
 
-        deltas = list(adapter.stream(_request()))
+        with self.assertRaises(V2OpenAIAdapterError) as caught:
+            list(adapter.stream(_request()))
 
-        self.assertEqual(deltas, ['{"action_type": "DONE"}'])
+        self.assertEqual(caught.exception.code, "LLM_CALL_FAILED")
 
     def test_malformed_data_lines_are_skipped(self) -> None:
         transport = _FakeTransport(

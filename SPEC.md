@@ -1566,7 +1566,10 @@ yielding byte chunks); the real transport lazily imports httpx with
 decodes lines incrementally, processes `data:` payloads only, and
 terminates on the standard double-safeguard only — a chunk's
 `finish_reason` or the `data: [DONE]` sentinel; the vendor-specific
-`lastOne` flag is ignored. A stream exceeding the closed 1 MiB bound, a
+`lastOne` flag is ignored. A stream whose bytes are exhausted without
+either marker fails closed as `LLM_CALL_FAILED` — a truncated stream
+never completes as normal output. A stream exceeding the closed 1 MiB
+bound, a
 non-200 status, or any transport exception maps onto the typed
 `V2OpenAIAdapterError` with a static message (`CONFIG_MISSING` with setup
 guidance, or `LLM_CALL_FAILED`); no secret, URL, header, or body fragment
