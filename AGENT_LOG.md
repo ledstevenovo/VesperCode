@@ -4567,3 +4567,7 @@ a mechanical fix.  None of them touches the v2 streaming surface.
 - **遗留与诚实边界：** ① t9 线2 复核从未由独立模型执行（限流），本条目的亲手复跑（探针×2、负控制×5、三件套×3、全量、CI 面）是其替代而非等价物——缺一层「异模型独立视角」；② 分支仍未 push，验收标准 1 的远端 CI 绿灯仍无运行证据；③ 2 个 v1 冻结夹具文件的 format/TOML 遗留债挂账（不在本分支范围）；④ `.worktrees/` 残留清理仍为 Tier-B 用户决策；⑤ c2 将中#3 与低#6 合并提交（view-model 同文件 hunk 交织，拆分风险大于收益，t7 报告原建议按 t3-evidence §② 拆 hunks，未采纳并在此披露）。
 - **Human intervention:** 用户本轮明确指令「把 round-3 的未提交改动做一轮验收（跑全量 + 对照六项逐项核验）然后分阶段提交」；无其他人工改码。
 - **Lesson:** 半途而废的多 agent 修复轮最危险的不是代码质量（本轮代码全绿），而是**无主工作树**——79 文件 ±1200 行悬置 10 天，任何一次误操作（`git add -A` 连同 sitecustomize 残留一起入库）都会造成真实污染；验收者接手时第一件事应是盘点+清残留，最后一件事才是提交。
+
+### 追记（同日 18:25）：push 与远端 CI 绿灯
+
+用户批准后 `git push -u origin zcode/new-ui`（20 提交首次上远端；release 工作流为 `workflow_dispatch` 手动触发，push 不会误触）。远端 CI run `40085445219`：**`unit-test` job ✓（14s）**，日志实证 `Ran 707 tests in 4.806s / OK (skipped=5)`，且两个 TUI pilot 用例在真实 textual 上执行（非静默跳过；skip 5 = 本地 2 + Linux 符号链接守卫 3，平台合法差异）。至此验收标准 1 的字面项「CI `unit-test` 通过」以远端运行证据闭合：https://github.com/ledstevenovo/VesperCode/actions/runs/40085445219 。上节「遗留②」就此销账；其余遗留项不变。
