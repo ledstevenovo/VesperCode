@@ -48,6 +48,7 @@ class _FixedClock:
     def __call__(self) -> int:
         return self.now_ms
 
+
 HOST = "127.0.0.1:8766"
 ORIGIN = "http://127.0.0.1:8766"
 
@@ -86,9 +87,7 @@ class RecordingShell:
             raise self.start_error
         return self.start_outcomes.pop(0)
 
-    def create_writeback_approval(
-        self, *, run_id, candidate_id, candidate_revision
-    ):
+    def create_writeback_approval(self, *, run_id, candidate_id, candidate_revision):
         self._record(
             "create_writeback_approval",
             run_id=run_id,
@@ -283,9 +282,7 @@ class V2LocalWebAppTests(unittest.TestCase):
         self.assertEqual(self.shell.calls, [])
 
     def test_state_changes_require_origin_and_csrf(self) -> None:
-        response = self._post(
-            "/writeback/approve", {}, origin=None, csrf=None
-        )
+        response = self._post("/writeback/approve", {}, origin=None, csrf=None)
         self.assertEqual(response.status, 403)
         self.assertIn("ORIGIN_MISSING", response.body)
         self.assertEqual(self.shell.calls, [])
@@ -321,13 +318,9 @@ class V2LocalWebAppTests(unittest.TestCase):
 
     def test_expired_session_cannot_reach_domain_calls(self) -> None:
         clock = _FixedClock(1_000_000)
-        manager = V2LocalSessionManager(
-            V2LocalSecurityConfig(), clock=clock
-        )
+        manager = V2LocalSessionManager(V2LocalSecurityConfig(), clock=clock)
         app = V2LocalWebApp(self.shell, session_manager=manager)
-        home = app.handle(
-            V2WebRequest(method="GET", path="/", headers={"host": HOST})
-        )
+        home = app.handle(V2WebRequest(method="GET", path="/", headers={"host": HOST}))
         self.assertEqual(home.status, 200)
         cookie_match = re.match(
             r"vespercode_v2_session=([0-9a-f]{64});",
@@ -347,9 +340,7 @@ class V2LocalWebAppTests(unittest.TestCase):
                 method="POST",
                 path="/writeback/approve",
                 headers={"host": HOST, "origin": ORIGIN},
-                cookies={
-                    "vespercode_v2_session": cookie_match.group(1)
-                },
+                cookies={"vespercode_v2_session": cookie_match.group(1)},
                 form={
                     "run_id": "run-1",
                     "candidate_id": "candidate-1",
@@ -441,9 +432,7 @@ class V2LocalWebAppTests(unittest.TestCase):
         )
         self.assertEqual(response.status, 200)
         self.assertIn("approval-recorded", response.body)
-        self.assertEqual(
-            self._mutation_calls(), ["create_writeback_approval"]
-        )
+        self.assertEqual(self._mutation_calls(), ["create_writeback_approval"])
 
     def test_writeback_apply_projects_the_outcome(self) -> None:
         response = self._post(
@@ -481,9 +470,7 @@ class V2LocalWebAppTests(unittest.TestCase):
 
     def test_recovery_pages_project_pending_and_preview(self) -> None:
         response = self.app.handle(
-            V2WebRequest(
-                method="GET", path="/recovery", headers={"host": HOST}
-            )
+            V2WebRequest(method="GET", path="/recovery", headers={"host": HOST})
         )
         self.assertEqual(response.status, 200)
         self.assertIn("tx-1", response.body)
@@ -587,9 +574,7 @@ class V2LocalWebAppTests(unittest.TestCase):
 
     def test_disclosure_page_projects_bounded_control_facts(self) -> None:
         response = self.app.handle(
-            V2WebRequest(
-                method="GET", path="/disclosures", headers={"host": HOST}
-            )
+            V2WebRequest(method="GET", path="/disclosures", headers={"host": HOST})
         )
         self.assertEqual(response.status, 200)
         self.assertIn("grant-1", response.body)

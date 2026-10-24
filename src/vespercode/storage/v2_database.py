@@ -12,7 +12,7 @@ import sqlite3
 from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Iterator, Sequence
+from typing import Iterator, Sequence, cast
 
 from vespercode.candidate.v2_candidate import (
     CandidateControlIdentityV2,
@@ -223,6 +223,7 @@ def _require_revision(value: int) -> int:
         raise V2DatabaseError("revision must be a non-negative integer")
     return value
 
+
 _DDL = (
     "CREATE TABLE IF NOT EXISTS v2_schema_meta ("
     " version INTEGER PRIMARY KEY, name TEXT NOT NULL)",
@@ -383,9 +384,12 @@ class V2Database:
         return identifier
 
     def get_run(self, run_id: str) -> sqlite3.Row | None:
-        return self._connection.execute(
-            "SELECT * FROM runs WHERE run_id = ?", (run_id,)
-        ).fetchone()
+        return cast(
+            "sqlite3.Row | None",
+            self._connection.execute(
+                "SELECT * FROM runs WHERE run_id = ?", (run_id,)
+            ).fetchone(),
+        )
 
     def list_runs(self, limit: int = 50) -> list[sqlite3.Row]:
         """Project the most recent runs (bounded, newest first).
@@ -550,7 +554,10 @@ class V2Database:
                 "SELECT revision FROM candidates WHERE candidate_id = ?",
                 (candidate_id,),
             ).fetchone()
-            if current_revision is None or int(current_revision[0]) != candidate_revision:
+            if (
+                current_revision is None
+                or int(current_revision[0]) != candidate_revision
+            ):
                 raise V2DatabaseError("writeback approval revision is stale")
             connection.execute(
                 "INSERT INTO writeback_approvals "
@@ -594,19 +601,30 @@ class V2Database:
         return identifier
 
     def get_candidate(self, candidate_id: str) -> sqlite3.Row | None:
-        return self._connection.execute(
-            "SELECT * FROM candidates WHERE candidate_id = ?", (candidate_id,)
-        ).fetchone()
+        return cast(
+            "sqlite3.Row | None",
+            self._connection.execute(
+                "SELECT * FROM candidates WHERE candidate_id = ?", (candidate_id,)
+            ).fetchone(),
+        )
 
     def get_writeback_approval(self, approval_id: str) -> sqlite3.Row | None:
-        return self._connection.execute(
-            "SELECT * FROM writeback_approvals WHERE approval_id = ?", (approval_id,)
-        ).fetchone()
+        return cast(
+            "sqlite3.Row | None",
+            self._connection.execute(
+                "SELECT * FROM writeback_approvals WHERE approval_id = ?",
+                (approval_id,),
+            ).fetchone(),
+        )
 
     def get_transaction(self, transaction_id: str) -> sqlite3.Row | None:
-        return self._connection.execute(
-            "SELECT * FROM transactions WHERE transaction_id = ?", (transaction_id,)
-        ).fetchone()
+        return cast(
+            "sqlite3.Row | None",
+            self._connection.execute(
+                "SELECT * FROM transactions WHERE transaction_id = ?",
+                (transaction_id,),
+            ).fetchone(),
+        )
 
     def get_transaction_journal(self, transaction_id: str) -> list[sqlite3.Row]:
         return list(
@@ -687,10 +705,11 @@ class V2Database:
             ).fetchone()
             if approval is None:
                 raise V2DatabaseError("writeback approval is missing")
-            if str(approval[0]) != candidate_id or int(approval[1]) != candidate_revision:
-                raise V2DatabaseError(
-                    "writeback approval does not match the candidate"
-                )
+            if (
+                str(approval[0]) != candidate_id
+                or int(approval[1]) != candidate_revision
+            ):
+                raise V2DatabaseError("writeback approval does not match the candidate")
             if str(approval[2]) != "PENDING":
                 raise V2DatabaseError("writeback approval is not pending")
             consumed = connection.execute(
@@ -729,7 +748,9 @@ class V2Database:
     # stored or consulted as authorization.
     # ------------------------------------------------------------------
 
-    def get_candidate_control(self, candidate_id: str) -> CandidateControlIdentityV2 | None:
+    def get_candidate_control(
+        self, candidate_id: str
+    ) -> CandidateControlIdentityV2 | None:
         """Project the candidates row into its control identity record.
 
         The row's bounded status and non-negative revision are
@@ -768,9 +789,7 @@ class V2Database:
                 (record.reference_profile_id, record.profile_revision),
             ).fetchone()
             if existing is not None:
-                raise V2DatabaseError(
-                    "reference profile revision already exists"
-                )
+                raise V2DatabaseError("reference profile revision already exists")
             connection.execute(
                 "INSERT INTO reference_profiles"
                 " (reference_profile_id, profile_revision, python_version,"
@@ -850,9 +869,7 @@ class V2Database:
                 (candidate_id, candidate_revision),
             ).fetchone()
             if existing is not None:
-                raise V2DatabaseError(
-                    "a candidate diff revision is already recorded"
-                )
+                raise V2DatabaseError("a candidate diff revision is already recorded")
             connection.execute(
                 "INSERT INTO candidate_diffs"
                 " (diff_id, run_id, candidate_id, candidate_revision, artifact_id)"
@@ -917,9 +934,7 @@ class V2Database:
                 (reference_profile_id, reference_profile_revision),
             ).fetchone()
             if profile is None:
-                raise V2DatabaseError(
-                    "reference profile revision is unknown"
-                )
+                raise V2DatabaseError("reference profile revision is unknown")
             connection.execute(
                 "INSERT INTO validation_runs"
                 " (validation_run_id, run_id, candidate_id, candidate_revision,"
@@ -936,7 +951,9 @@ class V2Database:
             )
         return identifier
 
-    def get_validation_run(self, validation_run_id: str) -> ValidationRunRecordV2 | None:
+    def get_validation_run(
+        self, validation_run_id: str
+    ) -> ValidationRunRecordV2 | None:
         """Load one validation run record, revalidating its shape.
 
         The bounded status, error shape, and non-negative revisions are
@@ -1204,9 +1221,7 @@ class V2Database:
                 status="PENDING",
             )
         except (TypeError, ValueError) as exc:
-            raise V2DatabaseError(
-                f"disclosure grant record is invalid: {exc}"
-            ) from exc
+            raise V2DatabaseError(f"disclosure grant record is invalid: {exc}") from exc
         with self.transaction() as connection:
             disclosure = connection.execute(
                 "SELECT run_id FROM disclosures WHERE disclosure_id = ?",
@@ -1305,9 +1320,7 @@ class V2Database:
             )
             return cursor.rowcount == 1
 
-    def list_disclosure_grants(
-        self, limit: int = 100
-    ) -> list[DisclosureGrantRecordV2]:
+    def list_disclosure_grants(self, limit: int = 100) -> list[DisclosureGrantRecordV2]:
         """Project grant records (bounded, oldest first), fail closed.
 
         Route B / B3 read helper for the local integration surface: the
@@ -1478,18 +1491,18 @@ class V2Database:
                 or endpoint.reference_profile_revision
                 != grant.reference_profile_revision
             ):
-                return outcome(
-                    "PROFILE_MISMATCH", None, grant.consumed_bytes
-                )
+                return outcome("PROFILE_MISMATCH", None, grant.consumed_bytes)
             existing = connection.execute(
                 "SELECT authorization_id FROM disclosure_authorizations"
                 " WHERE grant_id = ? AND request_id = ?",
                 (grant_id, request_id),
             ).fetchone()
             if existing is not None:
-                previous = self._authorization_record(
-                    connection, str(existing[0])
-                )
+                previous = self._authorization_record(connection, str(existing[0]))
+                if previous is None:
+                    raise V2DatabaseError(
+                        "authorization record missing; refusing replay check"
+                    )
                 previous_key = authorization_payload_key(
                     previous.run_id,
                     previous.endpoint_id,
@@ -1501,9 +1514,7 @@ class V2Database:
                 )
                 if previous_key == requested_key:
                     return outcome("REPLAY", previous, grant.consumed_bytes)
-                return outcome(
-                    "REPLAY_CONFLICT", None, grant.consumed_bytes
-                )
+                return outcome("REPLAY_CONFLICT", None, grant.consumed_bytes)
             try:
                 check_disclosure_request_sources(
                     grant.allowed_source_categories,
@@ -1604,9 +1615,7 @@ class V2Database:
                 return consume_outcome("NOT_AUTHORIZED")
             grant = self._grant_record(connection, grant_id)
             if grant is None:
-                raise V2DatabaseError(
-                    "the authorization's grant is missing"
-                )
+                raise V2DatabaseError("the authorization's grant is missing")
             if grant.status != "ACTIVE" or grant_is_expired(grant, current):
                 return consume_outcome("GRANT_NOT_ACTIVE")
             endpoint = self._endpoint_record(connection, str(row[3]))
@@ -1666,9 +1675,12 @@ def open_v2_database(path: Path) -> V2Database:
             if tables != _V2_TABLES:
                 database.close()
                 raise V2DatabaseError("v2 database schema is incomplete")
-            marker = [tuple(row) for row in connection.execute(
-                "SELECT version, name FROM v2_schema_meta"
-            ).fetchall()]
+            marker = [
+                tuple(row)
+                for row in connection.execute(
+                    "SELECT version, name FROM v2_schema_meta"
+                ).fetchall()
+            ]
             if marker != [(V2_SCHEMA_VERSION, "relaxed_identity_v2")]:
                 database.close()
                 raise V2DatabaseError("v2 database metadata is invalid")

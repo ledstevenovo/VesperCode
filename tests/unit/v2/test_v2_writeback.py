@@ -120,7 +120,9 @@ class V2WritebackServiceTests(unittest.TestCase):
         assert transaction is not None
         self.assertEqual(transaction["state"], "COMMITTED")
 
-    def test_stale_candidate_revision_writes_nothing_and_keeps_the_approval(self) -> None:
+    def test_stale_candidate_revision_writes_nothing_and_keeps_the_approval(
+        self,
+    ) -> None:
         operations = (WriteOperationV2("CREATE", "src/new.py", "new body"),)
         request, _, candidate_id, approval_id = self._request(operations)
         self.database.advance_candidate(candidate_id, 0)

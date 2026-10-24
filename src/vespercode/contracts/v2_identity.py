@@ -134,8 +134,12 @@ class CandidateIdentityV2:
     revision: int
 
     def __post_init__(self) -> None:
-        object.__setattr__(self, "candidate_id", _identifier(self.candidate_id, "candidate_id"))
-        object.__setattr__(self, "snapshot_id", _identifier(self.snapshot_id, "snapshot_id"))
+        object.__setattr__(
+            self, "candidate_id", _identifier(self.candidate_id, "candidate_id")
+        )
+        object.__setattr__(
+            self, "snapshot_id", _identifier(self.snapshot_id, "snapshot_id")
+        )
         object.__setattr__(self, "revision", _revision(self.revision))
 
 
@@ -148,7 +152,9 @@ class ActionInstanceV2:
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "action_id", _identifier(self.action_id, "action_id"))
-        object.__setattr__(self, "action_type", _identifier(self.action_type, "action_type"))
+        object.__setattr__(
+            self, "action_type", _identifier(self.action_type, "action_type")
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -165,8 +171,12 @@ class FinalWritebackSubjectV2:
     expires_at: str
 
     def __post_init__(self) -> None:
-        object.__setattr__(self, "subject_id", _identifier(self.subject_id, "subject_id"))
-        object.__setattr__(self, "candidate_id", _identifier(self.candidate_id, "candidate_id"))
+        object.__setattr__(
+            self, "subject_id", _identifier(self.subject_id, "subject_id")
+        )
+        object.__setattr__(
+            self, "candidate_id", _identifier(self.candidate_id, "candidate_id")
+        )
         object.__setattr__(self, "expires_at", _timestamp(self.expires_at))
 
 

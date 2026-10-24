@@ -14,7 +14,6 @@ from __future__ import annotations
 
 import http.client
 import threading
-import time
 import unittest
 from dataclasses import dataclass, field
 from http.server import HTTPServer
@@ -90,9 +89,7 @@ class V2ServerTests(unittest.TestCase):
         )
         response = connection.getresponse()
         payload = response.read().decode("utf-8")
-        response_headers = {
-            key.lower(): value for key, value in response.getheaders()
-        }
+        response_headers = {key.lower(): value for key, value in response.getheaders()}
         status = response.status
         connection.close()
         return status, response_headers, payload
@@ -103,14 +100,10 @@ class V2ServerTests(unittest.TestCase):
         self.assertIn("content-security-policy", headers)
         self.assertIn("x-content-type-options", headers)
         self.assertTrue(
-            headers.get("set-cookie", "").startswith(
-                "vespercode_v2_session="
-            )
+            headers.get("set-cookie", "").startswith("vespercode_v2_session=")
         )
         self.assertIn("VesperCode", body)
-        self.assertEqual(
-            self.shell.calls, ["recent_runs", "pending_transaction_ids"]
-        )
+        self.assertEqual(self.shell.calls, ["recent_runs", "pending_transaction_ids"])
 
     def test_unknown_paths_are_404(self) -> None:
         status, _, _ = self._request("GET", "/not-a-route")
@@ -140,9 +133,7 @@ class V2ServerTests(unittest.TestCase):
     def test_malformed_post_bodies_are_closed_400s(self) -> None:
         # Duplicate fields (HTTP parameter pollution) reject inside the
         # transport's closed body parser, before any session handling.
-        status, _, _ = self._request(
-            "POST", "/writeback/approve", body="a=1&a=2"
-        )
+        status, _, _ = self._request("POST", "/writeback/approve", body="a=1&a=2")
         self.assertEqual(status, 400)
 
     def test_the_bind_host_is_the_literal_loopback_only(self) -> None:

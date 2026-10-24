@@ -133,9 +133,7 @@ class ValidationBindingV2:
         object.__setattr__(
             self,
             "reference_profile_revision",
-            _revision(
-                self.reference_profile_revision, "reference_profile_revision"
-            ),
+            _revision(self.reference_profile_revision, "reference_profile_revision"),
         )
 
 
@@ -182,9 +180,7 @@ class ValidationRunRecordV2:
         object.__setattr__(
             self,
             "reference_profile_revision",
-            _revision(
-                self.reference_profile_revision, "reference_profile_revision"
-            ),
+            _revision(self.reference_profile_revision, "reference_profile_revision"),
         )
         object.__setattr__(
             self,
@@ -247,9 +243,7 @@ class ValidationResultV2:
         object.__setattr__(
             self,
             "reference_profile_revision",
-            _revision(
-                self.reference_profile_revision, "reference_profile_revision"
-            ),
+            _revision(self.reference_profile_revision, "reference_profile_revision"),
         )
         object.__setattr__(
             self,

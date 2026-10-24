@@ -126,7 +126,9 @@ class WorkspaceBoundaryTests(unittest.TestCase):
         with self.assertRaises(WorkspaceBoundaryError):
             self.boundary.check_write_target("src/new.py", "DELETE")
 
-    def test_recheck_before_mutation_revalidates_and_catches_toctou_changes(self) -> None:
+    def test_recheck_before_mutation_revalidates_and_catches_toctou_changes(
+        self,
+    ) -> None:
         resolved = self.boundary.check_write_target("src/app.py", "REPLACE")
         self.boundary.recheck_before_mutation(resolved, "REPLACE")
 
@@ -137,8 +139,11 @@ class WorkspaceBoundaryTests(unittest.TestCase):
             self.boundary.recheck_before_mutation(late, "CREATE")
 
         # A target replaced by a directory after the check must fail REPLACE.
-        hijacked = self.boundary.check_write_target("src/hijack.py", "REPLACE") \
-            if (self.root / "src" / "hijack.py").exists() else None
+        hijacked = (
+            self.boundary.check_write_target("src/hijack.py", "REPLACE")
+            if (self.root / "src" / "hijack.py").exists()
+            else None
+        )
         if hijacked is None:
             (self.root / "src" / "hijack.py").write_text("x", encoding="utf-8")
             hijacked = self.boundary.check_write_target("src/hijack.py", "REPLACE")

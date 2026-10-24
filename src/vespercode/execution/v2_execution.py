@@ -76,7 +76,7 @@ from vespercode.execution.v2_profile import ExecutionProfileRecordV2
 EXECUTION_ACTION_KINDS_V2: frozenset[str] = frozenset({"VALIDATE_CANDIDATE"})
 """The closed v2 execution action vocabulary (B4a: one kind)."""
 
-EXECUTION_ACTION_GRAMMARS_V2: MappingProxyType = MappingProxyType(
+EXECUTION_ACTION_GRAMMARS_V2: MappingProxyType[str, tuple[str, int]] = MappingProxyType(
     {"VALIDATE_CANDIDATE": ("vespercode-validate", 2)}
 )
 """Per action kind: the frozen argv executable token and the exact
@@ -88,9 +88,7 @@ EXECUTION_RESULT_STATUSES_V2: frozenset[str] = frozenset(
 )
 """The closed statuses of one executor report."""
 
-EXECUTION_READINESS_STATUSES_V2: frozenset[str] = frozenset(
-    {"READY", "NOT_READY"}
-)
+EXECUTION_READINESS_STATUSES_V2: frozenset[str] = frozenset({"READY", "NOT_READY"})
 """The closed statuses of one readiness verdict."""
 
 V2_READINESS_REASONS_V2: frozenset[str] = frozenset(
@@ -102,9 +100,7 @@ V2_READINESS_REASONS_V2: frozenset[str] = frozenset(
 )
 """The closed NOT_READY reasons."""
 
-EXECUTION_OUTCOME_STATUSES_V2: frozenset[str] = frozenset(
-    {"SUCCEEDED", "FAILED"}
-)
+EXECUTION_OUTCOME_STATUSES_V2: frozenset[str] = frozenset({"SUCCEEDED", "FAILED"})
 """The closed statuses of one sanitized outcome."""
 
 EXECUTION_OUTCOME_ERROR_CODES_V2: frozenset[str] = frozenset(
@@ -143,19 +139,16 @@ EXECUTION_OUTCOME_EXCERPT_MAX_CHARS_V2 = 2048
 EXECUTION_RESULT_MAX_OUTPUT_CHARS_V2 = 16 * 1024 * 1024
 """The closed sanity bound of an executor-reported output string."""
 
-EXECUTION_MESSAGES_V2: MappingProxyType = MappingProxyType(
+EXECUTION_MESSAGES_V2: MappingProxyType[str, str] = MappingProxyType(
     {
         "SUCCEEDED": "the execution completed",
         "PROFILE_BINDING_MISMATCH": (
             "the request does not match the bound execution profile"
         ),
         "EXECUTION_BINDING_NOT_FOUND": (
-            "the run/candidate binding does not resolve in the control "
-            "plane"
+            "the run/candidate binding does not resolve in the control plane"
         ),
-        "EXECUTION_BINDING_STALE": (
-            "the request cites a stale candidate revision"
-        ),
+        "EXECUTION_BINDING_STALE": ("the request cites a stale candidate revision"),
         "VALIDATION_BINDING_REQUIRED": (
             "the request cites no validation run; the production "
             "binding resolves only cited validations"
@@ -166,18 +159,14 @@ EXECUTION_MESSAGES_V2: MappingProxyType = MappingProxyType(
             "reference profile"
         ),
         "VALIDATION_BINDING_NOT_PASSED": (
-            "the cited validation run is not a terminal PASSED "
-            "validation"
+            "the cited validation run is not a terminal PASSED validation"
         ),
         "READINESS_IMAGE_NOT_AVAILABLE": (
             "the execution image is not available locally"
         ),
-        "READINESS_DAEMON_UNAVAILABLE": (
-            "the execution daemon is not available"
-        ),
+        "READINESS_DAEMON_UNAVAILABLE": ("the execution daemon is not available"),
         "READINESS_PROFILE_REVISION_UNKNOWN": (
-            "the execution profile revision is unknown to the readiness "
-            "boundary"
+            "the execution profile revision is unknown to the readiness boundary"
         ),
         "EXECUTION_FAILED": "the execution failed; no retry is attempted",
         "TIMED_OUT": "the execution exceeded its bounded timeout",
@@ -322,16 +311,12 @@ class ExecutionActionRequestV2:
         object.__setattr__(
             self,
             "execution_profile_id",
-            _opaque_identifier(
-                self.execution_profile_id, "execution_profile_id"
-            ),
+            _opaque_identifier(self.execution_profile_id, "execution_profile_id"),
         )
         object.__setattr__(
             self,
             "execution_profile_revision",
-            _revision(
-                self.execution_profile_revision, "execution_profile_revision"
-            ),
+            _revision(self.execution_profile_revision, "execution_profile_revision"),
         )
         object.__setattr__(
             self,
@@ -341,13 +326,9 @@ class ExecutionActionRequestV2:
         object.__setattr__(
             self,
             "reference_profile_revision",
-            _revision(
-                self.reference_profile_revision, "reference_profile_revision"
-            ),
+            _revision(self.reference_profile_revision, "reference_profile_revision"),
         )
-        object.__setattr__(
-            self, "run_id", _opaque_identifier(self.run_id, "run_id")
-        )
+        object.__setattr__(self, "run_id", _opaque_identifier(self.run_id, "run_id"))
         object.__setattr__(
             self, "candidate_id", _candidate_identifier(self.candidate_id)
         )
@@ -364,9 +345,7 @@ class ExecutionActionRequestV2:
             (
                 None
                 if self.validation_run_id is None
-                else _opaque_identifier(
-                    self.validation_run_id, "validation_run_id"
-                )
+                else _opaque_identifier(self.validation_run_id, "validation_run_id")
             ),
         )
 
@@ -414,8 +393,7 @@ class ExecutionActionRequestV2:
         if self.action_kind == "VALIDATE_CANDIDATE":
             if arguments[0] != self.candidate_id:
                 raise ValueError(
-                    "argv[1] must be exactly the request's bound "
-                    "candidate_id"
+                    "argv[1] must be exactly the request's bound candidate_id"
                 )
             if arguments[1] != str(self.candidate_revision):
                 raise ValueError(
@@ -445,8 +423,7 @@ class ExecutionResultV2:
     def __post_init__(self) -> None:
         if self.status not in EXECUTION_RESULT_STATUSES_V2:
             raise ValueError(
-                "status must be one of "
-                f"{sorted(EXECUTION_RESULT_STATUSES_V2)}"
+                f"status must be one of {sorted(EXECUTION_RESULT_STATUSES_V2)}"
             )
         if not isinstance(self.output, str):
             raise ValueError("output must be a string")
@@ -475,8 +452,7 @@ class ExecutionReadinessResultV2:
     def __post_init__(self) -> None:
         if self.status not in EXECUTION_READINESS_STATUSES_V2:
             raise ValueError(
-                "status must be one of "
-                f"{sorted(EXECUTION_READINESS_STATUSES_V2)}"
+                f"status must be one of {sorted(EXECUTION_READINESS_STATUSES_V2)}"
             )
         if self.status == "READY":
             if self.reason is not None:
@@ -484,8 +460,7 @@ class ExecutionReadinessResultV2:
         else:
             if self.reason not in V2_READINESS_REASONS_V2:
                 raise ValueError(
-                    "reason must be one of "
-                    f"{sorted(V2_READINESS_REASONS_V2)}"
+                    f"reason must be one of {sorted(V2_READINESS_REASONS_V2)}"
                 )
 
 
@@ -515,20 +490,21 @@ class ExecutionOutcomeV2:
         )
         if self.status not in EXECUTION_OUTCOME_STATUSES_V2:
             raise ValueError(
-                "status must be one of "
-                f"{sorted(EXECUTION_OUTCOME_STATUSES_V2)}"
+                f"status must be one of {sorted(EXECUTION_OUTCOME_STATUSES_V2)}"
             )
         if self.status == "SUCCEEDED":
             if self.error_code is not None:
                 raise ValueError("SUCCEEDED outcomes carry no error code")
+            expected = EXECUTION_MESSAGES_V2["SUCCEEDED"]
         else:
-            if self.error_code not in EXECUTION_OUTCOME_ERROR_CODES_V2:
+            error_code = self.error_code
+            if error_code is None or error_code not in EXECUTION_OUTCOME_ERROR_CODES_V2:
                 raise ValueError(
                     "error_code must be one of "
                     f"{sorted(EXECUTION_OUTCOME_ERROR_CODES_V2)}"
                 )
-        key = "SUCCEEDED" if self.status == "SUCCEEDED" else self.error_code
-        if self.message != EXECUTION_MESSAGES_V2[key]:
+            expected = EXECUTION_MESSAGES_V2[error_code]
+        if self.message != expected:
             raise ValueError(
                 "outcome message must be the closed static message of "
                 "its status or error code"
@@ -572,13 +548,9 @@ class ValidationBindingFactsV2:
         object.__setattr__(
             self,
             "validation_run_id",
-            _opaque_identifier(
-                self.validation_run_id, "validation_run_id"
-            ),
+            _opaque_identifier(self.validation_run_id, "validation_run_id"),
         )
-        object.__setattr__(
-            self, "run_id", _opaque_identifier(self.run_id, "run_id")
-        )
+        object.__setattr__(self, "run_id", _opaque_identifier(self.run_id, "run_id"))
         object.__setattr__(
             self,
             "candidate_id",
@@ -592,16 +564,12 @@ class ValidationBindingFactsV2:
         object.__setattr__(
             self,
             "reference_profile_id",
-            _opaque_identifier(
-                self.reference_profile_id, "reference_profile_id"
-            ),
+            _opaque_identifier(self.reference_profile_id, "reference_profile_id"),
         )
         object.__setattr__(
             self,
             "reference_profile_revision",
-            _revision(
-                self.reference_profile_revision, "reference_profile_revision"
-            ),
+            _revision(self.reference_profile_revision, "reference_profile_revision"),
         )
         if self.status not in VALIDATION_RUN_STATUSES_V2:
             raise ValueError(
@@ -629,9 +597,7 @@ class ExecutionBindingFactsV2:
     validation: ValidationBindingFactsV2 | None = None
 
     def __post_init__(self) -> None:
-        object.__setattr__(
-            self, "run_id", _opaque_identifier(self.run_id, "run_id")
-        )
+        object.__setattr__(self, "run_id", _opaque_identifier(self.run_id, "run_id"))
         object.__setattr__(
             self,
             "candidate_id",
@@ -674,13 +640,10 @@ class ExecutionBindingOutcomeV2:
         if self.kind == "RESOLVED":
             if not isinstance(self.facts, ExecutionBindingFactsV2):
                 raise ValueError(
-                    "a RESOLVED binding outcome must carry "
-                    "ExecutionBindingFactsV2"
+                    "a RESOLVED binding outcome must carry ExecutionBindingFactsV2"
                 )
         elif self.facts is not None:
-            raise ValueError(
-                "only a RESOLVED binding outcome carries facts"
-            )
+            raise ValueError("only a RESOLVED binding outcome carries facts")
 
 
 @runtime_checkable
@@ -740,7 +703,9 @@ class V2ReadinessPort(Protocol):
     read-only and never creates containers or modifies the daemon.
     """
 
-    def check(self, profile: ExecutionProfileRecordV2) -> ExecutionReadinessResultV2: ...
+    def check(
+        self, profile: ExecutionProfileRecordV2
+    ) -> ExecutionReadinessResultV2: ...
 
 
 # ``ExecutionActionRequestV2`` validates its argv inside ``__post_init__``

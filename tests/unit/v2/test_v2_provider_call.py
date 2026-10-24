@@ -139,13 +139,9 @@ class V2ProviderCallCredentialTests(unittest.TestCase):
                 self.assertEqual(
                     caught.exception.error_code, "CREDENTIAL_REVEAL_FORBIDDEN"
                 )
-        credential = V2ProviderCallCredential(
-            secret, _provider_reveal_capability()
-        )
+        credential = V2ProviderCallCredential(secret, _provider_reveal_capability())
         self.assertEqual(
-            credential.reveal_for_transport(
-                _transport_reveal_capability()
-            ),
+            credential.reveal_for_transport(_transport_reveal_capability()),
             _SECRET,
         )
 
@@ -183,55 +179,41 @@ class V2ProviderCallCredentialTests(unittest.TestCase):
                     caught.exception.error_code, "CREDENTIAL_REVEAL_FORBIDDEN"
                 )
         self.assertEqual(
-            credential.reveal_for_transport(
-                _transport_reveal_capability()
-            ),
+            credential.reveal_for_transport(_transport_reveal_capability()),
             _SECRET,
         )
 
     def test_the_call_credential_is_single_use(self) -> None:
         credential = self._mint()
         self.assertEqual(
-            credential.reveal_for_transport(
-                _transport_reveal_capability()
-            ),
+            credential.reveal_for_transport(_transport_reveal_capability()),
             _SECRET,
         )
         # A retained or replayed credential never yields a second raw
         # value — exactly one reveal per minted credential.
         with self.assertRaises(V2CredentialError) as caught:
-            credential.reveal_for_transport(
-                _transport_reveal_capability()
-            )
-        self.assertEqual(
-            caught.exception.error_code, "CREDENTIAL_REVEAL_FORBIDDEN"
-        )
+            credential.reveal_for_transport(_transport_reveal_capability())
+        self.assertEqual(caught.exception.error_code, "CREDENTIAL_REVEAL_FORBIDDEN")
 
     def test_the_capabilities_are_not_interchangeable(self) -> None:
         secret = V2CredentialSecret.from_hidden_input(_SECRET)
         # The mint capability never unlocks the wrapper's own reveal...
         with self.assertRaises(V2CredentialError) as caught:
             secret.reveal(_transport_reveal_capability())
-        self.assertEqual(
-            caught.exception.error_code, "CREDENTIAL_REVEAL_FORBIDDEN"
-        )
+        self.assertEqual(caught.exception.error_code, "CREDENTIAL_REVEAL_FORBIDDEN")
         # ...the mint capability never unlocks the transport reveal...
         credential = self._mint()
         with self.assertRaises(V2CredentialError):
             credential.reveal_for_transport(_provider_reveal_capability())
         # ...and fresh look-alike instances of the private classes never
         # unlock anything.
-        self.assertIsNot(
-            _TransportRevealCapability(), _transport_reveal_capability()
-        )
+        self.assertIsNot(_TransportRevealCapability(), _transport_reveal_capability())
         self.assertIsNot(_provider_reveal_capability(), _transport_reveal_capability())
         self.assertIsNot(_StorageCapability(), _storage_reveal_capability())
 
     def test_the_call_credential_is_redacted(self) -> None:
         credential = self._mint()
-        self.assertEqual(
-            repr(credential), "V2ProviderCallCredential([redacted])"
-        )
+        self.assertEqual(repr(credential), "V2ProviderCallCredential([redacted])")
         self.assertEqual(str(credential), "V2ProviderCallCredential([redacted])")
         self.assertNotIn(_SECRET, repr(credential))
         self.assertNotIn(_SECRET, str(credential))
@@ -284,9 +266,7 @@ class V2ProviderCallCredentialTests(unittest.TestCase):
         forged = V2ProviderCallCredential.__new__(V2ProviderCallCredential)
         with self.assertRaises(V2CredentialError) as caught:
             forged.reveal_for_transport(_transport_reveal_capability())
-        self.assertEqual(
-            caught.exception.error_code, "CREDENTIAL_REVEAL_FORBIDDEN"
-        )
+        self.assertEqual(caught.exception.error_code, "CREDENTIAL_REVEAL_FORBIDDEN")
 
 
 class V2ProviderCallTests(unittest.TestCase):
@@ -373,9 +353,7 @@ class V2ProviderCallTests(unittest.TestCase):
         # openable only through the transport-reveal seam.
         self.assertIsInstance(seen_credential, V2ProviderCallCredential)
         self.assertEqual(
-            seen_credential.reveal_for_transport(
-                _transport_reveal_capability()
-            ),
+            seen_credential.reveal_for_transport(_transport_reveal_capability()),
             _SECRET,
         )
         authorization = self.database.get_disclosure_authorization(
@@ -427,9 +405,7 @@ class V2ProviderCallTests(unittest.TestCase):
                 # target: only valid endpoint ids reach the binding check.
                 if overrides.get("endpoint_id") == "endpoint-9":
                     self.database.create_provider_endpoint(
-                        ProviderEndpointRecordV2(
-                            "endpoint-9", "OPENAI", "profile-1", 3
-                        )
+                        ProviderEndpointRecordV2("endpoint-9", "OPENAI", "profile-1", 3)
                     )
                 outcome = self._call(request)
                 self.assertEqual(outcome.status, "FAILED")
@@ -447,9 +423,7 @@ class V2ProviderCallTests(unittest.TestCase):
         self.assertEqual(self.transport.calls, [])
         # The authorization stays AUTHORIZED: no burn on a policy rejection.
         self.assertEqual(
-            self.database.get_disclosure_authorization(
-                self.authorization_id
-            ).status,
+            self.database.get_disclosure_authorization(self.authorization_id).status,
             "AUTHORIZED",
         )
 
@@ -477,9 +451,7 @@ class V2ProviderCallTests(unittest.TestCase):
         self.assertEqual(self.transport.calls, [])
         # The authorization is not burned by a missing credential.
         self.assertEqual(
-            self.database.get_disclosure_authorization(
-                self.authorization_id
-            ).status,
+            self.database.get_disclosure_authorization(self.authorization_id).status,
             "AUTHORIZED",
         )
 
@@ -510,9 +482,7 @@ class V2ProviderCallTests(unittest.TestCase):
         self.assertEqual(outcome.error_code, "GRANT_NOT_ACTIVE")
         self.assertEqual(self.transport.calls, [])
         self.assertEqual(
-            self.database.get_disclosure_authorization(
-                self.authorization_id
-            ).status,
+            self.database.get_disclosure_authorization(self.authorization_id).status,
             "AUTHORIZED",
         )
         # A retry cannot double-call the provider or consume anything.
@@ -520,9 +490,7 @@ class V2ProviderCallTests(unittest.TestCase):
         self.assertEqual(retry.error_code, "GRANT_NOT_ACTIVE")
         self.assertEqual(self.transport.calls, [])
         self.assertEqual(
-            self.database.get_disclosure_authorization(
-                self.authorization_id
-            ).status,
+            self.database.get_disclosure_authorization(self.authorization_id).status,
             "AUTHORIZED",
         )
 
@@ -548,9 +516,7 @@ class V2ProviderCallTests(unittest.TestCase):
         self.assertEqual(outcome.error_code, "GRANT_NOT_ACTIVE")
         self.assertEqual(self.transport.calls, [])
         self.assertEqual(
-            self.database.get_disclosure_authorization(
-                self.authorization_id
-            ).status,
+            self.database.get_disclosure_authorization(self.authorization_id).status,
             "AUTHORIZED",
         )
 
@@ -583,9 +549,7 @@ class V2ProviderCallTests(unittest.TestCase):
         self.assertEqual(len(transport.calls), 1)
         # The one-shot authorization is burned by the attempted call.
         self.assertEqual(
-            self.database.get_disclosure_authorization(
-                self.authorization_id
-            ).status,
+            self.database.get_disclosure_authorization(self.authorization_id).status,
             "CONSUMED",
         )
 

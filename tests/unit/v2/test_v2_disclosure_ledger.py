@@ -111,9 +111,7 @@ class V2DisclosureLedgerTests(unittest.TestCase):
     def _sources(
         self, *pairs: tuple[str, str | None]
     ) -> tuple[DisclosureSourceV2, ...]:
-        return tuple(
-            DisclosureSourceV2(category, path) for category, path in pairs
-        )
+        return tuple(DisclosureSourceV2(category, path) for category, path in pairs)
 
     def _authorize(
         self,
@@ -285,9 +283,7 @@ class V2DisclosureLedgerTests(unittest.TestCase):
     def test_revocation_is_terminal_from_pending_or_active(self) -> None:
         run_id, _, grant_id = self._grant(approve=False)
         self.assertTrue(self.database.revoke_disclosure_grant(grant_id))
-        self.assertEqual(
-            self.database.get_disclosure_grant(grant_id).status, "REVOKED"
-        )
+        self.assertEqual(self.database.get_disclosure_grant(grant_id).status, "REVOKED")
         self.assertFalse(self.database.revoke_disclosure_grant(grant_id))
         run_id, _, grant_id = self._grant(approve=True)
         self.assertTrue(self.database.revoke_disclosure_grant(grant_id))
@@ -313,8 +309,7 @@ class V2DisclosureLedgerTests(unittest.TestCase):
         # revalidate the record shape and fail closed.
         raw = self.database._connection
         raw.execute(
-            "UPDATE disclosure_grants SET expires_at = 'never'"
-            " WHERE grant_id = ?",
+            "UPDATE disclosure_grants SET expires_at = 'never' WHERE grant_id = ?",
             (grant_id,),
         )
         with self.assertRaises(ValueError):
@@ -352,9 +347,7 @@ class V2DisclosureLedgerTests(unittest.TestCase):
         self.assertEqual(outcome.kind, "GRANT_PENDING")
         self.assertIsNone(outcome.authorization)
         self.assertEqual(outcome.consumed_bytes, 0)
-        self.assertEqual(
-            self.database.get_disclosure_grant(grant_id).consumed_bytes, 0
-        )
+        self.assertEqual(self.database.get_disclosure_grant(grant_id).consumed_bytes, 0)
 
     def test_authorize_rejects_revoked_and_unknown_grants_with_zero_charge(
         self,
@@ -398,9 +391,7 @@ class V2DisclosureLedgerTests(unittest.TestCase):
         outcome = self._authorize(grant_id, other_run)
         self.assertEqual(outcome.kind, "RUN_MISMATCH")
         self.assertIsNone(outcome.authorization)
-        self.assertEqual(
-            self.database.get_disclosure_grant(grant_id).consumed_bytes, 0
-        )
+        self.assertEqual(self.database.get_disclosure_grant(grant_id).consumed_bytes, 0)
 
     def test_authorize_requires_a_known_endpoint_and_matching_profile(self) -> None:
         run_id, _, grant_id = self._grant()
@@ -415,9 +406,7 @@ class V2DisclosureLedgerTests(unittest.TestCase):
         stale = self._authorize(grant_id, run_id, endpoint_id="endpoint-stale")
         self.assertEqual(stale.kind, "PROFILE_MISMATCH")
         self.assertIsNone(stale.authorization)
-        self.assertEqual(
-            self.database.get_disclosure_grant(grant_id).consumed_bytes, 0
-        )
+        self.assertEqual(self.database.get_disclosure_grant(grant_id).consumed_bytes, 0)
 
     def test_authorize_enforces_the_source_category_and_path_scope(self) -> None:
         run_id, _, grant_id = self._grant()
@@ -468,9 +457,7 @@ class V2DisclosureLedgerTests(unittest.TestCase):
             "SCOPE_EXCEEDED",
         )
         # A ROOT scope admits any path.
-        run_id, _, grant_id = self._grant(
-            scopes=(DisclosurePathScopeV2("ROOT", ""),)
-        )
+        run_id, _, grant_id = self._grant(scopes=(DisclosurePathScopeV2("ROOT", ""),))
         self.assertEqual(
             self._authorize(
                 grant_id,
@@ -522,9 +509,7 @@ class V2DisclosureLedgerTests(unittest.TestCase):
             self.database.get_disclosure_grant(grant_id).consumed_bytes, 25
         )
         # A different payload under the same request id is a conflict.
-        conflict = self._authorize(
-            grant_id, run_id, charge=26, sources=sources
-        )
+        conflict = self._authorize(grant_id, run_id, charge=26, sources=sources)
         self.assertEqual(conflict.kind, "REPLAY_CONFLICT")
         self.assertIsNone(conflict.authorization)
         self.assertEqual(
@@ -599,9 +584,9 @@ class V2DisclosureLedgerTests(unittest.TestCase):
     def test_consume_rejects_when_the_grant_was_revoked_after_the_read(self) -> None:
         run_id, _, grant_id = self._grant()
         self._endpoint()
-        authorization_id = (
-            self._authorize(grant_id, run_id).authorization.authorization_id
-        )
+        authorization_id = self._authorize(
+            grant_id, run_id
+        ).authorization.authorization_id
         # The grant is revoked between the caller's read and the consume.
         self.assertTrue(self.database.revoke_disclosure_grant(grant_id))
         consume = self.database.consume_disclosure_authorization(
@@ -618,9 +603,7 @@ class V2DisclosureLedgerTests(unittest.TestCase):
         )
 
     def test_consume_rechecks_expiry_at_the_consume_time_clock(self) -> None:
-        run_id, _, grant_id = self._grant(
-            expires_at="2030-01-01T00:00:00+00:00"
-        )
+        run_id, _, grant_id = self._grant(expires_at="2030-01-01T00:00:00+00:00")
         self._endpoint()
         authorized = self._authorize(
             grant_id, run_id, now=datetime(2029, 6, 1, tzinfo=timezone.utc)
@@ -646,9 +629,9 @@ class V2DisclosureLedgerTests(unittest.TestCase):
     ) -> None:
         run_id, _, grant_id = self._grant()
         self._endpoint()
-        authorization_id = (
-            self._authorize(grant_id, run_id).authorization.authorization_id
-        )
+        authorization_id = self._authorize(
+            grant_id, run_id
+        ).authorization.authorization_id
         connection = self.database._connection
         connection.execute("PRAGMA foreign_keys = OFF")
         connection.execute(
@@ -672,9 +655,9 @@ class V2DisclosureLedgerTests(unittest.TestCase):
     ) -> None:
         run_id, _, grant_id = self._grant()
         self._endpoint()
-        authorization_id = (
-            self._authorize(grant_id, run_id).authorization.authorization_id
-        )
+        authorization_id = self._authorize(
+            grant_id, run_id
+        ).authorization.authorization_id
         # The grant's profile binding is repointed by direct SQL (no API
         # path exists); the terminal consume must reject fail-closed.
         self.database._connection.execute(
@@ -703,9 +686,7 @@ class V2DisclosureLedgerTests(unittest.TestCase):
             self._authorize(grant_id, run_id, charge=65537)
         with self.assertRaises(ValueError):
             self._authorize(grant_id, run_id, sources=())
-        self.assertEqual(
-            self.database.get_disclosure_grant(grant_id).consumed_bytes, 0
-        )
+        self.assertEqual(self.database.get_disclosure_grant(grant_id).consumed_bytes, 0)
 
     # ------------------------------------------------------------------
     # Provider endpoints

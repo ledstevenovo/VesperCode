@@ -358,15 +358,9 @@ class VerifyV2LocalRequestTests(unittest.TestCase):
     # -- origin binding ---------------------------------------------------
 
     def test_origin_must_match_the_request_host_and_port(self) -> None:
-        self.assertFalse(
-            self._verify(origin="https://127.0.0.1:8766").authorized
-        )
-        self.assertFalse(
-            self._verify(origin="http://localhost:8766").authorized
-        )
-        self.assertFalse(
-            self._verify(origin="http://127.0.0.1:9999").authorized
-        )
+        self.assertFalse(self._verify(origin="https://127.0.0.1:8766").authorized)
+        self.assertFalse(self._verify(origin="http://localhost:8766").authorized)
+        self.assertFalse(self._verify(origin="http://127.0.0.1:9999").authorized)
         self.assertFalse(self._verify(origin="http://127.0.0.1").authorized)
 
     def test_safe_reads_authorize_without_origin_or_csrf(self) -> None:
@@ -392,9 +386,7 @@ class V2RejectionProjectionTests(unittest.TestCase):
         for code, status in expected_status.items():
             self.assertEqual(v2_request_status(code), status)
             payload = v2_request_rejection_payload(code)
-            self.assertEqual(
-                set(payload), {"error_code", "message", "next_step"}
-            )
+            self.assertEqual(set(payload), {"error_code", "message", "next_step"})
             self.assertEqual(payload["error_code"], code)
             self.assertTrue(payload["message"])
             self.assertTrue(payload["next_step"])

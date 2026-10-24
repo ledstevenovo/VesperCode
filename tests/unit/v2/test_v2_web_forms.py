@@ -96,12 +96,8 @@ class V2WritebackApproveFormTests(unittest.TestCase):
         }
         for bad in ("-1", "1e3", " 4", "4 ", "٠", "0x10", "99999999999999"):
             with self.assertRaises(V2FormError):
-                V2_WRITEBACK_APPROVE_FORM.parse(
-                    {**base, "candidate_revision": bad}
-                )
-        parsed = V2_WRITEBACK_APPROVE_FORM.parse(
-            {**base, "candidate_revision": "42"}
-        )
+                V2_WRITEBACK_APPROVE_FORM.parse({**base, "candidate_revision": bad})
+        parsed = V2_WRITEBACK_APPROVE_FORM.parse({**base, "candidate_revision": "42"})
         self.assertEqual(parsed["candidate_revision"], 42)
 
 

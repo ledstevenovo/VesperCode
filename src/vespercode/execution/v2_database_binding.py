@@ -73,8 +73,7 @@ class DatabaseBackedExecutionBinding:
     def __init__(self, database: V2Database) -> None:
         if not isinstance(database, V2Database):
             raise ValueError(
-                "the database-backed execution binding requires a "
-                "V2Database"
+                "the database-backed execution binding requires a V2Database"
             )
         self._database = database
 
@@ -114,9 +113,7 @@ class DatabaseBackedExecutionBinding:
 
         # --- the cited validation run ---------------------------------
         try:
-            validation = self._database.get_validation_run(
-                validation_run_id
-            )
+            validation = self._database.get_validation_run(validation_run_id)
         except (TypeError, ValueError):
             # A corrupted validation_runs row does not revalidate as a
             # B1 record: it is not usable evidence, never fake facts.
@@ -128,8 +125,7 @@ class DatabaseBackedExecutionBinding:
             or validation.candidate_id != candidate_id
             or validation.candidate_revision != control.revision
             or validation.reference_profile_id != reference_profile_id
-            or validation.reference_profile_revision
-            != reference_profile_revision
+            or validation.reference_profile_revision != reference_profile_revision
         ):
             # A validation of another run, another candidate, a stale
             # revision (the candidate advanced after it was recorded),
@@ -167,9 +163,7 @@ class DatabaseBackedExecutionBinding:
                     candidate_id=validation.candidate_id,
                     candidate_revision=validation.candidate_revision,
                     reference_profile_id=validation.reference_profile_id,
-                    reference_profile_revision=(
-                        validation.reference_profile_revision
-                    ),
+                    reference_profile_revision=(validation.reference_profile_revision),
                     status=validation.status,
                 ),
             ),

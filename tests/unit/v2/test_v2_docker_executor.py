@@ -65,9 +65,7 @@ def _ok(
     stderr: bytes = b"",
     output_truncated: bool = False,
 ) -> ExecutorCommandOutcomeV2:
-    return ExecutorCommandOutcomeV2(
-        returncode, stdout, stderr, False, output_truncated
-    )
+    return ExecutorCommandOutcomeV2(returncode, stdout, stderr, False, output_truncated)
 
 
 def _timed_out(stdout: bytes = b"") -> ExecutorCommandOutcomeV2:
@@ -96,9 +94,7 @@ class _ScriptedRunner:
         assert isinstance(argv, list)
         assert isinstance(timeout_seconds, (int, float))
         assert isinstance(max_output_bytes, int)
-        self.calls.append(
-            (list(argv), float(timeout_seconds), int(max_output_bytes))
-        )
+        self.calls.append((list(argv), float(timeout_seconds), int(max_output_bytes)))
         outcome = self._outcomes.pop(0)
         if isinstance(outcome, Exception):
             raise outcome
@@ -353,31 +349,21 @@ class SubprocessDockerExecutorTests(unittest.TestCase):
 
     def test_the_isolation_parameters_come_from_the_bound_profile(self) -> None:
         profile = _profile(non_root_user="20002:20002")
-        runner = _ScriptedRunner(
-            _happy_outcomes(profile, self.request, self.source)
-        )
+        runner = _ScriptedRunner(_happy_outcomes(profile, self.request, self.source))
         executor = SubprocessDockerExecutorV2(self.workspace, runner)
         executor.run(self.request, profile)
         create = runner.argvs()[0]
-        self.assertEqual(
-            create[create.index("--user") + 1], profile.non_root_user
-        )
-        self.assertEqual(
-            create[create.index("--network") + 1], "none"
-        )
+        self.assertEqual(create[create.index("--user") + 1], profile.non_root_user)
+        self.assertEqual(create[create.index("--network") + 1], "none")
         self.assertIn("--read-only", create)
         self.assertEqual(create[create.index("--cap-drop") + 1], "ALL")
-        self.assertEqual(
-            create[create.index("--pull") + 1], "never"
-        )
+        self.assertEqual(create[create.index("--pull") + 1], "never")
         mount = create[create.index("--mount") + 1]
         self.assertEqual(
             mount,
             f"type=bind,source={self.source},target=/workspace,readonly",
         )
-        self.assertEqual(
-            create[create.index("--tmpfs") + 1], EXECUTOR_TMPFS_MOUNT_V2
-        )
+        self.assertEqual(create[create.index("--tmpfs") + 1], EXECUTOR_TMPFS_MOUNT_V2)
         self.assertEqual(
             create[create.index("--memory") + 1],
             str(EXECUTOR_MEMORY_LIMIT_BYTES_V2),
@@ -390,9 +376,7 @@ class SubprocessDockerExecutorTests(unittest.TestCase):
             create[create.index("--pids-limit") + 1],
             str(EXECUTOR_PIDS_LIMIT_V2),
         )
-        self.assertEqual(
-            create[create.index("--cpus") + 1], str(EXECUTOR_CPU_LIMIT_V2)
-        )
+        self.assertEqual(create[create.index("--cpus") + 1], str(EXECUTOR_CPU_LIMIT_V2))
 
     def test_every_command_is_a_plain_token_list_never_a_shell_string(
         self,
@@ -491,9 +475,7 @@ class SubprocessDockerExecutorTests(unittest.TestCase):
 
     def test_the_runner_bounds_every_command_by_the_profile(self) -> None:
         profile = _profile(timeout_seconds=5, max_output_bytes=4096)
-        runner = _ScriptedRunner(
-            _happy_outcomes(profile, self.request, self.source)
-        )
+        runner = _ScriptedRunner(_happy_outcomes(profile, self.request, self.source))
         executor = SubprocessDockerExecutorV2(self.workspace, runner)
         executor.run(self.request, profile)
         self.assertEqual(len(runner.calls), 4)
@@ -506,9 +488,7 @@ class SubprocessDockerExecutorTests(unittest.TestCase):
                 self.assertLessEqual(timeout, 5)
             else:
                 # the removal is bounded hygiene after the execution.
-                self.assertEqual(
-                    timeout, EXECUTOR_CLEANUP_TIMEOUT_SECONDS_V2
-                )
+                self.assertEqual(timeout, EXECUTOR_CLEANUP_TIMEOUT_SECONDS_V2)
 
     def test_the_container_name_is_unique_per_run_and_never_leaks(self) -> None:
         names = []
@@ -991,9 +971,7 @@ class SubprocessDockerExecutorTests(unittest.TestCase):
                         _ok(0, b"id\n"),
                         _ok(
                             0,
-                            _inspect_payload(
-                                self.profile, self.request, self.source
-                            ),
+                            _inspect_payload(self.profile, self.request, self.source),
                         ),
                         _ok(0, b"validate ok\n"),
                         cleanup,

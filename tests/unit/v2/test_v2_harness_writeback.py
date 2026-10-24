@@ -83,9 +83,7 @@ class LocalDiskWorkspacePortTests(unittest.TestCase):
         self.assertEqual(
             (self.workspace / "src" / "new.py").read_bytes(), b"alpha\nbeta"
         )
-        self.port.apply(
-            _plan("REPLACE", "src/new.py", "second", "alpha\nbeta")
-        )
+        self.port.apply(_plan("REPLACE", "src/new.py", "second", "alpha\nbeta"))
         self.assertEqual((self.workspace / "src" / "new.py").read_bytes(), b"second")
 
     def test_read_text_and_exists_round_trip(self) -> None:
@@ -120,7 +118,11 @@ class LocalDiskWorkspacePortTests(unittest.TestCase):
     def test_no_temp_files_are_left_behind_after_apply(self) -> None:
         self.port.apply(_plan("CREATE", "src/clean.py", "x"))
         self.port.apply(_plan("REPLACE", "src/app.py", "y", "original\n"))
-        leftovers = [p.name for p in (self.workspace / "src").iterdir() if p.name.endswith(".tmp")]
+        leftovers = [
+            p.name
+            for p in (self.workspace / "src").iterdir()
+            if p.name.endswith(".tmp")
+        ]
         self.assertEqual(leftovers, [])
 
     def test_unicode_content_round_trips(self) -> None:
@@ -399,7 +401,9 @@ class V2HarnessWritebackTests(unittest.TestCase):
         # workspace recovers the durable UNRESOLVED transaction.
         restarted = V2Harness(self._config())
         try:
-            self.assertEqual(restarted.recovery_service.pending_transaction_ids(), (transaction_id,))
+            self.assertEqual(
+                restarted.recovery_service.pending_transaction_ids(), (transaction_id,)
+            )
             outcome = restarted.recovery_service.apply(transaction_id)
             self.assertEqual(outcome.status, "APPLIED")
             self.assertEqual(
@@ -408,9 +412,7 @@ class V2HarnessWritebackTests(unittest.TestCase):
             self.assertEqual(
                 (self.workspace / "src" / "two.py").read_text(encoding="utf-8"), "two"
             )
-            self.assertEqual(
-                restarted.recovery_service.pending_transaction_ids(), ()
-            )
+            self.assertEqual(restarted.recovery_service.pending_transaction_ids(), ())
         finally:
             restarted.close()
 

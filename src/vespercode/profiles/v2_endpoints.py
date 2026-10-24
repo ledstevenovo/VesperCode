@@ -82,9 +82,7 @@ class ProviderEndpointRecordV2:
         object.__setattr__(
             self, "endpoint_id", _identifier(self.endpoint_id, "endpoint_id")
         )
-        object.__setattr__(
-            self, "provider", _provider_name(self.provider)
-        )
+        object.__setattr__(self, "provider", _provider_name(self.provider))
         object.__setattr__(
             self,
             "reference_profile_id",
@@ -93,9 +91,7 @@ class ProviderEndpointRecordV2:
         object.__setattr__(
             self,
             "reference_profile_revision",
-            _revision(
-                self.reference_profile_revision, "reference_profile_revision"
-            ),
+            _revision(self.reference_profile_revision, "reference_profile_revision"),
         )
 
 

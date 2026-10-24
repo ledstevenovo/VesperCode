@@ -55,7 +55,10 @@ from vespercode.providers.v2_call import (
     ProviderCallRequestV2,
     V2ProviderCallService,
 )
-from vespercode.providers.v2_transport import V2ProviderTransportAdapter
+from vespercode.providers.v2_transport import (
+    V2ProviderHttpResult,
+    V2ProviderTransportAdapter,
+)
 from vespercode.storage.v2_database import (
     V2_DATABASE_FILENAME,
     initialize_v2_database,
@@ -171,9 +174,7 @@ class FakeEdge:
             raise self._error
         from vespercode.providers.v2_transport import V2ProviderHttpResult
 
-        return V2ProviderHttpResult(
-            status_code=self._status_code, body=self._body
-        )
+        return V2ProviderHttpResult(status_code=self._status_code, body=self._body)
 
 
 class ComposedProviderBoundaryTests(unittest.TestCase):
@@ -187,9 +188,7 @@ class ComposedProviderBoundaryTests(unittest.TestCase):
             "profile-1", 3, "3.12.4", "8.4.2", "0.16.1", "2.3.0"
         )
         self.database.create_reference_profile(self.profile)
-        self.endpoint = ProviderEndpointRecordV2(
-            "endpoint-1", "OPENAI", "profile-1", 3
-        )
+        self.endpoint = ProviderEndpointRecordV2("endpoint-1", "OPENAI", "profile-1", 3)
         self.database.create_provider_endpoint(self.endpoint)
         self.run_id = self.database.create_run(str(self.root))
         disclosure_id = self.database.create_disclosure(self.run_id)
@@ -207,9 +206,7 @@ class ComposedProviderBoundaryTests(unittest.TestCase):
         self.authorization_id = self._authorize("request-1", "endpoint-1")
         self.backend = FakeOSBackend()
         self.credentials = OSV2CredentialProvider(self.backend)
-        self.credentials.set(
-            "OPENAI", V2CredentialSecret.from_hidden_input(_SECRET)
-        )
+        self.credentials.set("OPENAI", V2CredentialSecret.from_hidden_input(_SECRET))
         self.edge = FakeEdge()
         self.adapter = V2ProviderTransportAdapter(
             endpoint=self.endpoint, profile=self.profile, http_edge=self.edge
@@ -272,13 +269,9 @@ class ComposedProviderBoundaryTests(unittest.TestCase):
         call = self.edge.calls[0]
         self.assertEqual(call["url"], _OPENAI_URL)
         self.assertEqual(call["headers"]["Authorization"], f"Bearer {_SECRET}")
-        self.assertEqual(
-            call["headers"].get("Content-Type"), "application/json"
-        )
+        self.assertEqual(call["headers"].get("Content-Type"), "application/json")
         self.assertEqual(call["timeout_seconds"], 60)
-        self.assertEqual(
-            self._authorization_status(self.authorization_id), "CONSUMED"
-        )
+        self.assertEqual(self._authorization_status(self.authorization_id), "CONSUMED")
 
     def test_the_round_tripped_credential_is_the_os_stored_value(self) -> None:
         # The value that reaches the edge is the one the OS-backed
@@ -306,9 +299,7 @@ class ComposedProviderBoundaryTests(unittest.TestCase):
     def test_an_unsafe_backend_fails_closed_before_the_consume(self) -> None:
         backend = FakeOSBackend(probe_failure="UNSAFE")
         credentials = OSV2CredentialProvider(backend)
-        service = V2ProviderCallService(
-            self.database, credentials, self.adapter
-        )
+        service = V2ProviderCallService(self.database, credentials, self.adapter)
         with self.assertRaises(V2OSCredentialStoreError) as caught:
             service.call(self._request())
         self.assertEqual(caught.exception.code, "CREDENTIAL_BACKEND_UNSAFE")
@@ -321,14 +312,10 @@ class ComposedProviderBoundaryTests(unittest.TestCase):
     def test_an_unavailable_backend_fails_closed_before_the_consume(self) -> None:
         backend = FakeOSBackend(unavailable=True)
         credentials = OSV2CredentialProvider(backend)
-        service = V2ProviderCallService(
-            self.database, credentials, self.adapter
-        )
+        service = V2ProviderCallService(self.database, credentials, self.adapter)
         with self.assertRaises(V2OSCredentialStoreError) as caught:
             service.call(self._request())
-        self.assertEqual(
-            caught.exception.code, "CREDENTIAL_BACKEND_UNAVAILABLE"
-        )
+        self.assertEqual(caught.exception.code, "CREDENTIAL_BACKEND_UNAVAILABLE")
         self.assertEqual(self.edge.calls, [])
         self.assertEqual(
             self._authorization_status(self.authorization_id), "AUTHORIZED"
@@ -351,32 +338,24 @@ class ComposedProviderBoundaryTests(unittest.TestCase):
         self.assertEqual(outcome.error_code, "PROVIDER_CALL_FAILED")
         self.assertEqual(outcome.message, PROVIDER_CALL_FAILED_MESSAGE)
         self.assertEqual(len(edge.calls), 1)
-        self.assertEqual(
-            self._authorization_status(self.authorization_id), "CONSUMED"
-        )
+        self.assertEqual(self._authorization_status(self.authorization_id), "CONSUMED")
 
     def test_a_redirect_fails_the_call_without_a_follow(self) -> None:
         edge = FakeEdge(status_code=302)
         outcome = self._failing_service(edge).call(self._request())
         self.assertEqual(outcome.error_code, "PROVIDER_CALL_FAILED")
         self.assertEqual(len(edge.calls), 1)
-        self.assertEqual(
-            self._authorization_status(self.authorization_id), "CONSUMED"
-        )
+        self.assertEqual(self._authorization_status(self.authorization_id), "CONSUMED")
 
     def test_a_non_success_response_fails_with_no_refund(self) -> None:
         edge = FakeEdge(status_code=503)
         outcome = self._failing_service(edge).call(self._request())
         self.assertEqual(outcome.error_code, "PROVIDER_CALL_FAILED")
         self.assertEqual(len(edge.calls), 1)
-        self.assertEqual(
-            self._authorization_status(self.authorization_id), "CONSUMED"
-        )
+        self.assertEqual(self._authorization_status(self.authorization_id), "CONSUMED")
 
     def test_an_edge_exception_is_redacted_end_to_end(self) -> None:
-        edge = FakeEdge(
-            error=RuntimeError(f"leaked Authorization: Bearer {_SECRET}")
-        )
+        edge = FakeEdge(error=RuntimeError(f"leaked Authorization: Bearer {_SECRET}"))
         outcome = self._failing_service(edge).call(self._request())
         self.assertEqual(outcome.error_code, "PROVIDER_CALL_FAILED")
         self.assertEqual(outcome.message, PROVIDER_CALL_FAILED_MESSAGE)
@@ -407,9 +386,7 @@ class ComposedProviderBoundaryTests(unittest.TestCase):
         # check passes — but the adapter is bound to endpoint-1 and
         # independently rechecks its own binding after the consume.
         self.database.create_provider_endpoint(
-            ProviderEndpointRecordV2(
-                "endpoint-9", "OPENAI", "profile-1", 3
-            )
+            ProviderEndpointRecordV2("endpoint-9", "OPENAI", "profile-1", 3)
         )
         authorization_id = self._authorize("request-2", "endpoint-9")
         request = ProviderCallRequestV2(
@@ -427,9 +404,7 @@ class ComposedProviderBoundaryTests(unittest.TestCase):
         self.assertEqual(outcome.error_code, "PROVIDER_CALL_FAILED")
         self.assertEqual(self.edge.calls, [])
         # No refund: the consume committed before the transport call.
-        self.assertEqual(
-            self._authorization_status(authorization_id), "CONSUMED"
-        )
+        self.assertEqual(self._authorization_status(authorization_id), "CONSUMED")
 
     # ------------------------------------------------------------------
     # The secret never enters the control database

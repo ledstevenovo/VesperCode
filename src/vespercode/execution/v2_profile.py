@@ -168,16 +168,12 @@ class ExecutionProfileRecordV2:
         object.__setattr__(
             self,
             "execution_profile_id",
-            _opaque_identifier(
-                self.execution_profile_id, "execution_profile_id"
-            ),
+            _opaque_identifier(self.execution_profile_id, "execution_profile_id"),
         )
         object.__setattr__(
             self,
             "execution_profile_revision",
-            _revision(
-                self.execution_profile_revision, "execution_profile_revision"
-            ),
+            _revision(self.execution_profile_revision, "execution_profile_revision"),
         )
         object.__setattr__(
             self,
@@ -187,13 +183,15 @@ class ExecutionProfileRecordV2:
         object.__setattr__(
             self,
             "reference_profile_revision",
-            _revision(
-                self.reference_profile_revision, "reference_profile_revision"
-            ),
+            _revision(self.reference_profile_revision, "reference_profile_revision"),
         )
-        object.__setattr__(self, "image_reference", _image_reference(self.image_reference))
         object.__setattr__(
-            self, "network_disabled", _strict_bool(self.network_disabled, "network_disabled")
+            self, "image_reference", _image_reference(self.image_reference)
+        )
+        object.__setattr__(
+            self,
+            "network_disabled",
+            _strict_bool(self.network_disabled, "network_disabled"),
         )
         object.__setattr__(self, "non_root_user", _non_root_user(self.non_root_user))
         object.__setattr__(
@@ -204,9 +202,7 @@ class ExecutionProfileRecordV2:
         object.__setattr__(
             self,
             "all_capabilities_dropped",
-            _strict_bool(
-                self.all_capabilities_dropped, "all_capabilities_dropped"
-            ),
+            _strict_bool(self.all_capabilities_dropped, "all_capabilities_dropped"),
         )
         object.__setattr__(
             self,
@@ -216,11 +212,11 @@ class ExecutionProfileRecordV2:
         object.__setattr__(
             self,
             "workspace_mount_read_only",
-            _strict_bool(
-                self.workspace_mount_read_only, "workspace_mount_read_only"
-            ),
+            _strict_bool(self.workspace_mount_read_only, "workspace_mount_read_only"),
         )
-        object.__setattr__(self, "timeout_seconds", _timeout_seconds(self.timeout_seconds))
+        object.__setattr__(
+            self, "timeout_seconds", _timeout_seconds(self.timeout_seconds)
+        )
         object.__setattr__(
             self, "max_output_bytes", _max_output_bytes(self.max_output_bytes)
         )

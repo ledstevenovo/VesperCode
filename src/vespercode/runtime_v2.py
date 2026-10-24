@@ -12,6 +12,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Protocol, runtime_checkable
 
 from vespercode.contracts.v2_identity import CandidateIdentityV2
 from vespercode.contracts.v2_writeback import WriteOperationV2
@@ -27,6 +28,13 @@ from vespercode.storage.v2_database import (
 )
 from vespercode.tools.v2_dispatcher import InMemoryWorkspacePort, V2ToolDispatcher
 from vespercode.workspace.v2_disk import LocalDiskWorkspacePort
+
+
+@runtime_checkable
+class _DiskPort(Protocol):
+    """The disk existence probe the runtime needs from the disk port."""
+
+    def exists(self, path: str) -> bool: ...
 
 
 @dataclass(frozen=True, slots=True)
@@ -61,15 +69,19 @@ class V2Harness:
         config: V2HarnessConfig,
         *,
         staging_port: InMemoryWorkspacePort | None = None,
-        disk_port: object | None = None,
+        disk_port: _DiskPort | None = None,
     ) -> None:
         self._config = config
         initialize_v2_database(config.database_path)
         self._database: V2Database = open_v2_database(config.database_path)
         self._memory = V2Memory()
-        self._staging = staging_port if staging_port is not None else InMemoryWorkspacePort()
+        self._staging = (
+            staging_port if staging_port is not None else InMemoryWorkspacePort()
+        )
         self._disk_port = (
-            disk_port if disk_port is not None else LocalDiskWorkspacePort(config.workspace)
+            disk_port
+            if disk_port is not None
+            else LocalDiskWorkspacePort(config.workspace)
         )
         self._writeback = V2WritebackService(
             self._database, self._disk_port, workspace=config.workspace
@@ -129,9 +141,7 @@ class V2Harness:
         """Record the staged content as a candidate under one snapshot."""
 
         snapshot_id = self._database.create_snapshot(run_id)
-        candidate_id = self._database.create_candidate(
-            run_id, snapshot_id, revision=0
-        )
+        candidate_id = self._database.create_candidate(run_id, snapshot_id, revision=0)
         return CandidateIdentityV2(
             candidate_id=candidate_id, snapshot_id=snapshot_id, revision=0
         )

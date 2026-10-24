@@ -149,9 +149,7 @@ def resolve_provider_address_v2(provider: str) -> ProviderAddressV2:
 
     address = PROVIDER_ADDRESSES_V2.get(provider)
     if address is None:
-        raise ValueError(
-            "no trusted provider address is declared for the provider"
-        )
+        raise ValueError("no trusted provider address is declared for the provider")
     return address
 
 
@@ -168,9 +166,7 @@ class V2ProviderHttpResult:
     body: bytes
 
     def __post_init__(self) -> None:
-        if isinstance(self.status_code, bool) or not isinstance(
-            self.status_code, int
-        ):
+        if isinstance(self.status_code, bool) or not isinstance(self.status_code, int):
             raise ValueError("status_code must be an integer HTTP status")
         if not 100 <= self.status_code <= 599:
             raise ValueError("status_code is outside the HTTP status range")
@@ -227,9 +223,7 @@ class _HttpxV2ProviderEdge:
             raise V2ProviderTransportError(
                 "the httpx HTTP edge is not available"
             ) from exc
-        with httpx.Client(
-            timeout=timeout_seconds, follow_redirects=False
-        ) as client:
+        with httpx.Client(timeout=timeout_seconds, follow_redirects=False) as client:
             with client.stream(
                 "POST", url, headers=dict(headers), content=body
             ) as response:
@@ -267,9 +261,7 @@ def _control_request_body(request: ProviderCallRequestV2) -> bytes:
         "reference_profile_id": request.reference_profile_id,
         "reference_profile_revision": request.reference_profile_revision,
     }
-    return json.dumps(
-        payload, sort_keys=True, separators=(",", ":")
-    ).encode("utf-8")
+    return json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
 
 
 class V2ProviderTransportAdapter:
@@ -303,9 +295,7 @@ class V2ProviderTransportAdapter:
             endpoint.reference_profile_id != profile.reference_profile_id
             or endpoint.reference_profile_revision != profile.profile_revision
         ):
-            raise ValueError(
-                "the endpoint does not bind the reference profile"
-            )
+            raise ValueError("the endpoint does not bind the reference profile")
         if http_edge is None:
             http_edge = _HttpxV2ProviderEdge()
         if not isinstance(http_edge, V2ProviderHttpEdge):
@@ -353,9 +343,7 @@ class V2ProviderTransportAdapter:
             # The single sanctioned materialization: the handshake opens
             # only here, only once, and the opened value exists only
             # inside this frame to build the one Authorization header.
-            value = credential.reveal_for_transport(
-                _transport_reveal_capability()
-            )
+            value = credential.reveal_for_transport(_transport_reveal_capability())
         except Exception:  # noqa: BLE001 - redacted; never retried
             return ProviderCallResponseV2("FAILED")
         headers = {
@@ -388,8 +376,7 @@ class V2ProviderTransportAdapter:
         return (
             request.endpoint_id == self._endpoint.endpoint_id
             and request.provider == self._endpoint.provider
-            and request.reference_profile_id
-            == self._endpoint.reference_profile_id
+            and request.reference_profile_id == self._endpoint.reference_profile_id
             and request.reference_profile_revision
             == self._endpoint.reference_profile_revision
         )

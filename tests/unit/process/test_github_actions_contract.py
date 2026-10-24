@@ -22,9 +22,7 @@ import pytest
 _REPO_ROOT = Path(__file__).resolve().parents[3]
 GITHUB_WORKFLOW_PATH_V1 = _REPO_ROOT / ".github" / "workflows" / "ci.yml"
 
-EXPECTED_JOBS_V1: frozenset[str] = frozenset(
-    {"unit-test"}
-)
+EXPECTED_JOBS_V1: frozenset[str] = frozenset({"unit-test"})
 
 # Locked setup: the verification workflow may use exactly these pinned
 # actions (SPEC §8.4 locked setup; the card locked-setup pin set; the

@@ -154,9 +154,7 @@ class V2LocalSecurityConfig:
             raise ValueError("port must be between 1 and 65535")
         for name in (self.session_cookie_name, self.csrf_field_name):
             if not isinstance(name, str) or _NAME_RE.fullmatch(name) is None:
-                raise ValueError(
-                    "session cookie and CSRF names must be closed tokens"
-                )
+                raise ValueError("session cookie and CSRF names must be closed tokens")
 
 
 @dataclass(frozen=True, slots=True)
@@ -308,9 +306,7 @@ class V2RequestAuthorizationV2:
             self.error_code is None or self.rejected_at is None
         ):
             raise ValueError("rejected results carry a code and a check")
-        if self.session is not None and not isinstance(
-            self.session, V2LocalSessionV2
-        ):
+        if self.session is not None and not isinstance(self.session, V2LocalSessionV2):
             raise ValueError("session must be a V2LocalSessionV2")
         if not self.authorized and self.session is not None:
             raise ValueError("rejected results carry no session")
@@ -385,7 +381,9 @@ def _is_loopback_origin(origin: str, host_header: str) -> bool:
 
 
 def _rejected(code: str, check: str) -> V2RequestAuthorizationV2:
-    return V2RequestAuthorizationV2(authorized=False, error_code=code, rejected_at=check)
+    return V2RequestAuthorizationV2(
+        authorized=False, error_code=code, rejected_at=check
+    )
 
 
 def authorize_v2_local_request(
@@ -481,9 +479,7 @@ def v2_security_headers(csp_nonce: str | None = None) -> dict[str, str]:
         raise ValueError("CSP nonce must be a closed token form")
     csp = V2_CONTENT_SECURITY_POLICY
     if csp_nonce is not None:
-        csp = csp.replace(
-            "script-src 'self'", f"script-src 'self' 'nonce-{csp_nonce}'"
-        )
+        csp = csp.replace("script-src 'self'", f"script-src 'self' 'nonce-{csp_nonce}'")
     return {
         "Content-Security-Policy": csp,
         "X-Content-Type-Options": "nosniff",

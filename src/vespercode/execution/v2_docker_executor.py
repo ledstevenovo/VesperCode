@@ -132,12 +132,12 @@ class ExecutorCommandOutcomeV2:
         if self.timed_out:
             if self.returncode is not None:
                 raise ValueError("a timed-out command carries no returncode")
-        elif isinstance(self.returncode, bool) or not isinstance(
-            self.returncode, int
-        ):
-            raise ValueError("returncode must be None or an integer")
-        if not self.timed_out and not -255 <= self.returncode <= 255:
-            raise ValueError("returncode is out of the bounded range")
+        if not self.timed_out:
+            returncode = self.returncode
+            if returncode is None or isinstance(returncode, bool):
+                raise ValueError("returncode must be None or an integer")
+            if not -255 <= returncode <= 255:
+                raise ValueError("returncode is out of the bounded range")
         if not isinstance(self.stdout, bytes):
             raise ValueError("stdout must be exact raw bytes")
         if not isinstance(self.stderr, bytes):
@@ -295,9 +295,7 @@ class SubprocessDockerExecutorV2:
         self._workspace_source = normalized
         self._runner = runner if runner is not None else _default_command_runner
 
-    def run(
-        self, request: object, profile: object
-    ) -> ExecutionResultV2:
+    def run(self, request: object, profile: object) -> ExecutionResultV2:
         """Run exactly one closed execution request; fail closed always."""
         if not isinstance(request, ExecutionActionRequestV2):
             raise ValueError(
@@ -336,16 +334,13 @@ class SubprocessDockerExecutorV2:
                 # The daemon-side configuration of the exact container
                 # drifted from the closed flag set: nothing runs.
                 return _failed("")
-            started_outcome = self._invoke(
-                [*_START_COMMAND, container], deadline, cap
-            )
+            started_outcome = self._invoke([*_START_COMMAND, container], deadline, cap)
             if started_outcome is None:
                 return _failed("")
             output = self._bounded_output(started_outcome, cap)
             overflowed = (
                 started_outcome.output_truncated
-                or len(started_outcome.stdout) + len(started_outcome.stderr)
-                > cap
+                or len(started_outcome.stdout) + len(started_outcome.stderr) > cap
             )
             if started_outcome.timed_out:
                 self._stop_container(container, cap)
@@ -358,14 +353,10 @@ class SubprocessDockerExecutorV2:
                 return _failed(output)
             code = started_outcome.returncode
             if code == 0:
-                return ExecutionResultV2(
-                    status="SUCCEEDED", exit_code=0, output=output
-                )
+                return ExecutionResultV2(status="SUCCEEDED", exit_code=0, output=output)
             if code is None or not 0 <= code <= 255:
                 return _failed(output)
-            return ExecutionResultV2(
-                status="FAILED", exit_code=code, output=output
-            )
+            return ExecutionResultV2(status="FAILED", exit_code=code, output=output)
         except Exception:
             # Any runner/transport/contract failure is a closed failure;
             # the raw exception text never enters the result.
@@ -403,8 +394,7 @@ class SubprocessDockerExecutorV2:
             "--tmpfs",
             EXECUTOR_TMPFS_MOUNT_V2,
             "--mount",
-            f"type=bind,source={self._workspace_source}"
-            ",target=/workspace,readonly",
+            f"type=bind,source={self._workspace_source},target=/workspace,readonly",
             profile.image_reference,
             *request.argv,
         ]
@@ -430,9 +420,7 @@ class SubprocessDockerExecutorV2:
             )
         return outcome
 
-    def _invoke_cleanup(
-        self, argv: Sequence[str], max_output_bytes: int
-    ) -> None:
+    def _invoke_cleanup(self, argv: Sequence[str], max_output_bytes: int) -> None:
         """One bounded hygiene command outside the execution deadline."""
         outcome = self._runner(
             list(argv),
@@ -445,9 +433,7 @@ class SubprocessDockerExecutorV2:
             )
 
     @staticmethod
-    def _bounded_output(
-        outcome: ExecutorCommandOutcomeV2, cap: int
-    ) -> str:
+    def _bounded_output(outcome: ExecutorCommandOutcomeV2, cap: int) -> str:
         """The bounded decoded stdout+stderr of the attached run."""
         combined = outcome.stdout + outcome.stderr
         if len(combined) > cap:

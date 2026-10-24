@@ -147,9 +147,7 @@ class SubprocessDockerProbeTests(unittest.TestCase):
         # The readiness record has exactly two fields — status and
         # reason — so no inspect output, digest, or image detail can
         # ever enter the control plane through readiness.
-        self.assertEqual(
-            (result.status, result.reason), ("READY", None)
-        )
+        self.assertEqual((result.status, result.reason), ("READY", None))
         self.assertNotIn("sha256", repr(result))
 
     def test_the_probe_never_issues_container_or_registry_commands(self) -> None:

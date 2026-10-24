@@ -159,16 +159,12 @@ class V2CredentialStorageRevealTests(unittest.TestCase):
         # reveal ...
         with self.assertRaises(V2CredentialError) as caught:
             secret.reveal(_storage_reveal_capability())
-        self.assertEqual(
-            caught.exception.error_code, "CREDENTIAL_REVEAL_FORBIDDEN"
-        )
+        self.assertEqual(caught.exception.error_code, "CREDENTIAL_REVEAL_FORBIDDEN")
         # ... and the provider-call capability does not unlock the
         # storage reveal.
         with self.assertRaises(V2CredentialError) as caught:
             secret.reveal_for_storage(_provider_reveal_capability())
-        self.assertEqual(
-            caught.exception.error_code, "CREDENTIAL_REVEAL_FORBIDDEN"
-        )
+        self.assertEqual(caught.exception.error_code, "CREDENTIAL_REVEAL_FORBIDDEN")
         # The single minted instances are the only keys: fresh
         # look-alike instances of the private classes never unlock.
         self.assertIsNot(_StorageCapability(), _storage_reveal_capability())
@@ -257,9 +253,7 @@ class InMemoryV2CredentialProviderTests(unittest.TestCase):
         self.assertEqual(wrapper.reveal(_provider_reveal_capability()), _SECRET)
 
     def test_set_overwrites_the_previous_value_for_the_same_provider(self) -> None:
-        self.provider.set(
-            "OPENAI", V2CredentialSecret.from_hidden_input("first-value")
-        )
+        self.provider.set("OPENAI", V2CredentialSecret.from_hidden_input("first-value"))
         self.provider.set(
             "OPENAI", V2CredentialSecret.from_hidden_input("second-value")
         )

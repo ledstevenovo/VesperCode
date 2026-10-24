@@ -25,13 +25,17 @@ class V2CompositionTests(unittest.TestCase):
                     run_ids.append(run_id)
                     return run_id
 
-                with patch.object(harness.database, "create_run", side_effect=capture_run):
+                with patch.object(
+                    harness.database, "create_run", side_effect=capture_run
+                ):
                     with patch(
                         "vespercode.runtime_v2.V2AgentLoop.run",
                         side_effect=RuntimeError("unexpected loop failure"),
                     ):
                         with self.assertRaisesRegex(RuntimeError, "unexpected loop"):
-                            harness.run("fail", ScriptedLLMV2([{"action_type": "DONE"}]))
+                            harness.run(
+                                "fail", ScriptedLLMV2([{"action_type": "DONE"}])
+                            )
                 rows = harness.database.get_run(run_ids[0])
             finally:
                 harness.close()
@@ -39,12 +43,15 @@ class V2CompositionTests(unittest.TestCase):
         self.assertIsNotNone(rows)
         self.assertEqual(rows["status"], "STOPPED")
         self.assertIsNone(rows["phase"])
+
     def test_package_identity_exposes_v2_alpha_and_legacy_version(self) -> None:
         self.assertEqual(vespercode.__version__, "0.2.0a0")
         self.assertEqual(vespercode.V2_VERSION, "0.2.0a0")
         self.assertEqual(vespercode.LEGACY_VERSION, "0.1.0")
 
-    def test_composition_creates_run_enters_loop_and_records_terminal_state(self) -> None:
+    def test_composition_creates_run_enters_loop_and_records_terminal_state(
+        self,
+    ) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             harness = V2Harness(V2HarnessConfig(root, root / "control"))

@@ -44,7 +44,9 @@ class V2Memory:
     def select(self, run_id: str, *, limit: int = 20) -> tuple[V2MemoryEntry, ...]:
         if limit < 1:
             raise ValueError("memory limit must be positive")
-        return tuple(entry for entry in self._entries if entry.run_id == run_id)[-limit:]
+        return tuple(entry for entry in self._entries if entry.run_id == run_id)[
+            -limit:
+        ]
 
     def clear(self, run_id: str) -> int:
         before = len(self._entries)

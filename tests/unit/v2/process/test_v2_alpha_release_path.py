@@ -151,8 +151,7 @@ class V2AlphaReleaseWorkflowTests(unittest.TestCase):
         self.assertIn("preflight:", text)
         self.assertIn(f'if version != "{_V2_ALPHA_VERSION}":', text)
         self.assertIn(
-            'if scripts.get("vespercode-v2") != '
-            '"vespercode.cli_v2:main":',
+            'if scripts.get("vespercode-v2") != "vespercode.cli_v2:main":',
             text,
         )
         self.assertIn(

@@ -105,9 +105,7 @@ class SubprocessDockerProbeV2:
             # error text ever enters the closed result.
             return ExecutionReadinessResultV2("NOT_READY", "DAEMON_UNAVAILABLE")
         if not isinstance(outcome, ProbeCommandResultV2):
-            raise ValueError(
-                "the command runner must return a ProbeCommandResultV2"
-            )
+            raise ValueError("the command runner must return a ProbeCommandResultV2")
         if outcome.returncode == 0:
             return ExecutionReadinessResultV2("READY")
         # The image probe failed: distinguish a missing image from an
@@ -115,17 +113,11 @@ class SubprocessDockerProbeV2:
         try:
             daemon_outcome = self._runner(list(_DAEMON_COMMAND))
         except Exception:
-            return ExecutionReadinessResultV2(
-                "NOT_READY", "DAEMON_UNAVAILABLE"
-            )
+            return ExecutionReadinessResultV2("NOT_READY", "DAEMON_UNAVAILABLE")
         if not isinstance(daemon_outcome, ProbeCommandResultV2):
-            raise ValueError(
-                "the command runner must return a ProbeCommandResultV2"
-            )
+            raise ValueError("the command runner must return a ProbeCommandResultV2")
         if daemon_outcome.returncode == 0:
-            return ExecutionReadinessResultV2(
-                "NOT_READY", "IMAGE_NOT_AVAILABLE"
-            )
+            return ExecutionReadinessResultV2("NOT_READY", "IMAGE_NOT_AVAILABLE")
         return ExecutionReadinessResultV2("NOT_READY", "DAEMON_UNAVAILABLE")
 
 

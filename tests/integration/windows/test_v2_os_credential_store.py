@@ -91,12 +91,8 @@ class RealWindowsCredentialStoreTests(unittest.TestCase):
                     f"entry under {_SERVICE!r}; remove it manually before "
                     "running the v2 WinCred integration suite"
                 )
-            win32cred.CredDelete(
-                Type=win32cred.CRED_TYPE_GENERIC, TargetName=_SERVICE
-            )
-        self.provider = OSV2CredentialProvider(
-            WindowsCredentialManagerV2Backend()
-        )
+            win32cred.CredDelete(Type=win32cred.CRED_TYPE_GENERIC, TargetName=_SERVICE)
+        self.provider = OSV2CredentialProvider(WindowsCredentialManagerV2Backend())
 
     def tearDown(self) -> None:
         try:
@@ -138,8 +134,7 @@ class RealWindowsCredentialStoreTests(unittest.TestCase):
         self.assertEqual(
             self._v2_targets(),
             [],
-            "v2 Credential Manager residue left behind: "
-            f"{self._v2_targets()}",
+            f"v2 Credential Manager residue left behind: {self._v2_targets()}",
         )
 
     # ------------------------------------------------------------------
@@ -156,14 +151,10 @@ class RealWindowsCredentialStoreTests(unittest.TestCase):
         self.assertTrue(status.updated_at)
         wrapper = self.provider.get_for_call("OPENAI")
         self.assertIsInstance(wrapper, V2CredentialSecret)
-        self.assertEqual(
-            wrapper.reveal(_provider_reveal_capability()), _TEST_VALUE
-        )
+        self.assertEqual(wrapper.reveal(_provider_reveal_capability()), _TEST_VALUE)
 
     def test_the_real_store_update_and_clear(self) -> None:
-        self.provider.set(
-            "OPENAI", V2CredentialSecret.from_hidden_input(_TEST_VALUE)
-        )
+        self.provider.set("OPENAI", V2CredentialSecret.from_hidden_input(_TEST_VALUE))
         self.provider.set(
             "OPENAI",
             V2CredentialSecret.from_hidden_input(_TEST_VALUE + "-2"),
@@ -182,9 +173,7 @@ class RealWindowsCredentialStoreTests(unittest.TestCase):
         self.assertEqual(self.provider.clear("OPENAI").kind, "CLEARED")
 
     def test_the_real_store_uses_the_v2_namespaced_target(self) -> None:
-        self.provider.set(
-            "OPENAI", V2CredentialSecret.from_hidden_input(_TEST_VALUE)
-        )
+        self.provider.set("OPENAI", V2CredentialSecret.from_hidden_input(_TEST_VALUE))
         row = self._read_row(_SERVICE)
         self.assertIsNotNone(row)
         assert row is not None
@@ -194,9 +183,7 @@ class RealWindowsCredentialStoreTests(unittest.TestCase):
         self.assertIsNone(self._read_row("vespercode/v2/probe"))
 
     def test_the_real_status_projection_stays_non_revealing(self) -> None:
-        self.provider.set(
-            "OPENAI", V2CredentialSecret.from_hidden_input(_TEST_VALUE)
-        )
+        self.provider.set("OPENAI", V2CredentialSecret.from_hidden_input(_TEST_VALUE))
         status = self.provider.status("OPENAI")
         self.assertEqual(
             (status.provider, status.configured),

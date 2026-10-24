@@ -52,9 +52,7 @@ V2_FORM_ERROR_CODES = (
 )
 """The closed error-code vocabulary of the v2 form layer."""
 
-_FIELD_KINDS = frozenset(
-    {"identifier", "revision", "task", "confirm", "token"}
-)
+_FIELD_KINDS = frozenset({"identifier", "revision", "task", "confirm", "token"})
 
 
 class V2FormError(ValueError):
@@ -133,9 +131,7 @@ class V2FormContract:
     every value with its closed parser, returning the typed mapping.
     """
 
-    def __init__(
-        self, endpoint: str, fields: Sequence[tuple[str, str]]
-    ) -> None:
+    def __init__(self, endpoint: str, fields: Sequence[tuple[str, str]]) -> None:
         if not isinstance(endpoint, str) or not endpoint:
             raise ValueError("endpoint must be a non-empty string")
         self._endpoint = endpoint

@@ -128,7 +128,9 @@ class DisclosureVocabularyTests(unittest.TestCase):
         self.assertEqual(MIN_DISCLOSURE_CHARGE_BYTES_V2, 1)
         self.assertEqual(MAX_DISCLOSURE_CHARGE_BYTES_V2, 65536)
         self.assertEqual(MIN_DISCLOSURE_BUDGET_BYTES_V2, 1)
-        self.assertGreater(MAX_DISCLOSURE_BUDGET_BYTES_V2, MAX_DISCLOSURE_CHARGE_BYTES_V2)
+        self.assertGreater(
+            MAX_DISCLOSURE_BUDGET_BYTES_V2, MAX_DISCLOSURE_CHARGE_BYTES_V2
+        )
 
 
 class DisclosureScopeTests(unittest.TestCase):
@@ -161,9 +163,7 @@ class DisclosureScopeTests(unittest.TestCase):
                     DisclosurePathScopeV2("DIRECTORY", bad_path)
 
     def test_root_scope_matches_any_canonical_path(self) -> None:
-        scopes = canonicalize_disclosure_scopes(
-            [DisclosurePathScopeV2("ROOT", "")]
-        )
+        scopes = canonicalize_disclosure_scopes([DisclosurePathScopeV2("ROOT", "")])
         self.assertTrue(disclosure_scope_matches("any/path.py", scopes))
 
     def test_file_scope_matches_only_its_exact_path(self) -> None:
@@ -401,7 +401,9 @@ class DisclosurePolicyTests(unittest.TestCase):
             grant_is_expired(grant, datetime(2030, 1, 1, 0, 0, 1, tzinfo=timezone.utc))
         )
         self.assertFalse(
-            grant_is_expired(grant, datetime(2029, 12, 31, 23, 59, 59, tzinfo=timezone.utc))
+            grant_is_expired(
+                grant, datetime(2029, 12, 31, 23, 59, 59, tzinfo=timezone.utc)
+            )
         )
         # Naive timestamps are read as UTC; the Z spelling parses too.
         self.assertFalse(grant_is_expired(grant, datetime(2029, 6, 1)))
@@ -410,7 +412,9 @@ class DisclosurePolicyTests(unittest.TestCase):
         self.assertFalse(grant_is_expired(z_grant, datetime(2029, 6, 1)))
         self.assertTrue(grant_is_expired(z_grant, datetime(2030, 6, 1)))
 
-    def test_check_request_sources_allows_only_granted_categories_and_paths(self) -> None:
+    def test_check_request_sources_allows_only_granted_categories_and_paths(
+        self,
+    ) -> None:
         allowed_categories = canonicalize_disclosure_categories(
             ["FILE_CONTENT", "TASK"]
         )
@@ -431,9 +435,7 @@ class DisclosurePolicyTests(unittest.TestCase):
             check_disclosure_request_sources(
                 allowed_categories,
                 allowed_scopes,
-                canonicalize_disclosure_sources(
-                    [DisclosureSourceV2("MEMORY", None)]
-                ),
+                canonicalize_disclosure_sources([DisclosureSourceV2("MEMORY", None)]),
             )
         self.assertEqual(caught.exception.error_code, "SOURCE_CATEGORY")
         with self.assertRaises(DisclosureScopeErrorV2) as caught:
@@ -451,7 +453,9 @@ class DisclosurePolicyTests(unittest.TestCase):
             [DisclosureSourceV2("FILE_CONTENT", "src/app.py")]
         )
         base = authorization_payload_key("run-1", "endpoint-1", 16, sources)
-        self.assertEqual(base, authorization_payload_key("run-1", "endpoint-1", 16, sources))
+        self.assertEqual(
+            base, authorization_payload_key("run-1", "endpoint-1", 16, sources)
+        )
         self.assertNotEqual(
             base, authorization_payload_key("run-2", "endpoint-1", 16, sources)
         )

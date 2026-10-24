@@ -175,7 +175,10 @@ class SameFrameFinishReasonTests(unittest.TestCase):
     def test_dual_field_and_finish_reason_in_one_frame(self) -> None:
         chunks = [
             _delta_frame(
-                {"reasoning_content": "final thought", "content": '{"action_type": "DONE"}'},
+                {
+                    "reasoning_content": "final thought",
+                    "content": '{"action_type": "DONE"}',
+                },
                 finish_reason="stop",
             ),
             _delta_frame({"content": "NEVER-ARRIVES"}),

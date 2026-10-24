@@ -87,9 +87,7 @@ class ExecutionActionRequestTests(unittest.TestCase):
         self.assertEqual(request.candidate_id, "cand-0001")
         self.assertEqual(request.candidate_revision, 3)
         self.assertEqual(request.action_kind, "VALIDATE_CANDIDATE")
-        self.assertEqual(
-            request.argv, ("vespercode-validate", "cand-0001", "3")
-        )
+        self.assertEqual(request.argv, ("vespercode-validate", "cand-0001", "3"))
 
     def test_the_request_field_set_is_closed(self) -> None:
         self.assertEqual(
@@ -120,9 +118,7 @@ class ExecutionActionRequestTests(unittest.TestCase):
                 )
 
     def test_the_closed_action_vocabulary_is_pinned(self) -> None:
-        self.assertEqual(
-            EXECUTION_ACTION_KINDS_V2, frozenset({"VALIDATE_CANDIDATE"})
-        )
+        self.assertEqual(EXECUTION_ACTION_KINDS_V2, frozenset({"VALIDATE_CANDIDATE"}))
         self.assertEqual(
             EXECUTION_ACTION_GRAMMARS_V2["VALIDATE_CANDIDATE"],
             ("vespercode-validate", 2),
@@ -155,12 +151,8 @@ class ExecutionActionRequestTests(unittest.TestCase):
             _request(argv=("vespercode-validate", 3, "x"))
 
     def test_a_list_argv_normalizes_to_a_tuple(self) -> None:
-        request = _request(
-            argv=["vespercode-validate", "cand-0001", "3"]
-        )
-        self.assertEqual(
-            request.argv, ("vespercode-validate", "cand-0001", "3")
-        )
+        request = _request(argv=["vespercode-validate", "cand-0001", "3"])
+        self.assertEqual(request.argv, ("vespercode-validate", "cand-0001", "3"))
         self.assertIsInstance(request.argv, tuple)
 
     def test_argv_first_token_must_be_the_frozen_executable(self) -> None:
@@ -217,9 +209,7 @@ class ExecutionActionRequestTests(unittest.TestCase):
         ):
             with self.subTest(argument=argument):
                 with self.assertRaises(ValueError):
-                    _request(
-                        argv=("vespercode-validate", argument, "3")
-                    )
+                    _request(argv=("vespercode-validate", argument, "3"))
         for argument in ("cand-0001", "3", "a.b-c_9", "A9"):
             with self.subTest(argument=argument):
                 # The candidate binding follows the argument slot, so
@@ -369,7 +359,6 @@ class ExecutionActionRequestTests(unittest.TestCase):
                     _request(validation_run_id=bad)  # type: ignore[arg-type]
         with self.assertRaises(ValueError):
             _request(validation_run_id=_V1_FROZEN_DOCKER_IMAGE_DIGEST)
-
 
 
 if __name__ == "__main__":

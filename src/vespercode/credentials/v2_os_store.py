@@ -65,7 +65,7 @@ from __future__ import annotations
 
 import sys
 from datetime import datetime, timezone
-from typing import Protocol, runtime_checkable
+from typing import Any, Protocol, runtime_checkable
 
 from vespercode.credentials.v2_port import (
     V2CredentialError,
@@ -92,9 +92,7 @@ _STORE_MESSAGES: dict[str, str] = {
     "CREDENTIAL_BACKEND_UNAVAILABLE": (
         "the OS credential backend is unavailable on this host"
     ),
-    "CREDENTIAL_BACKEND_UNSAFE": (
-        "the OS credential backend cannot be proven safe"
-    ),
+    "CREDENTIAL_BACKEND_UNSAFE": ("the OS credential backend cannot be proven safe"),
     "CREDENTIAL_STORE_FAILED": "the OS credential store operation failed",
 }
 
@@ -178,16 +176,14 @@ class WindowsCredentialManagerV2Backend:
         return "WINDOWS_CREDENTIAL_MANAGER"
 
     @staticmethod
-    def _win32() -> tuple[object, object]:
+    def _win32() -> tuple[Any, Any]:
         if sys.platform != "win32":
             raise V2OSCredentialStoreError("CREDENTIAL_BACKEND_UNAVAILABLE")
         try:
             import win32cred  # type: ignore[import-untyped]
             import pywintypes  # type: ignore[import-untyped]
         except Exception as exc:  # noqa: BLE001 - fail closed, no store use
-            raise V2OSCredentialStoreError(
-                "CREDENTIAL_BACKEND_UNAVAILABLE"
-            ) from exc
+            raise V2OSCredentialStoreError("CREDENTIAL_BACKEND_UNAVAILABLE") from exc
         return win32cred, pywintypes
 
     def probe_cycle(self) -> None:
@@ -216,9 +212,7 @@ class WindowsCredentialManagerV2Backend:
         except V2OSCredentialStoreError:
             raise
         except Exception as exc:  # noqa: BLE001 - fail closed, no OS text
-            raise V2OSCredentialStoreError(
-                "CREDENTIAL_STORE_FAILED"
-            ) from exc
+            raise V2OSCredentialStoreError("CREDENTIAL_STORE_FAILED") from exc
 
     def read_metadata(self, service: str, username: str) -> int | None:
         row = self._read_row(service)
@@ -242,22 +236,16 @@ class WindowsCredentialManagerV2Backend:
         try:
             return blob.decode("utf-16-le")
         except UnicodeDecodeError as exc:
-            raise V2OSCredentialStoreError(
-                "CREDENTIAL_STORE_FAILED"
-            ) from exc
+            raise V2OSCredentialStoreError("CREDENTIAL_STORE_FAILED") from exc
 
     def delete(self, service: str) -> None:
         win32cred, _ = self._win32()
         try:
-            win32cred.CredDelete(
-                Type=win32cred.CRED_TYPE_GENERIC, TargetName=service
-            )
+            win32cred.CredDelete(Type=win32cred.CRED_TYPE_GENERIC, TargetName=service)
         except V2OSCredentialStoreError:
             raise
         except Exception as exc:  # noqa: BLE001 - fail closed, no OS text
-            raise V2OSCredentialStoreError(
-                "CREDENTIAL_STORE_FAILED"
-            ) from exc
+            raise V2OSCredentialStoreError("CREDENTIAL_STORE_FAILED") from exc
 
     def _read_row(self, service: str) -> dict[str, object] | None:
         win32cred, pywintypes = self._win32()
@@ -268,15 +256,11 @@ class WindowsCredentialManagerV2Backend:
         except pywintypes.error as exc:
             if exc.winerror == _CRED_NOT_FOUND:
                 return None
-            raise V2OSCredentialStoreError(
-                "CREDENTIAL_STORE_FAILED"
-            ) from exc
+            raise V2OSCredentialStoreError("CREDENTIAL_STORE_FAILED") from exc
         except V2OSCredentialStoreError:
             raise
         except Exception as exc:  # noqa: BLE001 - fail closed, no OS text
-            raise V2OSCredentialStoreError(
-                "CREDENTIAL_STORE_FAILED"
-            ) from exc
+            raise V2OSCredentialStoreError("CREDENTIAL_STORE_FAILED") from exc
         return row  # type: ignore[no-any-return]
 
     @staticmethod
@@ -284,10 +268,9 @@ class WindowsCredentialManagerV2Backend:
         if _MANDATORY_ROW_KEYS - set(row.keys()):
             raise V2OSCredentialStoreError("CREDENTIAL_STORE_FAILED")
 
-    @classmethod
-    def _delete_best_effort(cls, service: str) -> None:
+    def _delete_best_effort(self, service: str) -> None:
         try:
-            cls.delete(service)
+            self.delete(service)
         except Exception:
             pass  # probe residue is caught by the next probe cycle
 
@@ -358,13 +341,9 @@ class OSV2CredentialProvider:
 
     __slots__ = ("_backend",)
 
-    def __init__(
-        self, backend: V2OSCredentialBackendPort | None = None
-    ) -> None:
+    def __init__(self, backend: V2OSCredentialBackendPort | None = None) -> None:
         resolved = (
-            backend
-            if backend is not None
-            else default_v2_os_credential_backend()
+            backend if backend is not None else default_v2_os_credential_backend()
         )
         if not isinstance(resolved, V2OSCredentialBackendPort):
             raise V2CredentialError(
@@ -392,9 +371,7 @@ class OSV2CredentialProvider:
 
         name = _provider_name(provider)
         self._probe()
-        value = self._backend.read_value(
-            self._service(name), _CREDENTIAL_USERNAME
-        )
+        value = self._backend.read_value(self._service(name), _CREDENTIAL_USERNAME)
         if value is None:
             return None
         if not isinstance(value, str) or not value:
@@ -412,17 +389,13 @@ class OSV2CredentialProvider:
             self._service(name), _CREDENTIAL_USERNAME
         )
         if metadata is None:
-            return V2CredentialStatus(
-                provider=name, configured=False, updated_at=None
-            )
+            return V2CredentialStatus(provider=name, configured=False, updated_at=None)
         if isinstance(metadata, bool) or not isinstance(metadata, int):
             raise V2OSCredentialStoreError("CREDENTIAL_STORE_FAILED")
         updated_at = datetime.fromtimestamp(
             metadata / 1000, tz=timezone.utc
         ).isoformat()
-        return V2CredentialStatus(
-            provider=name, configured=True, updated_at=updated_at
-        )
+        return V2CredentialStatus(provider=name, configured=True, updated_at=updated_at)
 
     def clear(self, provider: str) -> V2CredentialMutation:
         """Delete the entry; an already-absent entry clears idempotently."""
@@ -430,10 +403,7 @@ class OSV2CredentialProvider:
         name = _provider_name(provider)
         self._probe()
         service = self._service(name)
-        present = (
-            self._backend.read_metadata(service, _CREDENTIAL_USERNAME)
-            is not None
-        )
+        present = self._backend.read_metadata(service, _CREDENTIAL_USERNAME) is not None
         if present:
             self._backend.delete(service)
         return V2CredentialMutation("CLEARED", name)
@@ -450,9 +420,7 @@ class OSV2CredentialProvider:
         except V2OSCredentialStoreError:
             raise
         except Exception as exc:  # noqa: BLE001 - fail closed, no backend text
-            raise V2OSCredentialStoreError(
-                "CREDENTIAL_BACKEND_UNAVAILABLE"
-            ) from exc
+            raise V2OSCredentialStoreError("CREDENTIAL_BACKEND_UNAVAILABLE") from exc
         if backend_id not in OS_CREDENTIAL_BACKEND_IDS_V2:
             raise V2OSCredentialStoreError("CREDENTIAL_BACKEND_UNSAFE")
         try:
@@ -460,9 +428,7 @@ class OSV2CredentialProvider:
         except V2OSCredentialStoreError:
             raise
         except Exception as exc:  # noqa: BLE001 - fail closed, no backend text
-            raise V2OSCredentialStoreError(
-                "CREDENTIAL_BACKEND_UNSAFE"
-            ) from exc
+            raise V2OSCredentialStoreError("CREDENTIAL_BACKEND_UNSAFE") from exc
 
 
 __all__ = (

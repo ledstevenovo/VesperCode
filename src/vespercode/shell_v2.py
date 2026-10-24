@@ -41,9 +41,11 @@ from vespercode.contracts.v2_writeback import (
 from vespercode.credentials.v2_port import (
     InMemoryV2CredentialProvider,
     V2CredentialError,
+    V2CredentialProviderPort,
     V2CredentialStatus,
 )
 from vespercode.governance.relaxed_policy import (
+    ActionRequestV2,
     DecisionV2,
     RelaxedPolicyV2,
 )
@@ -98,9 +100,7 @@ class V2ShellError(RuntimeError):
         if code not in V2_SHELL_ERROR_CODES:
             raise ValueError("unknown v2 shell error code")
         super().__init__(
-            message
-            if message is not None
-            else V2_SHELL_ERROR_MESSAGES[code]
+            message if message is not None else V2_SHELL_ERROR_MESSAGES[code]
         )
         self.code = code
 
@@ -147,9 +147,7 @@ class V2LocalShellPort(Protocol):
 
     def run_detail(self, run_id: str) -> V2RunSummaryV2 | None: ...
 
-    def candidate_revision(
-        self, run_id: str, candidate_id: str
-    ) -> int | None: ...
+    def candidate_revision(self, run_id: str, candidate_id: str) -> int | None: ...
 
     def start_run(self, task: str) -> V2RunStartOutcomeV2: ...
 
@@ -193,7 +191,7 @@ class _LocalControlPolicyV2(RelaxedPolicyV2):
             segment.casefold() for segment in control_segments
         )
 
-    def evaluate(self, request) -> DecisionV2:  # type: ignore[override]
+    def evaluate(self, request: ActionRequestV2) -> DecisionV2:
         if self._control_segments:
             relative = self._canonical_relative_path(request.path)
             if relative is not None:
@@ -219,7 +217,7 @@ class V2LocalShell:
         workspace: Path,
         control_root: Path | None = None,
         llm_factory: Callable[[], V2LLM] | None = None,
-        credential_port: object | None = None,
+        credential_port: V2CredentialProviderPort | None = None,
         max_turns: int = 20,
     ) -> None:
         if not isinstance(workspace, Path):
@@ -231,15 +229,16 @@ class V2LocalShell:
         if max_turns < 1:
             raise ValueError("max_turns must be positive")
         self._workspace = workspace
-        resolved_control = control_root if control_root is not None else (
-            workspace / ".vespercode"
+        resolved_control = (
+            control_root if control_root is not None else (workspace / ".vespercode")
         )
         if not isinstance(resolved_control, Path):
             raise TypeError("control_root must be a Path")
         self._control_root_path = resolved_control
         self._llm_factory = llm_factory
         self._credential_port = (
-            credential_port if credential_port is not None
+            credential_port
+            if credential_port is not None
             else InMemoryV2CredentialProvider()
         )
         self._harness = V2Harness(
@@ -258,9 +257,7 @@ class V2LocalShell:
         self._staged_by_run: dict[str, tuple[WriteOperationV2, ...]] = {}
 
     @staticmethod
-    def _control_segments(
-        workspace: Path, control_root: Path
-    ) -> tuple[str, ...]:
+    def _control_segments(workspace: Path, control_root: Path) -> tuple[str, ...]:
         """The control root's segments relative to the workspace, if inside."""
 
         try:
@@ -337,9 +334,7 @@ class V2LocalShell:
             turns=result.loop.turns,
         )
 
-    def candidate_revision(
-        self, run_id: str, candidate_id: str
-    ) -> int | None:
+    def candidate_revision(self, run_id: str, candidate_id: str) -> int | None:
         """The candidate's current revision, or None when not owned."""
 
         row = self._harness.database.get_candidate(candidate_id)
@@ -452,7 +447,7 @@ class V2LocalShell:
         """The non-revealing credential status of one provider."""
 
         try:
-            return self._credential_port.status(provider)  # type: ignore[attr-defined]
+            return self._credential_port.status(provider)
         except V2CredentialError as exc:
             raise V2ShellError("INVALID_PROVIDER") from exc
 

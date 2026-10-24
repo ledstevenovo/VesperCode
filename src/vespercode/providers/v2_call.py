@@ -67,14 +67,21 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Callable, Protocol, runtime_checkable
+from typing import Any, Callable, Protocol, runtime_checkable
 
 from vespercode.credentials.v2_port import (
     V2CredentialError,
+    V2CredentialProviderPort,
     V2CredentialSecret,
     _provider_reveal_capability,
 )
-from vespercode.governance.v2_disclosure import grant_is_expired
+from vespercode.governance.v2_disclosure import (
+    DisclosureAuthorizationRecordV2,
+    DisclosureConsumeOutcomeV2,
+    DisclosureGrantRecordV2,
+    grant_is_expired,
+)
+from vespercode.profiles.v2_endpoints import ProviderEndpointRecordV2
 
 _MAX_IDENTIFIER_BYTES = 256
 _PROVIDER_NAME_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$")
@@ -181,9 +188,7 @@ class ProviderCallRequestV2:
         object.__setattr__(
             self,
             "reference_profile_revision",
-            _revision(
-                self.reference_profile_revision, "reference_profile_revision"
-            ),
+            _revision(self.reference_profile_revision, "reference_profile_revision"),
         )
 
 
@@ -231,13 +236,14 @@ class ProviderCallOutcomeV2:
         if self.status == "SUCCEEDED":
             if self.error_code is not None:
                 raise ValueError("SUCCEEDED outcomes carry no error code")
+            expected = _CALL_MESSAGES["SUCCEEDED"]
         else:
-            if self.error_code not in PROVIDER_CALL_ERROR_CODES_V2:
+            error_code = self.error_code
+            if error_code is None or error_code not in PROVIDER_CALL_ERROR_CODES_V2:
                 raise ValueError(
-                    "error_code must be one of "
-                    f"{sorted(PROVIDER_CALL_ERROR_CODES_V2)}"
+                    f"error_code must be one of {sorted(PROVIDER_CALL_ERROR_CODES_V2)}"
                 )
-        expected = _CALL_MESSAGES["SUCCEEDED" if self.status == "SUCCEEDED" else self.error_code]
+            expected = _CALL_MESSAGES[error_code]
         if self.message != expected:
             raise ValueError(
                 "outcome message must be the closed static message of its code"
@@ -333,21 +339,18 @@ class V2ProviderCallCredential:
 
         if capability is not _TRANSPORT_REVEAL_CAPABILITY:
             raise V2CredentialError(
-                "the transport reveal requires the transport adapter "
-                "capability",
+                "the transport reveal requires the transport adapter capability",
                 error_code="CREDENTIAL_REVEAL_FORBIDDEN",
             )
         if getattr(self, "_minted_state", None) is not _MINTED_STATE:
             raise V2CredentialError(
-                "the call credential was not minted by the provider call "
-                "boundary",
+                "the call credential was not minted by the provider call boundary",
                 error_code="CREDENTIAL_REVEAL_FORBIDDEN",
             )
         secret = getattr(self, "_secret", None)
         if not isinstance(secret, V2CredentialSecret):
             raise V2CredentialError(
-                "the call credential was not minted by the provider call "
-                "boundary",
+                "the call credential was not minted by the provider call boundary",
                 error_code="CREDENTIAL_REVEAL_FORBIDDEN",
             )
         # Single use: burn the minted state before the one reveal, so a
@@ -367,10 +370,10 @@ class V2ProviderCallCredential:
     def __ne__(self, other: object) -> bool:
         raise TypeError("V2ProviderCallCredential is not comparable")
 
-    def __reduce__(self) -> object:
+    def __reduce__(self) -> str | tuple[Any, ...]:
         raise TypeError("V2ProviderCallCredential is not serializable")
 
-    def __reduce_ex__(self, protocol: object) -> object:
+    def __reduce_ex__(self, protocol: object) -> str | tuple[Any, ...]:
         raise TypeError("V2ProviderCallCredential is not serializable")
 
     def __copy__(self) -> "V2ProviderCallCredential":
@@ -380,6 +383,39 @@ class V2ProviderCallCredential:
         self, memo: dict[int, object] | None = None
     ) -> "V2ProviderCallCredential":
         raise TypeError("V2ProviderCallCredential is not copyable")
+
+
+@runtime_checkable
+class V2ProviderCallDatabasePort(Protocol):
+    """The control-database seam the provider call service depends on.
+
+    The service needs exactly four reads/consume operations from the
+    control database: provider endpoint lookup, disclosure authorization
+    lookup, disclosure grant lookup, and the atomic one-shot consume.
+    Declaring them as a protocol keeps the service decoupled from the
+    concrete ``V2Database`` while giving the injected dependency the
+    precise attribute type mypy requires.
+    """
+
+    def get_provider_endpoint(
+        self, endpoint_id: str
+    ) -> ProviderEndpointRecordV2 | None: ...
+
+    def get_disclosure_authorization(
+        self, authorization_id: str
+    ) -> DisclosureAuthorizationRecordV2 | None: ...
+
+    def get_disclosure_grant(self, grant_id: str) -> DisclosureGrantRecordV2 | None: ...
+
+    def consume_disclosure_authorization(
+        self,
+        *,
+        authorization_id: str,
+        grant_id: str,
+        run_id: str,
+        request_id: str,
+        now: datetime | None = None,
+    ) -> DisclosureConsumeOutcomeV2: ...
 
 
 @runtime_checkable
@@ -400,8 +436,7 @@ class V2ProviderTransport(Protocol):
         self,
         request: ProviderCallRequestV2,
         credential: V2ProviderCallCredential,
-    ) -> ProviderCallResponseV2:
-        ...
+    ) -> ProviderCallResponseV2: ...
 
 
 def _default_clock() -> datetime:
@@ -419,8 +454,8 @@ class V2ProviderCallService:
 
     def __init__(
         self,
-        database: object,
-        credential_port: object,
+        database: V2ProviderCallDatabasePort,
+        credential_port: V2CredentialProviderPort,
         transport: V2ProviderTransport,
         *,
         clock: Callable[[], datetime] | None = None,
@@ -506,9 +541,7 @@ class V2ProviderCallService:
             # exist anywhere — the handshake object carries only the
             # wrapper, and only the transport adapter's own frame opens
             # it, exactly once, through the transport-reveal seam.
-            credential = V2ProviderCallCredential(
-                secret, _provider_reveal_capability()
-            )
+            credential = V2ProviderCallCredential(secret, _provider_reveal_capability())
             response = self._transport.call(request, credential)
         except Exception:
             # The raw provider exception is discarded: it may carry the

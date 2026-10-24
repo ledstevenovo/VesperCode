@@ -98,9 +98,7 @@ class CandidateControlIdentityV2:
         )
         object.__setattr__(self, "revision", _revision(self.revision))
         if self.status not in CANDIDATE_CONTROL_STATUSES_V2:
-            raise ValueError(
-                "status must be one of 'ACTIVE' or 'SUPERSEDED'"
-            )
+            raise ValueError("status must be one of 'ACTIVE' or 'SUPERSEDED'")
 
 
 @dataclass(frozen=True, slots=True)

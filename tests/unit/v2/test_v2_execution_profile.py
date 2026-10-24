@@ -194,9 +194,7 @@ class ExecutionProfileRecordTests(unittest.TestCase):
                     _record(**{field: _V1_FROZEN_DOCKER_IMAGE_DIGEST})
         # Uppercase digest spellings reject too.
         with self.assertRaises(ValueError):
-            _record(
-                image_reference=_V1_FROZEN_DOCKER_IMAGE_DIGEST.upper()
-            )
+            _record(image_reference=_V1_FROZEN_DOCKER_IMAGE_DIGEST.upper())
 
     def test_url_or_registry_shaped_image_references_reject(self) -> None:
         for image_reference in (

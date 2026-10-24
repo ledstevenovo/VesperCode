@@ -61,9 +61,7 @@ class V2ValidationStorageTests(unittest.TestCase):
         self.database.create_reference_profile(record)
         return record
 
-    def _validation_run(
-        self, run_id: str, candidate_id: str, revision: int = 0
-    ) -> str:
+    def _validation_run(self, run_id: str, candidate_id: str, revision: int = 0) -> str:
         return self.database.create_validation_run(
             run_id=run_id,
             candidate_id=candidate_id,
@@ -342,10 +340,12 @@ class V2ValidationStorageTests(unittest.TestCase):
             ("RUNNING", None),
             ("PENDING", None),
         ):
-            with self.assertRaisesRegex(V2DatabaseError, "status|error", msg=repr((status, error[:8] if error else error))):
-                self.database.record_validation_result(
-                    validation_run_id, status, error
-                )
+            with self.assertRaisesRegex(
+                V2DatabaseError,
+                "status|error",
+                msg=repr((status, error[:8] if error else error)),
+            ):
+                self.database.record_validation_result(validation_run_id, status, error)
 
         self.assertTrue(
             self.database.record_validation_result(validation_run_id, "PASSED", None)

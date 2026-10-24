@@ -32,7 +32,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Protocol, runtime_checkable
+from typing import Any, Protocol, runtime_checkable
 
 _PROVIDER_NAME_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$")
 
@@ -202,16 +202,18 @@ class V2CredentialSecret:
     def __ne__(self, other: object) -> bool:
         raise TypeError("V2CredentialSecret is not comparable")
 
-    def __reduce__(self) -> object:
+    def __reduce__(self) -> "str | tuple[Any, ...]":
         raise TypeError("V2CredentialSecret is not serializable")
 
-    def __reduce_ex__(self, protocol: object) -> object:
+    def __reduce_ex__(self, protocol: object) -> "str | tuple[Any, ...]":
         raise TypeError("V2CredentialSecret is not serializable")
 
     def __copy__(self) -> "V2CredentialSecret":
         raise TypeError("V2CredentialSecret is not copyable")
 
-    def __deepcopy__(self, memo: dict[int, object] | None = None) -> "V2CredentialSecret":
+    def __deepcopy__(
+        self, memo: dict[int, object] | None = None
+    ) -> "V2CredentialSecret":
         raise TypeError("V2CredentialSecret is not copyable")
 
 
@@ -228,17 +230,13 @@ class V2CredentialStatus:
     updated_at: str | None
 
     def __post_init__(self) -> None:
-        object.__setattr__(
-            self, "provider", _provider_name(self.provider)
-        )
+        object.__setattr__(self, "provider", _provider_name(self.provider))
         if not isinstance(self.configured, bool):
             raise V2CredentialError("configured must be a boolean")
         if self.updated_at is not None and (
             not isinstance(self.updated_at, str) or not self.updated_at
         ):
-            raise V2CredentialError(
-                "updated_at must be a non-empty timestamp or None"
-            )
+            raise V2CredentialError("updated_at must be a non-empty timestamp or None")
 
 
 @dataclass(frozen=True, slots=True)
@@ -251,9 +249,7 @@ class V2CredentialMutation:
     def __post_init__(self) -> None:
         if self.kind not in ("STORED", "CLEARED"):
             raise V2CredentialError("kind must be 'STORED' or 'CLEARED'")
-        object.__setattr__(
-            self, "provider", _provider_name(self.provider)
-        )
+        object.__setattr__(self, "provider", _provider_name(self.provider))
 
 
 @runtime_checkable
@@ -267,17 +263,15 @@ class V2CredentialProviderPort(Protocol):
     provider call boundary consumes.
     """
 
-    def set(self, provider: str, secret: V2CredentialSecret) -> V2CredentialMutation:
-        ...
+    def set(
+        self, provider: str, secret: V2CredentialSecret
+    ) -> V2CredentialMutation: ...
 
-    def get_for_call(self, provider: str) -> V2CredentialSecret | None:
-        ...
+    def get_for_call(self, provider: str) -> V2CredentialSecret | None: ...
 
-    def status(self, provider: str) -> V2CredentialStatus:
-        ...
+    def status(self, provider: str) -> V2CredentialStatus: ...
 
-    def clear(self, provider: str) -> V2CredentialMutation:
-        ...
+    def clear(self, provider: str) -> V2CredentialMutation: ...
 
 
 def _now_timestamp() -> str:

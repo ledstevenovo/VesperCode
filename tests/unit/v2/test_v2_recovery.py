@@ -225,7 +225,9 @@ class V2RecoveryTests(unittest.TestCase):
         self.assertEqual(outcome.status, "APPLIED")
         self.assertEqual(self.port.files["src/w.py"], "written")
 
-    def test_apply_recovers_a_transaction_that_crashed_right_after_prepare(self) -> None:
+    def test_apply_recovers_a_transaction_that_crashed_right_after_prepare(
+        self,
+    ) -> None:
         run_id = self.database.create_run(str(self.workspace))
         snapshot_id = self.database.create_snapshot(run_id)
         candidate_id = self.database.create_candidate(run_id, snapshot_id)

@@ -132,7 +132,9 @@ class WorkspaceBoundaryV2:
         """Validate a CREATE/REPLACE target and its parent chain."""
 
         if action_type not in ALLOWED_WRITE_ACTION_TYPES:
-            raise WorkspaceBoundaryError(f"unsupported write action type: {action_type!r}")
+            raise WorkspaceBoundaryError(
+                f"unsupported write action type: {action_type!r}"
+            )
         resolved = self.resolve(path)
         parent = resolved.absolute.parent
         try:
@@ -147,17 +149,23 @@ class WorkspaceBoundaryV2:
             target_info = os.lstat(resolved.absolute)
         except FileNotFoundError:
             if action_type == "REPLACE":
-                raise WorkspaceBoundaryError(f"REPLACE target does not exist: {path}") from None
+                raise WorkspaceBoundaryError(
+                    f"REPLACE target does not exist: {path}"
+                ) from None
             return resolved
         except OSError as exc:
             raise WorkspaceBoundaryError(f"target is unreadable: {path}") from exc
         if action_type == "CREATE":
             raise WorkspaceBoundaryError(f"CREATE target already exists: {path}")
         if not stat.S_ISREG(target_info.st_mode):
-            raise WorkspaceBoundaryError(f"REPLACE target is not a regular file: {path}")
+            raise WorkspaceBoundaryError(
+                f"REPLACE target is not a regular file: {path}"
+            )
         return resolved
 
-    def recheck_before_mutation(self, resolved: ResolvedPathV2, action_type: str) -> None:
+    def recheck_before_mutation(
+        self, resolved: ResolvedPathV2, action_type: str
+    ) -> None:
         """Re-run the full write validation immediately before mutating.
 
         This is the TOCTOU guard: the caller validates once to plan the
@@ -176,7 +184,9 @@ class WorkspaceBoundaryV2:
         if "\\" in path:
             raise WorkspaceBoundaryError("path must use '/' separators only")
         if ":" in path:
-            raise WorkspaceBoundaryError("path must not contain a drive or stream separator")
+            raise WorkspaceBoundaryError(
+                "path must not contain a drive or stream separator"
+            )
         if path.startswith("/"):
             raise WorkspaceBoundaryError("path must be relative, not absolute")
         raw_parts = path.split("/")

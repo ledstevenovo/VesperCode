@@ -69,9 +69,7 @@ class V2CliWorkspaceTests(unittest.TestCase):
         self.addCleanup(self._directory.cleanup)
         self.workspace = Path(self._directory.name) / "workspace"
         (self.workspace / "src").mkdir(parents=True)
-        (self.workspace / "src" / "example.py").write_text(
-            "old body", encoding="utf-8"
-        )
+        (self.workspace / "src" / "example.py").write_text("old body", encoding="utf-8")
         self.out = io.StringIO()
         self.errors = io.StringIO()
         self.launches: list[tuple[object, str, int]] = []
@@ -90,9 +88,7 @@ class V2CliWorkspaceTests(unittest.TestCase):
         self.launches.append((app, host, port))
         return None
 
-    def _shell_factory_with_transaction(
-        self, workspace: Path, max_turns: int
-    ):
+    def _shell_factory_with_transaction(self, workspace: Path, max_turns: int):
         def factory(workspace: Path, max_turns: int) -> V2LocalShell:
             shell = V2LocalShell(
                 workspace=workspace,
@@ -159,10 +155,26 @@ class V2CliWorkspaceTests(unittest.TestCase):
         composition = self._composition()
         for argv in (
             ["run", "--workspace", str(self.workspace), "--task", "t", "--secret", "x"],
-            ["run", "--workspace", str(self.workspace), "--task", "t", "--provider-url", "http://x"],
+            [
+                "run",
+                "--workspace",
+                str(self.workspace),
+                "--task",
+                "t",
+                "--provider-url",
+                "http://x",
+            ],
             ["run", "--task", "t"],
             ["run", "--workspace", str(self.workspace), "--task", ""],
-            ["run", "--workspace", str(self.workspace), "--task", "t", "--max-turns", "0"],
+            [
+                "run",
+                "--workspace",
+                str(self.workspace),
+                "--task",
+                "t",
+                "--max-turns",
+                "0",
+            ],
             ["status", "--workspace", str(self.workspace), "--run-id", "../evil"],
             ["serve", "--host", "0.0.0.0"],
             ["serve", "--port", "99999"],
@@ -374,9 +386,7 @@ class V2CliWorkspaceTests(unittest.TestCase):
     def test_recovery_apply_requires_an_explicit_transaction(self) -> None:
         composition = self._composition()
         with self.assertRaises(SystemExit) as caught:
-            composition.run(
-                ["recovery", "--workspace", str(self.workspace), "--apply"]
-            )
+            composition.run(["recovery", "--workspace", str(self.workspace), "--apply"])
         self.assertEqual(caught.exception.code, 2)
 
     # ------------------------------------------------------------------
@@ -394,9 +404,7 @@ class V2CliWorkspaceTests(unittest.TestCase):
                 "openai",
                 V2CredentialSecret.from_hidden_input("sk-cli-super-secret"),
             )
-            return V2LocalShell(
-                workspace=workspace, credential_port=port
-            )
+            return V2LocalShell(workspace=workspace, credential_port=port)
 
         composition = self._composition(shell_factory=factory)
 
@@ -466,9 +474,7 @@ class V2CliWorkspaceTests(unittest.TestCase):
     def test_serve_composes_the_local_web_app_on_loopback(self) -> None:
         composition = self._composition()
 
-        code = composition.run(
-            ["serve", "--workspace", str(self.workspace)]
-        )
+        code = composition.run(["serve", "--workspace", str(self.workspace)])
 
         self.assertEqual(code, 0)
         self.assertEqual(len(self.launches), 1)

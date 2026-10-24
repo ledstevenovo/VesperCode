@@ -65,6 +65,9 @@ from vespercode.execution.v2_execution import (
     ExecutionReadinessResultV2,
     ExecutionResultV2,
     ValidationBindingFactsV2,
+    V2ExecutionBindingPort,
+    V2ExecutionPort,
+    V2ReadinessPort,
 )
 from vespercode.execution.v2_profile import ExecutionProfileRecordV2
 
@@ -118,9 +121,9 @@ class V2ExecutionService:
     def __init__(
         self,
         profile: object,
-        binding: object,
-        readiness: object,
-        executor: object,
+        binding: V2ExecutionBindingPort,
+        readiness: V2ReadinessPort,
+        executor: V2ExecutionPort,
     ) -> None:
         if not isinstance(profile, ExecutionProfileRecordV2):
             raise ValueError(
@@ -166,10 +169,7 @@ class V2ExecutionService:
         # bypass the validation requirement; an uncited request can
         # never reach readiness or the executor here.  Only the
         # explicitly test-only subclass relaxes it.
-        if (
-            self._REQUIRES_VALIDATION_CITATION
-            and request.validation_run_id is None
-        ):
+        if self._REQUIRES_VALIDATION_CITATION and request.validation_run_id is None:
             return self._rejected(request, "VALIDATION_BINDING_REQUIRED")
         # The B1 control-plane binding: the cited (run, candidate) pair
         # must resolve together at the candidate's CURRENT revision,
@@ -203,13 +203,9 @@ class V2ExecutionService:
         facts = binding.facts
         if not isinstance(facts, ExecutionBindingFactsV2):
             raise ValueError(
-                "a RESOLVED binding outcome must carry "
-                "ExecutionBindingFactsV2"
+                "a RESOLVED binding outcome must carry ExecutionBindingFactsV2"
             )
-        if (
-            facts.run_id != request.run_id
-            or facts.candidate_id != request.candidate_id
-        ):
+        if facts.run_id != request.run_id or facts.candidate_id != request.candidate_id:
             return self._rejected(request, "EXECUTION_BINDING_NOT_FOUND")
         if facts.candidate_revision != request.candidate_revision:
             return self._rejected(request, "EXECUTION_BINDING_STALE")
@@ -224,36 +220,26 @@ class V2ExecutionService:
         else:
             validation = facts.validation
             if validation is None:
-                return self._rejected(
-                    request, "VALIDATION_BINDING_NOT_FOUND"
-                )
+                return self._rejected(request, "VALIDATION_BINDING_NOT_FOUND")
             if (
                 validation.validation_run_id != request.validation_run_id
                 or validation.run_id != request.run_id
                 or validation.candidate_id != request.candidate_id
-                or validation.candidate_revision
-                != request.candidate_revision
-                or validation.reference_profile_id
-                != request.reference_profile_id
+                or validation.candidate_revision != request.candidate_revision
+                or validation.reference_profile_id != request.reference_profile_id
                 or validation.reference_profile_revision
                 != request.reference_profile_revision
             ):
-                return self._rejected(
-                    request, "VALIDATION_BINDING_NOT_FOUND"
-                )
+                return self._rejected(request, "VALIDATION_BINDING_NOT_FOUND")
             if validation.status != "PASSED":
-                return self._rejected(
-                    request, "VALIDATION_BINDING_NOT_PASSED"
-                )
+                return self._rejected(request, "VALIDATION_BINDING_NOT_PASSED")
         readiness = self._readiness.check(self._profile)
         if not isinstance(readiness, ExecutionReadinessResultV2):
             raise ValueError(
                 "the readiness port must return an ExecutionReadinessResultV2"
             )
         if readiness.status != "READY":
-            return self._rejected(
-                request, f"READINESS_{readiness.reason}"
-            )
+            return self._rejected(request, f"READINESS_{readiness.reason}")
         try:
             result = self._executor.run(request, self._profile)
         except Exception:
@@ -365,9 +351,7 @@ class FakeV2BindingLookup:
         self._validation_required = validation_required
         self._validation_unresolved = validation_unresolved
         self._validation_status = validation_status
-        self.lookups: list[
-            tuple[str, str, str | None, str, int]
-        ] = []
+        self.lookups: list[tuple[str, str, str | None, str, int]] = []
 
     def lookup_execution_binding(
         self,
@@ -436,9 +420,7 @@ class FakeV2Executor:
     ) -> None:
         self._result = result
         self._error = error
-        self.calls: list[
-            tuple[ExecutionActionRequestV2, ExecutionProfileRecordV2]
-        ] = []
+        self.calls: list[tuple[ExecutionActionRequestV2, ExecutionProfileRecordV2]] = []
 
     def run(
         self, request: ExecutionActionRequestV2, profile: ExecutionProfileRecordV2
@@ -466,9 +448,7 @@ class FakeV2Readiness:
         )
         self.checks: list[ExecutionProfileRecordV2] = []
 
-    def check(
-        self, profile: ExecutionProfileRecordV2
-    ) -> ExecutionReadinessResultV2:
+    def check(self, profile: ExecutionProfileRecordV2) -> ExecutionReadinessResultV2:
         self.checks.append(profile)
         return self._result
 

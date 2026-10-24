@@ -50,8 +50,16 @@ class V2RuntimeTests(unittest.TestCase):
             workspace = Path(directory)
             llm = ScriptedLLMV2(
                 [
-                    {"action_type": "REPLACE", "path": "tests/test_example.py", "content": "bad"},
-                    {"action_type": "REPLACE", "path": "src/example.py", "content": "fixed"},
+                    {
+                        "action_type": "REPLACE",
+                        "path": "tests/test_example.py",
+                        "content": "bad",
+                    },
+                    {
+                        "action_type": "REPLACE",
+                        "path": "src/example.py",
+                        "content": "fixed",
+                    },
                     {"action_type": "DONE"},
                 ]
             )
@@ -98,7 +106,9 @@ class V2RuntimeTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             loop = V2AgentLoop(
                 workspace=Path(directory),
-                llm=ScriptedLLMV2([{"action_type": "REPLACE", "action_id": "model-owned"}]),
+                llm=ScriptedLLMV2(
+                    [{"action_type": "REPLACE", "action_id": "model-owned"}]
+                ),
                 dispatcher=V2ToolDispatcher(InMemoryWorkspacePort()),
                 memory=V2Memory(),
                 max_turns=1,
@@ -115,7 +125,14 @@ class V2RuntimeTests(unittest.TestCase):
             loop = V2AgentLoop(
                 workspace=Path(directory),
                 llm=ScriptedLLMV2(
-                    [{"action_type": "REPLACE", "path": "src/a.py", "content": "x", "shell": "no"}]
+                    [
+                        {
+                            "action_type": "REPLACE",
+                            "path": "src/a.py",
+                            "content": "x",
+                            "shell": "no",
+                        }
+                    ]
                 ),
                 dispatcher=V2ToolDispatcher(InMemoryWorkspacePort()),
                 memory=V2Memory(),
@@ -130,9 +147,7 @@ class V2RuntimeTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             loop = V2AgentLoop(
                 workspace=Path(directory),
-                llm=ScriptedLLMV2(
-                    [{"action_type": "DONE", "path": "src/a.py"}]
-                ),
+                llm=ScriptedLLMV2([{"action_type": "DONE", "path": "src/a.py"}]),
                 dispatcher=V2ToolDispatcher(InMemoryWorkspacePort()),
                 memory=V2Memory(),
                 max_turns=1,

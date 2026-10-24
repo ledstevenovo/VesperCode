@@ -28,7 +28,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import parse_qsl, urlsplit
 
 from vespercode.web.v2_app import V2LocalWebApp, V2WebRequest, V2WebResponse
-from vespercode.web.v2_forms import V2FormError, parse_v2_urlencoded
+from vespercode.web.v2_forms import parse_v2_urlencoded
 from vespercode.web.v2_security import V2_LOOPBACK_BIND_HOST
 
 V2_MAX_FORM_BYTES = 64 * 1024
@@ -52,7 +52,7 @@ def _static_error(status: int, title: str) -> V2WebResponse:
     return V2WebResponse(status, headers, body)
 
 
-def v2_make_handler(app: V2LocalWebApp):
+def v2_make_handler(app: V2LocalWebApp) -> type[BaseHTTPRequestHandler]:
     """Build one ``BaseHTTPRequestHandler`` bound to the app."""
 
     class _V2LocalHandler(BaseHTTPRequestHandler):
@@ -89,9 +89,7 @@ def v2_make_handler(app: V2LocalWebApp):
         def _build_request(self, method: str) -> V2WebRequest:
             split = urlsplit(self.path)
             path = split.path
-            headers = {
-                key.lower(): value for key, value in self.headers.items()
-            }
+            headers = {key.lower(): value for key, value in self.headers.items()}
             cookies: dict[str, str] = {}
             raw_cookie = self.headers.get("Cookie", "")
             if raw_cookie:
@@ -177,7 +175,7 @@ def v2_make_handler(app: V2LocalWebApp):
             self.end_headers()
             self.wfile.write(payload)
 
-        def log_message(self, format: str, *args) -> None:  # noqa: A002
+        def log_message(self, format: str, *args: object) -> None:  # noqa: A002
             # Silence the access log: request paths, IDs, and form fields
             # never reach stderr.
             return

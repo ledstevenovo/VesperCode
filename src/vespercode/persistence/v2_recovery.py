@@ -26,6 +26,8 @@ in memory is required, so a fresh process recovers a crashed run.
 
 from __future__ import annotations
 
+import sqlite3
+
 from vespercode.contracts.v2_writeback import (
     ACTIVE_TRANSACTION_STATES,
     JournalEntryV2,
@@ -179,9 +181,12 @@ class V2RecoveryService:
 
     def _load_active(
         self, transaction_id: str
-    ) -> tuple[object, tuple[JournalEntryV2, ...]]:
+    ) -> tuple[sqlite3.Row, tuple[JournalEntryV2, ...]]:
         transaction = self._database.get_transaction(transaction_id)
-        if transaction is None or str(transaction["state"]) not in ACTIVE_TRANSACTION_STATES:
+        if (
+            transaction is None
+            or str(transaction["state"]) not in ACTIVE_TRANSACTION_STATES
+        ):
             raise ValueError("recovery requires a non-terminal transaction")
         rows = self._database.get_transaction_journal(transaction_id)
         # A corrupted journal must fail closed before any state advance:
@@ -197,8 +202,7 @@ class V2RecoveryService:
         for expected_position, row in enumerate(rows):
             if int(row["position"]) != expected_position:
                 raise ValueError(
-                    "transaction journal positions are corrupted; "
-                    "refusing recovery"
+                    "transaction journal positions are corrupted; refusing recovery"
                 )
             if str(row["transaction_id"]) != transaction_id:
                 raise ValueError(
@@ -213,7 +217,9 @@ class V2RecoveryService:
                     str(row["path"]),
                     str(row["action_type"]),
                     str(row["content"]),
-                    None if row["original_content"] is None else str(row["original_content"]),
+                    None
+                    if row["original_content"] is None
+                    else str(row["original_content"]),
                 )
             )
         return transaction, tuple(entries)

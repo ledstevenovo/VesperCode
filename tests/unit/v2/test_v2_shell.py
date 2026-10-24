@@ -74,9 +74,7 @@ class V2LocalShellTests(unittest.TestCase):
         self.root = Path(self._directory.name)
         self.workspace = self.root / "workspace"
         (self.workspace / "src").mkdir(parents=True)
-        (self.workspace / "src" / "example.py").write_text(
-            "old body", encoding="utf-8"
-        )
+        (self.workspace / "src" / "example.py").write_text("old body", encoding="utf-8")
         self.credential_port = InMemoryV2CredentialProvider()
 
     def _shell(self, **overrides) -> V2LocalShell:
@@ -209,13 +207,9 @@ class V2LocalShellTests(unittest.TestCase):
         self.assertEqual(
             shell.candidate_revision(outcome.run_id, outcome.candidate_id), 0
         )
-        self.assertIsNone(
-            shell.candidate_revision(outcome.run_id, "unknown-candidate")
-        )
+        self.assertIsNone(shell.candidate_revision(outcome.run_id, "unknown-candidate"))
         other = shell.start_run("second task")
-        self.assertIsNone(
-            shell.candidate_revision(other.run_id, outcome.candidate_id)
-        )
+        self.assertIsNone(shell.candidate_revision(other.run_id, outcome.candidate_id))
 
     # ------------------------------------------------------------------
     # real writeback (Route A services, real disk)

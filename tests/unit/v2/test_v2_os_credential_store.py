@@ -191,9 +191,7 @@ class OSV2CredentialProviderTests(unittest.TestCase):
             "OPENAI", V2CredentialSecret.from_hidden_input(_SECRET)
         )
         self.assertEqual(mutation, V2CredentialMutation("STORED", "OPENAI"))
-        self.assertEqual(
-            self.backend.write_calls, [(_OPENAI_SERVICE, "api-key")]
-        )
+        self.assertEqual(self.backend.write_calls, [(_OPENAI_SERVICE, "api-key")])
         status = self.provider.status("OPENAI")
         self.assertEqual(status.provider, "OPENAI")
         self.assertTrue(status.configured)
@@ -222,9 +220,7 @@ class OSV2CredentialProviderTests(unittest.TestCase):
         self.assertNotEqual(first.updated_at, second.updated_at)
         wrapper = self.provider.get_for_call("OPENAI")
         assert wrapper is not None
-        self.assertEqual(
-            wrapper.reveal(_provider_reveal_capability()), "second-secret"
-        )
+        self.assertEqual(wrapper.reveal(_provider_reveal_capability()), "second-secret")
 
     def test_a_missing_credential_is_none_without_error(self) -> None:
         self.assertIsNone(self.provider.get_for_call("OPENAI"))
@@ -235,9 +231,7 @@ class OSV2CredentialProviderTests(unittest.TestCase):
         )
 
     def test_clear_is_idempotent(self) -> None:
-        self.provider.set(
-            "OPENAI", V2CredentialSecret.from_hidden_input(_SECRET)
-        )
+        self.provider.set("OPENAI", V2CredentialSecret.from_hidden_input(_SECRET))
         self.provider.clear("OPENAI")
         deletes = len(self.backend.deletes)
         second = self.provider.clear("OPENAI")
@@ -256,9 +250,7 @@ class OSV2CredentialProviderTests(unittest.TestCase):
         self.assertEqual(self.backend.probe_calls, 0)
 
     def test_status_reads_metadata_only_never_the_stored_value(self) -> None:
-        self.provider.set(
-            "OPENAI", V2CredentialSecret.from_hidden_input(_SECRET)
-        )
+        self.provider.set("OPENAI", V2CredentialSecret.from_hidden_input(_SECRET))
         self.backend.value_reads = 0
         self.backend.metadata_reads = 0
         status = self.provider.status("OPENAI")
@@ -269,9 +261,7 @@ class OSV2CredentialProviderTests(unittest.TestCase):
         self.assertNotIn(_SECRET, str(status))
 
     def test_the_status_projection_is_the_closed_shape(self) -> None:
-        self.provider.set(
-            "OPENAI", V2CredentialSecret.from_hidden_input(_SECRET)
-        )
+        self.provider.set("OPENAI", V2CredentialSecret.from_hidden_input(_SECRET))
         status = self.provider.status("OPENAI")
         self.assertEqual(
             {field.name for field in fields(V2CredentialStatus)},
@@ -281,16 +271,12 @@ class OSV2CredentialProviderTests(unittest.TestCase):
             self.assertNotIn(_SECRET, str(getattr(status, name)), name)
 
     def test_every_operation_proves_the_backend_first(self) -> None:
-        self.provider.set(
-            "OPENAI", V2CredentialSecret.from_hidden_input(_SECRET)
-        )
+        self.provider.set("OPENAI", V2CredentialSecret.from_hidden_input(_SECRET))
         before = self.backend.probe_calls
         self.provider.status("OPENAI")
         self.provider.get_for_call("OPENAI")
         self.provider.clear("OPENAI")
-        self.provider.set(
-            "OPENAI", V2CredentialSecret.from_hidden_input(_SECRET)
-        )
+        self.provider.set("OPENAI", V2CredentialSecret.from_hidden_input(_SECRET))
         # set probes before AND after the write; the others probe once each.
         self.assertEqual(self.backend.probe_calls, before + 5)
 
@@ -309,9 +295,7 @@ class OSV2CredentialProviderTests(unittest.TestCase):
             with self.subTest(operation=operation):
                 with self.assertRaises(V2OSCredentialStoreError) as caught:
                     operation()
-                self.assertEqual(
-                    caught.exception.code, "CREDENTIAL_BACKEND_UNSAFE"
-                )
+                self.assertEqual(caught.exception.code, "CREDENTIAL_BACKEND_UNSAFE")
                 self.assertNotIn(_SECRET, str(caught.exception))
                 self.assertNotIn(_SECRET, repr(caught.exception))
         self.assertEqual(backend.write_calls, [])
@@ -349,9 +333,7 @@ class OSV2CredentialProviderTests(unittest.TestCase):
         self.assertEqual(backend.probe_calls, 0)
 
     def test_a_malformed_stored_value_fails_closed(self) -> None:
-        self.provider.set(
-            "OPENAI", V2CredentialSecret.from_hidden_input(_SECRET)
-        )
+        self.provider.set("OPENAI", V2CredentialSecret.from_hidden_input(_SECRET))
         for hostile_value in ("", 12345, None):
             with self.subTest(hostile_value=hostile_value):
                 self.backend.entries[_OPENAI_SERVICE] = (
@@ -361,9 +343,7 @@ class OSV2CredentialProviderTests(unittest.TestCase):
                 )
                 with self.assertRaises(V2OSCredentialStoreError) as caught:
                     self.provider.get_for_call("OPENAI")
-                self.assertEqual(
-                    caught.exception.code, "CREDENTIAL_STORE_FAILED"
-                )
+                self.assertEqual(caught.exception.code, "CREDENTIAL_STORE_FAILED")
 
     def test_a_foreign_entry_identity_fails_closed(self) -> None:
         self.backend.entries[_OPENAI_SERVICE] = (
@@ -378,17 +358,13 @@ class OSV2CredentialProviderTests(unittest.TestCase):
             with self.subTest(operation=operation):
                 with self.assertRaises(V2OSCredentialStoreError) as caught:
                     operation()
-                self.assertEqual(
-                    caught.exception.code, "CREDENTIAL_STORE_FAILED"
-                )
+                self.assertEqual(caught.exception.code, "CREDENTIAL_STORE_FAILED")
                 self.assertNotIn("their-value", str(caught.exception))
 
     def test_the_credential_service_name_is_disjoint_from_the_probe_service(
         self,
     ) -> None:
-        self.provider.set(
-            "probe", V2CredentialSecret.from_hidden_input(_SECRET)
-        )
+        self.provider.set("probe", V2CredentialSecret.from_hidden_input(_SECRET))
         services = {service for service, _ in self.backend.write_calls}
         self.assertIn("vespercode/v2/credential/probe", services)
         self.assertNotIn(_PROBE_SERVICE, services)
@@ -396,17 +372,13 @@ class OSV2CredentialProviderTests(unittest.TestCase):
             self.assertTrue(service.startswith("vespercode/v2/credential/"))
 
     def test_the_probe_leaves_no_residue(self) -> None:
-        self.provider.set(
-            "OPENAI", V2CredentialSecret.from_hidden_input(_SECRET)
-        )
+        self.provider.set("OPENAI", V2CredentialSecret.from_hidden_input(_SECRET))
         self.assertEqual(set(self.backend.entries), {_OPENAI_SERVICE})
         self.provider.clear("OPENAI")
         self.assertEqual(self.backend.entries, {})
 
     def test_the_provider_holds_no_secret_state(self) -> None:
-        self.provider.set(
-            "OPENAI", V2CredentialSecret.from_hidden_input(_SECRET)
-        )
+        self.provider.set("OPENAI", V2CredentialSecret.from_hidden_input(_SECRET))
         self.provider.get_for_call("OPENAI")
         for name in dir(self.provider):
             if name.startswith("__"):
@@ -447,9 +419,7 @@ class PlatformDefaultBackendTests(unittest.TestCase):
             self.assertNotIsInstance(backend, WindowsCredentialManagerV2Backend)
             with self.assertRaises(V2OSCredentialStoreError) as caught:
                 backend.backend_id()
-            self.assertEqual(
-                caught.exception.code, "CREDENTIAL_BACKEND_UNAVAILABLE"
-            )
+            self.assertEqual(caught.exception.code, "CREDENTIAL_BACKEND_UNAVAILABLE")
 
     def test_the_backend_port_is_runtime_checkable(self) -> None:
         self.assertIsInstance(FakeOSBackend(), V2OSCredentialBackendPort)

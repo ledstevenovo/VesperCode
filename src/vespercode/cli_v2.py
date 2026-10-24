@@ -21,7 +21,7 @@ import argparse
 import re
 import sys
 from pathlib import Path
-from typing import Callable, Sequence, TextIO
+from typing import Callable, Sequence, TextIO, cast
 
 from vespercode.llm.v2_openai_adapter import V2OpenAIAdapterError
 from vespercode.loop.v2_engine import V2LLM
@@ -268,7 +268,7 @@ class V2CliComposition:
         *,
         llm_factory: Callable[[], V2LLM] | None = None,
         shell_factory: Callable[[Path, int], V2LocalShell] | None = None,
-        web_launcher: Callable[[object, str, int], object] = v2_serve_forever,
+        web_launcher: Callable[[V2LocalWebApp, str, int], None] = v2_serve_forever,
         tui_launcher: Callable[[object], int] | None = None,
         stream: TextIO | None = None,
         error_stream: TextIO | None = None,
@@ -317,7 +317,10 @@ class V2CliComposition:
     def run(self, argv: Sequence[str] | None = None) -> int:
         self._parser = build_v2_cli_parser()
         args = self._parser.parse_args(argv)
-        handler = getattr(self, f"_run_{args.command.replace('-', '_')}")
+        handler = cast(
+            "Callable[[argparse.Namespace], int]",
+            getattr(self, f"_run_{args.command.replace('-', '_')}"),
+        )
         return handler(args)
 
     # ------------------------------------------------------------------

@@ -173,7 +173,9 @@ class V2DatabaseTests(unittest.TestCase):
             try:
                 run_id = database.create_run(str(root))
                 snapshot_id = database.create_snapshot(run_id)
-                candidate_id = database.create_candidate(run_id, snapshot_id, revision=2)
+                candidate_id = database.create_candidate(
+                    run_id, snapshot_id, revision=2
+                )
                 with self.assertRaisesRegex(V2DatabaseError, "stale"):
                     database.create_writeback_approval(run_id, candidate_id, 1)
             finally:

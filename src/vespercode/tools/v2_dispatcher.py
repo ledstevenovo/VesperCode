@@ -103,9 +103,7 @@ class V2ToolDispatcher:
         content = action.get("content")
         if not isinstance(path, str) or not isinstance(content, str):
             return V2ToolResult("FAILED", "REPLACE requires string path and content")
-        decision = self._policy.evaluate(
-            ActionRequestV2("REPLACE", path, workspace)
-        )
+        decision = self._policy.evaluate(ActionRequestV2("REPLACE", path, workspace))
         if decision is DecisionV2.DENY:
             return V2ToolResult("DENIED", f"protected or unsafe path: {path}", path)
         self._workspace.replace(path, content)

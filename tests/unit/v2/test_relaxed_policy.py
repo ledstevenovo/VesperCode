@@ -62,9 +62,7 @@ class RelaxedPolicyTests(unittest.TestCase):
                 "C:/src/example.py",
             ]
             rejected_decisions = [
-                policy.evaluate(
-                    ActionRequestV2("REPLACE", path, workspace)
-                )
+                policy.evaluate(ActionRequestV2("REPLACE", path, workspace))
                 for path in rejected
             ]
             read_decision = policy.evaluate(
@@ -102,8 +100,12 @@ class RelaxedPolicyTests(unittest.TestCase):
             workspace = Path(directory)
             policy = RelaxedPolicyV2()
             decisions = [
-                policy.evaluate(ActionRequestV2("REPLACE", "TESTS/example.py", workspace)),
-                policy.evaluate(ActionRequestV2("REPLACE", "PyProject.TOML", workspace)),
+                policy.evaluate(
+                    ActionRequestV2("REPLACE", "TESTS/example.py", workspace)
+                ),
+                policy.evaluate(
+                    ActionRequestV2("REPLACE", "PyProject.TOML", workspace)
+                ),
                 policy.evaluate(ActionRequestV2("REPLACE", ".ENV", workspace)),
                 policy.evaluate(ActionRequestV2("REPLACE", "src", workspace)),
             ]

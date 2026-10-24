@@ -121,9 +121,7 @@ class RacingDiskPort:
         if path in self._sabotage and path not in self.sabotaged:
             self.sabotaged.append(path)
             target = self._workspace / Path(*path.split("/"))
-            target.write_text(
-                self._sabotage[path], encoding="utf-8", newline=""
-            )
+            target.write_text(self._sabotage[path], encoding="utf-8", newline="")
         return self._inner.remove_expected(path, expected_content)
 
 
@@ -231,7 +229,9 @@ class ReplaceContentGuardTests(unittest.TestCase):
 
     def test_create_target_appeared_race_is_refused_without_clobbering(self) -> None:
         port = LocalDiskWorkspacePort(self.workspace)
-        racing = RacingDiskPort(port, self.workspace, {"src/ghost.py": "EXTERNAL CREATE"})
+        racing = RacingDiskPort(
+            port, self.workspace, {"src/ghost.py": "EXTERNAL CREATE"}
+        )
         service = V2WritebackService(self.database, racing, workspace=self.workspace)
         request, approval_id = self._request(
             (WriteOperationV2("CREATE", "src/ghost.py", "new body"),)
@@ -263,7 +263,11 @@ class ReplaceContentGuardTests(unittest.TestCase):
             )
         self.assertEqual(target.read_bytes(), b"old body")
         self.assertEqual(
-            [item.name for item in (self.workspace / "src").iterdir() if item.name.endswith(".tmp")],
+            [
+                item.name
+                for item in (self.workspace / "src").iterdir()
+                if item.name.endswith(".tmp")
+            ],
             [],
         )
 

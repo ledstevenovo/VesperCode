@@ -111,12 +111,48 @@ class JournalEntryContractTests(unittest.TestCase):
 
     def test_rejects_invalid_positions_and_shapes(self) -> None:
         invalid: tuple[dict[str, Any], ...] = (
-            {"position": -1, "path": "src/a.py", "action_type": "CREATE", "content": "x", "original_content": None},
-            {"position": True, "path": "src/a.py", "action_type": "CREATE", "content": "x", "original_content": None},
-            {"position": 0, "path": "", "action_type": "CREATE", "content": "x", "original_content": None},
-            {"position": 0, "path": "src/a.py", "action_type": "DELETE", "content": "x", "original_content": None},
-            {"position": 0, "path": "src/a.py", "action_type": "REPLACE", "content": "x", "original_content": None},
-            {"position": 0, "path": "src/a.py", "action_type": "CREATE", "content": None, "original_content": None},
+            {
+                "position": -1,
+                "path": "src/a.py",
+                "action_type": "CREATE",
+                "content": "x",
+                "original_content": None,
+            },
+            {
+                "position": True,
+                "path": "src/a.py",
+                "action_type": "CREATE",
+                "content": "x",
+                "original_content": None,
+            },
+            {
+                "position": 0,
+                "path": "",
+                "action_type": "CREATE",
+                "content": "x",
+                "original_content": None,
+            },
+            {
+                "position": 0,
+                "path": "src/a.py",
+                "action_type": "DELETE",
+                "content": "x",
+                "original_content": None,
+            },
+            {
+                "position": 0,
+                "path": "src/a.py",
+                "action_type": "REPLACE",
+                "content": "x",
+                "original_content": None,
+            },
+            {
+                "position": 0,
+                "path": "src/a.py",
+                "action_type": "CREATE",
+                "content": None,
+                "original_content": None,
+            },
         )
         for kwargs in invalid:
             with self.assertRaises(ValueError, msg=repr(kwargs)):
@@ -144,19 +180,29 @@ class WritebackRequestContractTests(unittest.TestCase):
 
     def test_request_rejects_invalid_revisions_and_empty_ids(self) -> None:
         with self.assertRaisesRegex(ValueError, "revision"):
-            WritebackRequestV2("run-1", "candidate-1", -1, "approval-1", (self._operation(),))
+            WritebackRequestV2(
+                "run-1", "candidate-1", -1, "approval-1", (self._operation(),)
+            )
         for bad_id in ("", "  "):
             with self.assertRaises(ValueError):
-                WritebackRequestV2(bad_id, "candidate-1", 0, "approval-1", (self._operation(),))
+                WritebackRequestV2(
+                    bad_id, "candidate-1", 0, "approval-1", (self._operation(),)
+                )
             with self.assertRaises(ValueError):
-                WritebackRequestV2("run-1", bad_id, 0, "approval-1", (self._operation(),))
+                WritebackRequestV2(
+                    "run-1", bad_id, 0, "approval-1", (self._operation(),)
+                )
             with self.assertRaises(ValueError):
-                WritebackRequestV2("run-1", "candidate-1", 0, bad_id, (self._operation(),))
+                WritebackRequestV2(
+                    "run-1", "candidate-1", 0, bad_id, (self._operation(),)
+                )
 
 
 class WritebackOutcomeContractTests(unittest.TestCase):
     def test_outcomes_carry_status_transaction_and_message(self) -> None:
-        outcome = WritebackOutcomeV2("COMMITTED", "transaction-1", "2 write(s) committed")
+        outcome = WritebackOutcomeV2(
+            "COMMITTED", "transaction-1", "2 write(s) committed"
+        )
         self.assertEqual(outcome.status, "COMMITTED")
         self.assertEqual(outcome.transaction_id, "transaction-1")
 

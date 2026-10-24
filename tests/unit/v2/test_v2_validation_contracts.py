@@ -127,7 +127,11 @@ class ValidationRecordShapeTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             _run_record(status="FAILED", error="x" * (MAX_VALIDATION_ERROR_CHARS + 1))
         self.assertEqual(
-            len(_run_record(status="FAILED", error="x" * MAX_VALIDATION_ERROR_CHARS).error),
+            len(
+                _run_record(
+                    status="FAILED", error="x" * MAX_VALIDATION_ERROR_CHARS
+                ).error
+            ),
             MAX_VALIDATION_ERROR_CHARS,
         )
 
@@ -152,16 +156,21 @@ class ValidationRecordShapeTests(unittest.TestCase):
         for overrides in bad:
             with self.assertRaises(ValueError, msg=repr(overrides)):
                 ValidationBindingV2(
-                    **{**{
-                        "run_id": "run-1",
-                        "candidate_id": "cand-1",
-                        "candidate_revision": 2,
-                        "reference_profile_id": "profile-1",
-                        "reference_profile_revision": 0,
-                    }, **overrides}
+                    **{
+                        **{
+                            "run_id": "run-1",
+                            "candidate_id": "cand-1",
+                            "candidate_revision": 2,
+                            "reference_profile_id": "profile-1",
+                            "reference_profile_revision": 0,
+                        },
+                        **overrides,
+                    }
                 )
 
-    def test_run_and_result_from_mapping_reject_unknown_and_missing_fields(self) -> None:
+    def test_run_and_result_from_mapping_reject_unknown_and_missing_fields(
+        self,
+    ) -> None:
         good_run = {
             "validation_run_id": "val-1",
             "run_id": "run-1",
@@ -212,7 +221,9 @@ class ValidationEvidenceBindingTests(unittest.TestCase):
             {"reference_profile_revision": 1},
         )
         for overrides in mismatches:
-            with self.assertRaisesRegex(ValueError, "does not match", msg=repr(overrides)):
+            with self.assertRaisesRegex(
+                ValueError, "does not match", msg=repr(overrides)
+            ):
                 verify_evidence_binding(
                     self.result,
                     run=self.run,

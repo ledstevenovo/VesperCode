@@ -122,9 +122,7 @@ class FakeEdge:
             raise self._error
         if not isinstance(self._result, _NoResult):
             return self._result  # type: ignore[no-any-return]
-        return V2ProviderHttpResult(
-            status_code=self._status_code, body=self._body
-        )
+        return V2ProviderHttpResult(status_code=self._status_code, body=self._body)
 
 
 def _request(**overrides: object) -> ProviderCallRequestV2:
@@ -193,18 +191,14 @@ class ProviderAddressRegistryTests(unittest.TestCase):
 
 class V2ProviderTransportAdapterConstructionTests(unittest.TestCase):
     def test_the_constructor_signature_is_closed(self) -> None:
-        parameters = inspect.signature(
-            V2ProviderTransportAdapter.__init__
-        ).parameters
+        parameters = inspect.signature(V2ProviderTransportAdapter.__init__).parameters
         self.assertEqual(
             set(parameters) - {"self"}, {"endpoint", "profile", "http_edge"}
         )
         for name, parameter in parameters.items():
             if name == "self":
                 continue
-            self.assertEqual(
-                parameter.kind, inspect.Parameter.KEYWORD_ONLY, name
-            )
+            self.assertEqual(parameter.kind, inspect.Parameter.KEYWORD_ONLY, name)
 
     def test_a_binding_mismatch_between_endpoint_and_profile_rejects(self) -> None:
         stale = ReferenceProfileRecordV2(
@@ -219,9 +213,7 @@ class V2ProviderTransportAdapterConstructionTests(unittest.TestCase):
                     V2ProviderTransportAdapter(endpoint=_ENDPOINT, profile=profile)
 
     def test_an_endpoint_for_an_undeclared_provider_rejects(self) -> None:
-        endpoint = ProviderEndpointRecordV2(
-            "endpoint-2", "MYSTERY", "profile-1", 3
-        )
+        endpoint = ProviderEndpointRecordV2("endpoint-2", "MYSTERY", "profile-1", 3)
         with self.assertRaises(ValueError):
             V2ProviderTransportAdapter(endpoint=endpoint, profile=_PROFILE)
 
@@ -275,9 +267,7 @@ class V2ProviderTransportAdapterCallTests(unittest.TestCase):
                 "Content-Type": "application/json",
             },
         )
-        self.assertEqual(
-            call["timeout_seconds"], PROVIDER_TRANSPORT_TIMEOUT_SECONDS_V2
-        )
+        self.assertEqual(call["timeout_seconds"], PROVIDER_TRANSPORT_TIMEOUT_SECONDS_V2)
 
     def test_the_request_body_is_the_bounded_control_projection(self) -> None:
         self.adapter.call(_request(), _minted_credential())
@@ -352,7 +342,8 @@ class V2ProviderTransportAdapterCallTests(unittest.TestCase):
     def test_a_non_record_request_rejects(self) -> None:
         with self.assertRaises(ValueError):
             self.adapter.call(
-                "not-a-request", _minted_credential()  # type: ignore[arg-type]
+                "not-a-request",
+                _minted_credential(),  # type: ignore[arg-type]
             )
 
     def test_an_empty_credential_rejects(self) -> None:
@@ -441,9 +432,7 @@ class V2ProviderTransportAdapterCallTests(unittest.TestCase):
         self.assertEqual(len(edge.calls), 1)
 
     def test_any_edge_exception_is_redacted_and_never_retried(self) -> None:
-        edge = FakeEdge(
-            error=RuntimeError(f"leaked Authorization: Bearer {_SECRET}")
-        )
+        edge = FakeEdge(error=RuntimeError(f"leaked Authorization: Bearer {_SECRET}"))
         adapter = V2ProviderTransportAdapter(
             endpoint=_ENDPOINT, profile=_PROFILE, http_edge=edge
         )

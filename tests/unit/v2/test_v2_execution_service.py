@@ -165,9 +165,7 @@ class V2ExecutionServiceTests(unittest.TestCase):
     def test_a_stale_execution_profile_revision_rejects_before_the_binding_lookup(
         self,
     ) -> None:
-        outcome = self.service.execute(
-            self._request(execution_profile_revision=5)
-        )
+        outcome = self.service.execute(self._request(execution_profile_revision=5))
         self.assertEqual(outcome.status, "FAILED")
         self.assertEqual(outcome.error_code, "PROFILE_BINDING_MISMATCH")
         self.assertEqual(
@@ -194,9 +192,7 @@ class V2ExecutionServiceTests(unittest.TestCase):
     def test_a_reference_profile_binding_mismatch_rejects_before_execution(
         self,
     ) -> None:
-        stale = self.service.execute(
-            self._request(reference_profile_revision=2)
-        )
+        stale = self.service.execute(self._request(reference_profile_revision=2))
         self.assertEqual(stale.error_code, "PROFILE_BINDING_MISMATCH")
         foreign = self.service.execute(
             self._request(reference_profile_id="reference-9")
@@ -338,9 +334,7 @@ class V2ExecutionServiceTests(unittest.TestCase):
         binding = FakeV2BindingLookup()
         readiness = FakeV2Readiness()
         executor = FakeV2Executor()
-        service = V2ExecutionTestService(
-            self.profile, binding, readiness, executor
-        )
+        service = V2ExecutionTestService(self.profile, binding, readiness, executor)
         outcome = service.execute(self._request(validation_run_id=None))
         self.assertEqual(outcome.status, "SUCCEEDED")
         self.assertEqual(len(executor.calls), 1)
@@ -357,9 +351,6 @@ class V2ExecutionServiceTests(unittest.TestCase):
         production = V2ExecutionService(
             self.profile, self.binding, self.readiness, self.executor
         )
-        test_only = V2ExecutionTestService(
-            self.profile, self.binding, self.readiness, self.executor
-        )
         self.assertIsInstance(production, V2ExecutionService)
         self.assertNotIsInstance(production, V2ExecutionTestService)
 
@@ -373,9 +364,7 @@ class V2ExecutionServiceTests(unittest.TestCase):
         binding = FakeV2BindingLookup(validation_required=True)
         readiness = FakeV2Readiness()
         executor = FakeV2Executor()
-        service = V2ExecutionTestService(
-            self.profile, binding, readiness, executor
-        )
+        service = V2ExecutionTestService(self.profile, binding, readiness, executor)
         outcome = service.execute(self._request(validation_run_id=None))
         self.assertEqual(outcome.status, "FAILED")
         self.assertEqual(outcome.error_code, "VALIDATION_BINDING_REQUIRED")
@@ -414,13 +403,9 @@ class V2ExecutionServiceTests(unittest.TestCase):
                 binding = FakeV2BindingLookup(validation_status=status)
                 readiness = FakeV2Readiness()
                 executor = FakeV2Executor()
-                service = V2ExecutionService(
-                    self.profile, binding, readiness, executor
-                )
+                service = V2ExecutionService(self.profile, binding, readiness, executor)
                 outcome = self.execute_rejecting(service)
-                self.assertEqual(
-                    outcome.error_code, "VALIDATION_BINDING_NOT_PASSED"
-                )
+                self.assertEqual(outcome.error_code, "VALIDATION_BINDING_NOT_PASSED")
                 self.assertEqual(
                     outcome.message,
                     EXECUTION_MESSAGES_V2["VALIDATION_BINDING_NOT_PASSED"],
@@ -436,46 +421,70 @@ class V2ExecutionServiceTests(unittest.TestCase):
         # and rejects closed.
         drifts = (
             ValidationBindingFactsV2(
-                "valid-0001", "run-9", "cand-0001", 3, "reference-1", 3,
+                "valid-0001",
+                "run-9",
+                "cand-0001",
+                3,
+                "reference-1",
+                3,
                 "PASSED",
             ),
             ValidationBindingFactsV2(
-                "valid-0001", "run-1", "cand-0009", 3, "reference-1", 3,
+                "valid-0001",
+                "run-1",
+                "cand-0009",
+                3,
+                "reference-1",
+                3,
                 "PASSED",
             ),
             ValidationBindingFactsV2(
-                "valid-0001", "run-1", "cand-0001", 2, "reference-1", 3,
+                "valid-0001",
+                "run-1",
+                "cand-0001",
+                2,
+                "reference-1",
+                3,
                 "PASSED",
             ),
             ValidationBindingFactsV2(
-                "valid-0001", "run-1", "cand-0001", 3, "reference-9", 3,
+                "valid-0001",
+                "run-1",
+                "cand-0001",
+                3,
+                "reference-9",
+                3,
                 "PASSED",
             ),
             ValidationBindingFactsV2(
-                "valid-0001", "run-1", "cand-0001", 3, "reference-1", 2,
+                "valid-0001",
+                "run-1",
+                "cand-0001",
+                3,
+                "reference-1",
+                2,
                 "PASSED",
             ),
             ValidationBindingFactsV2(
-                "valid-0009", "run-1", "cand-0001", 3, "reference-1", 3,
+                "valid-0009",
+                "run-1",
+                "cand-0001",
+                3,
+                "reference-1",
+                3,
                 "PASSED",
             ),
         )
         for validation in drifts:
             with self.subTest(validation=validation):
                 binding = FakeV2BindingLookup(
-                    facts=ExecutionBindingFactsV2(
-                        "run-1", "cand-0001", 3, validation
-                    )
+                    facts=ExecutionBindingFactsV2("run-1", "cand-0001", 3, validation)
                 )
                 readiness = FakeV2Readiness()
                 executor = FakeV2Executor()
-                service = V2ExecutionService(
-                    self.profile, binding, readiness, executor
-                )
+                service = V2ExecutionService(self.profile, binding, readiness, executor)
                 outcome = self.execute_rejecting(service)
-                self.assertEqual(
-                    outcome.error_code, "VALIDATION_BINDING_NOT_FOUND"
-                )
+                self.assertEqual(outcome.error_code, "VALIDATION_BINDING_NOT_FOUND")
                 self.assertEqual(readiness.checks, [])
                 self.assertEqual(executor.calls, [])
 
@@ -491,25 +500,26 @@ class V2ExecutionServiceTests(unittest.TestCase):
                 "cand-0001",
                 3,
                 ValidationBindingFactsV2(
-                    "valid-0001", "run-1", "cand-0001", 3, "reference-1", 3,
+                    "valid-0001",
+                    "run-1",
+                    "cand-0001",
+                    3,
+                    "reference-1",
+                    3,
                     "PASSED",
                 ),
             )
         )
         readiness = FakeV2Readiness()
         executor = FakeV2Executor()
-        service = V2ExecutionTestService(
-            self.profile, binding, readiness, executor
-        )
+        service = V2ExecutionTestService(self.profile, binding, readiness, executor)
         outcome = service.execute(self._request(validation_run_id=None))
         self.assertEqual(outcome.status, "FAILED")
         self.assertEqual(outcome.error_code, "VALIDATION_BINDING_REQUIRED")
         self.assertEqual(readiness.checks, [])
         self.assertEqual(executor.calls, [])
 
-    def execute_rejecting(
-        self, service: V2ExecutionService
-    ) -> ExecutionOutcomeV2:
+    def execute_rejecting(self, service: V2ExecutionService) -> ExecutionOutcomeV2:
         outcome = service.execute(self._request())
         self.assertEqual(outcome.status, "FAILED")
         return outcome
@@ -530,14 +540,10 @@ class V2ExecutionServiceTests(unittest.TestCase):
                     ExecutionReadinessResultV2("NOT_READY", reason)
                 )
                 executor = FakeV2Executor()
-                service = V2ExecutionService(
-                    self.profile, binding, readiness, executor
-                )
+                service = V2ExecutionService(self.profile, binding, readiness, executor)
                 outcome = service.execute(self._request())
                 self.assertEqual(outcome.status, "FAILED")
-                self.assertEqual(
-                    outcome.error_code, f"READINESS_{reason}"
-                )
+                self.assertEqual(outcome.error_code, f"READINESS_{reason}")
                 self.assertEqual(
                     outcome.message,
                     EXECUTION_MESSAGES_V2[f"READINESS_{reason}"],
@@ -560,13 +566,13 @@ class V2ExecutionServiceTests(unittest.TestCase):
         executor = FakeV2Executor(
             error=RuntimeError(f"docker: unauthorized, {_SECRET}")
         )
-        service = V2ExecutionService(self.profile, self.binding, self.readiness, executor)
+        service = V2ExecutionService(
+            self.profile, self.binding, self.readiness, executor
+        )
         outcome = service.execute(self._request())
         self.assertEqual(outcome.status, "FAILED")
         self.assertEqual(outcome.error_code, "EXECUTION_FAILED")
-        self.assertEqual(
-            outcome.message, EXECUTION_MESSAGES_V2["EXECUTION_FAILED"]
-        )
+        self.assertEqual(outcome.message, EXECUTION_MESSAGES_V2["EXECUTION_FAILED"])
         self.assertNotIn(_SECRET, outcome.message)
         self.assertNotIn(_SECRET, outcome.output_excerpt)
         self.assertNotIn(_SECRET, repr(outcome))
@@ -579,7 +585,9 @@ class V2ExecutionServiceTests(unittest.TestCase):
         executor = FakeV2Executor(
             ExecutionResultV2("FAILED", 2, "2 checks failed: test_a, test_b")
         )
-        service = V2ExecutionService(self.profile, self.binding, self.readiness, executor)
+        service = V2ExecutionService(
+            self.profile, self.binding, self.readiness, executor
+        )
         outcome = service.execute(self._request())
         self.assertEqual(outcome.status, "FAILED")
         self.assertEqual(outcome.error_code, "EXECUTION_FAILED")
@@ -590,7 +598,9 @@ class V2ExecutionServiceTests(unittest.TestCase):
         executor = FakeV2Executor(
             ExecutionResultV2("TIMED_OUT", None, "partial output")
         )
-        service = V2ExecutionService(self.profile, self.binding, self.readiness, executor)
+        service = V2ExecutionService(
+            self.profile, self.binding, self.readiness, executor
+        )
         outcome = service.execute(self._request())
         self.assertEqual(outcome.status, "FAILED")
         self.assertEqual(outcome.error_code, "TIMED_OUT")
@@ -604,18 +614,14 @@ class V2ExecutionServiceTests(unittest.TestCase):
         outcome = service.execute(self._request())
         self.assertEqual(outcome.status, "FAILED")
         self.assertEqual(outcome.error_code, "EXECUTION_FAILED")
-        self.assertEqual(
-            outcome.message, EXECUTION_MESSAGES_V2["EXECUTION_FAILED"]
-        )
+        self.assertEqual(outcome.message, EXECUTION_MESSAGES_V2["EXECUTION_FAILED"])
 
     def test_output_is_bounded_and_sanitized(self) -> None:
-        hostile = (
-            "line\n"
-            + "x" * 5_000
-            + "\x00\x1b[31m\rhidden"
-        )
+        hostile = "line\n" + "x" * 5_000 + "\x00\x1b[31m\rhidden"
         executor = FakeV2Executor(ExecutionResultV2("SUCCEEDED", 0, hostile))
-        service = V2ExecutionService(self.profile, self.binding, self.readiness, executor)
+        service = V2ExecutionService(
+            self.profile, self.binding, self.readiness, executor
+        )
         outcome = service.execute(self._request())
         self.assertLessEqual(
             len(outcome.output_excerpt),
@@ -701,9 +707,7 @@ class V2ExecutionServiceTests(unittest.TestCase):
                     self.profile,
                     self.binding,
                     FakeV2Readiness(
-                        ExecutionReadinessResultV2(
-                            "NOT_READY", "DAEMON_UNAVAILABLE"
-                        )
+                        ExecutionReadinessResultV2("NOT_READY", "DAEMON_UNAVAILABLE")
                     ),
                     FakeV2Executor(),
                 ),
@@ -738,9 +742,7 @@ class V2ExecutionServiceTests(unittest.TestCase):
                 self.assertEqual(outcome.status, "FAILED")
                 self.assertIn(outcome.error_code, EXECUTION_OUTCOME_ERROR_CODES_V2)
                 self.assertEqual(outcome.error_code, expected_code)
-                self.assertEqual(
-                    outcome.message, EXECUTION_MESSAGES_V2[expected_code]
-                )
+                self.assertEqual(outcome.message, EXECUTION_MESSAGES_V2[expected_code])
 
     def test_the_fake_executor_is_deterministic(self) -> None:
         executor = FakeV2Executor()
@@ -767,8 +769,13 @@ class V2ExecutionServiceTests(unittest.TestCase):
                     "cand-0001",
                     3,
                     ValidationBindingFactsV2(
-                        "valid-0001", "run-1", "cand-0001", 3,
-                        "reference-1", 3, "PASSED",
+                        "valid-0001",
+                        "run-1",
+                        "cand-0001",
+                        3,
+                        "reference-1",
+                        3,
+                        "PASSED",
                     ),
                 ),
             ),
@@ -803,9 +810,7 @@ class V2ExecutionServiceTests(unittest.TestCase):
                     V2ExecutionService(profile, binding, readiness, executor)
 
     def test_the_outcome_echoes_the_request_id(self) -> None:
-        outcome = self.service.execute(
-            self._request(request_id="exec-request-42")
-        )
+        outcome = self.service.execute(self._request(request_id="exec-request-42"))
         self.assertEqual(outcome.request_id, "exec-request-42")
 
     def test_an_outcome_record_enforces_its_own_closed_shape(self) -> None:

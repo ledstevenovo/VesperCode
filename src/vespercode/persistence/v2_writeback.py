@@ -69,13 +69,9 @@ class V2WritebackService:
     def request_writeback(self, request: WritebackRequestV2) -> WritebackOutcomeV2:
         candidate = self._database.get_candidate(request.candidate_id)
         if candidate is None or str(candidate["run_id"]) != request.run_id:
-            return WritebackOutcomeV2(
-                "DENIED", None, "unknown candidate for this run"
-            )
+            return WritebackOutcomeV2("DENIED", None, "unknown candidate for this run")
         if int(candidate["revision"]) != request.candidate_revision:
-            return WritebackOutcomeV2(
-                "STALE", None, "candidate revision is stale"
-            )
+            return WritebackOutcomeV2("STALE", None, "candidate revision is stale")
         approval = self._database.get_writeback_approval(request.approval_id)
         if (
             approval is None
@@ -125,7 +121,9 @@ class V2WritebackService:
                 # Journaling the observed original would copy the existing
                 # credential into the database; refuse before journaling.
                 return WritebackOutcomeV2(
-                    "DENIED", None, f"secret-like original content refused: {operation.path}"
+                    "DENIED",
+                    None,
+                    f"secret-like original content refused: {operation.path}",
                 )
             if operation.action_type == "CREATE" and current is not None:
                 return WritebackOutcomeV2(
@@ -155,9 +153,7 @@ class V2WritebackService:
         except V2DatabaseError as exc:
             if "stale" in str(exc).lower():
                 return WritebackOutcomeV2("STALE", None, "candidate revision is stale")
-            return WritebackOutcomeV2(
-                "DENIED", None, f"writeback was rejected: {exc}"
-            )
+            return WritebackOutcomeV2("DENIED", None, f"writeback was rejected: {exc}")
         if not self._database.transition_transaction(
             transaction_id, from_state="PREPARED", to_state="WRITING"
         ):

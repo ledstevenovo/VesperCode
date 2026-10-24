@@ -150,8 +150,7 @@ def _pyproject_project() -> dict[str, object]:
 def _discovered_v2_modules() -> frozenset[str]:
     """Every v2-named module under ``src/vespercode`` plus the extras."""
     discovered = {
-        path.relative_to(_SRC_ROOT).as_posix()
-        for path in _SRC_ROOT.rglob("v2*.py")
+        path.relative_to(_SRC_ROOT).as_posix() for path in _SRC_ROOT.rglob("v2*.py")
     }
     discovered.update(
         relative
@@ -168,8 +167,7 @@ class V2WheelContractTests(unittest.TestCase):
         self.assertEqual(
             missing,
             frozenset(),
-            "v2 modules missing from REQUIRED_RUNTIME_MEMBERS: "
-            f"{sorted(missing)}",
+            f"v2 modules missing from REQUIRED_RUNTIME_MEMBERS: {sorted(missing)}",
         )
 
     def test_every_v2_module_exists_in_the_source_tree(self) -> None:
@@ -184,14 +182,12 @@ class V2WheelContractTests(unittest.TestCase):
         self.assertIn(
             'packages = ["src/vespercode"]',
             pyproject,
-            "the Hatchling wheel package selection must keep the "
-            "src/vespercode tree",
+            "the Hatchling wheel package selection must keep the src/vespercode tree",
         )
         self.assertIn(
             "vespercode/**/*.py",
             pyproject,
-            "the wheel include pattern must select every packaged "
-            "Python file",
+            "the wheel include pattern must select every packaged Python file",
         )
 
     def test_the_pin_covers_every_v2_module_in_the_source_tree(self) -> None:
@@ -269,9 +265,7 @@ class V2WheelContractTests(unittest.TestCase):
         )
 
     def test_required_members_never_leak_outside_the_packaged_tree(self) -> None:
-        prohibited_segments = {
-            name.rstrip("/") for name in _prohibited_wheel_members()
-        }
+        prohibited_segments = {name.rstrip("/") for name in _prohibited_wheel_members()}
         for member in _required_runtime_members():
             first_segment = member.split("/", 1)[0]
             self.assertNotIn(

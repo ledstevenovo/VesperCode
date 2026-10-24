@@ -197,11 +197,19 @@ class PlannedWriteV2:
     def __post_init__(self) -> None:
         if not isinstance(self.operation, WriteOperationV2):
             raise ValueError("operation must be a WriteOperationV2")
-        if not isinstance(self.expected_original, str) and self.expected_original is not None:
+        if (
+            not isinstance(self.expected_original, str)
+            and self.expected_original is not None
+        ):
             raise ValueError("expected_original must be a string or None")
-        if self.operation.action_type == "CREATE" and self.expected_original is not None:
+        if (
+            self.operation.action_type == "CREATE"
+            and self.expected_original is not None
+        ):
             raise ValueError("CREATE plans must not expect original content")
-        if self.operation.action_type == "REPLACE" and not isinstance(self.expected_original, str):
+        if self.operation.action_type == "REPLACE" and not isinstance(
+            self.expected_original, str
+        ):
             raise ValueError("REPLACE plans require expected_original")
 
 
@@ -217,9 +225,15 @@ class WritebackRequestV2:
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "run_id", _identifier(self.run_id, "run_id"))
-        object.__setattr__(self, "candidate_id", _identifier(self.candidate_id, "candidate_id"))
-        object.__setattr__(self, "candidate_revision", _revision(self.candidate_revision))
-        object.__setattr__(self, "approval_id", _identifier(self.approval_id, "approval_id"))
+        object.__setattr__(
+            self, "candidate_id", _identifier(self.candidate_id, "candidate_id")
+        )
+        object.__setattr__(
+            self, "candidate_revision", _revision(self.candidate_revision)
+        )
+        object.__setattr__(
+            self, "approval_id", _identifier(self.approval_id, "approval_id")
+        )
         if not isinstance(self.operations, tuple):
             raise ValueError("operations must be a tuple of WriteOperationV2")
         if not self.operations:
@@ -255,7 +269,9 @@ class RecoveryItemV2:
 
     def __post_init__(self) -> None:
         if self.state not in {"APPLIED", "PENDING", "DRIFTED", "UNREADABLE"}:
-            raise ValueError("recovery item state must be APPLIED, PENDING, DRIFTED, or UNREADABLE")
+            raise ValueError(
+                "recovery item state must be APPLIED, PENDING, DRIFTED, or UNREADABLE"
+            )
 
 
 @dataclass(frozen=True, slots=True)
@@ -272,8 +288,12 @@ class RecoveryPreviewV2:
             raise ValueError("items must be a tuple of RecoveryItemV2")
         if self.transaction_state not in ACTIVE_TRANSACTION_STATES:
             raise ValueError("preview requires a non-terminal transaction state")
-        if self.blocked != any(item.state in {"DRIFTED", "UNREADABLE"} for item in self.items):
-            raise ValueError("blocked must match the presence of DRIFTED or UNREADABLE items")
+        if self.blocked != any(
+            item.state in {"DRIFTED", "UNREADABLE"} for item in self.items
+        ):
+            raise ValueError(
+                "blocked must match the presence of DRIFTED or UNREADABLE items"
+            )
 
 
 @dataclass(frozen=True, slots=True)

@@ -38,7 +38,7 @@ import html
 from dataclasses import dataclass, field
 from typing import Callable, Mapping
 
-from vespercode.shell_v2 import V2ShellError
+from vespercode.shell_v2 import V2LocalShellPort, V2ShellError
 from vespercode.web.v2_forms import (
     V2FormError,
     V2_RECOVERY_APPLY_FORM,
@@ -104,12 +104,26 @@ def _esc(value: object) -> str:
     return html.escape(str(value), quote=True)
 
 
+def _revision_field(parsed: Mapping[str, object], name: str) -> int | None:
+    """Narrow one parsed form field to its typed integer value.
+
+    The form contract parses every field into ``object``; the ``revision``
+    kind is typed as an integer by the parser, so the app narrows it
+    explicitly (fail-closed: a non-integer is a malformed form).
+    """
+
+    value = parsed[name]
+    if isinstance(value, bool) or not isinstance(value, int):
+        return None
+    return value
+
+
 class V2LocalWebApp:
     """The closed local WebUI composition over one injected shell."""
 
     def __init__(
         self,
-        shell,
+        shell: V2LocalShellPort,
         *,
         config: V2LocalSecurityConfig | None = None,
         session_manager: V2LocalSessionManager | None = None,
@@ -123,7 +137,7 @@ class V2LocalWebApp:
             if session_manager is not None
             else V2LocalSessionManager(self._config)
         )
-        self._routes: dict[tuple[str, str], Callable] = {
+        self._routes: dict[tuple[str, str], Callable[..., V2WebResponse]] = {
             ("GET", "/"): self._home,
             ("GET", "/runs"): self._runs_page,
             ("GET", "/run"): self._run_detail_page,
@@ -189,22 +203,23 @@ class V2LocalWebApp:
             f"<p>runs recorded (latest {_MAX_RUNS_ON_PAGE}): {len(runs)}</p>",
             f"<p>pending recovery transactions: {len(pending)}</p>",
             "<ul>"
-            "<li><a href=\"/runs\">runs</a></li>"
-            "<li><a href=\"/recovery\">recovery</a></li>"
-            "<li><a href=\"/credentials\">credentials</a></li>"
-            "<li><a href=\"/disclosures\">disclosures</a></li>"
+            '<li><a href="/runs">runs</a></li>'
+            '<li><a href="/recovery">recovery</a></li>'
+            '<li><a href="/credentials">credentials</a></li>'
+            '<li><a href="/disclosures">disclosures</a></li>'
             "</ul>",
             "<h2>Start a local run</h2>",
-            "<form method=\"post\" action=\"/run/start\">",
+            '<form method="post" action="/run/start">',
             self._csrf_input(session),
-            "<label>task <textarea name=\"task\" rows=\"4\" "
-            "maxlength=\"4096\" required></textarea></label><br>",
-            "<label>type CONFIRM to run <input name=\"confirm\" "
-            "required></label><br>",
-            "<button type=\"submit\">start run</button>",
+            '<label>task <textarea name="task" rows="4" '
+            'maxlength="4096" required></textarea></label><br>',
+            '<label>type CONFIRM to run <input name="confirm" required></label><br>',
+            '<button type="submit">start run</button>',
             "</form>",
         ]
-        return self._render(200, "\n".join(body), session=session, session_created=created)
+        return self._render(
+            200, "\n".join(body), session=session, session_created=created
+        )
 
     def _runs_page(
         self, request: V2WebRequest, session: V2LocalSessionV2, created: bool
@@ -212,7 +227,7 @@ class V2LocalWebApp:
         runs = self._shell.recent_runs(_MAX_RUNS_ON_PAGE)
         rows = [
             "<tr>"
-            f"<td><a href=\"/run?run_id={_esc(run.run_id)}\">{_esc(run.run_id)}</a></td>"
+            f'<td><a href="/run?run_id={_esc(run.run_id)}">{_esc(run.run_id)}</a></td>'
             f"<td>{_esc(run.status)}</td>"
             f"<td>{_esc(run.phase if run.phase is not None else '-')}</td>"
             f"<td>{_esc(run.revision)}</td>"
@@ -226,7 +241,9 @@ class V2LocalWebApp:
             *rows,
             "</tbody></table>",
         ]
-        return self._render(200, "\n".join(body), session=session, session_created=created)
+        return self._render(
+            200, "\n".join(body), session=session, session_created=created
+        )
 
     def _run_detail_page(
         self, request: V2WebRequest, session: V2LocalSessionV2, created: bool
@@ -245,23 +262,25 @@ class V2LocalWebApp:
             f"<p>phase: {_esc(run.phase if run.phase is not None else '-')}</p>",
             f"<p>revision: {_esc(run.revision)}</p>",
             "<h2>Approve a writeback</h2>",
-            "<form method=\"post\" action=\"/writeback/approve\">",
+            '<form method="post" action="/writeback/approve">',
             self._csrf_input(session),
-            f"<label>run_id <input name=\"run_id\" value=\"{_esc(run.run_id)}\" readonly></label><br>",
-            "<label>candidate_id <input name=\"candidate_id\" required></label><br>",
-            "<label>candidate_revision <input name=\"candidate_revision\" required></label><br>",
-            "<label>type CONFIRM to approve <input name=\"confirm\" required></label><br>",
-            "<button type=\"submit\">create approval</button>",
+            f'<label>run_id <input name="run_id" value="{_esc(run.run_id)}" readonly></label><br>',
+            '<label>candidate_id <input name="candidate_id" required></label><br>',
+            '<label>candidate_revision <input name="candidate_revision" required></label><br>',
+            '<label>type CONFIRM to approve <input name="confirm" required></label><br>',
+            '<button type="submit">create approval</button>',
             "</form>",
         ]
-        return self._render(200, "\n".join(body), session=session, session_created=created)
+        return self._render(
+            200, "\n".join(body), session=session, session_created=created
+        )
 
     def _recovery_page(
         self, request: V2WebRequest, session: V2LocalSessionV2, created: bool
     ) -> V2WebResponse:
         transaction_ids = self._shell.pending_transaction_ids()
         items = [
-            f"<li><a href=\"/recovery/preview?transaction_id={_esc(tid)}\">"
+            f'<li><a href="/recovery/preview?transaction_id={_esc(tid)}">'
             f"{_esc(tid)}</a></li>"
             for tid in transaction_ids
         ]
@@ -272,7 +291,9 @@ class V2LocalWebApp:
             *items,
             "</ul>",
         ]
-        return self._render(200, "\n".join(body), session=session, session_created=created)
+        return self._render(
+            200, "\n".join(body), session=session, session_created=created
+        )
 
     def _recovery_preview_page(
         self, request: V2WebRequest, session: V2LocalSessionV2, created: bool
@@ -305,14 +326,16 @@ class V2LocalWebApp:
             *rows,
             "</tbody></table>",
             "<h2>Apply this transaction</h2>",
-            "<form method=\"post\" action=\"/recovery/apply\">",
+            '<form method="post" action="/recovery/apply">',
             self._csrf_input(session),
-            f"<label>transaction_id <input name=\"transaction_id\" value=\"{_esc(preview.transaction_id)}\" readonly></label><br>",
-            "<label>type CONFIRM to apply <input name=\"confirm\" required></label><br>",
-            "<button type=\"submit\">apply</button>",
+            f'<label>transaction_id <input name="transaction_id" value="{_esc(preview.transaction_id)}" readonly></label><br>',
+            '<label>type CONFIRM to apply <input name="confirm" required></label><br>',
+            '<button type="submit">apply</button>',
             "</form>",
         ]
-        return self._render(200, "\n".join(body), session=session, session_created=created)
+        return self._render(
+            200, "\n".join(body), session=session, session_created=created
+        )
 
     def _credentials_page(
         self, request: V2WebRequest, session: V2LocalSessionV2, created: bool
@@ -321,9 +344,9 @@ class V2LocalWebApp:
             "<h1>v2 credential status</h1>",
             "<p>Status carries the provider, a configured flag, and an update "
             "time only — never a secret value, length, or derivative.</p>",
-            "<form method=\"get\" action=\"/credentials\">",
-            "<label>provider <input name=\"provider\" required></label>",
-            "<button type=\"submit\">show status</button>",
+            '<form method="get" action="/credentials">',
+            '<label>provider <input name="provider" required></label>',
+            '<button type="submit">show status</button>',
             "</form>",
         ]
         if "provider" in request.form:
@@ -340,7 +363,9 @@ class V2LocalWebApp:
                     f"<p>updated_at: {_esc(status.updated_at if status.updated_at is not None else '-')}</p>",
                 ]
             )
-        return self._render(200, "\n".join(body), session=session, session_created=created)
+        return self._render(
+            200, "\n".join(body), session=session, session_created=created
+        )
 
     def _disclosures_page(
         self, request: V2WebRequest, session: V2LocalSessionV2, created: bool
@@ -366,7 +391,9 @@ class V2LocalWebApp:
             *rows,
             "</tbody></table>",
         ]
-        return self._render(200, "\n".join(body), session=session, session_created=created)
+        return self._render(
+            200, "\n".join(body), session=session, session_created=created
+        )
 
     # ------------------------------------------------------------------
     # handlers (explicit, confirmed mutations)
@@ -392,16 +419,18 @@ class V2LocalWebApp:
             f"<p>stop_reason: {_esc(outcome.stop_reason)}</p>",
             f"<p>turns: {_esc(outcome.turns)}</p>",
             "<h2>Approve the writeback</h2>",
-            "<form method=\"post\" action=\"/writeback/approve\">",
+            '<form method="post" action="/writeback/approve">',
             self._csrf_input(session),
-            f"<label>run_id <input name=\"run_id\" value=\"{_esc(outcome.run_id)}\" readonly></label><br>",
-            f"<label>candidate_id <input name=\"candidate_id\" value=\"{_esc(outcome.candidate_id)}\" readonly></label><br>",
-            f"<label>candidate_revision <input name=\"candidate_revision\" value=\"{_esc(outcome.candidate_revision)}\" readonly></label><br>",
-            "<label>type CONFIRM to approve <input name=\"confirm\" required></label><br>",
-            "<button type=\"submit\">create approval</button>",
+            f'<label>run_id <input name="run_id" value="{_esc(outcome.run_id)}" readonly></label><br>',
+            f'<label>candidate_id <input name="candidate_id" value="{_esc(outcome.candidate_id)}" readonly></label><br>',
+            f'<label>candidate_revision <input name="candidate_revision" value="{_esc(outcome.candidate_revision)}" readonly></label><br>',
+            '<label>type CONFIRM to approve <input name="confirm" required></label><br>',
+            '<button type="submit">create approval</button>',
             "</form>",
         ]
-        return self._render(200, "\n".join(body), session=session, session_created=created)
+        return self._render(
+            200, "\n".join(body), session=session, session_created=created
+        )
 
     def _writeback_approve(
         self, request: V2WebRequest, session: V2LocalSessionV2, created: bool
@@ -412,7 +441,9 @@ class V2LocalWebApp:
             return self._form_error()
         run_id = str(parsed["run_id"])
         candidate_id = str(parsed["candidate_id"])
-        candidate_revision = int(parsed["candidate_revision"])
+        candidate_revision = _revision_field(parsed, "candidate_revision")
+        if candidate_revision is None:
+            return self._form_error()
         if self._shell.run_detail(run_id) is None:
             return self._static_error(404, "Unknown run")
         current = self._shell.candidate_revision(run_id, candidate_id)
@@ -435,17 +466,19 @@ class V2LocalWebApp:
             f"<p>candidate_id: {_esc(candidate_id)}</p>",
             f"<p>candidate_revision: {_esc(candidate_revision)}</p>",
             "<h2>Apply the approved writeback</h2>",
-            "<form method=\"post\" action=\"/writeback/apply\">",
+            '<form method="post" action="/writeback/apply">',
             self._csrf_input(session),
-            f"<label>run_id <input name=\"run_id\" value=\"{_esc(run_id)}\" readonly></label><br>",
-            f"<label>candidate_id <input name=\"candidate_id\" value=\"{_esc(candidate_id)}\" readonly></label><br>",
-            f"<label>candidate_revision <input name=\"candidate_revision\" value=\"{_esc(candidate_revision)}\" readonly></label><br>",
-            f"<label>approval_id <input name=\"approval_id\" value=\"{_esc(approval_id)}\" readonly></label><br>",
-            "<label>type CONFIRM to apply <input name=\"confirm\" required></label><br>",
-            "<button type=\"submit\">apply writeback</button>",
+            f'<label>run_id <input name="run_id" value="{_esc(run_id)}" readonly></label><br>',
+            f'<label>candidate_id <input name="candidate_id" value="{_esc(candidate_id)}" readonly></label><br>',
+            f'<label>candidate_revision <input name="candidate_revision" value="{_esc(candidate_revision)}" readonly></label><br>',
+            f'<label>approval_id <input name="approval_id" value="{_esc(approval_id)}" readonly></label><br>',
+            '<label>type CONFIRM to apply <input name="confirm" required></label><br>',
+            '<button type="submit">apply writeback</button>',
             "</form>",
         ]
-        return self._render(200, "\n".join(body), session=session, session_created=created)
+        return self._render(
+            200, "\n".join(body), session=session, session_created=created
+        )
 
     def _writeback_apply(
         self, request: V2WebRequest, session: V2LocalSessionV2, created: bool
@@ -456,7 +489,9 @@ class V2LocalWebApp:
             return self._form_error()
         run_id = str(parsed["run_id"])
         candidate_id = str(parsed["candidate_id"])
-        candidate_revision = int(parsed["candidate_revision"])
+        candidate_revision = _revision_field(parsed, "candidate_revision")
+        if candidate_revision is None:
+            return self._form_error()
         if self._shell.run_detail(run_id) is None:
             return self._static_error(404, "Unknown run")
         current = self._shell.candidate_revision(run_id, candidate_id)
@@ -480,7 +515,9 @@ class V2LocalWebApp:
             f"<p>transaction_id: {_esc(outcome.transaction_id if outcome.transaction_id is not None else '-')}</p>",
             f"<p>{_esc(outcome.message)}</p>",
         ]
-        return self._render(status, "\n".join(body), session=session, session_created=created)
+        return self._render(
+            status, "\n".join(body), session=session, session_created=created
+        )
 
     def _recovery_apply(
         self, request: V2WebRequest, session: V2LocalSessionV2, created: bool
@@ -501,7 +538,9 @@ class V2LocalWebApp:
             f"<p>transaction_id: {_esc(outcome.transaction_id)}</p>",
             f"<p>{_esc(outcome.message)}</p>",
         ]
-        return self._render(status, "\n".join(body), session=session, session_created=created)
+        return self._render(
+            status, "\n".join(body), session=session, session_created=created
+        )
 
     # ------------------------------------------------------------------
     # bounded error rendering
@@ -509,8 +548,8 @@ class V2LocalWebApp:
 
     def _csrf_input(self, session: V2LocalSessionV2) -> str:
         return (
-            "<input type=\"hidden\" name=\"csrf_token\" "
-            f"value=\"{_esc(session.csrf_token)}\">"
+            '<input type="hidden" name="csrf_token" '
+            f'value="{_esc(session.csrf_token)}">'
         )
 
     def _render(

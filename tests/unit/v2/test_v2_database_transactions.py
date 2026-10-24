@@ -37,7 +37,9 @@ class V2TransactionDatabaseTests(unittest.TestCase):
     def _approved_candidate(self, revision: int = 0) -> tuple[str, str, str]:
         run_id = self.database.create_run(str(self.root))
         snapshot_id = self.database.create_snapshot(run_id)
-        candidate_id = self.database.create_candidate(run_id, snapshot_id, revision=revision)
+        candidate_id = self.database.create_candidate(
+            run_id, snapshot_id, revision=revision
+        )
         approval_id = self.database.create_writeback_approval(
             run_id=run_id,
             candidate_id=candidate_id,
@@ -257,7 +259,9 @@ class V2TransactionDatabaseTests(unittest.TestCase):
             ("PREPARED", "WRITING", "UNRESOLVED")
         )
         self.assertEqual([row["transaction_id"] for row in active], [second])
-        terminal = self.database.list_transactions_in_states(("COMMITTED", "ROLLED_BACK"))
+        terminal = self.database.list_transactions_in_states(
+            ("COMMITTED", "ROLLED_BACK")
+        )
         self.assertEqual([row["transaction_id"] for row in terminal], [first])
 
     def test_an_older_v2_schema_version_is_rejected_on_open(self) -> None:
@@ -265,7 +269,9 @@ class V2TransactionDatabaseTests(unittest.TestCase):
         initialize_v2_database(legacy)
         connection = sqlite3.connect(legacy)
         connection.execute("DELETE FROM v2_schema_meta")
-        connection.execute("INSERT INTO v2_schema_meta VALUES (2, 'relaxed_identity_v2')")
+        connection.execute(
+            "INSERT INTO v2_schema_meta VALUES (2, 'relaxed_identity_v2')"
+        )
         connection.commit()
         connection.close()
         with self.assertRaisesRegex(V2DatabaseError, "invalid"):

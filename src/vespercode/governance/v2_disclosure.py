@@ -118,8 +118,7 @@ _OUTCOME_MESSAGES: dict[str, str] = {
         "reference profile revision"
     ),
     "SCOPE_EXCEEDED": (
-        "a requested source is outside the grant's categories and path "
-        "scopes"
+        "a requested source is outside the grant's categories and path scopes"
     ),
     "BUDGET_EXCEEDED": "the charge would exceed the grant's remaining byte budget",
 }
@@ -171,9 +170,7 @@ def _canonical_path(value: str, field_name: str) -> str:
     if "\\" in value:
         raise ValueError(f"{field_name} must use '/' separators only")
     if ":" in value:
-        raise ValueError(
-            f"{field_name} must not contain a drive or stream separator"
-        )
+        raise ValueError(f"{field_name} must not contain a drive or stream separator")
     if value.startswith("/"):
         raise ValueError(f"{field_name} must be relative, not absolute")
     parts = value.split("/")
@@ -234,9 +231,7 @@ class DisclosurePathScopeV2:
             if self.path != "":
                 raise ValueError("a ROOT scope carries no path")
         else:
-            object.__setattr__(
-                self, "path", _canonical_path(self.path, "scope path")
-            )
+            object.__setattr__(self, "path", _canonical_path(self.path, "scope path"))
 
 
 @dataclass(frozen=True, slots=True)
@@ -262,9 +257,7 @@ class DisclosureSourceV2:
         if self.category in PATH_BEARING_SOURCE_CATEGORIES_V2:
             if self.path is None:
                 raise ValueError(f"{self.category} sources require a path")
-            object.__setattr__(
-                self, "path", _canonical_path(self.path, "source path")
-            )
+            object.__setattr__(self, "path", _canonical_path(self.path, "source path"))
         elif self.path is not None:
             raise ValueError(f"{self.category} sources carry no path")
 
@@ -421,9 +414,7 @@ class DisclosureGrantRecordV2:
     status: str
 
     def __post_init__(self) -> None:
-        object.__setattr__(
-            self, "grant_id", _identifier(self.grant_id, "grant_id")
-        )
+        object.__setattr__(self, "grant_id", _identifier(self.grant_id, "grant_id"))
         object.__setattr__(
             self, "disclosure_id", _identifier(self.disclosure_id, "disclosure_id")
         )
@@ -436,9 +427,7 @@ class DisclosureGrantRecordV2:
         object.__setattr__(
             self,
             "reference_profile_revision",
-            _revision(
-                self.reference_profile_revision, "reference_profile_revision"
-            ),
+            _revision(self.reference_profile_revision, "reference_profile_revision"),
         )
         object.__setattr__(
             self, "expires_at", _timestamp(self.expires_at, "expires_at")
@@ -500,9 +489,7 @@ class DisclosureAuthorizationRecordV2:
             "authorization_id",
             _identifier(self.authorization_id, "authorization_id"),
         )
-        object.__setattr__(
-            self, "grant_id", _identifier(self.grant_id, "grant_id")
-        )
+        object.__setattr__(self, "grant_id", _identifier(self.grant_id, "grant_id"))
         object.__setattr__(self, "run_id", _identifier(self.run_id, "run_id"))
         object.__setattr__(
             self, "request_id", _identifier(self.request_id, "request_id")
@@ -510,7 +497,9 @@ class DisclosureAuthorizationRecordV2:
         object.__setattr__(
             self, "endpoint_id", _identifier(self.endpoint_id, "endpoint_id")
         )
-        if isinstance(self.charge_bytes, bool) or not isinstance(self.charge_bytes, int):
+        if isinstance(self.charge_bytes, bool) or not isinstance(
+            self.charge_bytes, int
+        ):
             raise ValueError("charge_bytes must be an integer")
         if not (
             MIN_DISCLOSURE_CHARGE_BYTES_V2
@@ -520,8 +509,7 @@ class DisclosureAuthorizationRecordV2:
             raise ValueError("charge_bytes is outside the bounded range")
         if self.status not in DISCLOSURE_AUTHORIZATION_STATUSES_V2:
             raise ValueError(
-                "status must be one of "
-                f"{sorted(DISCLOSURE_AUTHORIZATION_STATUSES_V2)}"
+                f"status must be one of {sorted(DISCLOSURE_AUTHORIZATION_STATUSES_V2)}"
             )
         object.__setattr__(
             self,
@@ -549,8 +537,7 @@ def disclosure_outcome_message(kind: str) -> str:
 _CONSUME_MESSAGES: dict[str, str] = {
     "CONSUMED": "the authorization was consumed one-shot",
     "NOT_AUTHORIZED": (
-        "the authorization is missing, misbound, or not in the "
-        "AUTHORIZED state"
+        "the authorization is missing, misbound, or not in the AUTHORIZED state"
     ),
     "GRANT_NOT_ACTIVE": "the grant is not active or is expired",
 }
@@ -589,8 +576,7 @@ class DisclosureConsumeOutcomeV2:
             )
         if self.message != _CONSUME_MESSAGES[self.kind]:
             raise ValueError(
-                "consume outcome message must be the closed static "
-                "message of its kind"
+                "consume outcome message must be the closed static message of its kind"
             )
 
 
@@ -618,9 +604,7 @@ class DisclosureAuthorizationOutcomeV2:
             )
         if self.kind in ("AUTHORIZED", "REPLAY"):
             if not isinstance(self.authorization, DisclosureAuthorizationRecordV2):
-                raise ValueError(
-                    f"{self.kind} outcomes carry the authorization record"
-                )
+                raise ValueError(f"{self.kind} outcomes carry the authorization record")
         elif self.authorization is not None:
             raise ValueError(f"{self.kind} outcomes carry no authorization record")
         if (

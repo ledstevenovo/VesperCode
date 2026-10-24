@@ -107,7 +107,12 @@ class LocalDiskWorkspacePort:
                 os.link(temp, resolved.absolute)
                 os.unlink(temp)
             else:
-                self._verify_expected_original(resolved, planned.expected_original)
+                expected_original = planned.expected_original
+                if not isinstance(expected_original, str):
+                    raise WorkspaceContentMismatchError(
+                        "REPLACE plan carries no expected original"
+                    )
+                self._verify_expected_original(resolved, expected_original)
                 os.replace(temp, resolved.absolute)
             if os.name == "posix":
                 self._fsync_directory(parent)

@@ -132,9 +132,7 @@ class DatabaseBackedExecutionBindingTests(unittest.TestCase):
         self.database = open_v2_database(self.database_path)
         self.run_id = self.database.create_run(str(self.root))
         snapshot_id = self.database.create_snapshot(self.run_id)
-        self.candidate_id = self.database.create_candidate(
-            self.run_id, snapshot_id
-        )
+        self.candidate_id = self.database.create_candidate(self.run_id, snapshot_id)
         self.database.create_reference_profile(_reference_profile())
         self.validation_run_id = self.database.create_validation_run(
             run_id=self.run_id,
@@ -144,9 +142,7 @@ class DatabaseBackedExecutionBindingTests(unittest.TestCase):
             reference_profile_revision=3,
         )
         self.assertTrue(
-            self.database.record_validation_result(
-                self.validation_run_id, "PASSED"
-            )
+            self.database.record_validation_result(self.validation_run_id, "PASSED")
         )
         self.binding = DatabaseBackedExecutionBinding(self.database)
         self.readiness = FakeV2Readiness()
@@ -172,9 +168,7 @@ class DatabaseBackedExecutionBindingTests(unittest.TestCase):
         validation_run_id: str | None = None,
         reference_profile_revision: int | None = None,
     ) -> ExecutionActionRequestV2:
-        bound_candidate = (
-            self.candidate_id if candidate_id is None else candidate_id
-        )
+        bound_candidate = self.candidate_id if candidate_id is None else candidate_id
         bound_revision = 0 if candidate_revision is None else candidate_revision
         values: dict[str, object] = {
             "request_id": "exec-request-db-1",
@@ -182,8 +176,7 @@ class DatabaseBackedExecutionBindingTests(unittest.TestCase):
             "execution_profile_revision": 4,
             "reference_profile_id": "reference-1",
             "reference_profile_revision": (
-                3 if reference_profile_revision is None
-                else reference_profile_revision
+                3 if reference_profile_revision is None else reference_profile_revision
             ),
             "run_id": self.run_id if run_id is None else run_id,
             "candidate_id": bound_candidate,
@@ -207,9 +200,7 @@ class DatabaseBackedExecutionBindingTests(unittest.TestCase):
             reference_profile_id="reference-1",
             reference_profile_revision=3,
         )
-        self.assertTrue(
-            self.database.record_validation_result(identifier, "PASSED")
-        )
+        self.assertTrue(self.database.record_validation_result(identifier, "PASSED"))
         return identifier
 
     def _snapshot_tables(self) -> dict[str, list[tuple]]:
@@ -275,9 +266,7 @@ class DatabaseBackedExecutionBindingTests(unittest.TestCase):
         self.assertEqual(facts.candidate_id, self.candidate_id)
         self.assertEqual(facts.candidate_revision, 0)
         assert facts.validation is not None
-        self.assertEqual(
-            facts.validation.validation_run_id, self.validation_run_id
-        )
+        self.assertEqual(facts.validation.validation_run_id, self.validation_run_id)
         self.assertEqual(facts.validation.run_id, self.run_id)
         self.assertEqual(facts.validation.candidate_id, self.candidate_id)
         self.assertEqual(facts.validation.candidate_revision, 0)
@@ -354,9 +343,7 @@ class DatabaseBackedExecutionBindingTests(unittest.TestCase):
     def test_a_candidate_from_a_foreign_run_rejects(self) -> None:
         other_run = self.database.create_run(str(self.root))
         other_snapshot = self.database.create_snapshot(other_run)
-        other_candidate = self.database.create_candidate(
-            other_run, other_snapshot
-        )
+        other_candidate = self.database.create_candidate(other_run, other_snapshot)
         outcome = self.service.execute(
             self._request(
                 candidate_id=other_candidate,
@@ -369,9 +356,7 @@ class DatabaseBackedExecutionBindingTests(unittest.TestCase):
         self.assertEqual(self.executor.calls, [])
 
     def test_an_unknown_validation_run_rejects_before_readiness(self) -> None:
-        outcome = self.service.execute(
-            self._request(validation_run_id="valid-missing")
-        )
+        outcome = self.service.execute(self._request(validation_run_id="valid-missing"))
         self.assertEqual(outcome.status, "FAILED")
         self.assertEqual(outcome.error_code, "VALIDATION_BINDING_NOT_FOUND")
         self.assertEqual(self.readiness.checks, [])
@@ -380,9 +365,7 @@ class DatabaseBackedExecutionBindingTests(unittest.TestCase):
     def test_a_validation_from_a_foreign_run_rejects(self) -> None:
         other_run = self.database.create_run(str(self.root))
         other_snapshot = self.database.create_snapshot(other_run)
-        other_candidate = self.database.create_candidate(
-            other_run, other_snapshot
-        )
+        other_candidate = self.database.create_candidate(other_run, other_snapshot)
         other_validation = self.database.create_validation_run(
             run_id=other_run,
             candidate_id=other_candidate,
@@ -410,9 +393,7 @@ class DatabaseBackedExecutionBindingTests(unittest.TestCase):
         # current revision — a request still citing the OLD revision is
         # stale: the resolved facts carry the current revision, and the
         # service comparison rejects with the closed STALE code.
-        self.assertTrue(
-            self.database.advance_candidate(self.candidate_id, 0)
-        )
+        self.assertTrue(self.database.advance_candidate(self.candidate_id, 0))
         current_validation = self._passed_validation(revision=1)
         outcome = self.service.execute(
             self._request(validation_run_id=current_validation)
@@ -437,9 +418,7 @@ class DatabaseBackedExecutionBindingTests(unittest.TestCase):
         # The candidate advanced AFTER the validation passed: the
         # recorded PASSED validation is no longer evidence for the
         # current revision and must not resolve.
-        self.assertTrue(
-            self.database.advance_candidate(self.candidate_id, 0)
-        )
+        self.assertTrue(self.database.advance_candidate(self.candidate_id, 0))
         outcome = self.service.execute(
             self._request(
                 candidate_revision=1,
@@ -562,9 +541,7 @@ class DatabaseBackedExecutionBindingTests(unittest.TestCase):
                 validation_run_id=orphan_validation,
             )
         )
-        self.assertEqual(
-            service_outcome.error_code, "PROFILE_BINDING_MISMATCH"
-        )
+        self.assertEqual(service_outcome.error_code, "PROFILE_BINDING_MISMATCH")
         self.assertEqual(self.readiness.checks, [])
         self.assertEqual(self.executor.calls, [])
 
@@ -636,7 +613,11 @@ class DatabaseBackedExecutionBindingTests(unittest.TestCase):
             3,
         )
         self.binding.lookup_execution_binding(
-            self.run_id, self.candidate_id, None, "reference-1", 3,
+            self.run_id,
+            self.candidate_id,
+            None,
+            "reference-1",
+            3,
         )
         self.binding.lookup_execution_binding(
             self.run_id,

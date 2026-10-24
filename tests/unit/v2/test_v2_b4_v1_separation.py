@@ -178,9 +178,7 @@ class B4V1SeparationTests(unittest.TestCase):
     def test_the_only_process_edges_are_the_docker_probe_and_executor(
         self,
     ) -> None:
-        process_import = re.compile(
-            r"^\s*(?:from|import)\s+subprocess\b", re.MULTILINE
-        )
+        process_import = re.compile(r"^\s*(?:from|import)\s+subprocess\b", re.MULTILINE)
         process_call = re.compile(r"\bos\.(?:system|popen|exec[lv])\b")
         for relative in _B4_MODULES:
             source = _source(relative)
@@ -204,9 +202,7 @@ class B4V1SeparationTests(unittest.TestCase):
             )
 
     def test_no_b4_module_imports_sockets(self) -> None:
-        socket_import = re.compile(
-            r"^\s*(?:from|import)\s+socket\b", re.MULTILINE
-        )
+        socket_import = re.compile(r"^\s*(?:from|import)\s+socket\b", re.MULTILINE)
         for relative in _B4_MODULES:
             self.assertIsNone(
                 socket_import.search(_source(relative)),

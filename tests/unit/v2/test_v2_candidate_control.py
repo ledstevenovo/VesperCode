@@ -48,7 +48,9 @@ class CandidateControlIdentityTests(unittest.TestCase):
 
         self.assertEqual(identity.revision, 0)
         self.assertEqual(identity.status, "ACTIVE")
-        self.assertEqual(CANDIDATE_CONTROL_STATUSES_V2, frozenset({"ACTIVE", "SUPERSEDED"}))
+        self.assertEqual(
+            CANDIDATE_CONTROL_STATUSES_V2, frozenset({"ACTIVE", "SUPERSEDED"})
+        )
         # No content digest is carried as identity or authorization.
         for forbidden in (
             "digest",
@@ -125,9 +127,7 @@ class CandidateControlIdentityTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "unknown"):
             candidate_control_from_mapping({**good, "digest": "a" * 64})
         with self.assertRaisesRegex(ValueError, "unknown"):
-            candidate_control_from_mapping(
-                {**good, "candidate_tree_digest": "a" * 64}
-            )
+            candidate_control_from_mapping({**good, "candidate_tree_digest": "a" * 64})
         with self.assertRaises(ValueError):
             candidate_control_from_mapping(("candidate_id", "c"))
 
