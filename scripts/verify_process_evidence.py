@@ -26,8 +26,19 @@ from pydantic import BaseModel, ConfigDict
 
 # PLAN contract pins (verified against the committed PLAN.md; changing either
 # of these without a matching PLAN change fails closed).
-EXPECTED_TASK_COUNT = 68
-EXPECTED_LEGACY_STEP_COUNT = 141
+#
+# v2 alignment (round 3, decision B): the committed PLAN.md @ c64b3c8 uses the
+# relaxed v2 card format (``## Task V2-01 …``, ``## Task RA-01 …``,
+# ``## Task B1-01 …`` …) with 40 task cards and zero ``**Legacy steps:**``
+# lines.  The v1 pins (68 ``### Task T`` cards / 141 legacy steps) described
+# the pre-b436ad3 plan and no longer match the committed plan, so the loader
+# failed closed on the real records.  The pins below are the v2 measured
+# values (source: PLAN.md @ c64b3c8, 40 ``## Task`` cards, 0 legacy-step
+# lines); the fail-closed semantics are unchanged — a PLAN that drifts from
+# these counts is rejected with PLAN_TASK_COUNT_MISMATCH /
+# PLAN_LEGACY_STEP_COUNT_MISMATCH.
+EXPECTED_TASK_COUNT = 40
+EXPECTED_LEGACY_STEP_COUNT = 0
 
 # The cold-start completion heading must positively say the cold start
 # passed (``冷启动[^\n未]*通过`` — single line, rejects a corrupted
@@ -37,7 +48,23 @@ EXPECTED_LEGACY_STEP_COUNT = 141
 _COLD_START_HEADING_RE = re.compile(r"^## \d+\. .*冷启动[^\n未]*通过", re.MULTILINE)
 _DOCUMENT_CHECK_HEADING_RE = re.compile(r"^## \d+\. .*文档检查", re.MULTILINE)
 _POSITIVE_RESULT_RE = re.compile(r"通过|完成")
-_TASK_HEADING_RE = re.compile(r"^### Task (T\d+\.\d+):", re.MULTILINE)
+# v2 relaxed card headings: ``## Task V2-01 — …``, ``## Task RA-01 — …``,
+# ``## Task B1-01 — …`` …  The id is ``[A-Z][A-Za-z0-9]+-[A-Za-z0-9]+…``
+# (V2-xx / RA-xx / B1-xx / B2-xx / B3-xx / B4a-xx / B4b-02A / B4b-02C1 …).
+# The literal ``Task `` prefix is required, exactly as the v1 pattern
+# ``^### Task (T\d+\.\d+):`` required it, so only genuine task cards are
+# counted.  The ``## B4b-02C2 public deployment decision`` heading (a decision
+# record, not a card — no Goal/Files/Implementation/Status fields) and the
+# non-card ``## `` headings (``## Goal and stop condition``, the lowercase
+# continuation lines ``## execution binding`` / ``## the real provider transport
+# boundary``) carry no ``Task `` + dashed id and are not matched.  This
+# replaced the v1 ``^### Task (T\d+\.\d+):`` pattern when the PLAN moved to
+# the relaxed v2 format; the captured id feeds the same
+# PLAN_TASK_COUNT_MISMATCH check.
+_TASK_HEADING_RE = re.compile(
+    r"^## Task ([A-Z][A-Za-z0-9]+-[A-Za-z0-9]+[A-Za-z0-9]*)\s",
+    re.MULTILINE,
+)
 _LEGACY_STEPS_RE = re.compile(r"^\*\*Legacy steps:\*\*\s*(.+)$", re.MULTILINE)
 _LEGACY_TOKEN_SPLIT_RE = re.compile(r"[;,、]")
 _ANCHOR_RE = re.compile(

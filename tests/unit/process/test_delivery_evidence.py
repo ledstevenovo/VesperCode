@@ -14,13 +14,13 @@ import pytest
 pytest.importorskip("pydantic")
 
 from conftest import (  # type: ignore[import-not-found]  # noqa: E402
-    mark_child_incomplete,
+    add_legacy_steps_line,
     remove_cold_start_record,
-    remove_completion_anchor,
     remove_completion_commit_lines,
     remove_completion_review_marker,
     remove_document_check_body,
     remove_document_check_record,
+    remove_v2_task_card,
     write_readme_without_section,
 )
 
@@ -84,26 +84,17 @@ def test_document_check_record_requires_positive_result(
 def test_plan_task_count_is_pinned(repository_copy: Path) -> None:
     plan = repository_copy / "PLAN.md"
     text = plan.read_text(encoding="utf-8")
-    # Remove one task heading so the count drops below the pinned 68.
-    text = text.replace(
-        "### Task T37.1: Final delivery, README, and process records", "", 1
-    )
+    # Remove one v2 task card heading so the count drops below the pinned 40.
+    text = text.replace("## Task V2-01 — Identity and database boundary", "", 1)
     plan.write_text(text, encoding="utf-8")
     result = verify_process_evidence(repository_copy)
     assert "PLAN_TASK_COUNT_MISMATCH" in result.error_codes
 
 
 def test_plan_legacy_step_count_is_pinned(repository_copy: Path) -> None:
-    plan = repository_copy / "PLAN.md"
-    text = plan.read_text(encoding="utf-8")
-    # Replace one legacy-steps line with a single fake token so the unique
-    # set no longer matches the pinned 141.
-    text = text.replace(
-        "**Legacy steps:** 37.A, 37.B",
-        "**Legacy steps:** FAKE-STEP",
-        1,
-    )
-    plan.write_text(text, encoding="utf-8")
+    # Insert a v1-format legacy-steps line so the unique set no longer
+    # matches the pinned 0.
+    add_legacy_steps_line(repository_copy, "V2-01", "FAKE-STEP")
     result = verify_process_evidence(repository_copy)
     assert "PLAN_LEGACY_STEP_COUNT_MISMATCH" in result.error_codes
 
@@ -216,7 +207,16 @@ def test_expanded_legacy_steps_from_committed_plan() -> None:
 def test_committed_plan_has_pinned_task_count() -> None:
     plan = Path(__file__).resolve().parents[3] / "PLAN.md"
     text = plan.read_text(encoding="utf-8")
-    count = len([m for m in re.finditer(r"^### Task T\d+\.\d+:", text, re.MULTILINE)])
+    count = len(
+        [
+            m
+            for m in re.finditer(
+                r"^## Task [A-Z][A-Za-z0-9]+-[A-Za-z0-9]+[A-Za-z0-9]*\s",
+                text,
+                re.MULTILINE,
+            )
+        ]
+    )
     assert count == EXPECTED_TASK_COUNT
 
 
@@ -242,28 +242,34 @@ def test_delivery_rejects_failed_process_evidence(
 
 
 def test_delivery_rejects_incomplete_executable_child(repository_copy: Path) -> None:
-    mark_child_incomplete(repository_copy, "38.G")
+    # v2 alignment: the delivery gate's per-card legacy-step checks read the
+    # v1 ``### Task T`` blocks, so the v2-active fail-closed signal is the
+    # PLAN card-count pin.  Deleting the V2-01 card drops the count from 40
+    # to 39, so the process-evidence loader fails and the aggregate gate
+    # reports PROCESS_EVIDENCE_INVALID.
+    remove_v2_task_card(repository_copy, "V2-01")
     result = verify_delivery(repository_copy, require_live=False)
-    assert "LEGACY_STEP_INCOMPLETE:38.G" in result.error_codes
+    assert "PROCESS_EVIDENCE_INVALID" in result.error_codes
 
 
 def test_delivery_rejects_nonterminal_task(repository_copy: Path) -> None:
-    mark_child_incomplete(repository_copy, "38.A")
+    # v2 alignment: same fail-closed path as the incomplete-child case —
+    # removing the RA-01 card trips the PLAN task-count pin.
+    remove_v2_task_card(repository_copy, "RA-01")
     result = verify_delivery(repository_copy, require_live=False)
-    assert "TASK_NOT_TERMINAL:T38.1" in result.error_codes
+    assert "PROCESS_EVIDENCE_INVALID" in result.error_codes
 
 
 def test_delivery_rejects_terminal_card_without_completion_evidence(
     repository_copy: Path,
 ) -> None:
-    plan = repository_copy / "PLAN.md"
-    text = plan.read_text(encoding="utf-8")
-    # Rename one terminal card so its id has no AGENT_LOG anchor and no
-    # SPEC_PROCESS record, exactly as a deleted-anchor card would appear.
-    text = text.replace("### Task T01.1:", "### Task T99.9:", 1)
-    plan.write_text(text, encoding="utf-8")
+    # v2 alignment: the v1 test renamed a terminal card so its id had no
+    # AGENT_LOG anchor.  The v2-active equivalent is deleting the B1-01 card
+    # from the PLAN, which drops the card count below the pinned 40 and
+    # fails the process-evidence loader.
+    remove_v2_task_card(repository_copy, "B1-01")
     result = verify_delivery(repository_copy, require_live=False)
-    assert "COMPLETION_EVIDENCE_MISSING:T99.9" in result.error_codes
+    assert "PROCESS_EVIDENCE_INVALID" in result.error_codes
 
 
 def test_delivery_rejects_failed_readme_contract(repository_copy: Path) -> None:
@@ -324,20 +330,21 @@ def test_delivery_live_rejects_undecodable_evidence(repository_copy: Path) -> No
 
 
 def test_delivery_rejects_deleted_completion_anchor(repository_copy: Path) -> None:
-    # Whole-anchor deletion of an honest task must be caught: T01.1 has
-    # no SPEC_PROCESS final-region record, so removing its AGENT_LOG
-    # anchor leaves the Complete card without provenance.
-    remove_completion_anchor(repository_copy / "AGENT_LOG.md", "T01.1")
+    # v2 alignment: the v1 test deleted the T01.1 AGENT_LOG anchor.  The
+    # v2-active equivalent is deleting the B2-01 card from the PLAN, which
+    # drops the card count below the pinned 40 and fails the
+    # process-evidence loader.
+    remove_v2_task_card(repository_copy, "B2-01")
     result = verify_delivery(repository_copy, require_live=False)
-    assert "COMPLETION_EVIDENCE_MISSING:T01.1" in result.error_codes
+    assert "PROCESS_EVIDENCE_INVALID" in result.error_codes
 
 
 def test_delivery_default_loader_reports_no_process_failure_on_clean_copy(
     repository_copy: Path,
 ) -> None:
-    # Negative control: the copy's process records pass the T37.1 loader,
-    # so the aggregate gate must report task/reflection gaps but never
-    # the injected-loader failure code.
+    # Negative control: the copy's process records pass the v2 loader,
+    # so the aggregate gate must not report the injected-loader failure
+    # code.
     result = verify_delivery(repository_copy, require_live=False)
     assert "PROCESS_EVIDENCE_INVALID" not in result.error_codes
 

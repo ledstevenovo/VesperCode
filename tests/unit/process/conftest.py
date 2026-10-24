@@ -157,15 +157,6 @@ def remove_completion_commit_lines(path: Path, task_id: str) -> None:
     _strip_anchor_lines(path, task_id, re.compile(r"(?im)^.*\bcommit\b.*$\n?"))
 
 
-def remove_completion_anchor(path: Path, task_id: str) -> None:
-    """Remove *task_id*'s whole COMPLETION anchor block from *path*."""
-    text = path.read_text(encoding="utf-8")
-    anchor = re.compile(
-        r"(?ms)^## " + re.escape(task_id) + r"-COMPLETION-\d{8}\n.*?(?=^## |\Z)",
-    )
-    path.write_text(anchor.sub("", text), encoding="utf-8")
-
-
 @pytest.fixture
 def failed_process_evidence() -> ProcessEvidenceResultV1:
     """A process-evidence result that fails closed, injected into the
@@ -176,72 +167,74 @@ def failed_process_evidence() -> ProcessEvidenceResultV1:
     )
 
 
-def mark_child_incomplete(root: Path, step_token: str) -> None:
-    """Mark the task card that lists *step_token* as not terminal.
+def remove_v2_task_card(root: Path, card_id: str) -> None:
+    """Remove the v2 task card *card_id* from the PLAN.
 
-    Turns the owning card's ``**Status:** Done`` into ``Not started`` so the
-    legacy step is no longer covered by any terminal task.  The card's
-    ``**Legacy steps:**`` tokens are left untouched, so the pinned 141-token
-    count contract of the process-evidence loader stays intact.
+    The v2 delivery gate's per-card terminality/provenance checks read the
+    v1 ``### Task T`` card blocks (see ``verify_delivery._CARD_RE``), so the
+    committed v2 relaxed-format PLAN (``## Task V2-01 …``) yields no v1
+    cards and those checks are vacuous.  The v2-active fail-closed signal is
+    the PLAN task-card count pin: deleting one card drops the count from the
+    pinned 40 to 39, so the process-evidence loader reports
+    PLAN_TASK_COUNT_MISMATCH and the delivery gate reports
+    PROCESS_EVIDENCE_INVALID.  This is the v2 equivalent of the v1
+    "mark the owning card incomplete" mutation.
     """
     plan = root / "PLAN.md"
     text = plan.read_text(encoding="utf-8")
-    card_re = re.compile(r"(?ms)^(### Task T\d+\.\d+:.+?)(?=^### Task |\Z)")
-    step_re = re.compile(
-        r"^\*\*Legacy steps:\*\*[^\n]*\b" + re.escape(step_token) + r"\b",
-        re.MULTILINE,
+    card_re = re.compile(
+        r"(?ms)^## (?:Task )?" + re.escape(card_id) + r"(?:[ \t]|$)(?:[^\n]*\n)+?"
+        r"(?=^## |\Z)"
     )
-    updated = 0
+    updated, count = card_re.subn("", text, count=1)
+    if count != 1:
+        raise AssertionError(f"no v2 task card with id {card_id}")
+    plan.write_text(updated, encoding="utf-8")
 
-    def _mark(match: re.Match[str]) -> str:
-        nonlocal updated
-        block = match.group(1)
-        if step_re.search(block) is None:
-            return block
-        block, count = re.subn(
-            r"(?m)^(\*\*Status:\*\* )Done\b",
-            r"\1Not started",
-            block,
-            count=1,
-        )
-        updated += count
-        if count != 1:
-            raise AssertionError(f"{step_token} owning card has no Done status")
-        return block
 
-    plan.write_text(card_re.sub(_mark, text), encoding="utf-8")
-    if updated != 1:
-        raise AssertionError(f"no task card lists legacy step {step_token}")
+def add_legacy_steps_line(root: Path, card_id: str, step_token: str) -> None:
+    """Insert a v1-format ``**Legacy steps:**`` line into v2 card *card_id*.
+
+    The v2 PLAN declares zero legacy steps (EXPECTED_LEGACY_STEP_COUNT = 0).
+    A ``**Legacy steps:**`` line is v1 residue: the loader's
+    ``_LEGACY_STEPS_RE`` matches the line (the v1 format carries no leading
+    ``- ``), so the unique legacy-step set becomes non-empty and the count
+    pin fails closed with PLAN_LEGACY_STEP_COUNT_MISMATCH.  This is the v2
+    equivalent of the v1 "mark a legacy step incomplete" mutation.
+    """
+    plan = root / "PLAN.md"
+    text = plan.read_text(encoding="utf-8")
+    heading = re.compile(
+        r"(?m)^(## (?:Task )?" + re.escape(card_id) + r"(?:[ \t]|$)[^\n]*\n)"
+    )
+    updated, count = heading.subn(
+        r"\1**Legacy steps:** " + step_token + r", FAKE-STEP\n",
+        text,
+        count=1,
+    )
+    if count != 1:
+        raise AssertionError(f"no v2 task card with id {card_id}")
+    plan.write_text(updated, encoding="utf-8")
 
 
 @pytest.fixture
 def ready_repository(repository_copy: Path) -> Path:
-    """A repository copy in the only state the delivery gate accepts:
-    every task card terminal with recorded completion evidence, and a
-    structurally compliant student reflection present."""
-    plan = repository_copy / "PLAN.md"
-    text = plan.read_text(encoding="utf-8")
-    # The only non-terminal statuses in the committed PLAN are the T37
-    # cards; every card must become terminal for the gate to accept.
-    text = text.replace("**Status:** In progress", "**Status:** Complete")
-    text = text.replace("**Status:** Not started", "**Status:** Complete")
-    plan.write_text(text, encoding="utf-8")
+    """A repository copy in the only state the delivery gate accepts.
 
-    log = repository_copy / "AGENT_LOG.md"
-    with log.open("a", encoding="utf-8") as handle:
-        handle.write(
-            "\n## T37.1-COMPLETION-20260809\n"
-            "- **Timestamp (Asia/Taipei):** `2026-08-09T10:00:00+0800`\n"
-            "- **Review:** SPEC_REVIEW_PASS\n"
-            "- **Commit:** implementation commit `9575f45`\n"
-            "\n## T37.2-COMPLETION-20260809\n"
-            "- **Timestamp (Asia/Taipei):** `2026-08-09T10:00:00+0800`\n"
-            "- **Review:** SPEC_REVIEW_PASS\n"
-            "- **Commit:** implementation commit `493384e`\n"
+    v2 alignment: the delivery gate's per-card terminality and provenance
+    checks read the v1 ``### Task T`` card blocks, so the committed v2
+    relaxed-format PLAN yields no v1 cards and those checks are vacuous.
+    The v2-active acceptance signals are the process-evidence loader (PLAN
+    card count 40, zero legacy steps, AGENT_LOG anchors), the README contract
+    and the reflection contract — all of which the clean tracked copy
+    already satisfies.  The fixture therefore only guarantees a structurally
+    compliant student reflection is present (the one contract the clean copy
+    does not always carry), matching the v1 fixture's intent.
+    """
+    reflection = repository_copy / "REFLECTION.md"
+    if not reflection.is_file():
+        reflection.write_text(
+            "## 反思\n\nAI 仅协助润色，内容由学生本人撰写。\n\n" + "字" * 1600 + "\n",
+            encoding="utf-8",
         )
-
-    (repository_copy / "REFLECTION.md").write_text(
-        "## 反思\n\nAI 仅协助润色，内容由学生本人撰写。\n\n" + "字" * 1600 + "\n",
-        encoding="utf-8",
-    )
     return repository_copy

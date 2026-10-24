@@ -217,21 +217,24 @@ def test_release_rule_boundary_matrix(
     assert dual_ci_contract.github.external_publish_actions == ()
     assert dual_ci_contract.github.secrets_referenced == ()
     assert gitlab.secrets_referenced == ()
+    # v2 alignment (round 3, decision B): the committed ci.yml runs a single
+    # ``unit-test`` job on push/pull_request (no reference-image-build or
+    # demo-image-build — those are GitLab-only in the v2 pipeline).  The v1
+    # matrix pinned 3 GitHub jobs; the v2 pins the measured single-job fact
+    # (source: .github/workflows/ci.yml @ c64b3c8 + GOAL_v2_streaming_tui.md).
+    # GitLab rows are unchanged: .gitlab-ci.yml actually carries the 4-job
+    # verify pipeline + release job.
     assert dual_ci_contract.event_matrix == (
         (
             CIContextRowV1(
                 platform="github",
                 context="push",
-                job_names=frozenset(
-                    {"unit-test", "reference-image-build", "demo-image-build"}
-                ),
+                job_names=frozenset({"unit-test"}),
             ),
             CIContextRowV1(
                 platform="github",
                 context="pull_request",
-                job_names=frozenset(
-                    {"unit-test", "reference-image-build", "demo-image-build"}
-                ),
+                job_names=frozenset({"unit-test"}),
             ),
             CIContextRowV1(
                 platform="gitlab",
