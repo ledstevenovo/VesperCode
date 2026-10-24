@@ -10,7 +10,10 @@ the worker's delta callbacks check a cancel event and raise
 ``KeyboardInterrupt``, which the engine propagates (only
 ``Exception``-shaped LLM failures map onto ``LLM_CALL_FAILED``); the
 worker body's ``try/finally`` restores the input and posts the
-cancellation status, so the widget tree is never left inconsistent.
+cancellation status, so the widget tree is never left inconsistent:
+the cancelled partial block is flushed into the log as a bounded
+preview and cleared, and every new submission resets the view model,
+so content never bleeds across runs.
 Writes stay staged in memory — the TUI never mutates the workspace
 outside the approval-gated writeback services.
 
@@ -53,6 +56,7 @@ from vespercode.tui.v2_view_model import (
 _STREAM_PREFIX = "▌ "
 _CONTENT_PREFIX = "› "
 _TURN_PREFIX = "● "
+_CANCELLED_PREFIX = "✕ "
 
 
 class V2StreamingTuiApp(App[None]):
@@ -121,6 +125,8 @@ class V2StreamingTuiApp(App[None]):
         self._cancel_event.clear()
         self.run_finished.clear()
         self._staged_count = 0
+        self._view.reset()
+        self.query_one("#current-block", Static).update(Text(""))
         event.input.disabled = True
         task = event.input.value.strip() or self._spec.task
         self._start_agent(task)
@@ -213,7 +219,17 @@ class V2StreamingTuiApp(App[None]):
         self._write_status(event.text, error=event.error)
 
     def _render_cancelled(self) -> None:
+        partial = self._view.cancelled_partial_lines()
         event = self._view.handle_cancelled()
+        log = self.query_one("#stream-log", RichLog)
+        for line in partial:
+            log.write(
+                Text(
+                    f"{_CANCELLED_PREFIX}{line}",
+                    style=V2_TUI_REASONING_STYLE,
+                )
+            )
+        self.query_one("#current-block", Static).update(Text(""))
         self._write_status(event.text, error=event.error)
 
     def _render_error(self, exc: Exception) -> None:
